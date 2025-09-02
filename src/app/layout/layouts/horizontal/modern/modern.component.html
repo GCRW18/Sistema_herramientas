@@ -1,0 +1,93 @@
+<!-- Loading bar -->
+<erp-loading-bar></erp-loading-bar>
+
+<!-- Navigation -->
+@if (isScreenSmall) {
+    <erp-vertical-navigation
+        class="dark bg-gray-900 print:hidden"
+        [mode]="'over'"
+        [name]="'mainNavigation'"
+        [navigation]="navigation.default"
+        [opened]="false"
+    >
+        <!-- Navigation header hook -->
+        <ng-container erpVerticalNavigationContentHeader>
+            <!-- Logo -->
+            <div class="flex h-20 items-center px-8 pt-6">
+                <img
+                    class="w-24"
+                    src="images/logo/logo-text-on-dark.svg"
+                    alt="Logo image"
+                />
+            </div>
+        </ng-container>
+    </erp-vertical-navigation>
+}
+
+<!-- Wrapper -->
+<div class="flex w-full min-w-0 flex-auto flex-col">
+    <!-- Header -->
+    <div
+        class="bg-card relative z-49 flex h-16 w-full flex-0 items-center px-4 shadow dark:border-b dark:bg-transparent dark:shadow-none sm:h-20 md:px-6 print:hidden"
+    >
+        @if (!isScreenSmall) {
+            <!-- Logo -->
+            <div class="mx-2 flex items-center lg:mr-8">
+                <div class="hidden lg:flex">
+                    <img
+                        class="w-24 dark:hidden"
+                        src="images/erp/boa_logo_blue.png"
+                    />
+                    <img
+                        class="hidden w-24 dark:flex"
+                        src="images/erp/boa_logo_white.png"
+                    />
+                </div>
+                <!--<img class="flex w-8 lg:hidden" src="images/logo/logo.svg" />-->
+            </div>
+            <!-- Horizontal navigation -->
+            <erp-horizontal-navigation
+                class="mr-2"
+                [name]="'mainNavigation'"
+                [navigation]="navigation.horizontal"
+            ></erp-horizontal-navigation>
+        }
+        <!-- Navigation toggle button -->
+        @if (isScreenSmall) {
+            <button
+                mat-icon-button
+                (click)="toggleNavigation('mainNavigation')"
+            >
+                <mat-icon [svgIcon]="'heroicons_outline:bars-3'"></mat-icon>
+            </button>
+        }
+        <!-- Components -->
+        <div class="ml-auto flex items-center space-x-0.5 pl-2 sm:space-x-2">
+            <languages></languages>
+            <erp-fullscreen class="hidden md:block"></erp-fullscreen>
+            <search [appearance]="'bar'"></search>
+            <scheme></scheme>
+            <theme></theme>
+            <notifications></notifications>
+            <user></user>
+        </div>
+    </div>
+
+    <!-- Content -->
+    <div class="flex w-full flex-auto flex-col">
+        <!-- *ngIf="true" hack is required here for router-outlet to work correctly.
+             Otherwise, layout changes won't be registered and the view won't be updated! -->
+        @if (true) {
+            <router-outlet></router-outlet>
+        }
+    </div>
+
+    <!-- Footer -->
+    <div
+        class="bg-card relative z-49 flex h-14 w-full flex-0 items-center border-t px-4 dark:bg-transparent sm:h-20 md:px-6 print:hidden"
+    >
+        <span class="text-secondary font-medium"
+            >Erp BoA &copy; {{ currentYear }} Boliviana de Aviación - Todos los derechos reservados</span
+        >
+    </div>
+</div>

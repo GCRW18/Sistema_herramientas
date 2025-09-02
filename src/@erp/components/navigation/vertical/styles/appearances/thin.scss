@@ -1,0 +1,97 @@
+/* Variables */
+:root {
+    --erp-vertical-navigation-thin-width: 80px;
+}
+
+erp-vertical-navigation {
+    /* Thin appearance overrides */
+    &.erp-vertical-navigation-appearance-thin {
+        width: var(--erp-vertical-navigation-thin-width);
+        min-width: var(--erp-vertical-navigation-thin-width);
+        max-width: var(--erp-vertical-navigation-thin-width);
+
+        /* Left positioned */
+        &.erp-vertical-navigation-position-left {
+            &.erp-vertical-navigation-mode-side {
+                margin-left: calc(
+                    var(--erp-vertical-navigation-thin-width) * -1
+                );
+            }
+
+            &.erp-vertical-navigation-opened {
+                margin-left: 0;
+            }
+        }
+
+        /* Right positioned */
+        &.erp-vertical-navigation-position-right {
+            &.erp-vertical-navigation-mode-side {
+                margin-right: calc(
+                    var(--erp-vertical-navigation-thin-width) * -1
+                );
+            }
+
+            &.erp-vertical-navigation-opened {
+                margin-right: 0;
+            }
+
+            .erp-vertical-navigation-aside-wrapper {
+                left: auto;
+                right: var(--erp-vertical-navigation-thin-width);
+            }
+        }
+
+        /* Wrapper */
+        .erp-vertical-navigation-wrapper {
+            /* Content */
+            .erp-vertical-navigation-content {
+                > erp-vertical-navigation-aside-item,
+                > erp-vertical-navigation-basic-item {
+                    flex-direction: column;
+                    justify-content: center;
+                    height: 64px;
+                    min-height: 64px;
+                    max-height: 64px;
+                    padding: 0 16px;
+
+                    .erp-vertical-navigation-item-wrapper {
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+
+                        .erp-vertical-navigation-item {
+                            justify-content: center;
+                            padding: 12px;
+                            border-radius: 4px;
+
+                            .erp-vertical-navigation-item-icon {
+                                margin: 0;
+                            }
+
+                            .erp-vertical-navigation-item-arrow,
+                            .erp-vertical-navigation-item-badge-content,
+                            .erp-vertical-navigation-item-title-wrapper {
+                                display: none;
+                            }
+                        }
+                    }
+                }
+
+                > erp-vertical-navigation-collapsable-item {
+                    display: none;
+                }
+
+                > erp-vertical-navigation-group-item {
+                    > .erp-vertical-navigation-item-wrapper {
+                        display: none;
+                    }
+                }
+            }
+        }
+
+        /* Aside wrapper */
+        .erp-vertical-navigation-aside-wrapper {
+            left: var(--erp-vertical-navigation-thin-width);
+        }
+    }
+}

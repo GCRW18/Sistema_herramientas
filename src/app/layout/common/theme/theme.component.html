@@ -1,0 +1,76 @@
+
+<!-- thema toggle -->
+<button mat-icon-button (click)="openPanel()" #shortcutsOrigin [matTooltip]="'Seleccione Tema'">
+    <mat-icon class="text-primary" [svgIcon]="'heroicons_outline:light-bulb'"></mat-icon>
+</button>
+
+<!-- thema panel -->
+<ng-template #shortcutsPanel>
+    <div
+        class="fixed inset-0 flex flex-col overflow-hidden shadow-lg sm:static sm:inset-auto sm:w-90 sm:min-w-90 sm:rounded-2xl"
+    >
+        <!-- Header -->
+        <div
+            class="flex shrink-0 items-center bg-primary py-2 pl-6 pr-4 text-on-primary"
+        >
+            <div class="-ml-1 mr-3 sm:hidden">
+                <button mat-icon-button (click)="closePanel()">
+                    <mat-icon
+                        class="text-current icon-size-5"
+                        [svgIcon]="'heroicons_solid:x-mark'"
+                    ></mat-icon>
+                </button>
+            </div>
+            <div class="flex items-center text-lg font-medium leading-10">
+                <span class="">Temas</span>
+            </div>
+        </div>
+
+        <div
+            class="bg-card relative -mb-px flex flex-auto flex-col overflow-y-auto sm:max-h-120"
+        >
+            <!-- View mode -->
+            @if (mode === 'view') {
+                <!-- Shortcuts -->
+                <div class="grid grid-flow-row grid-cols-2">
+                    <!-- Shortcut -->
+                    @for (
+                            theme of config.themes;  track trackByFn($index, theme);
+                        ) {
+                        <div
+                            class="group bg-card relative flex flex-col overflow-hidden border-b border-r even:border-r-0 hover:bg-gray-50 dark:hover:bg-black dark:hover:bg-opacity-5"
+                        >
+
+
+                            <a class="bg-hover flex cursor-pointer items-center justify-center px-4 py-3 ring-inset ring-primary"
+                                [class.ring-2]="config.theme === theme.id"
+                                [ngClass]="theme.id"
+                                (click)="setTheme(theme.id)"
+                            >
+                                <ng-container
+                                    *ngTemplateOutlet="linkContent"
+                                ></ng-container>
+                            </a>
+
+                            <!-- Link content template -->
+                            <ng-template #linkContent>
+                                <div class="flex flex-col place-items-center">
+                                    <div
+                                        class="h-3 w-3 flex-0 rounded-full bg-primary "
+                                    ></div>
+                                    <div
+                                        class="ml-2.5 truncate font-medium leading-5"
+                                        [class.text-secondary]="config.theme !== theme.id"
+                                    >
+                                        {{ theme.name }}
+                                    </div>
+                                </div>
+                            </ng-template>
+                        </div>
+                    }
+                </div>
+
+            }
+        </div>
+    </div>
+</ng-template>

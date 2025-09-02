@@ -1,0 +1,8 @@
+<button mat-icon-button (click)="setScheme(config.scheme === 'light' ? 'dark' : 'light')" [matTooltip]="config.scheme === 'light' ? 'Oscuro':'Claro'"
+        erpSoundEffect soundSrc="assets/sound-effects/mouse-click.ogg">
+    @if (config.scheme === 'light') {
+        <mat-icon class="icon-size-5" [svgIcon]="'heroicons_solid:moon'"></mat-icon>
+    } @else if (config.scheme === 'dark') {
+        <mat-icon class="icon-size-5" [svgIcon]="'heroicons_solid:sun'"></mat-icon>
+    }
+</button>
