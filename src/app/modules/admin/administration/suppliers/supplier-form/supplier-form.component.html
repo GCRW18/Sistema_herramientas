@@ -1,0 +1,116 @@
+<div class="flex flex-col flex-auto min-w-0">
+    <!-- Header -->
+    <div class="flex flex-col sm:flex-row flex-0 sm:items-center sm:justify-between p-6 sm:py-8 sm:px-10 border-b bg-card dark:bg-transparent">
+        <div class="flex-1 min-w-0">
+            <div class="flex items-center">
+                <button mat-icon-button (click)="cancel()" [matTooltip]="'Volver'">
+                    <mat-icon [svgIcon]="'heroicons_outline:arrow-left'"></mat-icon>
+                </button>
+                <h2 class="text-3xl font-extrabold tracking-tight leading-7 sm:leading-10 truncate ml-2 text-gray-900 dark:text-gray-100">
+                    {{ isEditMode ? 'Editar Proveedor' : 'Nuevo Proveedor' }}
+                </h2>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main -->
+    <div class="flex-auto p-6 sm:p-10">
+        <form [formGroup]="form" class="space-y-8">
+            <!-- Información Básica -->
+            <div class="bg-card shadow rounded-2xl p-6">
+                <h3 class="text-lg font-medium mb-4">Información Básica</h3>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                    <mat-form-field class="flex-auto">
+                        <mat-label>Código</mat-label>
+                        <input matInput formControlName="code" placeholder="Ej: PROV-001" required>
+                        <mat-icon matPrefix [svgIcon]="'heroicons_outline:hashtag'"></mat-icon>
+                        <mat-error *ngIf="form.get('code')?.hasError('required')">
+                            El código es requerido
+                        </mat-error>
+                    </mat-form-field>
+
+                    <mat-form-field class="flex-auto">
+                        <mat-label>Nombre de la Empresa</mat-label>
+                        <input matInput formControlName="name" placeholder="Razón social" required>
+                        <mat-icon matPrefix [svgIcon]="'heroicons_outline:building-office'"></mat-icon>
+                        <mat-error *ngIf="form.get('name')?.hasError('required')">
+                            El nombre es requerido
+                        </mat-error>
+                    </mat-form-field>
+
+                    <mat-form-field class="flex-auto">
+                        <mat-label>Persona de Contacto</mat-label>
+                        <input matInput formControlName="contactPerson" placeholder="Nombre del contacto">
+                        <mat-icon matPrefix [svgIcon]="'heroicons_outline:user'"></mat-icon>
+                    </mat-form-field>
+
+                    <div class="flex items-center">
+                        <mat-checkbox formControlName="active">
+                            Proveedor Activo
+                        </mat-checkbox>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Información de Contacto -->
+            <div class="bg-card shadow rounded-2xl p-6">
+                <h3 class="text-lg font-medium mb-4">Información de Contacto</h3>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                    <mat-form-field class="flex-auto">
+                        <mat-label>Email</mat-label>
+                        <input matInput type="email" formControlName="email" placeholder="correo@ejemplo.com">
+                        <mat-icon matPrefix [svgIcon]="'heroicons_outline:envelope'"></mat-icon>
+                        <mat-error *ngIf="form.get('email')?.hasError('email')">
+                            Email inválido
+                        </mat-error>
+                    </mat-form-field>
+
+                    <mat-form-field class="flex-auto">
+                        <mat-label>Teléfono</mat-label>
+                        <input matInput formControlName="phone" placeholder="+591 00000000">
+                        <mat-icon matPrefix [svgIcon]="'heroicons_outline:phone'"></mat-icon>
+                    </mat-form-field>
+
+                    <mat-form-field class="flex-auto sm:col-span-2">
+                        <mat-label>Dirección</mat-label>
+                        <input matInput formControlName="address" placeholder="Dirección completa">
+                        <mat-icon matPrefix [svgIcon]="'heroicons_outline:map-pin'"></mat-icon>
+                    </mat-form-field>
+
+                    <mat-form-field class="flex-auto">
+                        <mat-label>Ciudad</mat-label>
+                        <input matInput formControlName="city" placeholder="Ciudad">
+                        <mat-icon matPrefix [svgIcon]="'heroicons_outline:building-office-2'"></mat-icon>
+                    </mat-form-field>
+
+                    <mat-form-field class="flex-auto">
+                        <mat-label>País</mat-label>
+                        <input matInput formControlName="country" placeholder="País">
+                        <mat-icon matPrefix [svgIcon]="'heroicons_outline:globe-americas'"></mat-icon>
+                    </mat-form-field>
+                </div>
+            </div>
+
+            <!-- Notas Adicionales -->
+            <div class="bg-card shadow rounded-2xl p-6">
+                <h3 class="text-lg font-medium mb-4">Notas Adicionales</h3>
+                <mat-form-field class="flex-auto w-full">
+                    <mat-label>Notas</mat-label>
+                    <textarea matInput formControlName="notes" rows="3" placeholder="Observaciones o información adicional"></textarea>
+                </mat-form-field>
+            </div>
+
+            <!-- Actions -->
+            <div class="flex items-center justify-end gap-4">
+                <button mat-button type="button" (click)="cancel()">
+                    Cancelar
+                </button>
+                <button mat-flat-button [color]="'primary'" type="button" (click)="save()"
+                        [disabled]="form.invalid || loading">
+                    <mat-icon *ngIf="loading" class="animate-spin" [svgIcon]="'heroicons_outline:arrow-path'"></mat-icon>
+                    <span *ngIf="!loading">{{ isEditMode ? 'Guardar Cambios' : 'Crear Proveedor' }}</span>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>

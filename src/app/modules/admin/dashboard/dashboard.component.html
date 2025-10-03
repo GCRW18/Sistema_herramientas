@@ -1,0 +1,180 @@
+<div class="flex flex-col flex-auto min-w-0">
+    <!-- Header -->
+    <div class="flex flex-col sm:flex-row flex-0 sm:items-center sm:justify-between p-6 sm:py-8 sm:px-10 border-b bg-card dark:bg-transparent">
+        <div class="flex-1 min-w-0">
+            <!-- Title -->
+            <div class="flex items-center">
+                <mat-icon class="icon-size-12 text-hint mr-3" [svgIcon]="'heroicons_outline:chart-pie'"></mat-icon>
+                <h2 class="text-3xl font-extrabold tracking-tight leading-7 sm:leading-10 truncate">
+                    Dashboard
+                </h2>
+            </div>
+            <!-- Description -->
+            <div class="ml-15 mt-2">
+                <p class="text-secondary">
+                    Panel de control del Sistema de Gestión de Herramientas
+                </p>
+            </div>
+        </div>
+        <!-- Actions -->
+        <div class="flex shrink-0 items-center mt-6 sm:mt-0 sm:ml-4">
+            <button mat-icon-button (click)="refresh()" [matTooltip]="'Actualizar'">
+                <mat-icon [svgIcon]="'heroicons_outline:arrow-path'"></mat-icon>
+            </button>
+        </div>
+    </div>
+
+    <!-- Main -->
+    <div class="flex-auto p-6 sm:p-10">
+        <!-- Loading -->
+        <div *ngIf="loading" class="flex items-center justify-center h-96">
+            <mat-icon class="animate-spin icon-size-16" [svgIcon]="'heroicons_outline:arrow-path'"></mat-icon>
+        </div>
+
+        <!-- Content -->
+        <div *ngIf="!loading" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            <!-- Total Tools -->
+            <div class="flex flex-col flex-auto p-6 bg-card shadow rounded-2xl overflow-hidden">
+                <div class="flex items-start justify-between">
+                    <div class="text-lg font-medium tracking-tight leading-6 truncate">Total Herramientas</div>
+                    <div class="ml-2">
+                        <mat-icon class="icon-size-8 text-hint" [svgIcon]="'heroicons_outline:wrench-screwdriver'"></mat-icon>
+                    </div>
+                </div>
+                <div class="flex flex-col items-center justify-center flex-auto mt-2">
+                    <div class="text-7xl sm:text-8xl font-bold tracking-tight leading-none text-primary">
+                        {{ stats.totalTools }}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Available Tools -->
+            <div class="flex flex-col flex-auto p-6 bg-card shadow rounded-2xl overflow-hidden">
+                <div class="flex items-start justify-between">
+                    <div class="text-lg font-medium tracking-tight leading-6 truncate">Disponibles</div>
+                    <div class="ml-2">
+                        <mat-icon class="icon-size-8 text-green-500" [svgIcon]="'heroicons_outline:check-circle'"></mat-icon>
+                    </div>
+                </div>
+                <div class="flex flex-col items-center justify-center flex-auto mt-2">
+                    <div class="text-7xl sm:text-8xl font-bold tracking-tight leading-none text-green-500">
+                        {{ stats.availableTools }}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tools In Use -->
+            <div class="flex flex-col flex-auto p-6 bg-card shadow rounded-2xl overflow-hidden">
+                <div class="flex items-start justify-between">
+                    <div class="text-lg font-medium tracking-tight leading-6 truncate">En Uso</div>
+                    <div class="ml-2">
+                        <mat-icon class="icon-size-8 text-blue-500" [svgIcon]="'heroicons_outline:arrow-right-circle'"></mat-icon>
+                    </div>
+                </div>
+                <div class="flex flex-col items-center justify-center flex-auto mt-2">
+                    <div class="text-7xl sm:text-8xl font-bold tracking-tight leading-none text-blue-500">
+                        {{ stats.toolsInUse }}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Critical Alerts -->
+            <div class="flex flex-col flex-auto p-6 bg-card shadow rounded-2xl overflow-hidden">
+                <div class="flex items-start justify-between">
+                    <div class="text-lg font-medium tracking-tight leading-6 truncate">Alertas Críticas</div>
+                    <div class="ml-2">
+                        <mat-icon class="icon-size-8 text-red-500" [svgIcon]="'heroicons_outline:exclamation-triangle'"></mat-icon>
+                    </div>
+                </div>
+                <div class="flex flex-col items-center justify-center flex-auto mt-2">
+                    <div class="text-7xl sm:text-8xl font-bold tracking-tight leading-none text-red-500">
+                        {{ stats.criticalAlerts }}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tools In Calibration -->
+            <div class="flex flex-col flex-auto p-6 bg-card shadow rounded-2xl overflow-hidden">
+                <div class="flex items-start justify-between">
+                    <div class="text-lg font-medium tracking-tight leading-6 truncate">En Calibración</div>
+                    <div class="ml-2">
+                        <mat-icon class="icon-size-8 text-orange-500" [svgIcon]="'heroicons_outline:cog-6-tooth'"></mat-icon>
+                    </div>
+                </div>
+                <div class="flex flex-col items-center justify-center flex-auto mt-2">
+                    <div class="text-5xl sm:text-6xl font-bold tracking-tight leading-none text-orange-500">
+                        {{ stats.toolsInCalibration }}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Calibration Expired -->
+            <div class="flex flex-col flex-auto p-6 bg-card shadow rounded-2xl overflow-hidden">
+                <div class="flex items-start justify-between">
+                    <div class="text-lg font-medium tracking-tight leading-6 truncate">Calibración Vencida</div>
+                    <div class="ml-2">
+                        <mat-icon class="icon-size-8 text-red-500" [svgIcon]="'heroicons_outline:clock'"></mat-icon>
+                    </div>
+                </div>
+                <div class="flex flex-col items-center justify-center flex-auto mt-2">
+                    <div class="text-5xl sm:text-6xl font-bold tracking-tight leading-none text-red-500">
+                        {{ stats.calibrationExpired }}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tools In Quarantine -->
+            <div class="flex flex-col flex-auto p-6 bg-card shadow rounded-2xl overflow-hidden">
+                <div class="flex items-start justify-between">
+                    <div class="text-lg font-medium tracking-tight leading-6 truncate">En Cuarentena</div>
+                    <div class="ml-2">
+                        <mat-icon class="icon-size-8 text-yellow-500" [svgIcon]="'heroicons_outline:exclamation-circle'"></mat-icon>
+                    </div>
+                </div>
+                <div class="flex flex-col items-center justify-center flex-auto mt-2">
+                    <div class="text-5xl sm:text-6xl font-bold tracking-tight leading-none text-yellow-500">
+                        {{ stats.toolsInQuarantine }}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Decommissioned Tools -->
+            <div class="flex flex-col flex-auto p-6 bg-card shadow rounded-2xl overflow-hidden">
+                <div class="flex items-start justify-between">
+                    <div class="text-lg font-medium tracking-tight leading-6 truncate">Dados de Baja</div>
+                    <div class="ml-2">
+                        <mat-icon class="icon-size-8 text-gray-500" [svgIcon]="'heroicons_outline:x-circle'"></mat-icon>
+                    </div>
+                </div>
+                <div class="flex flex-col items-center justify-center flex-auto mt-2">
+                    <div class="text-5xl sm:text-6xl font-bold tracking-tight leading-none text-gray-500">
+                        {{ stats.decommissionedTools }}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="mt-12">
+            <h3 class="text-2xl font-bold tracking-tight">Acciones Rápidas</h3>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mt-6">
+                <button mat-flat-button class="h-24" [routerLink]="['/inventory/tools/new']">
+                    <mat-icon class="mr-2" [svgIcon]="'heroicons_outline:plus'"></mat-icon>
+                    Registrar Herramienta
+                </button>
+                <button mat-flat-button class="h-24" [routerLink]="['/movements/entries']">
+                    <mat-icon class="mr-2" [svgIcon]="'heroicons_outline:arrow-down-tray'"></mat-icon>
+                    Nueva Entrada
+                </button>
+                <button mat-flat-button class="h-24" [routerLink]="['/movements/exits']">
+                    <mat-icon class="mr-2" [svgIcon]="'heroicons_outline:arrow-up-tray'"></mat-icon>
+                    Nueva Salida
+                </button>
+                <button mat-flat-button class="h-24" [routerLink]="['/calibration/alerts']">
+                    <mat-icon class="mr-2" [svgIcon]="'heroicons_outline:bell'"></mat-icon>
+                    Ver Alertas
+                </button>
+            </div>
+        </div>
+    </div>
+</div>

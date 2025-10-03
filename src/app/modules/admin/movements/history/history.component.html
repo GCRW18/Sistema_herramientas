@@ -1,0 +1,155 @@
+<div class="flex flex-col flex-auto min-w-0">
+    <!-- Header -->
+    <div class="flex flex-col sm:flex-row flex-0 sm:items-center sm:justify-between p-6 sm:py-8 sm:px-10 border-b bg-card dark:bg-transparent">
+        <div class="flex-1 min-w-0">
+            <h2 class="text-3xl font-extrabold tracking-tight leading-7 sm:leading-10 truncate text-gray-900 dark:text-gray-100">
+                Historial de Movimientos
+            </h2>
+            <p class="mt-2 text-secondary dark:text-gray-400">Vista completa de todas las transacciones de inventario</p>
+        </div>
+    </div>
+
+    <!-- Main -->
+    <div class="flex-auto p-6 sm:p-10">
+        <!-- Filters -->
+        <div class="bg-card shadow rounded-2xl p-6 mb-6 dark:border dark:border-gray-700">
+            <h3 class="text-lg font-medium mb-4 text-gray-900 dark:text-gray-100">Filtros</h3>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <mat-form-field class="flex-auto">
+                    <mat-label>Tipo de Movimiento</mat-label>
+                    <mat-select [(value)]="selectedType">
+                        <mat-option *ngFor="let type of movementTypes" [value]="type.value">
+                            {{ type.label }}
+                        </mat-option>
+                    </mat-select>
+                </mat-form-field>
+
+                <mat-form-field class="flex-auto">
+                    <mat-label>Fecha Inicio</mat-label>
+                    <input matInput [matDatepicker]="startPicker" [(ngModel)]="startDate">
+                    <mat-datepicker-toggle matSuffix [for]="startPicker"></mat-datepicker-toggle>
+                    <mat-datepicker #startPicker></mat-datepicker>
+                </mat-form-field>
+
+                <mat-form-field class="flex-auto">
+                    <mat-label>Fecha Fin</mat-label>
+                    <input matInput [matDatepicker]="endPicker" [(ngModel)]="endDate">
+                    <mat-datepicker-toggle matSuffix [for]="endPicker"></mat-datepicker-toggle>
+                    <mat-datepicker #endPicker></mat-datepicker>
+                </mat-form-field>
+
+                <div class="flex items-end gap-2">
+                    <button mat-flat-button [color]="'primary'" (click)="applyFilters()" class="flex-1">
+                        <mat-icon [svgIcon]="'heroicons_outline:funnel'"></mat-icon>
+                        <span class="ml-2">Aplicar</span>
+                    </button>
+                    <button mat-stroked-button (click)="clearFilters()">
+                        <mat-icon [svgIcon]="'heroicons_outline:x-mark'"></mat-icon>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Search -->
+        <div class="mb-6">
+            <mat-form-field class="w-full sm:w-96">
+                <mat-icon matPrefix [svgIcon]="'heroicons_outline:magnifying-glass'"></mat-icon>
+                <input matInput (keyup)="applyFilter($event)" placeholder="Buscar en historial..." autocomplete="off">
+            </mat-form-field>
+        </div>
+
+        <!-- Table -->
+        <div class="bg-card shadow rounded-2xl overflow-hidden dark:border dark:border-gray-700">
+            <div class="overflow-x-auto">
+                <table mat-table [dataSource]="dataSource" matSort class="w-full">
+                    <!-- Date Column -->
+                    <ng-container matColumnDef="date">
+                        <th mat-header-cell *matHeaderCellDef mat-sort-header class="bg-gray-50 dark:bg-gray-800 font-semibold">Fecha</th>
+                        <td mat-cell *matCellDef="let movement" class="py-4 text-gray-700 dark:text-gray-300">
+                            {{ movement.date | date:'dd/MM/yyyy HH:mm' }}
+                        </td>
+                    </ng-container>
+
+                    <!-- Type Column -->
+                    <ng-container matColumnDef="type">
+                        <th mat-header-cell *matHeaderCellDef class="bg-gray-50 dark:bg-gray-800 font-semibold">Tipo</th>
+                        <td mat-cell *matCellDef="let movement" class="py-4">
+                            <span class="px-2 py-1 rounded-full text-xs font-medium"
+                                  [class.bg-green-100]="movement.type.startsWith('entry')"
+                                  [class.dark:bg-green-800]="movement.type.startsWith('entry')"
+                                  [class.text-green-800]="movement.type.startsWith('entry')"
+                                  [class.dark:text-green-200]="movement.type.startsWith('entry')"
+                                  [class.bg-red-100]="movement.type.startsWith('exit')"
+                                  [class.dark:bg-red-800]="movement.type.startsWith('exit')"
+                                  [class.text-red-800]="movement.type.startsWith('exit')"
+                                  [class.dark:text-red-200]="movement.type.startsWith('exit')"
+                                  [class.bg-blue-100]="movement.type === 'transfer'"
+                                  [class.dark:bg-blue-800]="movement.type === 'transfer'"
+                                  [class.text-blue-800]="movement.type === 'transfer'"
+                                  [class.dark:text-blue-200]="movement.type === 'transfer'">
+                                {{ getMovementTypeLabel(movement.type) }}
+                            </span>
+                        </td>
+                    </ng-container>
+
+                    <!-- Tool Code Column -->
+                    <ng-container matColumnDef="toolCode">
+                        <th mat-header-cell *matHeaderCellDef class="bg-gray-50 dark:bg-gray-800 font-semibold">Código</th>
+                        <td mat-cell *matCellDef="let movement" class="py-4">
+                            <span class="font-medium text-gray-900 dark:text-gray-100">{{ movement.tool?.code }}</span>
+                        </td>
+                    </ng-container>
+
+                    <!-- Tool Name Column -->
+                    <ng-container matColumnDef="toolName">
+                        <th mat-header-cell *matHeaderCellDef class="bg-gray-50 dark:bg-gray-800 font-semibold">Herramienta</th>
+                        <td mat-cell *matCellDef="let movement" class="py-4 text-gray-700 dark:text-gray-300">{{ movement.tool?.name }}</td>
+                    </ng-container>
+
+                    <!-- User Column -->
+                    <ng-container matColumnDef="user">
+                        <th mat-header-cell *matHeaderCellDef class="bg-gray-50 dark:bg-gray-800 font-semibold">Usuario</th>
+                        <td mat-cell *matCellDef="let movement" class="py-4 text-gray-700 dark:text-gray-300">
+                            {{ movement.responsiblePerson || 'N/A' }}
+                        </td>
+                    </ng-container>
+
+                    <!-- Status Column -->
+                    <ng-container matColumnDef="status">
+                        <th mat-header-cell *matHeaderCellDef class="bg-gray-50 dark:bg-gray-800 font-semibold">Estado</th>
+                        <td mat-cell *matCellDef="let movement" class="py-4">
+                            <mat-chip-set>
+                                <mat-chip [color]="getStatusColor(movement.status)" [highlighted]="true">
+                                    {{ getStatusLabel(movement.status) }}
+                                </mat-chip>
+                            </mat-chip-set>
+                        </td>
+                    </ng-container>
+
+                    <!-- Actions Column -->
+                    <ng-container matColumnDef="actions">
+                        <th mat-header-cell *matHeaderCellDef class="bg-gray-50 dark:bg-gray-800 font-semibold">Acciones</th>
+                        <td mat-cell *matCellDef="let movement" class="py-4">
+                            <button mat-icon-button [matTooltip]="'Ver detalle'" (click)="viewDetail(movement.id)" class="hover:bg-blue-50 dark:hover:bg-blue-900">
+                                <mat-icon class="text-blue-600 dark:text-blue-400" [svgIcon]="'heroicons_outline:eye'"></mat-icon>
+                            </button>
+                        </td>
+                    </ng-container>
+
+                    <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+                    <tr mat-row *matRowDef="let row; columns: displayedColumns;" class="hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"></tr>
+
+                    <!-- No data -->
+                    <tr class="h-16" *matNoDataRow>
+                        <td [attr.colspan]="displayedColumns.length" class="text-center text-secondary dark:text-gray-400">
+                            {{ dataSource.filter ? 'No se encontraron movimientos' : 'No hay movimientos en el historial' }}
+                        </td>
+                    </tr>
+                </table>
+            </div>
+
+            <!-- Paginator -->
+            <mat-paginator [pageSizeOptions]="[10, 25, 50, 100]" showFirstLastButtons class="border-t dark:border-gray-700"></mat-paginator>
+        </div>
+    </div>
+</div>

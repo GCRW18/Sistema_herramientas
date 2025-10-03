@@ -1,0 +1,142 @@
+<div class="flex flex-col flex-auto min-w-0">
+    <!-- Header -->
+    <div class="flex flex-col sm:flex-row flex-0 sm:items-center sm:justify-between p-6 sm:py-8 sm:px-10 border-b bg-card">
+        <div class="flex-1 min-w-0">
+            <div class="flex items-center">
+                <button mat-icon-button (click)="cancel()" [matTooltip]="'Volver'">
+                    <mat-icon [svgIcon]="'heroicons_outline:arrow-left'"></mat-icon>
+                </button>
+                <h2 class="text-3xl font-extrabold tracking-tight leading-7 sm:leading-10 truncate ml-2">
+                    Registrar Salida
+                </h2>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main -->
+    <div class="flex-auto p-6 sm:p-10">
+        <form [formGroup]="form" class="space-y-8">
+            <!-- Información del Movimiento -->
+            <div class="bg-card shadow rounded-2xl p-6">
+                <h3 class="text-lg font-medium mb-4">Información del Movimiento</h3>
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <mat-form-field class="flex-auto">
+                        <mat-label>Tipo de Salida</mat-label>
+                        <mat-select formControlName="type" required>
+                            <mat-option *ngFor="let type of exitTypes" [value]="type.value">
+                                {{ type.label }}
+                            </mat-option>
+                        </mat-select>
+                    </mat-form-field>
+
+                    <mat-form-field class="flex-auto">
+                        <mat-label>Fecha</mat-label>
+                        <input matInput [matDatepicker]="datePicker" formControlName="date" required>
+                        <mat-datepicker-toggle matSuffix [for]="datePicker"></mat-datepicker-toggle>
+                        <mat-datepicker #datePicker></mat-datepicker>
+                    </mat-form-field>
+
+                    <mat-form-field class="flex-auto">
+                        <mat-label>Responsable</mat-label>
+                        <input matInput formControlName="responsiblePerson" placeholder="Nombre del responsable" required>
+                        <mat-icon matPrefix [svgIcon]="'heroicons_outline:user'"></mat-icon>
+                    </mat-form-field>
+                </div>
+            </div>
+
+            <!-- Herramienta -->
+            <div class="bg-card shadow rounded-2xl p-6">
+                <h3 class="text-lg font-medium mb-4">Herramienta</h3>
+                <mat-form-field class="flex-auto w-full">
+                    <mat-label>Herramienta</mat-label>
+                    <input matInput formControlName="toolId" [matAutocomplete]="toolAuto" (input)="filterTools($event)" placeholder="Buscar herramienta disponible" required>
+                    <mat-icon matPrefix [svgIcon]="'heroicons_outline:wrench-screwdriver'"></mat-icon>
+                    <mat-autocomplete #toolAuto="matAutocomplete">
+                        <mat-option *ngFor="let tool of filteredTools" [value]="tool.id">
+                            {{ tool.code }} - {{ tool.name }}
+                        </mat-option>
+                    </mat-autocomplete>
+                </mat-form-field>
+            </div>
+
+            <!-- Préstamo -->
+            <div class="bg-card shadow rounded-2xl p-6" *ngIf="form.get('type')?.value === 'exit_loan'">
+                <h3 class="text-lg font-medium mb-4">Información de Préstamo</h3>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                    <mat-form-field class="flex-auto">
+                        <mat-label>Destinatario</mat-label>
+                        <input matInput formControlName="recipient" placeholder="Persona que recibe" required>
+                        <mat-icon matPrefix [svgIcon]="'heroicons_outline:user-circle'"></mat-icon>
+                    </mat-form-field>
+
+                    <mat-form-field class="flex-auto">
+                        <mat-label>Fecha de Retorno Esperada</mat-label>
+                        <input matInput [matDatepicker]="returnPicker" formControlName="expectedReturnDate" required>
+                        <mat-datepicker-toggle matSuffix [for]="returnPicker"></mat-datepicker-toggle>
+                        <mat-datepicker #returnPicker></mat-datepicker>
+                    </mat-form-field>
+                </div>
+            </div>
+
+            <!-- Calibración -->
+            <div class="bg-card shadow rounded-2xl p-6" *ngIf="form.get('type')?.value === 'exit_calibration'">
+                <h3 class="text-lg font-medium mb-4">Información de Calibración</h3>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                    <mat-form-field class="flex-auto">
+                        <mat-label>Proveedor de Calibración</mat-label>
+                        <input matInput formControlName="calibrationProvider" placeholder="Laboratorio o proveedor" required>
+                    </mat-form-field>
+
+                    <mat-form-field class="flex-auto">
+                        <mat-label>Fecha de Retorno Esperada</mat-label>
+                        <input matInput [matDatepicker]="calReturnPicker" formControlName="expectedReturnDate" required>
+                        <mat-datepicker-toggle matSuffix [for]="calReturnPicker"></mat-datepicker-toggle>
+                        <mat-datepicker #calReturnPicker></mat-datepicker>
+                    </mat-form-field>
+                </div>
+            </div>
+
+            <!-- Mantenimiento -->
+            <div class="bg-card shadow rounded-2xl p-6" *ngIf="form.get('type')?.value === 'exit_maintenance'">
+                <h3 class="text-lg font-medium mb-4">Información de Mantenimiento</h3>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                    <mat-form-field class="flex-auto">
+                        <mat-label>Tipo de Mantenimiento</mat-label>
+                        <mat-select formControlName="maintenanceType" required>
+                            <mat-option value="preventive">Preventivo</mat-option>
+                            <mat-option value="corrective">Correctivo</mat-option>
+                            <mat-option value="repair">Reparación</mat-option>
+                        </mat-select>
+                    </mat-form-field>
+
+                    <mat-form-field class="flex-auto">
+                        <mat-label>Fecha de Retorno Esperada</mat-label>
+                        <input matInput [matDatepicker]="maintReturnPicker" formControlName="expectedReturnDate" required>
+                        <mat-datepicker-toggle matSuffix [for]="maintReturnPicker"></mat-datepicker-toggle>
+                        <mat-datepicker #maintReturnPicker></mat-datepicker>
+                    </mat-form-field>
+                </div>
+            </div>
+
+            <!-- Notas -->
+            <div class="bg-card shadow rounded-2xl p-6">
+                <h3 class="text-lg font-medium mb-4">Notas Adicionales</h3>
+                <mat-form-field class="flex-auto w-full">
+                    <mat-label>Notas</mat-label>
+                    <textarea matInput formControlName="notes" rows="3" placeholder="Observaciones del movimiento"></textarea>
+                </mat-form-field>
+            </div>
+
+            <!-- Actions -->
+            <div class="flex items-center justify-end gap-4">
+                <button mat-button type="button" (click)="cancel()">
+                    Cancelar
+                </button>
+                <button mat-flat-button [color]="'primary'" type="button" (click)="save()" [disabled]="form.invalid || loading">
+                    <mat-icon *ngIf="loading" class="animate-spin" [svgIcon]="'heroicons_outline:arrow-path'"></mat-icon>
+                    <span *ngIf="!loading">Registrar Salida</span>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>

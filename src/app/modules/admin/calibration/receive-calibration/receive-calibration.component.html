@@ -1,0 +1,81 @@
+<div class="flex flex-col flex-auto min-w-0">
+    <!-- Header -->
+    <div class="flex flex-col sm:flex-row flex-0 sm:items-center sm:justify-between p-6 sm:py-8 sm:px-10 border-b bg-card">
+        <div class="flex-1 min-w-0">
+            <div class="flex items-center">
+                <button mat-icon-button (click)="cancel()" [matTooltip]="'Volver'">
+                    <mat-icon [svgIcon]="'heroicons_outline:arrow-left'"></mat-icon>
+                </button>
+                <h2 class="text-3xl font-extrabold tracking-tight leading-7 sm:leading-10 truncate ml-2">
+                    Recibir de Calibración
+                </h2>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main -->
+    <div class="flex-auto p-6 sm:p-10">
+        <form [formGroup]="form" class="space-y-8">
+            <!-- Información de Retorno -->
+            <div class="bg-card shadow rounded-2xl p-6">
+                <h3 class="text-lg font-medium mb-4">Información de Retorno</h3>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                    <mat-form-field class="flex-auto">
+                        <mat-label>Fecha de Retorno</mat-label>
+                        <input matInput [matDatepicker]="returnPicker" formControlName="returnDate" required>
+                        <mat-datepicker-toggle matSuffix [for]="returnPicker"></mat-datepicker-toggle>
+                        <mat-datepicker #returnPicker></mat-datepicker>
+                    </mat-form-field>
+
+                    <mat-form-field class="flex-auto">
+                        <mat-label>Resultado</mat-label>
+                        <mat-select formControlName="result" required>
+                            <mat-option value="approved">Aprobado</mat-option>
+                            <mat-option value="conditionally_approved">Aprobado con Condiciones</mat-option>
+                            <mat-option value="rejected">Rechazado</mat-option>
+                        </mat-select>
+                    </mat-form-field>
+
+                    <mat-form-field class="flex-auto">
+                        <mat-label>Número de Certificado</mat-label>
+                        <input matInput formControlName="certificate" placeholder="Certificado de calibración" required>
+                        <mat-icon matPrefix [svgIcon]="'heroicons_outline:document-text'"></mat-icon>
+                    </mat-form-field>
+
+                    <mat-form-field class="flex-auto">
+                        <mat-label>Próxima Calibración</mat-label>
+                        <input matInput [matDatepicker]="nextCalPicker" formControlName="nextCalibrationDate" required>
+                        <mat-datepicker-toggle matSuffix [for]="nextCalPicker"></mat-datepicker-toggle>
+                        <mat-datepicker #nextCalPicker></mat-datepicker>
+                    </mat-form-field>
+
+                    <mat-form-field class="flex-auto">
+                        <mat-label>Costo Real</mat-label>
+                        <input matInput type="number" formControlName="cost" placeholder="0.00">
+                        <span matPrefix>$&nbsp;</span>
+                    </mat-form-field>
+                </div>
+            </div>
+
+            <!-- Observaciones -->
+            <div class="bg-card shadow rounded-2xl p-6">
+                <h3 class="text-lg font-medium mb-4">Observaciones</h3>
+                <mat-form-field class="flex-auto w-full">
+                    <mat-label>Observaciones</mat-label>
+                    <textarea matInput formControlName="observations" rows="4" placeholder="Detalles de la calibración"></textarea>
+                </mat-form-field>
+            </div>
+
+            <!-- Actions -->
+            <div class="flex items-center justify-end gap-4">
+                <button mat-button type="button" (click)="cancel()">
+                    Cancelar
+                </button>
+                <button mat-flat-button [color]="'primary'" type="button" (click)="save()" [disabled]="form.invalid || loading">
+                    <mat-icon *ngIf="loading" class="animate-spin" [svgIcon]="'heroicons_outline:arrow-path'"></mat-icon>
+                    <span *ngIf="!loading">Registrar Retorno</span>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>

@@ -1,0 +1,137 @@
+<div class="flex flex-col flex-auto min-w-0">
+    <!-- Header -->
+    <div class="flex flex-col sm:flex-row flex-0 sm:items-center sm:justify-between p-6 sm:py-8 sm:px-10 border-b bg-card">
+        <div class="flex-1 min-w-0">
+            <div class="flex items-center">
+                <button mat-icon-button (click)="cancel()" [matTooltip]="'Volver'">
+                    <mat-icon [svgIcon]="'heroicons_outline:arrow-left'"></mat-icon>
+                </button>
+                <h2 class="text-3xl font-extrabold tracking-tight leading-7 sm:leading-10 truncate ml-2">
+                    Registrar Entrada
+                </h2>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main -->
+    <div class="flex-auto p-6 sm:p-10">
+        <form [formGroup]="form" class="space-y-8">
+            <!-- Información del Movimiento -->
+            <div class="bg-card shadow rounded-2xl p-6">
+                <h3 class="text-lg font-medium mb-4">Información del Movimiento</h3>
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <mat-form-field class="flex-auto">
+                        <mat-label>Tipo de Entrada</mat-label>
+                        <mat-select formControlName="type" required>
+                            <mat-option *ngFor="let type of entryTypes" [value]="type.value">
+                                {{ type.label }}
+                            </mat-option>
+                        </mat-select>
+                    </mat-form-field>
+
+                    <mat-form-field class="flex-auto">
+                        <mat-label>Fecha</mat-label>
+                        <input matInput [matDatepicker]="datePicker" formControlName="date" required>
+                        <mat-datepicker-toggle matSuffix [for]="datePicker"></mat-datepicker-toggle>
+                        <mat-datepicker #datePicker></mat-datepicker>
+                    </mat-form-field>
+
+                    <mat-form-field class="flex-auto">
+                        <mat-label>Responsable</mat-label>
+                        <input matInput formControlName="responsiblePerson" placeholder="Nombre del responsable" required>
+                        <mat-icon matPrefix [svgIcon]="'heroicons_outline:user'"></mat-icon>
+                    </mat-form-field>
+                </div>
+            </div>
+
+            <!-- Herramienta -->
+            <div class="bg-card shadow rounded-2xl p-6">
+                <h3 class="text-lg font-medium mb-4">Herramienta</h3>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                    <mat-form-field class="flex-auto">
+                        <mat-label>Herramienta</mat-label>
+                        <input matInput formControlName="toolId" [matAutocomplete]="toolAuto" (input)="filterTools($event)" placeholder="Buscar herramienta" required>
+                        <mat-icon matPrefix [svgIcon]="'heroicons_outline:wrench-screwdriver'"></mat-icon>
+                        <mat-autocomplete #toolAuto="matAutocomplete">
+                            <mat-option *ngFor="let tool of filteredTools" [value]="tool.id">
+                                {{ tool.code }} - {{ tool.name }}
+                            </mat-option>
+                        </mat-autocomplete>
+                    </mat-form-field>
+
+                    <mat-form-field class="flex-auto">
+                        <mat-label>Cantidad</mat-label>
+                        <input matInput type="number" formControlName="quantity" required min="1">
+                    </mat-form-field>
+                </div>
+            </div>
+
+            <!-- Ubicación -->
+            <div class="bg-card shadow rounded-2xl p-6">
+                <h3 class="text-lg font-medium mb-4">Ubicación de Destino</h3>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                    <mat-form-field class="flex-auto">
+                        <mat-label>Almacén</mat-label>
+                        <mat-select formControlName="warehouseId" required>
+                            <mat-option *ngFor="let warehouse of warehouses" [value]="warehouse.id">
+                                {{ warehouse.name }}
+                            </mat-option>
+                        </mat-select>
+                    </mat-form-field>
+
+                    <mat-form-field class="flex-auto">
+                        <mat-label>Ubicación</mat-label>
+                        <mat-select formControlName="locationId">
+                            <mat-option [value]="''">Sin ubicación específica</mat-option>
+                            <mat-option *ngFor="let location of locations" [value]="location.id">
+                                {{ location.code }} - {{ location.name }}
+                            </mat-option>
+                        </mat-select>
+                    </mat-form-field>
+                </div>
+            </div>
+
+            <!-- Información de Compra (solo para tipo 'purchase') -->
+            <div class="bg-card shadow rounded-2xl p-6" *ngIf="form.get('type')?.value === 'entry_purchase'">
+                <h3 class="text-lg font-medium mb-4">Información de Compra</h3>
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <mat-form-field class="flex-auto">
+                        <mat-label>Proveedor</mat-label>
+                        <input matInput formControlName="supplier" placeholder="Nombre del proveedor" required>
+                    </mat-form-field>
+
+                    <mat-form-field class="flex-auto">
+                        <mat-label>Número de Factura</mat-label>
+                        <input matInput formControlName="invoiceNumber" placeholder="Nro. de factura">
+                    </mat-form-field>
+
+                    <mat-form-field class="flex-auto">
+                        <mat-label>Precio de Compra</mat-label>
+                        <input matInput type="number" formControlName="purchasePrice" placeholder="0.00">
+                        <span matPrefix>$&nbsp;</span>
+                    </mat-form-field>
+                </div>
+            </div>
+
+            <!-- Notas -->
+            <div class="bg-card shadow rounded-2xl p-6">
+                <h3 class="text-lg font-medium mb-4">Notas Adicionales</h3>
+                <mat-form-field class="flex-auto w-full">
+                    <mat-label>Notas</mat-label>
+                    <textarea matInput formControlName="notes" rows="3" placeholder="Observaciones del movimiento"></textarea>
+                </mat-form-field>
+            </div>
+
+            <!-- Actions -->
+            <div class="flex items-center justify-end gap-4">
+                <button mat-button type="button" (click)="cancel()">
+                    Cancelar
+                </button>
+                <button mat-flat-button [color]="'primary'" type="button" (click)="save()" [disabled]="form.invalid || loading">
+                    <mat-icon *ngIf="loading" class="animate-spin" [svgIcon]="'heroicons_outline:arrow-path'"></mat-icon>
+                    <span *ngIf="!loading">Registrar Entrada</span>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>

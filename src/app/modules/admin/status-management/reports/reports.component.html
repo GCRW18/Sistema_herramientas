@@ -1,0 +1,105 @@
+<div class="flex flex-col flex-auto min-w-0">
+    <!-- Header -->
+    <div class="flex flex-col sm:flex-row flex-0 sm:items-center sm:justify-between p-6 sm:py-8 sm:px-10 border-b bg-card dark:bg-transparent">
+        <div class="flex-1 min-w-0">
+            <h2 class="text-3xl font-extrabold tracking-tight leading-7 sm:leading-10 truncate text-gray-900 dark:text-gray-100">
+                Reportes
+            </h2>
+            <p class="mt-2 text-secondary dark:text-gray-400">Generación de reportes del sistema</p>
+        </div>
+    </div>
+
+    <!-- Main -->
+    <div class="flex-auto p-6 sm:p-10">
+        <!-- Quick Reports -->
+        <div class="mb-8">
+            <h3 class="text-xl font-semibold mb-4 text-gray-900 dark:text-gray-100">Reportes Rápidos</h3>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                <mat-card *ngFor="let report of reportTypes" class="shadow hover:shadow-lg dark:bg-gray-800 dark:border dark:border-gray-700 transition-shadow cursor-pointer" (click)="quickReport(report.id)">
+                    <mat-card-content class="p-6">
+                        <div class="flex items-start space-x-4">
+                            <div class="flex-shrink-0">
+                                <mat-icon class="icon-size-12 text-primary" [svgIcon]="report.icon"></mat-icon>
+                            </div>
+                            <div class="flex-1">
+                                <h4 class="text-lg font-semibold mb-1 text-gray-900 dark:text-gray-100">{{ report.name }}</h4>
+                                <p class="text-sm text-secondary dark:text-gray-400">{{ report.description }}</p>
+                            </div>
+                        </div>
+                    </mat-card-content>
+                </mat-card>
+            </div>
+        </div>
+
+        <!-- Custom Report -->
+        <div class="bg-card p-6 rounded-2xl shadow dark:border dark:border-gray-700">
+            <h3 class="text-xl font-semibold mb-6 text-gray-900 dark:text-gray-100">Reporte Personalizado</h3>
+
+            <form [formGroup]="filterForm" (ngSubmit)="generateReport()">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <!-- Report Type -->
+                    <mat-form-field class="w-full">
+                        <mat-label>Tipo de Reporte</mat-label>
+                        <mat-select formControlName="reportType">
+                            <mat-option *ngFor="let type of reportTypes" [value]="type.id">
+                                {{ type.name }}
+                            </mat-option>
+                        </mat-select>
+                        <mat-icon matPrefix [svgIcon]="'heroicons_outline:document-text'"></mat-icon>
+                    </mat-form-field>
+
+                    <!-- Start Date -->
+                    <mat-form-field class="w-full">
+                        <mat-label>Fecha Inicio</mat-label>
+                        <input matInput [matDatepicker]="startPicker" formControlName="startDate">
+                        <mat-datepicker-toggle matIconSuffix [for]="startPicker"></mat-datepicker-toggle>
+                        <mat-datepicker #startPicker></mat-datepicker>
+                        <mat-icon matPrefix [svgIcon]="'heroicons_outline:calendar'"></mat-icon>
+                    </mat-form-field>
+
+                    <!-- End Date -->
+                    <mat-form-field class="w-full">
+                        <mat-label>Fecha Fin</mat-label>
+                        <input matInput [matDatepicker]="endPicker" formControlName="endDate">
+                        <mat-datepicker-toggle matIconSuffix [for]="endPicker"></mat-datepicker-toggle>
+                        <mat-datepicker #endPicker></mat-datepicker>
+                        <mat-icon matPrefix [svgIcon]="'heroicons_outline:calendar'"></mat-icon>
+                    </mat-form-field>
+
+                    <!-- Format -->
+                    <mat-form-field class="w-full">
+                        <mat-label>Formato</mat-label>
+                        <mat-select formControlName="format">
+                            <mat-option value="pdf">PDF</mat-option>
+                            <mat-option value="excel">Excel</mat-option>
+                            <mat-option value="csv">CSV</mat-option>
+                        </mat-select>
+                        <mat-icon matPrefix [svgIcon]="'heroicons_outline:document-arrow-down'"></mat-icon>
+                    </mat-form-field>
+                </div>
+
+                <!-- Actions -->
+                <div class="flex items-center justify-end gap-4 mt-6">
+                    <button mat-flat-button [color]="'primary'" type="submit" [disabled]="loading">
+                        <mat-icon [svgIcon]="'heroicons_outline:document-arrow-down'"></mat-icon>
+                        <span class="ml-2">{{ loading ? 'Generando...' : 'Generar Reporte' }}</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Recent Reports -->
+        <div class="mt-8">
+            <h3 class="text-xl font-semibold mb-4 text-gray-900 dark:text-gray-100">Reportes Recientes</h3>
+            <mat-card class="shadow dark:bg-gray-800 dark:border dark:border-gray-700">
+                <mat-card-content class="p-6">
+                    <div class="text-secondary dark:text-gray-400 text-center py-8">
+                        <mat-icon class="icon-size-16 mb-2" [svgIcon]="'heroicons_outline:document-text'"></mat-icon>
+                        <p>No hay reportes recientes</p>
+                        <p class="text-sm mt-1">Los reportes generados aparecerán aquí</p>
+                    </div>
+                </mat-card-content>
+            </mat-card>
+        </div>
+    </div>
+</div>

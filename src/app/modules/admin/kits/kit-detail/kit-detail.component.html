@@ -1,0 +1,152 @@
+<div class="flex flex-col flex-auto min-w-0" *ngIf="kit">
+    <!-- Header -->
+    <div class="flex flex-col sm:flex-row flex-0 sm:items-center sm:justify-between p-6 sm:py-8 sm:px-10 border-b bg-card dark:bg-transparent">
+        <div class="flex-1 min-w-0">
+            <div class="flex items-center mb-2">
+                <button mat-icon-button (click)="back()">
+                    <mat-icon [svgIcon]="'heroicons_outline:arrow-left'"></mat-icon>
+                </button>
+                <h2 class="text-3xl font-extrabold tracking-tight leading-7 sm:leading-10 truncate ml-2 text-gray-900 dark:text-gray-100">
+                    {{ kit.name }}
+                </h2>
+            </div>
+            <div class="flex items-center gap-2">
+                <span class="text-secondary">Código: {{ kit.code }}</span>
+                <mat-chip-set>
+                    <mat-chip [color]="getStatusColor(kit.status)" [highlighted]="true">
+                        {{ getStatusLabel(kit.status) }}
+                    </mat-chip>
+                </mat-chip-set>
+            </div>
+        </div>
+        <div class="flex shrink-0 items-center mt-6 sm:mt-0 sm:ml-4">
+            <button mat-flat-button [color]="'primary'" (click)="edit()">
+                <mat-icon [svgIcon]="'heroicons_outline:pencil'"></mat-icon>
+                <span class="ml-2">Editar</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Main -->
+    <div class="flex-auto p-6 sm:p-10">
+        <mat-tab-group class="w-full">
+            <!-- Details Tab -->
+            <mat-tab label="Información General">
+                <div class="p-6">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <h3 class="text-lg font-medium mb-4">Información Básica</h3>
+                            <div class="space-y-3">
+                                <div>
+                                    <span class="text-secondary">Código:</span>
+                                    <p class="font-medium">{{ kit.code }}</p>
+                                </div>
+                                <div>
+                                    <span class="text-secondary">Nombre:</span>
+                                    <p class="font-medium">{{ kit.name }}</p>
+                                </div>
+                                <div *ngIf="kit.description">
+                                    <span class="text-secondary">Descripción:</span>
+                                    <p>{{ kit.description }}</p>
+                                </div>
+                                <div>
+                                    <span class="text-secondary">Estado:</span>
+                                    <p>{{ getStatusLabel(kit.status) }}</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div>
+                            <h3 class="text-lg font-medium mb-4">Información de Calibración</h3>
+                            <div class="space-y-3">
+                                <div>
+                                    <span class="text-secondary">Requiere Calibración:</span>
+                                    <p class="font-medium">{{ kit.requiresCalibration ? 'Sí' : 'No' }}</p>
+                                </div>
+                                <div *ngIf="kit.lastCalibrationDate">
+                                    <span class="text-secondary">Última Calibración:</span>
+                                    <p>{{ kit.lastCalibrationDate | date:'dd/MM/yyyy' }}</p>
+                                </div>
+                                <div *ngIf="kit.nextCalibrationDate">
+                                    <span class="text-secondary">Próxima Calibración:</span>
+                                    <p>{{ kit.nextCalibrationDate | date:'dd/MM/yyyy' }}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div *ngIf="kit.notes" class="mt-6">
+                        <h3 class="text-lg font-medium mb-2">Notas</h3>
+                        <p class="text-secondary">{{ kit.notes }}</p>
+                    </div>
+                </div>
+            </mat-tab>
+
+            <!-- Items Tab -->
+            <mat-tab label="Herramientas del Kit">
+                <div class="p-6">
+                    <div class="bg-card shadow rounded-2xl overflow-hidden">
+                        <div class="overflow-x-auto">
+                            <table mat-table [dataSource]="kit.items || []" class="w-full">
+                                <!-- Tool Code Column -->
+                                <ng-container matColumnDef="toolCode">
+                                    <th mat-header-cell *matHeaderCellDef class="bg-gray-50">Código</th>
+                                    <td mat-cell *matCellDef="let item">
+                                        <span class="font-medium">{{ item.tool?.code }}</span>
+                                    </td>
+                                </ng-container>
+
+                                <!-- Tool Name Column -->
+                                <ng-container matColumnDef="toolName">
+                                    <th mat-header-cell *matHeaderCellDef class="bg-gray-50">Herramienta</th>
+                                    <td mat-cell *matCellDef="let item">{{ item.tool?.name }}</td>
+                                </ng-container>
+
+                                <!-- Quantity Column -->
+                                <ng-container matColumnDef="quantity">
+                                    <th mat-header-cell *matHeaderCellDef class="bg-gray-50">Cantidad</th>
+                                    <td mat-cell *matCellDef="let item">{{ item.quantity }}</td>
+                                </ng-container>
+
+                                <!-- Required Column -->
+                                <ng-container matColumnDef="required">
+                                    <th mat-header-cell *matHeaderCellDef class="bg-gray-50">Obligatorio</th>
+                                    <td mat-cell *matCellDef="let item">
+                                        <mat-icon [class.text-green-600]="item.required" [class.text-gray-400]="!item.required">
+                                            {{ item.required ? 'heroicons_solid:check-circle' : 'heroicons_outline:x-circle' }}
+                                        </mat-icon>
+                                    </td>
+                                </ng-container>
+
+                                <!-- Status Column -->
+                                <ng-container matColumnDef="status">
+                                    <th mat-header-cell *matHeaderCellDef class="bg-gray-50">Estado</th>
+                                    <td mat-cell *matCellDef="let item">
+                                        <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                            Disponible
+                                        </span>
+                                    </td>
+                                </ng-container>
+
+                                <tr mat-header-row *matHeaderRowDef="itemsColumns"></tr>
+                                <tr mat-row *matRowDef="let row; columns: itemsColumns;"></tr>
+
+                                <!-- No data -->
+                                <tr class="h-16" *matNoDataRow>
+                                    <td [attr.colspan]="itemsColumns.length" class="text-center text-secondary">
+                                        No hay herramientas en este kit
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </mat-tab>
+        </mat-tab-group>
+    </div>
+</div>
+
+<div class="flex flex-col flex-auto items-center justify-center p-6" *ngIf="!kit && !loading">
+    <mat-icon class="icon-size-24 text-secondary" [svgIcon]="'heroicons_outline:exclamation-circle'"></mat-icon>
+    <div class="mt-4 text-2xl font-semibold">Kit no encontrado</div>
+</div>

@@ -1,0 +1,220 @@
+<div class="flex flex-col flex-auto min-w-0">
+    <!-- Header -->
+    <div class="flex flex-col sm:flex-row flex-0 sm:items-center sm:justify-between p-6 sm:py-8 sm:px-10 border-b bg-card">
+        <div class="flex-1 min-w-0">
+            <button mat-icon-button (click)="goBack()" class="mr-2">
+                <mat-icon [svgIcon]="'heroicons_outline:arrow-left'"></mat-icon>
+            </button>
+            <h2 class="text-3xl font-extrabold tracking-tight leading-7 sm:leading-10 truncate inline-block">
+                Detalle de Calibración
+            </h2>
+        </div>
+        <div class="flex shrink-0 items-center mt-6 sm:mt-0 sm:ml-4">
+            <button mat-flat-button [color]="'primary'" (click)="downloadCertificate()"
+                    *ngIf="calibration?.certificateFile" class="ml-3">
+                <mat-icon [svgIcon]="'heroicons_outline:document-arrow-down'"></mat-icon>
+                <span class="ml-2">Descargar Certificado</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Main -->
+    <div class="flex-auto p-6 sm:p-10" *ngIf="calibration">
+        <mat-tab-group class="bg-card rounded-2xl shadow">
+            <!-- General Info Tab -->
+            <mat-tab label="Información General">
+                <div class="p-6">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <!-- Tool Information -->
+                        <mat-card class="shadow">
+                            <mat-card-content class="p-6">
+                                <h3 class="text-lg font-medium mb-4 flex items-center">
+                                    <mat-icon class="icon-size-6 mr-2" [svgIcon]="'heroicons_outline:wrench-screwdriver'"></mat-icon>
+                                    Herramienta
+                                </h3>
+                                <div class="space-y-3">
+                                    <div class="flex justify-between">
+                                        <span class="text-secondary">Código:</span>
+                                        <span class="font-medium">{{ calibration.tool?.code }}</span>
+                                    </div>
+                                    <mat-divider></mat-divider>
+                                    <div class="flex justify-between">
+                                        <span class="text-secondary">Nombre:</span>
+                                        <span class="font-medium">{{ calibration.tool?.name }}</span>
+                                    </div>
+                                    <mat-divider></mat-divider>
+                                    <div class="flex justify-between">
+                                        <span class="text-secondary">Serie:</span>
+                                        <span class="font-medium">{{ calibration.tool?.serialNumber || 'N/A' }}</span>
+                                    </div>
+                                </div>
+                            </mat-card-content>
+                        </mat-card>
+
+                        <!-- Calibration Status -->
+                        <mat-card class="shadow">
+                            <mat-card-content class="p-6">
+                                <h3 class="text-lg font-medium mb-4 flex items-center">
+                                    <mat-icon class="icon-size-6 mr-2" [svgIcon]="'heroicons_outline:information-circle'"></mat-icon>
+                                    Estado
+                                </h3>
+                                <div class="space-y-3">
+                                    <div class="flex justify-between items-center">
+                                        <span class="text-secondary">Estado:</span>
+                                        <mat-chip-set>
+                                            <mat-chip [color]="getStatusColor(calibration.status)" [highlighted]="true">
+                                                {{ getStatusLabel(calibration.status) }}
+                                            </mat-chip>
+                                        </mat-chip-set>
+                                    </div>
+                                    <mat-divider></mat-divider>
+                                    <div class="flex justify-between items-center" *ngIf="calibration.result">
+                                        <span class="text-secondary">Resultado:</span>
+                                        <mat-chip-set>
+                                            <mat-chip [color]="getResultColor(calibration.result)" [highlighted]="true">
+                                                {{ getResultLabel(calibration.result) }}
+                                            </mat-chip>
+                                        </mat-chip-set>
+                                    </div>
+                                </div>
+                            </mat-card-content>
+                        </mat-card>
+
+                        <!-- Dates -->
+                        <mat-card class="shadow">
+                            <mat-card-content class="p-6">
+                                <h3 class="text-lg font-medium mb-4 flex items-center">
+                                    <mat-icon class="icon-size-6 mr-2" [svgIcon]="'heroicons_outline:calendar'"></mat-icon>
+                                    Fechas
+                                </h3>
+                                <div class="space-y-3">
+                                    <div class="flex justify-between">
+                                        <span class="text-secondary">Fecha Programada:</span>
+                                        <span class="font-medium">{{ calibration.scheduledDate | date:'dd/MM/yyyy' }}</span>
+                                    </div>
+                                    <mat-divider></mat-divider>
+                                    <div class="flex justify-between" *ngIf="calibration.completedDate">
+                                        <span class="text-secondary">Fecha Completada:</span>
+                                        <span class="font-medium">{{ calibration.completedDate | date:'dd/MM/yyyy' }}</span>
+                                    </div>
+                                    <mat-divider *ngIf="calibration.completedDate"></mat-divider>
+                                    <div class="flex justify-between" *ngIf="calibration.nextCalibrationDate">
+                                        <span class="text-secondary">Próxima Calibración:</span>
+                                        <span class="font-medium text-blue-600">{{ calibration.nextCalibrationDate | date:'dd/MM/yyyy' }}</span>
+                                    </div>
+                                </div>
+                            </mat-card-content>
+                        </mat-card>
+
+                        <!-- Provider Information -->
+                        <mat-card class="shadow">
+                            <mat-card-content class="p-6">
+                                <h3 class="text-lg font-medium mb-4 flex items-center">
+                                    <mat-icon class="icon-size-6 mr-2" [svgIcon]="'heroicons_outline:building-office-2'"></mat-icon>
+                                    Proveedor
+                                </h3>
+                                <div class="space-y-3">
+                                    <div class="flex justify-between">
+                                        <span class="text-secondary">Nombre:</span>
+                                        <span class="font-medium">{{ calibration.provider?.name || 'N/A' }}</span>
+                                    </div>
+                                    <mat-divider></mat-divider>
+                                    <div class="flex justify-between">
+                                        <span class="text-secondary">Contacto:</span>
+                                        <span class="font-medium">{{ calibration.provider?.contactName || 'N/A' }}</span>
+                                    </div>
+                                    <mat-divider></mat-divider>
+                                    <div class="flex justify-between">
+                                        <span class="text-secondary">Teléfono:</span>
+                                        <span class="font-medium">{{ calibration.provider?.phone || 'N/A' }}</span>
+                                    </div>
+                                </div>
+                            </mat-card-content>
+                        </mat-card>
+                    </div>
+
+                    <!-- Certificate Information -->
+                    <mat-card class="shadow mt-6" *ngIf="calibration.certificateNumber || calibration.certificateFile">
+                        <mat-card-content class="p-6">
+                            <h3 class="text-lg font-medium mb-4 flex items-center">
+                                <mat-icon class="icon-size-6 mr-2" [svgIcon]="'heroicons_outline:document-text'"></mat-icon>
+                                Certificado
+                            </h3>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div class="flex justify-between">
+                                    <span class="text-secondary">Número de Certificado:</span>
+                                    <span class="font-medium">{{ calibration.certificateNumber || 'N/A' }}</span>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <span class="text-secondary">Certificado Digital:</span>
+                                    <button mat-stroked-button [color]="'primary'" (click)="downloadCertificate()"
+                                            *ngIf="calibration.certificateFile">
+                                        <mat-icon class="icon-size-4" [svgIcon]="'heroicons_outline:arrow-down-tray'"></mat-icon>
+                                        <span class="ml-1">Descargar</span>
+                                    </button>
+                                    <span *ngIf="!calibration.certificateFile">N/A</span>
+                                </div>
+                            </div>
+                        </mat-card-content>
+                    </mat-card>
+
+                    <!-- Additional Information -->
+                    <mat-card class="shadow mt-6">
+                        <mat-card-content class="p-6">
+                            <h3 class="text-lg font-medium mb-4 flex items-center">
+                                <mat-icon class="icon-size-6 mr-2" [svgIcon]="'heroicons_outline:clipboard-document-list'"></mat-icon>
+                                Información Adicional
+                            </h3>
+                            <div class="space-y-3">
+                                <div class="flex justify-between">
+                                    <span class="text-secondary">Costo:</span>
+                                    <span class="font-medium">{{ calibration.cost ? ('Bs. ' + calibration.cost) : 'N/A' }}</span>
+                                </div>
+                                <mat-divider></mat-divider>
+                                <div *ngIf="calibration.notes">
+                                    <span class="text-secondary block mb-2">Notas:</span>
+                                    <p class="text-sm bg-gray-50 p-4 rounded">{{ calibration.notes }}</p>
+                                </div>
+                            </div>
+                        </mat-card-content>
+                    </mat-card>
+                </div>
+            </mat-tab>
+
+            <!-- Technical Details Tab -->
+            <mat-tab label="Detalles Técnicos">
+                <div class="p-6">
+                    <mat-card class="shadow">
+                        <mat-card-content class="p-6">
+                            <h3 class="text-lg font-medium mb-4">Parámetros de Calibración</h3>
+                            <div class="text-secondary text-center py-8">
+                                <mat-icon class="icon-size-16 mb-2" [svgIcon]="'heroicons_outline:beaker'"></mat-icon>
+                                <p>Los detalles técnicos se mostrarán aquí una vez que estén disponibles</p>
+                            </div>
+                        </mat-card-content>
+                    </mat-card>
+                </div>
+            </mat-tab>
+
+            <!-- History Tab -->
+            <mat-tab label="Historial">
+                <div class="p-6">
+                    <mat-card class="shadow">
+                        <mat-card-content class="p-6">
+                            <h3 class="text-lg font-medium mb-4">Historial de Cambios</h3>
+                            <div class="text-secondary text-center py-8">
+                                <mat-icon class="icon-size-16 mb-2" [svgIcon]="'heroicons_outline:clock'"></mat-icon>
+                                <p>El historial de cambios se mostrará aquí</p>
+                            </div>
+                        </mat-card-content>
+                    </mat-card>
+                </div>
+            </mat-tab>
+        </mat-tab-group>
+    </div>
+
+    <!-- Loading State -->
+    <div class="flex items-center justify-center p-12" *ngIf="loading">
+        <mat-icon class="icon-size-24 text-secondary animate-spin" [svgIcon]="'heroicons_outline:arrow-path'"></mat-icon>
+    </div>
+</div>

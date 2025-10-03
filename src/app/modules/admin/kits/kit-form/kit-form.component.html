@@ -1,0 +1,108 @@
+<div class="flex flex-col flex-auto min-w-0">
+    <!-- Header -->
+    <div class="flex flex-col sm:flex-row flex-0 sm:items-center sm:justify-between p-6 sm:py-8 sm:px-10 border-b bg-card dark:bg-transparent">
+        <div class="flex-1 min-w-0">
+            <div class="flex items-center mb-2">
+                <button mat-icon-button (click)="cancel()" class="mr-2">
+                    <mat-icon [svgIcon]="'heroicons_outline:arrow-left'"></mat-icon>
+                </button>
+                <h2 class="text-3xl font-extrabold tracking-tight leading-7 sm:leading-10 truncate text-gray-900 dark:text-gray-100">
+                    {{ isEditMode ? 'Editar Kit' : 'Nuevo Kit' }}
+                </h2>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main -->
+    <div class="flex-auto p-6 sm:p-10">
+        <form [formGroup]="form" class="space-y-8">
+            <!-- Información Básica -->
+            <div class="bg-card shadow rounded-2xl p-6">
+                <h3 class="text-lg font-medium mb-4">Información Básica</h3>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                    <mat-form-field class="flex-auto">
+                        <mat-label>Código</mat-label>
+                        <input matInput formControlName="code" placeholder="Ej: KIT-001" required>
+                        <mat-icon matPrefix [svgIcon]="'heroicons_outline:hashtag'"></mat-icon>
+                    </mat-form-field>
+
+                    <mat-form-field class="flex-auto">
+                        <mat-label>Nombre</mat-label>
+                        <input matInput formControlName="name" placeholder="Nombre del kit" required>
+                        <mat-icon matPrefix [svgIcon]="'heroicons_outline:cube'"></mat-icon>
+                    </mat-form-field>
+
+                    <mat-form-field class="flex-auto sm:col-span-2">
+                        <mat-label>Categoría</mat-label>
+                        <mat-select formControlName="categoryId">
+                            <mat-option [value]="''">-- Sin categoría --</mat-option>
+                            <mat-option *ngFor="let category of categories" [value]="category.id">
+                                {{ category.name }}
+                            </mat-option>
+                        </mat-select>
+                        <mat-icon matPrefix [svgIcon]="'heroicons_outline:folder'"></mat-icon>
+                    </mat-form-field>
+
+                    <mat-form-field class="flex-auto sm:col-span-2">
+                        <mat-label>Descripción</mat-label>
+                        <textarea matInput formControlName="description" rows="3" placeholder="Descripción del kit"></textarea>
+                    </mat-form-field>
+                </div>
+            </div>
+
+            <!-- Herramientas -->
+            <div class="bg-card shadow rounded-2xl p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-medium">Herramientas del Kit</h3>
+                    <button mat-flat-button [color]="'primary'" type="button" (click)="addTool()">
+                        <mat-icon [svgIcon]="'heroicons_outline:plus'"></mat-icon>
+                        <span class="ml-2">Agregar Herramienta</span>
+                    </button>
+                </div>
+
+                <div formArrayName="tools" class="space-y-4">
+                    <div *ngFor="let toolGroup of toolsArray.controls; let i = index" [formGroupName]="i"
+                         class="flex items-start gap-4 p-4 bg-gray-50 rounded-lg">
+                        <div class="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <mat-form-field class="flex-auto">
+                                <mat-label>Herramienta</mat-label>
+                                <mat-select formControlName="toolId" required>
+                                    <mat-option *ngFor="let tool of tools" [value]="tool.id">
+                                        {{ tool.code }} - {{ tool.name }}
+                                    </mat-option>
+                                </mat-select>
+                                <mat-icon matPrefix [svgIcon]="'heroicons_outline:wrench-screwdriver'"></mat-icon>
+                            </mat-form-field>
+
+                            <div class="flex items-center">
+                                <mat-checkbox formControlName="required">
+                                    Herramienta obligatoria
+                                </mat-checkbox>
+                            </div>
+                        </div>
+
+                        <button mat-icon-button color="warn" type="button" (click)="removeTool(i)">
+                            <mat-icon [svgIcon]="'heroicons_outline:trash'"></mat-icon>
+                        </button>
+                    </div>
+
+                    <div *ngIf="toolsArray.length === 0" class="text-center text-secondary py-8">
+                        No hay herramientas agregadas. Haga clic en "Agregar Herramienta" para comenzar.
+                    </div>
+                </div>
+            </div>
+
+            <!-- Actions -->
+            <div class="flex items-center justify-end gap-4">
+                <button mat-button type="button" (click)="cancel()">
+                    Cancelar
+                </button>
+                <button mat-flat-button [color]="'primary'" type="button" (click)="save()"
+                        [disabled]="form.invalid || loading">
+                    <mat-icon *ngIf="loading" class="animate-spin" [svgIcon]="'heroicons_outline:arrow-path'"></mat-icon>
+                    <span *ngIf="!loading">{{ isEditMode ? 'Guardar Cambios' : 'Crear Kit' }}</span>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>

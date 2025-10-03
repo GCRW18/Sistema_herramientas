@@ -1,0 +1,137 @@
+<div class="flex flex-col flex-auto min-w-0">
+    <!-- Header -->
+    <div class="flex flex-col sm:flex-row flex-0 sm:items-center sm:justify-between p-6 sm:py-8 sm:px-10 border-b bg-card">
+        <div class="flex-1 min-w-0">
+            <button mat-icon-button (click)="goBack()" class="mr-2">
+                <mat-icon [svgIcon]="'heroicons_outline:arrow-left'"></mat-icon>
+            </button>
+            <h2 class="text-3xl font-extrabold tracking-tight leading-7 sm:leading-10 truncate inline-block">
+                Detalle de Cuarentena
+            </h2>
+        </div>
+        <div class="flex shrink-0 items-center mt-6 sm:mt-0 sm:ml-4">
+            <button mat-flat-button [color]="'primary'" (click)="releaseFromQuarantine()"
+                    *ngIf="quarantine?.status === 'active'">
+                <mat-icon [svgIcon]="'heroicons_outline:check-circle'"></mat-icon>
+                <span class="ml-2">Liberar de Cuarentena</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Main -->
+    <div class="flex-auto p-6 sm:p-10" *ngIf="quarantine">
+        <div class="max-w-4xl mx-auto">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Tool Information -->
+                <mat-card class="shadow">
+                    <mat-card-content class="p-6">
+                        <h3 class="text-lg font-medium mb-4 flex items-center">
+                            <mat-icon class="icon-size-6 mr-2" [svgIcon]="'heroicons_outline:wrench-screwdriver'"></mat-icon>
+                            Herramienta
+                        </h3>
+                        <div class="space-y-3">
+                            <div class="flex justify-between">
+                                <span class="text-secondary">Código:</span>
+                                <span class="font-medium">{{ quarantine.toolCode }}</span>
+                            </div>
+                            <mat-divider></mat-divider>
+                            <div class="flex justify-between">
+                                <span class="text-secondary">Nombre:</span>
+                                <span class="font-medium">{{ quarantine.toolName }}</span>
+                            </div>
+                        </div>
+                    </mat-card-content>
+                </mat-card>
+
+                <!-- Status -->
+                <mat-card class="shadow">
+                    <mat-card-content class="p-6">
+                        <h3 class="text-lg font-medium mb-4 flex items-center">
+                            <mat-icon class="icon-size-6 mr-2" [svgIcon]="'heroicons_outline:information-circle'"></mat-icon>
+                            Estado
+                        </h3>
+                        <div class="space-y-3">
+                            <div class="flex justify-between items-center">
+                                <span class="text-secondary">Estado:</span>
+                                <mat-chip-set>
+                                    <mat-chip [color]="getStatusColor(quarantine.status)" [highlighted]="true">
+                                        {{ getStatusLabel(quarantine.status) }}
+                                    </mat-chip>
+                                </mat-chip-set>
+                            </div>
+                        </div>
+                    </mat-card-content>
+                </mat-card>
+
+                <!-- Dates -->
+                <mat-card class="shadow">
+                    <mat-card-content class="p-6">
+                        <h3 class="text-lg font-medium mb-4 flex items-center">
+                            <mat-icon class="icon-size-6 mr-2" [svgIcon]="'heroicons_outline:calendar'"></mat-icon>
+                            Fechas
+                        </h3>
+                        <div class="space-y-3">
+                            <div class="flex justify-between">
+                                <span class="text-secondary">Fecha de Entrada:</span>
+                                <span class="font-medium">{{ quarantine.entryDate | date:'dd/MM/yyyy' }}</span>
+                            </div>
+                            <mat-divider *ngIf="quarantine.releaseDate"></mat-divider>
+                            <div class="flex justify-between" *ngIf="quarantine.releaseDate">
+                                <span class="text-secondary">Fecha de Liberación:</span>
+                                <span class="font-medium">{{ quarantine.releaseDate | date:'dd/MM/yyyy' }}</span>
+                            </div>
+                        </div>
+                    </mat-card-content>
+                </mat-card>
+
+                <!-- Personnel -->
+                <mat-card class="shadow">
+                    <mat-card-content class="p-6">
+                        <h3 class="text-lg font-medium mb-4 flex items-center">
+                            <mat-icon class="icon-size-6 mr-2" [svgIcon]="'heroicons_outline:user'"></mat-icon>
+                            Personal
+                        </h3>
+                        <div class="space-y-3">
+                            <div class="flex justify-between">
+                                <span class="text-secondary">Ingresado por:</span>
+                                <span class="font-medium">{{ quarantine.enteredBy }}</span>
+                            </div>
+                            <mat-divider *ngIf="quarantine.releasedBy"></mat-divider>
+                            <div class="flex justify-between" *ngIf="quarantine.releasedBy">
+                                <span class="text-secondary">Liberado por:</span>
+                                <span class="font-medium">{{ quarantine.releasedBy }}</span>
+                            </div>
+                        </div>
+                    </mat-card-content>
+                </mat-card>
+
+                <!-- Reason -->
+                <mat-card class="shadow md:col-span-2">
+                    <mat-card-content class="p-6">
+                        <h3 class="text-lg font-medium mb-4 flex items-center">
+                            <mat-icon class="icon-size-6 mr-2" [svgIcon]="'heroicons_outline:exclamation-triangle'"></mat-icon>
+                            Motivo de Cuarentena
+                        </h3>
+                        <p class="text-sm bg-gray-50 p-4 rounded">{{ quarantine.reason }}</p>
+                    </mat-card-content>
+                </mat-card>
+
+                <!-- Notes -->
+                <mat-card class="shadow md:col-span-2" *ngIf="quarantine.notes">
+                    <mat-card-content class="p-6">
+                        <h3 class="text-lg font-medium mb-4 flex items-center">
+                            <mat-icon class="icon-size-6 mr-2" [svgIcon]="'heroicons_outline:document-text'"></mat-icon>
+                            Notas
+                        </h3>
+                        <p class="text-sm bg-gray-50 p-4 rounded">{{ quarantine.notes }}</p>
+                    </mat-card-content>
+                </mat-card>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading State -->
+    <div class="flex items-center justify-center p-12" *ngIf="loading">
+        <mat-icon class="icon-size-24 text-secondary animate-spin" [svgIcon]="'heroicons_outline:arrow-path'"></mat-icon>
+    </div>
+</div>

@@ -53,4 +53,48 @@ export class UserService {
             })
         );
     }
+
+    /**
+     * Get user by ID
+     *
+     * @param id
+     */
+    getUserById(id: string): Observable<User> {
+        return this._httpClient.get<User>(`api/users/${id}`);
+    }
+
+    /**
+     * Create user
+     *
+     * @param user
+     */
+    createUser(user: Partial<User>): Observable<User> {
+        return this._httpClient.post<User>('api/users', user);
+    }
+
+    /**
+     * Update user by ID
+     *
+     * @param id
+     * @param user
+     */
+    updateUser(id: string, user: Partial<User>): Observable<User> {
+        return this._httpClient.put<User>(`api/users/${id}`, user);
+    }
+
+    /**
+     * Delete user
+     *
+     * @param id
+     */
+    deleteUser(id: string): Observable<void> {
+        return this._httpClient.delete<void>(`api/users/${id}`);
+    }
+
+    /**
+     * Get all users
+     */
+    getUsers(): Observable<User[]> {
+        return this._httpClient.get<User[]>('api/users');
+    }
 }

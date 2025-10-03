@@ -1,0 +1,276 @@
+<div class="flex flex-col flex-auto min-w-0">
+    <!-- Header -->
+    <div class="flex flex-col sm:flex-row flex-0 sm:items-center sm:justify-between p-6 sm:py-8 sm:px-10 border-b bg-card dark:bg-transparent">
+        <div class="flex-1 min-w-0">
+            <div class="flex items-center">
+                <button mat-icon-button (click)="cancel()" [matTooltip]="'Volver'">
+                    <mat-icon [svgIcon]="'heroicons_outline:arrow-left'"></mat-icon>
+                </button>
+                <div class="ml-2">
+                    <h2 class="text-3xl font-extrabold tracking-tight leading-7 sm:leading-10 truncate">
+                        {{ isEditMode ? 'Editar Herramienta' : 'Nueva Herramienta' }}
+                    </h2>
+                    <p class="text-secondary mt-1">
+                        {{ isEditMode ? 'Actualiza la información de la herramienta' : 'Registra una nueva herramienta en el inventario' }}
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main -->
+    <div class="flex-auto p-6 sm:p-10">
+        <!-- Loading -->
+        <div *ngIf="loading" class="flex items-center justify-center h-96">
+            <mat-icon class="animate-spin icon-size-16" [svgIcon]="'heroicons_outline:arrow-path'"></mat-icon>
+        </div>
+
+        <form [formGroup]="form" *ngIf="!loading" class="max-w-6xl mx-auto space-y-6">
+            <!-- Información Básica -->
+            <div class="bg-card shadow-lg rounded-2xl p-6">
+                <div class="flex items-center mb-4">
+                    <mat-icon class="text-primary mr-2" [svgIcon]="'heroicons_outline:information-circle'"></mat-icon>
+                    <h3 class="text-lg font-semibold">Información Básica</h3>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <mat-form-field class="flex-auto">
+                        <mat-label>Código</mat-label>
+                        <input matInput formControlName="code" placeholder="Ej: TOOL-001" required>
+                        <mat-icon matPrefix [svgIcon]="'heroicons_outline:identification'"></mat-icon>
+                    </mat-form-field>
+
+                    <mat-form-field class="flex-auto sm:col-span-2">
+                        <mat-label>Nombre</mat-label>
+                        <input matInput formControlName="name" placeholder="Nombre de la herramienta" required>
+                    </mat-form-field>
+
+                    <mat-form-field class="flex-auto sm:col-span-3">
+                        <mat-label>Descripción</mat-label>
+                        <textarea matInput formControlName="description" rows="3" placeholder="Descripción detallada"></textarea>
+                    </mat-form-field>
+                </div>
+            </div>
+
+            <!-- Categorización -->
+            <div class="bg-card shadow-lg rounded-2xl p-6">
+                <div class="flex items-center mb-4">
+                    <mat-icon class="text-primary mr-2" [svgIcon]="'heroicons_outline:tag'"></mat-icon>
+                    <h3 class="text-lg font-semibold">Categorización</h3>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                    <mat-form-field class="flex-auto">
+                        <mat-label>Categoría</mat-label>
+                        <mat-select formControlName="categoryId" required>
+                            <mat-option *ngFor="let category of categories" [value]="category.id">
+                                {{ category.name }}
+                            </mat-option>
+                        </mat-select>
+                    </mat-form-field>
+
+                    <mat-form-field class="flex-auto">
+                        <mat-label>Subcategoría</mat-label>
+                        <mat-select formControlName="subcategoryId">
+                            <mat-option [value]="''">Ninguna</mat-option>
+                            <mat-option *ngFor="let subcategory of subcategories" [value]="subcategory.id">
+                                {{ subcategory.name }}
+                            </mat-option>
+                        </mat-select>
+                    </mat-form-field>
+                </div>
+            </div>
+
+            <!-- Especificaciones -->
+            <div class="bg-card shadow-lg rounded-2xl p-6">
+                <div class="flex items-center mb-4">
+                    <mat-icon class="text-primary mr-2" [svgIcon]="'heroicons_outline:cog-6-tooth'"></mat-icon>
+                    <h3 class="text-lg font-semibold">Especificaciones Técnicas</h3>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <mat-form-field class="flex-auto">
+                        <mat-label>Marca</mat-label>
+                        <input matInput formControlName="brand" placeholder="Marca">
+                    </mat-form-field>
+
+                    <mat-form-field class="flex-auto">
+                        <mat-label>Modelo</mat-label>
+                        <input matInput formControlName="model" placeholder="Modelo">
+                    </mat-form-field>
+
+                    <mat-form-field class="flex-auto">
+                        <mat-label>Número de Serie</mat-label>
+                        <input matInput formControlName="serialNumber" placeholder="S/N">
+                    </mat-form-field>
+
+                    <mat-form-field class="flex-auto">
+                        <mat-label>Número de Parte</mat-label>
+                        <input matInput formControlName="partNumber" placeholder="P/N">
+                    </mat-form-field>
+                </div>
+            </div>
+
+            <!-- Ubicación -->
+            <div class="bg-card shadow-lg rounded-2xl p-6">
+                <div class="flex items-center mb-4">
+                    <mat-icon class="text-primary mr-2" [svgIcon]="'heroicons_outline:map-pin'"></mat-icon>
+                    <h3 class="text-lg font-semibold">Ubicación</h3>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                    <mat-form-field class="flex-auto">
+                        <mat-label>Almacén</mat-label>
+                        <mat-select formControlName="warehouseId" required>
+                            <mat-option *ngFor="let warehouse of warehouses" [value]="warehouse.id">
+                                {{ warehouse.name }}
+                            </mat-option>
+                        </mat-select>
+                    </mat-form-field>
+
+                    <mat-form-field class="flex-auto">
+                        <mat-label>Ubicación</mat-label>
+                        <mat-select formControlName="locationId">
+                            <mat-option [value]="''">Sin ubicación específica</mat-option>
+                            <mat-option *ngFor="let location of locations" [value]="location.id">
+                                {{ location.code }} - {{ location.name }}
+                            </mat-option>
+                        </mat-select>
+                    </mat-form-field>
+                </div>
+            </div>
+
+            <!-- Estado y Condición -->
+            <div class="bg-card shadow-lg rounded-2xl p-6">
+                <div class="flex items-center mb-4">
+                    <mat-icon class="text-primary mr-2" [svgIcon]="'heroicons_outline:clipboard-document-check'"></mat-icon>
+                    <h3 class="text-lg font-semibold">Estado y Condición</h3>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                    <mat-form-field class="flex-auto">
+                        <mat-label>Estado</mat-label>
+                        <mat-select formControlName="status" required>
+                            <mat-option value="available">Disponible</mat-option>
+                            <mat-option value="in_use">En Uso</mat-option>
+                            <mat-option value="in_calibration">En Calibración</mat-option>
+                            <mat-option value="in_maintenance">En Mantenimiento</mat-option>
+                            <mat-option value="quarantine">Cuarentena</mat-option>
+                            <mat-option value="decommissioned">Dado de Baja</mat-option>
+                        </mat-select>
+                    </mat-form-field>
+
+                    <mat-form-field class="flex-auto">
+                        <mat-label>Condición</mat-label>
+                        <mat-select formControlName="condition" required>
+                            <mat-option value="new">Nuevo</mat-option>
+                            <mat-option value="excellent">Excelente</mat-option>
+                            <mat-option value="good">Bueno</mat-option>
+                            <mat-option value="fair">Regular</mat-option>
+                            <mat-option value="poor">Malo</mat-option>
+                            <mat-option value="damaged">Dañado</mat-option>
+                        </mat-select>
+                    </mat-form-field>
+                </div>
+            </div>
+
+            <!-- Calibración -->
+            <div class="bg-card shadow-lg rounded-2xl p-6">
+                <div class="flex items-center mb-4">
+                    <mat-icon class="text-primary mr-2" [svgIcon]="'heroicons_outline:wrench-screwdriver'"></mat-icon>
+                    <h3 class="text-lg font-semibold">Calibración</h3>
+                </div>
+                <div class="mb-4">
+                    <mat-checkbox formControlName="requiresCalibration">
+                        Requiere Calibración
+                    </mat-checkbox>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-6" *ngIf="form.get('requiresCalibration')?.value">
+                    <mat-form-field class="flex-auto">
+                        <mat-label>Intervalo de Calibración (días)</mat-label>
+                        <input matInput type="number" formControlName="calibrationInterval" placeholder="365">
+                    </mat-form-field>
+
+                    <mat-form-field class="flex-auto">
+                        <mat-label>Última Calibración</mat-label>
+                        <input matInput [matDatepicker]="lastCalPicker" formControlName="lastCalibrationDate">
+                        <mat-datepicker-toggle matSuffix [for]="lastCalPicker"></mat-datepicker-toggle>
+                        <mat-datepicker #lastCalPicker></mat-datepicker>
+                    </mat-form-field>
+
+                    <mat-form-field class="flex-auto">
+                        <mat-label>Próxima Calibración</mat-label>
+                        <input matInput [matDatepicker]="nextCalPicker" formControlName="nextCalibrationDate">
+                        <mat-datepicker-toggle matSuffix [for]="nextCalPicker"></mat-datepicker-toggle>
+                        <mat-datepicker #nextCalPicker></mat-datepicker>
+                    </mat-form-field>
+
+                    <mat-form-field class="flex-auto">
+                        <mat-label>Certificado de Calibración</mat-label>
+                        <input matInput formControlName="calibrationCertificate" placeholder="Número de certificado">
+                    </mat-form-field>
+                </div>
+            </div>
+
+            <!-- Información de Compra -->
+            <div class="bg-card shadow-lg rounded-2xl p-6">
+                <div class="flex items-center mb-4">
+                    <mat-icon class="text-primary mr-2" [svgIcon]="'heroicons_outline:shopping-cart'"></mat-icon>
+                    <h3 class="text-lg font-semibold">Información de Compra</h3>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <mat-form-field class="flex-auto">
+                        <mat-label>Fecha de Compra</mat-label>
+                        <input matInput [matDatepicker]="purchasePicker" formControlName="purchaseDate">
+                        <mat-datepicker-toggle matSuffix [for]="purchasePicker"></mat-datepicker-toggle>
+                        <mat-datepicker #purchasePicker></mat-datepicker>
+                    </mat-form-field>
+
+                    <mat-form-field class="flex-auto">
+                        <mat-label>Precio de Compra</mat-label>
+                        <input matInput type="number" formControlName="purchasePrice" placeholder="0.00">
+                        <span matPrefix>$&nbsp;</span>
+                    </mat-form-field>
+
+                    <mat-form-field class="flex-auto">
+                        <mat-label>Proveedor</mat-label>
+                        <input matInput formControlName="supplier" placeholder="Nombre del proveedor">
+                    </mat-form-field>
+
+                    <mat-form-field class="flex-auto">
+                        <mat-label>Garantía</mat-label>
+                        <input matInput formControlName="warranty" placeholder="12 meses">
+                    </mat-form-field>
+
+                    <mat-form-field class="flex-auto sm:col-span-2">
+                        <mat-label>Vencimiento de Garantía</mat-label>
+                        <input matInput [matDatepicker]="warrantyPicker" formControlName="warrantyExpiration">
+                        <mat-datepicker-toggle matSuffix [for]="warrantyPicker"></mat-datepicker-toggle>
+                        <mat-datepicker #warrantyPicker></mat-datepicker>
+                    </mat-form-field>
+                </div>
+            </div>
+
+            <!-- Notas -->
+            <div class="bg-card shadow-lg rounded-2xl p-6">
+                <div class="flex items-center mb-4">
+                    <mat-icon class="text-primary mr-2" [svgIcon]="'heroicons_outline:document-text'"></mat-icon>
+                    <h3 class="text-lg font-semibold">Notas Adicionales</h3>
+                </div>
+                <mat-form-field class="flex-auto w-full">
+                    <mat-label>Notas</mat-label>
+                    <textarea matInput formControlName="notes" rows="4" placeholder="Información adicional"></textarea>
+                </mat-form-field>
+            </div>
+
+            <!-- Actions -->
+            <div class="flex items-center justify-end gap-4 mt-8 pt-6 border-t">
+                <button mat-stroked-button type="button" (click)="cancel()" [disabled]="loading">
+                    <mat-icon [svgIcon]="'heroicons_outline:x-mark'"></mat-icon>
+                    <span class="ml-2">Cancelar</span>
+                </button>
+                <button mat-flat-button [color]="'primary'" type="button" (click)="save()" [disabled]="form.invalid || loading">
+                    <mat-icon [class.animate-spin]="loading"
+                              [svgIcon]="loading ? 'heroicons_outline:arrow-path' : 'heroicons_outline:check'">
+                    </mat-icon>
+                    <span class="ml-2">{{ loading ? 'Guardando...' : (isEditMode ? 'Actualizar Herramienta' : 'Guardar Herramienta') }}</span>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>

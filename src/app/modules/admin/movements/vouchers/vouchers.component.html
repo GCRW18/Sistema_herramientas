@@ -1,0 +1,107 @@
+<div class="flex flex-col flex-auto min-w-0">
+    <!-- Header -->
+    <div class="flex flex-col sm:flex-row flex-0 sm:items-center sm:justify-between p-6 sm:py-8 sm:px-10 border-b bg-card dark:bg-transparent">
+        <div class="flex-1 min-w-0">
+            <h2 class="text-3xl font-extrabold tracking-tight leading-7 sm:leading-10 truncate text-gray-900 dark:text-gray-100">
+                Comprobantes de Movimientos
+            </h2>
+            <p class="mt-2 text-secondary dark:text-gray-400">Gestión de comprobantes y documentos de movimientos</p>
+        </div>
+    </div>
+
+    <!-- Main -->
+    <div class="flex-auto p-6 sm:p-10">
+        <!-- Search -->
+        <div class="mb-6">
+            <mat-form-field class="w-full sm:w-96">
+                <mat-icon matPrefix [svgIcon]="'heroicons_outline:magnifying-glass'"></mat-icon>
+                <input matInput (keyup)="applyFilter($event)" placeholder="Buscar comprobantes..." autocomplete="off">
+            </mat-form-field>
+        </div>
+
+        <!-- Table -->
+        <div class="bg-card shadow rounded-2xl overflow-hidden dark:border dark:border-gray-700">
+            <div class="overflow-x-auto">
+                <table mat-table [dataSource]="dataSource" matSort class="w-full">
+                    <!-- Voucher Number Column -->
+                    <ng-container matColumnDef="voucherNumber">
+                        <th mat-header-cell *matHeaderCellDef mat-sort-header class="bg-gray-50 dark:bg-gray-800 font-semibold">Nro. Comprobante</th>
+                        <td mat-cell *matCellDef="let voucher" class="py-4">
+                            <span class="font-medium text-gray-900 dark:text-gray-100">{{ voucher.voucherNumber }}</span>
+                        </td>
+                    </ng-container>
+
+                    <!-- Date Column -->
+                    <ng-container matColumnDef="date">
+                        <th mat-header-cell *matHeaderCellDef mat-sort-header class="bg-gray-50 dark:bg-gray-800 font-semibold">Fecha</th>
+                        <td mat-cell *matCellDef="let voucher" class="py-4 text-gray-700 dark:text-gray-300">
+                            {{ voucher.date | date:'dd/MM/yyyy' }}
+                        </td>
+                    </ng-container>
+
+                    <!-- Type Column -->
+                    <ng-container matColumnDef="type">
+                        <th mat-header-cell *matHeaderCellDef class="bg-gray-50 dark:bg-gray-800 font-semibold">Tipo de Movimiento</th>
+                        <td mat-cell *matCellDef="let voucher" class="py-4">
+                            <span class="px-2 py-1 rounded-full text-xs font-medium"
+                                  [class.bg-green-100]="voucher.type.startsWith('entry')"
+                                  [class.dark:bg-green-800]="voucher.type.startsWith('entry')"
+                                  [class.text-green-800]="voucher.type.startsWith('entry')"
+                                  [class.dark:text-green-200]="voucher.type.startsWith('entry')"
+                                  [class.bg-red-100]="voucher.type.startsWith('exit')"
+                                  [class.dark:bg-red-800]="voucher.type.startsWith('exit')"
+                                  [class.text-red-800]="voucher.type.startsWith('exit')"
+                                  [class.dark:text-red-200]="voucher.type.startsWith('exit')"
+                                  [class.bg-blue-100]="voucher.type === 'transfer'"
+                                  [class.dark:bg-blue-800]="voucher.type === 'transfer'"
+                                  [class.text-blue-800]="voucher.type === 'transfer'"
+                                  [class.dark:text-blue-200]="voucher.type === 'transfer'">
+                                {{ getMovementTypeLabel(voucher.type) }}
+                            </span>
+                        </td>
+                    </ng-container>
+
+                    <!-- Tool Code Column -->
+                    <ng-container matColumnDef="toolCode">
+                        <th mat-header-cell *matHeaderCellDef class="bg-gray-50 dark:bg-gray-800 font-semibold">Código</th>
+                        <td mat-cell *matCellDef="let voucher" class="py-4">
+                            <span class="font-medium text-gray-900 dark:text-gray-100">{{ voucher.toolCode }}</span>
+                        </td>
+                    </ng-container>
+
+                    <!-- Tool Name Column -->
+                    <ng-container matColumnDef="toolName">
+                        <th mat-header-cell *matHeaderCellDef class="bg-gray-50 dark:bg-gray-800 font-semibold">Herramienta</th>
+                        <td mat-cell *matCellDef="let voucher" class="py-4 text-gray-700 dark:text-gray-300">{{ voucher.toolName }}</td>
+                    </ng-container>
+
+                    <!-- Actions Column -->
+                    <ng-container matColumnDef="actions">
+                        <th mat-header-cell *matHeaderCellDef class="bg-gray-50 dark:bg-gray-800 font-semibold">Acciones</th>
+                        <td mat-cell *matCellDef="let voucher" class="py-4">
+                            <button mat-icon-button [matTooltip]="'Imprimir'" (click)="printVoucher(voucher.id)" class="hover:bg-purple-50 dark:hover:bg-purple-900">
+                                <mat-icon class="text-purple-600 dark:text-purple-400" [svgIcon]="'heroicons_outline:printer'"></mat-icon>
+                            </button>
+                            <button mat-icon-button [matTooltip]="'Descargar PDF'" (click)="downloadVoucher(voucher.id)" class="hover:bg-green-50 dark:hover:bg-green-900">
+                                <mat-icon class="text-green-600 dark:text-green-400" [svgIcon]="'heroicons_outline:arrow-down-tray'"></mat-icon>
+                            </button>
+                        </td>
+                    </ng-container>
+
+                    <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+                    <tr mat-row *matRowDef="let row; columns: displayedColumns;" class="hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"></tr>
+
+                    <!-- No data -->
+                    <tr class="h-16" *matNoDataRow>
+                        <td [attr.colspan]="displayedColumns.length" class="text-center text-secondary dark:text-gray-400">
+                            {{ dataSource.filter ? 'No se encontraron comprobantes' : 'No hay comprobantes generados' }}
+                        </td>
+                    </tr>
+                </table>
+            </div>
+
+            <!-- Paginator -->
+            <mat-paginator [pageSizeOptions]="[10, 25, 50]" showFirstLastButtons class="border-t dark:border-gray-700"></mat-paginator>
+        </div>
+    </div>
+</div>

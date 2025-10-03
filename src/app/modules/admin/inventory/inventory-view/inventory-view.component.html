@@ -1,0 +1,129 @@
+<div class="flex flex-col flex-auto min-w-0">
+    <!-- Header -->
+    <div class="flex flex-col sm:flex-row flex-0 sm:items-center sm:justify-between p-6 sm:py-8 sm:px-10 border-b bg-card">
+        <div class="flex-1 min-w-0">
+            <h2 class="text-3xl font-extrabold tracking-tight leading-7 sm:leading-10 truncate">
+                Vista de Inventario
+            </h2>
+            <p class="mt-2 text-secondary">Vista general del inventario de herramientas</p>
+        </div>
+        <div class="flex shrink-0 items-center mt-6 sm:mt-0 sm:ml-4">
+            <mat-form-field class="w-64">
+                <mat-label>Filtrar por Almacén</mat-label>
+                <mat-select [(value)]="selectedWarehouse" (selectionChange)="onWarehouseChange()">
+                    <mat-option value="">Todos</mat-option>
+                    <mat-option *ngFor="let warehouse of warehouses" [value]="warehouse.id">
+                        {{ warehouse.name }}
+                    </mat-option>
+                </mat-select>
+            </mat-form-field>
+        </div>
+    </div>
+
+    <!-- Main -->
+    <div class="flex-auto p-6 sm:p-10">
+        <!-- Statistics Cards -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
+            <mat-card class="shadow-lg">
+                <mat-card-content class="p-6">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-secondary text-sm">Total</p>
+                            <h3 class="text-3xl font-bold mt-1">{{ totalTools }}</h3>
+                        </div>
+                        <mat-icon class="icon-size-12 text-gray-400" [svgIcon]="'heroicons_outline:cube'"></mat-icon>
+                    </div>
+                </mat-card-content>
+            </mat-card>
+
+            <mat-card class="shadow-lg">
+                <mat-card-content class="p-6">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-secondary text-sm">Disponibles</p>
+                            <h3 class="text-3xl font-bold mt-1 text-green-600">{{ availableTools }}</h3>
+                        </div>
+                        <mat-icon class="icon-size-12 text-green-400" [svgIcon]="'heroicons_outline:check-circle'"></mat-icon>
+                    </div>
+                </mat-card-content>
+            </mat-card>
+
+            <mat-card class="shadow-lg">
+                <mat-card-content class="p-6">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-secondary text-sm">En Uso</p>
+                            <h3 class="text-3xl font-bold mt-1 text-blue-600">{{ inUseTools }}</h3>
+                        </div>
+                        <mat-icon class="icon-size-12 text-blue-400" [svgIcon]="'heroicons_outline:arrow-path'"></mat-icon>
+                    </div>
+                </mat-card-content>
+            </mat-card>
+
+            <mat-card class="shadow-lg">
+                <mat-card-content class="p-6">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-secondary text-sm">En Calibración</p>
+                            <h3 class="text-3xl font-bold mt-1 text-purple-600">{{ inCalibrationTools }}</h3>
+                        </div>
+                        <mat-icon class="icon-size-12 text-purple-400" [svgIcon]="'heroicons_outline:wrench-screwdriver'"></mat-icon>
+                    </div>
+                </mat-card-content>
+            </mat-card>
+
+            <mat-card class="shadow-lg">
+                <mat-card-content class="p-6">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-secondary text-sm">En Mantenimiento</p>
+                            <h3 class="text-3xl font-bold mt-1 text-orange-600">{{ inMaintenanceTools }}</h3>
+                        </div>
+                        <mat-icon class="icon-size-12 text-orange-400" [svgIcon]="'heroicons_outline:wrench'"></mat-icon>
+                    </div>
+                </mat-card-content>
+            </mat-card>
+        </div>
+
+        <!-- Tools Grid -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            <mat-card *ngFor="let tool of tools" class="shadow hover:shadow-lg transition-shadow cursor-pointer" (click)="viewTool(tool.id)">
+                <mat-card-content class="p-6">
+                    <div class="flex items-start justify-between mb-4">
+                        <div class="flex-1">
+                            <p class="text-xs text-secondary mb-1">{{ tool.code }}</p>
+                            <h3 class="font-semibold text-lg line-clamp-2">{{ tool.name }}</h3>
+                        </div>
+                        <mat-chip-set>
+                            <mat-chip [color]="getStatusColor(tool.status)" [highlighted]="true" class="text-xs">
+                                {{ getStatusLabel(tool.status) }}
+                            </mat-chip>
+                        </mat-chip-set>
+                    </div>
+
+                    <div class="space-y-2 text-sm">
+                        <div class="flex items-center text-secondary">
+                            <mat-icon class="icon-size-4 mr-2" [svgIcon]="'heroicons_outline:tag'"></mat-icon>
+                            <span>{{ tool.category?.name || 'Sin categoría' }}</span>
+                        </div>
+                        <div class="flex items-center text-secondary">
+                            <mat-icon class="icon-size-4 mr-2" [svgIcon]="'heroicons_outline:building-office'"></mat-icon>
+                            <span>{{ tool.warehouse?.name || 'Sin almacén' }}</span>
+                        </div>
+                        <div class="flex items-center text-secondary" *ngIf="tool.serialNumber">
+                            <mat-icon class="icon-size-4 mr-2" [svgIcon]="'heroicons_outline:hashtag'"></mat-icon>
+                            <span class="truncate">{{ tool.serialNumber }}</span>
+                        </div>
+                    </div>
+                </mat-card-content>
+            </mat-card>
+        </div>
+
+        <!-- Empty State -->
+        <div class="flex flex-col items-center justify-center p-12 bg-card rounded-2xl" *ngIf="tools.length === 0 && !loading">
+            <mat-icon class="icon-size-24 text-secondary mb-4" [svgIcon]="'heroicons_outline:cube'"></mat-icon>
+            <h3 class="text-xl font-medium mb-2">No hay herramientas</h3>
+            <p class="text-secondary">No se encontraron herramientas en el inventario</p>
+        </div>
+    </div>
+</div>

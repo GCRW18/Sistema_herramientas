@@ -1,0 +1,137 @@
+<div class="flex flex-col flex-auto min-w-0">
+    <!-- Header -->
+    <div class="flex flex-col sm:flex-row flex-0 sm:items-center sm:justify-between p-6 sm:py-8 sm:px-10 border-b bg-card">
+        <div class="flex-1 min-w-0">
+            <button mat-icon-button (click)="goBack()" class="mr-2">
+                <mat-icon [svgIcon]="'heroicons_outline:arrow-left'"></mat-icon>
+            </button>
+            <h2 class="text-3xl font-extrabold tracking-tight leading-7 sm:leading-10 truncate inline-block">
+                Detalle de Baja
+            </h2>
+        </div>
+        <div class="flex shrink-0 items-center mt-6 sm:mt-0 sm:ml-4">
+            <button mat-flat-button [color]="'primary'" (click)="approveDecommission()"
+                    *ngIf="decommission?.status === 'pending'">
+                <mat-icon [svgIcon]="'heroicons_outline:check-circle'"></mat-icon>
+                <span class="ml-2">Aprobar Baja</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Main -->
+    <div class="flex-auto p-6 sm:p-10" *ngIf="decommission">
+        <div class="max-w-4xl mx-auto">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Tool Information -->
+                <mat-card class="shadow">
+                    <mat-card-content class="p-6">
+                        <h3 class="text-lg font-medium mb-4 flex items-center">
+                            <mat-icon class="icon-size-6 mr-2" [svgIcon]="'heroicons_outline:wrench-screwdriver'"></mat-icon>
+                            Herramienta
+                        </h3>
+                        <div class="space-y-3">
+                            <div class="flex justify-between">
+                                <span class="text-secondary">Código:</span>
+                                <span class="font-medium">{{ decommission.toolCode }}</span>
+                            </div>
+                            <mat-divider></mat-divider>
+                            <div class="flex justify-between">
+                                <span class="text-secondary">Nombre:</span>
+                                <span class="font-medium">{{ decommission.toolName }}</span>
+                            </div>
+                        </div>
+                    </mat-card-content>
+                </mat-card>
+
+                <!-- Status -->
+                <mat-card class="shadow">
+                    <mat-card-content class="p-6">
+                        <h3 class="text-lg font-medium mb-4 flex items-center">
+                            <mat-icon class="icon-size-6 mr-2" [svgIcon]="'heroicons_outline:information-circle'"></mat-icon>
+                            Estado
+                        </h3>
+                        <div class="space-y-3">
+                            <div class="flex justify-between items-center">
+                                <span class="text-secondary">Estado:</span>
+                                <mat-chip-set>
+                                    <mat-chip [color]="getStatusColor(decommission.status)" [highlighted]="true">
+                                        {{ getStatusLabel(decommission.status) }}
+                                    </mat-chip>
+                                </mat-chip-set>
+                            </div>
+                        </div>
+                    </mat-card-content>
+                </mat-card>
+
+                <!-- Dates -->
+                <mat-card class="shadow">
+                    <mat-card-content class="p-6">
+                        <h3 class="text-lg font-medium mb-4 flex items-center">
+                            <mat-icon class="icon-size-6 mr-2" [svgIcon]="'heroicons_outline:calendar'"></mat-icon>
+                            Fechas
+                        </h3>
+                        <div class="space-y-3">
+                            <div class="flex justify-between">
+                                <span class="text-secondary">Fecha de Solicitud:</span>
+                                <span class="font-medium">{{ decommission.date | date:'dd/MM/yyyy' }}</span>
+                            </div>
+                            <mat-divider *ngIf="decommission.approvalDate"></mat-divider>
+                            <div class="flex justify-between" *ngIf="decommission.approvalDate">
+                                <span class="text-secondary">Fecha de Aprobación:</span>
+                                <span class="font-medium">{{ decommission.approvalDate | date:'dd/MM/yyyy' }}</span>
+                            </div>
+                        </div>
+                    </mat-card-content>
+                </mat-card>
+
+                <!-- Personnel -->
+                <mat-card class="shadow">
+                    <mat-card-content class="p-6">
+                        <h3 class="text-lg font-medium mb-4 flex items-center">
+                            <mat-icon class="icon-size-6 mr-2" [svgIcon]="'heroicons_outline:user'"></mat-icon>
+                            Personal
+                        </h3>
+                        <div class="space-y-3">
+                            <div class="flex justify-between">
+                                <span class="text-secondary">Solicitado por:</span>
+                                <span class="font-medium">{{ decommission.requestedBy }}</span>
+                            </div>
+                            <mat-divider *ngIf="decommission.approvedBy"></mat-divider>
+                            <div class="flex justify-between" *ngIf="decommission.approvedBy">
+                                <span class="text-secondary">Aprobado por:</span>
+                                <span class="font-medium">{{ decommission.approvedBy }}</span>
+                            </div>
+                        </div>
+                    </mat-card-content>
+                </mat-card>
+
+                <!-- Reason -->
+                <mat-card class="shadow md:col-span-2">
+                    <mat-card-content class="p-6">
+                        <h3 class="text-lg font-medium mb-4 flex items-center">
+                            <mat-icon class="icon-size-6 mr-2" [svgIcon]="'heroicons_outline:archive-box-x-mark'"></mat-icon>
+                            Motivo de Baja
+                        </h3>
+                        <p class="text-sm bg-gray-50 p-4 rounded">{{ decommission.reason }}</p>
+                    </mat-card-content>
+                </mat-card>
+
+                <!-- Notes -->
+                <mat-card class="shadow md:col-span-2" *ngIf="decommission.notes">
+                    <mat-card-content class="p-6">
+                        <h3 class="text-lg font-medium mb-4 flex items-center">
+                            <mat-icon class="icon-size-6 mr-2" [svgIcon]="'heroicons_outline:document-text'"></mat-icon>
+                            Notas Adicionales
+                        </h3>
+                        <p class="text-sm bg-gray-50 p-4 rounded">{{ decommission.notes }}</p>
+                    </mat-card-content>
+                </mat-card>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading State -->
+    <div class="flex items-center justify-center p-12" *ngIf="loading">
+        <mat-icon class="icon-size-24 text-secondary animate-spin" [svgIcon]="'heroicons_outline:arrow-path'"></mat-icon>
+    </div>
+</div>

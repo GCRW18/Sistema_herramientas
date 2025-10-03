@@ -1,0 +1,277 @@
+<div class="flex flex-col flex-auto min-w-0">
+    <!-- Header -->
+    <div class="flex flex-col sm:flex-row flex-0 sm:items-center sm:justify-between p-6 sm:py-8 sm:px-10 border-b bg-card dark:bg-transparent">
+        <div class="flex-1 min-w-0">
+            <div class="flex items-center mb-2">
+                <button mat-icon-button (click)="back()" [matTooltip]="'Volver'">
+                    <mat-icon [svgIcon]="'heroicons_outline:arrow-left'"></mat-icon>
+                </button>
+                <div class="ml-2">
+                    <h2 class="text-3xl font-extrabold tracking-tight leading-7 sm:leading-10 truncate">
+                        {{ warehouse?.name || 'Detalle del Almacén' }}
+                    </h2>
+                    <p class="text-secondary mt-1" *ngIf="warehouse">{{ warehouse.code }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="flex items-center gap-3 mt-4 sm:mt-0">
+            <button mat-stroked-button (click)="addLocation()" *ngIf="warehouse">
+                <mat-icon [svgIcon]="'heroicons_outline:plus'"></mat-icon>
+                <span class="ml-2">Nueva Ubicación</span>
+            </button>
+            <button mat-flat-button [color]="'primary'" (click)="edit()" *ngIf="warehouse">
+                <mat-icon [svgIcon]="'heroicons_outline:pencil'"></mat-icon>
+                <span class="ml-2">Editar</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Main -->
+    <div class="flex-auto p-6 sm:p-10" *ngIf="warehouse && !loading">
+        <!-- Info Cards -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+            <div class="bg-card shadow rounded-2xl p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-secondary">Estado</p>
+                        <mat-chip-set class="mt-2">
+                            <mat-chip [highlighted]="true" [color]="warehouse.active ? 'primary' : 'warn'">
+                                {{ warehouse.active ? 'Activo' : 'Inactivo' }}
+                            </mat-chip>
+                        </mat-chip-set>
+                    </div>
+                    <div class="bg-primary-100 dark:bg-primary-800 rounded-full p-3">
+                        <mat-icon class="text-primary" [svgIcon]="'heroicons_outline:building-office-2'"></mat-icon>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-card shadow rounded-2xl p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-secondary">Total Ubicaciones</p>
+                        <p class="text-3xl font-bold mt-1">{{ locations.length }}</p>
+                    </div>
+                    <div class="bg-blue-100 dark:bg-blue-800 rounded-full p-3">
+                        <mat-icon class="text-blue-600 dark:text-blue-200" [svgIcon]="'heroicons_outline:map-pin'"></mat-icon>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-card shadow rounded-2xl p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-secondary">Herramientas</p>
+                        <p class="text-3xl font-bold mt-1">{{ tools.length }}</p>
+                    </div>
+                    <div class="bg-green-100 dark:bg-green-800 rounded-full p-3">
+                        <mat-icon class="text-green-600 dark:text-green-200" [svgIcon]="'heroicons_outline:wrench-screwdriver'"></mat-icon>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-card shadow rounded-2xl p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-secondary">Responsable</p>
+                        <p class="font-medium mt-1">{{ warehouse.responsible || 'Sin asignar' }}</p>
+                    </div>
+                    <div class="bg-orange-100 dark:bg-orange-800 rounded-full p-3">
+                        <mat-icon class="text-orange-600 dark:text-orange-200" [svgIcon]="'heroicons_outline:user'"></mat-icon>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- General Information -->
+        <div class="bg-card shadow rounded-2xl p-6 mb-6">
+            <h3 class="text-xl font-semibold mb-4">Información General</h3>
+            <mat-divider class="mb-4"></mat-divider>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                <div>
+                    <p class="text-sm text-secondary">Código</p>
+                    <p class="font-medium mt-1">{{ warehouse.code }}</p>
+                </div>
+                <div>
+                    <p class="text-sm text-secondary">Nombre</p>
+                    <p class="font-medium mt-1">{{ warehouse.name }}</p>
+                </div>
+                <div class="sm:col-span-2" *ngIf="warehouse.description">
+                    <p class="text-sm text-secondary">Descripción</p>
+                    <p class="font-medium mt-1">{{ warehouse.description }}</p>
+                </div>
+                <div *ngIf="warehouse.address">
+                    <p class="text-sm text-secondary">Dirección</p>
+                    <p class="font-medium mt-1">{{ warehouse.address }}</p>
+                </div>
+                <div *ngIf="warehouse.phone">
+                    <p class="text-sm text-secondary">Teléfono</p>
+                    <p class="font-medium mt-1">{{ warehouse.phone }}</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tabs -->
+        <mat-tab-group class="bg-card shadow rounded-2xl">
+            <!-- Tab: Ubicaciones -->
+            <mat-tab>
+                <ng-template mat-tab-label>
+                    <mat-icon class="mr-2" [svgIcon]="'heroicons_outline:map-pin'"></mat-icon>
+                    Ubicaciones ({{ locations.length }})
+                </ng-template>
+                <div class="p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-lg font-medium">Ubicaciones del Almacén</h3>
+                        <button mat-flat-button [color]="'primary'" (click)="addLocation()">
+                            <mat-icon [svgIcon]="'heroicons_outline:plus'"></mat-icon>
+                            <span class="ml-2">Agregar Ubicación</span>
+                        </button>
+                    </div>
+
+                    <div class="overflow-x-auto" *ngIf="locations.length > 0">
+                        <table mat-table [dataSource]="locationDataSource" class="w-full">
+                            <!-- Code Column -->
+                            <ng-container matColumnDef="code">
+                                <th mat-header-cell *matHeaderCellDef class="font-semibold bg-gray-50 dark:bg-gray-800">Código</th>
+                                <td mat-cell *matCellDef="let location">
+                                    <span class="font-medium text-primary">{{ location.code }}</span>
+                                </td>
+                            </ng-container>
+
+                            <!-- Name Column -->
+                            <ng-container matColumnDef="name">
+                                <th mat-header-cell *matHeaderCellDef class="font-semibold bg-gray-50 dark:bg-gray-800">Nombre</th>
+                                <td mat-cell *matCellDef="let location">{{ location.name }}</td>
+                            </ng-container>
+
+                            <!-- Type Column -->
+                            <ng-container matColumnDef="type">
+                                <th mat-header-cell *matHeaderCellDef class="font-semibold bg-gray-50 dark:bg-gray-800">Tipo</th>
+                                <td mat-cell *matCellDef="let location">
+                                    <mat-chip-set>
+                                        <mat-chip>{{ getLocationTypeLabel(location.type) }}</mat-chip>
+                                    </mat-chip-set>
+                                </td>
+                            </ng-container>
+
+                            <!-- Capacity Column -->
+                            <ng-container matColumnDef="capacity">
+                                <th mat-header-cell *matHeaderCellDef class="font-semibold bg-gray-50 dark:bg-gray-800">Capacidad</th>
+                                <td mat-cell *matCellDef="let location">{{ location.capacity || 'N/A' }}</td>
+                            </ng-container>
+
+                            <!-- Current Capacity Column -->
+                            <ng-container matColumnDef="currentCapacity">
+                                <th mat-header-cell *matHeaderCellDef class="font-semibold bg-gray-50 dark:bg-gray-800">Ocupación</th>
+                                <td mat-cell *matCellDef="let location">
+                                    <div class="flex items-center">
+                                        <span>{{ location.currentCapacity || 0 }}</span>
+                                        <span class="text-secondary ml-2" *ngIf="location.capacity">
+                                            ({{ ((location.currentCapacity || 0) / location.capacity * 100) | number:'1.0-0' }}%)
+                                        </span>
+                                    </div>
+                                </td>
+                            </ng-container>
+
+                            <!-- Status Column -->
+                            <ng-container matColumnDef="status">
+                                <th mat-header-cell *matHeaderCellDef class="font-semibold bg-gray-50 dark:bg-gray-800">Acciones</th>
+                                <td mat-cell *matCellDef="let location">
+                                    <div class="flex items-center gap-1">
+                                        <button mat-icon-button (click)="editLocation(location)" [matTooltip]="'Editar'">
+                                            <mat-icon class="text-yellow-600" [svgIcon]="'heroicons_outline:pencil'"></mat-icon>
+                                        </button>
+                                        <button mat-icon-button (click)="deleteLocation(location)" [matTooltip]="'Eliminar'">
+                                            <mat-icon class="text-red-600" [svgIcon]="'heroicons_outline:trash'"></mat-icon>
+                                        </button>
+                                    </div>
+                                </td>
+                            </ng-container>
+
+                            <tr mat-header-row *matHeaderRowDef="locationColumns"></tr>
+                            <tr mat-row *matRowDef="let row; columns: locationColumns;"
+                                class="hover:bg-gray-50 dark:hover:bg-gray-800">
+                            </tr>
+                        </table>
+                    </div>
+
+                    <div *ngIf="locations.length === 0" class="flex flex-col items-center justify-center py-12 text-secondary">
+                        <mat-icon class="icon-size-16 mb-4" [svgIcon]="'heroicons_outline:map-pin'"></mat-icon>
+                        <p class="text-lg font-medium">No hay ubicaciones registradas</p>
+                        <p class="text-sm mb-4">Comienza agregando una nueva ubicación</p>
+                        <button mat-flat-button [color]="'primary'" (click)="addLocation()">
+                            <mat-icon [svgIcon]="'heroicons_outline:plus'"></mat-icon>
+                            <span class="ml-2">Agregar Ubicación</span>
+                        </button>
+                    </div>
+                </div>
+            </mat-tab>
+
+            <!-- Tab: Herramientas -->
+            <mat-tab>
+                <ng-template mat-tab-label>
+                    <mat-icon class="mr-2" [svgIcon]="'heroicons_outline:wrench-screwdriver'"></mat-icon>
+                    Herramientas ({{ tools.length }})
+                </ng-template>
+                <div class="p-6">
+                    <h3 class="text-lg font-medium mb-4">Herramientas en este Almacén</h3>
+
+                    <div class="overflow-x-auto" *ngIf="tools.length > 0">
+                        <table mat-table [dataSource]="toolDataSource" class="w-full">
+                            <!-- Code Column -->
+                            <ng-container matColumnDef="code">
+                                <th mat-header-cell *matHeaderCellDef class="font-semibold bg-gray-50 dark:bg-gray-800">Código</th>
+                                <td mat-cell *matCellDef="let tool">
+                                    <span class="font-medium text-primary">{{ tool.code }}</span>
+                                </td>
+                            </ng-container>
+
+                            <!-- Name Column -->
+                            <ng-container matColumnDef="name">
+                                <th mat-header-cell *matHeaderCellDef class="font-semibold bg-gray-50 dark:bg-gray-800">Nombre</th>
+                                <td mat-cell *matCellDef="let tool">{{ tool.name }}</td>
+                            </ng-container>
+
+                            <!-- Category Column -->
+                            <ng-container matColumnDef="category">
+                                <th mat-header-cell *matHeaderCellDef class="font-semibold bg-gray-50 dark:bg-gray-800">Categoría</th>
+                                <td mat-cell *matCellDef="let tool">{{ tool.category?.name || '-' }}</td>
+                            </ng-container>
+
+                            <!-- Location Column -->
+                            <ng-container matColumnDef="location">
+                                <th mat-header-cell *matHeaderCellDef class="font-semibold bg-gray-50 dark:bg-gray-800">Ubicación</th>
+                                <td mat-cell *matCellDef="let tool">{{ tool.location?.name || '-' }}</td>
+                            </ng-container>
+
+                            <!-- Status Column -->
+                            <ng-container matColumnDef="status">
+                                <th mat-header-cell *matHeaderCellDef class="font-semibold bg-gray-50 dark:bg-gray-800">Estado</th>
+                                <td mat-cell *matCellDef="let tool">
+                                    <mat-chip-set>
+                                        <mat-chip>{{ tool.status }}</mat-chip>
+                                    </mat-chip-set>
+                                </td>
+                            </ng-container>
+
+                            <tr mat-header-row *matHeaderRowDef="toolColumns"></tr>
+                            <tr mat-row *matRowDef="let row; columns: toolColumns;"
+                                class="hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer">
+                            </tr>
+                        </table>
+                    </div>
+
+                    <div *ngIf="tools.length === 0" class="flex flex-col items-center justify-center py-12 text-secondary">
+                        <mat-icon class="icon-size-16 mb-4" [svgIcon]="'heroicons_outline:wrench-screwdriver'"></mat-icon>
+                        <p class="text-lg font-medium">No hay herramientas en este almacén</p>
+                    </div>
+                </div>
+            </mat-tab>
+        </mat-tab-group>
+    </div>
+
+    <!-- Loading -->
+    <div class="flex items-center justify-center h-96" *ngIf="loading">
+        <mat-icon class="animate-spin icon-size-16" [svgIcon]="'heroicons_outline:arrow-path'"></mat-icon>
+    </div>
+</div>

@@ -1,0 +1,96 @@
+<div class="flex flex-col flex-auto min-w-0">
+    <!-- Header -->
+    <div class="flex flex-col sm:flex-row flex-0 sm:items-center sm:justify-between p-6 sm:py-8 sm:px-10 border-b bg-card">
+        <div class="flex-1 min-w-0">
+            <div class="flex items-center">
+                <button mat-icon-button (click)="cancel()" [matTooltip]="'Volver'">
+                    <mat-icon [svgIcon]="'heroicons_outline:arrow-left'"></mat-icon>
+                </button>
+                <h2 class="text-3xl font-extrabold tracking-tight leading-7 sm:leading-10 truncate ml-2">
+                    Enviar a Calibración
+                </h2>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main -->
+    <div class="flex-auto p-6 sm:p-10">
+        <form [formGroup]="form" class="space-y-8">
+            <!-- Herramienta -->
+            <div class="bg-card shadow rounded-2xl p-6">
+                <h3 class="text-lg font-medium mb-4">Seleccionar Herramienta</h3>
+                <mat-form-field class="flex-auto w-full">
+                    <mat-label>Herramienta</mat-label>
+                    <input matInput formControlName="toolId" [matAutocomplete]="toolAuto" (input)="filterTools($event)" placeholder="Buscar herramienta" required>
+                    <mat-icon matPrefix [svgIcon]="'heroicons_outline:wrench-screwdriver'"></mat-icon>
+                    <mat-autocomplete #toolAuto="matAutocomplete">
+                        <mat-option *ngFor="let tool of filteredTools" [value]="tool.id">
+                            {{ tool.code }} - {{ tool.name }}
+                        </mat-option>
+                    </mat-autocomplete>
+                </mat-form-field>
+            </div>
+
+            <!-- Información de Calibración -->
+            <div class="bg-card shadow rounded-2xl p-6">
+                <h3 class="text-lg font-medium mb-4">Información de Calibración</h3>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                    <mat-form-field class="flex-auto">
+                        <mat-label>Proveedor/Laboratorio</mat-label>
+                        <input matInput formControlName="provider" placeholder="Nombre del proveedor" required>
+                        <mat-icon matPrefix [svgIcon]="'heroicons_outline:building-office'"></mat-icon>
+                    </mat-form-field>
+
+                    <mat-form-field class="flex-auto">
+                        <mat-label>Tipo de Calibración</mat-label>
+                        <mat-select formControlName="calibrationType" required>
+                            <mat-option value="calibration">Calibración</mat-option>
+                            <mat-option value="verification">Verificación</mat-option>
+                            <mat-option value="adjustment">Ajuste</mat-option>
+                        </mat-select>
+                    </mat-form-field>
+
+                    <mat-form-field class="flex-auto">
+                        <mat-label>Fecha de Envío</mat-label>
+                        <input matInput [matDatepicker]="sendPicker" formControlName="sendDate" required>
+                        <mat-datepicker-toggle matSuffix [for]="sendPicker"></mat-datepicker-toggle>
+                        <mat-datepicker #sendPicker></mat-datepicker>
+                    </mat-form-field>
+
+                    <mat-form-field class="flex-auto">
+                        <mat-label>Fecha Estimada de Retorno</mat-label>
+                        <input matInput [matDatepicker]="returnPicker" formControlName="estimatedReturnDate" required>
+                        <mat-datepicker-toggle matSuffix [for]="returnPicker"></mat-datepicker-toggle>
+                        <mat-datepicker #returnPicker></mat-datepicker>
+                    </mat-form-field>
+
+                    <mat-form-field class="flex-auto">
+                        <mat-label>Costo Estimado</mat-label>
+                        <input matInput type="number" formControlName="cost" placeholder="0.00">
+                        <span matPrefix>$&nbsp;</span>
+                    </mat-form-field>
+                </div>
+            </div>
+
+            <!-- Notas -->
+            <div class="bg-card shadow rounded-2xl p-6">
+                <h3 class="text-lg font-medium mb-4">Notas Adicionales</h3>
+                <mat-form-field class="flex-auto w-full">
+                    <mat-label>Notas</mat-label>
+                    <textarea matInput formControlName="notes" rows="3" placeholder="Observaciones"></textarea>
+                </mat-form-field>
+            </div>
+
+            <!-- Actions -->
+            <div class="flex items-center justify-end gap-4">
+                <button mat-button type="button" (click)="cancel()">
+                    Cancelar
+                </button>
+                <button mat-flat-button [color]="'primary'" type="button" (click)="save()" [disabled]="form.invalid || loading">
+                    <mat-icon *ngIf="loading" class="animate-spin" [svgIcon]="'heroicons_outline:arrow-path'"></mat-icon>
+                    <span *ngIf="!loading">Enviar a Calibración</span>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>

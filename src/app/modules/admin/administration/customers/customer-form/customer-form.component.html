@@ -1,0 +1,101 @@
+<div class="flex flex-col flex-auto min-w-0">
+    <!-- Header -->
+    <div class="flex flex-col sm:flex-row flex-0 sm:items-center sm:justify-between p-6 sm:py-8 sm:px-10 border-b bg-card">
+        <div class="flex-1 min-w-0">
+            <button mat-icon-button (click)="cancel()" class="mr-2">
+                <mat-icon [svgIcon]="'heroicons_outline:arrow-left'"></mat-icon>
+            </button>
+            <h2 class="text-3xl font-extrabold tracking-tight leading-7 sm:leading-10 truncate inline-block">
+                {{ isEditMode ? 'Editar Cliente' : 'Nuevo Cliente' }}
+            </h2>
+        </div>
+    </div>
+
+    <!-- Main -->
+    <div class="flex-auto p-6 sm:p-10">
+        <div class="max-w-3xl mx-auto">
+            <mat-card class="shadow-lg">
+                <mat-card-content class="p-6">
+                    <form [formGroup]="form" (ngSubmit)="save()">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <!-- Company Name -->
+                            <mat-form-field class="w-full md:col-span-2">
+                                <mat-label>Nombre de la Empresa</mat-label>
+                                <input matInput formControlName="name" placeholder="Empresa S.A.">
+                                <mat-icon matPrefix [svgIcon]="'heroicons_outline:building-office'"></mat-icon>
+                                <mat-error *ngIf="form.get('name')?.hasError('required')">
+                                    El nombre es requerido
+                                </mat-error>
+                            </mat-form-field>
+
+                            <!-- Contact Name -->
+                            <mat-form-field class="w-full">
+                                <mat-label>Nombre de Contacto</mat-label>
+                                <input matInput formControlName="contactName" placeholder="Juan Pérez">
+                                <mat-icon matPrefix [svgIcon]="'heroicons_outline:user'"></mat-icon>
+                                <mat-error *ngIf="form.get('contactName')?.hasError('required')">
+                                    El nombre de contacto es requerido
+                                </mat-error>
+                            </mat-form-field>
+
+                            <!-- Email -->
+                            <mat-form-field class="w-full">
+                                <mat-label>Correo Electrónico</mat-label>
+                                <input matInput type="email" formControlName="email" placeholder="contacto@empresa.com">
+                                <mat-icon matPrefix [svgIcon]="'heroicons_outline:envelope'"></mat-icon>
+                                <mat-error *ngIf="form.get('email')?.hasError('required')">
+                                    El correo es requerido
+                                </mat-error>
+                                <mat-error *ngIf="form.get('email')?.hasError('email')">
+                                    Ingrese un correo válido
+                                </mat-error>
+                            </mat-form-field>
+
+                            <!-- Phone -->
+                            <mat-form-field class="w-full">
+                                <mat-label>Teléfono</mat-label>
+                                <input matInput formControlName="phone" placeholder="+591 12345678">
+                                <mat-icon matPrefix [svgIcon]="'heroicons_outline:phone'"></mat-icon>
+                                <mat-error *ngIf="form.get('phone')?.hasError('required')">
+                                    El teléfono es requerido
+                                </mat-error>
+                            </mat-form-field>
+
+                            <!-- Tax ID -->
+                            <mat-form-field class="w-full">
+                                <mat-label>NIT / RUC</mat-label>
+                                <input matInput formControlName="taxId" placeholder="123456789">
+                                <mat-icon matPrefix [svgIcon]="'heroicons_outline:identification'"></mat-icon>
+                            </mat-form-field>
+
+                            <!-- Address -->
+                            <mat-form-field class="w-full md:col-span-2">
+                                <mat-label>Dirección</mat-label>
+                                <textarea matInput formControlName="address" rows="2" placeholder="Av. Principal #123"></textarea>
+                                <mat-icon matPrefix [svgIcon]="'heroicons_outline:map-pin'"></mat-icon>
+                            </mat-form-field>
+
+                            <!-- Notes -->
+                            <mat-form-field class="w-full md:col-span-2">
+                                <mat-label>Notas</mat-label>
+                                <textarea matInput formControlName="notes" rows="3" placeholder="Información adicional..."></textarea>
+                                <mat-icon matPrefix [svgIcon]="'heroicons_outline:document-text'"></mat-icon>
+                            </mat-form-field>
+                        </div>
+
+                        <!-- Actions -->
+                        <div class="flex items-center justify-end gap-4 mt-8">
+                            <button mat-stroked-button type="button" (click)="cancel()" [disabled]="loading">
+                                Cancelar
+                            </button>
+                            <button mat-flat-button [color]="'primary'" type="submit" [disabled]="loading">
+                                <mat-icon [svgIcon]="'heroicons_outline:check'" class="icon-size-5"></mat-icon>
+                                <span class="ml-2">{{ isEditMode ? 'Guardar Cambios' : 'Crear Cliente' }}</span>
+                            </button>
+                        </div>
+                    </form>
+                </mat-card-content>
+            </mat-card>
+        </div>
+    </div>
+</div>

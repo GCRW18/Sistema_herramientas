@@ -1,0 +1,80 @@
+<div class="flex flex-col flex-auto min-w-0">
+    <!-- Header -->
+    <div class="flex flex-col sm:flex-row flex-0 sm:items-center sm:justify-between p-6 sm:py-8 sm:px-10 border-b bg-card dark:bg-transparent">
+        <div class="flex-1 min-w-0">
+            <div class="flex items-center">
+                <button mat-icon-button (click)="cancel()" [matTooltip]="'Volver'">
+                    <mat-icon [svgIcon]="'heroicons_outline:arrow-left'"></mat-icon>
+                </button>
+                <h2 class="text-3xl font-extrabold tracking-tight leading-7 sm:leading-10 truncate ml-2 text-gray-900 dark:text-gray-100">
+                    {{ isEditMode ? 'Editar Usuario' : 'Nuevo Usuario' }}
+                </h2>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main -->
+    <div class="flex-auto p-6 sm:p-10">
+        <div class="max-w-3xl">
+            <form [formGroup]="form" class="flex flex-col">
+                <!-- Name -->
+                <mat-form-field class="w-full">
+                    <mat-label>Nombre Completo</mat-label>
+                    <input matInput formControlName="name" required>
+                    <mat-icon matPrefix [svgIcon]="'heroicons_outline:user'"></mat-icon>
+                    <mat-error>El nombre es requerido</mat-error>
+                </mat-form-field>
+
+                <!-- Email -->
+                <mat-form-field class="w-full">
+                    <mat-label>Correo Electrónico</mat-label>
+                    <input matInput type="email" formControlName="email" required>
+                    <mat-icon matPrefix [svgIcon]="'heroicons_outline:envelope'"></mat-icon>
+                    <mat-error>Ingrese un correo válido</mat-error>
+                </mat-form-field>
+
+                <!-- Password -->
+                <mat-form-field class="w-full">
+                    <mat-label>{{ isEditMode ? 'Nueva Contraseña (dejar en blanco para no cambiar)' : 'Contraseña' }}</mat-label>
+                    <input matInput type="password" formControlName="password" [required]="!isEditMode">
+                    <mat-icon matPrefix [svgIcon]="'heroicons_outline:lock-closed'"></mat-icon>
+                    <mat-error>La contraseña debe tener al menos 6 caracteres</mat-error>
+                </mat-form-field>
+
+                <!-- Role -->
+                <mat-form-field class="w-full">
+                    <mat-label>Rol</mat-label>
+                    <mat-select formControlName="roleId" required>
+                        <mat-option *ngFor="let role of roles" [value]="role.id">
+                            {{ role.name }}
+                        </mat-option>
+                    </mat-select>
+                    <mat-icon matPrefix [svgIcon]="'heroicons_outline:shield-check'"></mat-icon>
+                    <mat-error>Seleccione un rol</mat-error>
+                </mat-form-field>
+
+                <!-- Phone -->
+                <mat-form-field class="w-full">
+                    <mat-label>Teléfono</mat-label>
+                    <input matInput formControlName="phone">
+                    <mat-icon matPrefix [svgIcon]="'heroicons_outline:phone'"></mat-icon>
+                </mat-form-field>
+
+                <!-- Active -->
+                <div class="flex items-center mt-4 mb-6">
+                    <mat-checkbox formControlName="active">Usuario Activo</mat-checkbox>
+                </div>
+
+                <!-- Actions -->
+                <div class="flex items-center justify-end mt-6 gap-4">
+                    <button mat-stroked-button type="button" (click)="cancel()">
+                        Cancelar
+                    </button>
+                    <button mat-flat-button [color]="'primary'" (click)="save()" [disabled]="form.invalid || loading">
+                        {{ isEditMode ? 'Actualizar' : 'Crear' }}
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

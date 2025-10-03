@@ -88,7 +88,7 @@ export class UserComponent implements OnInit, OnDestroy {
      *
      * @param status
      */
-    updateUserStatus(status: string): void {
+    updateUserStatus(status: 'online' | 'away' | 'busy' | 'not-visible'): void {
         // Return if user is not available
         if (!this.user) {
             return;

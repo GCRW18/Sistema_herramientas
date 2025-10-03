@@ -1,0 +1,131 @@
+<div class="flex flex-col flex-auto min-w-0">
+    <!-- Header -->
+    <div class="flex flex-col sm:flex-row flex-0 sm:items-center sm:justify-between p-6 sm:py-8 sm:px-10 border-b bg-card dark:bg-transparent">
+        <div class="flex-1 min-w-0">
+            <h2 class="text-3xl font-extrabold tracking-tight leading-7 sm:leading-10 truncate text-gray-900 dark:text-gray-100">
+                Mantenimiento
+            </h2>
+            <p class="mt-2 text-secondary dark:text-gray-400">Gestión de mantenimientos de herramientas</p>
+        </div>
+        <div class="flex shrink-0 items-center mt-6 sm:mt-0 sm:ml-4">
+            <button mat-flat-button [color]="'primary'" (click)="newMaintenance()">
+                <mat-icon [svgIcon]="'heroicons_outline:plus'"></mat-icon>
+                <span class="ml-2">Nuevo Mantenimiento</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Main -->
+    <div class="flex-auto p-6 sm:p-10">
+        <!-- Filters -->
+        <div class="bg-card p-6 rounded-2xl shadow mb-6 dark:border dark:border-gray-700">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <mat-form-field class="w-full">
+                    <mat-label>Buscar</mat-label>
+                    <input matInput (keyup)="applyFilter($event)" placeholder="Código, nombre, técnico...">
+                    <mat-icon matPrefix [svgIcon]="'heroicons_outline:magnifying-glass'"></mat-icon>
+                </mat-form-field>
+
+                <mat-form-field class="w-full">
+                    <mat-label>Tipo</mat-label>
+                    <mat-select [(value)]="filterType" (selectionChange)="applyTypeFilter()">
+                        <mat-option *ngFor="let option of typeOptions" [value]="option.value">
+                            {{ option.label }}
+                        </mat-option>
+                    </mat-select>
+                    <mat-icon matPrefix [svgIcon]="'heroicons_outline:wrench'"></mat-icon>
+                </mat-form-field>
+
+                <mat-form-field class="w-full">
+                    <mat-label>Estado</mat-label>
+                    <mat-select [(value)]="filterStatus" (selectionChange)="applyStatusFilter()">
+                        <mat-option *ngFor="let option of statusOptions" [value]="option.value">
+                            {{ option.label }}
+                        </mat-option>
+                    </mat-select>
+                    <mat-icon matPrefix [svgIcon]="'heroicons_outline:information-circle'"></mat-icon>
+                </mat-form-field>
+            </div>
+        </div>
+
+        <!-- Table -->
+        <div class="bg-card shadow rounded-2xl overflow-hidden dark:border dark:border-gray-700">
+            <div class="overflow-x-auto">
+                <table mat-table [dataSource]="dataSource" matSort class="w-full">
+                    <!-- Tool Code Column -->
+                    <ng-container matColumnDef="toolCode">
+                        <th mat-header-cell *matHeaderCellDef mat-sort-header class="bg-gray-50 dark:bg-gray-800 font-semibold">Código</th>
+                        <td mat-cell *matCellDef="let item" class="py-4">
+                            <span class="font-medium text-gray-900 dark:text-gray-100">{{ item.toolCode }}</span>
+                        </td>
+                    </ng-container>
+
+                    <!-- Tool Name Column -->
+                    <ng-container matColumnDef="toolName">
+                        <th mat-header-cell *matHeaderCellDef mat-sort-header class="bg-gray-50 dark:bg-gray-800 font-semibold">Herramienta</th>
+                        <td mat-cell *matCellDef="let item" class="py-4 text-gray-700 dark:text-gray-300">{{ item.toolName }}</td>
+                    </ng-container>
+
+                    <!-- Type Column -->
+                    <ng-container matColumnDef="type">
+                        <th mat-header-cell *matHeaderCellDef mat-sort-header class="bg-gray-50 dark:bg-gray-800 font-semibold">Tipo</th>
+                        <td mat-cell *matCellDef="let item" class="py-4">
+                            <mat-chip-set>
+                                <mat-chip [color]="getTypeColor(item.type)" [highlighted]="true">
+                                    {{ getTypeLabel(item.type) }}
+                                </mat-chip>
+                            </mat-chip-set>
+                        </td>
+                    </ng-container>
+
+                    <!-- Scheduled Date Column -->
+                    <ng-container matColumnDef="scheduledDate">
+                        <th mat-header-cell *matHeaderCellDef mat-sort-header class="bg-gray-50 dark:bg-gray-800 font-semibold">Fecha Programada</th>
+                        <td mat-cell *matCellDef="let item" class="py-4 text-gray-700 dark:text-gray-300">{{ item.scheduledDate | date:'dd/MM/yyyy' }}</td>
+                    </ng-container>
+
+                    <!-- Status Column -->
+                    <ng-container matColumnDef="status">
+                        <th mat-header-cell *matHeaderCellDef mat-sort-header class="bg-gray-50 dark:bg-gray-800 font-semibold">Estado</th>
+                        <td mat-cell *matCellDef="let item" class="py-4">
+                            <mat-chip-set>
+                                <mat-chip [color]="getStatusColor(item.status)" [highlighted]="true">
+                                    {{ getStatusLabel(item.status) }}
+                                </mat-chip>
+                            </mat-chip-set>
+                        </td>
+                    </ng-container>
+
+                    <!-- Technician Column -->
+                    <ng-container matColumnDef="technician">
+                        <th mat-header-cell *matHeaderCellDef mat-sort-header class="bg-gray-50 dark:bg-gray-800 font-semibold">Técnico</th>
+                        <td mat-cell *matCellDef="let item" class="py-4 text-gray-700 dark:text-gray-300">{{ item.technician || '-' }}</td>
+                    </ng-container>
+
+                    <!-- Actions Column -->
+                    <ng-container matColumnDef="actions">
+                        <th mat-header-cell *matHeaderCellDef class="bg-gray-50 dark:bg-gray-800 font-semibold">Acciones</th>
+                        <td mat-cell *matCellDef="let item" class="py-4">
+                            <button mat-icon-button [matTooltip]="'Ver detalle'" (click)="viewDetail(item.id)" class="hover:bg-blue-50 dark:hover:bg-blue-900">
+                                <mat-icon class="text-blue-600 dark:text-blue-400" [svgIcon]="'heroicons_outline:eye'"></mat-icon>
+                            </button>
+                        </td>
+                    </ng-container>
+
+                    <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+                    <tr mat-row *matRowDef="let row; columns: displayedColumns;" class="hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer transition-colors"></tr>
+                </table>
+            </div>
+
+            <!-- Paginator -->
+            <mat-paginator [pageSizeOptions]="[10, 25, 50, 100]" showFirstLastButtons class="border-t dark:border-gray-700"></mat-paginator>
+        </div>
+
+        <!-- Empty State -->
+        <div class="flex flex-col items-center justify-center p-12 bg-card rounded-2xl dark:border dark:border-gray-700" *ngIf="dataSource.data.length === 0 && !loading">
+            <mat-icon class="icon-size-24 text-secondary dark:text-gray-400 mb-4" [svgIcon]="'heroicons_outline:wrench'"></mat-icon>
+            <h3 class="text-xl font-medium mb-2 text-gray-900 dark:text-gray-100">No hay mantenimientos</h3>
+            <p class="text-secondary dark:text-gray-400">No se encontraron mantenimientos registrados</p>
+        </div>
+    </div>
+</div>

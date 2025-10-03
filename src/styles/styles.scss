@@ -2,3 +2,28 @@
 /*  @ Import/write your custom styles here.
 /*  @ Styles from this file will override 'vendors.scss' and Erp's base styles.
 /* ----------------------------------------------------------------------------------------------------- */
+
+// Snackbar Styles
+.success-snackbar {
+    --mdc-snackbar-container-color: #10b981 !important;
+    --mdc-snackbar-supporting-text-color: #ffffff !important;
+    --mat-snack-bar-button-color: #ffffff !important;
+}
+
+.error-snackbar {
+    --mdc-snackbar-container-color: #ef4444 !important;
+    --mdc-snackbar-supporting-text-color: #ffffff !important;
+    --mat-snack-bar-button-color: #ffffff !important;
+}
+
+.warning-snackbar {
+    --mdc-snackbar-container-color: #f59e0b !important;
+    --mdc-snackbar-supporting-text-color: #ffffff !important;
+    --mat-snack-bar-button-color: #ffffff !important;
+}
+
+.info-snackbar {
+    --mdc-snackbar-container-color: #3b82f6 !important;
+    --mdc-snackbar-supporting-text-color: #ffffff !important;
+    --mat-snack-bar-button-color: #ffffff !important;
+}

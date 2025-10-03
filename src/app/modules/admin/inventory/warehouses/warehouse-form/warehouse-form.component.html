@@ -1,0 +1,137 @@
+<div class="flex flex-col flex-auto min-w-0">
+    <!-- Header -->
+    <div class="flex flex-col sm:flex-row flex-0 sm:items-center sm:justify-between p-6 sm:py-8 sm:px-10 border-b bg-card dark:bg-transparent">
+        <div class="flex-1 min-w-0">
+            <div class="flex items-center">
+                <button mat-icon-button (click)="cancel()" [matTooltip]="'Volver'">
+                    <mat-icon [svgIcon]="'heroicons_outline:arrow-left'"></mat-icon>
+                </button>
+                <div class="ml-2">
+                    <h2 class="text-3xl font-extrabold tracking-tight leading-7 sm:leading-10 truncate">
+                        {{ isEditMode ? 'Editar Almacén' : 'Nuevo Almacén' }}
+                    </h2>
+                    <p class="text-secondary mt-1">
+                        {{ isEditMode ? 'Modifica la información del almacén' : 'Completa los datos para crear un nuevo almacén' }}
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main -->
+    <div class="flex-auto p-6 sm:p-10">
+        <!-- Loading -->
+        <div *ngIf="loading" class="flex items-center justify-center h-96">
+            <mat-icon class="animate-spin icon-size-16" [svgIcon]="'heroicons_outline:arrow-path'"></mat-icon>
+        </div>
+
+        <!-- Form -->
+        <div *ngIf="!loading" class="max-w-4xl mx-auto">
+            <form [formGroup]="form" (ngSubmit)="save()">
+                <!-- Basic Information -->
+                <mat-card class="mb-6 shadow-lg">
+                    <mat-card-header>
+                        <mat-card-title class="flex items-center">
+                            <mat-icon class="mr-2 text-primary" [svgIcon]="'heroicons_outline:information-circle'"></mat-icon>
+                            Información Básica
+                        </mat-card-title>
+                    </mat-card-header>
+                    <mat-card-content class="mt-4">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                            <!-- Code -->
+                            <mat-form-field class="w-full">
+                                <mat-label>Código *</mat-label>
+                                <input matInput formControlName="code" placeholder="Ej: ALM-001" maxlength="50">
+                                <mat-icon matPrefix class="icon-size-5" [svgIcon]="'heroicons_outline:hashtag'"></mat-icon>
+                                <mat-error *ngIf="form.get('code')?.hasError('required')">
+                                    El código es requerido
+                                </mat-error>
+                                <mat-error *ngIf="form.get('code')?.hasError('maxlength')">
+                                    Máximo 50 caracteres
+                                </mat-error>
+                            </mat-form-field>
+
+                            <!-- Name -->
+                            <mat-form-field class="w-full">
+                                <mat-label>Nombre *</mat-label>
+                                <input matInput formControlName="name" placeholder="Ej: Almacén Principal" maxlength="200">
+                                <mat-icon matPrefix class="icon-size-5" [svgIcon]="'heroicons_outline:building-office-2'"></mat-icon>
+                                <mat-error *ngIf="form.get('name')?.hasError('required')">
+                                    El nombre es requerido
+                                </mat-error>
+                                <mat-error *ngIf="form.get('name')?.hasError('maxlength')">
+                                    Máximo 200 caracteres
+                                </mat-error>
+                            </mat-form-field>
+
+                            <!-- Description -->
+                            <mat-form-field class="w-full sm:col-span-2">
+                                <mat-label>Descripción</mat-label>
+                                <textarea matInput formControlName="description" rows="3" maxlength="500"
+                                          placeholder="Descripción del almacén..."></textarea>
+                                <mat-icon matPrefix class="icon-size-5" [svgIcon]="'heroicons_outline:document-text'"></mat-icon>
+                                <mat-hint align="end">{{ form.get('description')?.value?.length || 0 }}/500</mat-hint>
+                            </mat-form-field>
+
+                            <!-- Responsible -->
+                            <mat-form-field class="w-full">
+                                <mat-label>Responsable</mat-label>
+                                <input matInput formControlName="responsible" placeholder="Nombre del responsable" maxlength="200">
+                                <mat-icon matPrefix class="icon-size-5" [svgIcon]="'heroicons_outline:user'"></mat-icon>
+                            </mat-form-field>
+
+                            <!-- Active Status -->
+                            <div class="flex items-center">
+                                <mat-slide-toggle formControlName="active" color="primary">
+                                    <span class="ml-2">Almacén Activo</span>
+                                </mat-slide-toggle>
+                            </div>
+                        </div>
+                    </mat-card-content>
+                </mat-card>
+
+                <!-- Contact Information -->
+                <mat-card class="mb-6 shadow-lg">
+                    <mat-card-header>
+                        <mat-card-title class="flex items-center">
+                            <mat-icon class="mr-2 text-primary" [svgIcon]="'heroicons_outline:map-pin'"></mat-icon>
+                            Ubicación y Contacto
+                        </mat-card-title>
+                    </mat-card-header>
+                    <mat-card-content class="mt-4">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                            <!-- Address -->
+                            <mat-form-field class="w-full sm:col-span-2">
+                                <mat-label>Dirección</mat-label>
+                                <textarea matInput formControlName="address" rows="2" maxlength="500"
+                                          placeholder="Dirección completa del almacén..."></textarea>
+                                <mat-icon matPrefix class="icon-size-5" [svgIcon]="'heroicons_outline:map'"></mat-icon>
+                                <mat-hint align="end">{{ form.get('address')?.value?.length || 0 }}/500</mat-hint>
+                            </mat-form-field>
+
+                            <!-- Phone -->
+                            <mat-form-field class="w-full">
+                                <mat-label>Teléfono</mat-label>
+                                <input matInput formControlName="phone" placeholder="Ej: +591 2 1234567" maxlength="50">
+                                <mat-icon matPrefix class="icon-size-5" [svgIcon]="'heroicons_outline:phone'"></mat-icon>
+                            </mat-form-field>
+                        </div>
+                    </mat-card-content>
+                </mat-card>
+
+                <!-- Actions -->
+                <div class="flex items-center justify-end gap-4 mt-8">
+                    <button mat-stroked-button type="button" (click)="cancel()" [disabled]="submitting">
+                        <mat-icon [svgIcon]="'heroicons_outline:x-mark'"></mat-icon>
+                        <span class="ml-2">Cancelar</span>
+                    </button>
+                    <button mat-flat-button [color]="'primary'" type="submit" [disabled]="submitting || form.invalid">
+                        <mat-icon [svgIcon]="submitting ? 'heroicons_outline:arrow-path' : 'heroicons_outline:check'"
+                                  [class.animate-spin]="submitting"></mat-icon>
+                        <span class="ml-2">{{ submitting ? 'Guardando...' : (isEditMode ? 'Actualizar' : 'Crear Almacén') }}</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

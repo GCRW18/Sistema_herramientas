@@ -1,0 +1,156 @@
+<div class="flex flex-col flex-auto min-w-0">
+    <!-- Header -->
+    <div class="flex flex-col sm:flex-row flex-0 sm:items-center sm:justify-between p-6 sm:py-8 sm:px-10 border-b bg-card">
+        <div class="flex-1 min-w-0">
+            <button mat-icon-button (click)="goBack()" class="mr-2">
+                <mat-icon [svgIcon]="'heroicons_outline:arrow-left'"></mat-icon>
+            </button>
+            <h2 class="text-3xl font-extrabold tracking-tight leading-7 sm:leading-10 truncate inline-block">
+                Detalle de Usuario
+            </h2>
+        </div>
+        <div class="flex shrink-0 items-center mt-6 sm:mt-0 sm:ml-4">
+            <button mat-flat-button [color]="'primary'" (click)="editUser()" *ngIf="user">
+                <mat-icon [svgIcon]="'heroicons_outline:pencil'"></mat-icon>
+                <span class="ml-2">Editar</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Main -->
+    <div class="flex-auto p-6 sm:p-10" *ngIf="user">
+        <mat-tab-group class="bg-card rounded-2xl shadow">
+            <!-- General Info Tab -->
+            <mat-tab label="Información General">
+                <div class="p-6">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <!-- Personal Information -->
+                        <mat-card class="shadow">
+                            <mat-card-content class="p-6">
+                                <h3 class="text-lg font-medium mb-4 flex items-center">
+                                    <mat-icon class="icon-size-6 mr-2" [svgIcon]="'heroicons_outline:user'"></mat-icon>
+                                    Información Personal
+                                </h3>
+                                <div class="space-y-3">
+                                    <div class="flex justify-between">
+                                        <span class="text-secondary">Nombre Completo:</span>
+                                        <span class="font-medium">{{ user.name }}</span>
+                                    </div>
+                                    <mat-divider></mat-divider>
+                                    <div class="flex justify-between">
+                                        <span class="text-secondary">Nombre de Usuario:</span>
+                                        <span class="font-medium">{{ user.username }}</span>
+                                    </div>
+                                    <mat-divider></mat-divider>
+                                    <div class="flex justify-between">
+                                        <span class="text-secondary">Email:</span>
+                                        <span class="font-medium">{{ user.email }}</span>
+                                    </div>
+                                </div>
+                            </mat-card-content>
+                        </mat-card>
+
+                        <!-- Role & Status -->
+                        <mat-card class="shadow">
+                            <mat-card-content class="p-6">
+                                <h3 class="text-lg font-medium mb-4 flex items-center">
+                                    <mat-icon class="icon-size-6 mr-2" [svgIcon]="'heroicons_outline:shield-check'"></mat-icon>
+                                    Rol y Estado
+                                </h3>
+                                <div class="space-y-3">
+                                    <div class="flex justify-between">
+                                        <span class="text-secondary">Rol:</span>
+                                        <span class="font-medium">{{ user.role?.name || 'N/A' }}</span>
+                                    </div>
+                                    <mat-divider></mat-divider>
+                                    <div class="flex justify-between items-center">
+                                        <span class="text-secondary">Estado:</span>
+                                        <mat-chip-set>
+                                            <mat-chip [color]="getStatusColor(user.status)" [highlighted]="true">
+                                                {{ getStatusLabel(user.status) }}
+                                            </mat-chip>
+                                        </mat-chip-set>
+                                    </div>
+                                </div>
+                            </mat-card-content>
+                        </mat-card>
+
+                        <!-- Permissions -->
+                        <mat-card class="shadow md:col-span-2" *ngIf="user.role?.permissions && user.role.permissions.length > 0">
+                            <mat-card-content class="p-6">
+                                <h3 class="text-lg font-medium mb-4 flex items-center">
+                                    <mat-icon class="icon-size-6 mr-2" [svgIcon]="'heroicons_outline:key'"></mat-icon>
+                                    Permisos
+                                </h3>
+                                <div class="flex flex-wrap gap-2">
+                                    <mat-chip-set>
+                                        <mat-chip *ngFor="let permission of user.role.permissions">
+                                            {{ permission }}
+                                        </mat-chip>
+                                    </mat-chip-set>
+                                </div>
+                            </mat-card-content>
+                        </mat-card>
+                    </div>
+                </div>
+            </mat-tab>
+
+            <!-- Activity Tab -->
+            <mat-tab label="Actividad">
+                <div class="p-6">
+                    <mat-card class="shadow">
+                        <mat-card-content class="p-6">
+                            <h3 class="text-lg font-medium mb-4">Actividad Reciente</h3>
+                            <div class="text-secondary text-center py-8">
+                                <mat-icon class="icon-size-16 mb-2" [svgIcon]="'heroicons_outline:clock'"></mat-icon>
+                                <p>El historial de actividades se mostrará aquí</p>
+                            </div>
+                        </mat-card-content>
+                    </mat-card>
+                </div>
+            </mat-tab>
+
+            <!-- Settings Tab -->
+            <mat-tab label="Configuración">
+                <div class="p-6">
+                    <mat-card class="shadow">
+                        <mat-card-content class="p-6">
+                            <h3 class="text-lg font-medium mb-4 flex items-center">
+                                <mat-icon class="icon-size-6 mr-2" [svgIcon]="'heroicons_outline:cog-6-tooth'"></mat-icon>
+                                Configuración de Usuario
+                            </h3>
+                            <div class="space-y-4">
+                                <div class="flex justify-between items-center p-4 bg-gray-50 rounded">
+                                    <div>
+                                        <p class="font-medium">Autenticación de dos factores</p>
+                                        <p class="text-sm text-secondary">Agregar capa extra de seguridad</p>
+                                    </div>
+                                    <button mat-stroked-button>Configurar</button>
+                                </div>
+                                <div class="flex justify-between items-center p-4 bg-gray-50 rounded">
+                                    <div>
+                                        <p class="font-medium">Cambiar contraseña</p>
+                                        <p class="text-sm text-secondary">Actualizar credenciales de acceso</p>
+                                    </div>
+                                    <button mat-stroked-button>Cambiar</button>
+                                </div>
+                                <div class="flex justify-between items-center p-4 bg-gray-50 rounded">
+                                    <div>
+                                        <p class="font-medium">Preferencias de notificaciones</p>
+                                        <p class="text-sm text-secondary">Gestionar alertas y notificaciones</p>
+                                    </div>
+                                    <button mat-stroked-button>Configurar</button>
+                                </div>
+                            </div>
+                        </mat-card-content>
+                    </mat-card>
+                </div>
+            </mat-tab>
+        </mat-tab-group>
+    </div>
+
+    <!-- Loading State -->
+    <div class="flex items-center justify-center p-12" *ngIf="loading">
+        <mat-icon class="icon-size-24 text-secondary animate-spin" [svgIcon]="'heroicons_outline:arrow-path'"></mat-icon>
+    </div>
+</div>

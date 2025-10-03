@@ -1,0 +1,115 @@
+<div class="relative flex flex-col w-full max-w-4xl max-h-screen">
+    <!-- Header -->
+    <div class="flex items-center justify-between px-6 py-4 border-b bg-card dark:bg-transparent">
+        <h2 class="text-2xl font-semibold text-gray-900 dark:text-gray-100">{{ dialogTitle }}</h2>
+        <button mat-icon-button (click)="onCancel()">
+            <mat-icon [svgIcon]="'heroicons_outline:x-mark'"></mat-icon>
+        </button>
+    </div>
+
+    <!-- Content -->
+    <div class="flex-auto overflow-y-auto p-6">
+        <form [formGroup]="maintenanceForm" class="space-y-6">
+            <!-- Tool Information -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <mat-form-field class="w-full">
+                    <mat-label>Código de Herramienta</mat-label>
+                    <input matInput formControlName="toolCode" placeholder="Ej: MIC-001">
+                    <mat-icon matPrefix [svgIcon]="'heroicons_outline:tag'"></mat-icon>
+                    <mat-error *ngIf="maintenanceForm.get('toolCode')?.hasError('required')">
+                        El código es requerido
+                    </mat-error>
+                </mat-form-field>
+
+                <mat-form-field class="w-full">
+                    <mat-label>Nombre de Herramienta</mat-label>
+                    <input matInput formControlName="toolName" placeholder="Ej: Micrómetro Digital">
+                    <mat-icon matPrefix [svgIcon]="'heroicons_outline:wrench-screwdriver'"></mat-icon>
+                    <mat-error *ngIf="maintenanceForm.get('toolName')?.hasError('required')">
+                        El nombre es requerido
+                    </mat-error>
+                </mat-form-field>
+            </div>
+
+            <!-- Maintenance Type and Date -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <mat-form-field class="w-full">
+                    <mat-label>Tipo de Mantenimiento</mat-label>
+                    <mat-select formControlName="type">
+                        <mat-option *ngFor="let type of maintenanceTypes" [value]="type.value">
+                            {{ type.label }}
+                        </mat-option>
+                    </mat-select>
+                    <mat-icon matPrefix [svgIcon]="'heroicons_outline:wrench'"></mat-icon>
+                    <mat-error *ngIf="maintenanceForm.get('type')?.hasError('required')">
+                        El tipo es requerido
+                    </mat-error>
+                </mat-form-field>
+
+                <mat-form-field class="w-full">
+                    <mat-label>Fecha Programada</mat-label>
+                    <input matInput [matDatepicker]="scheduledPicker" formControlName="scheduledDate">
+                    <mat-datepicker-toggle matSuffix [for]="scheduledPicker"></mat-datepicker-toggle>
+                    <mat-datepicker #scheduledPicker></mat-datepicker>
+                    <mat-icon matPrefix [svgIcon]="'heroicons_outline:calendar'"></mat-icon>
+                    <mat-error *ngIf="maintenanceForm.get('scheduledDate')?.hasError('required')">
+                        La fecha es requerida
+                    </mat-error>
+                </mat-form-field>
+            </div>
+
+            <!-- Technician and Cost -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <mat-form-field class="w-full">
+                    <mat-label>Técnico Responsable</mat-label>
+                    <input matInput formControlName="technician" placeholder="Nombre del técnico">
+                    <mat-icon matPrefix [svgIcon]="'heroicons_outline:user'"></mat-icon>
+                </mat-form-field>
+
+                <mat-form-field class="w-full">
+                    <mat-label>Costo Estimado (Bs)</mat-label>
+                    <input matInput type="number" formControlName="estimatedCost" placeholder="0.00">
+                    <mat-icon matPrefix [svgIcon]="'heroicons_outline:currency-dollar'"></mat-icon>
+                    <mat-error *ngIf="maintenanceForm.get('estimatedCost')?.hasError('min')">
+                        El costo debe ser mayor o igual a 0
+                    </mat-error>
+                </mat-form-field>
+            </div>
+
+            <!-- Description -->
+            <mat-form-field class="w-full">
+                <mat-label>Descripción</mat-label>
+                <textarea matInput formControlName="description" rows="3"
+                          placeholder="Describe el mantenimiento a realizar..."></textarea>
+                <mat-icon matPrefix [svgIcon]="'heroicons_outline:document-text'"></mat-icon>
+                <mat-error *ngIf="maintenanceForm.get('description')?.hasError('required')">
+                    La descripción es requerida
+                </mat-error>
+            </mat-form-field>
+
+            <!-- Notes -->
+            <mat-form-field class="w-full">
+                <mat-label>Notas Adicionales</mat-label>
+                <textarea matInput formControlName="notes" rows="2"
+                          placeholder="Notas opcionales..."></textarea>
+                <mat-icon matPrefix [svgIcon]="'heroicons_outline:pencil'"></mat-icon>
+            </mat-form-field>
+
+            <!-- Hidden field for toolId -->
+            <input type="hidden" formControlName="toolId">
+        </form>
+    </div>
+
+    <!-- Actions -->
+    <div class="flex items-center justify-end gap-2 px-6 py-4 border-t bg-gray-50 dark:bg-gray-800">
+        <button mat-button (click)="onCancel()">
+            Cancelar
+        </button>
+        <button mat-flat-button [color]="'primary'"
+                (click)="onSave()"
+                [disabled]="!maintenanceForm.valid">
+            <mat-icon [svgIcon]="'heroicons_outline:check'"></mat-icon>
+            <span class="ml-2">{{ isEditMode ? 'Actualizar' : 'Crear' }}</span>
+        </button>
+    </div>
+</div>

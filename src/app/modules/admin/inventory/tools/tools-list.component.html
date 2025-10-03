@@ -1,0 +1,286 @@
+<div class="flex flex-col flex-auto min-w-0">
+    <!-- Header -->
+    <div class="flex flex-col sm:flex-row flex-0 sm:items-center sm:justify-between p-6 sm:py-8 sm:px-10 border-b bg-card dark:bg-transparent">
+        <div class="flex-1 min-w-0">
+            <div class="flex items-center">
+                <mat-icon class="icon-size-12 text-primary mr-3" [svgIcon]="'heroicons_outline:wrench-screwdriver'"></mat-icon>
+                <h2 class="text-3xl font-extrabold tracking-tight leading-7 sm:leading-10 truncate">
+                    Inventario de Herramientas
+                </h2>
+            </div>
+            <div class="ml-15 mt-2">
+                <p class="text-secondary">
+                    Gestión completa del inventario de herramientas y equipos
+                </p>
+            </div>
+        </div>
+        <div class="flex shrink-0 items-center gap-3 mt-6 sm:mt-0 sm:ml-4">
+            <button mat-stroked-button>
+                <mat-icon [svgIcon]="'heroicons_outline:arrow-down-tray'"></mat-icon>
+                <span class="ml-2">Exportar</span>
+            </button>
+            <button mat-flat-button [color]="'primary'" [routerLink]="['new']">
+                <mat-icon [svgIcon]="'heroicons_outline:plus'"></mat-icon>
+                <span class="ml-2">Nueva Herramienta</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Main -->
+    <div class="flex-auto p-6 sm:p-10">
+        <!-- Stats Cards -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+            <div class="bg-card shadow rounded-2xl p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-secondary">Total Herramientas</p>
+                        <p class="text-3xl font-bold mt-1">{{ dataSource.data.length }}</p>
+                    </div>
+                    <div class="bg-blue-100 dark:bg-blue-800 rounded-full p-3">
+                        <mat-icon class="text-blue-600 dark:text-blue-200" [svgIcon]="'heroicons_outline:wrench-screwdriver'"></mat-icon>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-card shadow rounded-2xl p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-secondary">Disponibles</p>
+                        <p class="text-3xl font-bold mt-1 text-green-600">
+                            {{ getToolCountByStatus('available') }}
+                        </p>
+                    </div>
+                    <div class="bg-green-100 dark:bg-green-800 rounded-full p-3">
+                        <mat-icon class="text-green-600 dark:text-green-200" [svgIcon]="'heroicons_outline:check-circle'"></mat-icon>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-card shadow rounded-2xl p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-secondary">En Uso</p>
+                        <p class="text-3xl font-bold mt-1 text-blue-600">
+                            {{ getToolCountByStatus('in_use') }}
+                        </p>
+                    </div>
+                    <div class="bg-blue-100 dark:bg-blue-800 rounded-full p-3">
+                        <mat-icon class="text-blue-600 dark:text-blue-200" [svgIcon]="'heroicons_outline:user-circle'"></mat-icon>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-card shadow rounded-2xl p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-secondary">En Mantenimiento</p>
+                        <p class="text-3xl font-bold mt-1 text-orange-600">
+                            {{ getToolCountByStatus('in_maintenance') + getToolCountByStatus('in_calibration') }}
+                        </p>
+                    </div>
+                    <div class="bg-orange-100 dark:bg-orange-800 rounded-full p-3">
+                        <mat-icon class="text-orange-600 dark:text-orange-200" [svgIcon]="'heroicons_outline:wrench'"></mat-icon>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filters -->
+        <div class="bg-card shadow rounded-2xl p-6 mb-6">
+            <div class="flex items-center justify-between mb-4">
+                <div class="text-lg font-medium">Filtros de Búsqueda</div>
+                <button mat-icon-button [matTooltip]="'Limpiar filtros'" (click)="clearFilters()">
+                    <mat-icon [svgIcon]="'heroicons_outline:x-mark'"></mat-icon>
+                </button>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <mat-form-field class="flex-auto">
+                    <mat-label>Búsqueda</mat-label>
+                    <input matInput [(ngModel)]="filters.search" placeholder="Código, nombre..." (keyup.enter)="applyFilters()">
+                    <mat-icon class="icon-size-5" [svgIcon]="'heroicons_outline:magnifying-glass'" matPrefix></mat-icon>
+                </mat-form-field>
+
+                <mat-form-field class="flex-auto">
+                    <mat-label>Categoría</mat-label>
+                    <mat-select [(ngModel)]="filters.categoryId" (selectionChange)="applyFilters()">
+                        <mat-option [value]="''">Todas las categorías</mat-option>
+                        <mat-option *ngFor="let category of categories" [value]="category.id">
+                            {{ category.name }}
+                        </mat-option>
+                    </mat-select>
+                    <mat-icon class="icon-size-5" [svgIcon]="'heroicons_outline:tag'" matPrefix></mat-icon>
+                </mat-form-field>
+
+                <mat-form-field class="flex-auto">
+                    <mat-label>Almacén</mat-label>
+                    <mat-select [(ngModel)]="filters.warehouseId" (selectionChange)="applyFilters()">
+                        <mat-option [value]="''">Todos los almacenes</mat-option>
+                        <mat-option *ngFor="let warehouse of warehouses" [value]="warehouse.id">
+                            {{ warehouse.name }}
+                        </mat-option>
+                    </mat-select>
+                    <mat-icon class="icon-size-5" [svgIcon]="'heroicons_outline:building-office-2'" matPrefix></mat-icon>
+                </mat-form-field>
+
+                <mat-form-field class="flex-auto">
+                    <mat-label>Estado</mat-label>
+                    <mat-select [(ngModel)]="filters.status" (selectionChange)="applyFilters()">
+                        <mat-option [value]="undefined">Todos los estados</mat-option>
+                        <mat-option value="available">Disponible</mat-option>
+                        <mat-option value="in_use">En Uso</mat-option>
+                        <mat-option value="in_calibration">En Calibración</mat-option>
+                        <mat-option value="in_maintenance">En Mantenimiento</mat-option>
+                        <mat-option value="quarantine">Cuarentena</mat-option>
+                        <mat-option value="decommissioned">Dado de Baja</mat-option>
+                        <mat-option value="lost">Perdido</mat-option>
+                    </mat-select>
+                    <mat-icon class="icon-size-5" [svgIcon]="'heroicons_outline:information-circle'" matPrefix></mat-icon>
+                </mat-form-field>
+            </div>
+        </div>
+
+        <!-- Loading -->
+        <div *ngIf="loading" class="flex items-center justify-center h-96">
+            <mat-icon class="animate-spin icon-size-16" [svgIcon]="'heroicons_outline:arrow-path'"></mat-icon>
+        </div>
+
+        <!-- Table -->
+        <div *ngIf="!loading" class="bg-card shadow rounded-2xl overflow-hidden">
+            <div class="overflow-x-auto">
+                <table mat-table [dataSource]="dataSource" matSort class="w-full">
+                    <!-- Code Column -->
+                    <ng-container matColumnDef="code">
+                        <th mat-header-cell *matHeaderCellDef mat-sort-header class="font-semibold bg-gray-50 dark:bg-gray-800">
+                            Código
+                        </th>
+                        <td mat-cell *matCellDef="let tool" class="py-4">
+                            <div class="flex items-center">
+                                <div class="bg-primary-100 dark:bg-primary-800 rounded-lg p-2 mr-3">
+                                    <mat-icon class="text-primary icon-size-6" [svgIcon]="'heroicons_outline:hashtag'"></mat-icon>
+                                </div>
+                                <span class="font-medium text-primary">{{ tool.code }}</span>
+                            </div>
+                        </td>
+                    </ng-container>
+
+                    <!-- Name Column -->
+                    <ng-container matColumnDef="name">
+                        <th mat-header-cell *matHeaderCellDef mat-sort-header class="font-semibold bg-gray-50 dark:bg-gray-800">
+                            Nombre
+                        </th>
+                        <td mat-cell *matCellDef="let tool" class="py-4">
+                            <div class="font-medium">{{ tool.name }}</div>
+                            <div class="text-sm text-secondary" *ngIf="tool.description">{{ tool.description | slice:0:50 }}...</div>
+                        </td>
+                    </ng-container>
+
+                    <!-- Category Column -->
+                    <ng-container matColumnDef="category">
+                        <th mat-header-cell *matHeaderCellDef class="font-semibold bg-gray-50 dark:bg-gray-800">
+                            Categoría
+                        </th>
+                        <td mat-cell *matCellDef="let tool" class="py-4">
+                            <div class="flex items-center">
+                                <mat-icon class="icon-size-5 text-secondary mr-1" [svgIcon]="'heroicons_outline:tag'"></mat-icon>
+                                <span>{{ tool.category?.name || '-' }}</span>
+                            </div>
+                        </td>
+                    </ng-container>
+
+                    <!-- Warehouse Column -->
+                    <ng-container matColumnDef="warehouse">
+                        <th mat-header-cell *matHeaderCellDef class="font-semibold bg-gray-50 dark:bg-gray-800">
+                            Ubicación
+                        </th>
+                        <td mat-cell *matCellDef="let tool" class="py-4">
+                            <div class="flex items-center">
+                                <mat-icon class="icon-size-5 text-secondary mr-1" [svgIcon]="'heroicons_outline:building-office-2'"></mat-icon>
+                                <div>
+                                    <div class="font-medium">{{ tool.warehouse?.name || '-' }}</div>
+                                    <div class="text-sm text-secondary" *ngIf="tool.location?.name">{{ tool.location.name }}</div>
+                                </div>
+                            </div>
+                        </td>
+                    </ng-container>
+
+                    <!-- Status Column -->
+                    <ng-container matColumnDef="status">
+                        <th mat-header-cell *matHeaderCellDef class="font-semibold bg-gray-50 dark:bg-gray-800">
+                            Estado
+                        </th>
+                        <td mat-cell *matCellDef="let tool" class="py-4">
+                            <span class="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium text-white"
+                                  [ngClass]="getStatusInfo(tool.status).color">
+                                <mat-icon class="icon-size-4 mr-1" [svgIcon]="'heroicons_outline:information-circle'"></mat-icon>
+                                {{ getStatusInfo(tool.status).label }}
+                            </span>
+                        </td>
+                    </ng-container>
+
+                    <!-- Condition Column -->
+                    <ng-container matColumnDef="condition">
+                        <th mat-header-cell *matHeaderCellDef class="font-semibold bg-gray-50 dark:bg-gray-800">
+                            Condición
+                        </th>
+                        <td mat-cell *matCellDef="let tool" class="py-4">
+                            <div class="flex items-center">
+                                <div class="w-2 h-2 rounded-full mr-2"
+                                     [ngClass]="{
+                                         'bg-green-500': tool.condition === 'excellent' || tool.condition === 'good',
+                                         'bg-yellow-500': tool.condition === 'fair',
+                                         'bg-red-500': tool.condition === 'poor' || tool.condition === 'damaged'
+                                     }">
+                                </div>
+                                <span class="capitalize">{{ tool.condition }}</span>
+                            </div>
+                        </td>
+                    </ng-container>
+
+                    <!-- Actions Column -->
+                    <ng-container matColumnDef="actions">
+                        <th mat-header-cell *matHeaderCellDef class="font-semibold bg-gray-50 dark:bg-gray-800">
+                            Acciones
+                        </th>
+                        <td mat-cell *matCellDef="let tool" class="py-4">
+                            <div class="flex items-center gap-1">
+                                <button mat-icon-button [routerLink]="[tool.id]" [matTooltip]="'Ver detalles'" class="hover:bg-blue-50 dark:hover:bg-blue-900">
+                                    <mat-icon class="text-blue-600" [svgIcon]="'heroicons_outline:eye'"></mat-icon>
+                                </button>
+                                <button mat-icon-button [routerLink]="[tool.id, 'edit']" [matTooltip]="'Editar'" class="hover:bg-yellow-50 dark:hover:bg-yellow-900">
+                                    <mat-icon class="text-yellow-600" [svgIcon]="'heroicons_outline:pencil'"></mat-icon>
+                                </button>
+                                <button mat-icon-button (click)="deleteTool(tool)" [matTooltip]="'Eliminar'" class="hover:bg-red-50 dark:hover:bg-red-900">
+                                    <mat-icon class="text-red-600" [svgIcon]="'heroicons_outline:trash'"></mat-icon>
+                                </button>
+                            </div>
+                        </td>
+                    </ng-container>
+
+                    <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+                    <tr mat-row *matRowDef="let row; columns: displayedColumns;"
+                        class="hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer transition-colors"
+                        [routerLink]="[row.id]">
+                    </tr>
+
+                    <!-- No data -->
+                    <tr class="h-32" *matNoDataRow>
+                        <td [attr.colspan]="displayedColumns.length" class="text-center">
+                            <div class="flex flex-col items-center justify-center text-secondary">
+                                <mat-icon class="icon-size-16 mb-4" [svgIcon]="'heroicons_outline:magnifying-glass'"></mat-icon>
+                                <p class="text-lg font-medium">No se encontraron herramientas</p>
+                                <p class="text-sm">Intenta ajustar los filtros de búsqueda</p>
+                            </div>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+
+            <mat-paginator
+                [pageSizeOptions]="[10, 25, 50, 100]"
+                [pageSize]="25"
+                showFirstLastButtons
+                class="border-t">
+            </mat-paginator>
+        </div>
+    </div>
+</div>

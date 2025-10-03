@@ -1,7 +1,2 @@
-export interface User {
-    id: string;
-    name: string;
-    email: string;
-    avatar?: string;
-    status?: string;
-}
+// Re-export User from models to maintain compatibility
+export { User, UserRole } from '../models/user.types';

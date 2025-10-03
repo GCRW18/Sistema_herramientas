@@ -1,0 +1,70 @@
+<div class="flex flex-col max-h-screen">
+    <!-- Header -->
+    <div class="flex items-center justify-between p-6 border-b">
+        <h2 class="text-2xl font-bold">
+            {{ isEditMode ? 'Editar Categoría' : 'Nueva Categoría' }}
+        </h2>
+        <button mat-icon-button (click)="cancel()">
+            <mat-icon [svgIcon]="'heroicons_outline:x-mark'"></mat-icon>
+        </button>
+    </div>
+
+    <!-- Content -->
+    <div class="flex-auto overflow-y-auto p-6">
+        <form [formGroup]="form" class="space-y-6">
+            <!-- Code -->
+            <mat-form-field class="w-full">
+                <mat-label>Código *</mat-label>
+                <input matInput formControlName="code" placeholder="Ej: CAT-001" maxlength="50">
+                <mat-icon matPrefix class="icon-size-5" [svgIcon]="'heroicons_outline:hashtag'"></mat-icon>
+                <mat-error *ngIf="form.get('code')?.hasError('required')">
+                    El código es requerido
+                </mat-error>
+                <mat-error *ngIf="form.get('code')?.hasError('maxlength')">
+                    Máximo 50 caracteres
+                </mat-error>
+            </mat-form-field>
+
+            <!-- Name -->
+            <mat-form-field class="w-full">
+                <mat-label>Nombre *</mat-label>
+                <input matInput formControlName="name" placeholder="Nombre de la categoría" maxlength="200">
+                <mat-icon matPrefix class="icon-size-5" [svgIcon]="'heroicons_outline:tag'"></mat-icon>
+                <mat-error *ngIf="form.get('name')?.hasError('required')">
+                    El nombre es requerido
+                </mat-error>
+                <mat-error *ngIf="form.get('name')?.hasError('maxlength')">
+                    Máximo 200 caracteres
+                </mat-error>
+            </mat-form-field>
+
+            <!-- Description -->
+            <mat-form-field class="w-full">
+                <mat-label>Descripción</mat-label>
+                <textarea matInput formControlName="description" rows="3" maxlength="500"
+                          placeholder="Descripción de la categoría..."></textarea>
+                <mat-icon matPrefix class="icon-size-5" [svgIcon]="'heroicons_outline:document-text'"></mat-icon>
+                <mat-hint align="end">{{ form.get('description')?.value?.length || 0 }}/500</mat-hint>
+            </mat-form-field>
+
+            <!-- Active -->
+            <div class="flex items-center">
+                <mat-slide-toggle formControlName="active" color="primary">
+                    <span class="ml-2">Categoría Activa</span>
+                </mat-slide-toggle>
+            </div>
+        </form>
+    </div>
+
+    <!-- Actions -->
+    <div class="flex items-center justify-end gap-4 p-6 border-t bg-gray-50 dark:bg-gray-800">
+        <button mat-stroked-button (click)="cancel()">
+            <mat-icon [svgIcon]="'heroicons_outline:x-mark'"></mat-icon>
+            <span class="ml-2">Cancelar</span>
+        </button>
+        <button mat-flat-button [color]="'primary'" (click)="save()" [disabled]="form.invalid">
+            <mat-icon [svgIcon]="'heroicons_outline:check'"></mat-icon>
+            <span class="ml-2">{{ isEditMode ? 'Actualizar' : 'Crear' }}</span>
+        </button>
+    </div>
+</div>

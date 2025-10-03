@@ -1,0 +1,203 @@
+<div class="flex flex-col flex-auto min-w-0">
+    <!-- Header -->
+    <div class="flex flex-col sm:flex-row flex-0 sm:items-center sm:justify-between p-6 sm:py-8 sm:px-10 border-b bg-card">
+        <div class="flex-1 min-w-0">
+            <div class="flex items-center mb-2">
+                <button mat-icon-button (click)="back()">
+                    <mat-icon [svgIcon]="'heroicons_outline:arrow-left'"></mat-icon>
+                </button>
+                <h2 class="text-3xl font-extrabold tracking-tight leading-7 sm:leading-10 truncate ml-2">
+                    {{ tool?.name || 'Detalle de Herramienta' }}
+                </h2>
+            </div>
+            <p class="text-secondary" *ngIf="tool">{{ tool.code }}</p>
+        </div>
+        <div class="flex items-center mt-4 sm:mt-0">
+            <button mat-flat-button [color]="'primary'" (click)="edit()">
+                <mat-icon [svgIcon]="'heroicons_outline:pencil'"></mat-icon>
+                <span class="ml-2">Editar</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Main -->
+    <div class="flex-auto p-6 sm:p-10" *ngIf="tool">
+        <!-- Información Principal -->
+        <div class="bg-card shadow rounded-2xl p-6 mb-6">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div>
+                    <p class="text-sm text-secondary">Estado</p>
+                    <mat-chip-set>
+                        <mat-chip [color]="getStatusColor(tool.status)" [highlighted]="true">
+                            {{ tool.status }}
+                        </mat-chip>
+                    </mat-chip-set>
+                </div>
+                <div>
+                    <p class="text-sm text-secondary">Condición</p>
+                    <mat-chip-set>
+                        <mat-chip [color]="getConditionColor(tool.condition)" [highlighted]="true">
+                            {{ tool.condition }}
+                        </mat-chip>
+                    </mat-chip-set>
+                </div>
+                <div>
+                    <p class="text-sm text-secondary">Categoría</p>
+                    <p class="font-medium">{{ tool.categoryName }}</p>
+                    <p class="text-sm text-secondary" *ngIf="tool.subcategoryName">{{ tool.subcategoryName }}</p>
+                </div>
+                <div>
+                    <p class="text-sm text-secondary">Ubicación</p>
+                    <p class="font-medium">{{ tool.warehouseName }}</p>
+                    <p class="text-sm text-secondary" *ngIf="tool.locationName">{{ tool.locationName }}</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tabs -->
+        <mat-tab-group class="bg-card shadow rounded-2xl">
+            <!-- Tab: Detalles -->
+            <mat-tab label="Detalles">
+                <div class="p-6">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                        <div *ngIf="tool.description">
+                            <p class="text-sm text-secondary">Descripción</p>
+                            <p class="font-medium">{{ tool.description }}</p>
+                        </div>
+                        <div *ngIf="tool.brand">
+                            <p class="text-sm text-secondary">Marca</p>
+                            <p class="font-medium">{{ tool.brand }}</p>
+                        </div>
+                        <div *ngIf="tool.model">
+                            <p class="text-sm text-secondary">Modelo</p>
+                            <p class="font-medium">{{ tool.model }}</p>
+                        </div>
+                        <div *ngIf="tool.serialNumber">
+                            <p class="text-sm text-secondary">Número de Serie</p>
+                            <p class="font-medium">{{ tool.serialNumber }}</p>
+                        </div>
+                        <div *ngIf="tool.partNumber">
+                            <p class="text-sm text-secondary">Número de Parte</p>
+                            <p class="font-medium">{{ tool.partNumber }}</p>
+                        </div>
+                        <div *ngIf="tool.purchaseDate">
+                            <p class="text-sm text-secondary">Fecha de Compra</p>
+                            <p class="font-medium">{{ tool.purchaseDate | date:'dd/MM/yyyy' }}</p>
+                        </div>
+                        <div *ngIf="tool.purchasePrice">
+                            <p class="text-sm text-secondary">Precio de Compra</p>
+                            <p class="font-medium">{{ tool.purchasePrice | currency }}</p>
+                        </div>
+                        <div *ngIf="tool.supplier">
+                            <p class="text-sm text-secondary">Proveedor</p>
+                            <p class="font-medium">{{ tool.supplier }}</p>
+                        </div>
+                    </div>
+
+                    <div class="mt-6" *ngIf="tool.notes">
+                        <p class="text-sm text-secondary">Notas</p>
+                        <p class="font-medium">{{ tool.notes }}</p>
+                    </div>
+                </div>
+            </mat-tab>
+
+            <!-- Tab: Calibración -->
+            <mat-tab label="Calibración" *ngIf="tool.requiresCalibration">
+                <div class="p-6">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
+                        <div *ngIf="tool.calibrationInterval">
+                            <p class="text-sm text-secondary">Intervalo de Calibración</p>
+                            <p class="font-medium">{{ tool.calibrationInterval }} días</p>
+                        </div>
+                        <div *ngIf="tool.lastCalibrationDate">
+                            <p class="text-sm text-secondary">Última Calibración</p>
+                            <p class="font-medium">{{ tool.lastCalibrationDate | date:'dd/MM/yyyy' }}</p>
+                        </div>
+                        <div *ngIf="tool.nextCalibrationDate">
+                            <p class="text-sm text-secondary">Próxima Calibración</p>
+                            <p class="font-medium">{{ tool.nextCalibrationDate | date:'dd/MM/yyyy' }}</p>
+                        </div>
+                        <div *ngIf="tool.calibrationCertificate">
+                            <p class="text-sm text-secondary">Certificado</p>
+                            <p class="font-medium">{{ tool.calibrationCertificate }}</p>
+                        </div>
+                    </div>
+
+                    <h3 class="text-lg font-medium mb-4">Historial de Calibración</h3>
+                    <table mat-table [dataSource]="calibrations" class="w-full">
+                        <ng-container matColumnDef="date">
+                            <th mat-header-cell *matHeaderCellDef>Fecha</th>
+                            <td mat-cell *matCellDef="let calibration">
+                                {{ calibration.calibrationDate | date:'dd/MM/yyyy' }}
+                            </td>
+                        </ng-container>
+
+                        <ng-container matColumnDef="type">
+                            <th mat-header-cell *matHeaderCellDef>Tipo</th>
+                            <td mat-cell *matCellDef="let calibration">{{ calibration.type }}</td>
+                        </ng-container>
+
+                        <ng-container matColumnDef="provider">
+                            <th mat-header-cell *matHeaderCellDef>Proveedor</th>
+                            <td mat-cell *matCellDef="let calibration">{{ calibration.provider }}</td>
+                        </ng-container>
+
+                        <ng-container matColumnDef="nextDate">
+                            <th mat-header-cell *matHeaderCellDef>Próxima Calibración</th>
+                            <td mat-cell *matCellDef="let calibration">
+                                {{ calibration.nextCalibrationDate | date:'dd/MM/yyyy' }}
+                            </td>
+                        </ng-container>
+
+                        <ng-container matColumnDef="certificate">
+                            <th mat-header-cell *matHeaderCellDef>Certificado</th>
+                            <td mat-cell *matCellDef="let calibration">{{ calibration.certificate }}</td>
+                        </ng-container>
+
+                        <tr mat-header-row *matHeaderRowDef="calibrationColumns"></tr>
+                        <tr mat-row *matRowDef="let row; columns: calibrationColumns;"></tr>
+                    </table>
+                </div>
+            </mat-tab>
+
+            <!-- Tab: Historial de Movimientos -->
+            <mat-tab label="Historial">
+                <div class="p-6">
+                    <table mat-table [dataSource]="movements" class="w-full">
+                        <ng-container matColumnDef="date">
+                            <th mat-header-cell *matHeaderCellDef>Fecha</th>
+                            <td mat-cell *matCellDef="let movement">
+                                {{ movement.date | date:'dd/MM/yyyy HH:mm' }}
+                            </td>
+                        </ng-container>
+
+                        <ng-container matColumnDef="type">
+                            <th mat-header-cell *matHeaderCellDef>Tipo</th>
+                            <td mat-cell *matCellDef="let movement">
+                                {{ getMovementTypeLabel(movement.type) }}
+                            </td>
+                        </ng-container>
+
+                        <ng-container matColumnDef="responsiblePerson">
+                            <th mat-header-cell *matHeaderCellDef>Responsable</th>
+                            <td mat-cell *matCellDef="let movement">{{ movement.responsiblePerson }}</td>
+                        </ng-container>
+
+                        <ng-container matColumnDef="notes">
+                            <th mat-header-cell *matHeaderCellDef>Notas</th>
+                            <td mat-cell *matCellDef="let movement">{{ movement.notes }}</td>
+                        </ng-container>
+
+                        <tr mat-header-row *matHeaderRowDef="movementColumns"></tr>
+                        <tr mat-row *matRowDef="let row; columns: movementColumns;"></tr>
+                    </table>
+                </div>
+            </mat-tab>
+        </mat-tab-group>
+    </div>
+
+    <!-- Loading -->
+    <div class="flex items-center justify-center h-96" *ngIf="loading">
+        <mat-icon class="animate-spin" [svgIcon]="'heroicons_outline:arrow-path'"></mat-icon>
+    </div>
+</div>
