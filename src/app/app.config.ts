@@ -17,6 +17,7 @@ import { provideIcons } from 'app/core/icons/icons.provider';
 import { mockApiServices } from 'app/mock-api';
 import { firstValueFrom } from 'rxjs';
 import { TranslocoHttpLoader } from './core/transloco/transloco.http-loader';
+import { provideErpApi } from './core/api/api.provider';
 
 export const appConfig: ApplicationConfig = {
     providers: [
@@ -125,5 +126,6 @@ export const appConfig: ApplicationConfig = {
                 ],
             },
         }),
+        provideErpApi()
     ],
 };

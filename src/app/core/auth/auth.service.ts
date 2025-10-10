@@ -2,7 +2,11 @@ import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { AuthUtils } from 'app/core/auth/auth.utils';
 import { UserService } from 'app/core/user/user.service';
-import { catchError, Observable, of, switchMap, throwError } from 'rxjs';
+import { catchError, from, Observable, of, switchMap, throwError } from 'rxjs';
+import { Router } from '@angular/router';
+
+import PxpClient from 'pxp-client';
+import { environment } from '../../../environments/environment';
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
@@ -10,6 +14,37 @@ export class AuthService {
     private _httpClient = inject(HttpClient);
     private _userService = inject(UserService);
 
+    /**
+     * Constructor
+     */
+    constructor(private _router: Router) {
+        let auth = JSON.parse(localStorage.getItem('aut'));
+
+        if( auth ) {
+            this._authenticated = true;
+        }else{
+            this._router.navigate(['sign-in']);
+        }
+    }
+
+    /**
+     * Initialize params for authentication ERP
+     */
+    initErp() {
+        PxpClient.init(
+            environment.host,
+            environment.baseUrl,
+            environment.mode,
+            environment.port,
+            environment.protocol,
+            environment.backendRestVersion,
+            environment.initWebSocket,
+            environment.portWs,
+            environment.backendVersion,
+            environment.urlLogin,
+            environment.storeToken
+        );
+    }
     // -----------------------------------------------------------------------------------------------------
     // @ Accessors
     // -----------------------------------------------------------------------------------------------------
@@ -58,19 +93,33 @@ export class AuthService {
             return throwError('User is already logged in.');
         }
 
-        return this._httpClient.post('api/auth/sign-in', credentials).pipe(
+        this.initErp();
+
+        return from(PxpClient.login(credentials.email, credentials.password)).pipe(
             switchMap((response: any) => {
                 // Store the access token in the local storage
-                this.accessToken = response.accessToken;
+                if ( response.data.success ) {
 
-                // Set the authenticated flag to true
-                this._authenticated = true;
+                    // Set the authenticated flag to true
+                    this._authenticated = true;
 
-                // Store the user on the user service
-                this._userService.user = response.user;
+                    // Store the user on the user service
+                    let protocol = location.protocol.replace(':', '');
+                    let user = {
+                        id: response.data.id_usuario,
+                        name: response.data.nombre_usuario,
+                        email: response.user,
+                        avatar: `${protocol}://erp.boa.bo/uploaded_files/sis_parametros/Archivo/${response.data.logo}`,
+                        status: "online"
+                    };
+                    this._userService.user = user;
 
-                // Return a new observable with the response
-                return of(response);
+                    // Return a new observable with the response
+                    return of(user);
+                }
+            }),
+            catchError((error) =>{
+                return of(error)
             })
         );
     }
@@ -118,11 +167,10 @@ export class AuthService {
      */
     signOut(): Observable<any> {
         // Remove the access token from the local storage
-        localStorage.removeItem('accessToken');
-
+        localStorage.removeItem('aut');
         // Set the authenticated flag to false
         this._authenticated = false;
-
+        PxpClient.logout();
         // Return the observable
         return of(true);
     }
@@ -158,21 +206,29 @@ export class AuthService {
      */
     check(): Observable<boolean> {
         // Check if the user is logged in
-        if (this._authenticated) {
+        let auth:any = localStorage.getItem('aut');
+        if ( auth !== null)
+            auth = JSON.parse(auth);
+
+        // Check if the user is logged in
+        if (auth) {
             return of(true);
         }
 
-        // Check the access token availability
-        if (!this.accessToken) {
-            return of(false);
-        }
+        return of(false);
+    }
 
-        // Check the access token expire date
-        if (AuthUtils.isTokenExpired(this.accessToken)) {
-            return of(false);
-        }
+    /**
+     * Redirect to
+     */
+    redirect(): Observable<any>
+    {
+        // Remove the access token from the local storage
+        localStorage.removeItem('accessToken');
+        // Set the authenticated flag to false
+        this._authenticated = false;
 
-        // If the access token exists, and it didn't expire, sign in using it
-        return this.signInUsingToken();
+        // Return the observable
+        return of(true);
     }
 }

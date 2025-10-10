@@ -6,6 +6,7 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { RouterLink } from '@angular/router';
 import { ToolService, CalibrationService, QuarantineService } from 'app/core/services';
 import { forkJoin } from 'rxjs';
+import { DashboardService } from './dashboard.service';
 
 @Component({
     selector: 'app-dashboard',
@@ -24,6 +25,8 @@ export class DashboardComponent implements OnInit {
     private _toolService = inject(ToolService);
     private _calibrationService = inject(CalibrationService);
     private _quarantineService = inject(QuarantineService);
+
+    private _dashboardService = inject(DashboardService);
 
     // Statistics
     stats = {
@@ -44,6 +47,11 @@ export class DashboardComponent implements OnInit {
     // -----------------------------------------------------------------------------------------------------
 
     ngOnInit(): void {
+
+        this._dashboardService.getTool().subscribe((data:any) =>{
+            console.warn('data',data);
+        });
+
         this.loadDashboardData();
     }
 

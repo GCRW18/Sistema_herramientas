@@ -4,7 +4,11 @@ import { AuthService } from 'app/core/auth/auth.service';
 import { of, switchMap } from 'rxjs';
 
 export const AuthGuard: CanActivateFn | CanActivateChildFn = (route, state) => {
+
     const router: Router = inject(Router);
+    const authService: AuthService = inject(AuthService);
+
+    authService.initErp();
 
     // Check the authentication status
     return inject(AuthService)
