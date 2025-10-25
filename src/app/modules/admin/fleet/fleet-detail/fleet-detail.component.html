@@ -1,0 +1,288 @@
+<div class="flex flex-col flex-auto min-w-0 admin-page-container">
+    <!-- Header -->
+    <div class="flex flex-col sm:flex-row flex-0 sm:items-center sm:justify-between p-6 sm:py-8 sm:px-10 border-b bg-card">
+        <div class="flex-1 min-w-0">
+            <div class="flex items-center">
+                <button mat-icon-button (click)="goBack()" [matTooltip]="'Volver'">
+                    <mat-icon [svgIcon]="'heroicons_outline:arrow-left'"></mat-icon>
+                </button>
+                <div class="ml-2">
+                    <h2 class="text-3xl font-extrabold tracking-tight leading-7 sm:leading-10 truncate">
+                        {{ aircraft?.registration || 'Cargando...' }}
+                    </h2>
+                    <p class="text-secondary mt-1" *ngIf="aircraft">
+                        {{ aircraft.manufacturer }} {{ aircraft.model }}
+                    </p>
+                </div>
+            </div>
+        </div>
+        <div class="flex shrink-0 items-center gap-3 mt-6 sm:mt-0 sm:ml-4" *ngIf="aircraft">
+            <button mat-stroked-button (click)="editAircraft()">
+                <mat-icon [svgIcon]="'heroicons_outline:pencil'"></mat-icon>
+                <span class="ml-2">Editar</span>
+            </button>
+            <button mat-stroked-button color="warn" (click)="deleteAircraft()">
+                <mat-icon [svgIcon]="'heroicons_outline:trash'"></mat-icon>
+                <span class="ml-2">Eliminar</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Loading -->
+    <div *ngIf="loading" class="flex items-center justify-center h-96">
+        <mat-icon class="animate-spin icon-size-16" [svgIcon]="'heroicons_outline:arrow-path'"></mat-icon>
+    </div>
+
+    <!-- Content -->
+    <div *ngIf="!loading && aircraft" class="flex-auto p-6 sm:p-10">
+        <mat-tab-group
+            [(selectedIndex)]="selectedTabIndex"
+            (selectedIndexChange)="onTabChange($event)"
+            class="bg-card shadow rounded-2xl overflow-hidden">
+
+            <!-- Details Tab -->
+            <mat-tab label="Detalles">
+                <div class="p-6 space-y-6">
+                    <!-- Basic Information -->
+                    <div>
+                        <h3 class="text-lg font-medium mb-4 flex items-center">
+                            <mat-icon class="mr-2" [svgIcon]="'heroicons_outline:information-circle'"></mat-icon>
+                            Información Básica
+                        </h3>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                            <div>
+                                <p class="text-sm text-secondary">Matrícula</p>
+                                <p class="text-base font-medium mt-1">{{ aircraft.registration }}</p>
+                            </div>
+                            <div>
+                                <p class="text-sm text-secondary">Fabricante</p>
+                                <p class="text-base font-medium mt-1">{{ aircraft.manufacturer }}</p>
+                            </div>
+                            <div>
+                                <p class="text-sm text-secondary">Modelo</p>
+                                <p class="text-base font-medium mt-1">{{ aircraft.model }}</p>
+                            </div>
+                            <div>
+                                <p class="text-sm text-secondary">Número de Serie</p>
+                                <p class="text-base font-medium mt-1">{{ aircraft.serialNumber || '-' }}</p>
+                            </div>
+                            <div>
+                                <p class="text-sm text-secondary">Tipo</p>
+                                <p class="text-base font-medium mt-1">{{ getTypeLabel(aircraft.type) }}</p>
+                            </div>
+                            <div>
+                                <p class="text-sm text-secondary">Estado</p>
+                                <span class="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium text-white mt-1"
+                                      [ngClass]="getStatusInfo(aircraft.status).color">
+                                    {{ getStatusInfo(aircraft.status).label }}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="border-t"></div>
+
+                    <!-- Location -->
+                    <div>
+                        <h3 class="text-lg font-medium mb-4 flex items-center">
+                            <mat-icon class="mr-2" [svgIcon]="'heroicons_outline:map-pin'"></mat-icon>
+                            Ubicación
+                        </h3>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                            <div>
+                                <p class="text-sm text-secondary">Base Principal</p>
+                                <p class="text-base font-medium mt-1">{{ aircraft.baseLocation || '-' }}</p>
+                            </div>
+                            <div>
+                                <p class="text-sm text-secondary">Ubicación Actual</p>
+                                <p class="text-base font-medium mt-1">{{ aircraft.currentLocation || '-' }}</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="border-t"></div>
+
+                    <!-- Important Dates -->
+                    <div>
+                        <h3 class="text-lg font-medium mb-4 flex items-center">
+                            <mat-icon class="mr-2" [svgIcon]="'heroicons_outline:calendar'"></mat-icon>
+                            Fechas Importantes
+                        </h3>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                            <div>
+                                <p class="text-sm text-secondary">Fecha de Fabricación</p>
+                                <p class="text-base font-medium mt-1">{{ formatDate(aircraft.manufactureDate) }}</p>
+                            </div>
+                            <div>
+                                <p class="text-sm text-secondary">Fecha de Adquisición</p>
+                                <p class="text-base font-medium mt-1">{{ formatDate(aircraft.acquisitionDate) }}</p>
+                            </div>
+                            <div>
+                                <p class="text-sm text-secondary">Último Mantenimiento</p>
+                                <p class="text-base font-medium mt-1">{{ formatDate(aircraft.lastMaintenanceDate) }}</p>
+                            </div>
+                            <div>
+                                <p class="text-sm text-secondary">Próximo Mantenimiento</p>
+                                <p class="text-base font-medium mt-1">{{ formatDate(aircraft.nextMaintenanceDate) }}</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="border-t"></div>
+
+                    <!-- Capacities & Metrics -->
+                    <div>
+                        <h3 class="text-lg font-medium mb-4 flex items-center">
+                            <mat-icon class="mr-2" [svgIcon]="'heroicons_outline:chart-bar'"></mat-icon>
+                            Capacidades y Métricas
+                        </h3>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
+                            <div>
+                                <p class="text-sm text-secondary">Capacidad Pasajeros</p>
+                                <p class="text-base font-medium mt-1">{{ aircraft.passengerCapacity || '-' }}</p>
+                            </div>
+                            <div>
+                                <p class="text-sm text-secondary">Capacidad Carga</p>
+                                <p class="text-base font-medium mt-1">
+                                    {{ aircraft.cargoCapacity ? aircraft.cargoCapacity + ' kg' : '-' }}
+                                </p>
+                            </div>
+                            <div>
+                                <p class="text-sm text-secondary">Capacidad Combustible</p>
+                                <p class="text-base font-medium mt-1">
+                                    {{ aircraft.fuelCapacity ? aircraft.fuelCapacity + ' L' : '-' }}
+                                </p>
+                            </div>
+                            <div>
+                                <p class="text-sm text-secondary">Horas de Vuelo</p>
+                                <p class="text-base font-medium mt-1">{{ aircraft.totalFlightHours || '-' }}</p>
+                            </div>
+                            <div>
+                                <p class="text-sm text-secondary">Ciclos Totales</p>
+                                <p class="text-base font-medium mt-1">{{ aircraft.totalCycles || '-' }}</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="border-t"></div>
+
+                    <!-- Additional Information -->
+                    <div>
+                        <h3 class="text-lg font-medium mb-4 flex items-center">
+                            <mat-icon class="mr-2" [svgIcon]="'heroicons_outline:document-text'"></mat-icon>
+                            Información Adicional
+                        </h3>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                            <div>
+                                <p class="text-sm text-secondary">Propietario</p>
+                                <p class="text-base font-medium mt-1">{{ aircraft.owner || '-' }}</p>
+                            </div>
+                            <div>
+                                <p class="text-sm text-secondary">Operador</p>
+                                <p class="text-base font-medium mt-1">{{ aircraft.operator || '-' }}</p>
+                            </div>
+                        </div>
+                        <div class="mt-6" *ngIf="aircraft.notes">
+                            <p class="text-sm text-secondary">Notas</p>
+                            <p class="text-base mt-1">{{ aircraft.notes }}</p>
+                        </div>
+                    </div>
+                </div>
+            </mat-tab>
+
+            <!-- Maintenance History Tab -->
+            <mat-tab label="Historial de Mantenimiento">
+                <div class="p-6">
+                    <div *ngIf="loadingMaintenance" class="flex items-center justify-center h-64">
+                        <mat-icon class="animate-spin icon-size-12" [svgIcon]="'heroicons_outline:arrow-path'"></mat-icon>
+                    </div>
+
+                    <div *ngIf="!loadingMaintenance && maintenanceHistory.length === 0" class="flex flex-col items-center justify-center h-64 text-secondary">
+                        <mat-icon class="icon-size-16 mb-4" [svgIcon]="'heroicons_outline:wrench'"></mat-icon>
+                        <p class="text-lg font-medium">No hay historial de mantenimiento</p>
+                        <p class="text-sm">El historial de mantenimiento aparecerá aquí</p>
+                    </div>
+
+                    <div *ngIf="!loadingMaintenance && maintenanceHistory.length > 0" class="overflow-x-auto">
+                        <table mat-table [dataSource]="maintenanceHistory" class="w-full">
+                            <ng-container matColumnDef="date">
+                                <th mat-header-cell *matHeaderCellDef class="font-semibold">Fecha</th>
+                                <td mat-cell *matCellDef="let item">{{ formatDate(item.date) }}</td>
+                            </ng-container>
+
+                            <ng-container matColumnDef="type">
+                                <th mat-header-cell *matHeaderCellDef class="font-semibold">Tipo</th>
+                                <td mat-cell *matCellDef="let item">{{ item.type }}</td>
+                            </ng-container>
+
+                            <ng-container matColumnDef="description">
+                                <th mat-header-cell *matHeaderCellDef class="font-semibold">Descripción</th>
+                                <td mat-cell *matCellDef="let item">{{ item.description }}</td>
+                            </ng-container>
+
+                            <ng-container matColumnDef="technician">
+                                <th mat-header-cell *matHeaderCellDef class="font-semibold">Técnico</th>
+                                <td mat-cell *matCellDef="let item">{{ item.technician }}</td>
+                            </ng-container>
+
+                            <ng-container matColumnDef="status">
+                                <th mat-header-cell *matHeaderCellDef class="font-semibold">Estado</th>
+                                <td mat-cell *matCellDef="let item">{{ item.status }}</td>
+                            </ng-container>
+
+                            <tr mat-header-row *matHeaderRowDef="maintenanceColumns"></tr>
+                            <tr mat-row *matRowDef="let row; columns: maintenanceColumns;"></tr>
+                        </table>
+                    </div>
+                </div>
+            </mat-tab>
+
+            <!-- Assigned Tools Tab -->
+            <mat-tab label="Herramientas Asignadas">
+                <div class="p-6">
+                    <div *ngIf="loadingTools" class="flex items-center justify-center h-64">
+                        <mat-icon class="animate-spin icon-size-12" [svgIcon]="'heroicons_outline:arrow-path'"></mat-icon>
+                    </div>
+
+                    <div *ngIf="!loadingTools && assignedTools.length === 0" class="flex flex-col items-center justify-center h-64 text-secondary">
+                        <mat-icon class="icon-size-16 mb-4" [svgIcon]="'heroicons_outline:wrench-screwdriver'"></mat-icon>
+                        <p class="text-lg font-medium">No hay herramientas asignadas</p>
+                        <p class="text-sm">Las herramientas asignadas a esta aeronave aparecerán aquí</p>
+                    </div>
+
+                    <div *ngIf="!loadingTools && assignedTools.length > 0" class="overflow-x-auto">
+                        <table mat-table [dataSource]="assignedTools" class="w-full">
+                            <ng-container matColumnDef="code">
+                                <th mat-header-cell *matHeaderCellDef class="font-semibold">Código</th>
+                                <td mat-cell *matCellDef="let tool">{{ tool.code }}</td>
+                            </ng-container>
+
+                            <ng-container matColumnDef="name">
+                                <th mat-header-cell *matHeaderCellDef class="font-semibold">Nombre</th>
+                                <td mat-cell *matCellDef="let tool">{{ tool.name }}</td>
+                            </ng-container>
+
+                            <ng-container matColumnDef="category">
+                                <th mat-header-cell *matHeaderCellDef class="font-semibold">Categoría</th>
+                                <td mat-cell *matCellDef="let tool">{{ tool.category }}</td>
+                            </ng-container>
+
+                            <ng-container matColumnDef="assignedDate">
+                                <th mat-header-cell *matHeaderCellDef class="font-semibold">Fecha Asignación</th>
+                                <td mat-cell *matCellDef="let tool">{{ formatDate(tool.assignedDate) }}</td>
+                            </ng-container>
+
+                            <ng-container matColumnDef="status">
+                                <th mat-header-cell *matHeaderCellDef class="font-semibold">Estado</th>
+                                <td mat-cell *matCellDef="let tool">{{ tool.status }}</td>
+                            </ng-container>
+
+                            <tr mat-header-row *matHeaderRowDef="toolsColumns"></tr>
+                            <tr mat-row *matRowDef="let row; columns: toolsColumns;"></tr>
+                        </table>
+                    </div>
+                </div>
+            </mat-tab>
+        </mat-tab-group>
+    </div>
+</div>

@@ -94,6 +94,32 @@
                         </div>
                     </div>
 
+                    <!-- Información Aeronáutica -->
+                    <div class="mt-8" *ngIf="tool.aircraft || tool.workOrderNumber || tool.technician || tool.department">
+                        <h4 class="text-base font-semibold mb-4 flex items-center">
+                            <mat-icon class="text-primary mr-2" [svgIcon]="'heroicons_outline:paper-airplane'"></mat-icon>
+                            Información Aeronáutica
+                        </h4>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                            <div *ngIf="tool.aircraft">
+                                <p class="text-sm text-secondary">Matrícula Aeronave</p>
+                                <p class="font-medium">{{ tool.aircraft }}</p>
+                            </div>
+                            <div *ngIf="tool.workOrderNumber">
+                                <p class="text-sm text-secondary">Orden de Trabajo</p>
+                                <p class="font-medium">{{ tool.workOrderNumber }}</p>
+                            </div>
+                            <div *ngIf="tool.technician">
+                                <p class="text-sm text-secondary">Técnico</p>
+                                <p class="font-medium">{{ tool.technician }}</p>
+                            </div>
+                            <div *ngIf="tool.department">
+                                <p class="text-sm text-secondary">Departamento</p>
+                                <p class="font-medium">{{ tool.department }}</p>
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="mt-6" *ngIf="tool.notes">
                         <p class="text-sm text-secondary">Notas</p>
                         <p class="font-medium">{{ tool.notes }}</p>
@@ -191,6 +217,27 @@
                         <tr mat-header-row *matHeaderRowDef="movementColumns"></tr>
                         <tr mat-row *matRowDef="let row; columns: movementColumns;"></tr>
                     </table>
+                </div>
+            </mat-tab>
+
+            <!-- Tab: Archivos Adjuntos -->
+            <mat-tab label="Archivos Adjuntos">
+                <div class="p-6">
+                    <div *ngIf="files.length > 0">
+                        <mat-list>
+                            <mat-list-item *ngFor="let file of files">
+                                <mat-icon matListItemIcon [svgIcon]="file.tipo === 'image' ? 'heroicons_outline:photo' : 'heroicons_outline:document'"></mat-icon>
+                                <div matListItemTitle>{{ file.nombre_archivo }}</div>
+                                <div matListItemLine class="text-sm text-secondary">{{ file.descripcion }}</div>
+                                <button mat-icon-button [matTooltip]="'Ver/Descargar'" (click)="window.open(file.ruta, '_blank')">
+                                    <mat-icon [svgIcon]="'heroicons_outline:eye'"></mat-icon>
+                                </button>
+                            </mat-list-item>
+                        </mat-list>
+                    </div>
+                    <div *ngIf="files.length === 0" class="text-secondary text-center py-4">
+                        No hay archivos adjuntos para esta herramienta.
+                    </div>
                 </div>
             </mat-tab>
         </mat-tab-group>

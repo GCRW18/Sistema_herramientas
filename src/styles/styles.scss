@@ -3,6 +3,12 @@
 /*  @ Styles from this file will override 'vendors.scss' and Erp's base styles.
 /* ----------------------------------------------------------------------------------------------------- */
 
+// Layout improvements
+@use './layout-improvements.scss';
+
+// Sidebar improvements
+@use './sidebar-improvements.scss';
+
 // Snackbar Styles
 .success-snackbar {
     --mdc-snackbar-container-color: #10b981 !important;

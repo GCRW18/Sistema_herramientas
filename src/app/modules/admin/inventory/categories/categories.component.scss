@@ -1,0 +1,67 @@
+// Organigrama styles for categories component
+
+// Alineación vertical del campo de búsqueda con botones
+mat-form-field.boby-mat-dense {
+    margin-bottom: 0 !important;
+
+    ::ng-deep {
+        .mat-mdc-text-field-wrapper {
+            padding-bottom: 0 !important;
+        }
+
+        .mat-mdc-form-field-subscript-wrapper {
+            display: none;
+        }
+    }
+}
+
+mat-table {
+    width: 100%;
+}
+
+mat-row {
+    transition: background-color 150ms ease-in-out;
+}
+
+// Estilos para el organigrama
+.category-tree-cell {
+    position: relative;
+
+    // Línea vertical conectora
+    &.has-children::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 50%;
+        bottom: -50%;
+        width: 2px;
+        background-color: rgba(var(--fuse-primary-rgb), 0.2);
+    }
+
+    // Línea horizontal conectora
+    &.has-parent::after {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 50%;
+        width: 12px;
+        height: 2px;
+        background-color: rgba(var(--fuse-primary-rgb), 0.2);
+    }
+}
+
+// Indentación con líneas guía
+.tree-indent {
+    position: relative;
+    display: inline-block;
+
+    &::before {
+        content: '';
+        position: absolute;
+        left: 50%;
+        top: 0;
+        bottom: 0;
+        width: 1px;
+        background-color: rgba(var(--fuse-border-rgb), 0.12);
+    }
+}

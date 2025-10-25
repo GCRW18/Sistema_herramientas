@@ -1,0 +1,11 @@
+:host {
+    display: flex;
+    flex-direction: column;
+    flex: 1 0 auto;
+
+    .mat-mdc-dialog-container {
+        .mat-mdc-dialog-surface {
+            min-height: 100%;
+        }
+    }
+}

@@ -2,7 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { AuthUtils } from 'app/core/auth/auth.utils';
 import { UserService } from 'app/core/user/user.service';
-import { catchError, from, Observable, of, switchMap, throwError } from 'rxjs';
+import { catchError, from, Observable, of, switchMap, throwError, timeout } from 'rxjs';
 import { Router } from '@angular/router';
 
 import PxpClient from 'pxp-client';
@@ -13,6 +13,7 @@ export class AuthService {
     private _authenticated: boolean = false;
     private _httpClient = inject(HttpClient);
     private _userService = inject(UserService);
+    private _erpInitialized: boolean = false;
 
     /**
      * Constructor
@@ -22,8 +23,6 @@ export class AuthService {
 
         if( auth ) {
             this._authenticated = true;
-        }else{
-            this._router.navigate(['sign-in']);
         }
     }
 
@@ -31,19 +30,29 @@ export class AuthService {
      * Initialize params for authentication ERP
      */
     initErp() {
-        PxpClient.init(
-            environment.host,
-            environment.baseUrl,
-            environment.mode,
-            environment.port,
-            environment.protocol,
-            environment.backendRestVersion,
-            environment.initWebSocket,
-            environment.portWs,
-            environment.backendVersion,
-            environment.urlLogin,
-            environment.storeToken
-        );
+        if (this._erpInitialized) {
+            return;
+        }
+
+        try {
+            PxpClient.init(
+                environment.host,
+                environment.baseUrl,
+                environment.mode,
+                environment.port,
+                environment.protocol,
+                environment.backendRestVersion,
+                environment.initWebSocket,
+                environment.portWs,
+                environment.backendVersion,
+                environment.urlLogin,
+                environment.storeToken
+            );
+            this._erpInitialized = true;
+        } catch (error) {
+            console.error('Error initializing PxpClient:', error);
+            throw error;
+        }
     }
     // -----------------------------------------------------------------------------------------------------
     // @ Accessors
@@ -88,17 +97,43 @@ export class AuthService {
      * @param credentials
      */
     signIn(credentials: { email: string; password: string }): Observable<any> {
+        console.log('[AuthService] Iniciando login para:', credentials.email);
+        console.time('login-duration');
+
         // Throw error, if the user is already logged in
         if (this._authenticated) {
-            return throwError('User is already logged in.');
+            console.warn('[AuthService] Sesión ya activa');
+            return of({
+                error: true,
+                message: 'Ya hay una sesión activa.'
+            });
         }
 
-        this.initErp();
+        console.log('[AuthService] Inicializando PxpClient...');
+        try {
+            this.initErp();
+            console.log('[AuthService] PxpClient inicializado correctamente');
+        } catch (error) {
+            console.error('[AuthService] Error inicializando PxpClient:', error);
+            return of({
+                error: true,
+                message: 'Error al inicializar el cliente de autenticación'
+            });
+        }
+
+        console.log('[AuthService] Llamando a PxpClient.login...');
+        const loginStart = performance.now();
 
         return from(PxpClient.login(credentials.email, credentials.password)).pipe(
+            timeout(90000), // Timeout reducido a 15 segundos
             switchMap((response: any) => {
+                const loginEnd = performance.now();
+                console.log(`[AuthService] Respuesta recibida en ${(loginEnd - loginStart).toFixed(2)}ms`);
+                console.log('[AuthService] Respuesta del servidor:', response);
+
                 // Store the access token in the local storage
-                if ( response.data.success ) {
+                if ( response?.data?.success ) {
+                    console.log('[AuthService] Login exitoso');
 
                     // Set the authenticated flag to true
                     this._authenticated = true;
@@ -114,12 +149,41 @@ export class AuthService {
                     };
                     this._userService.user = user;
 
+                    console.timeEnd('login-duration');
+                    console.log('[AuthService] Usuario guardado:', user);
+
                     // Return a new observable with the response
                     return of(user);
+                } else {
+                    console.warn('[AuthService] Login fallido:', response?.message);
+                    console.timeEnd('login-duration');
+
+                    // Login failed
+                    return of({
+                        error: true,
+                        message: response?.message || 'Usuario o contraseña incorrectos'
+                    });
                 }
             }),
-            catchError((error) =>{
-                return of(error)
+            catchError((error) => {
+                console.timeEnd('login-duration');
+                console.error('[AuthService] Error en signIn:', error);
+
+                let errorMessage = 'Error al iniciar sesión';
+
+                if (error.name === 'TimeoutError') {
+                    errorMessage = 'Tiempo de espera agotado (15s). Verifica la conexión al servidor.';
+                    console.error('[AuthService] Timeout - El servidor no respondió en 15 segundos');
+                } else if (error.message) {
+                    errorMessage = error.message;
+                } else if (!navigator.onLine) {
+                    errorMessage = 'No hay conexión a internet.';
+                }
+
+                return of({
+                    error: true,
+                    message: errorMessage
+                });
             })
         );
     }

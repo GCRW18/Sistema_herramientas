@@ -1,15 +1,18 @@
 import { Component, OnInit, inject } from '@angular/core';
+import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
+import { ActivatedRoute, Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
-import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
-import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
+import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatDatepickerModule } from '@angular/material/datepicker';
-import { MatTooltipModule } from '@angular/material/tooltip';
-import { ActivatedRoute, Router } from '@angular/router';
+import { MatNativeDateModule } from '@angular/material/core';
+import { MatProgressBarModule } from '@angular/material/progress-bar';
+import { MatListModule } from '@angular/material/list';
 import { ToolService, CategoryService, WarehouseService, NotificationService } from 'app/core/services';
 import { Category, Subcategory, Warehouse, Location } from 'app/core/models';
 
@@ -20,30 +23,33 @@ import { Category, Subcategory, Warehouse, Location } from 'app/core/models';
         CommonModule,
         ReactiveFormsModule,
         MatButtonModule,
-        MatFormFieldModule,
         MatIconModule,
+        MatFormFieldModule,
         MatInputModule,
         MatSelectModule,
+        MatTooltipModule,
         MatCheckboxModule,
         MatDatepickerModule,
-        MatTooltipModule,
+        MatNativeDateModule,
+        MatProgressBarModule,
+        MatListModule,
     ],
     templateUrl: './tool-form.component.html',
-    styleUrls: ['./tool-form.component.scss'],
+    styleUrls: ['./tool-form.component.scss']
 })
 export class ToolFormComponent implements OnInit {
-    private _fb = inject(FormBuilder);
-    private _router = inject(Router);
+    private _formBuilder = inject(FormBuilder);
     private _route = inject(ActivatedRoute);
+    private _router = inject(Router);
     private _toolService = inject(ToolService);
     private _categoryService = inject(CategoryService);
     private _warehouseService = inject(WarehouseService);
     private _notificationService = inject(NotificationService);
 
     form!: FormGroup;
-    isEditMode = false;
+    isEditMode: boolean = false;
     toolId: string | null = null;
-    loading = false;
+    loading: boolean = false;
 
     categories: Category[] = [];
     subcategories: Subcategory[] = [];
@@ -57,39 +63,30 @@ export class ToolFormComponent implements OnInit {
     }
 
     initForm(): void {
-        this.form = this._fb.group({
-            code: ['', Validators.required],
+        this.form = this._formBuilder.group({
+            id: [null],
             name: ['', Validators.required],
             description: [''],
-            categoryId: ['', Validators.required],
+            code: ['', Validators.required],
+            categoryid: ['', Validators.required],
             subcategoryId: [''],
-            brand: [''],
-            model: [''],
-            serialNumber: [''],
-            partNumber: [''],
             warehouseId: ['', Validators.required],
             locationId: [''],
-            status: ['available', Validators.required],
-            condition: ['good', Validators.required],
-            requiresCalibration: [false],
-            calibrationInterval: [''],
-            lastCalibrationDate: [''],
-            nextCalibrationDate: [''],
-            calibrationCertificate: [''],
-            purchaseDate: [''],
-            purchasePrice: [''],
+            status: [true],
+            purchaseDate: [null],
+            price: [null, [Validators.min(0)]],
             supplier: [''],
-            warranty: [''],
-            warrantyExpiration: [''],
-            notes: [''],
+            serialNumber: [''],
+            assetNumber: [''],
+            maintenanceDate: [null],
+            calibrationDate: [null],
+            notes: ['']
         });
 
         this.form.get('categoryId')?.valueChanges.subscribe((categoryId) => {
             if (categoryId) {
-                this._categoryService.getSubcategories(categoryId).subscribe({
-                    next: (subcategories) => {
-                        this.subcategories = subcategories;
-                    },
+                this._categoryService.getSubcategories(categoryId).subscribe((subcategories) => {
+                    this.subcategories = subcategories;
                 });
             } else {
                 this.subcategories = [];
@@ -99,10 +96,8 @@ export class ToolFormComponent implements OnInit {
 
         this.form.get('warehouseId')?.valueChanges.subscribe((warehouseId) => {
             if (warehouseId) {
-                this._warehouseService.getLocations(warehouseId).subscribe({
-                    next: (locations) => {
-                        this.locations = locations;
-                    },
+                this._warehouseService.getLocations(warehouseId).subscribe((locations) => {
+                    this.locations = locations;
                 });
             } else {
                 this.locations = [];
@@ -115,13 +110,13 @@ export class ToolFormComponent implements OnInit {
         this._categoryService.getCategories().subscribe({
             next: (categories) => {
                 this.categories = categories;
-            },
+            }
         });
 
         this._warehouseService.getWarehouses().subscribe({
             next: (warehouses) => {
                 this.warehouses = warehouses;
-            },
+            }
         });
     }
 
@@ -144,13 +139,13 @@ export class ToolFormComponent implements OnInit {
             },
             error: () => {
                 this.loading = false;
-            },
+            }
         });
     }
 
     save(): void {
         if (this.form.invalid) {
-            this._notificationService.warning('Por favor complete todos los campos requeridos');
+            this._notificationService.warning('Por favor complete todos los campos requeridos.');
             return;
         }
 
@@ -164,19 +159,19 @@ export class ToolFormComponent implements OnInit {
         operation.subscribe({
             next: () => {
                 const message = this.isEditMode
-                    ? `Herramienta ${toolData.code} actualizada correctamente`
-                    : `Herramienta ${toolData.code} creada correctamente`;
+                    ? 'Herramienta actualizada exitosamente!'
+                    : 'Herramienta creada exitosamente!';
                 this._notificationService.success(message);
                 this._router.navigate(['/inventory/tools']);
             },
-            error: (error) => {
+            error: (err) => {
                 this.loading = false;
                 const message = this.isEditMode
-                    ? 'Error al actualizar la herramienta'
-                    : 'Error al crear la herramienta';
+                    ? 'Error al actualizar la herramienta.'
+                    : 'Error al crear la herramienta.';
                 this._notificationService.error(message);
-                console.error('Error saving tool:', error);
-            },
+                console.error(err);
+            }
         });
     }
 

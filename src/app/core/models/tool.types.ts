@@ -36,8 +36,10 @@ export interface Tool {
     // Categorización
     categoryId: string;
     category?: Category;
+    categoryName?: string; // Added for flat representation
     subcategoryId?: string;
     subcategory?: Subcategory;
+    subcategoryName?: string; // Added for flat representation
 
     // Especificaciones
     brand?: string;
@@ -45,11 +47,19 @@ export interface Tool {
     serialNumber?: string;
     partNumber?: string;
 
+    // Campos Aeronáuticos
+    aircraft?: string; // Matrícula de la aeronave
+    workOrderNumber?: string; // Número de orden de trabajo
+    technician?: string; // Técnico responsable
+    department?: string; // Departamento o área
+
     // Ubicación
     warehouseId: string;
     warehouse?: Warehouse;
+    warehouseName?: string; // Added for flat representation
     locationId?: string;
     location?: Location;
+    locationName?: string; // Added for flat representation
 
     // Estado y condición
     status: ToolStatus;

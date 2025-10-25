@@ -36,7 +36,7 @@ export default class ExitsComponent implements OnInit {
     @ViewChild(MatPaginator) paginator!: MatPaginator;
     @ViewChild(MatSort) sort!: MatSort;
 
-    displayedColumns: string[] = ['date', 'type', 'toolCode', 'recipient', 'responsiblePerson', 'actions'];
+    displayedColumns: string[] = ['date', 'type', 'toolCode', 'aircraft', 'department', 'recipient', 'responsiblePerson', 'actions'];
     dataSource = new MatTableDataSource<Movement>();
     loading = false;
 

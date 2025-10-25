@@ -235,13 +235,13 @@
                             <!-- Category Column -->
                             <ng-container matColumnDef="category">
                                 <th mat-header-cell *matHeaderCellDef class="font-semibold bg-gray-50 dark:bg-gray-800">Categoría</th>
-                                <td mat-cell *matCellDef="let tool">{{ tool.category?.name || '-' }}</td>
+                                <td mat-cell *matCellDef="let tool">{{ tool.categoryName || '-' }}</td>
                             </ng-container>
 
                             <!-- Location Column -->
                             <ng-container matColumnDef="location">
                                 <th mat-header-cell *matHeaderCellDef class="font-semibold bg-gray-50 dark:bg-gray-800">Ubicación</th>
-                                <td mat-cell *matCellDef="let tool">{{ tool.location?.name || '-' }}</td>
+                                <td mat-cell *matCellDef="let tool">{{ tool.locationName || '-' }}</td>
                             </ng-container>
 
                             <!-- Status Column -->

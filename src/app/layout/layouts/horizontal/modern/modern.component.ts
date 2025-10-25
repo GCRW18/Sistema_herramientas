@@ -18,7 +18,6 @@ import { SearchComponent } from 'app/layout/common/search/search.component';
 import { UserComponent } from 'app/layout/common/user/user.component';
 import { Subject, takeUntil } from 'rxjs';
 import { SchemeComponent } from '../../../common/scheme/scheme.component';
-import { ThemeComponent } from '../../../common/theme/theme.component';
 
 @Component({
     selector: 'modern-layout',
@@ -37,7 +36,6 @@ import { ThemeComponent } from '../../../common/theme/theme.component';
         UserComponent,
         RouterOutlet,
         SchemeComponent,
-        ThemeComponent,
     ],
 })
 export class ModernLayoutComponent implements OnInit, OnDestroy {

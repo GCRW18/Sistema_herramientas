@@ -67,6 +67,12 @@ export default class EntryFormComponent implements OnInit {
             warehouseId: ['', Validators.required],
             locationId: [''],
             responsiblePerson: ['', Validators.required],
+            // Campos Aeronáuticos
+            aircraft: [''],
+            workOrderNumber: [''],
+            technician: [''],
+            authorizedBy: [''],
+            department: [''],
             supplier: [''],
             invoiceNumber: [''],
             purchasePrice: [''],

@@ -36,7 +36,7 @@ export default class EntriesComponent implements OnInit {
     @ViewChild(MatPaginator) paginator!: MatPaginator;
     @ViewChild(MatSort) sort!: MatSort;
 
-    displayedColumns: string[] = ['date', 'type', 'toolCode', 'quantity', 'responsiblePerson', 'actions'];
+    displayedColumns: string[] = ['date', 'type', 'toolCode', 'quantity', 'aircraft', 'department', 'responsiblePerson', 'actions'];
     dataSource = new MatTableDataSource<Movement>();
     loading = false;
 

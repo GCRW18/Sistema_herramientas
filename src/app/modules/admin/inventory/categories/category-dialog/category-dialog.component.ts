@@ -7,7 +7,18 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { MatIconModule } from '@angular/material/icon';
-import { Category } from 'app/core/models';
+
+interface CategoryDialogData {
+    category?: {
+        id?: number;
+        code?: string;
+        name: string;
+        description?: string;
+        active?: boolean;
+    };
+    parentId?: number;
+    parentName?: string;
+}
 
 @Component({
     selector: 'app-category-dialog',
@@ -28,13 +39,18 @@ import { Category } from 'app/core/models';
 export class CategoryDialogComponent implements OnInit {
     form: FormGroup;
     isEditMode = false;
+    isSubcategory = false;
+    parentName = '';
 
     constructor(
         private _fb: FormBuilder,
         private _dialogRef: MatDialogRef<CategoryDialogComponent>,
-        @Inject(MAT_DIALOG_DATA) public data: { category?: Category }
+        @Inject(MAT_DIALOG_DATA) public data: CategoryDialogData
     ) {
         this.isEditMode = !!data?.category;
+        this.isSubcategory = !!data?.parentId;
+        this.parentName = data?.parentName || '';
+
         this.form = this._fb.group({
             code: ['', [Validators.required, Validators.maxLength(50)]],
             name: ['', [Validators.required, Validators.maxLength(200)]],
@@ -45,8 +61,20 @@ export class CategoryDialogComponent implements OnInit {
 
     ngOnInit(): void {
         if (this.isEditMode && this.data.category) {
-            this.form.patchValue(this.data.category);
+            this.form.patchValue({
+                code: this.data.category.code || '',
+                name: this.data.category.name || '',
+                description: this.data.category.description || '',
+                active: this.data.category.active !== false
+            });
         }
+    }
+
+    getTitle(): string {
+        if (this.isEditMode) {
+            return this.isSubcategory ? 'Editar Subcategoría' : 'Editar Categoría';
+        }
+        return this.isSubcategory ? 'Nueva Subcategoría' : 'Nueva Categoría';
     }
 
     save(): void {

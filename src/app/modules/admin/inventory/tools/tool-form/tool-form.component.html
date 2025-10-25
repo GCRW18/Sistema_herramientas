@@ -51,6 +51,52 @@
                 </div>
             </div>
 
+            <!-- Información Aeronáutica -->
+            <div class="bg-card shadow-lg rounded-2xl p-6">
+                <div class="flex items-center mb-4">
+                    <mat-icon class="text-primary mr-2" [svgIcon]="'heroicons_outline:paper-airplane'"></mat-icon>
+                    <h3 class="text-lg font-semibold">Información Aeronáutica</h3>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <mat-form-field class="flex-auto">
+                        <mat-label>Matrícula Aeronave</mat-label>
+                        <input matInput formControlName="aircraft" placeholder="Ej: CP-2554">
+                        <mat-icon matPrefix [svgIcon]="'heroicons_outline:paper-airplane'"></mat-icon>
+                        <mat-hint>Matrícula de la aeronave asignada</mat-hint>
+                    </mat-form-field>
+
+                    <mat-form-field class="flex-auto">
+                        <mat-label>Orden de Trabajo</mat-label>
+                        <input matInput formControlName="workOrderNumber" placeholder="Ej: OT-12345">
+                        <mat-icon matPrefix [svgIcon]="'heroicons_outline:clipboard-document-list'"></mat-icon>
+                        <mat-hint>Número de orden de trabajo</mat-hint>
+                    </mat-form-field>
+
+                    <mat-form-field class="flex-auto">
+                        <mat-label>Técnico Responsable</mat-label>
+                        <input matInput formControlName="technician" placeholder="Nombre del técnico">
+                        <mat-icon matPrefix [svgIcon]="'heroicons_outline:user'"></mat-icon>
+                        <mat-hint>Técnico a cargo</mat-hint>
+                    </mat-form-field>
+
+                    <mat-form-field class="flex-auto">
+                        <mat-label>Departamento / Área</mat-label>
+                        <mat-select formControlName="department">
+                            <mat-option value="">Sin asignar</mat-option>
+                            <mat-option value="MANTENIMIENTO">MANTENIMIENTO</mat-option>
+                            <mat-option value="LINEA">LINEA</mat-option>
+                            <mat-option value="HANGAR">HANGAR</mat-option>
+                            <mat-option value="TALLER">TALLER</mat-option>
+                            <mat-option value="COMPONENTES">COMPONENTES</mat-option>
+                            <mat-option value="ESTRUCTURAS">ESTRUCTURAS</mat-option>
+                            <mat-option value="AVIONICOS">AVIONICOS</mat-option>
+                            <mat-option value="OTROS">OTROS</mat-option>
+                        </mat-select>
+                        <mat-icon matPrefix [svgIcon]="'heroicons_outline:building-office'"></mat-icon>
+                    </mat-form-field>
+                </div>
+            </div>
+
             <!-- Categorización -->
             <div class="bg-card shadow-lg rounded-2xl p-6">
                 <div class="flex items-center mb-4">
@@ -152,6 +198,7 @@
                             <mat-option value="in_maintenance">En Mantenimiento</mat-option>
                             <mat-option value="quarantine">Cuarentena</mat-option>
                             <mat-option value="decommissioned">Dado de Baja</mat-option>
+                            <mat-option value="lost">Perdido</mat-option>
                         </mat-select>
                     </mat-form-field>
 
@@ -246,6 +293,62 @@
                 </div>
             </div>
 
+            <!-- Archivos Adjuntos -->
+            <div class="bg-card shadow-lg rounded-2xl p-6" *ngIf="isEditMode && toolId">
+                <div class="flex items-center mb-4">
+                    <mat-icon class="text-primary mr-2" [svgIcon]="'heroicons_outline:paper-clip'"></mat-icon>
+                    <h3 class="text-lg font-semibold">Archivos Adjuntos</h3>
+                </div>
+
+                <div class="flex flex-col sm:flex-row items-center justify-start space-y-4 sm:space-y-0 sm:space-x-4 mb-4">
+                    <input type="file" #fileInput (change)="onFileSelected($event)" multiple hidden>
+                    <button mat-flat-button color="primary" type="button" (click)="fileInput.click()" [disabled]="uploading">
+                        <mat-icon [svgIcon]="'heroicons_outline:arrow-up-tray'"></mat-icon>
+                        <span class="ml-2">Seleccionar Archivos</span>
+                    </button>
+                    <button mat-stroked-button type="button" (click)="uploadFiles(toolId)" [disabled]="selectedFiles.length === 0 || uploading">
+                        <mat-icon [class.animate-spin]="uploading" [svgIcon]="uploading ? 'heroicons_outline:arrow-path' : 'heroicons_outline:cloud-arrow-up'"></mat-icon>
+                        <span class="ml-2">Subir ({{ selectedFiles.length }})</span>
+                    </button>
+                </div>
+
+                <div *ngIf="uploading" class="mb-4">
+                    <mat-progress-bar mode="indeterminate"></mat-progress-bar>
+                    <p class="text-sm text-secondary mt-2">Subiendo archivos...</p>
+                </div>
+
+                <div *ngIf="selectedFiles.length > 0" class="mb-4">
+                    <h4 class="text-md font-semibold mb-2">Archivos seleccionados para subir:</h4>
+                    <mat-list>
+                        <mat-list-item *ngFor="let file of selectedFiles">
+                            <mat-icon matListItemIcon [svgIcon]="file.type.startsWith('image') ? 'heroicons_outline:photo' : 'heroicons_outline:document'"></mat-icon>
+                            <div matListItemTitle>{{ file.name }}</div>
+                            <div matListItemLine class="text-sm text-secondary">{{ file.size / 1024 | number:'1.0-0' }} KB</div>
+                        </mat-list-item>
+                    </mat-list>
+                </div>
+
+                <div *ngIf="files.length > 0">
+                    <h4 class="text-md font-semibold mb-2">Archivos existentes:</h4>
+                    <mat-list>
+                        <mat-list-item *ngFor="let file of files">
+                            <mat-icon matListItemIcon [svgIcon]="file.tipo === 'image' ? 'heroicons_outline:photo' : 'heroicons_outline:document'"></mat-icon>
+                            <div matListItemTitle>{{ file.nombre_archivo }}</div>
+                            <div matListItemLine class="text-sm text-secondary">{{ file.descripcion }}</div>
+                            <button mat-icon-button [matTooltip]="'Ver/Descargar'" (click)="window.open(file.ruta, '_blank')">
+                                <mat-icon [svgIcon]="'heroicons_outline:eye'"></mat-icon>
+                            </button>
+                            <button mat-icon-button [matTooltip]="'Eliminar'" (click)="deleteFile(file)">
+                                <mat-icon [svgIcon]="'heroicons_outline:trash'"></mat-icon>
+                            </button>
+                        </mat-list-item>
+                    </mat-list>
+                </div>
+                <div *ngIf="files.length === 0 && !uploading && selectedFiles.length === 0" class="text-secondary text-center py-4">
+                    No hay archivos adjuntos para esta herramienta.
+                </div>
+            </div>
+
             <!-- Notas -->
             <div class="bg-card shadow-lg rounded-2xl p-6">
                 <div class="flex items-center mb-4">
@@ -264,11 +367,11 @@
                     <mat-icon [svgIcon]="'heroicons_outline:x-mark'"></mat-icon>
                     <span class="ml-2">Cancelar</span>
                 </button>
-                <button mat-flat-button [color]="'primary'" type="button" (click)="save()" [disabled]="form.invalid || loading">
-                    <mat-icon [class.animate-spin]="loading"
-                              [svgIcon]="loading ? 'heroicons_outline:arrow-path' : 'heroicons_outline:check'">
+                <button mat-flat-button [color]="'primary'" type="submit" (click)="save()" [disabled]="form.invalid || loading || uploading">
+                    <mat-icon [class.animate-spin]="loading || uploading"
+                              [svgIcon]="(loading || uploading) ? 'heroicons_outline:arrow-path' : 'heroicons_outline:check'">
                     </mat-icon>
-                    <span class="ml-2">{{ loading ? 'Guardando...' : (isEditMode ? 'Actualizar Herramienta' : 'Guardar Herramienta') }}</span>
+                    <span class="ml-2">{{ (loading || uploading) ? 'Guardando...' : (isEditMode ? 'Actualizar Herramienta' : 'Guardar Herramienta') }}</span>
                 </button>
             </div>
         </form>

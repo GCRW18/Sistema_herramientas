@@ -73,14 +73,26 @@ export const appRoutes: Route[] = [
             // Gestión de Kits
             {path: 'kits', loadChildren: () => import('app/modules/admin/kits/kits.routes')},
 
+            // Gestión de Flota
+            {path: 'fleet', loadChildren: () => import('app/modules/admin/fleet/fleet.routes')},
+
             // Gestión de Calibración y Mantenimiento
             {path: 'calibration', loadChildren: () => import('app/modules/admin/calibration/calibration.routes')},
 
             // Gestión de Estado (Bajas y Cuarentena)
             {path: 'status-management', loadChildren: () => import('app/modules/admin/status-management/status-management.routes')},
 
+            // Gestión de Roster
+            {path: 'roster', loadChildren: () => import('app/modules/admin/roster/roster.routes')},
+
+            // Logs y Auditoría
+            {path: 'logs', loadChildren: () => import('app/modules/admin/logs/logs.routes')},
+
             // Administración del Sistema
             {path: 'administration', loadChildren: () => import('app/modules/admin/administration/administration.routes')},
+
+            // Utilidades
+            {path: 'utilities', loadChildren: () => import('app/modules/admin/utilities/utilities.routes')},
         ]
     }
 ];

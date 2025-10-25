@@ -6,8 +6,9 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatTabsModule } from '@angular/material/tabs';
 import { MatTableModule } from '@angular/material/table';
 import { MatChipsModule } from '@angular/material/chips';
-import { ToolService, MovementService, CalibrationService } from 'app/core/services';
-import { Tool, Movement, CalibrationRecord } from 'app/core/models';
+import { MatListModule } from '@angular/material/list';
+import { ToolService, MovementService, CalibrationService, FileService } from 'app/core/services';
+import { Tool, Movement, CalibrationRecord, Archivo } from 'app/core/models';
 
 @Component({
     selector: 'app-tool-detail',
@@ -19,20 +20,23 @@ import { Tool, Movement, CalibrationRecord } from 'app/core/models';
         MatTabsModule,
         MatTableModule,
         MatChipsModule,
+        MatListModule,
     ],
     templateUrl: './tool-detail.component.html',
     styleUrl: './tool-detail.component.scss'
 })
-export default class ToolDetailComponent implements OnInit {
+export class ToolDetailComponent implements OnInit {
     private _route = inject(ActivatedRoute);
     private _router = inject(Router);
     private _toolService = inject(ToolService);
     private _movementService = inject(MovementService);
     private _calibrationService = inject(CalibrationService);
+    private _fileService = inject(FileService);
 
     tool: Tool | null = null;
     movements: Movement[] = [];
     calibrations: CalibrationRecord[] = [];
+    files: Archivo[] = [];
     loading = false;
 
     movementColumns: string[] = ['date', 'type', 'responsiblePerson', 'notes'];
@@ -44,6 +48,7 @@ export default class ToolDetailComponent implements OnInit {
             this.loadTool(toolId);
             this.loadMovements(toolId);
             this.loadCalibrations(toolId);
+            this.loadFiles(toolId);
         }
     }
 
@@ -73,6 +78,17 @@ export default class ToolDetailComponent implements OnInit {
         this._calibrationService.getToolCalibrationHistory(toolId).subscribe({
             next: (calibrations) => {
                 this.calibrations = calibrations;
+            },
+        });
+    }
+
+    loadFiles(toolId: string): void {
+        this._fileService.getFilesByToolId(toolId).subscribe({
+            next: (files) => {
+                this.files = files;
+            },
+            error: (error) => {
+                console.error('Error loading files:', error);
             },
         });
     }

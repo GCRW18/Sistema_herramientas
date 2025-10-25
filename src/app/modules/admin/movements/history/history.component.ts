@@ -44,7 +44,7 @@ export default class HistoryComponent implements OnInit {
     @ViewChild(MatPaginator) paginator!: MatPaginator;
     @ViewChild(MatSort) sort!: MatSort;
 
-    displayedColumns: string[] = ['date', 'type', 'toolCode', 'toolName', 'user', 'status', 'actions'];
+    displayedColumns: string[] = ['date', 'type', 'toolCode', 'toolName', 'aircraft', 'workOrderNumber', 'department', 'user', 'status', 'actions'];
     dataSource = new MatTableDataSource<Movement>();
     loading = false;
 

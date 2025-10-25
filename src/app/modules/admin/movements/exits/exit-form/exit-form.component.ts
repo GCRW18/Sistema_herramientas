@@ -62,6 +62,12 @@ export default class ExitFormComponent implements OnInit {
             date: [new Date(), Validators.required],
             toolId: ['', Validators.required],
             responsiblePerson: ['', Validators.required],
+            // Campos Aeronáuticos
+            aircraft: [''],
+            workOrderNumber: [''],
+            technician: [''],
+            authorizedBy: [''],
+            department: [''],
             recipient: [''],
             expectedReturnDate: [''],
             calibrationProvider: [''],

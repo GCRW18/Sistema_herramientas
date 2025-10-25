@@ -15,6 +15,7 @@ import { ERP_VERSION } from '@erp/version';
 import { Subject, combineLatest, filter, map, takeUntil } from 'rxjs';
 import { EmptyLayoutComponent } from './layouts/empty/empty.component';
 import { ModernLayoutComponent } from './layouts/horizontal/modern/modern.component';
+import { ClassicLayoutComponent } from './layouts/vertical/classic/classic.component';
 
 @Component({
     selector: 'layout',
@@ -24,6 +25,7 @@ import { ModernLayoutComponent } from './layouts/horizontal/modern/modern.compon
     imports: [
         EmptyLayoutComponent,
         ModernLayoutComponent,
+        ClassicLayoutComponent,
     ]
 })
 export class LayoutComponent implements OnInit, OnDestroy {

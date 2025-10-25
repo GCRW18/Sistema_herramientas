@@ -80,46 +80,76 @@ export class AuthSignInComponent implements OnInit {
      * Sign in
      */
     signIn(): void {
+        console.log('[SignInComponent] Iniciando proceso de login...');
+
         // Return if the form is invalid
         if (this.signInForm.invalid) {
+            console.warn('[SignInComponent] Formulario inválido');
             return;
         }
 
+        console.log('[SignInComponent] Deshabilitando formulario...');
         // Disable the form
         this.signInForm.disable();
 
         // Hide the alert
         this.showAlert = false;
 
+        console.log('[SignInComponent] Llamando al servicio de autenticación...');
+        const componentStart = performance.now();
+
         // Sign in
-        this._authService.signIn(this.signInForm.value).subscribe(
-            (response) => {
+        this._authService.signIn(this.signInForm.value).subscribe({
+            next: (response) => {
+                const componentEnd = performance.now();
+                console.log(`[SignInComponent] Respuesta recibida en ${(componentEnd - componentStart).toFixed(2)}ms`);
+                console.log('[SignInComponent] Respuesta:', response);
+
                 if (!response.error) {
+                    console.log('[SignInComponent] Login exitoso, redirigiendo...');
+
                     // Set the redirect url.
                     // The '/signed-in-redirect' is a dummy url to catch the request and redirect the user
                     // to the correct page after a successful sign in. This way, that url can be set via
                     // routing file and we don't have to touch here.
                     const redirectURL = this._activatedRoute.snapshot.queryParamMap.get('redirectURL') || '/signed-in-redirect';
 
+                    console.log('[SignInComponent] Redirigiendo a:', redirectURL);
                     // Navigate to the redirect url
                     this._router.navigateByUrl(redirectURL);
-                }else{
+                } else {
+                    console.warn('[SignInComponent] Error en login:', response.message);
+
                     // Re-enable the form
                     this.signInForm.enable();
 
-                    // Reset the form
-                    //this.signInNgForm.resetForm();
-
                     // Set the alert
                     this.alert = {
-                        type   : 'error',
-                        message: response.message,
+                        type: 'error',
+                        message: response.message || 'Error al iniciar sesión',
                     };
 
                     // Show the alert
                     this.showAlert = true;
                 }
+            },
+            error: (error) => {
+                const componentEnd = performance.now();
+                console.error(`[SignInComponent] Error después de ${(componentEnd - componentStart).toFixed(2)}ms`);
+                console.error('[SignInComponent] Error:', error);
+
+                // Re-enable the form
+                this.signInForm.enable();
+
+                // Set the alert
+                this.alert = {
+                    type: 'error',
+                    message: error.message || 'Error de conexión con el servidor. Por favor, verifica tu conexión e intenta nuevamente.',
+                };
+
+                // Show the alert
+                this.showAlert = true;
             }
-        );
+        });
     }
 }

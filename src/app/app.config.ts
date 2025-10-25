@@ -89,7 +89,7 @@ export const appConfig: ApplicationConfig = {
                 services: mockApiServices,
             },
             erp: {
-                layout: 'modern',
+                layout: 'classic',
                 scheme: 'light',
                 screens: {
                     sm: '600px',

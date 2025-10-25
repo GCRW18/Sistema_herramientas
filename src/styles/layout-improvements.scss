@@ -1,0 +1,60 @@
+// Layout improvements for better spacing and centering
+
+// Centered container with max-width for all admin pages
+.admin-page-container {
+    .flex-auto {
+        > div[class*="p-6"],
+        > div[class*="p-10"] {
+            max-width: 1920px;
+            margin-left: auto;
+            margin-right: auto;
+            padding-left: 2rem !important;
+            padding-right: 2rem !important;
+
+            @media (min-width: 640px) {
+                padding-left: 3rem !important;
+                padding-right: 3rem !important;
+            }
+
+            @media (min-width: 1024px) {
+                padding-left: 4rem !important;
+                padding-right: 4rem !important;
+            }
+        }
+    }
+}
+
+// Better card spacing
+.bg-card {
+    &.shadow {
+        box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1) !important;
+    }
+
+    &.rounded-2xl {
+        border-radius: 1rem;
+    }
+}
+
+// Improved header spacing
+.border-b.bg-card {
+    padding-top: 1.5rem !important;
+    padding-bottom: 1.5rem !important;
+}
+
+// Better grid gaps
+.gap-6 {
+    gap: 2rem;
+}
+
+// Improved form field spacing
+mat-form-field {
+    margin-bottom: 0.5rem;
+}
+
+// Better table padding
+mat-table {
+    td, th {
+        padding-left: 1.5rem !important;
+        padding-right: 1.5rem !important;
+    }
+}

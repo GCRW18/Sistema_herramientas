@@ -76,11 +76,22 @@ export interface Movement {
     approvedBy?: User;
     receivedById?: string;
     receivedBy?: User;
+    responsiblePerson?: string; // Persona responsable del movimiento
+
+    // Campos Aeronáuticos
+    aircraft?: string; // Matrícula de la aeronave
+    workOrderNumber?: string; // Número de orden de trabajo
+    technician?: string; // Técnico responsable
+    authorizedBy?: string; // Persona que autoriza
+    department?: string; // Departamento o área
 
     // Información adicional
     supplier?: string;
     customer?: string;
+    recipient?: string; // Destinatario (para préstamos)
     expectedReturnDate?: string; // Para préstamos
+    calibrationProvider?: string; // Proveedor de calibración
+    maintenanceType?: string; // Tipo de mantenimiento
 
     // Notas
     notes?: string;

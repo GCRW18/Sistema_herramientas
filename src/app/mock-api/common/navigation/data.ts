@@ -109,6 +109,27 @@ export const defaultNavigation: ErpNavigationItem[] = [
         ]
     },
     {
+        id      : 'fleet',
+        title   : 'Gestión de Flota',
+        subtitle: 'Aeronaves y mantenimiento',
+        type    : 'collapsable',
+        icon    : 'heroicons_outline:paper-airplane',
+        children: [
+            {
+                id   : 'fleet.list',
+                title: 'Lista de Aeronaves',
+                type : 'basic',
+                link : '/fleet/list'
+            },
+            {
+                id   : 'fleet.create',
+                title: 'Nueva Aeronave',
+                type : 'basic',
+                link : '/fleet/new'
+            }
+        ]
+    },
+    {
         id      : 'calibration',
         title   : 'Calibración y Mantenimiento',
         subtitle: 'Control de calidad',
@@ -171,6 +192,48 @@ export const defaultNavigation: ErpNavigationItem[] = [
                 title: 'Reportes',
                 type : 'basic',
                 link : '/status-management/reports'
+            }
+        ]
+    },
+    {
+        id      : 'roster',
+        title   : 'Gestión de Roster',
+        subtitle: 'Turnos y asignaciones',
+        type    : 'collapsable',
+        icon    : 'heroicons_outline:calendar-days',
+        children: [
+            {
+                id   : 'roster.list',
+                title: 'Lista de Turnos',
+                type : 'basic',
+                link : '/roster/list'
+            }
+        ]
+    },
+    {
+        id      : 'utilities',
+        title   : 'Utilidades',
+        subtitle: 'Herramientas del sistema',
+        type    : 'collapsable',
+        icon    : 'heroicons_outline:wrench',
+        children: [
+            {
+                id   : 'utilities.barcode',
+                title: 'Códigos de Barras',
+                type : 'basic',
+                link : '/utilities/barcode-generator'
+            },
+            {
+                id   : 'utilities.labels',
+                title: 'Etiquetas',
+                type : 'basic',
+                link : '/utilities/label-generator'
+            },
+            {
+                id   : 'utilities.logs',
+                title: 'Logs de Auditoría',
+                type : 'basic',
+                link : '/logs/audit'
             }
         ]
     },
@@ -272,6 +335,13 @@ export const horizontalNavigation: ErpNavigationItem[] = [
         link    : '/kits/list'
     },
     {
+        id      : 'fleet',
+        title   : 'Flota',
+        type    : 'basic',
+        icon    : 'heroicons_outline:paper-airplane',
+        link    : '/fleet/list'
+    },
+    {
         id      : 'calibration',
         title   : 'Calibración',
         type    : 'group',
@@ -308,6 +378,26 @@ export const horizontalNavigation: ErpNavigationItem[] = [
                 title: 'Bajas',
                 type : 'basic',
                 link : '/status-management/decommission'
+            }
+        ]
+    },
+    {
+        id      : 'utilities',
+        title   : 'Utilidades',
+        type    : 'group',
+        icon    : 'heroicons_outline:wrench',
+        children: [
+            {
+                id   : 'utilities.barcode',
+                title: 'Códigos Barras',
+                type : 'basic',
+                link : '/utilities/barcode-generator'
+            },
+            {
+                id   : 'utilities.labels',
+                title: 'Etiquetas',
+                type : 'basic',
+                link : '/utilities/label-generator'
             }
         ]
     },

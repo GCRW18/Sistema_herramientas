@@ -13,11 +13,25 @@
             </div>
         </div>
         <div class="flex shrink-0 items-center gap-3 mt-6 sm:mt-0 sm:ml-4">
-            <button mat-stroked-button>
-                <mat-icon [svgIcon]="'heroicons_outline:arrow-down-tray'"></mat-icon>
-                <span class="ml-2">Exportar</span>
+            <!-- Search -->
+            <mat-form-field class="boby-mat-dense boby-mat-no-subscript boby-mat-rounded min-w-64 flex-shrink-0">
+                <mat-icon class="icon-size-5" [svgIcon]="'heroicons_outline:magnifying-glass'" matPrefix></mat-icon>
+                <input
+                    matInput
+                    [formControl]="searchInputControl"
+                    [autocomplete]="'off'"
+                    [placeholder]="'Buscar categoría...'">
+            </mat-form-field>
+
+            <button mat-stroked-button (click)="expandAll()" class="flex-shrink-0">
+                <mat-icon [svgIcon]="'heroicons_outline:arrows-pointing-out'"></mat-icon>
+                <span class="ml-2">Expandir Todo</span>
             </button>
-            <button mat-flat-button [color]="'primary'" (click)="createCategory()">
+            <button mat-stroked-button (click)="collapseAll()" class="flex-shrink-0">
+                <mat-icon [svgIcon]="'heroicons_outline:arrows-pointing-in'"></mat-icon>
+                <span class="ml-2">Colapsar Todo</span>
+            </button>
+            <button mat-flat-button [color]="'primary'" (click)="createCategory()" class="flex-shrink-0">
                 <mat-icon [svgIcon]="'heroicons_outline:plus'"></mat-icon>
                 <span class="ml-2">Nueva Categoría</span>
             </button>
@@ -26,189 +40,207 @@
 
     <!-- Main -->
     <div class="flex-auto p-6 sm:p-10">
-        <!-- Stats Cards -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
-            <div class="bg-card shadow rounded-2xl p-6">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <p class="text-sm text-secondary">Total Categorías</p>
-                        <p class="text-3xl font-bold mt-1">{{ dataSource.data.length }}</p>
-                    </div>
-                    <div class="bg-blue-100 dark:bg-blue-800 rounded-full p-3">
-                        <mat-icon class="text-blue-600 dark:text-blue-200" [svgIcon]="'heroicons_outline:tag'"></mat-icon>
-                    </div>
-                </div>
-            </div>
+        <!-- Loading bar -->
+        <mat-progress-bar *ngIf="isLoading" mode="indeterminate" class="mb-6"></mat-progress-bar>
 
-            <div class="bg-card shadow rounded-2xl p-6">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <p class="text-sm text-secondary">Categorías Activas</p>
-                        <p class="text-3xl font-bold mt-1 text-green-600">
-                            {{ getActiveCategoryCount() }}
-                        </p>
-                    </div>
-                    <div class="bg-green-100 dark:bg-green-800 rounded-full p-3">
-                        <mat-icon class="text-green-600 dark:text-green-200" [svgIcon]="'heroicons_outline:check-circle'"></mat-icon>
-                    </div>
-                </div>
-            </div>
-
-            <div class="bg-card shadow rounded-2xl p-6">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <p class="text-sm text-secondary">Herramientas Totales</p>
-                        <p class="text-3xl font-bold mt-1 text-purple-600">0</p>
-                    </div>
-                    <div class="bg-purple-100 dark:bg-purple-800 rounded-full p-3">
-                        <mat-icon class="text-purple-600 dark:text-purple-200" [svgIcon]="'heroicons_outline:wrench-screwdriver'"></mat-icon>
-                    </div>
-                </div>
-            </div>
-
-            <div class="bg-card shadow rounded-2xl p-6">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <p class="text-sm text-secondary">Subcategorías</p>
-                        <p class="text-3xl font-bold mt-1 text-orange-600">0</p>
-                    </div>
-                    <div class="bg-orange-100 dark:bg-orange-800 rounded-full p-3">
-                        <mat-icon class="text-orange-600 dark:text-orange-200" [svgIcon]="'heroicons_outline:queue-list'"></mat-icon>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Search -->
-        <div class="bg-card shadow rounded-2xl p-6 mb-6">
-            <mat-form-field class="w-full">
-                <mat-label>Buscar categorías</mat-label>
-                <input matInput (keyup)="applyFilter($event)" placeholder="Código, nombre, descripción..." autocomplete="off">
-                <mat-icon matPrefix [svgIcon]="'heroicons_outline:magnifying-glass'"></mat-icon>
-            </mat-form-field>
-        </div>
-
-        <!-- Table -->
+        <!-- Tree table -->
         <div class="bg-card shadow rounded-2xl overflow-hidden">
             <div class="overflow-x-auto">
-                <table mat-table [dataSource]="dataSource" matSort class="w-full">
-                    <!-- Code Column -->
-                    <ng-container matColumnDef="code">
-                        <th mat-header-cell *matHeaderCellDef mat-sort-header class="font-semibold bg-gray-50 dark:bg-gray-800">
-                            Código
+                <table mat-table [dataSource]="dataSource" class="w-full">
+
+                    <!-- Icon column - Organigrama Structure -->
+                    <ng-container matColumnDef="icono">
+                        <th mat-header-cell *matHeaderCellDef class="font-semibold bg-gray-50 dark:bg-gray-800 pl-4">
+                            Jerarquía
                         </th>
-                        <td mat-cell *matCellDef="let category" class="py-4">
-                            <div class="flex items-center">
-                                <div class="bg-primary-100 dark:bg-primary-800 rounded-lg p-2 mr-3">
-                                    <mat-icon class="text-primary icon-size-6" [svgIcon]="'heroicons_outline:hashtag'"></mat-icon>
+                        <td mat-cell *matCellDef="let row" class="py-4 pl-4 category-tree-cell"
+                            [class.has-children]="row.expandable"
+                            [class.has-parent]="row.level > 0">
+                            <div class="flex items-center gap-2">
+                                <!-- Indentation levels with vertical lines -->
+                                <div class="flex items-center">
+                                    <ng-container *ngFor="let i of [].constructor(row.level)">
+                                        <div class="tree-indent w-8 h-12"></div>
+                                    </ng-container>
                                 </div>
-                                <span class="font-medium text-primary">{{ category.code }}</span>
+
+                                <!-- Expand/collapse button -->
+                                <button
+                                    mat-icon-button
+                                    class="w-9 h-9 -ml-1"
+                                    [style.visibility]="!row.expandable ? 'hidden' : ''"
+                                    (click)="loadChildren(row); $event.stopPropagation()">
+                                    <mat-icon class="mat-icon-rtl-mirror icon-size-5"
+                                              [class.text-primary]="treeControl.isExpanded(row)">
+                                        {{treeControl.isExpanded(row) ? 'expand_more' : 'chevron_right'}}
+                                    </mat-icon>
+                                </button>
+
+                                <!-- Category card with icon -->
+                                <div class="flex items-center gap-3 px-3 py-2 rounded-lg border-2 min-w-64"
+                                     [ngClass]="{
+                                        'border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-900/30': !row.item.id_categoria_padre,
+                                        'border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-900/30': row.item.id_categoria_padre
+                                     }">
+
+
+                                    <!-- Icon -->
+                                    <div class="flex items-center justify-center w-10 h-10 rounded-lg"
+                                         [class.bg-blue-100]="!row.item.id_categoria_padre"
+                                         [class.dark:bg-blue-800]="!row.item.id_categoria_padre"
+                                         [class.bg-green-100]="row.item.id_categoria_padre"
+                                         [class.dark:bg-green-800]="row.item.id_categoria_padre">
+                                        <mat-icon class="icon-size-6"
+                                                  [class.text-blue-600]="!row.item.id_categoria_padre"
+                                                  [class.dark:text-blue-300]="!row.item.id_categoria_padre"
+                                                  [class.text-green-600]="row.item.id_categoria_padre"
+                                                  [class.dark:text-green-300]="row.item.id_categoria_padre"
+                                                  [svgIcon]="row.item.id_categoria_padre ? 'heroicons_outline:tag' : 'heroicons_outline:folder'">
+                                        </mat-icon>
+                                    </div>
+
+                                    <!-- Name and level info -->
+                                    <div class="flex-1 min-w-0">
+                                        <div class="font-semibold text-sm truncate"
+                                             [class.text-blue-900]="!row.item.id_categoria_padre"
+                                             [class.dark:text-blue-100]="!row.item.id_categoria_padre"
+                                             [class.text-green-900]="row.item.id_categoria_padre"
+                                             [class.dark:text-green-100]="row.item.id_categoria_padre">
+                                            {{ row.item.nombre }}
+                                        </div>
+                                        <div class="text-xs text-secondary mt-0.5">
+                                            Nivel {{ row.level + 1 }}
+                                            <span *ngIf="row.item.codigo"> • {{ row.item.codigo }}</span>
+                                        </div>
+                                    </div>
+
+                                    <!-- Expandable indicator -->
+                                    <div *ngIf="row.expandable" class="flex items-center justify-center w-6 h-6 rounded-full bg-primary/10">
+                                        <mat-icon class="icon-size-4 text-primary">groups</mat-icon>
+                                    </div>
+                                </div>
                             </div>
                         </td>
                     </ng-container>
 
-                    <!-- Name Column -->
-                    <ng-container matColumnDef="name">
-                        <th mat-header-cell *matHeaderCellDef mat-sort-header class="font-semibold bg-gray-50 dark:bg-gray-800">
-                            Nombre
-                        </th>
-                        <td mat-cell *matCellDef="let category" class="py-4">
-                            <div class="font-medium">{{ category.name }}</div>
-                            <div class="text-sm text-secondary" *ngIf="category.description">
-                                {{ category.description | slice:0:50 }}{{ category.description.length > 50 ? '...' : '' }}
-                            </div>
-                        </td>
-                    </ng-container>
-
-                    <!-- Description Column -->
-                    <ng-container matColumnDef="description">
+                    <!-- Name column - Hidden, info is in hierarchy -->
+                    <ng-container matColumnDef="nombre">
                         <th mat-header-cell *matHeaderCellDef class="font-semibold bg-gray-50 dark:bg-gray-800">
-                            Subcategorías
+                            Descripción
                         </th>
-                        <td mat-cell *matCellDef="let category" class="py-4">
-                            <div class="flex items-center">
-                                <mat-icon class="icon-size-5 text-secondary mr-1" [svgIcon]="'heroicons_outline:queue-list'"></mat-icon>
-                                <span class="text-secondary">{{ category.subcategoryCount || 0 }}</span>
+                        <td mat-cell *matCellDef="let row" class="py-4">
+                            <div class="text-sm text-secondary max-w-md" *ngIf="row.item.descripcion">
+                                {{ row.item.descripcion }}
                             </div>
-                        </td>
-                    </ng-container>
-
-                    <!-- Tool Count Column -->
-                    <ng-container matColumnDef="toolCount">
-                        <th mat-header-cell *matHeaderCellDef mat-sort-header class="font-semibold bg-gray-50 dark:bg-gray-800">
-                            Herramientas
-                        </th>
-                        <td mat-cell *matCellDef="let category" class="py-4">
-                            <div class="flex items-center justify-center">
-                                <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800 dark:bg-blue-800 dark:text-blue-200">
-                                    <mat-icon class="icon-size-4 mr-1" [svgIcon]="'heroicons_outline:wrench-screwdriver'"></mat-icon>
-                                    {{ category.toolCount || 0 }}
-                                </span>
-                            </div>
-                        </td>
-                    </ng-container>
-
-                    <!-- Active Column -->
-                    <ng-container matColumnDef="active">
-                        <th mat-header-cell *matHeaderCellDef mat-sort-header class="font-semibold bg-gray-50 dark:bg-gray-800">
-                            Estado
-                        </th>
-                        <td mat-cell *matCellDef="let category" class="py-4">
-                            <span class="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium"
-                                  [class.bg-green-100]="category.active"
-                                  [class.text-green-800]="category.active"
-                                  [class.dark:bg-green-800]="category.active"
-                                  [class.dark:text-green-200]="category.active"
-                                  [class.bg-gray-100]="!category.active"
-                                  [class.text-gray-800]="!category.active"
-                                  [class.dark:bg-gray-700]="!category.active"
-                                  [class.dark:text-gray-300]="!category.active">
-                                <mat-icon class="icon-size-4 mr-1"
-                                          [svgIcon]="category.active ? 'heroicons_outline:check-circle' : 'heroicons_outline:x-circle'">
-                                </mat-icon>
-                                {{ category.active ? 'Activo' : 'Inactivo' }}
+                            <span class="text-sm text-secondary italic" *ngIf="!row.item.descripcion">
+                                Sin descripción
                             </span>
                         </td>
                     </ng-container>
 
-                    <!-- Actions Column -->
-                    <ng-container matColumnDef="actions">
+                    <!-- Code column - Hidden, codigo is in hierarchy card -->
+                    <ng-container matColumnDef="codigo">
                         <th mat-header-cell *matHeaderCellDef class="font-semibold bg-gray-50 dark:bg-gray-800">
+                            Tipo
+                        </th>
+                        <td mat-cell *matCellDef="let row" class="py-4">
+                            <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium"
+                                  [class.bg-blue-100]="!row.item.id_categoria_padre"
+                                  [class.text-blue-700]="!row.item.id_categoria_padre"
+                                  [class.dark:bg-blue-900]="!row.item.id_categoria_padre"
+                                  [class.dark:text-blue-200]="!row.item.id_categoria_padre"
+                                  [class.bg-green-100]="row.item.id_categoria_padre"
+                                  [class.text-green-700]="row.item.id_categoria_padre"
+                                  [class.dark:bg-green-900]="row.item.id_categoria_padre"
+                                  [class.dark:text-green-200]="row.item.id_categoria_padre">
+                                <mat-icon class="icon-size-4"
+                                          [svgIcon]="row.item.id_categoria_padre ? 'heroicons_outline:tag' : 'heroicons_outline:folder'">
+                                </mat-icon>
+                                {{ row.item.id_categoria_padre ? 'Subcategoría' : 'Categoría Principal' }}
+                            </span>
+                        </td>
+                    </ng-container>
+
+                    <!-- Estado column - Simplified -->
+                    <ng-container matColumnDef="descripcion">
+                        <th mat-header-cell *matHeaderCellDef class="font-semibold bg-gray-50 dark:bg-gray-800 text-center w-24">
+                            Estado
+                        </th>
+                        <td mat-cell *matCellDef="let row" class="py-4 text-center">
+                            <span class="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium"
+                                  [class.bg-green-100]="row.item.estado_reg === 'activo'"
+                                  [class.text-green-700]="row.item.estado_reg === 'activo'"
+                                  [class.dark:bg-green-900]="row.item.estado_reg === 'activo'"
+                                  [class.dark:text-green-300]="row.item.estado_reg === 'activo'"
+                                  [class.bg-gray-100]="row.item.estado_reg !== 'activo'"
+                                  [class.text-gray-700]="row.item.estado_reg !== 'activo'"
+                                  [class.dark:bg-gray-700]="row.item.estado_reg !== 'activo'"
+                                  [class.dark:text-gray-300]="row.item.estado_reg !== 'activo'">
+                                <span class="w-1.5 h-1.5 rounded-full"
+                                      [class.bg-green-500]="row.item.estado_reg === 'activo'"
+                                      [class.bg-gray-400]="row.item.estado_reg !== 'activo'">
+                                </span>
+                                {{ row.item.estado_reg === 'activo' ? 'Activo' : 'Inactivo' }}
+                            </span>
+                        </td>
+                    </ng-container>
+
+                    <!-- Tools column - Simplified -->
+                    <ng-container matColumnDef="cantidad_herramientas">
+                        <th mat-header-cell *matHeaderCellDef class="font-semibold bg-gray-50 dark:bg-gray-800 text-center w-20">
+                            <mat-icon class="icon-size-4" [svgIcon]="'heroicons_outline:wrench-screwdriver'" [matTooltip]="'Cantidad de herramientas'"></mat-icon>
+                        </th>
+                        <td mat-cell *matCellDef="let row" class="py-4 text-center">
+                            <span class="inline-flex items-center justify-center w-7 h-7 rounded-full text-xs font-semibold bg-indigo-100 text-indigo-700 dark:bg-indigo-900 dark:text-indigo-300">
+                                {{ row.item.cantidad_herramientas || 0 }}
+                            </span>
+                        </td>
+                    </ng-container>
+
+                    <!-- Actions Column - Compact -->
+                    <ng-container matColumnDef="actions">
+                        <th mat-header-cell *matHeaderCellDef class="font-semibold bg-gray-50 dark:bg-gray-800 text-right w-28">
                             Acciones
                         </th>
-                        <td mat-cell *matCellDef="let category" class="py-4">
-                            <div class="flex items-center gap-1">
-                                <button mat-icon-button [matTooltip]="'Editar'" (click)="editCategory(category.id)"
-                                        class="hover:bg-yellow-50 dark:hover:bg-yellow-900">
-                                    <mat-icon class="text-yellow-600" [svgIcon]="'heroicons_outline:pencil'"></mat-icon>
+                        <td mat-cell *matCellDef="let row" class="py-4">
+                            <div class="flex items-center justify-end gap-0.5">
+                                <button mat-icon-button
+                                        class="w-7 h-7"
+                                        [matTooltip]="'Editar'"
+                                        (click)="editCategory(row); $event.stopPropagation()">
+                                    <mat-icon class="icon-size-4 text-amber-600 dark:text-amber-400" [svgIcon]="'heroicons_outline:pencil'"></mat-icon>
                                 </button>
-                                <button mat-icon-button [matTooltip]="'Gestionar Subcategorías'" (click)="manageSubcategories(category)"
-                                        class="hover:bg-blue-50 dark:hover:bg-blue-900">
-                                    <mat-icon class="text-blue-600" [svgIcon]="'heroicons_outline:queue-list'"></mat-icon>
+                                <button mat-icon-button
+                                        class="w-7 h-7"
+                                        [matTooltip]="'Agregar Subcategoría'"
+                                        (click)="createSubcategory(row); $event.stopPropagation()">
+                                    <mat-icon class="icon-size-4 text-blue-600 dark:text-blue-400" [svgIcon]="'heroicons_outline:plus-circle'"></mat-icon>
                                 </button>
-                                <button mat-icon-button [matTooltip]="'Eliminar'" (click)="deleteCategory(category.id)"
-                                        class="hover:bg-red-50 dark:hover:bg-red-900">
-                                    <mat-icon class="text-red-600" [svgIcon]="'heroicons_outline:trash'"></mat-icon>
+                                <button mat-icon-button
+                                        class="w-7 h-7"
+                                        [matTooltip]="'Eliminar'"
+                                        (click)="deleteCategory(row); $event.stopPropagation()">
+                                    <mat-icon class="icon-size-4 text-red-600 dark:text-red-400" [svgIcon]="'heroicons_outline:trash'"></mat-icon>
                                 </button>
                             </div>
                         </td>
                     </ng-container>
 
-                    <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+                    <tr mat-header-row *matHeaderRowDef="displayedColumns" class="h-12"></tr>
                     <tr mat-row *matRowDef="let row; columns: displayedColumns;"
-                        class="hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+                        class="h-14 hover:bg-gray-50 dark:hover:bg-hover transition-colors cursor-pointer border-b border-gray-100 dark:border-gray-700">
                     </tr>
 
                     <!-- No data -->
                     <tr class="h-32" *matNoDataRow>
                         <td [attr.colspan]="displayedColumns.length" class="text-center">
                             <div class="flex flex-col items-center justify-center text-secondary">
-                                <mat-icon class="icon-size-16 mb-4" [svgIcon]="'heroicons_outline:tag'"></mat-icon>
+                                <mat-icon class="icon-size-16 mb-4" [svgIcon]="'heroicons_outline:folder-open'"></mat-icon>
                                 <p class="text-lg font-medium">
-                                    {{ dataSource.filter ? 'No se encontraron categorías' : 'No hay categorías registradas' }}
+                                    {{ searchInputControl.value ? 'No se encontraron categorías' : 'No hay categorías registradas' }}
                                 </p>
-                                <p class="text-sm mb-4" *ngIf="!dataSource.filter">Comienza creando tu primera categoría</p>
-                                <button mat-flat-button [color]="'primary'" (click)="createCategory()" *ngIf="!dataSource.filter">
+                                <p class="text-sm mb-4" *ngIf="!searchInputControl.value">Comienza creando tu primera categoría</p>
+                                <button mat-flat-button [color]="'primary'" (click)="createCategory()" *ngIf="!searchInputControl.value">
                                     <mat-icon [svgIcon]="'heroicons_outline:plus'"></mat-icon>
                                     <span class="ml-2">Crear Categoría</span>
                                 </button>
@@ -217,13 +249,6 @@
                     </tr>
                 </table>
             </div>
-
-            <!-- Paginator -->
-            <mat-paginator [pageSizeOptions]="[10, 25, 50]"
-                           [pageSize]="10"
-                           showFirstLastButtons
-                           class="border-t">
-            </mat-paginator>
         </div>
     </div>
 </div>

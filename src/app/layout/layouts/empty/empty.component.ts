@@ -7,6 +7,7 @@ import { Subject } from 'rxjs';
     selector: 'empty-layout',
     templateUrl: './empty.component.html',
     encapsulation: ViewEncapsulation.None,
+    standalone: true,
     imports: [ErpLoadingBarComponent, RouterOutlet]
 })
 export class EmptyLayoutComponent implements OnDestroy {

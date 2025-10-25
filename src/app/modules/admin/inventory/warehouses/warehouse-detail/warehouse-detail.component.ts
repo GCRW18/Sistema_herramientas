@@ -10,6 +10,8 @@ import { MatCardModule } from '@angular/material/card';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { WarehouseService, ToolService } from 'app/core/services';
+import { ErpConfirmationService } from '@erp/services/confirmation';
+import { NotificationService } from 'app/core/services/notification.service';
 import { Warehouse, Location, Tool } from 'app/core/models';
 
 @Component({
@@ -34,6 +36,8 @@ export class WarehouseDetailComponent implements OnInit {
     private _router = inject(Router);
     private _warehouseService = inject(WarehouseService);
     private _toolService = inject(ToolService);
+    private _confirmationService = inject(ErpConfirmationService);
+    private _notificationService = inject(NotificationService);
 
     warehouse: Warehouse | null = null;
     locations: Location[] = [];
@@ -41,7 +45,7 @@ export class WarehouseDetailComponent implements OnInit {
     loading = true;
 
     // Location table
-    locationColumns = ['code', 'name', 'type', 'capacity', 'currentCapacity', 'status'];
+    locationColumns = ['code', 'name', 'type', 'capacity', 'currentCapacity', 'status', 'actions'];
     locationDataSource = new MatTableDataSource<Location>();
 
     // Tools table
@@ -112,15 +116,44 @@ export class WarehouseDetailComponent implements OnInit {
     }
 
     deleteLocation(location: Location): void {
-        if (confirm(`¿Está seguro de eliminar la ubicación ${location.name}?`)) {
-            this._warehouseService.deleteLocation(location.id).subscribe({
-                next: () => {
-                    if (this.warehouse) {
-                        this.loadLocations(this.warehouse.id);
-                    }
+        const confirmation = this._confirmationService.open({
+            title: 'Eliminar Ubicación',
+            message: `¿Está seguro de eliminar la ubicación <strong>${location.name}</strong>? Esta acción no se puede deshacer.`,
+            icon: {
+                show: true,
+                name: 'heroicons_outline:exclamation-triangle',
+                color: 'warn',
+            },
+            actions: {
+                confirm: {
+                    show: true,
+                    label: 'Eliminar',
+                    color: 'warn',
                 },
-            });
-        }
+                cancel: {
+                    show: true,
+                    label: 'Cancelar',
+                },
+            },
+            dismissible: true,
+        });
+
+        confirmation.afterClosed().subscribe((result) => {
+            if (result === 'confirmed') {
+                this._warehouseService.deleteLocation(location.id).subscribe({
+                    next: () => {
+                        this._notificationService.success(`Ubicación ${location.name} eliminada correctamente`);
+                        if (this.warehouse) {
+                            this.loadLocations(this.warehouse.id);
+                        }
+                    },
+                    error: (error) => {
+                        this._notificationService.error('Error al eliminar la ubicación');
+                        console.error('Error deleting location:', error);
+                    },
+                });
+            }
+        });
     }
 
     getLocationTypeLabel(type: string): string {

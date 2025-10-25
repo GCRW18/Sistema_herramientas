@@ -9,9 +9,8 @@ export const AuthGuard: CanActivateFn | CanActivateChildFn = (route, state) => {
     const authService: AuthService = inject(AuthService);
 
     authService.initErp();
-
     // Check the authentication status
-    return inject(AuthService)
+    return authService
         .check()
         .pipe(
             switchMap((authenticated) => {

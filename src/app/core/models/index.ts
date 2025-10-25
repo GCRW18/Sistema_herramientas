@@ -8,3 +8,6 @@ export * from './calibration.types';
 export * from './quarantine.types';
 export * from './user.types';
 export * from './role.types';
+export * from './aircraft.types';
+export * from './utilities.types';
+export * from './archivo.types';

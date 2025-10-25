@@ -1,11 +1,11 @@
-import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { Observable, ReplaySubject, tap } from 'rxjs';
+import { from, Observable, of, ReplaySubject, switchMap, tap } from 'rxjs';
 import { Location, Warehouse } from '../models';
+import { ErpApiService } from '../api/api.service';
 
 @Injectable({ providedIn: 'root' })
 export class WarehouseService {
-    private _httpClient = inject(HttpClient);
+    private _api = inject(ErpApiService);
     private _warehouses: ReplaySubject<Warehouse[]> = new ReplaySubject<Warehouse[]>(1);
     private _locations: ReplaySubject<Location[]> = new ReplaySubject<Location[]>(1);
 
@@ -35,9 +35,16 @@ export class WarehouseService {
      * Get all warehouses
      */
     getWarehouses(): Observable<Warehouse[]> {
-        return this._httpClient.get<Warehouse[]>('api/warehouses').pipe(
-            tap((warehouses) => {
+        return from(this._api.post('herramientas/Deposito/listarDeposito', {
+            start: 0,
+            limit: 50,
+            sort: 'nombre',
+            dir: 'asc'
+        })).pipe(
+            switchMap((response: any) => {
+                const warehouses = response?.datos || [];
                 this._warehouses.next(warehouses);
+                return of(warehouses);
             })
         );
     }
@@ -46,41 +53,72 @@ export class WarehouseService {
      * Get warehouse by id
      */
     getWarehouseById(id: string): Observable<Warehouse> {
-        return this._httpClient.get<Warehouse>(`api/warehouses/${id}`);
+        return from(this._api.post('herramientas/Deposito/listarDeposito', {
+            start: 0,
+            limit: 1,
+            id_deposito: id
+        })).pipe(
+            switchMap((response: any) => {
+                return of(response?.datos?.[0] || null);
+            })
+        );
     }
 
     /**
      * Create warehouse
      */
     createWarehouse(warehouse: Partial<Warehouse>): Observable<Warehouse> {
-        return this._httpClient.post<Warehouse>('api/warehouses', warehouse);
+        return from(this._api.post('herramientas/Deposito/insertarDeposito', warehouse)).pipe(
+            switchMap((response: any) => {
+                return of(response?.datos || warehouse);
+            })
+        );
     }
 
     /**
      * Update warehouse
      */
     updateWarehouse(id: string, warehouse: Partial<Warehouse>): Observable<Warehouse> {
-        return this._httpClient.put<Warehouse>(`api/warehouses/${id}`, warehouse);
+        return from(this._api.post('herramientas/Deposito/insertarDeposito', {
+            ...warehouse,
+            id_deposito: id
+        })).pipe(
+            switchMap((response: any) => {
+                return of(response?.datos || warehouse);
+            })
+        );
     }
 
     /**
      * Delete warehouse
      */
     deleteWarehouse(id: string): Observable<void> {
-        return this._httpClient.delete<void>(`api/warehouses/${id}`);
+        return from(this._api.post('herramientas/Deposito/eliminarDeposito', {
+            id_deposito: id
+        })).pipe(
+            switchMap(() => {
+                return of(undefined);
+            })
+        );
     }
 
     /**
      * Get all locations
      */
     getLocations(warehouseId?: string): Observable<Location[]> {
-        const url = warehouseId
-            ? `api/locations?warehouseId=${warehouseId}`
-            : 'api/locations';
+        const params = {
+            start: 0,
+            limit: 50,
+            sort: 'nombre',
+            dir: 'asc',
+            ...(warehouseId ? { id_deposito: warehouseId } : {})
+        };
 
-        return this._httpClient.get<Location[]>(url).pipe(
-            tap((locations) => {
+        return from(this._api.post('herramientas/AlmacenUbicacion/listarAlmacenUbicacion', params)).pipe(
+            switchMap((response: any) => {
+                const locations = response?.datos || [];
                 this._locations.next(locations);
+                return of(locations);
             })
         );
     }
@@ -89,27 +127,52 @@ export class WarehouseService {
      * Get location by id
      */
     getLocationById(id: string): Observable<Location> {
-        return this._httpClient.get<Location>(`api/locations/${id}`);
+        return from(this._api.post('herramientas/AlmacenUbicacion/listarAlmacenUbicacion', {
+            start: 0,
+            limit: 1,
+            id_ubicacion: id
+        })).pipe(
+            switchMap((response: any) => {
+                return of(response?.datos?.[0] || null);
+            })
+        );
     }
 
     /**
      * Create location
      */
     createLocation(location: Partial<Location>): Observable<Location> {
-        return this._httpClient.post<Location>('api/locations', location);
+        return from(this._api.post('herramientas/AlmacenUbicacion/insertarAlmacenUbicacion', location)).pipe(
+            switchMap((response: any) => {
+                return of(response?.datos || location);
+            })
+        );
     }
 
     /**
      * Update location
      */
     updateLocation(id: string, location: Partial<Location>): Observable<Location> {
-        return this._httpClient.put<Location>(`api/locations/${id}`, location);
+        return from(this._api.post('herramientas/AlmacenUbicacion/insertarAlmacenUbicacion', {
+            ...location,
+            id_ubicacion: id
+        })).pipe(
+            switchMap((response: any) => {
+                return of(response?.datos || location);
+            })
+        );
     }
 
     /**
      * Delete location
      */
     deleteLocation(id: string): Observable<void> {
-        return this._httpClient.delete<void>(`api/locations/${id}`);
+        return from(this._api.post('herramientas/AlmacenUbicacion/eliminarAlmacenUbicacion', {
+            id_ubicacion: id
+        })).pipe(
+            switchMap(() => {
+                return of(undefined);
+            })
+        );
     }
 }

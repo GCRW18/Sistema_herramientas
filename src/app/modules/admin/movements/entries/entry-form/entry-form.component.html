@@ -42,6 +42,52 @@
                         <mat-icon matPrefix [svgIcon]="'heroicons_outline:user'"></mat-icon>
                     </mat-form-field>
                 </div>
+
+                <!-- Campos Aeronáuticos -->
+                <div class="mt-4">
+                    <h4 class="text-sm font-medium text-secondary mb-3">Información Aeronáutica</h4>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <mat-form-field class="flex-auto">
+                            <mat-label>Matrícula Aeronave</mat-label>
+                            <input matInput formControlName="aircraft" placeholder="Ej: CP-2554">
+                            <mat-icon matPrefix [svgIcon]="'heroicons_outline:paper-airplane'"></mat-icon>
+                        </mat-form-field>
+
+                        <mat-form-field class="flex-auto">
+                            <mat-label>Orden de Trabajo</mat-label>
+                            <input matInput formControlName="workOrderNumber" placeholder="Ej: OT-12345">
+                            <mat-icon matPrefix [svgIcon]="'heroicons_outline:clipboard-document-list'"></mat-icon>
+                        </mat-form-field>
+
+                        <mat-form-field class="flex-auto">
+                            <mat-label>Técnico</mat-label>
+                            <input matInput formControlName="technician" placeholder="Nombre del técnico">
+                            <mat-icon matPrefix [svgIcon]="'heroicons_outline:user-circle'"></mat-icon>
+                        </mat-form-field>
+
+                        <mat-form-field class="flex-auto">
+                            <mat-label>Autorizado Por</mat-label>
+                            <input matInput formControlName="authorizedBy" placeholder="Nombre de quien autoriza">
+                            <mat-icon matPrefix [svgIcon]="'heroicons_outline:check-badge'"></mat-icon>
+                        </mat-form-field>
+
+                        <mat-form-field class="flex-auto sm:col-span-2">
+                            <mat-label>Departamento / Área</mat-label>
+                            <mat-select formControlName="department">
+                                <mat-option value="">Sin asignar</mat-option>
+                                <mat-option value="MANTENIMIENTO">MANTENIMIENTO</mat-option>
+                                <mat-option value="LINEA">LINEA</mat-option>
+                                <mat-option value="HANGAR">HANGAR</mat-option>
+                                <mat-option value="TALLER">TALLER</mat-option>
+                                <mat-option value="COMPONENTES">COMPONENTES</mat-option>
+                                <mat-option value="ESTRUCTURAS">ESTRUCTURAS</mat-option>
+                                <mat-option value="AVIONICOS">AVIONICOS</mat-option>
+                                <mat-option value="OTROS">OTROS</mat-option>
+                            </mat-select>
+                            <mat-icon matPrefix [svgIcon]="'heroicons_outline:building-office'"></mat-icon>
+                        </mat-form-field>
+                    </div>
+                </div>
             </div>
 
             <!-- Herramienta -->

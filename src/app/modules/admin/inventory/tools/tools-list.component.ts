@@ -49,7 +49,7 @@ export class ToolsListComponent implements OnInit, AfterViewInit {
     private _notificationService = inject(NotificationService);
 
     dataSource = new MatTableDataSource<Tool>();
-    displayedColumns = ['code', 'name', 'category', 'warehouse', 'status', 'condition', 'actions'];
+    displayedColumns = ['code', 'name', 'category', 'warehouse', 'aircraft', 'department', 'status', 'condition', 'actions'];
 
     categories: Category[] = [];
     warehouses: Warehouse[] = [];

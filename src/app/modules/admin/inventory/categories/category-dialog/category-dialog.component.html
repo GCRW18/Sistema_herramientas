@@ -1,9 +1,12 @@
 <div class="flex flex-col max-h-screen">
     <!-- Header -->
     <div class="flex items-center justify-between p-6 border-b">
-        <h2 class="text-2xl font-bold">
-            {{ isEditMode ? 'Editar Categoría' : 'Nueva Categoría' }}
-        </h2>
+        <div>
+            <h2 class="text-2xl font-bold">{{ getTitle() }}</h2>
+            <p class="text-sm text-secondary mt-1" *ngIf="isSubcategory && parentName">
+                Subcategoría de: <strong>{{ parentName }}</strong>
+            </p>
+        </div>
         <button mat-icon-button (click)="cancel()">
             <mat-icon [svgIcon]="'heroicons_outline:x-mark'"></mat-icon>
         </button>

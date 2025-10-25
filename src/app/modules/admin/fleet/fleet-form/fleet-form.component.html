@@ -1,0 +1,177 @@
+<div class="flex flex-col flex-auto min-w-0 admin-page-container">
+    <div class="flex flex-col sm:flex-row flex-0 sm:items-center sm:justify-between p-6 sm:py-8 sm:px-10 border-b bg-card">
+        <div class="flex-1 min-w-0">
+            <div class="flex items-center">
+                <button mat-icon-button (click)="cancel()" [matTooltip]="'Volver'">
+                    <mat-icon [svgIcon]="'heroicons_outline:arrow-left'"></mat-icon>
+                </button>
+                <h2 class="text-3xl font-extrabold tracking-tight leading-7 sm:leading-10 truncate ml-2">
+                    {{ isEditMode ? 'Editar Aeronave' : 'Nueva Aeronave' }}
+                </h2>
+            </div>
+        </div>
+    </div>
+
+    <div class="flex-auto p-6 sm:p-10">
+        <form [formGroup]="form" class="space-y-8">
+            <!-- Información Básica -->
+            <div class="bg-card shadow rounded-2xl p-6">
+                <h3 class="text-lg font-medium mb-4">Información Básica</h3>
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <mat-form-field class="flex-auto">
+                        <mat-label>Matrícula</mat-label>
+                        <input matInput formControlName="registration" placeholder="Ej: CP-2554" required>
+                        <mat-icon matPrefix [svgIcon]="'heroicons_outline:paper-airplane'"></mat-icon>
+                    </mat-form-field>
+
+                    <mat-form-field class="flex-auto">
+                        <mat-label>Fabricante</mat-label>
+                        <input matInput formControlName="manufacturer" placeholder="Ej: Boeing, Airbus" required>
+                    </mat-form-field>
+
+                    <mat-form-field class="flex-auto">
+                        <mat-label>Modelo</mat-label>
+                        <input matInput formControlName="model" placeholder="Ej: 737-800" required>
+                    </mat-form-field>
+
+                    <mat-form-field class="flex-auto">
+                        <mat-label>Número de Serie</mat-label>
+                        <input matInput formControlName="serialNumber">
+                    </mat-form-field>
+
+                    <mat-form-field class="flex-auto">
+                        <mat-label>Tipo</mat-label>
+                        <mat-select formControlName="type" required>
+                            <mat-option value="passenger">Pasajeros</mat-option>
+                            <mat-option value="cargo">Carga</mat-option>
+                            <mat-option value="mixed">Mixto</mat-option>
+                        </mat-select>
+                    </mat-form-field>
+
+                    <mat-form-field class="flex-auto">
+                        <mat-label>Estado</mat-label>
+                        <mat-select formControlName="status" required>
+                            <mat-option value="active">Activa</mat-option>
+                            <mat-option value="maintenance">En Mantenimiento</mat-option>
+                            <mat-option value="grounded">En Tierra</mat-option>
+                            <mat-option value="decommissioned">Fuera de Servicio</mat-option>
+                        </mat-select>
+                    </mat-form-field>
+                </div>
+            </div>
+
+            <!-- Ubicación -->
+            <div class="bg-card shadow rounded-2xl p-6">
+                <h3 class="text-lg font-medium mb-4">Ubicación</h3>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                    <mat-form-field class="flex-auto">
+                        <mat-label>Base Principal</mat-label>
+                        <input matInput formControlName="baseLocation" placeholder="Ej: Santa Cruz, La Paz">
+                    </mat-form-field>
+
+                    <mat-form-field class="flex-auto">
+                        <mat-label>Ubicación Actual</mat-label>
+                        <input matInput formControlName="currentLocation">
+                    </mat-form-field>
+                </div>
+            </div>
+
+            <!-- Fechas -->
+            <div class="bg-card shadow rounded-2xl p-6">
+                <h3 class="text-lg font-medium mb-4">Fechas Importantes</h3>
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <mat-form-field class="flex-auto">
+                        <mat-label>Fecha de Fabricación</mat-label>
+                        <input matInput [matDatepicker]="manufacturePicker" formControlName="manufactureDate">
+                        <mat-datepicker-toggle matSuffix [for]="manufacturePicker"></mat-datepicker-toggle>
+                        <mat-datepicker #manufacturePicker></mat-datepicker>
+                    </mat-form-field>
+
+                    <mat-form-field class="flex-auto">
+                        <mat-label>Fecha de Adquisición</mat-label>
+                        <input matInput [matDatepicker]="acquisitionPicker" formControlName="acquisitionDate">
+                        <mat-datepicker-toggle matSuffix [for]="acquisitionPicker"></mat-datepicker-toggle>
+                        <mat-datepicker #acquisitionPicker></mat-datepicker>
+                    </mat-form-field>
+
+                    <mat-form-field class="flex-auto">
+                        <mat-label>Último Mantenimiento</mat-label>
+                        <input matInput [matDatepicker]="lastMaintenancePicker" formControlName="lastMaintenanceDate">
+                        <mat-datepicker-toggle matSuffix [for]="lastMaintenancePicker"></mat-datepicker-toggle>
+                        <mat-datepicker #lastMaintenancePicker></mat-datepicker>
+                    </mat-form-field>
+
+                    <mat-form-field class="flex-auto">
+                        <mat-label>Próximo Mantenimiento</mat-label>
+                        <input matInput [matDatepicker]="nextMaintenancePicker" formControlName="nextMaintenanceDate">
+                        <mat-datepicker-toggle matSuffix [for]="nextMaintenancePicker"></mat-datepicker-toggle>
+                        <mat-datepicker #nextMaintenancePicker></mat-datepicker>
+                    </mat-form-field>
+                </div>
+            </div>
+
+            <!-- Capacidades -->
+            <div class="bg-card shadow rounded-2xl p-6">
+                <h3 class="text-lg font-medium mb-4">Capacidades y Métricas</h3>
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
+                    <mat-form-field class="flex-auto">
+                        <mat-label>Capacidad Pasajeros</mat-label>
+                        <input matInput type="number" formControlName="passengerCapacity">
+                    </mat-form-field>
+
+                    <mat-form-field class="flex-auto">
+                        <mat-label>Capacidad Carga (kg)</mat-label>
+                        <input matInput type="number" formControlName="cargoCapacity">
+                    </mat-form-field>
+
+                    <mat-form-field class="flex-auto">
+                        <mat-label>Capacidad Combustible (L)</mat-label>
+                        <input matInput type="number" formControlName="fuelCapacity">
+                    </mat-form-field>
+
+                    <mat-form-field class="flex-auto">
+                        <mat-label>Horas de Vuelo</mat-label>
+                        <input matInput type="number" formControlName="totalFlightHours">
+                    </mat-form-field>
+
+                    <mat-form-field class="flex-auto">
+                        <mat-label>Ciclos Totales</mat-label>
+                        <input matInput type="number" formControlName="totalCycles">
+                    </mat-form-field>
+                </div>
+            </div>
+
+            <!-- Información Adicional -->
+            <div class="bg-card shadow rounded-2xl p-6">
+                <h3 class="text-lg font-medium mb-4">Información Adicional</h3>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                    <mat-form-field class="flex-auto">
+                        <mat-label>Propietario</mat-label>
+                        <input matInput formControlName="owner">
+                    </mat-form-field>
+
+                    <mat-form-field class="flex-auto">
+                        <mat-label>Operador</mat-label>
+                        <input matInput formControlName="operator">
+                    </mat-form-field>
+                </div>
+
+                <mat-form-field class="flex-auto w-full">
+                    <mat-label>Notas</mat-label>
+                    <textarea matInput formControlName="notes" rows="3"></textarea>
+                </mat-form-field>
+            </div>
+
+            <!-- Actions -->
+            <div class="flex items-center justify-end gap-4">
+                <button mat-button type="button" (click)="cancel()">
+                    Cancelar
+                </button>
+                <button mat-flat-button [color]="'primary'" type="button" (click)="save()" [disabled]="form.invalid || loading">
+                    <mat-icon *ngIf="loading" class="animate-spin" [svgIcon]="'heroicons_outline:arrow-path'"></mat-icon>
+                    <span *ngIf="!loading">{{ isEditMode ? 'Actualizar' : 'Crear' }} Aeronave</span>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>

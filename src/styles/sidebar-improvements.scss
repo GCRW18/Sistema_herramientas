@@ -1,0 +1,303 @@
+// =====================================================
+// Sidebar Navigation Improvements
+// =====================================================
+
+:root {
+    // Aumentar el ancho del sidebar para más espacio
+    --erp-vertical-navigation-width: 280px !important;
+}
+
+erp-vertical-navigation {
+    // Agregar sombra sutil al sidebar
+    box-shadow: 2px 0 12px rgba(0, 0, 0, 0.08) !important;
+
+    // Fondo con gradiente sutil
+    background: linear-gradient(180deg,
+        var(--erp-bg-card) 0%,
+        var(--erp-bg-card) 100%) !important;
+
+    .erp-vertical-navigation-wrapper {
+        // Mejorar el borde
+        box-shadow: none !important;
+        border-right: 1px solid rgba(0, 0, 0, 0.08);
+
+        // Agregar padding superior e inferior
+        padding-top: 0.5rem;
+        padding-bottom: 0.5rem;
+
+        .erp-vertical-navigation-content {
+            // Mejorar el scrollbar
+            &::-webkit-scrollbar {
+                width: 6px;
+            }
+
+            &::-webkit-scrollbar-track {
+                background: transparent;
+            }
+
+            &::-webkit-scrollbar-thumb {
+                background: rgba(0, 0, 0, 0.2);
+                border-radius: 10px;
+
+                &:hover {
+                    background: rgba(0, 0, 0, 0.3);
+                }
+            }
+        }
+    }
+
+    // =====================================================
+    // Mejoras en los items del menú
+    // =====================================================
+
+    erp-vertical-navigation-aside-item,
+    erp-vertical-navigation-basic-item,
+    erp-vertical-navigation-collapsable-item {
+        > .erp-vertical-navigation-item-wrapper {
+            // Aumentar el margen para más espacio visual
+            margin: 0 14px !important;
+
+            .erp-vertical-navigation-item {
+                // Mejorar el padding y border-radius
+                padding: 12px 16px !important;
+                border-radius: 10px !important;
+                transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
+                font-weight: 500 !important;
+
+                // Mejorar el icono
+                .erp-vertical-navigation-item-icon {
+                    margin-right: 14px !important;
+                    font-size: 20px !important;
+                    width: 24px;
+                    height: 24px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    transition: all 0.25s ease !important;
+                }
+
+                // Mejorar el título
+                .erp-vertical-navigation-item-title-wrapper {
+                    .erp-vertical-navigation-item-title {
+                        font-size: 14px !important;
+                        font-weight: 500 !important;
+                        line-height: 1.4 !important;
+                    }
+
+                    .erp-vertical-navigation-item-subtitle {
+                        font-size: 11px !important;
+                        margin-top: 2px !important;
+                        opacity: 0.7 !important;
+                    }
+                }
+
+                // Estado activo mejorado
+                &.erp-vertical-navigation-item-active,
+                &.erp-vertical-navigation-item-active-forced {
+                    background: linear-gradient(90deg,
+                        rgba(59, 130, 246, 0.12) 0%,
+                        rgba(59, 130, 246, 0.08) 100%) !important;
+                    border-left: 3px solid rgb(59, 130, 246) !important;
+                    padding-left: 13px !important;
+                    box-shadow: 0 2px 8px rgba(59, 130, 246, 0.15) !important;
+
+                    .erp-vertical-navigation-item-icon {
+                        color: rgb(59, 130, 246) !important;
+                        opacity: 1 !important;
+                        transform: scale(1.1);
+                    }
+
+                    .erp-vertical-navigation-item-title {
+                        color: rgb(59, 130, 246) !important;
+                        opacity: 1 !important;
+                        font-weight: 600 !important;
+                    }
+                }
+
+                // Hover mejorado
+                &:not(.erp-vertical-navigation-item-active):not(.erp-vertical-navigation-item-disabled):hover {
+                    background: rgba(0, 0, 0, 0.04) !important;
+                    transform: translateX(4px);
+                    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08) !important;
+
+                    .erp-vertical-navigation-item-icon {
+                        transform: scale(1.05);
+                        opacity: 1 !important;
+                    }
+
+                    .erp-vertical-navigation-item-title {
+                        opacity: 1 !important;
+                    }
+                }
+            }
+        }
+    }
+
+    // =====================================================
+    // Mejoras para items colapsables
+    // =====================================================
+
+    erp-vertical-navigation-collapsable-item {
+        &.erp-vertical-navigation-item-expanded {
+            > .erp-vertical-navigation-item-wrapper {
+                .erp-vertical-navigation-item {
+                    background: rgba(0, 0, 0, 0.03) !important;
+
+                    .erp-vertical-navigation-item-arrow {
+                        color: rgb(59, 130, 246) !important;
+                    }
+                }
+            }
+        }
+
+        .erp-vertical-navigation-item-children {
+            .erp-vertical-navigation-item {
+                padding: 10px 16px !important;
+                padding-left: 52px !important;
+                margin: 2px 14px !important;
+                border-radius: 8px !important;
+                font-size: 13px !important;
+
+                &:hover {
+                    background: rgba(0, 0, 0, 0.04) !important;
+                    padding-left: 56px !important;
+                }
+
+                &.erp-vertical-navigation-item-active {
+                    background: rgba(59, 130, 246, 0.08) !important;
+                    color: rgb(59, 130, 246) !important;
+                    border-left: 2px solid rgb(59, 130, 246) !important;
+                    padding-left: 50px !important;
+                }
+            }
+        }
+    }
+
+    // =====================================================
+    // Mejoras para grupos
+    // =====================================================
+
+    erp-vertical-navigation-group-item {
+        margin-top: 28px !important;
+        margin-bottom: 8px !important;
+
+        > .erp-vertical-navigation-item-wrapper {
+            margin: 0 14px !important;
+            padding: 8px 0 !important;
+
+            .erp-vertical-navigation-item {
+                .erp-vertical-navigation-item-title-wrapper {
+                    .erp-vertical-navigation-item-title {
+                        font-size: 11px !important;
+                        font-weight: 700 !important;
+                        letter-spacing: 0.08em !important;
+                        text-transform: uppercase !important;
+                        color: rgba(0, 0, 0, 0.5) !important;
+                        padding-left: 4px;
+                    }
+                }
+            }
+        }
+    }
+
+    // =====================================================
+    // Dividers mejorados
+    // =====================================================
+
+    erp-vertical-navigation-divider-item {
+        margin: 20px 14px !important;
+
+        .erp-vertical-navigation-item-wrapper {
+            height: 1px !important;
+            background: linear-gradient(90deg,
+                transparent 0%,
+                rgba(0, 0, 0, 0.1) 50%,
+                transparent 100%) !important;
+            box-shadow: none !important;
+        }
+    }
+
+    // =====================================================
+    // Dark mode overrides
+    // =====================================================
+
+    &.dark, .dark & {
+        box-shadow: 2px 0 12px rgba(0, 0, 0, 0.3) !important;
+
+        .erp-vertical-navigation-wrapper {
+            border-right-color: rgba(255, 255, 255, 0.08) !important;
+        }
+
+        erp-vertical-navigation-aside-item,
+        erp-vertical-navigation-basic-item,
+        erp-vertical-navigation-collapsable-item {
+            > .erp-vertical-navigation-item-wrapper {
+                .erp-vertical-navigation-item {
+                    &.erp-vertical-navigation-item-active,
+                    &.erp-vertical-navigation-item-active-forced {
+                        background: linear-gradient(90deg,
+                            rgba(59, 130, 246, 0.18) 0%,
+                            rgba(59, 130, 246, 0.12) 100%) !important;
+                        box-shadow: 0 2px 8px rgba(59, 130, 246, 0.25) !important;
+
+                        .erp-vertical-navigation-item-icon {
+                            color: rgb(96, 165, 250) !important;
+                        }
+
+                        .erp-vertical-navigation-item-title {
+                            color: rgb(96, 165, 250) !important;
+                        }
+                    }
+
+                    &:not(.erp-vertical-navigation-item-active):hover {
+                        background: rgba(255, 255, 255, 0.08) !important;
+                    }
+                }
+            }
+        }
+
+        erp-vertical-navigation-group-item {
+            > .erp-vertical-navigation-item-wrapper {
+                .erp-vertical-navigation-item {
+                    .erp-vertical-navigation-item-title {
+                        color: rgba(255, 255, 255, 0.5) !important;
+                    }
+                }
+            }
+        }
+
+        erp-vertical-navigation-divider-item {
+            .erp-vertical-navigation-item-wrapper {
+                background: linear-gradient(90deg,
+                    transparent 0%,
+                    rgba(255, 255, 255, 0.1) 50%,
+                    transparent 100%) !important;
+            }
+        }
+    }
+}
+
+// =====================================================
+// Responsive improvements
+// =====================================================
+
+@media (max-width: 959px) {
+    :root {
+        --erp-vertical-navigation-width: 260px !important;
+    }
+
+    erp-vertical-navigation {
+        erp-vertical-navigation-aside-item,
+        erp-vertical-navigation-basic-item,
+        erp-vertical-navigation-collapsable-item {
+            > .erp-vertical-navigation-item-wrapper {
+                margin: 0 10px !important;
+
+                .erp-vertical-navigation-item {
+                    padding: 10px 12px !important;
+                    font-size: 13px !important;
+                }
+            }
+        }
+    }
+}
