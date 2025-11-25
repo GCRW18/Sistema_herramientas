@@ -35,7 +35,7 @@ export class AuditService {
             ...filters,
         };
 
-        return from(this._api.post('sistema/Auditoria/listarAuditoria', params)).pipe(
+        return from(this._api.post('sistema/Auditoria/listAuditoria', params)).pipe(
             switchMap((response: any) => {
                 const logs = response?.datos || [];
                 this._logs.next(logs);
@@ -48,7 +48,7 @@ export class AuditService {
      * Get audit log by id
      */
     getAuditLogById(id: string): Observable<AuditLog> {
-        return from(this._api.post('sistema/Auditoria/obtenerAuditoria', {
+        return from(this._api.post('sistema/Auditoria/getAuditoria', {
             id_auditoria: id,
         })).pipe(
             switchMap((response: any) => {
@@ -106,7 +106,7 @@ export class AuditService {
      * Get audit logs by entity
      */
     getAuditLogsByEntity(entityType: string, entityId: string): Observable<AuditLog[]> {
-        return from(this._api.post('sistema/Auditoria/listarAuditoriaPorEntidad', {
+        return from(this._api.post('sistema/Auditoria/listAuditoriaPorEntidad', {
             tipo_entidad: entityType,
             id_entidad: entityId,
         })).pipe(
@@ -134,7 +134,7 @@ export class AuditService {
      * Get audit statistics
      */
     getAuditStatistics(filters?: AuditLogFilters): Observable<any> {
-        return from(this._api.post('sistema/Auditoria/obtenerEstadisticas', {
+        return from(this._api.post('sistema/Auditoria/getEstadisticas', {
             filtros: filters,
         })).pipe(
             switchMap((response: any) => {
@@ -147,8 +147,8 @@ export class AuditService {
      * Delete old audit logs
      */
     deleteOldAuditLogs(beforeDate: Date): Observable<void> {
-        return from(this._api.post('sistema/Auditoria/eliminarAuditoriasAntiguas', {
-            fecha_limite: beforeDate,
+        return from(this._api.post('sistema/Auditoria/deleteAuditoriasAntiguas', {
+            limit_date: beforeDate,
         })).pipe(
             switchMap(() => {
                 return of(undefined);

@@ -1,6 +1,11 @@
 import { Routes } from '@angular/router';
 
 export default [
+    {
+        path: '',
+        redirectTo: 'list',
+        pathMatch: 'full'
+    },
     // Listado de Kits
     {
         path: 'list',

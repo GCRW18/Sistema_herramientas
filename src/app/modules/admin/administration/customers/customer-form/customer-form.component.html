@@ -23,7 +23,7 @@
                                 <mat-label>Nombre de la Empresa</mat-label>
                                 <input matInput formControlName="name" placeholder="Empresa S.A.">
                                 <mat-icon matPrefix [svgIcon]="'heroicons_outline:building-office'"></mat-icon>
-                                <mat-error *ngIf="form.get('name')?.hasError('required')">
+                                <mat-error>
                                     El nombre es requerido
                                 </mat-error>
                             </mat-form-field>
@@ -33,7 +33,7 @@
                                 <mat-label>Nombre de Contacto</mat-label>
                                 <input matInput formControlName="contactName" placeholder="Juan Pérez">
                                 <mat-icon matPrefix [svgIcon]="'heroicons_outline:user'"></mat-icon>
-                                <mat-error *ngIf="form.get('contactName')?.hasError('required')">
+                                <mat-error>
                                     El nombre de contacto es requerido
                                 </mat-error>
                             </mat-form-field>
@@ -43,10 +43,10 @@
                                 <mat-label>Correo Electrónico</mat-label>
                                 <input matInput type="email" formControlName="email" placeholder="contacto@empresa.com">
                                 <mat-icon matPrefix [svgIcon]="'heroicons_outline:envelope'"></mat-icon>
-                                <mat-error *ngIf="form.get('email')?.hasError('required')">
+                                <mat-error *ngIf="form.get('email')?.errors?.['required']">
                                     El correo es requerido
                                 </mat-error>
-                                <mat-error *ngIf="form.get('email')?.hasError('email')">
+                                <mat-error *ngIf="form.get('email')?.errors?.['email'] && !form.get('email')?.errors?.['required']">
                                     Ingrese un correo válido
                                 </mat-error>
                             </mat-form-field>
@@ -56,7 +56,7 @@
                                 <mat-label>Teléfono</mat-label>
                                 <input matInput formControlName="phone" placeholder="+591 12345678">
                                 <mat-icon matPrefix [svgIcon]="'heroicons_outline:phone'"></mat-icon>
-                                <mat-error *ngIf="form.get('phone')?.hasError('required')">
+                                <mat-error>
                                     El teléfono es requerido
                                 </mat-error>
                             </mat-form-field>
@@ -88,7 +88,7 @@
                             <button mat-stroked-button type="button" (click)="cancel()" [disabled]="loading">
                                 Cancelar
                             </button>
-                            <button mat-flat-button [color]="'primary'" type="submit" [disabled]="loading">
+                            <button mat-flat-button [color]="'primary'" type="submit" [disabled]="loading || form.invalid">
                                 <mat-icon [svgIcon]="'heroicons_outline:check'" class="icon-size-5"></mat-icon>
                                 <span class="ml-2">{{ isEditMode ? 'Guardar Cambios' : 'Crear Cliente' }}</span>
                             </button>

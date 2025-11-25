@@ -14,6 +14,11 @@ import { ErpConfirmationService } from '@erp/services/confirmation';
 import { NotificationService } from 'app/core/services/notification.service';
 import { Warehouse, Location, Tool } from 'app/core/models';
 
+/**
+ * WarehouseDetailComponent
+ * Componente para ver detalles de un almacén
+ * CORREGIDO: 13-11-2025 - Campos según estructura real de BD
+ */
 @Component({
     selector: 'app-warehouse-detail',
     standalone: true,
@@ -44,8 +49,8 @@ export class WarehouseDetailComponent implements OnInit {
     tools: Tool[] = [];
     loading = true;
 
-    // Location table
-    locationColumns = ['code', 'name', 'type', 'capacity', 'currentCapacity', 'status', 'actions'];
+    // Location table - CORREGIDO: campos según BD real
+    locationColumns = ['code', 'name', 'level', 'section', 'actions'];
     locationDataSource = new MatTableDataSource<Location>();
 
     // Tools table
@@ -68,7 +73,9 @@ export class WarehouseDetailComponent implements OnInit {
                 this.warehouse = warehouse;
                 this.loading = false;
             },
-            error: () => {
+            error: (error) => {
+                this._notificationService.error('Error al cargar el almacén');
+                console.error('Error loading warehouse:', error);
                 this.loading = false;
                 this._router.navigate(['/inventory/warehouses']);
             },
@@ -81,6 +88,10 @@ export class WarehouseDetailComponent implements OnInit {
                 this.locations = locations;
                 this.locationDataSource.data = locations;
             },
+            error: (error) => {
+                this._notificationService.error('Error al cargar ubicaciones');
+                console.error('Error loading locations:', error);
+            },
         });
     }
 
@@ -89,6 +100,9 @@ export class WarehouseDetailComponent implements OnInit {
             next: (tools) => {
                 this.tools = tools;
                 this.toolDataSource.data = tools;
+            },
+            error: (error) => {
+                console.error('Error loading tools:', error);
             },
         });
     }
@@ -99,19 +113,19 @@ export class WarehouseDetailComponent implements OnInit {
 
     edit(): void {
         if (this.warehouse) {
-            this._router.navigate(['/inventory/warehouses', this.warehouse.id, 'edit']);
+            this._router.navigate(['/inventory/warehouses', this.warehouse.id_warehouse, 'edit']);
         }
     }
 
     addLocation(): void {
         if (this.warehouse) {
-            this._router.navigate(['/inventory/warehouses', this.warehouse.id, 'locations', 'new']);
+            this._router.navigate(['/inventory/warehouses', this.warehouse.id_warehouse, 'locations', 'new']);
         }
     }
 
     editLocation(location: Location): void {
         if (this.warehouse) {
-            this._router.navigate(['/inventory/warehouses', this.warehouse.id, 'locations', location.id, 'edit']);
+            this._router.navigate(['/inventory/warehouses', this.warehouse.id_warehouse, 'locations', location.id_location, 'edit']);
         }
     }
 
@@ -140,11 +154,11 @@ export class WarehouseDetailComponent implements OnInit {
 
         confirmation.afterClosed().subscribe((result) => {
             if (result === 'confirmed') {
-                this._warehouseService.deleteLocation(location.id).subscribe({
+                this._warehouseService.deleteLocation(location.id_location.toString()).subscribe({
                     next: () => {
                         this._notificationService.success(`Ubicación ${location.name} eliminada correctamente`);
                         if (this.warehouse) {
-                            this.loadLocations(this.warehouse.id);
+                            this.loadLocations(this.warehouse.id_warehouse.toString());
                         }
                     },
                     error: (error) => {
@@ -154,22 +168,5 @@ export class WarehouseDetailComponent implements OnInit {
                 });
             }
         });
-    }
-
-    getLocationTypeLabel(type: string): string {
-        const types: Record<string, string> = {
-            shelf: 'Estante',
-            rack: 'Rack',
-            bin: 'Bin',
-            drawer: 'Cajón',
-            cabinet: 'Gabinete',
-            area: 'Área',
-            other: 'Otro',
-        };
-        return types[type] || type;
-    }
-
-    getStatusColor(status: string): string {
-        return status === 'active' ? 'primary' : 'warn';
     }
 }

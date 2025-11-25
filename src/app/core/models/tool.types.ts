@@ -96,6 +96,7 @@ export interface Tool {
  */
 export interface ToolFilters {
     search?: string;
+    query?: string; // ← AGREGAR ESTA LÍNEA
     categoryId?: string;
     subcategoryId?: string;
     warehouseId?: string;
@@ -105,3 +106,4 @@ export interface ToolFilters {
     requiresCalibration?: boolean;
     calibrationExpired?: boolean;
 }
+

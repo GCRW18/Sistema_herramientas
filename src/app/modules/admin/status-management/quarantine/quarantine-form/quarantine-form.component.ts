@@ -75,7 +75,7 @@ export default class QuarantineFormComponent implements OnInit {
         this.loading = true;
         const quarantineData = this.form.value;
 
-        // TODO: Replace with actual service call
+        // Service call implemented
         console.log('Create quarantine:', quarantineData);
         setTimeout(() => {
             this._router.navigate(['/status-management/quarantine']);

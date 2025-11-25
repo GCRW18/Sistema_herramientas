@@ -141,7 +141,15 @@ export default class EntryFormComponent implements OnInit {
         }
 
         this.loading = true;
-        const movementData = this.form.value;
+        const formValue = this.form.value;
+
+        // Formatear la fecha a formato YYYY-MM-DD que PostgreSQL entiende
+        const movementData = {
+            ...formValue,
+            date: formValue.date instanceof Date
+                ? formValue.date.toISOString().split('T')[0]
+                : formValue.date
+        };
 
         this._movementService.createMovement(movementData).subscribe({
             next: () => {
@@ -152,6 +160,7 @@ export default class EntryFormComponent implements OnInit {
             },
         });
     }
+
 
     cancel(): void {
         this._router.navigate(['/movements/entries']);

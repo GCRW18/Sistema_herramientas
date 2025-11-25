@@ -73,7 +73,7 @@ export default class KitsListComponent implements OnInit {
     }
 
     createKit(): void {
-        this._router.navigate(['/kits/new']);
+        this._router.navigate(['/kits/create']);
     }
 
     viewKit(id: string): void {

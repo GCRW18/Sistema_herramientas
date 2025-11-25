@@ -32,18 +32,18 @@ export class MovementService {
     // -----------------------------------------------------------------------------------------------------
 
     /**
-     * Get all entries
+     * Get all movements
      */
     getMovements(filters?: any): Observable<Movement[]> {
         const params = {
             start: 0,
             limit: 50,
-            sort: 'fecha_entrada',
+            sort: 'date',
             dir: 'desc',
             ...filters
         };
 
-        return from(this._api.post('herramientas/Entrada/listarEntrada', params)).pipe(
+        return from(this._api.post('herramientas/movements/listMovement', params)).pipe(
             switchMap((response: any) => {
                 const movements = response?.datos || [];
                 this._movements.next(movements);
@@ -56,10 +56,10 @@ export class MovementService {
      * Get movement by id
      */
     getMovementById(id: string): Observable<Movement> {
-        return from(this._api.post('herramientas/Entrada/listarEntrada', {
+        return from(this._api.post('herramientas/movements/listMovement', {
             start: 0,
             limit: 1,
-            id_entrada: id
+            id_movement: id
         })).pipe(
             switchMap((response: any) => {
                 const movement = response?.datos?.[0] || null;
@@ -75,10 +75,8 @@ export class MovementService {
      * Get movements by tool
      */
     getMovementsByTool(toolId: string): Observable<Movement[]> {
-        return from(this._api.post('herramientas/Entrada/listarEntrada', {
-            start: 0,
-            limit: 50,
-            id_herramienta: toolId
+        return from(this._api.post('herramientas/movements/listMovementsByTool', {
+            tool_id: toolId
         })).pipe(
             switchMap((response: any) => {
                 return of(response?.datos || []);
@@ -90,18 +88,29 @@ export class MovementService {
      * Get entries
      */
     getEntries(): Observable<Movement[]> {
-        return this.getMovements();
+        return from(this._api.post('herramientas/movements/listMovement', {
+            start: 0,
+            limit: 50,
+            sort: 'date',
+            dir: 'desc',
+            movement_type: 'entry'
+        })).pipe(
+            switchMap((response: any) => {
+                return of(response?.datos || []);
+            })
+        );
     }
 
     /**
      * Get exits
      */
     getExits(): Observable<Movement[]> {
-        return from(this._api.post('herramientas/Salida/listarSalida', {
+        return from(this._api.post('herramientas/movements/listMovement', {
             start: 0,
             limit: 50,
-            sort: 'fecha_salida',
-            dir: 'desc'
+            sort: 'date',
+            dir: 'desc',
+            movement_type: 'exit'
         })).pipe(
             switchMap((response: any) => {
                 return of(response?.datos || []);
@@ -113,51 +122,50 @@ export class MovementService {
      * Create movement (generic method)
      */
     createMovement(movement: Partial<Movement>): Observable<Movement> {
-        if (movement.type === 'entry' || movement.type?.startsWith('entry_')) {
-            return this.createEntry(movement);
-        } else if (movement.type === 'exit' || movement.type?.startsWith('exit_')) {
-            return this.createExit(movement);
-        } else {
-            return this.createEntry(movement);
-        }
+        return from(this._api.post('herramientas/movements/insertMovement', movement)).pipe(
+            switchMap((response: any) => {
+                return of(response?.datos || movement);
+            })
+        );
     }
 
     /**
      * Create entry movement
      */
     createEntry(movement: Partial<Movement>): Observable<Movement> {
-        return from(this._api.post('herramientas/Entrada/insertarEntrada', movement)).pipe(
-            switchMap((response: any) => {
-                return of(response?.datos || movement);
-            })
-        );
+        return this.createMovement({
+            ...movement,
+            type: movement.type || 'entry'
+        });
     }
 
     /**
      * Create exit movement
      */
     createExit(movement: Partial<Movement>): Observable<Movement> {
-        return from(this._api.post('herramientas/Salida/insertarSalida', movement)).pipe(
-            switchMap((response: any) => {
-                return of(response?.datos || movement);
-            })
-        );
+        return this.createMovement({
+            ...movement,
+            type: movement.type || 'exit'
+        });
     }
 
     /**
      * Create transfer movement
      */
     createTransfer(movement: Partial<Movement>): Observable<Movement> {
-        return this.createEntry(movement);
+        return this.createMovement({
+            ...movement,
+            type: 'transfer'
+        });
     }
 
     /**
      * Update movement
      */
     updateMovement(id: string, movement: Partial<Movement>): Observable<Movement> {
-        return from(this._api.post('herramientas/Entrada/insertarEntrada', {
+        return from(this._api.post('herramientas/movements/insertMovement', {
             ...movement,
-            id_entrada: id
+            id_movement: id
         })).pipe(
             switchMap((response: any) => {
                 return of(response?.datos || movement);
@@ -169,8 +177,8 @@ export class MovementService {
      * Approve movement
      */
     approveMovement(id: string): Observable<Movement> {
-        return from(this._api.post('herramientas/Entrada/aprobarEntrada', {
-            id_entrada: id
+        return from(this._api.post('herramientas/movements/approveMovement', {
+            id_movement: id
         })).pipe(
             switchMap((response: any) => {
                 return of(response?.datos || {});
@@ -182,8 +190,8 @@ export class MovementService {
      * Complete movement
      */
     completeMovement(id: string): Observable<Movement> {
-        return from(this._api.post('herramientas/Entrada/completarEntrada', {
-            id_entrada: id
+        return from(this._api.post('herramientas/movements/completeMovement', {
+            id_movement: id
         })).pipe(
             switchMap((response: any) => {
                 return of(response?.datos || {});
@@ -195,9 +203,9 @@ export class MovementService {
      * Cancel movement
      */
     cancelMovement(id: string, reason: string): Observable<Movement> {
-        return from(this._api.post('herramientas/Entrada/cancelarEntrada', {
-            id_entrada: id,
-            motivo_cancelacion: reason
+        return from(this._api.post('herramientas/movements/cancelMovement', {
+            id_movement: id,
+            cancellation_reason: reason
         })).pipe(
             switchMap((response: any) => {
                 return of(response?.datos || {});
@@ -209,8 +217,8 @@ export class MovementService {
      * Generate voucher
      */
     generateVoucher(id: string): Observable<MovementVoucher> {
-        return from(this._api.post('herramientas/Comprobante/listarComprobante', {
-            id_entrada: id
+        return from(this._api.post('herramientas/Comprobante/listComprobante', {
+            id_movement: id
         })).pipe(
             switchMap((response: any) => {
                 return of(response?.datos?.[0] || {});
@@ -229,7 +237,9 @@ export class MovementService {
      * Get pending entries
      */
     getPendingEntries(): Observable<Movement[]> {
-        return from(this._api.post('herramientas/Entrada/listarEntradasPendientes', {})).pipe(
+        return from(this._api.post('herramientas/movements/listPendingMovements', {
+            movement_type: 'entry'
+        })).pipe(
             switchMap((response: any) => {
                 return of(response?.datos || []);
             })
@@ -240,12 +250,52 @@ export class MovementService {
      * Get entries by status
      */
     getEntriesByStatus(status: string): Observable<Movement[]> {
-        return from(this._api.post('herramientas/Entrada/listarEntradaPorEstado', {
-            estado: status
+        return from(this._api.post('herramientas/movements/listMovementsByStatus', {
+            status: status,
+            movement_type: 'entry'
         })).pipe(
             switchMap((response: any) => {
                 return of(response?.datos || []);
             })
         );
+    }
+
+    /**
+     * Get movements by status
+     */
+    getMovementsByStatus(status: string, movementType?: string): Observable<Movement[]> {
+        const params: any = { status };
+        if (movementType) {
+            params.movement_type = movementType;
+        }
+        return from(this._api.post('herramientas/movements/listMovementsByStatus', params)).pipe(
+            switchMap((response: any) => {
+                return of(response?.datos || []);
+            })
+        );
+    }
+
+    /**
+     * Get pending movements
+     */
+    getPendingMovements(movementType?: string): Observable<Movement[]> {
+        const params: any = {};
+        if (movementType) {
+            params.movement_type = movementType;
+        }
+        return from(this._api.post('herramientas/movements/listPendingMovements', params)).pipe(
+            switchMap((response: any) => {
+                return of(response?.datos || []);
+            })
+        );
+    }
+
+    /**
+     * Export movements to PDF or Excel
+     */
+    exportMovements(filters?: any, format: 'PDF' | 'EXCEL' = 'PDF'): Observable<Blob> {
+        // Return a mock blob for now - backend needs to implement this endpoint
+        const mockBlob = new Blob(['PDF Content'], { type: 'application/pdf' });
+        return of(mockBlob);
     }
 }

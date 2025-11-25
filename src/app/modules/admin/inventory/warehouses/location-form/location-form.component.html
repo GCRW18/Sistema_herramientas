@@ -38,7 +38,7 @@
                     </mat-card-header>
                     <mat-card-content class="mt-4">
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                            <!-- Code -->
+                            <!-- Code - BD: varchar(50) -->
                             <mat-form-field class="w-full">
                                 <mat-label>Código *</mat-label>
                                 <input matInput formControlName="code" placeholder="Ej: A01" maxlength="50">
@@ -51,54 +51,40 @@
                                 </mat-error>
                             </mat-form-field>
 
-                            <!-- Name -->
+                            <!-- Name - BD: varchar(100) -->
                             <mat-form-field class="w-full">
                                 <mat-label>Nombre *</mat-label>
-                                <input matInput formControlName="name" placeholder="Ej: Estante A01" maxlength="200">
+                                <input matInput formControlName="name" placeholder="Ej: Estante A01" maxlength="100">
                                 <mat-icon matPrefix class="icon-size-5" [svgIcon]="'heroicons_outline:tag'"></mat-icon>
                                 <mat-error *ngIf="form.get('name')?.hasError('required')">
                                     El nombre es requerido
                                 </mat-error>
                                 <mat-error *ngIf="form.get('name')?.hasError('maxlength')">
-                                    Máximo 200 caracteres
+                                    Máximo 100 caracteres
                                 </mat-error>
                             </mat-form-field>
 
-                            <!-- Type -->
+                            <!-- Level - BD: varchar(50) -->
                             <mat-form-field class="w-full">
-                                <mat-label>Tipo de Ubicación *</mat-label>
-                                <mat-select formControlName="type" required>
-                                    <mat-option *ngFor="let type of locationTypes" [value]="type">
-                                        {{ type | titlecase }}
-                                    </mat-option>
-                                </mat-select>
-                                <mat-icon matPrefix class="icon-size-5" [svgIcon]="'heroicons_outline:cube'"></mat-icon>
-                                <mat-error *ngIf="form.get('type')?.hasError('required')">
-                                    El tipo es requerido
-                                </mat-error>
-                            </mat-form-field>
-
-                            <!-- Capacity -->
-                            <mat-form-field class="w-full">
-                                <mat-label>Capacidad (unidades)</mat-label>
-                                <input matInput type="number" formControlName="capacity" placeholder="Ej: 100">
+                                <mat-label>Nivel</mat-label>
+                                <input matInput formControlName="level" placeholder="Ej: Nivel 1" maxlength="50">
                                 <mat-icon matPrefix class="icon-size-5" [svgIcon]="'heroicons_outline:squares-2x2'"></mat-icon>
                             </mat-form-field>
 
-                            <!-- Current Capacity (only for edit mode) -->
-                            <mat-form-field class="w-full" *ngIf="isEditMode">
-                                <mat-label>Ocupación Actual</mat-label>
-                                <input matInput type="number" formControlName="currentCapacity" readonly>
-                                <mat-icon matPrefix class="icon-size-5" [svgIcon]="'heroicons_outline:chart-pie'"></mat-icon>
+                            <!-- Section - BD: varchar(50) -->
+                            <mat-form-field class="w-full">
+                                <mat-label>Sección</mat-label>
+                                <input matInput formControlName="section" placeholder="Ej: Sección A" maxlength="50">
+                                <mat-icon matPrefix class="icon-size-5" [svgIcon]="'heroicons_outline:cube'"></mat-icon>
                             </mat-form-field>
 
-                            <!-- Description -->
+                            <!-- Description - BD: varchar(255) -->
                             <mat-form-field class="w-full sm:col-span-2">
                                 <mat-label>Descripción</mat-label>
-                                <textarea matInput formControlName="description" rows="3" maxlength="500"
+                                <textarea matInput formControlName="description" rows="3" maxlength="255"
                                           placeholder="Descripción detallada de la ubicación..."></textarea>
                                 <mat-icon matPrefix class="icon-size-5" [svgIcon]="'heroicons_outline:document-text'"></mat-icon>
-                                <mat-hint align="end">{{ form.get('description')?.value?.length || 0 }}/500</mat-hint>
+                                <mat-hint align="end">{{ form.get('description')?.value?.length || 0 }}/255</mat-hint>
                             </mat-form-field>
 
                             <!-- Active Status -->

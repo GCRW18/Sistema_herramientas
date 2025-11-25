@@ -55,7 +55,7 @@ export default class CalibrationDetailComponent implements OnInit {
     }
 
     goBack(): void {
-        this._router.navigate(['/calibration']);
+        this._router.navigate(['/calibration/tracking']);
     }
 
     downloadCertificate(): void {

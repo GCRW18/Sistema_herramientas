@@ -1,12 +1,12 @@
 export interface Archivo {
-    id_archivo: string;
-    id_herramienta: string;
-    tipo: 'image' | 'document';
-    nombre_archivo: string;
-    ruta: string;
-    tamano_bytes?: number;
+    id_file: string;
+    tool_id: string;
+    type: 'image' | 'document';
+    file_name: string;
+    path: string;
+    size_bytes?: number;
     mime_type?: string;
-    descripcion?: string;
+    description?: string;
     estado_reg: string;
     id_usuario_reg: string;
     fecha_reg: string;

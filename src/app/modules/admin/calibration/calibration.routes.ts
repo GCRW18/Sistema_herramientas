@@ -6,9 +6,10 @@ export default [
         loadComponent: () => import('./send-calibration/send-calibration.component'),
     },
     {
-        path: 'receive',
+        path: 'receive/:id',
         loadComponent: () => import('./receive-calibration/receive-calibration.component'),
     },
+
     {
         path: 'tracking',
         loadComponent: () => import('./calibration-tracking/calibration-tracking.component'),
@@ -21,6 +22,7 @@ export default [
         path: 'alerts',
         loadComponent: () => import('./alerts/alerts.component'),
     },
+    // IMPORTANTE: Esta ruta DEBE estar al final porque captura cualquier :id
     {
         path: ':id',
         loadComponent: () => import('./calibration-detail/calibration-detail.component'),

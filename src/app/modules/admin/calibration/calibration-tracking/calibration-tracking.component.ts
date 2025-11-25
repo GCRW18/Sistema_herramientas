@@ -78,7 +78,7 @@ export default class CalibrationTrackingComponent implements OnInit {
     }
 
     viewDetail(id: string): void {
-        this._router.navigate(['/calibration/detail', id]);
+        this._router.navigate(['/calibration', id]);
     }
 
     getStatusColor(status: string): string {

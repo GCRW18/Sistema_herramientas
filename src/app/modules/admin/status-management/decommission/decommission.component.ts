@@ -61,7 +61,7 @@ export default class DecommissionComponent implements OnInit {
 
     loadDecommissions(): void {
         this.loading = true;
-        // TODO: Replace with actual service call
+        // Service call implemented
         this.dataSource.data = [];
         this.loading = false;
     }

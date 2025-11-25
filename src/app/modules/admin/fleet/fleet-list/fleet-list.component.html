@@ -19,7 +19,7 @@
                 <mat-icon [svgIcon]="'heroicons_outline:arrow-down-tray'"></mat-icon>
                 <span class="ml-2">Exportar</span>
             </button>
-            <button mat-flat-button [color]="'primary'" [routerLink]="['new']">
+            <button mat-flat-button [color]="'primary'" (click)="createAircraft()">
                 <mat-icon [svgIcon]="'heroicons_outline:plus'"></mat-icon>
                 <span class="ml-2">Nueva Aeronave</span>
             </button>
@@ -229,8 +229,7 @@
 
                     <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
                     <tr mat-row *matRowDef="let row; columns: displayedColumns;"
-                        class="hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer transition-colors"
-                        [routerLink]="[row.id]">
+                        class="hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
                     </tr>
 
                     <!-- No data -->

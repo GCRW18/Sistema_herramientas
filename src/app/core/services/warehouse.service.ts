@@ -1,177 +1,275 @@
-import { Injectable, inject } from '@angular/core';
-import { from, Observable, of, ReplaySubject, switchMap, tap } from 'rxjs';
-import { Location, Warehouse } from '../models';
-import { ErpApiService } from '../api/api.service';
+import { Injectable } from '@angular/core';
+import { Observable, from, map, catchError, throwError } from 'rxjs';
+import { Warehouse, Location } from 'app/core/models';
+import PxpClient from 'pxp-client';
 
-@Injectable({ providedIn: 'root' })
+/**
+ * WarehouseService
+ * Servicio para gestión de almacenes y ubicaciones usando PxpClient
+ * CORREGIDO: 14-11-2025 - URLs corregidas a herramientas/warehouses
+ */
+@Injectable({
+    providedIn: 'root'
+})
 export class WarehouseService {
-    private _api = inject(ErpApiService);
-    private _warehouses: ReplaySubject<Warehouse[]> = new ReplaySubject<Warehouse[]>(1);
-    private _locations: ReplaySubject<Location[]> = new ReplaySubject<Location[]>(1);
 
-    // -----------------------------------------------------------------------------------------------------
-    // @ Accessors
-    // -----------------------------------------------------------------------------------------------------
-
-    /**
-     * Getter for warehouses
-     */
-    get warehouses$(): Observable<Warehouse[]> {
-        return this._warehouses.asObservable();
+    constructor() {
+        console.log('🏭 WarehouseService inicializado');
     }
 
-    /**
-     * Getter for locations
-     */
-    get locations$(): Observable<Location[]> {
-        return this._locations.asObservable();
-    }
+    // ============================================
+    // WAREHOUSES CRUD
+    // ============================================
 
-    // -----------------------------------------------------------------------------------------------------
-    // @ Public methods
-    // -----------------------------------------------------------------------------------------------------
-
-    /**
-     * Get all warehouses
-     */
     getWarehouses(): Observable<Warehouse[]> {
-        return from(this._api.post('herramientas/Deposito/listarDeposito', {
-            start: 0,
-            limit: 50,
-            sort: 'nombre',
-            dir: 'asc'
-        })).pipe(
-            switchMap((response: any) => {
-                const warehouses = response?.datos || [];
-                this._warehouses.next(warehouses);
-                return of(warehouses);
+        console.log('📦 Obteniendo lista de almacenes...');
+
+        return from(
+            PxpClient.doRequest({
+                url: 'herramientas/warehouses/listWarehouses',
+                params: {
+                    start: 0,
+                    limit: 1000
+                }
+            })
+        ).pipe(
+            map((response: any) => {
+                console.log('✅ Respuesta getWarehouses:', response);
+
+                if (response?.datos) {
+                    return response.datos;
+                }
+                if (response?.data) {
+                    return response.data;
+                }
+                return [];
+            }),
+            catchError((error) => {
+                console.error('❌ Error en getWarehouses:', error);
+                return throwError(() => error);
             })
         );
     }
 
-    /**
-     * Get warehouse by id
-     */
     getWarehouseById(id: string): Observable<Warehouse> {
-        return from(this._api.post('herramientas/Deposito/listarDeposito', {
-            start: 0,
-            limit: 1,
-            id_deposito: id
-        })).pipe(
-            switchMap((response: any) => {
-                return of(response?.datos?.[0] || null);
+        console.log('🔍 Obteniendo almacén por ID:', id);
+
+        return from(
+            PxpClient.doRequest({
+                url: 'herramientas/warehouses/listWarehouses',
+                params: {
+                    start: 0,
+                    limit: 1,
+                    filtro: `whs.id_warehouse = ${id}`
+                }
+            })
+        ).pipe(
+            map((response: any) => {
+                console.log('✅ Respuesta getWarehouseById:', response);
+
+                const data = response?.datos || response?.data;
+                if (data && data.length > 0) {
+                    return data[0];
+                }
+                throw new Error('Almacén no encontrado');
+            }),
+            catchError((error) => {
+                console.error('❌ Error en getWarehouseById:', error);
+                return throwError(() => error);
             })
         );
     }
 
-    /**
-     * Create warehouse
-     */
-    createWarehouse(warehouse: Partial<Warehouse>): Observable<Warehouse> {
-        return from(this._api.post('herramientas/Deposito/insertarDeposito', warehouse)).pipe(
-            switchMap((response: any) => {
-                return of(response?.datos || warehouse);
+    createWarehouse(warehouse: Partial<Warehouse>): Observable<any> {
+        console.log('➕ Creando almacén:', warehouse);
+
+        return from(
+            PxpClient.doRequest({
+                url: 'herramientas/warehouses/insertWarehouse',
+                params: warehouse
+            })
+        ).pipe(
+            map((response: any) => {
+                console.log('✅ Respuesta createWarehouse:', response);
+                return response;
+            }),
+            catchError((error) => {
+                console.error('❌ Error en createWarehouse:', error);
+                return throwError(() => error);
             })
         );
     }
 
-    /**
-     * Update warehouse
-     */
-    updateWarehouse(id: string, warehouse: Partial<Warehouse>): Observable<Warehouse> {
-        return from(this._api.post('herramientas/Deposito/insertarDeposito', {
-            ...warehouse,
-            id_deposito: id
-        })).pipe(
-            switchMap((response: any) => {
-                return of(response?.datos || warehouse);
+    updateWarehouse(id: string, warehouse: Partial<Warehouse>): Observable<any> {
+        console.log('✏️ Actualizando almacén:', id, warehouse);
+
+        return from(
+            PxpClient.doRequest({
+                url: 'herramientas/warehouses/insertWarehouse',
+                params: {
+                    ...warehouse,
+                    id_warehouse: parseInt(id)
+                }
+            })
+        ).pipe(
+            map((response: any) => {
+                console.log('✅ Respuesta updateWarehouse:', response);
+                return response;
+            }),
+            catchError((error) => {
+                console.error('❌ Error en updateWarehouse:', error);
+                return throwError(() => error);
             })
         );
     }
 
-    /**
-     * Delete warehouse
-     */
-    deleteWarehouse(id: string): Observable<void> {
-        return from(this._api.post('herramientas/Deposito/eliminarDeposito', {
-            id_deposito: id
-        })).pipe(
-            switchMap(() => {
-                return of(undefined);
+    deleteWarehouse(id: string): Observable<any> {
+        console.log('🗑️ Eliminando almacén:', id);
+
+        return from(
+            PxpClient.doRequest({
+                url: 'herramientas/warehouses/deleteWarehouse',
+                params: {
+                    id_warehouse: parseInt(id)
+                }
+            })
+        ).pipe(
+            map((response: any) => {
+                console.log('✅ Respuesta deleteWarehouse:', response);
+                return response;
+            }),
+            catchError((error) => {
+                console.error('❌ Error en deleteWarehouse:', error);
+                return throwError(() => error);
             })
         );
     }
 
-    /**
-     * Get all locations
-     */
-    getLocations(warehouseId?: string): Observable<Location[]> {
-        const params = {
-            start: 0,
-            limit: 50,
-            sort: 'nombre',
-            dir: 'asc',
-            ...(warehouseId ? { id_deposito: warehouseId } : {})
-        };
+    // ============================================
+    // LOCATIONS CRUD
+    // ============================================
 
-        return from(this._api.post('herramientas/AlmacenUbicacion/listarAlmacenUbicacion', params)).pipe(
-            switchMap((response: any) => {
-                const locations = response?.datos || [];
-                this._locations.next(locations);
-                return of(locations);
+    getLocations(warehouseId: string): Observable<Location[]> {
+        console.log('📍 Obteniendo ubicaciones del almacén:', warehouseId);
+
+        return from(
+            PxpClient.doRequest({
+                url: 'herramientas/locations/listLocations',
+                params: {
+                    start: 0,
+                    limit: 1000,
+                    filtro: `loc.warehouse_id = ${warehouseId}`
+                }
+            })
+        ).pipe(
+            map((response: any) => {
+                console.log('✅ Respuesta getLocations:', response);
+
+                if (response?.datos) {
+                    return response.datos;
+                }
+                if (response?.data) {
+                    return response.data;
+                }
+                return [];
+            }),
+            catchError((error) => {
+                console.error('❌ Error en getLocations:', error);
+                return throwError(() => error);
             })
         );
     }
 
-    /**
-     * Get location by id
-     */
     getLocationById(id: string): Observable<Location> {
-        return from(this._api.post('herramientas/AlmacenUbicacion/listarAlmacenUbicacion', {
-            start: 0,
-            limit: 1,
-            id_ubicacion: id
-        })).pipe(
-            switchMap((response: any) => {
-                return of(response?.datos?.[0] || null);
+        console.log('🔍 Obteniendo ubicación por ID:', id);
+
+        return from(
+            PxpClient.doRequest({
+                url: 'herramientas/locations/listLocations',
+                params: {
+                    start: 0,
+                    limit: 1,
+                    filtro: `loc.id_location = ${id}`
+                }
+            })
+        ).pipe(
+            map((response: any) => {
+                console.log('✅ Respuesta getLocationById:', response);
+
+                const data = response?.datos || response?.data;
+                if (data && data.length > 0) {
+                    return data[0];
+                }
+                throw new Error('Ubicación no encontrada');
+            }),
+            catchError((error) => {
+                console.error('❌ Error en getLocationById:', error);
+                return throwError(() => error);
             })
         );
     }
 
-    /**
-     * Create location
-     */
-    createLocation(location: Partial<Location>): Observable<Location> {
-        return from(this._api.post('herramientas/AlmacenUbicacion/insertarAlmacenUbicacion', location)).pipe(
-            switchMap((response: any) => {
-                return of(response?.datos || location);
+    createLocation(location: Partial<Location>): Observable<any> {
+        console.log('➕ Creando ubicación:', location);
+
+        return from(
+            PxpClient.doRequest({
+                url: 'herramientas/locations/insertLocation',
+                params: location
+            })
+        ).pipe(
+            map((response: any) => {
+                console.log('✅ Respuesta createLocation:', response);
+                return response;
+            }),
+            catchError((error) => {
+                console.error('❌ Error en createLocation:', error);
+                return throwError(() => error);
             })
         );
     }
 
-    /**
-     * Update location
-     */
-    updateLocation(id: string, location: Partial<Location>): Observable<Location> {
-        return from(this._api.post('herramientas/AlmacenUbicacion/insertarAlmacenUbicacion', {
-            ...location,
-            id_ubicacion: id
-        })).pipe(
-            switchMap((response: any) => {
-                return of(response?.datos || location);
+    updateLocation(id: string, location: Partial<Location>): Observable<any> {
+        console.log('✏️ Actualizando ubicación:', id, location);
+
+        return from(
+            PxpClient.doRequest({
+                url: 'herramientas/locations/insertLocation',
+                params: {
+                    ...location,
+                    id_location: parseInt(id)
+                }
+            })
+        ).pipe(
+            map((response: any) => {
+                console.log('✅ Respuesta updateLocation:', response);
+                return response;
+            }),
+            catchError((error) => {
+                console.error('❌ Error en updateLocation:', error);
+                return throwError(() => error);
             })
         );
     }
 
-    /**
-     * Delete location
-     */
-    deleteLocation(id: string): Observable<void> {
-        return from(this._api.post('herramientas/AlmacenUbicacion/eliminarAlmacenUbicacion', {
-            id_ubicacion: id
-        })).pipe(
-            switchMap(() => {
-                return of(undefined);
+    deleteLocation(id: string): Observable<any> {
+        console.log('🗑️ Eliminando ubicación:', id);
+
+        return from(
+            PxpClient.doRequest({
+                url: 'herramientas/locations/deleteLocation',
+                params: {
+                    id_location: parseInt(id)
+                }
+            })
+        ).pipe(
+            map((response: any) => {
+                console.log('✅ Respuesta deleteLocation:', response);
+                return response;
+            }),
+            catchError((error) => {
+                console.error('❌ Error en deleteLocation:', error);
+                return throwError(() => error);
             })
         );
     }

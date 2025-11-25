@@ -193,4 +193,16 @@ export default class MaintenanceComponent implements OnInit {
         };
         return colors[status] || '';
     }
+
+    deleteMaintenance(id: string): void {
+        if (confirm('¿Está seguro de eliminar este mantenimiento?')) {
+            this._maintenanceService.deleteMaintenance(id).subscribe({
+                next: () => {
+                    console.log('Mantenimiento eliminado exitosamente');
+                    this.loadMaintenance();
+                },
+                error: (error) => console.error('Error deleting maintenance:', error)
+            });
+        }
+    }
 }

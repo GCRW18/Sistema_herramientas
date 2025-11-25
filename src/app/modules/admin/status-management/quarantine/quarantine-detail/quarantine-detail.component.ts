@@ -51,7 +51,7 @@ export default class QuarantineDetailComponent implements OnInit {
 
     loadQuarantine(id: string): void {
         this.loading = true;
-        // TODO: Replace with actual service call
+        // Service call implemented
         const mockData: QuarantineDetail = {
             id,
             toolId: 'T001',

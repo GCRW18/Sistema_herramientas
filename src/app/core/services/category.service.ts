@@ -5,12 +5,11 @@ import { ErpApiService } from '../api/api.service';
 
 // Interfaces para estructura jerárquica (tipo árbol)
 export interface CategoryNode {
-    id_categoria: number;
-    nombre: string;
-    codigo?: string;
-    descripcion?: string;
-    id_categoria_fk?: number; // Padre en el backend
-    id_categoria_padre?: number; // Alias para compatibilidad
+    id_category: number;
+    name: string;
+    code?: string;
+    description?: string;
+    parent_category_id?: number;
     nivel?: number;
     tiene_hijos?: boolean;
     cantidad_herramientas?: number;
@@ -65,10 +64,10 @@ export class CategoryService {
      * Get all categories (flat list)
      */
     getCategories(): Observable<Category[]> {
-        return from(this._api.post('herramientas/Categoria/listarCategoria', {
+        return from(this._api.post('herramientas/categories/listCategories', {
             start: 0,
             limit: 500,
-            sort: 'nombre',
+            sort: 'name',
             dir: 'asc'
         })).pipe(
             switchMap((response: any) => {
@@ -83,10 +82,10 @@ export class CategoryService {
      * Get category by id
      */
     getCategoryById(id: string): Observable<Category> {
-        return from(this._api.post('herramientas/Categoria/listarCategoria', {
+        return from(this._api.post('herramientas/categories/listCategories', {
             start: 0,
             limit: 1,
-            id_categoria: id
+            id_category: id
         })).pipe(
             switchMap((response: any) => {
                 return of(response?.datos?.[0] || null);
@@ -98,7 +97,7 @@ export class CategoryService {
      * Create category
      */
     createCategory(category: any): Observable<any> {
-        return from(this._api.post('herramientas/Categoria/insertarCategoria', category)).pipe(
+        return from(this._api.post('herramientas/categories/insertCategory', category)).pipe(
             switchMap((response: any) => {
                 return of(response?.datos || category);
             })
@@ -109,9 +108,9 @@ export class CategoryService {
      * Update category
      */
     updateCategory(id: string, category: any): Observable<any> {
-        return from(this._api.post('herramientas/Categoria/insertarCategoria', {
+        return from(this._api.post('herramientas/categories/insertCategory', {
             ...category,
-            id_categoria: id
+            id_category: id
         })).pipe(
             switchMap((response: any) => {
                 return of(response?.datos || category);
@@ -123,8 +122,8 @@ export class CategoryService {
      * Delete category
      */
     deleteCategory(id: string): Observable<void> {
-        return from(this._api.post('herramientas/Categoria/eliminarCategoria', {
-            id_categoria: id
+        return from(this._api.post('herramientas/categories/deleteCategory', {
+            id_category: id
         })).pipe(
             switchMap(() => {
                 return of(undefined);
@@ -141,11 +140,11 @@ export class CategoryService {
      * @param parentId - ID de categoría padre (null o '0' para raíz)
      */
     getCategoryTree(parentId: string = '0'): Observable<CategoryNode[]> {
-        return from(this._api.post('herramientas/Categoria/listarCategoria', {
+        return from(this._api.post('herramientas/categories/listCategories', {
             start: 0,
             limit: 500,
-            id_categoria_fk: parentId === '0' ? null : parentId,
-            sort: 'nombre',
+            parent_category_id: parentId === '0' ? null : parentId,
+            sort: 'name',
             dir: 'asc'
         })).pipe(
             switchMap((response: any) => {
@@ -153,12 +152,11 @@ export class CategoryService {
 
                 // Transform to tree nodes
                 const treeNodes: CategoryNode[] = categories.map((cat: any) => ({
-                    id_categoria: cat.id_categoria,
-                    nombre: cat.nombre,
-                    codigo: cat.codigo,
-                    descripcion: cat.descripcion,
-                    id_categoria_fk: cat.id_categoria_fk,
-                    id_categoria_padre: cat.id_categoria_fk, // Alias para compatibilidad
+                    id_category: cat.id_category,
+                    name: cat.name,
+                    code: cat.code,
+                    description: cat.description,
+                    parent_category_id: cat.parent_category_id,
                     nivel: cat.nivel || 0,
                     tiene_hijos: cat.tiene_hijos || false,
                     cantidad_herramientas: cat.cantidad_herramientas || 0,
@@ -176,23 +174,22 @@ export class CategoryService {
      * Load children for a specific category node (lazy loading)
      */
     loadCategoryChildren(parentNode: CategoryNode): Observable<CategoryNode[]> {
-        return from(this._api.post('herramientas/Categoria/listarCategoria', {
+        return from(this._api.post('herramientas/categories/listCategories', {
             start: 0,
             limit: 500,
-            id_categoria_fk: parentNode.id_categoria,
-            sort: 'nombre',
+            parent_category_id: parentNode.id_category,
+            sort: 'name',
             dir: 'asc'
         })).pipe(
             switchMap((response: any) => {
                 const children = response?.datos || [];
 
                 const childrenNodes: CategoryNode[] = children.map((cat: any) => ({
-                    id_categoria: cat.id_categoria,
-                    nombre: cat.nombre,
-                    codigo: cat.codigo,
-                    descripcion: cat.descripcion,
-                    id_categoria_fk: cat.id_categoria_fk,
-                    id_categoria_padre: cat.id_categoria_fk,
+                    id_category: cat.id_category,
+                    name: cat.name,
+                    code: cat.code,
+                    description: cat.description,
+                    parent_category_id: cat.parent_category_id,
                     nivel: (parentNode.nivel || 0) + 1,
                     tiene_hijos: cat.tiene_hijos || false,
                     cantidad_herramientas: cat.cantidad_herramientas || 0,
@@ -213,23 +210,22 @@ export class CategoryService {
             return this.getCategoryTree('0');
         }
 
-        return from(this._api.post('herramientas/Categoria/listarCategoria', {
+        return from(this._api.post('herramientas/categories/listCategories', {
             start: 0,
             limit: 500,
-            nombre: query, // Búsqueda por nombre
-            sort: 'nombre',
+            name: query, // Búsqueda por nombre
+            sort: 'name',
             dir: 'asc'
         })).pipe(
             switchMap((response: any) => {
                 const categories = response?.datos || [];
 
                 const treeNodes: CategoryNode[] = categories.map((cat: any) => ({
-                    id_categoria: cat.id_categoria,
-                    nombre: cat.nombre,
-                    codigo: cat.codigo,
-                    descripcion: cat.descripcion,
-                    id_categoria_fk: cat.id_categoria_fk,
-                    id_categoria_padre: cat.id_categoria_fk,
+                    id_category: cat.id_category,
+                    name: cat.name,
+                    code: cat.code,
+                    description: cat.description,
+                    parent_category_id: cat.parent_category_id,
                     nivel: cat.nivel || 0,
                     tiene_hijos: cat.tiene_hijos || false,
                     cantidad_herramientas: cat.cantidad_herramientas || 0,
@@ -253,15 +249,15 @@ export class CategoryService {
         const params: any = {
             start: 0,
             limit: 500,
-            sort: 'nombre',
+            sort: 'name',
             dir: 'asc'
         };
 
         if (categoryId) {
-            params.id_categoria_fk = categoryId;
+            params.parent_category_id = categoryId;
         }
 
-        return from(this._api.post('herramientas/Categoria/listarCategoria', params)).pipe(
+        return from(this._api.post('herramientas/categories/listCategories', params)).pipe(
             switchMap((response: any) => {
                 const subcategories = response?.datos || [];
                 this._subcategories.next(subcategories);
@@ -302,7 +298,7 @@ export class CategoryService {
      * Get category statistics
      */
     getCategoryStatistics(): Observable<any> {
-        return from(this._api.post('herramientas/Categoria/listarCategoria', {
+        return from(this._api.post('herramientas/categories/listCategories', {
             start: 0,
             limit: 1000
         })).pipe(
@@ -313,8 +309,8 @@ export class CategoryService {
                     total: categories.length,
                     activas: categories.filter((c: any) => c.estado_reg === 'activo').length,
                     con_herramientas: categories.filter((c: any) => (c.cantidad_herramientas || 0) > 0).length,
-                    raices: categories.filter((c: any) => !c.id_categoria_padre).length,
-                    subcategorias: categories.filter((c: any) => c.id_categoria_padre).length
+                    raices: categories.filter((c: any) => !c.parent_category_id).length,
+                    subcategorias: categories.filter((c: any) => c.parent_category_id).length
                 };
 
                 return of(stats);

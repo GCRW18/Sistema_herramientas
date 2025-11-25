@@ -1,1 +1,231 @@
-<p>audit-log works!</p>
+<div class="flex flex-col flex-auto min-w-0">
+    <!-- Header -->
+    <div class="flex flex-col sm:flex-row flex-0 sm:items-center sm:justify-between p-6 sm:py-8 sm:px-10 border-b bg-card dark:bg-transparent">
+        <div class="flex-1 min-w-0">
+            <h2 class="text-3xl font-extrabold tracking-tight leading-7 sm:leading-10 truncate text-gray-900 dark:text-gray-100">
+                Registros de Auditoría
+            </h2>
+            <p class="mt-2 text-secondary dark:text-gray-400">Historial completo de acciones realizadas en el sistema</p>
+        </div>
+        <div class="flex shrink-0 items-center mt-6 sm:mt-0 sm:ml-4">
+            <button mat-stroked-button (click)="exportLogs()">
+                <mat-icon [svgIcon]="'heroicons_outline:arrow-down-tray'"></mat-icon>
+                <span class="ml-2">Exportar</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 p-6 sm:px-10">
+        <!-- Total Logs -->
+        <div class="bg-card rounded-2xl shadow p-6 dark:border dark:border-gray-700">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm text-secondary dark:text-gray-400">Total Registros</p>
+                    <p class="mt-2 text-3xl font-bold text-gray-900 dark:text-gray-100">{{ stats.totalLogs }}</p>
+                </div>
+                <div class="flex items-center justify-center w-12 h-12 rounded-full bg-blue-100 dark:bg-blue-900">
+                    <mat-icon class="text-blue-600 dark:text-blue-400" [svgIcon]="'heroicons_outline:clipboard-document-list'"></mat-icon>
+                </div>
+            </div>
+        </div>
+
+        <!-- Today Logs -->
+        <div class="bg-card rounded-2xl shadow p-6 dark:border dark:border-gray-700">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm text-secondary dark:text-gray-400">Registros Hoy</p>
+                    <p class="mt-2 text-3xl font-bold text-green-600 dark:text-green-400">{{ stats.todayLogs }}</p>
+                </div>
+                <div class="flex items-center justify-center w-12 h-12 rounded-full bg-green-100 dark:bg-green-900">
+                    <mat-icon class="text-green-600 dark:text-green-400" [svgIcon]="'heroicons_outline:clock'"></mat-icon>
+                </div>
+            </div>
+        </div>
+
+        <!-- Critical Actions -->
+        <div class="bg-card rounded-2xl shadow p-6 dark:border dark:border-gray-700">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm text-secondary dark:text-gray-400">Acciones Críticas</p>
+                    <p class="mt-2 text-3xl font-bold text-red-600 dark:text-red-400">{{ stats.criticalActions }}</p>
+                </div>
+                <div class="flex items-center justify-center w-12 h-12 rounded-full bg-red-100 dark:bg-red-900">
+                    <mat-icon class="text-red-600 dark:text-red-400" [svgIcon]="'heroicons_outline:exclamation-triangle'"></mat-icon>
+                </div>
+            </div>
+        </div>
+
+        <!-- Active Users -->
+        <div class="bg-card rounded-2xl shadow p-6 dark:border dark:border-gray-700">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm text-secondary dark:text-gray-400">Usuarios Activos</p>
+                    <p class="mt-2 text-3xl font-bold text-purple-600 dark:text-purple-400">{{ stats.activeUsers }}</p>
+                </div>
+                <div class="flex items-center justify-center w-12 h-12 rounded-full bg-purple-100 dark:bg-purple-900">
+                    <mat-icon class="text-purple-600 dark:text-purple-400" [svgIcon]="'heroicons_outline:users'"></mat-icon>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main -->
+    <div class="flex-auto p-6 sm:p-10">
+        <!-- Filters -->
+        <form [formGroup]="filterForm" class="bg-card rounded-2xl shadow p-6 mb-6 dark:border dark:border-gray-700">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">Filtros de Búsqueda</h3>
+                <button mat-button type="button" (click)="clearFilters()" class="text-primary">
+                    <mat-icon [svgIcon]="'heroicons_outline:x-mark'"></mat-icon>
+                    <span class="ml-1">Limpiar</span>
+                </button>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <!-- Search -->
+                <mat-form-field class="w-full">
+                    <mat-label>Buscar</mat-label>
+                    <mat-icon matPrefix [svgIcon]="'heroicons_outline:magnifying-glass'"></mat-icon>
+                    <input matInput formControlName="search" placeholder="Usuario, acción, entidad..." autocomplete="off">
+                </mat-form-field>
+
+                <!-- Action Type Filter -->
+                <mat-form-field class="w-full">
+                    <mat-label>Tipo de Acción</mat-label>
+                    <mat-select formControlName="actionType">
+                        <mat-option value="">Todas</mat-option>
+                        <mat-option *ngFor="let type of actionTypeOptions" [value]="type.value">
+                            {{ type.label }}
+                        </mat-option>
+                    </mat-select>
+                </mat-form-field>
+
+                <!-- Module Filter -->
+                <mat-form-field class="w-full">
+                    <mat-label>Módulo</mat-label>
+                    <mat-select formControlName="module">
+                        <mat-option value="">Todos</mat-option>
+                        <mat-option *ngFor="let module of moduleOptions" [value]="module">
+                            {{ module }}
+                        </mat-option>
+                    </mat-select>
+                </mat-form-field>
+
+                <!-- Date From -->
+                <mat-form-field class="w-full">
+                    <mat-label>Desde</mat-label>
+                    <input matInput [matDatepicker]="pickerFrom" formControlName="startDate">
+                    <mat-datepicker-toggle matSuffix [for]="pickerFrom"></mat-datepicker-toggle>
+                    <mat-datepicker #pickerFrom></mat-datepicker>
+                </mat-form-field>
+
+                <!-- Date To -->
+                <mat-form-field class="w-full">
+                    <mat-label>Hasta</mat-label>
+                    <input matInput [matDatepicker]="pickerTo" formControlName="endDate">
+                    <mat-datepicker-toggle matSuffix [for]="pickerTo"></mat-datepicker-toggle>
+                    <mat-datepicker #pickerTo></mat-datepicker>
+                </mat-form-field>
+            </div>
+        </form>
+
+        <!-- Table -->
+        <div class="bg-card shadow rounded-2xl overflow-hidden dark:border dark:border-gray-700">
+            <div class="overflow-x-auto">
+                <table mat-table [dataSource]="dataSource" matSort class="w-full">
+                    <!-- Timestamp Column -->
+                    <ng-container matColumnDef="timestamp">
+                        <th mat-header-cell *matHeaderCellDef mat-sort-header class="bg-gray-50 dark:bg-gray-800 font-semibold">Fecha/Hora</th>
+                        <td mat-cell *matCellDef="let log" class="py-4">
+                            <span class="text-sm text-gray-700 dark:text-gray-300">{{ formatTimestamp(log.timestamp) }}</span>
+                        </td>
+                    </ng-container>
+
+                    <!-- User Column -->
+                    <ng-container matColumnDef="user">
+                        <th mat-header-cell *matHeaderCellDef mat-sort-header class="bg-gray-50 dark:bg-gray-800 font-semibold">Usuario</th>
+                        <td mat-cell *matCellDef="let log" class="py-4">
+                            <span class="font-medium text-gray-900 dark:text-gray-100">{{ log.user }}</span>
+                        </td>
+                    </ng-container>
+
+                    <!-- Action Type Column -->
+                    <ng-container matColumnDef="actionType">
+                        <th mat-header-cell *matHeaderCellDef mat-sort-header class="bg-gray-50 dark:bg-gray-800 font-semibold">Tipo</th>
+                        <td mat-cell *matCellDef="let log" class="py-4">
+                            <mat-chip-set>
+                                <mat-chip [color]="getActionTypeColor(log.actionType)" [highlighted]="true">
+                                    {{ getActionTypeLabel(log.actionType) }}
+                                </mat-chip>
+                            </mat-chip-set>
+                        </td>
+                    </ng-container>
+
+                    <!-- Module Column -->
+                    <ng-container matColumnDef="module">
+                        <th mat-header-cell *matHeaderCellDef mat-sort-header class="bg-gray-50 dark:bg-gray-800 font-semibold">Módulo</th>
+                        <td mat-cell *matCellDef="let log" class="py-4">
+                            <span class="text-gray-700 dark:text-gray-300">{{ log.module }}</span>
+                        </td>
+                    </ng-container>
+
+                    <!-- Action Column -->
+                    <ng-container matColumnDef="action">
+                        <th mat-header-cell *matHeaderCellDef mat-sort-header class="bg-gray-50 dark:bg-gray-800 font-semibold">Acción</th>
+                        <td mat-cell *matCellDef="let log" class="py-4">
+                            <span class="font-medium text-gray-900 dark:text-gray-100">{{ log.action }}</span>
+                        </td>
+                    </ng-container>
+
+                    <!-- Entity Column -->
+                    <ng-container matColumnDef="entity">
+                        <th mat-header-cell *matHeaderCellDef mat-sort-header class="bg-gray-50 dark:bg-gray-800 font-semibold">Entidad</th>
+                        <td mat-cell *matCellDef="let log" class="py-4">
+                            <span class="text-sm text-gray-700 dark:text-gray-300">{{ getEntityDisplay(log) }}</span>
+                        </td>
+                    </ng-container>
+
+                    <!-- IP Address Column -->
+                    <ng-container matColumnDef="ipAddress">
+                        <th mat-header-cell *matHeaderCellDef class="bg-gray-50 dark:bg-gray-800 font-semibold">IP</th>
+                        <td mat-cell *matCellDef="let log" class="py-4">
+                            <span class="text-xs font-mono text-gray-600 dark:text-gray-400">{{ log.ipAddress || 'N/A' }}</span>
+                        </td>
+                    </ng-container>
+
+                    <!-- Details Column -->
+                    <ng-container matColumnDef="details">
+                        <th mat-header-cell *matHeaderCellDef class="bg-gray-50 dark:bg-gray-800 font-semibold">Acciones</th>
+                        <td mat-cell *matCellDef="let log" class="py-4">
+                            <button mat-icon-button [matTooltip]="'Ver detalles'" (click)="viewDetails(log)" class="hover:bg-blue-50 dark:hover:bg-blue-900">
+                                <mat-icon class="text-blue-600 dark:text-blue-400" [svgIcon]="'heroicons_outline:eye'"></mat-icon>
+                            </button>
+                            <mat-icon *ngIf="isCriticalAction(log)" class="text-red-600 dark:text-red-400 ml-2"
+                                      [svgIcon]="'heroicons_outline:exclamation-triangle'"
+                                      [matTooltip]="'Acción crítica'">
+                            </mat-icon>
+                        </td>
+                    </ng-container>
+
+                    <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+                    <tr mat-row *matRowDef="let row; columns: displayedColumns;"
+                        class="hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                        [class.bg-red-50]="isCriticalAction(row)"
+                        [class.dark:bg-red-900]="isCriticalAction(row)">
+                    </tr>
+
+                    <!-- No data -->
+                    <tr class="h-16" *matNoDataRow>
+                        <td [attr.colspan]="displayedColumns.length" class="text-center text-secondary dark:text-gray-400">
+                            {{ loading ? 'Cargando...' : (dataSource.filter ? 'No se encontraron registros' : 'No hay registros de auditoría') }}
+                        </td>
+                    </tr>
+                </table>
+            </div>
+
+            <!-- Paginator -->
+            <mat-paginator [pageSizeOptions]="[25, 50, 100, 200]" showFirstLastButtons class="border-t dark:border-gray-700"></mat-paginator>
+        </div>
+    </div>
+</div>

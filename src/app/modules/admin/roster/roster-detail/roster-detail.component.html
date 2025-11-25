@@ -1,0 +1,248 @@
+<div class="flex flex-col flex-auto min-w-0 admin-page-container">
+    <!-- Header -->
+    <div class="flex flex-col sm:flex-row flex-0 sm:items-center sm:justify-between p-6 sm:py-8 sm:px-10 border-b bg-card dark:bg-transparent">
+        <div class="flex-1 min-w-0">
+            <div class="flex items-center">
+                <button mat-icon-button (click)="goBack()" class="mr-2">
+                    <mat-icon [svgIcon]="'heroicons_outline:arrow-left'"></mat-icon>
+                </button>
+                <mat-icon class="icon-size-12 text-primary mr-3" [svgIcon]="'heroicons_outline:clipboard-document-list'"></mat-icon>
+                <h2 class="text-3xl font-extrabold tracking-tight leading-7 sm:leading-10 truncate">
+                    Detalles de Asignación
+                </h2>
+            </div>
+            <div *ngIf="assignment" class="ml-15 mt-2">
+                <p class="text-secondary">
+                    {{ getItemCode() }} - {{ getItemName() }}
+                </p>
+            </div>
+        </div>
+        <div *ngIf="assignment" class="flex shrink-0 items-center gap-3 mt-6 sm:mt-0 sm:ml-4">
+            <button mat-stroked-button *ngIf="canReturn()" (click)="returnAssignment()">
+                <mat-icon [svgIcon]="'heroicons_outline:arrow-uturn-left'"></mat-icon>
+                <span class="ml-2">Devolver</span>
+            </button>
+            <button mat-stroked-button *ngIf="canEdit()" (click)="editAssignment()">
+                <mat-icon [svgIcon]="'heroicons_outline:pencil'"></mat-icon>
+                <span class="ml-2">Editar</span>
+            </button>
+            <button mat-stroked-button color="warn" (click)="deleteAssignment()">
+                <mat-icon [svgIcon]="'heroicons_outline:trash'"></mat-icon>
+                <span class="ml-2">Eliminar</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Loading -->
+    <div *ngIf="loading" class="flex items-center justify-center h-96">
+        <mat-spinner></mat-spinner>
+    </div>
+
+    <!-- Content -->
+    <div *ngIf="!loading && assignment" class="flex-auto p-6 sm:p-10">
+        <div class="max-w-5xl mx-auto">
+            <!-- Overdue Warning -->
+            <div *ngIf="isOverdue()" class="mb-6 p-4 bg-red-50 dark:bg-red-900 border border-red-200 dark:border-red-700 rounded-xl">
+                <div class="flex items-center">
+                    <mat-icon class="text-red-600 dark:text-red-200 mr-3" [svgIcon]="'heroicons_outline:exclamation-triangle'"></mat-icon>
+                    <div>
+                        <div class="font-semibold text-red-900 dark:text-red-100">Asignación Vencida</div>
+                        <div class="text-sm text-red-700 dark:text-red-300">
+                            Esta asignación está vencida por {{ getDaysOverdue() }} día(s). Por favor proceda con la devolución.
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Status Card -->
+            <div class="bg-card shadow rounded-2xl p-6 mb-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <div class="text-sm text-secondary mb-1">Estado</div>
+                        <div class="flex items-center">
+                            <span class="inline-flex items-center px-4 py-2 rounded-full text-sm font-medium"
+                                  [ngClass]="[getStatusInfo().color, getStatusInfo().bgColor]">
+                                {{ getStatusInfo().label }}
+                            </span>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <div class="text-sm text-secondary mb-1">Tipo</div>
+                        <div class="text-lg font-semibold">{{ getAssignmentTypeLabel() }}</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Item Details -->
+                <div class="bg-card shadow rounded-2xl overflow-hidden">
+                    <div class="p-6 border-b bg-gray-50 dark:bg-gray-800">
+                        <h3 class="text-lg font-semibold">Detalles del Elemento</h3>
+                    </div>
+                    <div class="p-6 space-y-4">
+                        <div>
+                            <div class="text-sm text-secondary mb-1">Código</div>
+                            <div class="text-lg font-medium">{{ getItemCode() }}</div>
+                        </div>
+                        <mat-divider></mat-divider>
+                        <div>
+                            <div class="text-sm text-secondary mb-1">Nombre</div>
+                            <div class="text-lg font-medium">{{ getItemName() }}</div>
+                        </div>
+                        <mat-divider></mat-divider>
+                        <div>
+                            <div class="text-sm text-secondary mb-1">Tipo</div>
+                            <div class="flex items-center">
+                                <mat-icon class="icon-size-5 mr-2"
+                                          [svgIcon]="assignment.assignmentType === 'tool' ? 'heroicons_outline:wrench' : 'heroicons_outline:briefcase'"></mat-icon>
+                                <span>{{ getAssignmentTypeLabel() }}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Employee Details -->
+                <div class="bg-card shadow rounded-2xl overflow-hidden">
+                    <div class="p-6 border-b bg-gray-50 dark:bg-gray-800">
+                        <h3 class="text-lg font-semibold">Empleado Asignado</h3>
+                    </div>
+                    <div class="p-6 space-y-4">
+                        <div>
+                            <div class="text-sm text-secondary mb-1">Nombre</div>
+                            <div class="text-lg font-medium">{{ assignment.employeeName || 'N/A' }}</div>
+                        </div>
+                        <mat-divider></mat-divider>
+                        <div>
+                            <div class="text-sm text-secondary mb-1">Posición</div>
+                            <div>{{ assignment.employeePosition || 'N/A' }}</div>
+                        </div>
+                        <mat-divider></mat-divider>
+                        <div>
+                            <div class="text-sm text-secondary mb-1">Turno</div>
+                            <div class="flex items-center">
+                                <mat-icon class="icon-size-5 mr-2" [svgIcon]="'heroicons_outline:clock'"></mat-icon>
+                                <span>{{ getShiftLabel() }}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Assignment Dates -->
+                <div class="bg-card shadow rounded-2xl overflow-hidden">
+                    <div class="p-6 border-b bg-gray-50 dark:bg-gray-800">
+                        <h3 class="text-lg font-semibold">Fechas</h3>
+                    </div>
+                    <div class="p-6 space-y-4">
+                        <div>
+                            <div class="text-sm text-secondary mb-1">Fecha de Asignación</div>
+                            <div class="flex items-center">
+                                <mat-icon class="icon-size-5 mr-2 text-primary" [svgIcon]="'heroicons_outline:calendar'"></mat-icon>
+                                <span>{{ formatDate(assignment.assignmentDate) }}</span>
+                            </div>
+                        </div>
+                        <mat-divider></mat-divider>
+                        <div>
+                            <div class="text-sm text-secondary mb-1">Fecha Esperada de Devolución</div>
+                            <div class="flex items-center">
+                                <mat-icon class="icon-size-5 mr-2 text-accent" [svgIcon]="'heroicons_outline:calendar'"></mat-icon>
+                                <span>{{ formatDateShort(assignment.expectedReturnDate) }}</span>
+                            </div>
+                        </div>
+                        <mat-divider *ngIf="assignment.actualReturnDate"></mat-divider>
+                        <div *ngIf="assignment.actualReturnDate">
+                            <div class="text-sm text-secondary mb-1">Fecha de Devolución Real</div>
+                            <div class="flex items-center">
+                                <mat-icon class="icon-size-5 mr-2 text-green-600" [svgIcon]="'heroicons_outline:check-circle'"></mat-icon>
+                                <span>{{ formatDate(assignment.actualReturnDate) }}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Additional Information -->
+                <div class="bg-card shadow rounded-2xl overflow-hidden">
+                    <div class="p-6 border-b bg-gray-50 dark:bg-gray-800">
+                        <h3 class="text-lg font-semibold">Información Adicional</h3>
+                    </div>
+                    <div class="p-6 space-y-4">
+                        <div *ngIf="assignment.aircraftRegistration">
+                            <div class="text-sm text-secondary mb-1">Aeronave</div>
+                            <div class="flex items-center">
+                                <mat-icon class="icon-size-5 mr-2" [svgIcon]="'heroicons_outline:paper-airplane'"></mat-icon>
+                                <span>{{ assignment.aircraftRegistration }}</span>
+                            </div>
+                        </div>
+                        <mat-divider *ngIf="assignment.aircraftRegistration"></mat-divider>
+                        <div *ngIf="assignment.workOrderNumber">
+                            <div class="text-sm text-secondary mb-1">Orden de Trabajo</div>
+                            <div class="flex items-center">
+                                <mat-icon class="icon-size-5 mr-2" [svgIcon]="'heroicons_outline:document-text'"></mat-icon>
+                                <span>{{ assignment.workOrderNumber }}</span>
+                            </div>
+                        </div>
+                        <mat-divider *ngIf="assignment.workOrderNumber"></mat-divider>
+                        <div *ngIf="assignment.purpose">
+                            <div class="text-sm text-secondary mb-1">Propósito</div>
+                            <div>{{ assignment.purpose }}</div>
+                        </div>
+                        <mat-divider *ngIf="!assignment.purpose && !assignment.workOrderNumber && !assignment.aircraftRegistration"></mat-divider>
+                        <div *ngIf="!assignment.purpose && !assignment.workOrderNumber && !assignment.aircraftRegistration">
+                            <div class="text-center text-secondary py-4">
+                                <mat-icon class="icon-size-8 mb-2" [svgIcon]="'heroicons_outline:information-circle'"></mat-icon>
+                                <p>No hay información adicional disponible</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Notes (Full Width) -->
+                <div *ngIf="assignment.notes || assignment.returnNotes" class="lg:col-span-2 bg-card shadow rounded-2xl overflow-hidden">
+                    <div class="p-6 border-b bg-gray-50 dark:bg-gray-800">
+                        <h3 class="text-lg font-semibold">Notas</h3>
+                    </div>
+                    <div class="p-6 space-y-4">
+                        <div *ngIf="assignment.notes">
+                            <div class="text-sm text-secondary mb-2">Notas de Asignación</div>
+                            <div class="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                                {{ assignment.notes }}
+                            </div>
+                        </div>
+                        <div *ngIf="assignment.returnNotes">
+                            <div class="text-sm text-secondary mb-2">Notas de Devolución</div>
+                            <div class="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                                {{ assignment.returnNotes }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Audit Information -->
+                <div class="lg:col-span-2 bg-card shadow rounded-2xl overflow-hidden">
+                    <div class="p-6 border-b bg-gray-50 dark:bg-gray-800">
+                        <h3 class="text-lg font-semibold">Información de Auditoría</h3>
+                    </div>
+                    <div class="p-6">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+                            <div>
+                                <span class="text-secondary">Creado:</span>
+                                <span class="ml-2">{{ formatDate(assignment.createdAt) }}</span>
+                            </div>
+                            <div>
+                                <span class="text-secondary">Actualizado:</span>
+                                <span class="ml-2">{{ formatDate(assignment.updatedAt) }}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- No Data -->
+    <div *ngIf="!loading && !assignment" class="flex items-center justify-center h-96">
+        <div class="text-center text-secondary">
+            <mat-icon class="icon-size-16 mb-4" [svgIcon]="'heroicons_outline:clipboard-document-list'"></mat-icon>
+            <p class="text-lg font-medium">Asignación no encontrada</p>
+        </div>
+    </div>
+</div>

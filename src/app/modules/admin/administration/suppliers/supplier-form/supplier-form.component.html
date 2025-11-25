@@ -24,7 +24,7 @@
                         <mat-label>Código</mat-label>
                         <input matInput formControlName="code" placeholder="Ej: PROV-001" required>
                         <mat-icon matPrefix [svgIcon]="'heroicons_outline:hashtag'"></mat-icon>
-                        <mat-error *ngIf="form.get('code')?.hasError('required')">
+                        <mat-error>
                             El código es requerido
                         </mat-error>
                     </mat-form-field>
@@ -33,7 +33,7 @@
                         <mat-label>Nombre de la Empresa</mat-label>
                         <input matInput formControlName="name" placeholder="Razón social" required>
                         <mat-icon matPrefix [svgIcon]="'heroicons_outline:building-office'"></mat-icon>
-                        <mat-error *ngIf="form.get('name')?.hasError('required')">
+                        <mat-error>
                             El nombre es requerido
                         </mat-error>
                     </mat-form-field>
@@ -60,7 +60,7 @@
                         <mat-label>Email</mat-label>
                         <input matInput type="email" formControlName="email" placeholder="correo@ejemplo.com">
                         <mat-icon matPrefix [svgIcon]="'heroicons_outline:envelope'"></mat-icon>
-                        <mat-error *ngIf="form.get('email')?.hasError('email')">
+                        <mat-error *ngIf="form.get('email')?.errors?.['email']">
                             Email inválido
                         </mat-error>
                     </mat-form-field>

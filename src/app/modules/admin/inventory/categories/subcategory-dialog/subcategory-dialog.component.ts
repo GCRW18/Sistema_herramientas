@@ -7,6 +7,7 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { MatIconModule } from '@angular/material/icon';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatTableDataSource, MatTableModule } from '@angular/material/table';
 import { MatPaginator, MatPaginatorModule } from '@angular/material/paginator';
 import { MatSort, MatSortModule } from '@angular/material/sort';
@@ -26,6 +27,7 @@ import { ErpConfirmationService } from '@erp/services/confirmation';
         MatInputModule,
         MatSlideToggleModule,
         MatIconModule,
+        MatTooltipModule,
         MatTableModule,
         MatPaginatorModule,
         MatSortModule,

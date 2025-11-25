@@ -65,3 +65,17 @@ mat-row {
         background-color: rgba(var(--fuse-border-rgb), 0.12);
     }
 }
+
+// Estilos para snackbar de error
+::ng-deep .error-snackbar {
+    background-color: #f44336 !important;
+    color: white !important;
+
+    .mat-mdc-snack-bar-label {
+        color: white !important;
+    }
+
+    .mat-mdc-button {
+        color: white !important;
+    }
+}

@@ -17,12 +17,28 @@
     <div class="flex-auto p-6 sm:p-10">
         <div class="max-w-3xl">
             <form [formGroup]="form" class="flex flex-col">
-                <!-- Name -->
+                <!-- Username -->
                 <mat-form-field class="w-full">
-                    <mat-label>Nombre Completo</mat-label>
-                    <input matInput formControlName="name" required>
+                    <mat-label>Nombre de Usuario</mat-label>
+                    <input matInput formControlName="username" required>
+                    <mat-icon matPrefix [svgIcon]="'heroicons_outline:user'"></mat-icon>
+                    <mat-error>El nombre de usuario es requerido</mat-error>
+                </mat-form-field>
+
+                <!-- First Name -->
+                <mat-form-field class="w-full">
+                    <mat-label>Nombre</mat-label>
+                    <input matInput formControlName="firstName" required>
                     <mat-icon matPrefix [svgIcon]="'heroicons_outline:user'"></mat-icon>
                     <mat-error>El nombre es requerido</mat-error>
+                </mat-form-field>
+
+                <!-- Last Name -->
+                <mat-form-field class="w-full">
+                    <mat-label>Apellido</mat-label>
+                    <input matInput formControlName="lastName" required>
+                    <mat-icon matPrefix [svgIcon]="'heroicons_outline:user'"></mat-icon>
+                    <mat-error>El apellido es requerido</mat-error>
                 </mat-form-field>
 
                 <!-- Email -->
@@ -44,9 +60,9 @@
                 <!-- Role -->
                 <mat-form-field class="w-full">
                     <mat-label>Rol</mat-label>
-                    <mat-select formControlName="roleId" required>
-                        <mat-option *ngFor="let role of roles" [value]="role.id">
-                            {{ role.name }}
+                    <mat-select formControlName="role" required>
+                        <mat-option *ngFor="let role of roles" [value]="role.value">
+                            {{ role.label }}
                         </mat-option>
                     </mat-select>
                     <mat-icon matPrefix [svgIcon]="'heroicons_outline:shield-check'"></mat-icon>

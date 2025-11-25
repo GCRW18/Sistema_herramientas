@@ -2,14 +2,16 @@
  * Categoría de herramientas
  */
 export interface Category {
-    id: string;
+    id?: string;
+    id_category?: number; // Campo del backend - AGREGAR ESTA LÍNEA
     code: string;
     name: string;
     description?: string;
     active: boolean;
-    createdAt: string;
-    updatedAt: string;
+    createdAt?: string;
+    updatedAt?: string;
 }
+
 
 /**
  * Subcategoría de herramientas

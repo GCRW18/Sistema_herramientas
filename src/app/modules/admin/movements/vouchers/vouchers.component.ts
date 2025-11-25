@@ -8,7 +8,7 @@ import { MatSort, MatSortModule } from '@angular/material/sort';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatTooltipModule } from '@angular/material/tooltip';
-import { MovementService } from 'app/core/services';
+import { MovementService, NotificationService } from 'app/core/services';
 
 interface Voucher {
     id: string;
@@ -39,6 +39,7 @@ interface Voucher {
 })
 export default class VouchersComponent implements OnInit {
     private _movementService = inject(MovementService);
+    private _notificationService = inject(NotificationService);
 
     @ViewChild(MatPaginator) paginator!: MatPaginator;
     @ViewChild(MatSort) sort!: MatSort;
@@ -58,9 +59,26 @@ export default class VouchersComponent implements OnInit {
 
     loadVouchers(): void {
         this.loading = true;
-        // TODO: Replace with actual service call
-        this.dataSource.data = [];
-        this.loading = false;
+        this._movementService.getMovements().subscribe({
+            next: (movements) => {
+                // Convert movements to vouchers
+                const vouchers: Voucher[] = movements.map(m => ({
+                    id: m.id,
+                    movementId: m.id,
+                    voucherNumber: m.movementNumber || `VOC-${m.id.substring(0, 8).toUpperCase()}`,
+                    date: new Date(m.date),
+                    type: m.type,
+                    toolCode: '', // Will be populated from movement items
+                    toolName: '' // Will be populated from movement items
+                }));
+                this.dataSource.data = vouchers;
+                this.loading = false;
+            },
+            error: () => {
+                this._notificationService.error('Error al cargar comprobantes');
+                this.loading = false;
+            }
+        });
     }
 
     applyFilter(event: Event): void {
@@ -69,13 +87,39 @@ export default class VouchersComponent implements OnInit {
     }
 
     downloadVoucher(id: string): void {
-        // TODO: Implement voucher download
-        console.log('Download voucher:', id);
+        this._movementService.exportMovements({ movementIds: [id] }, 'PDF').subscribe({
+            next: (blob) => {
+                const url = window.URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = `voucher-${id}.pdf`;
+                link.click();
+                window.URL.revokeObjectURL(url);
+                this._notificationService.success('Comprobante descargado correctamente');
+            },
+            error: () => {
+                this._notificationService.error('Error al descargar comprobante');
+            }
+        });
     }
 
     printVoucher(id: string): void {
-        // TODO: Implement voucher print
-        console.log('Print voucher:', id);
+        this._movementService.exportMovements({ movementIds: [id] }, 'PDF').subscribe({
+            next: (blob) => {
+                const url = window.URL.createObjectURL(blob);
+                const printWindow = window.open(url, '_blank');
+                if (printWindow) {
+                    printWindow.onload = () => {
+                        printWindow.print();
+                        window.URL.revokeObjectURL(url);
+                    };
+                }
+                this._notificationService.success('Preparando impresión...');
+            },
+            error: () => {
+                this._notificationService.error('Error al preparar impresión');
+            }
+        });
     }
 
     getMovementTypeLabel(type: string): string {

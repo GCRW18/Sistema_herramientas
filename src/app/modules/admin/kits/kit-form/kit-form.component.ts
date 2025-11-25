@@ -139,7 +139,7 @@ export default class KitFormComponent implements OnInit {
                     ? `Kit ${kitData.code} actualizado correctamente`
                     : `Kit ${kitData.code} creado correctamente`;
                 this._notificationService.success(message);
-                this._router.navigate(['/kits']);
+                this._router.navigate(['/kits/list']);
             },
             error: (error) => {
                 this.loading = false;
@@ -153,6 +153,6 @@ export default class KitFormComponent implements OnInit {
     }
 
     cancel(): void {
-        this._router.navigate(['/kits']);
+        this._router.navigate(['/kits/list']);
     }
 }

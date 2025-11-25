@@ -41,7 +41,7 @@ export class LabelService {
         options: LabelGenerationOptions
     ): Observable<GeneratedLabel> {
         return from(this._api.post('herramientas/Utilidades/generarEtiqueta', {
-            id_herramienta: toolId,
+            tool_id: toolId,
             opciones: options,
         })).pipe(
             switchMap((response: any) => {

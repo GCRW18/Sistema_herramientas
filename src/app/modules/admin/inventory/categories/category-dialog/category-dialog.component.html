@@ -20,10 +20,10 @@
                 <mat-label>Código *</mat-label>
                 <input matInput formControlName="code" placeholder="Ej: CAT-001" maxlength="50">
                 <mat-icon matPrefix class="icon-size-5" [svgIcon]="'heroicons_outline:hashtag'"></mat-icon>
-                <mat-error *ngIf="form.get('code')?.hasError('required')">
+                <mat-error *ngIf="form.get('code')?.errors?.['required']">
                     El código es requerido
                 </mat-error>
-                <mat-error *ngIf="form.get('code')?.hasError('maxlength')">
+                <mat-error *ngIf="form.get('code')?.errors?.['maxlength']">
                     Máximo 50 caracteres
                 </mat-error>
             </mat-form-field>
@@ -33,10 +33,10 @@
                 <mat-label>Nombre *</mat-label>
                 <input matInput formControlName="name" placeholder="Nombre de la categoría" maxlength="200">
                 <mat-icon matPrefix class="icon-size-5" [svgIcon]="'heroicons_outline:tag'"></mat-icon>
-                <mat-error *ngIf="form.get('name')?.hasError('required')">
+                <mat-error *ngIf="form.get('name')?.errors?.['required']">
                     El nombre es requerido
                 </mat-error>
-                <mat-error *ngIf="form.get('name')?.hasError('maxlength')">
+                <mat-error *ngIf="form.get('name')?.errors?.['maxlength']">
                     Máximo 200 caracteres
                 </mat-error>
             </mat-form-field>

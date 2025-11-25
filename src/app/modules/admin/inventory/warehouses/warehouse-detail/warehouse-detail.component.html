@@ -104,9 +104,9 @@
                     <p class="text-sm text-secondary">Dirección</p>
                     <p class="font-medium mt-1">{{ warehouse.address }}</p>
                 </div>
-                <div *ngIf="warehouse.phone">
-                    <p class="text-sm text-secondary">Teléfono</p>
-                    <p class="font-medium mt-1">{{ warehouse.phone }}</p>
+                <div *ngIf="warehouse.responsible">
+                    <p class="text-sm text-secondary">Responsable</p>
+                    <p class="font-medium mt-1">{{ warehouse.responsible }}</p>
                 </div>
             </div>
         </div>
@@ -144,37 +144,24 @@
                                 <td mat-cell *matCellDef="let location">{{ location.name }}</td>
                             </ng-container>
 
-                            <!-- Type Column -->
-                            <ng-container matColumnDef="type">
-                                <th mat-header-cell *matHeaderCellDef class="font-semibold bg-gray-50 dark:bg-gray-800">Tipo</th>
+                            <!-- Level Column -->
+                            <ng-container matColumnDef="level">
+                                <th mat-header-cell *matHeaderCellDef class="font-semibold bg-gray-50 dark:bg-gray-800">Nivel</th>
                                 <td mat-cell *matCellDef="let location">
-                                    <mat-chip-set>
-                                        <mat-chip>{{ getLocationTypeLabel(location.type) }}</mat-chip>
-                                    </mat-chip-set>
+                                    <span>{{ location.level || '-' }}</span>
                                 </td>
                             </ng-container>
 
-                            <!-- Capacity Column -->
-                            <ng-container matColumnDef="capacity">
-                                <th mat-header-cell *matHeaderCellDef class="font-semibold bg-gray-50 dark:bg-gray-800">Capacidad</th>
-                                <td mat-cell *matCellDef="let location">{{ location.capacity || 'N/A' }}</td>
-                            </ng-container>
-
-                            <!-- Current Capacity Column -->
-                            <ng-container matColumnDef="currentCapacity">
-                                <th mat-header-cell *matHeaderCellDef class="font-semibold bg-gray-50 dark:bg-gray-800">Ocupación</th>
+                            <!-- Section Column -->
+                            <ng-container matColumnDef="section">
+                                <th mat-header-cell *matHeaderCellDef class="font-semibold bg-gray-50 dark:bg-gray-800">Sección</th>
                                 <td mat-cell *matCellDef="let location">
-                                    <div class="flex items-center">
-                                        <span>{{ location.currentCapacity || 0 }}</span>
-                                        <span class="text-secondary ml-2" *ngIf="location.capacity">
-                                            ({{ ((location.currentCapacity || 0) / location.capacity * 100) | number:'1.0-0' }}%)
-                                        </span>
-                                    </div>
+                                    <span>{{ location.section || '-' }}</span>
                                 </td>
                             </ng-container>
 
-                            <!-- Status Column -->
-                            <ng-container matColumnDef="status">
+                            <!-- Actions Column -->
+                            <ng-container matColumnDef="actions">
                                 <th mat-header-cell *matHeaderCellDef class="font-semibold bg-gray-50 dark:bg-gray-800">Acciones</th>
                                 <td mat-cell *matCellDef="let location">
                                     <div class="flex items-center gap-1">

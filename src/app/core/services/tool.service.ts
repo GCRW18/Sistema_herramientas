@@ -33,17 +33,45 @@ export class ToolService {
 
     /**
      * Get all tools with optional filters
+     * FIX: Construir filtros SQL manualmente para evitar error de sintaxis
      */
     getTools(filters?: ToolFilters): Observable<Tool[]> {
         const params: any = {
             start: 0,
             limit: 50,
-            sort: 'nombre',
-            dir: 'asc',
-            ...filters
+            sort: 'name',
+            dir: 'asc'
         };
 
-        return from(this._api.post('herramientas/Herramienta/listarHerramienta', params)).pipe(
+        const additionalFilters: string[] = [];
+
+        if (filters?.query) {
+            const searchTerm = filters.query.replace(/'/g, "''");
+            additionalFilters.push(`(
+              LOWER(tls.code::varchar) LIKE LOWER('%${searchTerm}%') OR
+              LOWER(tls.name::varchar) LIKE LOWER('%${searchTerm}%') OR
+              LOWER(tls.serial_number::varchar) LIKE LOWER('%${searchTerm}%') OR
+              LOWER(tls.description::varchar) LIKE LOWER('%${searchTerm}%')
+          )`);
+        }
+
+        if (filters?.categoryId) {
+            additionalFilters.push(`tls.category_id = ${filters.categoryId}`);
+        }
+
+        if (filters?.warehouseId) {
+            additionalFilters.push(`tls.warehouse_id = ${filters.warehouseId}`);
+        }
+
+        if (filters?.status) {
+            additionalFilters.push(`tls.status = '${filters.status}'`);
+        }
+
+        if (additionalFilters.length > 0) {
+            params.filtro_adicional = additionalFilters.join(' AND ');
+        }
+
+        return from(this._api.post('herramientas/tools/listTools', params)).pipe(
             switchMap((response: any) => {
                 const tools = response?.datos || [];
                 this._tools.next(tools);
@@ -56,10 +84,10 @@ export class ToolService {
      * Get tool by id
      */
     getToolById(id: string): Observable<Tool> {
-        return from(this._api.post('herramientas/Herramienta/listarHerramienta', {
+        return from(this._api.post('herramientas/tools/listTools', {
             start: 0,
             limit: 1,
-            id_herramienta: id
+            id_tool: id
         })).pipe(
             switchMap((response: any) => {
                 const tool = response?.datos?.[0] || null;
@@ -75,8 +103,8 @@ export class ToolService {
      * Get tool by code
      */
     getToolByCode(code: string): Observable<Tool> {
-        return from(this._api.post('herramientas/Herramienta/listarHerramientaPorCodigo', {
-            codigo_boa: code
+        return from(this._api.post('herramientas/tools/getToolByCode', {
+            code: code
         })).pipe(
             switchMap((response: any) => {
                 return of(response?.datos?.[0] || null);
@@ -88,7 +116,7 @@ export class ToolService {
      * Create tool
      */
     createTool(tool: Partial<Tool>): Observable<Tool> {
-        return from(this._api.post('herramientas/Herramienta/insertarHerramienta', tool)).pipe(
+        return from(this._api.post('herramientas/tools/insertTool', tool)).pipe(
             switchMap((response: any) => {
                 return of(response?.datos || tool);
             })
@@ -99,9 +127,9 @@ export class ToolService {
      * Update tool
      */
     updateTool(id: string, tool: Partial<Tool>): Observable<Tool> {
-        return from(this._api.post('herramientas/Herramienta/insertarHerramienta', {
+        return from(this._api.post('herramientas/tools/insertTool', {
             ...tool,
-            id_herramienta: id
+            id_tool: id
         })).pipe(
             switchMap((response: any) => {
                 const updatedTool = response?.datos || tool;
@@ -115,10 +143,10 @@ export class ToolService {
      * Update tool location
      */
     updateToolLocation(id: string, locationId: string, warehouseId: string): Observable<Tool> {
-        return from(this._api.post('herramientas/Herramienta/actualizarUbicacionHerramienta', {
-            id_herramienta: id,
-            id_ubicacion: locationId,
-            id_deposito: warehouseId
+        return from(this._api.post('herramientas/tools/updateToolLocation', {
+            id_tool: id,
+            location_id: locationId,
+            warehouse_id: warehouseId
         })).pipe(
             switchMap((response: any) => {
                 return of(response?.datos || {});
@@ -130,8 +158,8 @@ export class ToolService {
      * Delete tool
      */
     deleteTool(id: string): Observable<void> {
-        return from(this._api.post('herramientas/Herramienta/eliminarHerramienta', {
-            id_herramienta: id
+        return from(this._api.post('herramientas/tools/deleteTool', {
+            id_tool: id
         })).pipe(
             switchMap(() => {
                 return of(undefined);
@@ -141,10 +169,11 @@ export class ToolService {
 
     /**
      * Search tools
+     * CORREGIDO: Cambiar 'query' por 'search_text' para que coincida con el backend
      */
     searchTools(query: string): Observable<Tool[]> {
-        return from(this._api.post('herramientas/Herramienta/buscarHerramientasTexto', {
-            query: query
+        return from(this._api.post('herramientas/tools/searchToolsByText', {
+            search_text: query  // ← CAMBIO: 'query' → 'search_text'
         })).pipe(
             switchMap((response: any) => {
                 return of(response?.datos || []);
@@ -154,11 +183,13 @@ export class ToolService {
 
     /**
      * Get inventory summary
+     * CORREGIDO: No enviar parámetros vacíos innecesarios
      */
     getInventorySummary(): Observable<any> {
-        return from(this._api.post('herramientas/Herramienta/obtenerResumenInventario', {})).pipe(
+        return from(this._api.post('herramientas/tools/getInventorySummary', {})).pipe(
             switchMap((response: any) => {
-                return of(response?.datos || {});
+                // La respuesta viene en datos[0] porque es un único registro
+                return of(response?.datos?.[0] || response?.datos || {});
             })
         );
     }
@@ -167,7 +198,7 @@ export class ToolService {
      * Get tools requiring calibration
      */
     getToolsRequiringCalibration(): Observable<Tool[]> {
-        return from(this._api.post('herramientas/Herramienta/obtenerHerramientasRequierenCalibracion', {})).pipe(
+        return from(this._api.post('herramientas/tools/getToolsRequireCalibration', {})).pipe(
             switchMap((response: any) => {
                 return of(response?.datos || []);
             })
@@ -178,7 +209,7 @@ export class ToolService {
      * Get tools with expired calibration
      */
     getToolsWithExpiredCalibration(): Observable<Tool[]> {
-        return from(this._api.post('herramientas/Herramienta/obtenerHerramientasCalibracionVencida', {})).pipe(
+        return from(this._api.post('herramientas/tools/getToolsExpiredCalibration', {})).pipe(
             switchMap((response: any) => {
                 return of(response?.datos || []);
             })
@@ -187,11 +218,12 @@ export class ToolService {
 
     /**
      * Update tool status
+     * CORREGIDO: Cambiar 'tool_id' por 'id_tool' para que coincida con el backend
      */
     updateToolStatus(id: string, status: string): Observable<Tool> {
-        return from(this._api.post('herramientas/Herramienta/actualizarEstadoHerramienta', {
-            id_herramienta: id,
-            estado: status
+        return from(this._api.post('herramientas/tools/updateToolStatus', {
+            id_tool: id,  // ← CAMBIO: 'tool_id' → 'id_tool'
+            status: status
         })).pipe(
             switchMap((response: any) => {
                 return of(response?.datos || {});
@@ -201,10 +233,11 @@ export class ToolService {
 
     /**
      * Send tool to calibration
+     * CORREGIDO: Cambiar 'tool_id' por 'id_tool' para que coincida con el backend
      */
     sendToCalibration(id: string, data: any): Observable<Tool> {
-        return from(this._api.post('herramientas/Herramienta/enviarACalibracion', {
-            id_herramienta: id,
+        return from(this._api.post('herramientas/tools/sendToCalibration', {
+            id_tool: id,  // ← CAMBIO: 'tool_id' → 'id_tool'
             ...data
         })).pipe(
             switchMap((response: any) => {
@@ -215,10 +248,11 @@ export class ToolService {
 
     /**
      * Send tool to maintenance
+     * CORREGIDO: Cambiar 'tool_id' por 'id_tool' para que coincida con el backend
      */
     sendToMaintenance(id: string, data: any): Observable<Tool> {
-        return from(this._api.post('herramientas/Herramienta/enviarAMantenimiento', {
-            id_herramienta: id,
+        return from(this._api.post('herramientas/tools/sendToMaintenance', {
+            id_tool: id,  // ← CAMBIO: 'tool_id' → 'id_tool'
             ...data
         })).pipe(
             switchMap((response: any) => {
@@ -229,10 +263,11 @@ export class ToolService {
 
     /**
      * Send tool to quarantine
+     * CORREGIDO: Cambiar 'tool_id' por 'id_tool' para que coincida con el backend
      */
     sendToQuarantine(id: string, data: any): Observable<Tool> {
-        return from(this._api.post('herramientas/Herramienta/enviarACuarentena', {
-            id_herramienta: id,
+        return from(this._api.post('herramientas/tools/sendToQuarantine', {
+            id_tool: id,  // ← CAMBIO: 'tool_id' → 'id_tool'
             ...data
         })).pipe(
             switchMap((response: any) => {
@@ -243,10 +278,11 @@ export class ToolService {
 
     /**
      * Decommission tool
+     * CORREGIDO: Cambiar 'tool_id' por 'id_tool' para que coincida con el backend
      */
     decommissionTool(id: string, data: any): Observable<Tool> {
-        return from(this._api.post('herramientas/Herramienta/darDeBaja', {
-            id_herramienta: id,
+        return from(this._api.post('herramientas/tools/decommission', {
+            id_tool: id,  // ← CAMBIO: 'tool_id' → 'id_tool'
             ...data
         })).pipe(
             switchMap((response: any) => {

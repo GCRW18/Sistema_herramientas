@@ -40,22 +40,41 @@ export default class ReceiveCalibrationComponent implements OnInit {
 
     ngOnInit(): void {
         this.calibrationId = this._route.snapshot.paramMap.get('id');
+        console.log('Calibration ID:', this.calibrationId);  // AGREGAR ESTA LÍNEA
         this.initForm();
     }
 
+
     initForm(): void {
+        // Calcular fecha de próxima calibración (1 año desde hoy por defecto)
+        const nextYear = new Date();
+        nextYear.setFullYear(nextYear.getFullYear() + 1);
+
         this.form = this._fb.group({
             returnDate: [new Date(), Validators.required],
             result: ['approved', Validators.required],
             certificate: ['', Validators.required],
-            nextCalibrationDate: ['', Validators.required],
+            nextCalibrationDate: [nextYear, Validators.required],
             observations: [''],
             cost: [''],
         });
     }
-
     save(): void {
-        if (this.form.invalid || !this.calibrationId) {
+        if (!this.calibrationId) {
+            console.error('No calibration ID');
+            alert('No se encontró el ID de calibración');
+            return;
+        }
+
+        if (this.form.invalid) {
+            console.error('Form invalid');
+            Object.keys(this.form.controls).forEach(key => {
+                const control = this.form.get(key);
+                if (control?.invalid) {
+                    console.error(`Campo inválido: ${key}`, control.errors);
+                }
+            });
+            alert('Por favor complete todos los campos requeridos');
             return;
         }
 
@@ -65,17 +84,31 @@ export default class ReceiveCalibrationComponent implements OnInit {
             calibrationId: this.calibrationId,
         };
 
-        if (!this.calibrationId) return;
-
         this._calibrationService.receiveFromCalibration(this.calibrationId, returnData).subscribe({
-            next: () => {
-                this._router.navigate(['/calibration/tracking']);
-            },
-            error: () => {
+            next: (response) => {
+                console.log('Calibration received successfully:', response);
                 this.loading = false;
+                // Redirigir inmediatamente sin esperar
+                this._router.navigate(['/calibration/tracking']).then(() => {
+                    console.log('Navigation completed');
+                });
             },
+            error: (error) => {
+                console.error('Error receiving calibration:', error);
+                this.loading = false;
+                alert('Error al registrar el retorno de calibración: ' + (error?.detalle?.mensaje || 'Error desconocido'));
+            },
+            complete: () => {
+                console.log('Observable completed');
+            }
         });
     }
+
+
+
+
+
+
 
     cancel(): void {
         this._router.navigate(['/calibration/tracking']);

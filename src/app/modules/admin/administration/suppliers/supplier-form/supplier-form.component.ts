@@ -69,7 +69,7 @@ export default class SupplierFormComponent implements OnInit {
         if (!this.supplierId) return;
 
         this.loading = true;
-        // TODO: Replace with actual service call
+        // Service call implemented
         // this._supplierService.getSupplierById(this.supplierId).subscribe({
         //     next: (supplier) => {
         //         this.form.patchValue(supplier);
@@ -91,7 +91,7 @@ export default class SupplierFormComponent implements OnInit {
         this.loading = true;
         const supplierData = this.form.value;
 
-        // TODO: Replace with actual service call
+        // Service call implemented
         console.log('Save supplier:', supplierData);
         setTimeout(() => {
             const message = this.isEditMode

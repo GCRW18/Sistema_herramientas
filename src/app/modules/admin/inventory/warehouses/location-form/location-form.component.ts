@@ -13,6 +13,11 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { WarehouseService, NotificationService } from 'app/core/services';
 import { Location } from 'app/core/models';
 
+/**
+ * LocationFormComponent
+ * Componente para crear y editar ubicaciones
+ * CORREGIDO: 13-11-2025 - Campos según estructura real de BD (locations)
+ */
 @Component({
     selector: 'app-location-form',
     standalone: true,
@@ -45,39 +50,38 @@ export class LocationFormComponent implements OnInit {
     loading = false;
     submitting = false;
 
-    locationTypes: string[] = ['shelf', 'rack', 'bin', 'drawer', 'cabinet', 'area', 'other'];
-
     ngOnInit(): void {
         this.warehouseId = this._route.snapshot.paramMap.get('warehouseId');
         this.locationId = this._route.snapshot.paramMap.get('locationId');
         this.isEditMode = !!this.locationId;
         this.initForm();
 
-        if (this.isEditMode && this.warehouseId && this.locationId) {
-            this.loadLocation(this.warehouseId, this.locationId);
+        if (this.isEditMode && this.locationId) {
+            this.loadLocation(this.locationId);
         }
     }
 
     initForm(): void {
         this.form = this._fb.group({
             code: ['', [Validators.required, Validators.maxLength(50)]],
-            name: ['', [Validators.required, Validators.maxLength(200)]],
-            description: ['', Validators.maxLength(500)],
-            type: ['shelf', Validators.required],
-            capacity: [null],
-            currentCapacity: [0],
+            name: ['', [Validators.required, Validators.maxLength(100)]],
+            description: ['', Validators.maxLength(255)],
+            level: ['', Validators.maxLength(50)],
+            section: ['', Validators.maxLength(50)],
             active: [true],
         });
     }
 
-    loadLocation(warehouseId: string, locationId: string): void {
+    loadLocation(locationId: string): void {
         this.loading = true;
         this._warehouseService.getLocationById(locationId).subscribe({
             next: (location) => {
                 this.form.patchValue(location);
                 this.loading = false;
             },
-            error: () => {
+            error: (error) => {
+                this._notificationService.error('Error al cargar la ubicación');
+                console.error('Error loading location:', error);
                 this.loading = false;
                 this._router.navigate(['/inventory/warehouses', this.warehouseId]);
             },
@@ -92,7 +96,10 @@ export class LocationFormComponent implements OnInit {
         }
 
         this.submitting = true;
-        const locationData: Location = { ...this.form.value, warehouseId: this.warehouseId };
+        const locationData: Partial<Location> = {
+            ...this.form.value,
+            warehouse_id: parseInt(this.warehouseId!)
+        };
 
         const request = this.isEditMode && this.locationId
             ? this._warehouseService.updateLocation(this.locationId, locationData)

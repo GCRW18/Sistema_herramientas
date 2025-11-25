@@ -26,7 +26,7 @@
                     <mat-label>Categoría</mat-label>
                     <mat-select formControlName="categoryId">
                         <mat-option value="">Todas</mat-option>
-                        <mat-option *ngFor="let category of categories" [value]="category.id">
+                        <mat-option *ngFor="let category of categories" [value]="category.id_category || category.id">
                             {{ category.name }}
                         </mat-option>
                     </mat-select>
@@ -38,7 +38,7 @@
                     <mat-label>Almacén</mat-label>
                     <mat-select formControlName="warehouseId">
                         <mat-option value="">Todos</mat-option>
-                        <mat-option *ngFor="let warehouse of warehouses" [value]="warehouse.id">
+                        <mat-option *ngFor="let warehouse of warehouses" [value]="warehouse.id_warehouse || warehouse.id">
                             {{ warehouse.name }}
                         </mat-option>
                     </mat-select>

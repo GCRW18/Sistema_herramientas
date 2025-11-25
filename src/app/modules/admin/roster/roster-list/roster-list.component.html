@@ -1,1 +1,282 @@
-<p>roster-list works!</p>
+<div class="flex flex-col flex-auto min-w-0">
+    <!-- Header -->
+    <div class="flex flex-col sm:flex-row flex-0 sm:items-center sm:justify-between p-6 sm:py-8 sm:px-10 border-b bg-card dark:bg-transparent">
+        <div class="flex-1 min-w-0">
+            <h2 class="text-3xl font-extrabold tracking-tight leading-7 sm:leading-10 truncate text-gray-900 dark:text-gray-100">
+                Gestión de Asignaciones (Roster)
+            </h2>
+            <p class="mt-2 text-secondary dark:text-gray-400">Administración de asignaciones de herramientas y kits a personal</p>
+        </div>
+        <div class="flex shrink-0 items-center mt-6 sm:mt-0 sm:ml-4 gap-2">
+            <button mat-stroked-button (click)="exportAssignments()">
+                <mat-icon [svgIcon]="'heroicons_outline:arrow-down-tray'"></mat-icon>
+                <span class="ml-2">Exportar</span>
+            </button>
+            <button mat-flat-button [color]="'primary'" (click)="createAssignment()">
+                <mat-icon [svgIcon]="'heroicons_outline:plus'"></mat-icon>
+                <span class="ml-2">Nueva Asignación</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 p-6 sm:px-10">
+        <!-- Total Assignments -->
+        <div class="bg-card rounded-2xl shadow p-6 dark:border dark:border-gray-700">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm text-secondary dark:text-gray-400">Total Asignaciones</p>
+                    <p class="mt-2 text-3xl font-bold text-gray-900 dark:text-gray-100">{{ stats.totalAssignments }}</p>
+                </div>
+                <div class="flex items-center justify-center w-12 h-12 rounded-full bg-blue-100 dark:bg-blue-900">
+                    <mat-icon class="text-blue-600 dark:text-blue-400" [svgIcon]="'heroicons_outline:clipboard-document-list'"></mat-icon>
+                </div>
+            </div>
+        </div>
+
+        <!-- Active Assignments -->
+        <div class="bg-card rounded-2xl shadow p-6 dark:border dark:border-gray-700">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm text-secondary dark:text-gray-400">Activas</p>
+                    <p class="mt-2 text-3xl font-bold text-green-600 dark:text-green-400">{{ stats.activeAssignments }}</p>
+                </div>
+                <div class="flex items-center justify-center w-12 h-12 rounded-full bg-green-100 dark:bg-green-900">
+                    <mat-icon class="text-green-600 dark:text-green-400" [svgIcon]="'heroicons_outline:check-circle'"></mat-icon>
+                </div>
+            </div>
+        </div>
+
+        <!-- Overdue Assignments -->
+        <div class="bg-card rounded-2xl shadow p-6 dark:border dark:border-gray-700">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm text-secondary dark:text-gray-400">Vencidas</p>
+                    <p class="mt-2 text-3xl font-bold text-red-600 dark:text-red-400">{{ stats.overdueAssignments }}</p>
+                </div>
+                <div class="flex items-center justify-center w-12 h-12 rounded-full bg-red-100 dark:bg-red-900">
+                    <mat-icon class="text-red-600 dark:text-red-400" [svgIcon]="'heroicons_outline:exclamation-triangle'"></mat-icon>
+                </div>
+            </div>
+        </div>
+
+        <!-- Returned Today -->
+        <div class="bg-card rounded-2xl shadow p-6 dark:border dark:border-gray-700">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm text-secondary dark:text-gray-400">Devueltas Hoy</p>
+                    <p class="mt-2 text-3xl font-bold text-purple-600 dark:text-purple-400">{{ stats.returnedToday }}</p>
+                </div>
+                <div class="flex items-center justify-center w-12 h-12 rounded-full bg-purple-100 dark:bg-purple-900">
+                    <mat-icon class="text-purple-600 dark:text-purple-400" [svgIcon]="'heroicons_outline:arrow-uturn-left'"></mat-icon>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main -->
+    <div class="flex-auto p-6 sm:p-10">
+        <!-- Filters -->
+        <form [formGroup]="filterForm" class="bg-card rounded-2xl shadow p-6 mb-6 dark:border dark:border-gray-700">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">Filtros de Búsqueda</h3>
+                <button mat-button type="button" (click)="clearFilters()" class="text-primary">
+                    <mat-icon [svgIcon]="'heroicons_outline:x-mark'"></mat-icon>
+                    <span class="ml-1">Limpiar</span>
+                </button>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <!-- Search -->
+                <mat-form-field class="w-full">
+                    <mat-label>Buscar</mat-label>
+                    <mat-icon matPrefix [svgIcon]="'heroicons_outline:magnifying-glass'"></mat-icon>
+                    <input matInput formControlName="search" placeholder="Código, nombre, empleado..." autocomplete="off">
+                </mat-form-field>
+
+                <!-- Status Filter -->
+                <mat-form-field class="w-full">
+                    <mat-label>Estado</mat-label>
+                    <mat-select formControlName="status">
+                        <mat-option value="">Todos</mat-option>
+                        <mat-option *ngFor="let status of statusOptions" [value]="status.value">
+                            {{ status.label }}
+                        </mat-option>
+                    </mat-select>
+                </mat-form-field>
+
+                <!-- Shift Filter -->
+                <mat-form-field class="w-full">
+                    <mat-label>Turno</mat-label>
+                    <mat-select formControlName="shift">
+                        <mat-option value="">Todos</mat-option>
+                        <mat-option *ngFor="let shift of shiftOptions" [value]="shift.value">
+                            {{ shift.label }}
+                        </mat-option>
+                    </mat-select>
+                </mat-form-field>
+
+                <!-- Date From -->
+                <mat-form-field class="w-full">
+                    <mat-label>Desde</mat-label>
+                    <input matInput [matDatepicker]="pickerFrom" formControlName="dateFrom">
+                    <mat-datepicker-toggle matSuffix [for]="pickerFrom"></mat-datepicker-toggle>
+                    <mat-datepicker #pickerFrom></mat-datepicker>
+                </mat-form-field>
+
+                <!-- Date To -->
+                <mat-form-field class="w-full">
+                    <mat-label>Hasta</mat-label>
+                    <input matInput [matDatepicker]="pickerTo" formControlName="dateTo">
+                    <mat-datepicker-toggle matSuffix [for]="pickerTo"></mat-datepicker-toggle>
+                    <mat-datepicker #pickerTo></mat-datepicker>
+                </mat-form-field>
+
+                <!-- Overdue Only Checkbox -->
+                <div class="flex items-center">
+                    <mat-checkbox formControlName="overdueOnly" color="warn">
+                        Solo vencidas
+                    </mat-checkbox>
+                </div>
+            </div>
+        </form>
+
+        <!-- Table -->
+        <div class="bg-card shadow rounded-2xl overflow-hidden dark:border dark:border-gray-700">
+            <div class="overflow-x-auto">
+                <table mat-table [dataSource]="dataSource" matSort class="w-full">
+                    <!-- Assignment Type Column -->
+                    <ng-container matColumnDef="assignmentType">
+                        <th mat-header-cell *matHeaderCellDef class="bg-gray-50 dark:bg-gray-800 font-semibold">Tipo</th>
+                        <td mat-cell *matCellDef="let assignment" class="py-4">
+                            <mat-chip-set>
+                                <mat-chip [highlighted]="true" [color]="assignment.assignmentType === 'tool' ? 'primary' : 'accent'">
+                                    {{ getAssignmentTypeLabel(assignment.assignmentType) }}
+                                </mat-chip>
+                            </mat-chip-set>
+                        </td>
+                    </ng-container>
+
+                    <!-- Item Code Column -->
+                    <ng-container matColumnDef="itemCode">
+                        <th mat-header-cell *matHeaderCellDef mat-sort-header class="bg-gray-50 dark:bg-gray-800 font-semibold">Código</th>
+                        <td mat-cell *matCellDef="let assignment" class="py-4">
+                            <span class="font-medium text-gray-900 dark:text-gray-100">{{ getItemCode(assignment) }}</span>
+                        </td>
+                    </ng-container>
+
+                    <!-- Item Name Column -->
+                    <ng-container matColumnDef="itemName">
+                        <th mat-header-cell *matHeaderCellDef mat-sort-header class="bg-gray-50 dark:bg-gray-800 font-semibold">Elemento</th>
+                        <td mat-cell *matCellDef="let assignment" class="py-4">
+                            <div class="flex flex-col">
+                                <span class="font-medium text-gray-900 dark:text-gray-100">{{ getItemName(assignment) }}</span>
+                                <span class="text-xs text-secondary dark:text-gray-400" *ngIf="assignment.workOrderNumber">
+                                    OT: {{ assignment.workOrderNumber }}
+                                </span>
+                            </div>
+                        </td>
+                    </ng-container>
+
+                    <!-- Employee Column -->
+                    <ng-container matColumnDef="employee">
+                        <th mat-header-cell *matHeaderCellDef mat-sort-header class="bg-gray-50 dark:bg-gray-800 font-semibold">Empleado</th>
+                        <td mat-cell *matCellDef="let assignment" class="py-4">
+                            <div class="flex flex-col">
+                                <span class="font-medium text-gray-900 dark:text-gray-100">{{ assignment.employeeName }}</span>
+                                <span class="text-xs text-secondary dark:text-gray-400" *ngIf="assignment.employeePosition">
+                                    {{ assignment.employeePosition }}
+                                </span>
+                            </div>
+                        </td>
+                    </ng-container>
+
+                    <!-- Assignment Date Column -->
+                    <ng-container matColumnDef="assignmentDate">
+                        <th mat-header-cell *matHeaderCellDef mat-sort-header class="bg-gray-50 dark:bg-gray-800 font-semibold">Fecha Asignación</th>
+                        <td mat-cell *matCellDef="let assignment" class="py-4 text-gray-700 dark:text-gray-300">
+                            {{ formatDate(assignment.assignmentDate) }}
+                        </td>
+                    </ng-container>
+
+                    <!-- Expected Return Date Column -->
+                    <ng-container matColumnDef="expectedReturnDate">
+                        <th mat-header-cell *matHeaderCellDef mat-sort-header class="bg-gray-50 dark:bg-gray-800 font-semibold">Devolución Esperada</th>
+                        <td mat-cell *matCellDef="let assignment" class="py-4">
+                            <span [class.text-red-600]="isOverdue(assignment)" [class.dark:text-red-400]="isOverdue(assignment)"
+                                  [class.font-semibold]="isOverdue(assignment)">
+                                {{ formatDate(assignment.expectedReturnDate) }}
+                            </span>
+                        </td>
+                    </ng-container>
+
+                    <!-- Status Column -->
+                    <ng-container matColumnDef="status">
+                        <th mat-header-cell *matHeaderCellDef class="bg-gray-50 dark:bg-gray-800 font-semibold">Estado</th>
+                        <td mat-cell *matCellDef="let assignment" class="py-4">
+                            <mat-chip-set>
+                                <mat-chip [color]="getStatusColor(assignment.status)" [highlighted]="true">
+                                    {{ getStatusLabel(assignment.status) }}
+                                </mat-chip>
+                            </mat-chip-set>
+                        </td>
+                    </ng-container>
+
+                    <!-- Shift Column -->
+                    <ng-container matColumnDef="shift">
+                        <th mat-header-cell *matHeaderCellDef class="bg-gray-50 dark:bg-gray-800 font-semibold">Turno</th>
+                        <td mat-cell *matCellDef="let assignment" class="py-4 text-gray-700 dark:text-gray-300">
+                            {{ getShiftLabel(assignment.shift) }}
+                        </td>
+                    </ng-container>
+
+                    <!-- Actions Column -->
+                    <ng-container matColumnDef="actions">
+                        <th mat-header-cell *matHeaderCellDef class="bg-gray-50 dark:bg-gray-800 font-semibold">Acciones</th>
+                        <td mat-cell *matCellDef="let assignment" class="py-4">
+                            <button mat-icon-button [matMenuTriggerFor]="actionsMenu">
+                                <mat-icon [svgIcon]="'heroicons_outline:ellipsis-vertical'"></mat-icon>
+                            </button>
+                            <mat-menu #actionsMenu="matMenu">
+                                <button mat-menu-item (click)="viewAssignment(assignment.id)">
+                                    <mat-icon [svgIcon]="'heroicons_outline:eye'"></mat-icon>
+                                    <span>Ver Detalle</span>
+                                </button>
+                                <button mat-menu-item (click)="editAssignment(assignment.id)" *ngIf="assignment.status === 'active'">
+                                    <mat-icon [svgIcon]="'heroicons_outline:pencil'"></mat-icon>
+                                    <span>Editar</span>
+                                </button>
+                                <button mat-menu-item (click)="returnAssignment(assignment)" *ngIf="assignment.status === 'active' || assignment.status === 'overdue'">
+                                    <mat-icon [svgIcon]="'heroicons_outline:arrow-uturn-left'"></mat-icon>
+                                    <span>Devolver</span>
+                                </button>
+                                <button mat-menu-item (click)="extendAssignment(assignment)" *ngIf="assignment.status === 'active'">
+                                    <mat-icon [svgIcon]="'heroicons_outline:clock'"></mat-icon>
+                                    <span>Extender</span>
+                                </button>
+                                <mat-divider></mat-divider>
+                                <button mat-menu-item (click)="deleteAssignment(assignment)" class="text-red-600">
+                                    <mat-icon class="text-red-600" [svgIcon]="'heroicons_outline:trash'"></mat-icon>
+                                    <span>Eliminar</span>
+                                </button>
+                            </mat-menu>
+                        </td>
+                    </ng-container>
+
+                    <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+                    <tr mat-row *matRowDef="let row; columns: displayedColumns;" class="hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"></tr>
+
+                    <!-- No data -->
+                    <tr class="h-16" *matNoDataRow>
+                        <td [attr.colspan]="displayedColumns.length" class="text-center text-secondary dark:text-gray-400">
+                            {{ loading ? 'Cargando...' : (dataSource.filter ? 'No se encontraron asignaciones' : 'No hay asignaciones registradas') }}
+                        </td>
+                    </tr>
+                </table>
+            </div>
+
+            <!-- Paginator -->
+            <mat-paginator [pageSizeOptions]="[10, 25, 50, 100]" showFirstLastButtons class="border-t dark:border-gray-700"></mat-paginator>
+        </div>
+    </div>
+</div>

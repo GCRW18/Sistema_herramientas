@@ -1,0 +1,194 @@
+<div class="flex flex-col flex-auto min-w-0 admin-page-container">
+    <!-- Header -->
+    <div class="flex flex-col sm:flex-row flex-0 sm:items-center sm:justify-between p-6 sm:py-8 sm:px-10 border-b bg-card dark:bg-transparent">
+        <div class="flex-1 min-w-0">
+            <div class="flex items-center">
+                <button mat-icon-button (click)="cancel()" class="mr-2">
+                    <mat-icon [svgIcon]="'heroicons_outline:arrow-left'"></mat-icon>
+                </button>
+                <mat-icon class="icon-size-12 text-primary mr-3" [svgIcon]="'heroicons_outline:clipboard-document-list'"></mat-icon>
+                <h2 class="text-3xl font-extrabold tracking-tight leading-7 sm:leading-10 truncate">
+                    {{ isEditMode ? 'Editar Asignación' : 'Nueva Asignación' }}
+                </h2>
+            </div>
+            <div class="ml-15 mt-2">
+                <p class="text-secondary">
+                    {{ isEditMode ? 'Modifique los datos de la asignación' : 'Complete el formulario para crear una nueva asignación de herramienta o kit' }}
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading -->
+    <div *ngIf="loadingData" class="flex items-center justify-center h-96">
+        <mat-spinner></mat-spinner>
+    </div>
+
+    <!-- Form -->
+    <div *ngIf="!loadingData" class="flex-auto p-6 sm:p-10">
+        <div class="max-w-5xl mx-auto">
+            <form [formGroup]="form" class="bg-card shadow rounded-2xl overflow-hidden">
+                <!-- Assignment Type Selection -->
+                <div class="p-6 border-b">
+                    <div class="text-lg font-semibold mb-4">Tipo de Asignación</div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div *ngFor="let option of assignmentTypeOptions"
+                             class="relative flex items-center p-4 border-2 rounded-xl cursor-pointer transition-all"
+                             [class.border-primary]="form.get('assignmentType')?.value === option.value"
+                             [class.bg-primary-50]="form.get('assignmentType')?.value === option.value"
+                             [class.dark:bg-primary-900]="form.get('assignmentType')?.value === option.value"
+                             [class.border-gray-200]="form.get('assignmentType')?.value !== option.value"
+                             (click)="setAssignmentType(option.value)">
+                            <input type="radio"
+                                   [value]="option.value"
+                                   formControlName="assignmentType"
+                                   class="sr-only">
+                            <div class="flex items-center w-full">
+                                <div class="flex-shrink-0 w-12 h-12 flex items-center justify-center rounded-full"
+                                     [class.bg-primary-100]="form.get('assignmentType')?.value === option.value"
+                                     [class.dark:bg-primary-800]="form.get('assignmentType')?.value === option.value"
+                                     [class.bg-gray-100]="form.get('assignmentType')?.value !== option.value">
+                                    <mat-icon [svgIcon]="option.icon"
+                                              [class.text-primary]="form.get('assignmentType')?.value === option.value"
+                                              [class.text-gray-500]="form.get('assignmentType')?.value !== option.value"></mat-icon>
+                                </div>
+                                <div class="ml-4 flex-1">
+                                    <div class="text-lg font-medium"
+                                         [class.text-primary]="form.get('assignmentType')?.value === option.value">
+                                        {{ option.label }}
+                                    </div>
+                                </div>
+                                <mat-icon *ngIf="form.get('assignmentType')?.value === option.value"
+                                          class="text-primary"
+                                          [svgIcon]="'heroicons_solid:check-circle'"></mat-icon>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Assignment Details -->
+                <div class="p-6 border-b">
+                    <div class="text-lg font-semibold mb-4">Detalles de Asignación</div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <!-- Tool Selection (if assignmentType === 'tool') -->
+                        <mat-form-field *ngIf="getSelectedAssignmentType() === 'tool'" class="w-full md:col-span-2">
+                            <mat-label>Herramienta</mat-label>
+                            <mat-icon matPrefix [svgIcon]="'heroicons_outline:wrench'"></mat-icon>
+                            <mat-select formControlName="toolId" required>
+                                <mat-option *ngFor="let tool of tools" [value]="tool.id">
+                                    {{ tool.code }} - {{ tool.name }}
+                                </mat-option>
+                            </mat-select>
+                            <mat-error>Seleccione una herramienta</mat-error>
+                        </mat-form-field>
+
+                        <!-- Kit Selection (if assignmentType === 'kit') -->
+                        <mat-form-field *ngIf="getSelectedAssignmentType() === 'kit'" class="w-full md:col-span-2">
+                            <mat-label>Kit</mat-label>
+                            <mat-icon matPrefix [svgIcon]="'heroicons_outline:briefcase'"></mat-icon>
+                            <mat-select formControlName="kitId" required>
+                                <mat-option *ngFor="let kit of kits" [value]="kit.id">
+                                    {{ kit.code }} - {{ kit.name }}
+                                </mat-option>
+                            </mat-select>
+                            <mat-error>Seleccione un kit</mat-error>
+                        </mat-form-field>
+
+                        <!-- Employee Selection -->
+                        <mat-form-field class="w-full md:col-span-2">
+                            <mat-label>Empleado Asignado</mat-label>
+                            <mat-icon matPrefix [svgIcon]="'heroicons_outline:user'"></mat-icon>
+                            <mat-select formControlName="employeeId" required>
+                                <mat-option *ngFor="let employee of employees" [value]="employee.id">
+                                    {{ employee.fullName }} - {{ employee.position }}
+                                </mat-option>
+                            </mat-select>
+                            <mat-error>Seleccione un empleado</mat-error>
+                        </mat-form-field>
+
+                        <!-- Aircraft (Optional) -->
+                        <mat-form-field class="w-full md:col-span-2">
+                            <mat-label>Aeronave (Opcional)</mat-label>
+                            <mat-icon matPrefix [svgIcon]="'heroicons_outline:paper-airplane'"></mat-icon>
+                            <mat-select formControlName="aircraftId">
+                                <mat-option [value]="''">Ninguna</mat-option>
+                                <mat-option *ngFor="let ac of aircraft" [value]="ac.id">
+                                    {{ ac.registration }} - {{ ac.manufacturer }} {{ ac.model }}
+                                </mat-option>
+                            </mat-select>
+                        </mat-form-field>
+
+                        <!-- Assignment Date -->
+                        <mat-form-field class="w-full">
+                            <mat-label>Fecha de Asignación</mat-label>
+                            <mat-icon matPrefix [svgIcon]="'heroicons_outline:calendar'"></mat-icon>
+                            <input matInput [matDatepicker]="assignmentDatePicker" formControlName="assignmentDate" required>
+                            <mat-datepicker-toggle matSuffix [for]="assignmentDatePicker"></mat-datepicker-toggle>
+                            <mat-datepicker #assignmentDatePicker></mat-datepicker>
+                            <mat-error>La fecha de asignación es requerida</mat-error>
+                        </mat-form-field>
+
+                        <!-- Expected Return Date -->
+                        <mat-form-field class="w-full">
+                            <mat-label>Fecha Esperada de Devolución</mat-label>
+                            <mat-icon matPrefix [svgIcon]="'heroicons_outline:calendar'"></mat-icon>
+                            <input matInput [matDatepicker]="returnDatePicker" formControlName="expectedReturnDate">
+                            <mat-datepicker-toggle matSuffix [for]="returnDatePicker"></mat-datepicker-toggle>
+                            <mat-datepicker #returnDatePicker></mat-datepicker>
+                        </mat-form-field>
+
+                        <!-- Shift -->
+                        <mat-form-field class="w-full">
+                            <mat-label>Turno</mat-label>
+                            <mat-icon matPrefix [svgIcon]="'heroicons_outline:clock'"></mat-icon>
+                            <mat-select formControlName="shift" required>
+                                <mat-option *ngFor="let shift of shiftOptions" [value]="shift.value">
+                                    {{ shift.label }}
+                                </mat-option>
+                            </mat-select>
+                            <mat-error>El turno es requerido</mat-error>
+                        </mat-form-field>
+
+                        <!-- Work Order Number -->
+                        <mat-form-field class="w-full">
+                            <mat-label>Número de Orden de Trabajo</mat-label>
+                            <mat-icon matPrefix [svgIcon]="'heroicons_outline:document-text'"></mat-icon>
+                            <input matInput formControlName="workOrderNumber" placeholder="Ej: OT-2024-001">
+                        </mat-form-field>
+                    </div>
+                </div>
+
+                <!-- Additional Information -->
+                <div class="p-6">
+                    <div class="text-lg font-semibold mb-4">Información Adicional</div>
+                    <div class="grid grid-cols-1 gap-6">
+                        <!-- Purpose -->
+                        <mat-form-field class="w-full">
+                            <mat-label>Propósito de la Asignación</mat-label>
+                            <mat-icon matPrefix [svgIcon]="'heroicons_outline:clipboard-document-check'"></mat-icon>
+                            <input matInput formControlName="purpose" placeholder="Ej: Mantenimiento programado, Inspección, etc.">
+                        </mat-form-field>
+
+                        <!-- Notes -->
+                        <mat-form-field class="w-full">
+                            <mat-label>Notas</mat-label>
+                            <textarea matInput formControlName="notes" rows="4" placeholder="Notas adicionales sobre la asignación"></textarea>
+                        </mat-form-field>
+                    </div>
+                </div>
+
+                <!-- Actions -->
+                <div class="flex items-center justify-end gap-3 p-6 border-t bg-gray-50 dark:bg-gray-800">
+                    <button mat-button type="button" (click)="cancel()" [disabled]="loading">
+                        Cancelar
+                    </button>
+                    <button mat-flat-button color="primary" (click)="save()" [disabled]="loading || form.invalid">
+                        <mat-icon *ngIf="!loading" [svgIcon]="'heroicons_outline:check'"></mat-icon>
+                        <mat-icon *ngIf="loading" class="animate-spin" [svgIcon]="'heroicons_outline:arrow-path'"></mat-icon>
+                        <span class="ml-2">{{ isEditMode ? 'Actualizar' : 'Crear Asignación' }}</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

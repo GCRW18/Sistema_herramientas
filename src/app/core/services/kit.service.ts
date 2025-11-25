@@ -1,11 +1,11 @@
-import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { Observable, ReplaySubject, tap } from 'rxjs';
+import { from, Observable, of, ReplaySubject, switchMap } from 'rxjs';
 import { Kit, KitCalibrationStatus } from '../models';
+import { ErpApiService } from '../api/api.service';
 
 @Injectable({ providedIn: 'root' })
 export class KitService {
-    private _httpClient = inject(HttpClient);
+    private _api = inject(ErpApiService);
     private _kits: ReplaySubject<Kit[]> = new ReplaySubject<Kit[]>(1);
     private _kit: ReplaySubject<Kit> = new ReplaySubject<Kit>(1);
 
@@ -34,10 +34,20 @@ export class KitService {
     /**
      * Get all kits
      */
-    getKits(): Observable<Kit[]> {
-        return this._httpClient.get<Kit[]>('api/kits').pipe(
-            tap((kits) => {
+    getKits(filters?: any): Observable<Kit[]> {
+        const params: any = {
+            start: 0,
+            limit: 50,
+            sort: 'name',
+            dir: 'asc',
+            ...filters
+        };
+
+        return from(this._api.post('herramientas/kits/listKit', params)).pipe(
+            switchMap((response: any) => {
+                const kits = response?.datos || [];
                 this._kits.next(kits);
+                return of(kits);
             })
         );
     }
@@ -46,9 +56,17 @@ export class KitService {
      * Get kit by id
      */
     getKitById(id: string): Observable<Kit> {
-        return this._httpClient.get<Kit>(`api/kits/${id}`).pipe(
-            tap((kit) => {
-                this._kit.next(kit);
+        return from(this._api.post('herramientas/kits/listKit', {
+            start: 0,
+            limit: 1,
+            id_kit: id
+        })).pipe(
+            switchMap((response: any) => {
+                const kit = response?.datos?.[0] || null;
+                if (kit) {
+                    this._kit.next(kit);
+                }
+                return of(kit);
             })
         );
     }
@@ -57,16 +75,25 @@ export class KitService {
      * Create kit
      */
     createKit(kit: Partial<Kit>): Observable<Kit> {
-        return this._httpClient.post<Kit>('api/kits', kit);
+        return from(this._api.post('herramientas/kits/insertKit', kit)).pipe(
+            switchMap((response: any) => {
+                return of(response?.datos || kit);
+            })
+        );
     }
 
     /**
      * Update kit
      */
     updateKit(id: string, kit: Partial<Kit>): Observable<Kit> {
-        return this._httpClient.put<Kit>(`api/kits/${id}`, kit).pipe(
-            tap((updatedKit) => {
-                this._kit.next(updatedKit);
+        return from(this._api.post('herramientas/kits/updateKit', {
+            ...kit,
+            id_kit: id
+        })).pipe(
+            switchMap((response: any) => {
+                const updatedKit = response?.datos || kit;
+                this._kit.next(updatedKit as Kit);
+                return of(updatedKit);
             })
         );
     }
@@ -75,45 +102,81 @@ export class KitService {
      * Delete kit
      */
     deleteKit(id: string): Observable<void> {
-        return this._httpClient.delete<void>(`api/kits/${id}`);
+        return from(this._api.post('herramientas/kits/deleteKit', {
+            id_kit: id
+        })).pipe(
+            switchMap(() => {
+                return of(undefined);
+            })
+        );
     }
 
     /**
      * Add tool to kit
      */
     addToolToKit(kitId: string, toolId: string, quantity: number, required: boolean): Observable<Kit> {
-        return this._httpClient.post<Kit>(`api/kits/${kitId}/tools`, {
-            toolId,
-            quantity,
-            required,
-        });
+        return from(this._api.post('herramientas/kits/addToolToKit', {
+            id_kit: kitId,
+            tool_id: toolId,
+            cantidad: quantity,
+            requerido: required
+        })).pipe(
+            switchMap((response: any) => {
+                return of(response?.datos || {});
+            })
+        );
     }
 
     /**
      * Remove tool from kit
      */
     removeToolFromKit(kitId: string, itemId: string): Observable<Kit> {
-        return this._httpClient.delete<Kit>(`api/kits/${kitId}/tools/${itemId}`);
+        return from(this._api.post('herramientas/kits/removeToolFromKit', {
+            id_kit: kitId,
+            id_componente: itemId
+        })).pipe(
+            switchMap((response: any) => {
+                return of(response?.datos || {});
+            })
+        );
     }
 
     /**
      * Update kit item
      */
     updateKitItem(kitId: string, itemId: string, data: any): Observable<Kit> {
-        return this._httpClient.put<Kit>(`api/kits/${kitId}/tools/${itemId}`, data);
+        return from(this._api.post('herramientas/kits/updateKitComponent', {
+            id_kit: kitId,
+            id_componente: itemId,
+            ...data
+        })).pipe(
+            switchMap((response: any) => {
+                return of(response?.datos || {});
+            })
+        );
     }
 
     /**
      * Get kit calibration status
      */
     getKitCalibrationStatus(kitId: string): Observable<KitCalibrationStatus> {
-        return this._httpClient.get<KitCalibrationStatus>(`api/kits/${kitId}/calibration-status`);
+        return from(this._api.post('herramientas/kits/getKitCalibrationStatus', {
+            id_kit: kitId
+        })).pipe(
+            switchMap((response: any) => {
+                return of(response?.datos || {});
+            })
+        );
     }
 
     /**
      * Get all kits calibration status
      */
     getAllKitsCalibrationStatus(): Observable<KitCalibrationStatus[]> {
-        return this._httpClient.get<KitCalibrationStatus[]>('api/kits/calibration-status');
+        return from(this._api.post('herramientas/kits/getAllKitsCalibrationStatus', {})).pipe(
+            switchMap((response: any) => {
+                return of(response?.datos || []);
+            })
+        );
     }
 }

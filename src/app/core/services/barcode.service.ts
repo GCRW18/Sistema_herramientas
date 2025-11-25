@@ -42,7 +42,7 @@ export class BarcodeService {
         format: BarcodeFormat = 'CODE128'
     ): Observable<GeneratedBarcode> {
         return from(this._api.post('herramientas/Utilidades/generarCodigoBarras', {
-            id_herramienta: toolId,
+            tool_id: toolId,
             codigo: toolCode,
             formato: format,
         })).pipe(

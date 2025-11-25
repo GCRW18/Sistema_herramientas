@@ -60,14 +60,14 @@
                                 <div class="space-y-3">
                                     <div class="flex justify-between">
                                         <span class="text-secondary">Rol:</span>
-                                        <span class="font-medium">{{ user.role?.name || 'N/A' }}</span>
+                                        <span class="font-medium">{{ getRoleLabel(user.role) }}</span>
                                     </div>
                                     <mat-divider></mat-divider>
                                     <div class="flex justify-between items-center">
                                         <span class="text-secondary">Estado:</span>
                                         <mat-chip-set>
-                                            <mat-chip [color]="getStatusColor(user.status)" [highlighted]="true">
-                                                {{ getStatusLabel(user.status) }}
+                                            <mat-chip [color]="getStatusColor(user.active ? 'active' : 'inactive')" [highlighted]="true">
+                                                {{ user.active ? 'Activo' : 'Inactivo' }}
                                             </mat-chip>
                                         </mat-chip-set>
                                     </div>
@@ -76,7 +76,7 @@
                         </mat-card>
 
                         <!-- Permissions -->
-                        <mat-card class="shadow md:col-span-2" *ngIf="user.role?.permissions && user.role.permissions.length > 0">
+                        <mat-card class="shadow md:col-span-2" *ngIf="user.permissions && user.permissions.length > 0">
                             <mat-card-content class="p-6">
                                 <h3 class="text-lg font-medium mb-4 flex items-center">
                                     <mat-icon class="icon-size-6 mr-2" [svgIcon]="'heroicons_outline:key'"></mat-icon>
@@ -84,7 +84,7 @@
                                 </h3>
                                 <div class="flex flex-wrap gap-2">
                                     <mat-chip-set>
-                                        <mat-chip *ngFor="let permission of user.role.permissions">
+                                        <mat-chip *ngFor="let permission of user.permissions">
                                             {{ permission }}
                                         </mat-chip>
                                     </mat-chip-set>

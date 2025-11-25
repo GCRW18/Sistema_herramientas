@@ -46,10 +46,13 @@ export class MaintenanceDialogComponent implements OnInit {
         public dialogRef: MatDialogRef<MaintenanceDialogComponent>,
         @Inject(MAT_DIALOG_DATA) public data: MaintenanceDialogData
     ) {
+        // En modo creación, toolId no es requerido inicialmente
+        const isCreateMode = this.data.mode === 'create';
+
         this.maintenanceForm = this._formBuilder.group({
-            toolId: ['', Validators.required],
-            toolCode: ['', Validators.required],
-            toolName: ['', Validators.required],
+            toolId: [''],
+            toolCode: ['', isCreateMode ? [] : Validators.required],
+            toolName: ['', isCreateMode ? [] : Validators.required],
             type: ['preventive', Validators.required],
             scheduledDate: [new Date(), Validators.required],
             technician: [''],

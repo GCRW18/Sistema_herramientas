@@ -15,6 +15,9 @@ export * from './barcode.service';
 export * from './label.service';
 export * from './audit.service';
 export * from './file.service';
+export * from './roster.service';
+export * from './decommission.service';
+export * from './supplier.service';
 
 // Re-export UserService from core/user
 export { UserService } from '../user/user.service';

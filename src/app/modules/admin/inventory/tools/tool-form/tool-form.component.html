@@ -107,7 +107,7 @@
                     <mat-form-field class="flex-auto">
                         <mat-label>Categoría</mat-label>
                         <mat-select formControlName="categoryId" required>
-                            <mat-option *ngFor="let category of categories" [value]="category.id">
+                            <mat-option *ngFor="let category of categories" [value]="category.id_category">
                                 {{ category.name }}
                             </mat-option>
                         </mat-select>
@@ -117,7 +117,7 @@
                         <mat-label>Subcategoría</mat-label>
                         <mat-select formControlName="subcategoryId">
                             <mat-option [value]="''">Ninguna</mat-option>
-                            <mat-option *ngFor="let subcategory of subcategories" [value]="subcategory.id">
+                            <mat-option *ngFor="let subcategory of subcategories" [value]="subcategory.id_category">
                                 {{ subcategory.name }}
                             </mat-option>
                         </mat-select>
@@ -149,7 +149,7 @@
 
                     <mat-form-field class="flex-auto">
                         <mat-label>Número de Parte</mat-label>
-                        <input matInput formControlName="partNumber" placeholder="P/N">
+                        <input matInput formControlName="assetNumber" placeholder="P/N">
                     </mat-form-field>
                 </div>
             </div>
@@ -164,7 +164,7 @@
                     <mat-form-field class="flex-auto">
                         <mat-label>Almacén</mat-label>
                         <mat-select formControlName="warehouseId" required>
-                            <mat-option *ngFor="let warehouse of warehouses" [value]="warehouse.id">
+                            <mat-option *ngFor="let warehouse of warehouses" [value]="warehouse.id_warehouse">
                                 {{ warehouse.name }}
                             </mat-option>
                         </mat-select>
@@ -174,7 +174,7 @@
                         <mat-label>Ubicación</mat-label>
                         <mat-select formControlName="locationId">
                             <mat-option [value]="''">Sin ubicación específica</mat-option>
-                            <mat-option *ngFor="let location of locations" [value]="location.id">
+                            <mat-option *ngFor="let location of locations" [value]="location.id_location">
                                 {{ location.code }} - {{ location.name }}
                             </mat-option>
                         </mat-select>
@@ -270,7 +270,7 @@
 
                     <mat-form-field class="flex-auto">
                         <mat-label>Precio de Compra</mat-label>
-                        <input matInput type="number" formControlName="purchasePrice" placeholder="0.00">
+                        <input matInput type="number" formControlName="price" placeholder="0.00">
                         <span matPrefix>$&nbsp;</span>
                     </mat-form-field>
 

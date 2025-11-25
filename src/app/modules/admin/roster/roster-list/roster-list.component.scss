@@ -1,0 +1,31 @@
+// Component-specific styles for roster-list
+// Most styles are handled by Tailwind CSS classes in the template
+
+:host {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+    width: 100%;
+}
+
+// Table customizations
+.mat-mdc-table {
+    .mat-mdc-cell,
+    .mat-mdc-header-cell {
+        padding: 0.75rem 1rem;
+    }
+}
+
+// Chip customizations
+mat-chip {
+    font-size: 0.75rem;
+    min-height: 24px;
+    padding: 4px 8px;
+}
+
+// Menu customizations
+.mat-mdc-menu-content {
+    .mat-mdc-menu-item {
+        min-height: 40px;
+    }
+}

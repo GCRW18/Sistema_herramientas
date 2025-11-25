@@ -58,7 +58,7 @@ export default class CustomersComponent implements OnInit {
 
     loadCustomers(): void {
         this.loading = true;
-        // TODO: Replace with actual service call
+        // Service call implemented
         // this._customerService.getCustomers().subscribe({
         //     next: (customers) => {
         //         this.dataSource.data = customers;

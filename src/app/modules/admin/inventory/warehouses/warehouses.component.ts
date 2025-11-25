@@ -13,6 +13,11 @@ import { WarehouseService, NotificationService } from 'app/core/services';
 import { Warehouse } from 'app/core/models';
 import { ErpConfirmationService } from '@erp/services/confirmation';
 
+/**
+ * WarehousesComponent
+ * Componente para listar almacenes
+ * CORREGIDO: 13-11-2025 - Referencias correctas a id_warehouse
+ */
 @Component({
     selector: 'app-warehouses',
     standalone: true,
@@ -59,7 +64,9 @@ export class WarehousesComponent implements OnInit {
                 this.dataSource.data = warehouses;
                 this.loading = false;
             },
-            error: () => {
+            error: (error) => {
+                this._notificationService.error('Error al cargar almacenes');
+                console.error('Error loading warehouses:', error);
                 this.loading = false;
             },
         });
@@ -74,12 +81,12 @@ export class WarehousesComponent implements OnInit {
         this._router.navigate(['/inventory/warehouses/new']);
     }
 
-    viewWarehouse(id: string): void {
-        this._router.navigate(['/inventory/warehouses', id]);
+    viewWarehouse(id_warehouse: number): void {
+        this._router.navigate(['/inventory/warehouses', id_warehouse]);
     }
 
-    editWarehouse(id: string): void {
-        this._router.navigate(['/inventory/warehouses', id, 'edit']);
+    editWarehouse(id_warehouse: number): void {
+        this._router.navigate(['/inventory/warehouses', id_warehouse, 'edit']);
     }
 
     deleteWarehouse(warehouse: Warehouse): void {
@@ -107,7 +114,7 @@ export class WarehousesComponent implements OnInit {
 
         confirmation.afterClosed().subscribe((result) => {
             if (result === 'confirmed') {
-                this._warehouseService.deleteWarehouse(warehouse.id).subscribe({
+                this._warehouseService.deleteWarehouse(warehouse.id_warehouse.toString()).subscribe({
                     next: () => {
                         this._notificationService.success(`Almacén ${warehouse.code} eliminado correctamente`);
                         this.loadWarehouses();

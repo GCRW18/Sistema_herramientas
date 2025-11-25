@@ -119,7 +119,7 @@
                     <mat-form-field class="flex-auto">
                         <mat-label>Almacén</mat-label>
                         <mat-select formControlName="warehouseId" required>
-                            <mat-option *ngFor="let warehouse of warehouses" [value]="warehouse.id">
+                            <mat-option *ngFor="let warehouse of warehouses" [value]="warehouse.id_warehouse || warehouse.id">
                                 {{ warehouse.name }}
                             </mat-option>
                         </mat-select>
@@ -129,8 +129,7 @@
                         <mat-label>Ubicación</mat-label>
                         <mat-select formControlName="locationId">
                             <mat-option [value]="''">Sin ubicación específica</mat-option>
-                            <mat-option *ngFor="let location of locations" [value]="location.id">
-                                {{ location.code }} - {{ location.name }}
+                            <mat-option *ngFor="let location of locations" [value]="location.id_location || location.id">                                {{ location.code }} - {{ location.name }}
                             </mat-option>
                         </mat-select>
                     </mat-form-field>

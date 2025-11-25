@@ -192,10 +192,11 @@ export default class CategoriesComponent implements OnInit {
         dialogRef.afterClosed().subscribe(result => {
             if (result) {
                 this._categoryService.createCategory({
-                    nombre: result.name,
-                    codigo: result.code,
-                    descripcion: result.description,
-                    estado_reg: result.active ? 'activo' : 'inactivo'
+                    name: result.name,
+                    code: result.code,
+                    description: result.description,
+                    parent_category_id: null,
+                    active: result.active
                 }).subscribe({
                     next: () => {
                         this._snackBar.open('Categoría creada exitosamente', 'Cerrar', {
@@ -224,19 +225,19 @@ export default class CategoriesComponent implements OnInit {
             disableClose: true,
             data: {
                 category: null,
-                parentId: node.item.id_categoria,
-                parentName: node.item.nombre
+                parentId: node.item.id_category,
+                parentName: node.item.name
             }
         });
 
         dialogRef.afterClosed().subscribe(result => {
             if (result) {
                 this._categoryService.createCategory({
-                    nombre: result.name,
-                    codigo: result.code,
-                    descripcion: result.description,
-                    id_categoria_fk: node.item.id_categoria,
-                    estado_reg: result.active ? 'activo' : 'inactivo'
+                    name: result.name,
+                    code: result.code,
+                    description: result.description,
+                    parent_category_id: node.item.id_category,
+                    active: result.active
                 }).subscribe({
                     next: () => {
                         this._snackBar.open('Subcategoría creada exitosamente', 'Cerrar', {
@@ -272,10 +273,10 @@ export default class CategoriesComponent implements OnInit {
             disableClose: true,
             data: {
                 category: {
-                    id: node.item.id_categoria,
-                    code: node.item.codigo,
-                    name: node.item.nombre,
-                    description: node.item.descripcion,
+                    id: node.item.id_category,
+                    code: node.item.code,
+                    name: node.item.name,
+                    description: node.item.description,
                     active: node.item.estado_reg === 'activo'
                 }
             }
@@ -283,11 +284,11 @@ export default class CategoriesComponent implements OnInit {
 
         dialogRef.afterClosed().subscribe(result => {
             if (result) {
-                this._categoryService.updateCategory(node.item.id_categoria.toString(), {
-                    nombre: result.name,
-                    codigo: result.code,
-                    descripcion: result.description,
-                    estado_reg: result.active ? 'activo' : 'inactivo'
+                this._categoryService.updateCategory(node.item.id_category.toString(), {
+                    name: result.name,
+                    code: result.code,
+                    description: result.description,
+                    active: result.active
                 }).subscribe({
                     next: () => {
                         this._snackBar.open('Categoría actualizada exitosamente', 'Cerrar', {
@@ -311,9 +312,20 @@ export default class CategoriesComponent implements OnInit {
     }
 
     deleteCategory(node: CategoryFlatNode): void {
+        // Construir mensaje de advertencia
+        let warningMessage = `¿Está seguro de eliminar "${node.item.name}"?`;
+
+        if (node.item.cantidad_herramientas && node.item.cantidad_herramientas > 0) {
+            warningMessage += `\n\nATENCIÓN: Esta categoría tiene ${node.item.cantidad_herramientas} herramienta(s) asociada(s) y no se podrá eliminar hasta que reasigne o elimine estas herramientas.`;
+        }
+
+        if (node.item.children?.length) {
+            warningMessage += `\n\nEsta categoría tiene subcategorías y no se podrá eliminar hasta que elimine las subcategorías primero.`;
+        }
+
         const confirmation = this._confirmationService.open({
             title: 'Eliminar Categoría',
-            message: `¿Está seguro de eliminar "${node.item.nombre}"? ${node.item.children?.length ? 'Esto también eliminará todas sus subcategorías.' : ''}`,
+            message: warningMessage,
             icon: {
                 show: true,
                 name: 'heroicons_outline:exclamation-triangle',
@@ -334,7 +346,7 @@ export default class CategoriesComponent implements OnInit {
 
         confirmation.afterClosed().subscribe((result) => {
             if (result === 'confirmed') {
-                this._categoryService.deleteCategory(node.item.id_categoria.toString()).subscribe({
+                this._categoryService.deleteCategory(node.item.id_category.toString()).subscribe({
                     next: () => {
                         this._snackBar.open('Categoría eliminada exitosamente', 'Cerrar', {
                             duration: 3000,
@@ -346,10 +358,33 @@ export default class CategoriesComponent implements OnInit {
                     },
                     error: (error) => {
                         console.error('Error deleting category:', error);
-                        this._snackBar.open('Error al eliminar categoría', 'Cerrar', {
-                            duration: 3000,
+
+                        // Extraer mensaje de error específico del backend
+                        let errorMessage = 'Error al eliminar categoría';
+
+                        if (error?.error?.ROOT?.detalle?.mensaje) {
+                            const backendMessage = error.error.ROOT.detalle.mensaje;
+
+                            // Si el backend ya tiene un mensaje descriptivo, usarlo directamente
+                            if (backendMessage.includes('No se puede eliminar')) {
+                                errorMessage = backendMessage;
+                            }
+                            // Detectar error de clave foránea con herramientas (category_id o subcategory_id)
+                            else if (backendMessage.includes('tools_category_id_fkey') ||
+                                     backendMessage.includes('tools_subcategory_id_fkey')) {
+                                errorMessage = 'No se puede eliminar: la categoría tiene herramientas asociadas. Reasigne o elimine las herramientas primero.';
+                            }
+                            // Detectar otros errores de foreign key
+                            else if (backendMessage.includes('violates foreign key constraint')) {
+                                errorMessage = 'No se puede eliminar: la categoría tiene dependencias asociadas. Elimine las dependencias primero.';
+                            }
+                        }
+
+                        this._snackBar.open(errorMessage, 'Cerrar', {
+                            duration: 5000,
                             horizontalPosition: 'end',
-                            verticalPosition: 'top'
+                            verticalPosition: 'top',
+                            panelClass: ['error-snackbar']
                         });
                     }
                 });

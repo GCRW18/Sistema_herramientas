@@ -11,6 +11,7 @@ import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatNativeDateModule } from '@angular/material/core';
 import { MatCardModule } from '@angular/material/card';
 import { MatTableModule } from '@angular/material/table';
+import { MovementService, NotificationService } from 'app/core/services';
 
 @Component({
   selector: 'app-comprobante-form',
@@ -36,6 +37,8 @@ export class ComprobanteFormComponent implements OnInit {
   private _formBuilder = inject(FormBuilder);
   private _router = inject(Router);
   private _activatedRoute = inject(ActivatedRoute);
+  private _movementService = inject(MovementService);
+  private _notificationService = inject(NotificationService);
 
   comprobanteForm!: FormGroup;
   isEditMode: boolean = false;
@@ -129,12 +132,30 @@ export class ComprobanteFormComponent implements OnInit {
   onSubmit(): void {
     if (this.comprobanteForm.valid) {
       const formData = this.comprobanteForm.value;
-      console.log('Guardando comprobante:', formData);
-      
-      // TODO: Call service to save data
-      // this.comprobanteService.save(formData).subscribe(...)
-      
-      this._router.navigate(['/movements/comprobante']);
+
+      if (this.isEditMode && this.comprobanteId) {
+        // Update existing comprobante
+        this._movementService.updateMovement(this.comprobanteId.toString(), formData).subscribe({
+          next: () => {
+            this._notificationService.success('Comprobante actualizado correctamente');
+            this._router.navigate(['/movements/comprobante']);
+          },
+          error: () => {
+            this._notificationService.error('Error al actualizar comprobante');
+          }
+        });
+      } else {
+        // Create new comprobante
+        this._movementService.createMovement(formData).subscribe({
+          next: () => {
+            this._notificationService.success('Comprobante creado correctamente');
+            this._router.navigate(['/movements/comprobante']);
+          },
+          error: () => {
+            this._notificationService.error('Error al crear comprobante');
+          }
+        });
+      }
     } else {
       this.comprobanteForm.markAllAsTouched();
     }

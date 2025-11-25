@@ -162,9 +162,24 @@ export class ToolsListComponent implements OnInit, AfterViewInit {
      * Delete tool
      */
     deleteTool(tool: Tool): void {
+        // FIX: Asegurar que el ID es válido
+        const toolId = (tool as any).id_tool || tool.id;
+
+        if (!toolId) {
+            this._notificationService.error('Error: ID de herramienta no válido');
+            console.error('Tool ID is undefined:', tool);
+            return;
+        }
+
         const confirmation = this._confirmationService.open({
             title: 'Eliminar Herramienta',
-            message: `¿Está seguro de eliminar la herramienta <strong>${tool.code} - ${tool.name}</strong>? Esta acción no se puede deshacer.`,
+            message: `¿Está seguro de eliminar la herramienta <strong>${tool.code} - ${tool.name}</strong>?<br><br>
+                <strong>ADVERTENCIA:</strong> Esta acción eliminará también:<br>
+                - Todas las calibraciones asociadas<br>
+                - Todos los mantenimientos registrados<br>
+                - Todo el historial de movimientos<br>
+                - Todas las asignaciones a empleados<br><br>
+                <strong>Esta acción no se puede deshacer.</strong>`,
             icon: {
                 show: true,
                 name: 'heroicons_outline:exclamation-triangle',
@@ -173,7 +188,7 @@ export class ToolsListComponent implements OnInit, AfterViewInit {
             actions: {
                 confirm: {
                     show: true,
-                    label: 'Eliminar',
+                    label: 'Eliminar Todo',
                     color: 'warn',
                 },
                 cancel: {
@@ -186,14 +201,51 @@ export class ToolsListComponent implements OnInit, AfterViewInit {
 
         confirmation.afterClosed().subscribe((result) => {
             if (result === 'confirmed') {
-                this._toolService.deleteTool(tool.id).subscribe({
+                this._toolService.deleteTool(toolId.toString()).subscribe({
                     next: () => {
                         this._notificationService.success(`Herramienta ${tool.code} eliminada correctamente`);
                         this.loadData();
                     },
                     error: (error) => {
-                        this._notificationService.error('Error al eliminar la herramienta');
                         console.error('Error deleting tool:', error);
+
+                        // Extraer mensaje de error específico del backend
+                        let errorMessage = 'Error al eliminar la herramienta';
+
+                        if (error?.error?.ROOT?.detalle?.mensaje) {
+                            const backendMessage = error.error.ROOT.detalle.mensaje;
+
+                            // Si el backend tiene un mensaje descriptivo, usarlo
+                            if (backendMessage.includes('No se puede eliminar')) {
+                                errorMessage = backendMessage;
+                            }
+                            // Detectar error de calibraciones
+                            else if (backendMessage.includes('calibrations_tool_id_fkey') ||
+                                     backendMessage.includes('calibración(es)')) {
+                                errorMessage = 'No se puede eliminar: la herramienta tiene calibraciones registradas. Elimine primero las calibraciones.';
+                            }
+                            // Detectar error de mantenimientos
+                            else if (backendMessage.includes('maintenances_tool_id_fkey') ||
+                                     backendMessage.includes('mantenimiento(s)')) {
+                                errorMessage = 'No se puede eliminar: la herramienta tiene mantenimientos registrados. Elimine primero los mantenimientos.';
+                            }
+                            // Detectar error de movimientos
+                            else if (backendMessage.includes('tool_movements') ||
+                                     backendMessage.includes('movimiento(s)')) {
+                                errorMessage = 'No se puede eliminar: la herramienta tiene movimientos registrados. Elimine primero el historial.';
+                            }
+                            // Detectar error de asignaciones
+                            else if (backendMessage.includes('tool_assignments') ||
+                                     backendMessage.includes('asignación(es)')) {
+                                errorMessage = 'No se puede eliminar: la herramienta está asignada a empleados. Finalice las asignaciones primero.';
+                            }
+                            // Detectar otros errores de FK
+                            else if (backendMessage.includes('violates foreign key constraint')) {
+                                errorMessage = 'No se puede eliminar: la herramienta tiene registros asociados. Elimine las dependencias primero.';
+                            }
+                        }
+
+                        this._notificationService.error(errorMessage);
                     },
                 });
             }

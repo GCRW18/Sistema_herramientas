@@ -81,4 +81,14 @@ export default class UserDetailComponent implements OnInit {
         };
         return colors[status] || '';
     }
+
+    getRoleLabel(role: string): string {
+        const labels: Record<string, string> = {
+            admin: 'Administrador',
+            warehouse_manager: 'Jefe de Almacén',
+            technician: 'Técnico',
+            viewer: 'Visualizador',
+        };
+        return labels[role] || role;
+    }
 }

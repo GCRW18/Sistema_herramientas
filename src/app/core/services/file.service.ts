@@ -11,8 +11,8 @@ export class FileService {
      * Get files by tool ID
      */
     getFilesByToolId(toolId: string): Observable<Archivo[]> {
-        return from(this._api.post('herramientas/Archivo/listarArchivo', {
-            id_herramienta: toolId,
+        return from(this._api.post('herramientas/Archivo/listArchivo', {
+            tool_id: toolId,
             start: 0,
             limit: 100 // Adjust limit as needed
         })).pipe(
@@ -28,13 +28,13 @@ export class FileService {
     uploadFile(file: File, toolId: string, type: 'image' | 'document', description: string = ''): Observable<Archivo> {
         const formData = new FormData();
         formData.append('file', file);
-        formData.append('id_herramienta', toolId);
+        formData.append('tool_id', toolId);
         formData.append('tipo', type);
         formData.append('descripcion', description);
 
         // This assumes your PxpClient can handle FormData directly or that the backend expects multipart/form-data
         // You might need to adjust ErpApiService or backend to handle file uploads properly.
-        return from(this._api.post('herramientas/Archivo/insertarArchivo', formData)).pipe(
+        return from(this._api.post('herramientas/Archivo/insertArchivo', formData)).pipe(
             switchMap((response: any) => {
                 return of(response?.datos || {});
             })
@@ -45,7 +45,7 @@ export class FileService {
      * Delete a file
      */
     deleteFile(fileId: string): Observable<void> {
-        return from(this._api.post('herramientas/Archivo/eliminarArchivo', {
+        return from(this._api.post('herramientas/Archivo/deleteArchivo', {
             id_archivo: fileId
         })).pipe(
             switchMap(() => {

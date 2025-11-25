@@ -118,6 +118,10 @@ export default class FleetListComponent implements OnInit, AfterViewInit {
         return this.dataSource.data.filter(aircraft => aircraft.status === status).length;
     }
 
+    createAircraft(): void {
+        this._router.navigate(['/fleet/new']);
+    }
+
     deleteAircraft(aircraft: Aircraft): void {
         const confirmation = this._confirmationService.open({
             title: 'Eliminar Aeronave',

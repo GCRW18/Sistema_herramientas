@@ -1,5 +1,5 @@
 import { Injectable, inject } from '@angular/core';
-import { from, Observable, of, ReplaySubject, switchMap, tap } from 'rxjs';
+import { from, Observable, of, ReplaySubject, switchMap, tap, catchError } from 'rxjs';
 import { CalibrationAlert, CalibrationRecord, MaintenanceRecord } from '../models';
 import { ErpApiService } from '../api/api.service';
 
@@ -46,12 +46,12 @@ export class CalibrationService {
         const params = {
             start: 0,
             limit: 50,
-            sort: 'fecha_envio',
+            sort: 'send_date',
             dir: 'desc',
             ...filters
         };
 
-        return from(this._api.post('herramientas/Calibracion/listarCalibracion', params)).pipe(
+        return from(this._api.post('herramientas/calibrations/listCalibrations', params)).pipe(
             switchMap((response: any) => {
                 const calibrations = response?.datos || [];
                 this._calibrations.next(calibrations);
@@ -64,10 +64,10 @@ export class CalibrationService {
      * Get calibration by id
      */
     getCalibrationById(id: string): Observable<CalibrationRecord> {
-        return from(this._api.post('herramientas/Calibracion/listarCalibracion', {
+        return from(this._api.post('herramientas/calibrations/listCalibrations', {
             start: 0,
             limit: 1,
-            id_calibracion: id
+            id_calibration: id
         })).pipe(
             switchMap((response: any) => {
                 return of(response?.datos?.[0] || null);
@@ -79,7 +79,7 @@ export class CalibrationService {
      * Send tool to calibration
      */
     sendToCalibration(record: Partial<CalibrationRecord>): Observable<CalibrationRecord> {
-        return from(this._api.post('herramientas/Calibracion/insertarCalibracion', record)).pipe(
+        return from(this._api.post('herramientas/calibrations/insertCalibration', record)).pipe(
             switchMap((response: any) => {
                 return of(response?.datos || record);
             })
@@ -90,11 +90,12 @@ export class CalibrationService {
      * Receive tool from calibration
      */
     receiveFromCalibration(id: string, data: any): Observable<CalibrationRecord> {
-        return from(this._api.post('herramientas/Calibracion/insertarCalibracion', {
+        return from(this._api.post('herramientas/calibrations/updateCalibration', {
             ...data,
-            id_calibracion: id
+            id_calibration: id
         })).pipe(
             switchMap((response: any) => {
+                console.log('receiveFromCalibration response:', response);
                 return of(response?.datos || data);
             })
         );
@@ -104,9 +105,9 @@ export class CalibrationService {
      * Update calibration record
      */
     updateCalibration(id: string, record: Partial<CalibrationRecord>): Observable<CalibrationRecord> {
-        return from(this._api.post('herramientas/Calibracion/insertarCalibracion', {
+        return from(this._api.post('herramientas/calibrations/insertCalibration', {
             ...record,
-            id_calibracion: id
+            id_calibration: id
         })).pipe(
             switchMap((response: any) => {
                 return of(response?.datos || record);
@@ -118,10 +119,10 @@ export class CalibrationService {
      * Cancel calibration
      */
     cancelCalibration(id: string, reason: string): Observable<CalibrationRecord> {
-        return from(this._api.post('herramientas/Calibracion/insertarCalibracion', {
-            id_calibracion: id,
-            estado: 'cancelled',
-            observaciones: reason
+        return from(this._api.post('herramientas/calibrations/insertCalibration', {
+            id_calibration: id,
+            status: 'cancelled',
+            notes: reason
         })).pipe(
             switchMap((response: any) => {
                 return of(response?.datos || {});
@@ -133,11 +134,11 @@ export class CalibrationService {
      * Get calibration history for a tool
      */
     getToolCalibrationHistory(toolId: string): Observable<CalibrationRecord[]> {
-        return from(this._api.post('herramientas/Calibracion/listarCalibracion', {
+        return from(this._api.post('herramientas/calibrations/listCalibrations', {
             start: 0,
             limit: 50,
-            id_herramienta: toolId,
-            sort: 'fecha_envio',
+            tool_id: toolId,
+            sort: 'send_date',
             dir: 'desc'
         })).pipe(
             switchMap((response: any) => {
@@ -150,7 +151,7 @@ export class CalibrationService {
      * Get active calibrations (in-process calibrations)
      */
     getActiveCalibrations(): Observable<CalibrationRecord[]> {
-        return this.getCalibrations({ estado: 'in_process' });
+        return this.getCalibrations({ status: 'in_process' });
     }
 
     // -----------------------------------------------------------------------------------------------------
@@ -164,12 +165,12 @@ export class CalibrationService {
         const params = {
             start: 0,
             limit: 50,
-            sort: 'fecha_inicio',
+            sort: 'start_date',
             dir: 'desc',
             ...filters
         };
 
-        return from(this._api.post('herramientas/Mantenimiento/listarMantenimiento', params)).pipe(
+        return from(this._api.post('herramientas/maintenances/listMaintenances', params)).pipe(
             switchMap((response: any) => {
                 const maintenances = response?.datos || [];
                 this._maintenances.next(maintenances);
@@ -182,10 +183,10 @@ export class CalibrationService {
      * Get maintenance by id
      */
     getMaintenanceById(id: string): Observable<MaintenanceRecord> {
-        return from(this._api.post('herramientas/Mantenimiento/listarMantenimiento', {
+        return from(this._api.post('herramientas/maintenances/listMaintenances', {
             start: 0,
             limit: 1,
-            id_mantenimiento: id
+            id_maintenance: id
         })).pipe(
             switchMap((response: any) => {
                 return of(response?.datos?.[0] || null);
@@ -197,7 +198,7 @@ export class CalibrationService {
      * Send tool to maintenance
      */
     sendToMaintenance(record: Partial<MaintenanceRecord>): Observable<MaintenanceRecord> {
-        return from(this._api.post('herramientas/Mantenimiento/insertarMantenimiento', record)).pipe(
+        return from(this._api.post('herramientas/maintenances/insertMaintenance', record)).pipe(
             switchMap((response: any) => {
                 return of(response?.datos || record);
             })
@@ -208,9 +209,9 @@ export class CalibrationService {
      * Receive tool from maintenance
      */
     receiveFromMaintenance(id: string, data: any): Observable<MaintenanceRecord> {
-        return from(this._api.post('herramientas/Mantenimiento/insertarMantenimiento', {
+        return from(this._api.post('herramientas/maintenances/insertMaintenance', {
             ...data,
-            id_mantenimiento: id
+            id_maintenance: id
         })).pipe(
             switchMap((response: any) => {
                 return of(response?.datos || data);
@@ -222,9 +223,9 @@ export class CalibrationService {
      * Update maintenance record
      */
     updateMaintenance(id: string, record: Partial<MaintenanceRecord>): Observable<MaintenanceRecord> {
-        return from(this._api.post('herramientas/Mantenimiento/insertarMantenimiento', {
+        return from(this._api.post('herramientas/maintenances/insertMaintenance', {
             ...record,
-            id_mantenimiento: id
+            id_maintenance: id
         })).pipe(
             switchMap((response: any) => {
                 return of(response?.datos || record);
@@ -236,11 +237,11 @@ export class CalibrationService {
      * Get maintenance history for a tool
      */
     getToolMaintenanceHistory(toolId: string): Observable<MaintenanceRecord[]> {
-        return from(this._api.post('herramientas/Mantenimiento/listarMantenimiento', {
+        return from(this._api.post('herramientas/maintenances/listMaintenances', {
             start: 0,
             limit: 50,
-            id_herramienta: toolId,
-            sort: 'fecha_inicio',
+            tool_id: toolId,
+            sort: 'start_date',
             dir: 'desc'
         })).pipe(
             switchMap((response: any) => {
@@ -257,11 +258,22 @@ export class CalibrationService {
      * Get calibration alerts
      */
     getCalibrationAlerts(): Observable<CalibrationAlert[]> {
-        return from(this._api.post('herramientas/Calibracion/obtenerResumenAlertas', {})).pipe(
+        return from(this._api.post('herramientas/calibrations/getResumenAlertas', {})).pipe(
             switchMap((response: any) => {
                 const alerts = response?.datos || [];
                 this._alerts.next(alerts);
                 return of(alerts);
+            }),
+            // Capturar error pero extraer datos si existen
+            catchError((error) => {
+                console.warn('Error en getCalibrationAlerts, intentando extraer datos:', error);
+                const datos = error?.ROOT?.datos || error?.datos || [];
+                if (datos && datos.length > 0) {
+                    console.log('Datos recuperados a pesar del error:', datos);
+                    this._alerts.next(datos);
+                    return of(datos);
+                }
+                return of([]);
             })
         );
     }
@@ -270,7 +282,7 @@ export class CalibrationService {
      * Get critical alerts (upcoming calibration < 30 days)
      */
     getCriticalAlerts(): Observable<CalibrationAlert[]> {
-        return from(this._api.post('herramientas/Calibracion/obtenerAlertasCalibracionProxima', {})).pipe(
+        return from(this._api.post('herramientas/calibrations/getUpcomingCalibrationAlerts', {})).pipe(
             switchMap((response: any) => {
                 return of(response?.datos || []);
             })
@@ -281,7 +293,7 @@ export class CalibrationService {
      * Get expired calibration alerts
      */
     getExpiredAlerts(): Observable<CalibrationAlert[]> {
-        return from(this._api.post('herramientas/Calibracion/obtenerAlertasCalibracionVencida', {})).pipe(
+        return from(this._api.post('herramientas/calibrations/getExpiredCalibrationAlerts', {})).pipe(
             switchMap((response: any) => {
                 return of(response?.datos || []);
             })
