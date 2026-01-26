@@ -1,0 +1,410 @@
+<div class="flex flex-col md:flex-row w-full h-full bg-white dark:bg-[#0f172a] font-sans overflow-hidden border-[3px] border-black rounded-xl shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] relative">
+
+    <div class="w-full md:w-1/3 lg:w-1/4 bg-gradient-to-br from-[#111A43] to-[#1a2657] text-white p-6 flex flex-col relative overflow-hidden border-b-[3px] md:border-b-0 md:border-r-[3px] border-black z-10">
+
+        <mat-icon class="absolute -right-16 -bottom-16 !text-[300px] !w-[300px] !h-[300px] text-white opacity-5 pointer-events-none rotate-12">inventory</mat-icon>
+        <div class="absolute top-0 left-0 w-40 h-40 bg-white/5 rounded-full -translate-x-1/2 -translate-y-1/2 blur-2xl"></div>
+
+        <div class="mb-8 relative z-10">
+            <div class="flex items-center justify-between mb-3">
+                <button (click)="cerrar()" class="flex items-center gap-2 text-[#FFE500] hover:text-white transition-colors group cursor-pointer">
+                    <mat-icon class="group-hover:-translate-x-1 transition-transform">arrow_back</mat-icon>
+                    <span class="font-black uppercase tracking-widest text-xs">Salir</span>
+                </button>
+                <div class="flex items-center gap-1 text-white/60">
+                    <span class="w-2 h-2 bg-green-400 rounded-full animate-pulse"></span>
+                    <span class="text-[8px] font-bold uppercase tracking-wider">Live Stock</span>
+                </div>
+            </div>
+            <h1 class="text-4xl lg:text-5xl font-[1000] uppercase leading-none tracking-tighter text-white">
+                STOCK<br><span class="text-transparent bg-clip-text bg-gradient-to-r from-[#FFE500] to-yellow-600">INVENTARIO</span>
+            </h1>
+            <p class="text-[10px] font-mono mt-2 text-white/60 border-t border-white/20 pt-2">
+                CONTROL DE INVENTARIO V2.0
+            </p>
+        </div>
+
+        <div class="space-y-4 relative z-10 overflow-y-auto pr-2 custom-scrollbar flex-1">
+
+            <div class="group">
+                <span class="block text-[10px] font-bold text-white/60 uppercase tracking-widest mb-1">Total Items</span>
+                <div class="bg-[#FFE500] text-black p-4 border-[3px] border-black rounded-xl shadow-[4px_4px_0px_0px_rgba(255,255,255,0.1)] group-hover:translate-x-1 transition-transform">
+                    <div class="flex justify-between items-center">
+                        <span class="text-4xl font-[1000]">{{ estadisticas().total }}</span>
+                        <mat-icon class="!text-3xl">widgets</mat-icon>
+                    </div>
+                    <span class="text-xs font-black uppercase">Registrados</span>
+                </div>
+            </div>
+
+            <div class="bg-white/10 border-[2px] border-white/20 rounded-xl p-4 backdrop-blur-sm hover:bg-white/20 transition-colors">
+                <div class="flex justify-between items-start mb-1">
+                    <span class="block text-[10px] font-bold text-white/80 uppercase tracking-widest">En Almacén</span>
+                    <mat-icon class="text-green-400 !text-lg">check_circle</mat-icon>
+                </div>
+                <div class="flex items-baseline gap-2">
+                    <span class="text-3xl font-[1000] text-white">{{ estadisticas().disponibles }}</span>
+                    <span class="text-[10px] font-bold text-green-400 uppercase">Disp.</span>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+                <div class="bg-white/10 border-[2px] border-white/20 rounded-xl p-3 backdrop-blur-sm hover:bg-white/20 transition-colors">
+                    <mat-icon class="text-yellow-400 !text-lg mb-1">warning</mat-icon>
+                    <span class="text-2xl font-[1000] text-white block">{{ estadisticas().bajoStock }}</span>
+                    <span class="text-[9px] font-bold text-white/70 uppercase">Bajo Stock</span>
+                </div>
+                <div class="bg-white/10 border-[2px] border-white/20 rounded-xl p-3 backdrop-blur-sm hover:bg-white/20 transition-colors">
+                    <mat-icon class="text-red-500 !text-lg mb-1">error</mat-icon>
+                    <span class="text-2xl font-[1000] text-white block">{{ estadisticas().sinStock }}</span>
+                    <span class="text-[9px] font-bold text-white/70 uppercase">Sin Stock</span>
+                </div>
+            </div>
+
+            <div class="bg-gradient-to-r from-blue-900/50 to-blue-800/50 border-[2px] border-blue-400/30 rounded-xl p-4 backdrop-blur-sm">
+                <div class="flex justify-between items-start mb-1">
+                    <span class="block text-[10px] font-bold text-blue-200 uppercase tracking-widest">Valorización</span>
+                    <mat-icon class="text-blue-300 !text-lg">attach_money</mat-icon>
+                </div>
+                <span class="text-2xl font-[1000] text-white tracking-tight">
+                    Bs {{ (estadisticas().valorTotal / 1000).toFixed(1) }}K
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <div class="flex-1 flex flex-col bg-[#f8f9fa] dark:bg-[#0f172a] relative">
+
+        <div class="bg-white dark:bg-[#1e293b] p-5 border-b-[3px] border-black flex flex-col md:flex-row justify-between items-center gap-4 shadow-sm z-20">
+            <div class="flex items-center gap-3 w-full md:w-auto">
+                <div class="w-10 h-10 bg-[#111A43] border-[2px] border-black rounded-lg flex items-center justify-center shadow-[2px_2px_0px_0px_#000] text-white">
+                    <mat-icon>manage_search</mat-icon>
+                </div>
+                <div>
+                    <h2 class="text-xl font-[1000] uppercase leading-none text-black dark:text-white">Consulta de Inventario</h2>
+                    <span class="text-[10px] font-black uppercase text-gray-500 tracking-widest">Búsqueda & Filtrado</span>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-2 w-full md:w-auto overflow-x-auto pb-1 md:pb-0">
+                <div class="flex gap-1 bg-gray-100 dark:bg-slate-700 p-1 rounded-lg border-[2px] border-black mr-2">
+                    <button (click)="changeView('grid')"
+                            [class.bg-[#111A43]]="viewMode() === 'grid'"
+                            [class.text-white]="viewMode() === 'grid'"
+                            [class.text-gray-400]="viewMode() !== 'grid'"
+                            class="w-8 h-8 rounded flex items-center justify-center transition-all">
+                        <mat-icon class="!text-lg">grid_view</mat-icon>
+                    </button>
+                    <button (click)="changeView('list')"
+                            [class.bg-[#111A43]]="viewMode() === 'list'"
+                            [class.text-white]="viewMode() === 'list'"
+                            [class.text-gray-400]="viewMode() !== 'list'"
+                            class="w-8 h-8 rounded flex items-center justify-center transition-all">
+                        <mat-icon class="!text-lg">view_list</mat-icon>
+                    </button>
+                    <button (click)="changeView('table')"
+                            [class.bg-[#111A43]]="viewMode() === 'table'"
+                            [class.text-white]="viewMode() === 'table'"
+                            [class.text-gray-400]="viewMode() !== 'table'"
+                            class="w-8 h-8 rounded flex items-center justify-center transition-all">
+                        <mat-icon class="!text-lg">table_view</mat-icon>
+                    </button>
+                </div>
+
+                <button (click)="exportarExcel()" matTooltip="Exportar"
+                        class="w-10 h-10 flex items-center justify-center bg-green-500 text-black border-[2px] border-black rounded-lg shadow-[2px_2px_0px_0px_#000] hover:translate-y-[1px] hover:shadow-none transition-all">
+                    <mat-icon>download</mat-icon>
+                </button>
+            </div>
+        </div>
+
+        <div class="flex-1 overflow-y-auto p-4 md:p-6 bg-[#f8f9fa] dark:bg-[#0f172a]">
+
+            <div class="mb-6 bg-white dark:bg-[#1e293b] border-[3px] border-black rounded-xl p-4 shadow-[4px_4px_0px_0px_rgba(0,0,0,0.1)]">
+                <div class="flex justify-between items-center mb-4 cursor-pointer" (click)="toggleFilters()">
+                    <span class="text-xs font-black uppercase tracking-widest text-gray-500 flex items-center gap-2">
+                        <mat-icon class="!text-sm">filter_list</mat-icon> Filtros Avanzados
+                    </span>
+                    <mat-icon [class.rotate-180]="showFilters()" class="transition-transform text-black dark:text-white">expand_more</mat-icon>
+                </div>
+
+                <div *ngIf="showFilters()" class="grid grid-cols-1 md:grid-cols-12 gap-4 animate-slide-in">
+                    <div class="md:col-span-12 lg:col-span-4">
+                        <div class="relative">
+                            <input type="text" [ngModel]="searchTerm()" (ngModelChange)="searchTerm.set($event)"
+                                   placeholder="BUSCAR POR CÓDIGO, P/N..."
+                                   class="w-full h-10 pl-9 pr-2 bg-gray-50 dark:bg-slate-700 border-[2px] border-black rounded-lg font-bold text-sm uppercase focus:bg-white transition-colors">
+                            <mat-icon class="absolute left-2 top-2 text-gray-400 !text-lg">search</mat-icon>
+                        </div>
+                    </div>
+                    <div class="md:col-span-4 lg:col-span-2">
+                        <select [ngModel]="selectedCategoria()" (ngModelChange)="selectedCategoria.set($event)"
+                                class="w-full h-10 px-2 bg-gray-50 dark:bg-slate-700 border-[2px] border-black rounded-lg font-bold text-xs uppercase cursor-pointer">
+                            <option value="todas">CAT: TODAS</option>
+                            <option *ngFor="let c of categorias" [value]="c">{{c}}</option>
+                        </select>
+                    </div>
+                    <div class="md:col-span-4 lg:col-span-2">
+                        <select [ngModel]="selectedEstado()" (ngModelChange)="selectedEstado.set($event)"
+                                class="w-full h-10 px-2 bg-gray-50 dark:bg-slate-700 border-[2px] border-black rounded-lg font-bold text-xs uppercase cursor-pointer">
+                            <option value="todos">ESTADO: TODOS</option>
+                            <option *ngFor="let e of estados" [value]="e">{{e}}</option>
+                        </select>
+                    </div>
+                    <div class="md:col-span-4 lg:col-span-2">
+                        <select [ngModel]="selectedUbicacion()" (ngModelChange)="selectedUbicacion.set($event)"
+                                class="w-full h-10 px-2 bg-gray-50 dark:bg-slate-700 border-[2px] border-black rounded-lg font-bold text-xs uppercase cursor-pointer">
+                            <option value="todas">UBIC: TODAS</option>
+                            <option *ngFor="let u of ubicaciones" [value]="u">{{u}}</option>
+                        </select>
+                    </div>
+                    <div class="md:col-span-12 lg:col-span-2 flex justify-end">
+                        <button (click)="limpiarFiltros()" class="w-full h-10 flex items-center justify-center bg-red-100 text-red-600 border-[2px] border-black rounded-lg hover:bg-red-500 hover:text-white transition-colors font-bold text-xs uppercase gap-2">
+                            <mat-icon class="!text-lg">close</mat-icon> Limpiar
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div *ngIf="viewMode() === 'grid'" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+                <div *ngFor="let item of filteredData()" (click)="verDetalle(item)"
+                     class="group bg-white dark:bg-[#1e293b] border-[3px] border-black rounded-xl overflow-hidden shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all cursor-pointer flex flex-col">
+
+                    <div class="p-3 border-b-[3px] border-black flex justify-between items-center bg-gray-50 dark:bg-slate-800">
+                        <span class="text-[10px] font-black font-mono uppercase text-gray-500">
+                            {{ item.codigo }}
+                        </span>
+                        <span class="px-2 py-0.5 text-[9px] font-black uppercase rounded border border-black" [ngClass]="getStatusClass(item.estado)">
+                            {{ item.estado }}
+                        </span>
+                    </div>
+
+                    <div class="p-4 flex-1 flex flex-col gap-3">
+                        <h3 class="text-sm font-[1000] uppercase leading-tight text-black dark:text-white line-clamp-2 min-h-[2.5rem]">
+                            {{ item.descripcion }}
+                        </h3>
+
+                        <div class="grid grid-cols-2 gap-2 text-[10px] font-bold text-gray-500 uppercase">
+                            <div>
+                                <span class="block text-gray-400">P/N</span>
+                                <span class="text-black dark:text-white">{{ item.partNumber }}</span>
+                            </div>
+                            <div class="text-right">
+                                <span class="block text-gray-400">Stock</span>
+                                <span class="text-black dark:text-white text-lg font-[1000] leading-none">{{ item.stockActual }}</span>
+                                <span class="text-gray-400">/{{ item.stockMaximo }}</span>
+                            </div>
+                        </div>
+
+                        <div class="h-2 w-full bg-gray-200 dark:bg-gray-700 rounded-full border border-black overflow-hidden">
+                            <div class="h-full transition-all duration-300"
+                                 [ngClass]="getStockBarColor(getStockPorcentaje(item))"
+                                 [style.width.%]="getStockPorcentaje(item)"></div>
+                        </div>
+
+                        <div class="flex items-center justify-between pt-2 border-t-[2px] border-dashed border-gray-200 dark:border-gray-700 mt-auto">
+                            <span class="text-[10px] font-bold text-gray-500 flex items-center gap-1">
+                                <mat-icon class="!text-xs">place</mat-icon> {{ item.ubicacion }}
+                            </span>
+                            <span class="text-[10px] font-bold text-blue-600 dark:text-blue-400">
+                                Bs {{ item.valorUnitario }}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div *ngIf="viewMode() === 'list'" class="space-y-3">
+                <div *ngFor="let item of filteredData()" (click)="verDetalle(item)"
+                     class="group bg-white dark:bg-[#1e293b] border-[3px] border-black rounded-lg p-3 flex items-center gap-4 shadow-[3px_3px_0px_0px_rgba(0,0,0,0.1)] hover:shadow-[5px_5px_0px_0px_#000] hover:translate-x-[-1px] hover:translate-y-[-1px] transition-all cursor-pointer">
+
+                    <div class="w-12 h-12 flex-shrink-0 flex items-center justify-center border-[2px] border-black rounded-md font-black shadow-sm"
+                         [ngClass]="item.stockActual > 0 ? 'bg-blue-100 text-blue-800' : 'bg-red-100 text-red-800'">
+                        <mat-icon>{{ item.stockActual > 0 ? 'inventory_2' : 'production_quantity_limits' }}</mat-icon>
+                    </div>
+
+                    <div class="flex-1 min-w-0 grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
+                        <div class="md:col-span-5">
+                            <div class="flex items-center gap-2 mb-1">
+                                <span class="text-[10px] font-mono font-bold text-gray-400">{{ item.codigo }}</span>
+                                <span class="px-2 py-0.5 text-[9px] font-black uppercase rounded border border-black" [ngClass]="getStatusClass(item.estado)">
+                                    {{ item.estado }}
+                                </span>
+                            </div>
+                            <h4 class="text-sm font-[1000] uppercase text-black dark:text-white truncate">{{ item.descripcion }}</h4>
+                        </div>
+
+                        <div class="md:col-span-3 text-xs font-bold text-gray-500 uppercase">
+                            <div class="flex items-center gap-1"><mat-icon class="!text-xs">place</mat-icon> {{ item.ubicacion }}</div>
+                            <div class="flex items-center gap-1"><mat-icon class="!text-xs">category</mat-icon> {{ item.categoria }}</div>
+                        </div>
+
+                        <div class="md:col-span-4 flex items-center justify-between gap-4">
+                            <div class="flex-1">
+                                <div class="flex justify-between text-[10px] font-black uppercase mb-1">
+                                    <span>Stock</span>
+                                    <span>{{ item.stockActual }} / {{ item.stockMaximo }}</span>
+                                </div>
+                                <div class="h-2 w-full bg-gray-200 dark:bg-gray-700 rounded-full border border-black overflow-hidden">
+                                    <div class="h-full transition-all duration-300"
+                                         [ngClass]="getStockBarColor(getStockPorcentaje(item))"
+                                         [style.width.%]="getStockPorcentaje(item)"></div>
+                                </div>
+                            </div>
+                            <mat-icon class="text-gray-400">chevron_right</mat-icon>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div *ngIf="viewMode() === 'table'" class="bg-white dark:bg-[#1e293b] border-[3px] border-black rounded-xl overflow-hidden shadow-sm">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm text-left">
+                        <thead class="bg-[#111A43] text-white uppercase text-xs font-black">
+                        <tr>
+                            <th class="p-4">Código / P/N</th>
+                            <th class="p-4">Descripción</th>
+                            <th class="p-4">Ubicación</th>
+                            <th class="p-4 text-center">Stock</th>
+                            <th class="p-4 text-center">Estado</th>
+                            <th class="p-4 text-right">Acciones</th>
+                        </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+                        <tr *ngFor="let item of filteredData()" class="hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-colors cursor-pointer" (click)="verDetalle(item)">
+                            <td class="p-4 font-mono font-bold">{{ item.codigo }}<br><span class="text-gray-400 text-xs">{{ item.partNumber }}</span></td>
+                            <td class="p-4 font-bold text-black dark:text-white">{{ item.descripcion }}</td>
+                            <td class="p-4 font-bold text-gray-600 dark:text-gray-300">{{ item.ubicacion }}</td>
+                            <td class="p-4 text-center font-black text-lg">{{ item.stockActual }}</td>
+                            <td class="p-4 text-center">
+                                    <span class="px-2 py-1 text-[10px] font-black uppercase rounded border border-black" [ngClass]="getStatusClass(item.estado)">
+                                        {{ item.estado }}
+                                    </span>
+                            </td>
+                            <td class="p-4 text-right">
+                                <button (click)="verDetalle(item); $event.stopPropagation()" class="text-blue-600 hover:text-blue-800 font-bold uppercase text-xs">Ver Ficha</button>
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div *ngIf="filteredData().length === 0" class="flex flex-col items-center justify-center h-64 border-[3px] border-dashed border-gray-300 dark:border-gray-600 rounded-xl opacity-70">
+                <mat-icon class="!text-5xl text-gray-400 mb-2">search_off</mat-icon>
+                <p class="font-black text-gray-500 uppercase">Sin resultados en inventario</p>
+                <button (click)="limpiarFiltros()" class="mt-4 text-xs font-bold text-blue-600 hover:underline uppercase">Limpiar filtros</button>
+            </div>
+
+        </div>
+    </div>
+
+    <div *ngIf="selectedItem()" class="absolute inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-fade-in" (click)="cerrarDetalle()">
+        <div class="w-full max-w-4xl bg-white dark:bg-[#1e293b] border-[3px] border-black rounded-xl shadow-[8px_8px_0px_0px_#000] overflow-hidden flex flex-col max-h-full" (click)="$event.stopPropagation()">
+
+            <div class="bg-[#111A43] p-4 flex justify-between items-center border-b-[3px] border-black">
+                <div class="flex items-center gap-3">
+                    <div class="w-12 h-12 bg-[#FFE500] border-[2px] border-black rounded-lg flex items-center justify-center shadow-[2px_2px_0px_0px_#000]">
+                        <mat-icon class="text-black !text-2xl">article</mat-icon>
+                    </div>
+                    <div>
+                        <h2 class="text-xl font-[1000] text-white uppercase leading-none">Ficha Técnica</h2>
+                        <span class="text-xs font-mono font-bold text-white/60">{{ selectedItem()?.codigo }}</span>
+                    </div>
+                </div>
+                <button (click)="cerrarDetalle()" class="w-10 h-10 bg-white text-black border-[2px] border-black rounded-lg hover:bg-red-500 hover:text-white transition-colors flex items-center justify-center">
+                    <mat-icon>close</mat-icon>
+                </button>
+            </div>
+
+            <div class="p-6 overflow-y-auto flex-1">
+                <div class="flex flex-col md:flex-row gap-6">
+                    <div class="flex-1 space-y-6">
+                        <div>
+                            <span class="text-xs font-black text-gray-400 uppercase">Descripción</span>
+                            <h3 class="text-2xl font-[1000] text-black dark:text-white uppercase leading-tight">{{ selectedItem()?.descripcion }}</h3>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="p-3 bg-gray-50 dark:bg-slate-700 border-[2px] border-black rounded-lg">
+                                <span class="text-[10px] font-black text-gray-400 uppercase block">Part Number</span>
+                                <span class="text-sm font-bold text-black dark:text-white">{{ selectedItem()?.partNumber }}</span>
+                            </div>
+                            <div class="p-3 bg-gray-50 dark:bg-slate-700 border-[2px] border-black rounded-lg">
+                                <span class="text-[10px] font-black text-gray-400 uppercase block">Ubicación</span>
+                                <span class="text-sm font-bold text-black dark:text-white">{{ selectedItem()?.ubicacion }}</span>
+                            </div>
+                            <div class="p-3 bg-gray-50 dark:bg-slate-700 border-[2px] border-black rounded-lg">
+                                <span class="text-[10px] font-black text-gray-400 uppercase block">Categoría</span>
+                                <span class="text-sm font-bold text-black dark:text-white">{{ selectedItem()?.categoria }}</span>
+                            </div>
+                            <div class="p-3 bg-gray-50 dark:bg-slate-700 border-[2px] border-black rounded-lg">
+                                <span class="text-[10px] font-black text-gray-400 uppercase block">Valor Unitario</span>
+                                <span class="text-sm font-bold text-black dark:text-white">Bs {{ selectedItem()?.valorUnitario }}</span>
+                            </div>
+                        </div>
+
+                        <div class="p-4 bg-gray-100 dark:bg-slate-800 border-[2px] border-black rounded-xl">
+                            <div class="flex justify-between items-end mb-2">
+                                <div>
+                                    <span class="text-xs font-black text-gray-500 uppercase block">Nivel de Stock</span>
+                                    <span class="text-3xl font-[1000] text-black dark:text-white">{{ selectedItem()?.stockActual }}</span>
+                                    <span class="text-sm font-bold text-gray-500"> / {{ selectedItem()?.stockMaximo }}</span>
+                                </div>
+                                <span class="px-3 py-1 text-xs font-black uppercase rounded border border-black" [ngClass]="getStatusClass(selectedItem()?.estado || '')">
+                                    {{ selectedItem()?.estado }}
+                                </span>
+                            </div>
+                            <div class="h-4 w-full bg-gray-300 dark:bg-gray-600 rounded-full border border-black overflow-hidden">
+                                <div class="h-full"
+                                     [ngClass]="getStockBarColor(getStockPorcentaje(selectedItem()!))"
+                                     [style.width.%]="getStockPorcentaje(selectedItem()!)"></div>
+                            </div>
+                            <div class="flex justify-between mt-2 text-[10px] font-bold text-gray-500 uppercase">
+                                <span>Min: {{ selectedItem()?.stockMinimo }}</span>
+                                <span>Condición: {{ selectedItem()?.condicion }}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="w-full md:w-1/3 space-y-4">
+                        <div *ngIf="selectedItem()?.serialNumber" class="p-3 border-l-4 border-l-[#FFE500] bg-gray-50 dark:bg-slate-700 border border-gray-200">
+                            <span class="text-[10px] font-black text-gray-400 uppercase block">Serial Number</span>
+                            <span class="font-mono font-bold text-sm">{{ selectedItem()?.serialNumber }}</span>
+                        </div>
+                        <div *ngIf="selectedItem()?.proveedor" class="p-3 border-l-4 border-l-blue-500 bg-gray-50 dark:bg-slate-700 border border-gray-200">
+                            <span class="text-[10px] font-black text-gray-400 uppercase block">Proveedor</span>
+                            <span class="font-bold text-sm">{{ selectedItem()?.proveedor }}</span>
+                        </div>
+
+                        <div *ngIf="selectedItem()?.fechaCalibracion" class="bg-purple-50 dark:bg-purple-900/20 p-4 rounded-xl border-[2px] border-purple-200 dark:border-purple-800">
+                            <div class="flex items-center gap-2 mb-3 text-purple-800 dark:text-purple-300">
+                                <mat-icon>verified</mat-icon>
+                                <span class="font-black uppercase text-xs">Calibración</span>
+                            </div>
+                            <div class="space-y-2">
+                                <div class="flex justify-between text-xs">
+                                    <span class="font-bold text-gray-500">Última:</span>
+                                    <span class="font-black">{{ selectedItem()?.fechaCalibracion | date:'dd/MM/yyyy' }}</span>
+                                </div>
+                                <div class="flex justify-between text-xs">
+                                    <span class="font-bold text-gray-500">Próxima:</span>
+                                    <span class="font-black text-red-500">{{ selectedItem()?.proximaCalibracion | date:'dd/MM/yyyy' }}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="pt-4 border-t-2 border-dashed border-gray-300">
+                            <span class="text-[10px] font-black text-gray-400 uppercase block mb-2">Acciones Rápidas</span>
+                            <div class="grid grid-cols-2 gap-2">
+                                <button (click)="ajustarStock(selectedItem()!)" class="h-10 bg-black text-white rounded font-bold text-xs uppercase hover:bg-gray-800">Ajustar</button>
+                                <button (click)="generarQR(selectedItem()!)" class="h-10 border-2 border-black text-black dark:text-white rounded font-bold text-xs uppercase hover:bg-gray-100 dark:hover:bg-slate-700">QR Code</button>
+                                <button (click)="imprimirEtiqueta(selectedItem()!)" class="col-span-2 h-10 bg-[#FFE500] text-black border-2 border-black rounded font-bold text-xs uppercase shadow-[2px_2px_0px_0px_#000] hover:translate-y-[1px] hover:shadow-none transition-all">Imprimir Etiqueta</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

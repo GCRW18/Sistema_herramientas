@@ -1,0 +1,160 @@
+<div class="flex flex-col w-full h-full bg-[#FFF] dark:bg-[#0a0f29] transition-colors duration-300 font-sans overflow-hidden border-3 border-black"
+     cdkDrag cdkDragRootElement=".cdk-overlay-pane" cdkDragBoundary=".cdk-overlay-container">
+
+    <div class="fixed -top-10 -right-10 w-40 h-40 bg-yellow-300 rounded-full border-3 border-black opacity-20 pointer-events-none z-0"></div>
+    <div class="fixed bottom-20 left-10 w-16 h-16 bg-[#111A43] rotate-45 border-3 border-black opacity-10 pointer-events-none z-0"></div>
+
+    <div class="shrink-0 p-6 md:p-8 flex items-center justify-between relative z-20 cursor-move bg-white dark:bg-[#0a0f29]" cdkDragHandle>
+        <div class="flex items-center gap-6">
+            <div class="w-14 h-14 bg-[#111A43] border-3 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] flex items-center justify-center rounded-lg">
+                <mat-icon class="!text-3xl !w-8 !h-8 text-white">tune</mat-icon>
+            </div>
+            <div>
+                <h1 class="text-3xl md:text-4xl font-black text-black dark:text-white uppercase tracking-tighter drop-shadow-[2px_2px_0px_rgba(255,255,255,0.5)] dark:drop-shadow-none leading-none mb-1">
+                    Ajustar Stock
+                </h1>
+                <div class="flex items-center gap-2">
+                    <span class="w-3 h-3 bg-yellow-400 border border-black rounded-full animate-pulse"></span>
+                    <p class="text-sm font-bold bg-white dark:bg-slate-800 text-black dark:text-white px-2 py-0.5 inline-block transform -rotate-1 border border-black shadow-[2px_2px_0px_0px_#000]">
+                        MODIFICACIÓN DE INVENTARIO
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <button (click)="cerrar()" type="button" (mousedown)="$event.stopPropagation()"
+                class="w-12 h-12 bg-red-500 border-3 border-black rounded-full hover:bg-red-400 transition-all flex items-center justify-center shadow-[4px_4px_0px_0px_#000] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_0px_#000] active:shadow-none">
+            <mat-icon class="!text-white font-black">close</mat-icon>
+        </button>
+    </div>
+
+    <div class="flex-1 overflow-y-auto px-6 md:px-8 pb-8 relative z-10">
+        <form [formGroup]="ajusteForm" class="flex flex-col gap-6">
+
+            <div class="neo-card-base bg-white dark:bg-[#151e4a] p-6">
+                <h2 class="text-lg font-black text-black dark:text-white uppercase mb-4 flex items-center gap-2 tracking-tight">
+                    <mat-icon class="text-[#111A43] dark:text-yellow-400">search</mat-icon>
+                    Seleccionar Herramienta
+                </h2>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="flex gap-2 items-start">
+                        <mat-form-field appearance="fill" class="w-full">
+                            <mat-label>Código BOAMM</mat-label>
+                            <input matInput formControlName="codigo" placeholder="Ej: BOA-H-123">
+                        </mat-form-field>
+
+                        <button type="button" (click)="buscarHerramienta()"
+                                class="h-[52px] px-4 bg-[#111A43] text-white border-2 border-black rounded-lg shadow-[3px_3px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[1px_1px_0px_0px_#000] active:shadow-none transition-all flex items-center justify-center mt-[1px]">
+                            <mat-icon>search</mat-icon>
+                        </button>
+                    </div>
+
+                    <mat-form-field appearance="fill" class="w-full">
+                        <mat-label>Descripción</mat-label>
+                        <input matInput formControlName="descripcion" readonly class="!text-gray-500">
+                        <mat-icon matSuffix>description</mat-icon>
+                    </mat-form-field>
+                </div>
+            </div>
+
+            <div class="neo-card-base bg-white dark:bg-[#0f1633] p-6 relative overflow-hidden">
+                <div class="absolute top-0 right-0 w-32 h-32 bg-yellow-300 rounded-bl-full border-b-3 border-l-3 border-black opacity-10 pointer-events-none"></div>
+
+                <div class="grid grid-cols-1 md:grid-cols-12 gap-6">
+
+                    <div class="md:col-span-7 flex flex-col gap-4">
+                        <h2 class="text-lg font-black text-black dark:text-white uppercase mb-2 flex items-center gap-2 tracking-tight">
+                            <mat-icon class="text-[#111A43] dark:text-yellow-400">edit_note</mat-icon>
+                            Datos del Ajuste
+                        </h2>
+
+                        <mat-form-field appearance="fill" class="w-full">
+                            <mat-label>Tipo de Ajuste</mat-label>
+                            <mat-select formControlName="tipoAjuste">
+                                <mat-option *ngFor="let tipo of tiposAjuste" [value]="tipo.value">
+                                    {{ tipo.label | uppercase }}
+                                </mat-option>
+                            </mat-select>
+                        </mat-form-field>
+
+                        <mat-form-field appearance="fill" class="w-full">
+                            <mat-label>Motivo</mat-label>
+                            <mat-select formControlName="motivo">
+                                <mat-option *ngFor="let motivo of motivos" [value]="motivo">
+                                    {{ motivo | uppercase }}
+                                </mat-option>
+                            </mat-select>
+                        </mat-form-field>
+
+                        <mat-form-field appearance="fill" class="w-full textarea-field">
+                            <mat-label>Observaciones</mat-label>
+                            <textarea matInput formControlName="observaciones" rows="3" class="!resize-none"></textarea>
+                        </mat-form-field>
+                    </div>
+
+                    <div class="md:col-span-5 flex flex-col gap-4">
+                        <div class="bg-gray-100 dark:bg-[#111A43]/50 border-3 border-black rounded-xl p-4 shadow-[4px_4px_0px_0px_rgba(0,0,0,0.2)] h-full flex flex-col justify-between">
+
+                            <div class="flex justify-between items-center bg-white dark:bg-[#151e4a] p-3 border-2 border-black rounded-lg mb-3">
+                                <span class="text-xs font-black uppercase text-gray-500">Cant. Actual</span>
+                                <span class="text-xl font-black text-gray-700 dark:text-gray-300">{{ ajusteForm.get('cantidadActual')?.value || 0 }}</span>
+                            </div>
+
+                            <div class="flex justify-center mb-3">
+                                <div class="w-8 h-8 rounded-full bg-black text-white flex items-center justify-center font-black text-lg">
+                                    <span *ngIf="ajusteForm.get('tipoAjuste')?.value === 'AUMENTO'">+</span>
+                                    <span *ngIf="ajusteForm.get('tipoAjuste')?.value === 'REDUCCION' || ajusteForm.get('tipoAjuste')?.value === 'MERMA'">-</span>
+                                    <span *ngIf="ajusteForm.get('tipoAjuste')?.value === 'CORRECCION'">=</span>
+                                    <span *ngIf="!ajusteForm.get('tipoAjuste')?.value">?</span>
+                                </div>
+                            </div>
+
+                            <mat-form-field appearance="fill" class="w-full !mb-3">
+                                <mat-label>
+                                    <span *ngIf="ajusteForm.get('tipoAjuste')?.value === 'CORRECCION'">Nueva Cantidad</span>
+                                    <span *ngIf="ajusteForm.get('tipoAjuste')?.value !== 'CORRECCION'">Cantidad Ajuste</span>
+                                </mat-label>
+                                <input matInput type="number" formControlName="cantidadAjuste" min="1" class="!text-center !text-lg !font-black">
+                            </mat-form-field>
+
+                            <div class="bg-yellow-300 dark:bg-yellow-500 border-3 border-black rounded-xl p-4 flex flex-col items-center justify-center relative shadow-[2px_2px_0px_0px_#000] mt-auto">
+                                <span class="text-[10px] font-black uppercase text-black tracking-widest mb-1">CANTIDAD FINAL</span>
+                                <span class="text-4xl font-black text-black leading-none">
+                                    {{ ajusteForm.get('cantidadFinal')?.value || 0 }}
+                                </span>
+                                <div class="absolute -top-3 -right-3">
+                                    <mat-icon class="text-black drop-shadow-sm">calculate</mat-icon>
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-[#111A43] border-3 border-black rounded-xl p-4 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] flex items-start gap-4">
+                <mat-icon class="text-yellow-300 !text-3xl !w-8 !h-8 mt-1">lightbulb</mat-icon>
+                <div>
+                    <h3 class="font-black text-white uppercase text-sm mb-1">Registro de Auditoría</h3>
+                    <p class="text-gray-300 font-bold text-xs leading-relaxed">
+                        Este ajuste quedará grabado permanentemente. Asegúrese de que el motivo seleccionado corresponda a la realidad física del almacén.
+                    </p>
+                </div>
+            </div>
+
+            <div class="flex justify-end gap-4 pt-2">
+                <button type="button" (click)="cerrar()"
+                        class="px-8 py-3 bg-white text-black font-black text-sm border-3 border-black rounded-full shadow-[4px_4px_0px_0px_#000] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_0px_#000] active:shadow-none transition-all uppercase">
+                    Cancelar
+                </button>
+                <button type="button" (click)="guardar()" [disabled]="!ajusteForm.valid"
+                        class="px-8 py-3 bg-[#111A43] text-white font-black text-sm border-3 border-black rounded-full shadow-[4px_4px_0px_0px_#000] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_0px_#000] active:shadow-none transition-all uppercase disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2">
+                    <mat-icon class="!text-lg">save</mat-icon>
+                    Confirmar Ajuste
+                </button>
+            </div>
+
+        </form>
+    </div>
+</div>

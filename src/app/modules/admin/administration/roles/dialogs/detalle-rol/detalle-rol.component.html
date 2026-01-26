@@ -1,0 +1,126 @@
+<div class="flex flex-col w-full h-full bg-white overflow-hidden" cdkDrag cdkDragRootElement=".cdk-overlay-pane" cdkDragBoundary=".cdk-overlay-container">
+
+    <!-- Header draggable -->
+    <div cdkDragHandle class="flex items-center justify-between px-8 py-6 bg-white border-b-[3px] border-black cursor-move select-none">
+        <div class="flex items-center gap-4">
+            <div class="flex items-center justify-center w-14 h-14 bg-purple-600 border-[3px] border-black rounded-2xl">
+                <mat-icon class="!text-3xl !w-8 !h-8 text-white" svgIcon="heroicons_outline:shield-check"></mat-icon>
+            </div>
+            <div>
+                <h2 class="text-3xl font-black text-black uppercase tracking-tight leading-none">
+                    DETALLE DEL ROL
+                </h2>
+                <p class="text-xs font-bold text-gray-500 uppercase tracking-wide mt-1">
+                    Información completa del rol
+                </p>
+            </div>
+        </div>
+        <button type="button" (click)="cerrar()"
+                class="w-10 h-10 flex items-center justify-center border-2 border-black bg-white hover:bg-gray-100 rounded-lg shadow-[2px_2px_0px_0px_#000] active:translate-y-[2px] active:shadow-none transition-all">
+            <mat-icon class="text-black text-lg">close</mat-icon>
+        </button>
+    </div>
+
+    <!-- Content -->
+    <div class="flex-1 overflow-y-auto p-8">
+        <div class="space-y-6">
+
+            <!-- Información Básica -->
+            <div class="bg-gray-50 border-[3px] border-black rounded-2xl p-6">
+                <h3 class="text-xl font-black text-black uppercase mb-4 flex items-center gap-2">
+                    <mat-icon class="text-purple-600">info</mat-icon> INFORMACIÓN BÁSICA
+                </h3>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                        <p class="text-xs font-black text-gray-500 uppercase mb-1">Nombre del Rol</p>
+                        <p class="text-sm font-bold text-black">{{ data.rol.nombre || data.rol.name || '-' }}</p>
+                    </div>
+                    <div>
+                        <p class="text-xs font-black text-gray-500 uppercase mb-1">Usuarios Asignados</p>
+                        <p class="text-sm font-bold text-black">{{ data.rol.userCount || 0 }} usuarios</p>
+                    </div>
+                    <div>
+                        <p class="text-xs font-black text-gray-500 uppercase mb-1">Estado</p>
+                        <span class="inline-block px-3 py-1 border-2 border-black rounded-lg text-xs font-black uppercase"
+                              [class.bg-green-100]="data.rol.active"
+                              [class.text-green-800]="data.rol.active"
+                              [class.bg-red-100]="!data.rol.active"
+                              [class.text-red-800]="!data.rol.active">
+                            {{ data.rol.active ? 'ACTIVO' : 'INACTIVO' }}
+                        </span>
+                    </div>
+                    <div class="md:col-span-3" *ngIf="data.rol.descripcion || data.rol.description">
+                        <p class="text-xs font-black text-gray-500 uppercase mb-1">Descripción</p>
+                        <p class="text-sm font-semibold text-gray-700">{{ data.rol.descripcion || data.rol.description }}</p>
+                    </div>
+                    <div *ngIf="data.rol.es_sistema">
+                        <span class="inline-block px-3 py-1 bg-yellow-100 border-2 border-yellow-600 rounded-lg text-yellow-800 font-black text-xs uppercase">
+                            ROL DEL SISTEMA
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Permisos Asignados -->
+            <div class="bg-gray-50 border-[3px] border-black rounded-2xl p-6">
+                <h3 class="text-xl font-black text-black uppercase mb-4 flex items-center gap-2">
+                    <mat-icon class="text-purple-600">verified_user</mat-icon> PERMISOS ASIGNADOS
+                </h3>
+
+                <div class="space-y-4">
+                    <div *ngFor="let entry of groupedPermissions | keyvalue"
+                         class="border-2 border-black rounded-lg overflow-hidden">
+
+                        <!-- Header del módulo -->
+                        <div class="bg-gray-100 p-4">
+                            <div class="flex items-center gap-3">
+                                <span class="font-black uppercase text-sm">{{ entry.key }}</span>
+                                <span class="text-xs bg-black text-white px-2 py-1 rounded-full font-bold">
+                                    {{ entry.value.length }} permisos
+                                </span>
+                            </div>
+                        </div>
+
+                        <!-- Lista de permisos -->
+                        <div class="p-4 bg-white">
+                            <div *ngFor="let perm of entry.value"
+                                 class="flex items-start gap-3 py-2 border-b border-gray-100 last:border-b-0">
+                                <mat-icon class="text-green-600 text-sm mt-1">check_circle</mat-icon>
+                                <div class="flex-1">
+                                    <div class="font-bold text-sm">{{ perm.name }}</div>
+                                    <div class="text-xs text-gray-600">{{ perm.description }}</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div *ngIf="groupedPermissions.size === 0" class="text-center py-8">
+                        <mat-icon class="!text-4xl text-gray-300 mb-2">lock_open</mat-icon>
+                        <p class="text-gray-500 font-bold">Este rol no tiene permisos asignados</p>
+                    </div>
+                </div>
+
+                <!-- Resumen -->
+                <div class="mt-4 p-4 bg-purple-50 border-2 border-purple-600 rounded-lg">
+                    <div class="font-bold text-purple-900">
+                        Total de permisos: <span class="text-2xl ml-2">{{ data.rol.permissions?.length || 0 }}</span>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Footer con botones -->
+    <div class="flex items-center justify-end gap-4 px-8 py-6 bg-gray-50 border-t-[3px] border-black">
+        <button type="button" (click)="cerrar()"
+                class="h-12 px-6 bg-white text-black font-black text-sm border-[3px] border-black rounded-full shadow-[4px_4px_0px_0px_#000] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_0px_#000] active:translate-y-[4px] active:shadow-none transition-all uppercase tracking-wide flex items-center gap-2">
+            <mat-icon class="scale-90">close</mat-icon> CERRAR
+        </button>
+        <button type="button" (click)="editarRol()"
+                [disabled]="data.rol.es_sistema"
+                class="h-12 px-6 bg-purple-600 text-white font-black text-sm border-[3px] border-black rounded-full shadow-[4px_4px_0px_0px_#000] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_0px_#000] active:translate-y-[2px] active:shadow-[2px_2px_0px_0px_#000] transition-all uppercase tracking-wide flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
+            <mat-icon class="scale-90">edit</mat-icon> EDITAR
+        </button>
+    </div>
+</div>

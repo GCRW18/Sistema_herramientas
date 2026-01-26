@@ -298,4 +298,187 @@ export class MovementService {
         const mockBlob = new Blob(['PDF Content'], { type: 'application/pdf' });
         return of(mockBlob);
     }
+
+    /**
+     * Get historial de movimientos con filtros y paginación
+     */
+    getHistorialMovimientos(filtros?: any): Observable<{ data: any[], total: number }> {
+        const params = {
+            start: ((filtros?.page || 1) - 1) * (filtros?.limit || 25),
+            limit: filtros?.limit || 25,
+            sort: 'date',
+            dir: 'desc',
+            ...filtros
+        };
+
+        return from(this._api.post('herramientas/movements/listMovement', params)).pipe(
+            switchMap((response: any) => {
+                return of({
+                    data: response?.datos || [],
+                    total: response?.total || 0
+                });
+            })
+        );
+    }
+
+    // -----------------------------------------------------------------------------------------------------
+    // @ Métodos auxiliares para formularios
+    // -----------------------------------------------------------------------------------------------------
+
+    /**
+     * Get proveedores
+     */
+    getProveedores(): Observable<any[]> {
+        return from(this._api.post('herramientas/proveedores/listar', {
+            start: 0,
+            limit: 100
+        })).pipe(
+            switchMap((response: any) => of(response?.datos || []))
+        );
+    }
+
+    /**
+     * Get herramientas disponibles
+     */
+    getHerramientasDisponibles(): Observable<any[]> {
+        return from(this._api.post('herramientas/herramientas/listar', {
+            start: 0,
+            limit: 500,
+            estado: 'activo'
+        })).pipe(
+            switchMap((response: any) => of(response?.datos || []))
+        );
+    }
+
+    /**
+     * Get almacenes
+     */
+    getAlmacenes(): Observable<any[]> {
+        return from(this._api.post('herramientas/almacenes/listar', {
+            start: 0,
+            limit: 100
+        })).pipe(
+            switchMap((response: any) => of(response?.datos || []))
+        );
+    }
+
+    /**
+     * Get técnicos/responsables
+     */
+    getResponsables(): Observable<any[]> {
+        return from(this._api.post('herramientas/tecnicos/listar', {
+            start: 0,
+            limit: 100
+        })).pipe(
+            switchMap((response: any) => of(response?.datos || []))
+        );
+    }
+
+    /**
+     * Get categorías de herramientas
+     */
+    getCategorias(): Observable<any[]> {
+        return from(this._api.post('herramientas/categorias/listar', {
+            start: 0,
+            limit: 100
+        })).pipe(
+            switchMap((response: any) => of(response?.datos || []))
+        );
+    }
+
+    /**
+     * Generate automatic voucher number
+     */
+    generateVoucherNumber(type: 'entrada' | 'salida'): Observable<string> {
+        const prefix = type === 'entrada' ? 'ENT' : 'SAL';
+        const year = new Date().getFullYear();
+
+        return from(this._api.post('herramientas/movimientos/getNextVoucherNumber', {
+            type: type
+        })).pipe(
+            switchMap((response: any) => {
+                const number = response?.numero || 1;
+                return of(`${prefix}-${year}-${String(number).padStart(3, '0')}`);
+            })
+        );
+    }
+
+    /**
+     * Get recent entries (for sidebar)
+     */
+    getRecentEntries(limit: number = 5): Observable<Movement[]> {
+        return from(this._api.post('herramientas/movements/listMovement', {
+            start: 0,
+            limit: limit,
+            sort: 'date',
+            dir: 'desc',
+            movement_type: 'entry'
+        })).pipe(
+            switchMap((response: any) => of(response?.datos || []))
+        );
+    }
+
+    /**
+     * Get recent exits (for sidebar)
+     */
+    getRecentExits(limit: number = 5): Observable<Movement[]> {
+        return from(this._api.post('herramientas/movements/listMovement', {
+            start: 0,
+            limit: limit,
+            sort: 'date',
+            dir: 'desc',
+            movement_type: 'exit'
+        })).pipe(
+            switchMap((response: any) => of(response?.datos || []))
+        );
+    }
+
+    /**
+     * Get personal/personnel list
+     */
+    getPersonal(): Observable<any[]> {
+        return from(this._api.post('herramientas/personal/listar', {
+            start: 0,
+            limit: 500,
+            estado: 'activo'
+        })).pipe(
+            switchMap((response: any) => of(response?.datos || []))
+        );
+    }
+
+    /**
+     * Get departamentos list
+     */
+    getDepartamentos(): Observable<any[]> {
+        return from(this._api.post('herramientas/departamentos/listar', {
+            start: 0,
+            limit: 100
+        })).pipe(
+            switchMap((response: any) => of(response?.datos || []))
+        );
+    }
+
+    /**
+     * Get bases operativas list
+     */
+    getBases(): Observable<any[]> {
+        return from(this._api.post('herramientas/bases/listar', {
+            start: 0,
+            limit: 100
+        })).pipe(
+            switchMap((response: any) => of(response?.datos || []))
+        );
+    }
+
+    /**
+     * Get terceros/empresas externas list
+     */
+    getTerceros(): Observable<any[]> {
+        return from(this._api.post('herramientas/terceros/listar', {
+            start: 0,
+            limit: 100
+        })).pipe(
+            switchMap((response: any) => of(response?.datos || []))
+        );
+    }
 }

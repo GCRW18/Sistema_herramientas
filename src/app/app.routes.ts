@@ -13,10 +13,6 @@ export const appRoutes: Route[] = [
     {path: '', pathMatch : 'full', redirectTo: 'dashboard'},
 
     // Redirect signed-in user to the '/dashboard'
-    //
-    // After the user signs in, the sign-in page will redirect the user to the 'signed-in-redirect'
-    // path. Below is another redirection for that path to redirect the user to the desired
-    // location. This is a small convenience to keep all main routes together here on this file.
     {path: 'signed-in-redirect', pathMatch : 'full', redirectTo: 'dashboard'},
 
     // Auth routes for guests
@@ -61,38 +57,29 @@ export const appRoutes: Route[] = [
             initialData: initialDataResolver
         },
         children: [
-            // Dashboard
-            {path: 'dashboard', loadChildren: () => import('app/modules/admin/dashboard/dashboard.routes')},
+            // DASHBOARD - Panel principal
+            {path: 'dashboard', loadComponent: () => import('app/modules/admin/dashboard/dashboard.component').then(m => m.DashboardComponent)},
 
-            // Gestión de Herramientas e Inventario
-            {path: 'inventory', loadChildren: () => import('app/modules/admin/inventory/inventory.routes')},
+            // BAJAS - Gestión de bajas de herramientas
 
-            // Gestión de Movimientos
-            {path: 'movements', loadChildren: () => import('app/modules/admin/movements/movements.routes')},
+            // ENTRADAS - Gestión de entradas de herramientas
+            {path: 'entradas', loadChildren: () => import('app/modules/admin/entries/entries.routes')},
 
-            // Gestión de Kits
+            // SALIDAS - Gestión de salidas de herramientas
+            {path: 'salidas', loadChildren: () => import('app/modules/admin/exits/exits.routes')},
+
+            // KITS - Gestión de kits de herramientas
             {path: 'kits', loadChildren: () => import('app/modules/admin/kits/kits.routes')},
 
-            // Gestión de Flota
-            {path: 'fleet', loadChildren: () => import('app/modules/admin/fleet/fleet.routes')},
 
-            // Gestión de Calibración y Mantenimiento
-            {path: 'calibration', loadChildren: () => import('app/modules/admin/calibration/calibration.routes')},
+            // INVENTARIO - Consultas y gestión de inventario
+            {path: 'inventario', loadChildren: () => import('app/modules/admin/inventory/inventory.routes')},
 
-            // Gestión de Estado (Bajas y Cuarentena)
-            {path: 'status-management', loadChildren: () => import('app/modules/admin/status-management/status-management.routes')},
-
-            // Gestión de Roster
-            {path: 'roster', loadChildren: () => import('app/modules/admin/roster/roster.routes')},
-
-            // Logs y Auditoría
-            {path: 'logs', loadChildren: () => import('app/modules/admin/logs/logs.routes')},
-
-            // Administración del Sistema
+            // ADMINISTRACIÓN - Gestión de usuarios, roles, proveedores y clientes
             {path: 'administration', loadChildren: () => import('app/modules/admin/administration/administration.routes')},
 
-            // Utilidades
-            {path: 'utilities', loadChildren: () => import('app/modules/admin/utilities/utilities.routes')},
+            // REPORTES - Reportes y analíticas
+            {path: 'reportes', loadChildren: () => import('app/modules/admin/reports/reports.routes')}
         ]
     }
 ];

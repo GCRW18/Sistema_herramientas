@@ -1,0 +1,173 @@
+<div class="flex flex-col w-full h-full bg-[#f8f9fa] dark:bg-[#0a0f29] transition-colors duration-300 font-sans overflow-hidden relative"
+     cdkDrag cdkDragRootElement=".cdk-overlay-pane" cdkDragBoundary=".cdk-overlay-container">
+
+    <div cdkDragHandle class="relative z-20 px-8 py-6 bg-white dark:bg-slate-800 border-b-[3px] border-black flex items-center justify-between cursor-move select-none">
+        <div class="flex items-center gap-4">
+            <div class="w-14 h-14 bg-[#6D28D9] border-[3px] border-black rounded-xl shadow-[4px_4px_0px_0px_#000] flex items-center justify-center transform -rotate-3">
+                <mat-icon class="!text-3xl !w-8 !h-8 text-white" svgIcon="heroicons_outline:shield-check"></mat-icon>
+            </div>
+            <div>
+                <h2 class="text-3xl font-[1000] text-black dark:text-white uppercase tracking-tighter leading-none">
+                    {{ isEditMode ? 'EDITAR ROL' : 'NUEVO ROL' }}
+                </h2>
+                <div class="flex items-center gap-2 mt-1">
+                    <span class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+                    <p class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest">
+                        Gestión de Accesos
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <button type="button" (click)="onCancel()"
+                class="group w-10 h-10 flex items-center justify-center border-[3px] border-black bg-red-100 hover:bg-red-500 rounded-lg shadow-[3px_3px_0px_0px_#000] active:translate-y-[2px] active:shadow-none transition-all">
+            <mat-icon class="text-black group-hover:text-white font-black">close</mat-icon>
+        </button>
+    </div>
+
+    <div class="flex-1 overflow-y-auto bg-[#f8f9fa] dark:bg-[#0f172a] p-6 md:p-8">
+        <form [formGroup]="rolForm" class="max-w-[1600px] mx-auto">
+
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+
+                <div class="lg:col-span-4 space-y-6">
+
+                    <div class="bg-white dark:bg-slate-800 border-[3px] border-black rounded-2xl p-6 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] sticky top-0">
+                        <div class="flex items-center gap-2 mb-6 border-b-[3px] border-black pb-4">
+                            <mat-icon class="text-black dark:text-white">badge</mat-icon>
+                            <h3 class="text-xl font-[1000] uppercase">Datos Generales</h3>
+                        </div>
+
+                        <div class="space-y-6">
+                            <div class="group">
+                                <label class="block text-xs font-black uppercase mb-2 ml-1 text-gray-500 dark:text-gray-400">Nombre del Rol</label>
+                                <div class="relative">
+                                    <input type="text" formControlName="nombre"
+                                           class="w-full h-12 px-4 bg-gray-50 dark:bg-slate-700 border-[3px] border-black rounded-xl font-bold focus:outline-none focus:shadow-[4px_4px_0px_0px_#6D28D9] focus:-translate-y-1 transition-all placeholder:text-gray-400"
+                                           placeholder="Ej. Administrador">
+                                    <mat-icon class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">edit</mat-icon>
+                                </div>
+                                <mat-error *ngIf="rolForm.get('nombre')?.hasError('required') && rolForm.get('nombre')?.touched" class="text-xs font-bold text-red-600 mt-1 ml-1">
+                                    * El nombre es requerido
+                                </mat-error>
+                            </div>
+
+                            <div class="group">
+                                <label class="block text-xs font-black uppercase mb-2 ml-1 text-gray-500 dark:text-gray-400">Descripción</label>
+                                <textarea formControlName="descripcion" rows="4"
+                                          class="w-full p-4 bg-gray-50 dark:bg-slate-700 border-[3px] border-black rounded-xl font-bold focus:outline-none focus:shadow-[4px_4px_0px_0px_#6D28D9] focus:-translate-y-1 transition-all placeholder:text-gray-400 resize-none"
+                                          placeholder="Describe las responsabilidades..."></textarea>
+                            </div>
+
+                            <div class="flex items-center justify-between bg-gray-100 dark:bg-slate-700 p-4 rounded-xl border-2 border-dashed border-gray-400">
+                                <div>
+                                    <span class="block text-sm font-black uppercase">Estado del Rol</span>
+                                    <span class="text-xs font-bold" [ngClass]="rolForm.get('active')?.value ? 'text-green-600' : 'text-red-500'">
+                                        {{ rolForm.get('active')?.value ? 'ACTIVO' : 'INACTIVO' }}
+                                    </span>
+                                </div>
+                                <label class="relative inline-flex items-center cursor-pointer">
+                                    <input type="checkbox" formControlName="active" class="sr-only peer">
+                                    <div class="w-14 h-8 bg-gray-300 peer-focus:outline-none rounded-full peer dark:bg-gray-600 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[4px] after:left-[4px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-[#6D28D9] border-2 border-black"></div>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="lg:col-span-8 space-y-6">
+
+                    <div class="flex items-center justify-between bg-[#111A43] p-4 rounded-xl border-[3px] border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,0.5)]">
+                        <div class="flex items-center gap-3">
+                            <mat-icon class="text-yellow-400">lock_person</mat-icon>
+                            <h3 class="text-xl font-[1000] text-white uppercase tracking-wide">Configuración de Permisos</h3>
+                        </div>
+                        <span class="px-3 py-1 bg-white text-black font-black text-xs rounded border-2 border-black">
+                            {{ rolForm.get('permissions')?.value?.length || 0 }} SELECCIONADOS
+                        </span>
+                    </div>
+
+                    <div class="grid grid-cols-1 gap-6">
+                        <div *ngFor="let entry of groupedPermissions | keyvalue"
+                             class="bg-white dark:bg-slate-800 border-[3px] border-black rounded-2xl overflow-hidden transition-all duration-300"
+                             [class.shadow-[8px_8px_0px_0px_#000]]="isModuleExpanded(entry.key)">
+
+                            <div class="p-4 flex items-center justify-between cursor-pointer select-none bg-gray-50 dark:bg-slate-700 border-b-2 border-gray-200 dark:border-gray-600"
+                                 (click)="toggleModuleExpanded(entry.key)">
+                                <div class="flex items-center gap-4">
+                                    <button type="button"
+                                            (click)="$event.stopPropagation(); toggleModulePermissions(entry.key)"
+                                            class="w-10 h-10 rounded-lg border-2 border-black flex items-center justify-center transition-colors"
+                                            [ngClass]="isModuleFullySelected(entry.key) ? 'bg-[#6D28D9] text-white' : 'bg-white hover:bg-gray-100'">
+                                        <mat-icon class="font-bold">{{ isModuleFullySelected(entry.key) ? 'check' : 'remove' }}</mat-icon>
+                                    </button>
+                                    <div>
+                                        <h4 class="text-lg font-[900] uppercase text-black dark:text-white leading-none">{{ entry.key }}</h4>
+                                        <span class="text-xs font-bold text-gray-500">
+                                            {{ getSelectedCountInModule(entry.key) }} de {{ entry.value.length }} permisos activos
+                                        </span>
+                                    </div>
+                                </div>
+                                <div class="w-8 h-8 flex items-center justify-center rounded-full bg-gray-200 dark:bg-slate-600">
+                                    <mat-icon class="transition-transform duration-300" [class.rotate-180]="isModuleExpanded(entry.key)">expand_more</mat-icon>
+                                </div>
+                            </div>
+
+                            <div *ngIf="isModuleExpanded(entry.key)" class="p-5 bg-white dark:bg-slate-800 animate-fadeIn">
+                                <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+                                    <div *ngFor="let perm of entry.value"
+                                         (click)="togglePermission(perm.id)"
+                                         class="cursor-pointer relative group p-3 border-2 rounded-xl transition-all duration-200 flex items-start gap-3 select-none"
+                                         [ngClass]="isPermissionSelected(perm.id)
+                                            ? 'bg-purple-50 dark:bg-purple-900/20 border-[#6D28D9] shadow-[4px_4px_0px_0px_#6D28D9]'
+                                            : 'bg-white dark:bg-slate-700 border-gray-300 dark:border-gray-600 hover:border-gray-400'">
+
+                                        <div class="w-6 h-6 mt-0.5 rounded border-2 flex-shrink-0 flex items-center justify-center transition-colors"
+                                             [ngClass]="isPermissionSelected(perm.id)
+                                                ? 'bg-[#6D28D9] border-[#6D28D9]'
+                                                : 'bg-white border-gray-300'">
+                                            <mat-icon *ngIf="isPermissionSelected(perm.id)" class="text-white !text-sm font-bold">check</mat-icon>
+                                        </div>
+
+                                        <div>
+                                            <p class="font-bold text-sm uppercase leading-tight"
+                                               [ngClass]="isPermissionSelected(perm.id) ? 'text-[#6D28D9] dark:text-purple-300' : 'text-gray-700 dark:text-gray-300'">
+                                                {{ perm.name }}
+                                            </p>
+                                            <p class="text-[10px] font-semibold text-gray-500 mt-1 leading-snug">
+                                                {{ perm.description }}
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </form>
+    </div>
+
+    <div class="px-8 py-5 bg-white dark:bg-slate-800 border-t-[3px] border-black flex justify-between items-center relative z-20 shadow-[0_-4px_20px_rgba(0,0,0,0.1)]">
+        <div class="hidden md:flex items-center gap-2 text-xs font-bold text-gray-500">
+            <mat-icon class="!text-sm">info</mat-icon>
+            <span>Los cambios impactarán a los usuarios asignados inmediatamente.</span>
+        </div>
+
+        <div class="flex items-center gap-4 w-full md:w-auto justify-end">
+            <button type="button" (click)="onCancel()"
+                    class="px-6 py-3 bg-gray-100 dark:bg-slate-700 text-black dark:text-white font-black text-sm border-[3px] border-black rounded-lg shadow-[4px_4px_0px_0px_#000] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_0px_#000] active:translate-y-[4px] active:shadow-none transition-all uppercase tracking-wide">
+                CANCELAR
+            </button>
+            <button type="button" (click)="onSubmit()"
+                    [disabled]="!rolForm.valid"
+                    class="px-8 py-3 bg-[#6D28D9] hover:bg-[#5b21b6] text-white font-black text-sm border-[3px] border-black rounded-lg shadow-[4px_4px_0px_0px_#000] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_0px_#000] active:translate-y-[2px] active:shadow-[2px_2px_0px_0px_#000] transition-all uppercase tracking-wide flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
+                <mat-icon>save</mat-icon>
+                {{ isEditMode ? 'GUARDAR CAMBIOS' : 'CREAR ROL' }}
+            </button>
+        </div>
+    </div>
+
+</div>

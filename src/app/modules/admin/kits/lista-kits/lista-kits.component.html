@@ -1,0 +1,249 @@
+<div class="flex flex-col md:flex-row w-full h-full bg-white dark:bg-[#0f172a] font-sans overflow-hidden border-[3px] border-black rounded-xl shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] relative">
+
+    <div class="w-full md:w-1/3 lg:w-1/4 bg-gradient-to-br from-[#111A43] to-[#1a2657] text-white p-6 flex flex-col relative overflow-hidden border-b-[3px] md:border-b-0 md:border-r-[3px] border-black z-10">
+
+        <mat-icon class="absolute -right-10 -bottom-10 !text-[250px] !w-[250px] !h-[250px] text-white opacity-5 pointer-events-none rotate-12">inventory_2</mat-icon>
+        <div class="absolute top-0 left-0 w-40 h-40 bg-white/5 rounded-full -translate-x-1/2 -translate-y-1/2 blur-2xl"></div>
+
+        <div class="mb-8 relative z-10">
+            <div class="flex items-center justify-between mb-3">
+                <button (click)="goBack()" class="flex items-center gap-2 text-[#FFE500] hover:text-white transition-colors group cursor-pointer">
+                    <mat-icon class="group-hover:-translate-x-1 transition-transform">arrow_back</mat-icon>
+                    <span class="font-black uppercase tracking-widest text-xs">Volver</span>
+                </button>
+                <div class="flex items-center gap-1 text-white/60">
+                    <span class="w-2 h-2 bg-green-400 rounded-full animate-pulse"></span>
+                    <span class="text-[8px] font-bold uppercase tracking-wider">Online</span>
+                </div>
+            </div>
+            <h1 class="text-5xl font-[1000] uppercase leading-none tracking-tighter text-white">
+                KITS<br><span class="text-transparent bg-clip-text bg-gradient-to-r from-[#FFE500] to-yellow-600">DISPONIBLES</span>
+            </h1>
+            <p class="text-[10px] font-mono mt-2 text-white/60 border-t border-white/20 pt-2">
+                BOA SYSTEM
+            </p>
+        </div>
+
+        <div class="space-y-4 relative z-10 overflow-y-auto pr-2 custom-scrollbar flex-1">
+
+            <div class="group">
+                <span class="block text-[10px] font-bold text-white/60 uppercase tracking-widest mb-1">Total Inventario</span>
+                <div class="bg-[#FFE500] text-black p-4 border-[3px] border-black rounded-xl shadow-[4px_4px_0px_0px_rgba(255,255,255,0.1)] group-hover:translate-x-1 transition-transform">
+                    <div class="flex justify-between items-center">
+                        <span class="text-4xl font-[1000]">{{ stats().totalKits }}</span>
+                        <mat-icon class="!text-3xl">inventory_2</mat-icon>
+                    </div>
+                    <span class="text-xs font-black uppercase">Kits Registrados</span>
+                </div>
+            </div>
+
+            <div class="bg-white/10 border-[2px] border-white/20 rounded-xl p-4 backdrop-blur-sm hover:bg-white/20 transition-colors">
+                <div class="flex justify-between items-start mb-1">
+                    <span class="block text-[10px] font-bold text-white/80 uppercase tracking-widest">Operativos</span>
+                    <mat-icon class="text-green-400 !text-lg">check_circle</mat-icon>
+                </div>
+                <div class="flex items-baseline gap-2">
+                    <span class="text-3xl font-[1000] text-white">{{ stats().kitsCompletos }}</span>
+                    <span class="text-[10px] font-bold text-green-400 uppercase">Completos</span>
+                </div>
+                <div class="w-full bg-black/30 h-1.5 rounded-full mt-2 overflow-hidden">
+                    <div class="h-full bg-green-400" [style.width.%]="(stats().kitsCompletos / stats().totalKits) * 100"></div>
+                </div>
+            </div>
+
+            <div class="bg-white/10 border-[2px] border-white/20 rounded-xl p-4 backdrop-blur-sm hover:bg-white/20 transition-colors">
+                <div class="flex justify-between items-start mb-1">
+                    <span class="block text-[10px] font-bold text-white/80 uppercase tracking-widest">Asignados</span>
+                    <mat-icon class="text-blue-400 !text-lg">engineering</mat-icon>
+                </div>
+                <div class="flex items-baseline gap-2">
+                    <span class="text-3xl font-[1000] text-white">{{ stats().kitsEnUso }}</span>
+                    <span class="text-[10px] font-bold text-blue-400 uppercase">En Uso</span>
+                </div>
+                <div class="w-full bg-black/30 h-1.5 rounded-full mt-2 overflow-hidden">
+                    <div class="h-full bg-blue-400" [style.width.%]="(stats().kitsEnUso / stats().totalKits) * 100"></div>
+                </div>
+            </div>
+
+            <div class="bg-white/10 border-[2px] border-white/20 rounded-xl p-4 backdrop-blur-sm hover:bg-white/20 transition-colors">
+                <div class="flex justify-between items-start mb-1">
+                    <span class="block text-[10px] font-bold text-white/80 uppercase tracking-widest">Herramientas</span>
+                    <mat-icon class="text-orange-400 !text-lg">build</mat-icon>
+                </div>
+                <span class="text-3xl font-[1000] text-white">{{ stats().totalItems }}</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="flex-1 flex flex-col bg-[#f8f9fa] dark:bg-[#0f172a] relative">
+
+        <div class="bg-white dark:bg-[#1e293b] p-5 border-b-[3px] border-black flex flex-col md:flex-row justify-between items-center gap-4 shadow-sm z-20">
+            <div class="flex items-center gap-3 w-full md:w-auto">
+                <div class="w-10 h-10 bg-[#111A43] border-[2px] border-black rounded-lg flex items-center justify-center shadow-[2px_2px_0px_0px_#000] text-white">
+                    <mat-icon>tune</mat-icon>
+                </div>
+                <div>
+                    <h2 class="text-xl font-[1000] uppercase leading-none text-black dark:text-white">Panel de Gestión</h2>
+                    <span class="text-[10px] font-black uppercase text-gray-500 tracking-widest">Filtros & Acciones</span>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-2 w-full md:w-auto overflow-x-auto pb-1 md:pb-0">
+                <div class="flex gap-1 bg-gray-100 dark:bg-slate-700 p-1 rounded-lg border-[2px] border-black mr-2">
+                    <button (click)="changeView('grid')"
+                            [class.bg-[#111A43]]="viewMode() === 'grid'"
+                            [class.text-white]="viewMode() === 'grid'"
+                            [class.text-gray-400]="viewMode() !== 'grid'"
+                            class="w-8 h-8 rounded flex items-center justify-center transition-all">
+                        <mat-icon class="!text-lg">grid_view</mat-icon>
+                    </button>
+                    <button (click)="changeView('list')"
+                            [class.bg-[#111A43]]="viewMode() === 'list'"
+                            [class.text-white]="viewMode() === 'list'"
+                            [class.text-gray-400]="viewMode() !== 'list'"
+                            class="w-8 h-8 rounded flex items-center justify-center transition-all">
+                        <mat-icon class="!text-lg">view_list</mat-icon>
+                    </button>
+                </div>
+
+                <button (click)="exportarExcel()" matTooltip="Exportar"
+                        class="w-10 h-10 flex items-center justify-center bg-green-500 text-black border-[2px] border-black rounded-lg shadow-[2px_2px_0px_0px_#000] hover:translate-y-[1px] hover:shadow-none transition-all">
+                    <mat-icon>table_view</mat-icon>
+                </button>
+
+                <button (click)="crearNuevoKit()"
+                        class="h-10 px-4 bg-[#FFE500] text-black font-[1000] text-xs uppercase border-[2px] border-black rounded-lg shadow-[2px_2px_0px_0px_#000] hover:translate-y-[1px] hover:shadow-none transition-all flex items-center gap-2 whitespace-nowrap">
+                    <mat-icon class="!text-lg">add_circle</mat-icon>
+                    Nuevo Kit
+                </button>
+            </div>
+        </div>
+
+        <div class="flex-1 overflow-y-auto p-4 md:p-6 bg-[#f8f9fa] dark:bg-[#0f172a]">
+
+            <div class="mb-6 bg-white dark:bg-[#1e293b] border-[3px] border-black rounded-xl p-4 shadow-[4px_4px_0px_0px_rgba(0,0,0,0.1)]">
+                <div class="flex justify-between items-center mb-4 cursor-pointer" (click)="toggleFilters()">
+                    <span class="text-xs font-black uppercase tracking-widest text-gray-500 flex items-center gap-2">
+                        <mat-icon class="!text-sm">filter_list</mat-icon> Búsqueda Avanzada
+                    </span>
+                    <mat-icon [class.rotate-180]="showFilters()" class="transition-transform text-black dark:text-white">expand_more</mat-icon>
+                </div>
+
+                <div *ngIf="showFilters()" class="grid grid-cols-1 md:grid-cols-4 gap-4 animate-slide-in">
+                    <div class="md:col-span-4 lg:col-span-1">
+                        <div class="relative">
+                            <input type="text" [ngModel]="searchTerm()" (ngModelChange)="searchTerm.set($event)"
+                                   placeholder="BUSCAR..."
+                                   class="w-full h-10 pl-9 pr-2 bg-gray-50 dark:bg-slate-700 border-[2px] border-black rounded-lg font-bold text-sm uppercase focus:bg-white transition-colors">
+                            <mat-icon class="absolute left-2 top-2 text-gray-400 !text-lg">search</mat-icon>
+                        </div>
+                    </div>
+                    <div>
+                        <select [ngModel]="selectedCategoria()" (ngModelChange)="selectedCategoria.set($event)"
+                                class="w-full h-10 px-2 bg-gray-50 dark:bg-slate-700 border-[2px] border-black rounded-lg font-bold text-xs uppercase cursor-pointer">
+                            <option value="todas">CAT: TODAS</option>
+                            <option *ngFor="let c of categorias" [value]="c">{{c}}</option>
+                        </select>
+                    </div>
+                    <div>
+                        <select [ngModel]="selectedModelo()" (ngModelChange)="selectedModelo.set($event)"
+                                class="w-full h-10 px-2 bg-gray-50 dark:bg-slate-700 border-[2px] border-black rounded-lg font-bold text-xs uppercase cursor-pointer">
+                            <option value="todos">MOD: TODOS</option>
+                            <option *ngFor="let m of modelos" [value]="m">{{m}}</option>
+                        </select>
+                    </div>
+                    <div class="flex gap-2">
+                        <select [ngModel]="selectedEstado()" (ngModelChange)="selectedEstado.set($event)"
+                                class="flex-1 h-10 px-2 bg-gray-50 dark:bg-slate-700 border-[2px] border-black rounded-lg font-bold text-xs uppercase cursor-pointer">
+                            <option value="todos">EST: TODOS</option>
+                            <option *ngFor="let e of estados" [value]="e">{{e}}</option>
+                        </select>
+                        <button (click)="limpiarFiltros()" class="w-10 h-10 flex items-center justify-center bg-red-100 text-red-600 border-[2px] border-black rounded-lg hover:bg-red-500 hover:text-white transition-colors">
+                            <mat-icon class="!text-lg">close</mat-icon>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div *ngIf="viewMode() === 'grid'" class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-5">
+                <div *ngFor="let kit of kitsFiltrados()" (click)="verDetalle(kit)"
+                     class="group bg-white dark:bg-[#1e293b] border-[3px] border-black rounded-xl overflow-hidden shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all cursor-pointer flex flex-col">
+
+                    <div [ngClass]="getCategoriaClass(kit.categoria)" class="p-3 border-b-[3px] border-black flex justify-between items-start relative overflow-hidden h-24">
+                        <mat-icon class="absolute -right-2 -bottom-4 !text-8xl text-white opacity-20 rotate-12">construction</mat-icon>
+                        <span class="relative z-10 inline-block px-2 py-0.5 bg-black/20 text-white border border-white/30 rounded text-[10px] font-black font-mono">
+                            #{{ kit.id | number:'3.0' }}
+                        </span>
+                    </div>
+
+                    <div class="p-4 flex-1 flex flex-col relative">
+                        <div class="absolute -top-8 left-4 w-12 h-12 bg-white dark:bg-[#1e293b] border-[3px] border-black rounded-lg flex items-center justify-center text-lg font-[1000] z-10 shadow-sm">
+                            {{ kit.responsable?.charAt(0) }}
+                        </div>
+
+                        <div class="mt-4 mb-2">
+                            <h3 class="text-base font-[1000] uppercase leading-tight text-black dark:text-white line-clamp-2 min-h-[2.5rem]">
+                                {{ kit.nombre }}
+                            </h3>
+                            <p class="text-xs font-bold text-gray-500 dark:text-gray-400 mt-1 flex items-center gap-1 truncate">
+                                <mat-icon class="!text-xs">place</mat-icon> {{ kit.ubicacion }}
+                            </p>
+                        </div>
+
+                        <p class="text-xs text-gray-600 dark:text-gray-300 font-medium line-clamp-2 mb-4 flex-1">
+                            {{ kit.descripcion }}
+                        </p>
+
+                        <div class="flex items-center justify-between pt-3 border-t-[2px] border-dashed border-gray-200 dark:border-gray-700">
+                             <span class="px-2 py-0.5 text-[10px] font-black uppercase rounded border border-black" [ngClass]="getEstadoClass(kit.estado)">
+                                {{ kit.estado }}
+                            </span>
+                            <div class="text-right">
+                                <span class="block text-[10px] font-black uppercase text-gray-400">Items</span>
+                                <span class="text-lg font-[1000] leading-none text-black dark:text-white">{{ kit.cantidadItems }}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div *ngIf="viewMode() === 'list'" class="space-y-3">
+                <div *ngFor="let kit of kitsFiltrados()" (click)="verDetalle(kit)"
+                     class="group bg-white dark:bg-[#1e293b] border-[3px] border-black rounded-lg p-3 flex items-center gap-4 shadow-[3px_3px_0px_0px_rgba(0,0,0,0.1)] hover:shadow-[5px_5px_0px_0px_#000] hover:translate-x-[-1px] hover:translate-y-[-1px] transition-all cursor-pointer">
+
+                    <div class="w-12 h-12 flex-shrink-0 flex items-center justify-center text-white border-[2px] border-black rounded-md font-black shadow-sm" [ngClass]="getCategoriaClass(kit.categoria)">
+                        {{ kit.id }}
+                    </div>
+
+                    <div class="flex-1 min-w-0">
+                        <div class="flex flex-col md:flex-row md:items-center justify-between gap-2">
+                            <div>
+                                <h4 class="text-sm font-[1000] uppercase text-black dark:text-white truncate">{{ kit.nombre }}</h4>
+                                <div class="flex items-center gap-3 text-[10px] font-bold text-gray-500 uppercase">
+                                    <span class="flex items-center gap-1"><mat-icon class="!text-xs">place</mat-icon> {{ kit.ubicacion }}</span>
+                                    <span class="flex items-center gap-1"><mat-icon class="!text-xs">person</mat-icon> {{ kit.responsable }}</span>
+                                </div>
+                            </div>
+
+                            <div class="flex items-center gap-3">
+                                <span class="px-2 py-0.5 text-[10px] font-black uppercase rounded border border-black whitespace-nowrap" [ngClass]="getEstadoClass(kit.estado)">
+                                    {{ kit.estado }}
+                                </span>
+                                <div class="bg-gray-100 dark:bg-slate-700 px-3 py-1 rounded border border-black font-mono font-bold text-xs">
+                                    {{ kit.cantidadItems }} Itm.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div *ngIf="kitsFiltrados().length === 0" class="flex flex-col items-center justify-center h-64 border-[3px] border-dashed border-gray-300 dark:border-gray-600 rounded-xl opacity-70">
+                <mat-icon class="!text-5xl text-gray-400 mb-2">search_off</mat-icon>
+                <p class="font-black text-gray-500 uppercase">Sin resultados</p>
+                <button (click)="limpiarFiltros()" class="mt-4 text-xs font-bold text-blue-600 hover:underline uppercase">Limpiar filtros</button>
+            </div>
+
+        </div>
+    </div>
+</div>

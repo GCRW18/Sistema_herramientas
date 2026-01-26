@@ -1,0 +1,635 @@
+<div class="flex flex-col w-full h-full bg-[#FFF] dark:bg-[#0a0f29] transition-colors duration-300 font-sans overflow-hidden">
+
+    <div class="flex-1 overflow-y-auto p-6 md:p-8 relative">
+
+        <!-- Decorative shapes -->
+        <div class="fixed top-20 right-10 w-40 h-40 bg-[#111A43] rounded-full border-[3px] border-black opacity-5 pointer-events-none"></div>
+        <div class="fixed bottom-10 left-10 w-24 h-24 bg-red-500 rotate-12 border-[3px] border-black opacity-10 pointer-events-none"></div>
+        <div class="fixed top-1/2 left-1/4 w-32 h-32 rounded-full border-[3px] border-black opacity-5 pointer-events-none"
+             [class.bg-violet-500]="currentView() === 'internal'"
+             [class.bg-red-500]="currentView() === 'external'"></div>
+
+        <div class="max-w-[1600px] mx-auto relative z-10">
+
+            <!-- ==================== VISTA PRÉSTAMO INTERNO ==================== -->
+            @if (currentView() === 'internal') {
+                <div class="animate-fadeIn">
+
+                    <!-- Header -->
+                    <div class="flex items-center justify-between mb-10">
+                        <div class="flex items-center gap-6">
+                            <button (click)="goBack()"
+                                    class="w-14 h-14 bg-white dark:bg-slate-800 border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] active:shadow-none active:translate-x-1 active:translate-y-1 hover:bg-gray-50 transition-all flex items-center justify-center rounded-xl cursor-pointer"
+                                    (mousedown)="$event.stopPropagation()">
+                                <mat-icon class="!text-3xl !w-8 !h-8 text-black dark:text-white" svgIcon="heroicons_outline:arrow-left"></mat-icon>
+                            </button>
+                            <div>
+                                <h1 class="text-3xl md:text-5xl font-black text-black dark:text-white uppercase tracking-tighter drop-shadow-[3px_3px_0px_rgba(255,255,255,0.5)] dark:drop-shadow-none leading-none">
+                                    PRÉSTAMO INTERNO
+                                </h1>
+                                <div class="flex items-center gap-2 mt-3">
+                                    <span class="w-4 h-4 bg-violet-600 border-2 border-black rounded-full animate-pulse"></span>
+                                    <p class="text-base font-bold bg-slate-800 text-white px-3 py-1 inline-block transform -rotate-1 border-2 border-black">
+                                        HERRAMIENTAS Y EQUIPOS
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center gap-4">
+                            <!-- Nro Nota Badge -->
+                            <div class="flex flex-col items-center bg-white dark:bg-slate-800 border-[3px] border-black rounded-xl px-4 py-2 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+                                <span class="text-xs font-black uppercase text-gray-500 dark:text-gray-400">Nro Nota</span>
+                                <span class="text-3xl font-black text-[#00FF00] bg-black px-3 py-1 border-2 border-white rounded-lg">9185</span>
+                            </div>
+
+                            <button (click)="switchView('external')"
+                                    class="px-6 py-3 bg-red-600 dark:bg-red-600 text-white font-black text-xl border-[3px] border-black rounded-full shadow-[3px_3px_0px_0px_#000] hover:shadow-[2px_2px_0px_0px_#000] hover:translate-x-[3px] hover:translate-y-[3px] active:shadow-none transition-all uppercase tracking-wide flex items-center gap-3">
+                                <mat-icon>swap_horiz</mat-icon> Ir a Terceros
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Formulario Principal -->
+                    <div class="relative z-10 border-[3px] border-black bg-white dark:bg-slate-800 rounded-2xl shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] overflow-hidden mb-8">
+                        <!-- Header del Card -->
+                        <div class="p-4 bg-[#111A43] dark:bg-slate-900 border-b-[3px] border-black flex justify-between items-center">
+                            <h2 class="text-lg md:text-xl font-black text-white uppercase tracking-wider flex items-center gap-2">
+                                <mat-icon class="scale-100">assignment_ind</mat-icon>
+                                DATOS DEL PRÉSTAMO
+                            </h2>
+                        </div>
+
+                        <div class="p-6 md:p-8">
+                            <form [formGroup]="internalForm">
+                                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+
+                                    <!-- Columna Izquierda - Datos del Técnico -->
+                                    <div class="flex flex-col gap-4 border-r-0 lg:border-r-[3px] border-black/10 pr-0 lg:pr-6">
+                                        <h3 class="text-lg font-black uppercase mb-2 flex items-center gap-2 dark:text-white">
+                                            <span class="w-2 h-6 bg-violet-600 rounded-full"></span>
+                                            Datos del Técnico
+                                        </h3>
+
+                                        <div class="flex gap-3 items-end">
+                                            <mat-form-field appearance="fill" class="flex-1">
+                                                <mat-label>BUSCAR TÉCNICO</mat-label>
+                                                <input matInput formControlName="buscar">
+                                                <mat-icon matSuffix class="text-black font-bold">search</mat-icon>
+                                            </mat-form-field>
+                                            <button class="h-[52px] px-6 bg-cyan-400 hover:bg-cyan-300 text-black font-black border-[3px] border-black rounded-xl shadow-[3px_3px_0px_0px_#000] hover:translate-y-[2px] hover:shadow-[1px_1px_0px_0px_#000] transition-all uppercase text-sm">
+                                                AGREGAR
+                                            </button>
+                                        </div>
+
+                                        <mat-form-field appearance="fill" class="w-full">
+                                            <mat-label>NRO. LICENCIA</mat-label>
+                                            <input matInput formControlName="nroLicencia">
+                                            <mat-icon matSuffix class="text-black font-bold">badge</mat-icon>
+                                        </mat-form-field>
+
+                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <mat-form-field appearance="fill" class="w-full">
+                                                <mat-label>APELLIDO PATERNO</mat-label>
+                                                <input matInput formControlName="apPaterno">
+                                            </mat-form-field>
+                                            <mat-form-field appearance="fill" class="w-full">
+                                                <mat-label>APELLIDO MATERNO</mat-label>
+                                                <input matInput formControlName="apMaterno">
+                                            </mat-form-field>
+                                        </div>
+
+                                        <mat-form-field appearance="fill" class="w-full">
+                                            <mat-label>NOMBRES</mat-label>
+                                            <input matInput formControlName="nombres">
+                                        </mat-form-field>
+
+                                        <div class="grid grid-cols-2 gap-4">
+                                            <mat-form-field appearance="fill" class="w-full">
+                                                <mat-label>FECHA</mat-label>
+                                                <input matInput [matDatepicker]="pickerInt" formControlName="fecha">
+                                                <mat-datepicker-toggle matIconSuffix [for]="pickerInt"></mat-datepicker-toggle>
+                                                <mat-datepicker #pickerInt></mat-datepicker>
+                                            </mat-form-field>
+                                            <mat-form-field appearance="fill" class="w-full">
+                                                <mat-label>HORA</mat-label>
+                                                <input matInput formControlName="hora">
+                                                <mat-icon matSuffix class="text-black font-bold">schedule</mat-icon>
+                                            </mat-form-field>
+                                        </div>
+                                    </div>
+
+                                    <!-- Columna Derecha - Datos del Trabajo -->
+                                    <div class="flex flex-col gap-4">
+                                        <h3 class="text-lg font-black uppercase mb-2 flex items-center gap-2 dark:text-white">
+                                            <span class="w-2 h-6 bg-violet-600 rounded-full"></span>
+                                            Datos del Trabajo
+                                        </h3>
+
+                                        <mat-form-field appearance="fill" class="w-full">
+                                            <mat-label>MATRÍCULA AERONAVE</mat-label>
+                                            <mat-select formControlName="matriculaAeronave">
+                                                <mat-option value="N/A">N/A</mat-option>
+                                            </mat-select>
+                                        </mat-form-field>
+
+                                        <mat-form-field appearance="fill" class="w-full">
+                                            <mat-label>NRO. ORDEN DE TRABAJO</mat-label>
+                                            <input matInput formControlName="ordenTrabajo">
+                                        </mat-form-field>
+
+                                        <div class="bg-gray-50 dark:bg-slate-700 p-4 border-[3px] border-black rounded-xl shadow-[3px_3px_0px_0px_rgba(0,0,0,0.1)]">
+                                            <span class="font-black text-xs uppercase block mb-3 text-gray-600 dark:text-gray-300">Unidad de destino:</span>
+                                            <div class="flex gap-6 flex-wrap">
+                                                <mat-checkbox formControlName="destinoServicios" class="font-bold">Servicios</mat-checkbox>
+                                                <mat-checkbox formControlName="destinoLinea" class="font-bold">Línea</mat-checkbox>
+                                                <mat-checkbox formControlName="destinoTaller" class="font-bold">Taller</mat-checkbox>
+                                            </div>
+                                        </div>
+
+                                        <div class="bg-gray-50 dark:bg-slate-700 p-4 border-[3px] border-black rounded-xl shadow-[3px_3px_0px_0px_rgba(0,0,0,0.1)]">
+                                            <span class="font-black text-xs uppercase block mb-3 text-gray-600 dark:text-gray-300">Trabajo especial:</span>
+                                            <div class="flex gap-6">
+                                                <mat-checkbox formControlName="trabajoEspecialNo" class="font-bold">NO</mat-checkbox>
+                                                <mat-checkbox formControlName="trabajoEspecialSi" class="font-bold">SÍ</mat-checkbox>
+                                            </div>
+                                        </div>
+
+                                        <mat-form-field appearance="fill" class="w-full textarea-field">
+                                            <mat-label>OBSERVACIONES</mat-label>
+                                            <textarea matInput formControlName="observaciones" rows="3" class="!resize-none"></textarea>
+                                        </mat-form-field>
+                                    </div>
+                                </div>
+
+                                <!-- Acciones del formulario -->
+                                <div class="mt-8 pt-6 border-t-[3px] border-dashed border-black/20 flex flex-col md:flex-row items-center gap-4">
+                                    <button (click)="openHerramientasAPrestar()"
+                                            class="px-6 py-3 bg-violet-600 dark:bg-violet-600 text-white font-black text-lg border-[3px] border-black rounded-full shadow-[3px_3px_0px_0px_#000] hover:shadow-[2px_2px_0px_0px_#000] hover:translate-x-[2px] hover:translate-y-[2px] transition-all uppercase tracking-wide flex items-center gap-2">
+                                        <mat-icon>build</mat-icon> Herramientas a Prestar
+                                    </button>
+                                    <button class="px-6 py-3 bg-yellow-400 dark:bg-yellow-400 text-black font-black text-lg border-[3px] border-black rounded-full shadow-[3px_3px_0px_0px_#000] hover:shadow-[2px_2px_0px_0px_#000] hover:translate-x-[2px] hover:translate-y-[2px] transition-all uppercase tracking-wide flex items-center gap-2">
+                                        <mat-icon>inventory_2</mat-icon> Agregar Kit
+                                    </button>
+                                    <div class="flex-1 w-full md:w-auto">
+                                        <mat-form-field appearance="fill" class="w-full">
+                                            <mat-label>ADICIONAR KIT DE HERRAMIENTAS</mat-label>
+                                            <mat-select formControlName="kitSeleccionado">
+                                                <mat-option value="kit1">KIT MECÁNICA A</mat-option>
+                                            </mat-select>
+                                        </mat-form-field>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+
+                    <!-- Tabla de Herramientas -->
+                    <div class="relative z-10 border-[3px] border-black bg-white dark:bg-slate-800 rounded-2xl shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] overflow-hidden mb-8">
+                        <div class="p-4 bg-[#111A43] dark:bg-slate-900 border-b-[3px] border-black flex justify-between items-center">
+                            <h3 class="text-lg md:text-xl font-black text-white uppercase tracking-wider flex items-center gap-2">
+                                <mat-icon class="scale-100">handyman</mat-icon>
+                                HERRAMIENTAS A PRESTAR ({{ internalDataSource().length }})
+                            </h3>
+                        </div>
+
+                        <div class="overflow-x-auto bg-white dark:bg-slate-800">
+                            <table mat-table [dataSource]="internalDataSource()" class="w-full">
+                                <ng-container matColumnDef="codigo">
+                                    <th mat-header-cell *matHeaderCellDef class="!bg-gray-100 dark:!bg-slate-700 !text-black dark:!text-white !font-black !text-xs !border-b-[3px] !border-black !p-4 uppercase">Código</th>
+                                    <td mat-cell *matCellDef="let e" class="!p-4 !font-bold !border-b !border-gray-200 dark:!border-slate-600 !text-black dark:!text-white">{{e.codigo}}</td>
+                                </ng-container>
+
+                                <ng-container matColumnDef="pn">
+                                    <th mat-header-cell *matHeaderCellDef class="!bg-gray-100 dark:!bg-slate-700 !text-black dark:!text-white !font-black !text-xs !border-b-[3px] !border-black !p-4 uppercase">P/N</th>
+                                    <td mat-cell *matCellDef="let e" class="!p-4 !border-b !border-gray-200 dark:!border-slate-600 !font-mono !font-bold !text-black dark:!text-gray-300">{{e.pn}}</td>
+                                </ng-container>
+
+                                <ng-container matColumnDef="descripcion">
+                                    <th mat-header-cell *matHeaderCellDef class="!bg-gray-100 dark:!bg-slate-700 !text-black dark:!text-white !font-black !text-xs !border-b-[3px] !border-black !p-4 uppercase">Descripción</th>
+                                    <td mat-cell *matCellDef="let e" class="!p-4 !border-b !border-gray-200 dark:!border-slate-600 !font-bold !text-black dark:!text-gray-300">{{e.descripcion}}</td>
+                                </ng-container>
+
+                                <ng-container matColumnDef="sn">
+                                    <th mat-header-cell *matHeaderCellDef class="!bg-gray-100 dark:!bg-slate-700 !text-black dark:!text-white !font-black !text-xs !border-b-[3px] !border-black !p-4 uppercase">S/N</th>
+                                    <td mat-cell *matCellDef="let e" class="!p-4 !border-b !border-gray-200 dark:!border-slate-600 !font-mono !font-bold !text-black dark:!text-gray-300">{{e.sn}}</td>
+                                </ng-container>
+
+                                <ng-container matColumnDef="fechaCalibracion">
+                                    <th mat-header-cell *matHeaderCellDef class="!bg-gray-100 dark:!bg-slate-700 !text-black dark:!text-white !font-black !text-xs !border-b-[3px] !border-black !p-4 uppercase">F. Calib.</th>
+                                    <td mat-cell *matCellDef="let e" class="!p-4 !border-b !border-gray-200 dark:!border-slate-600 !text-black dark:!text-gray-400">{{e.fechaCalibracion}}</td>
+                                </ng-container>
+
+                                <ng-container matColumnDef="cantidad">
+                                    <th mat-header-cell *matHeaderCellDef class="!bg-gray-100 dark:!bg-slate-700 !text-black dark:!text-white !font-black !text-xs !border-b-[3px] !border-black !p-4 uppercase text-center">Cant.</th>
+                                    <td mat-cell *matCellDef="let e" class="!p-4 !border-b !border-gray-200 dark:!border-slate-600 text-center">
+                                        <span class="inline-block px-3 py-1 bg-violet-100 dark:bg-violet-900 border-2 border-black rounded-lg font-black text-violet-800 dark:text-violet-200">{{e.cantidad}}</span>
+                                    </td>
+                                </ng-container>
+
+                                <ng-container matColumnDef="unidad">
+                                    <th mat-header-cell *matHeaderCellDef class="!bg-gray-100 dark:!bg-slate-700 !text-black dark:!text-white !font-black !text-xs !border-b-[3px] !border-black !p-4 uppercase text-center">Unid.</th>
+                                    <td mat-cell *matCellDef="let e" class="!p-4 !border-b !border-gray-200 dark:!border-slate-600 text-center !font-bold !text-black dark:!text-gray-400">{{e.unidad}}</td>
+                                </ng-container>
+
+                                <ng-container matColumnDef="estadoFisico">
+                                    <th mat-header-cell *matHeaderCellDef class="!bg-gray-100 dark:!bg-slate-700 !text-black dark:!text-white !font-black !text-xs !border-b-[3px] !border-black !p-4 uppercase">Estado</th>
+                                    <td mat-cell *matCellDef="let e" class="!p-4 !border-b !border-gray-200 dark:!border-slate-600">
+                                        <span class="inline-block px-2 py-0.5 border-2 border-black rounded text-xs font-black uppercase"
+                                              [class.bg-emerald-100]="e.estadoFisico === 'BUENO'"
+                                              [class.text-emerald-800]="e.estadoFisico === 'BUENO'"
+                                              [class.bg-yellow-100]="e.estadoFisico === 'REGULAR'"
+                                              [class.text-yellow-800]="e.estadoFisico === 'REGULAR'"
+                                              [class.bg-red-100]="e.estadoFisico === 'MALO'"
+                                              [class.text-red-800]="e.estadoFisico === 'MALO'">
+                                            {{e.estadoFisico}}
+                                        </span>
+                                    </td>
+                                </ng-container>
+
+                                <ng-container matColumnDef="contenido">
+                                    <th mat-header-cell *matHeaderCellDef class="!bg-gray-100 dark:!bg-slate-700 !text-black dark:!text-white !font-black !text-xs !border-b-[3px] !border-black !p-4 uppercase">Contenido</th>
+                                    <td mat-cell *matCellDef="let e" class="!p-4 !border-b !border-gray-200 dark:!border-slate-600 !text-black dark:!text-gray-400">{{e.contenido}}</td>
+                                </ng-container>
+
+                                <tr mat-header-row *matHeaderRowDef="displayedColumnsInternal"></tr>
+                                <tr mat-row *matRowDef="let row; columns: displayedColumnsInternal;" class="hover:!bg-slate-50 dark:hover:!bg-slate-700/50 transition-colors"></tr>
+                            </table>
+
+                            <!-- Empty State -->
+                            <div *ngIf="internalDataSource().length === 0" class="p-12 text-center bg-white dark:bg-slate-800">
+                                <mat-icon class="!text-5xl text-gray-300 dark:text-gray-600 mb-3">inventory_2</mat-icon>
+                                <p class="text-gray-500 dark:text-gray-400 font-bold">No hay herramientas agregadas</p>
+                            </div>
+                        </div>
+
+                        <!-- Table Footer -->
+                        <div class="bg-gray-50 dark:bg-slate-900 border-t-[3px] border-black px-6 py-4">
+                            <div class="flex items-center justify-between text-sm font-bold text-gray-600 dark:text-gray-400">
+                                <div class="flex items-center gap-2">
+                                    <mat-icon class="!text-base">info</mat-icon>
+                                    <span>Total de herramientas: <strong class="text-black dark:text-white">{{ internalDataSource().length }}</strong></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Botones de Acción -->
+                    <div class="flex flex-wrap justify-between items-center gap-4">
+                        <div class="flex gap-4">
+                            <button class="w-8 h-8 md:w-auto md:h-auto md:px-6 md:py-3 flex items-center justify-center md:gap-2 border-[3px] border-black bg-white dark:bg-slate-700 hover:bg-gray-100 dark:hover:bg-slate-600 md:rounded-full rounded-lg shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] active:translate-y-[1px] active:shadow-none transition-all md:font-black md:uppercase">
+                                <mat-icon class="text-black dark:text-white">print</mat-icon>
+                                <span class="hidden md:inline">Imprimir Reducida</span>
+                            </button>
+                            <button class="w-8 h-8 md:w-auto md:h-auto md:px-6 md:py-3 flex items-center justify-center md:gap-2 border-[3px] border-black bg-white dark:bg-slate-700 hover:bg-gray-100 dark:hover:bg-slate-600 md:rounded-full rounded-lg shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] active:translate-y-[1px] active:shadow-none transition-all md:font-black md:uppercase">
+                                <mat-icon class="text-black dark:text-white">receipt_long</mat-icon>
+                                <span class="hidden md:inline">Reimprimir Nota</span>
+                            </button>
+                        </div>
+                        <button (click)="salir()"
+                                class="px-6 py-3 bg-[#111A43] hover:bg-[#1a2555] text-white font-black border-[3px] border-black rounded-full shadow-[3px_3px_0px_0px_#000] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_0px_#000] transition-all uppercase tracking-wide flex items-center gap-2">
+                            <mat-icon>logout</mat-icon> Salir
+                        </button>
+                    </div>
+                </div>
+            }
+
+            <!-- ==================== VISTA PRÉSTAMO A TERCEROS ==================== -->
+            @if (currentView() === 'external') {
+                <div class="animate-fadeIn">
+
+                    <!-- Header -->
+                    <div class="flex items-center justify-between mb-10">
+                        <div class="flex items-center gap-6">
+                            <button (click)="switchView('internal')"
+                                    class="w-14 h-14 bg-white dark:bg-slate-800 border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] active:shadow-none active:translate-x-1 active:translate-y-1 hover:bg-gray-50 transition-all flex items-center justify-center rounded-xl cursor-pointer">
+                                <mat-icon class="!text-3xl !w-8 !h-8 text-black dark:text-white" svgIcon="heroicons_outline:arrow-left"></mat-icon>
+                            </button>
+                            <div>
+                                <h1 class="text-3xl md:text-5xl font-black text-black dark:text-white uppercase tracking-tighter drop-shadow-[3px_3px_0px_rgba(255,255,255,0.5)] dark:drop-shadow-none leading-none">
+                                    PRÉSTAMO A TERCEROS
+                                </h1>
+                                <div class="flex items-center gap-2 mt-3">
+                                    <span class="w-4 h-4 bg-red-600 border-2 border-black rounded-full animate-pulse"></span>
+                                    <p class="text-base font-bold bg-slate-800 text-white px-3 py-1 inline-block transform -rotate-1 border-2 border-black">
+                                        EXTERNO
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Nro Nota Badge -->
+                        <div class="flex flex-col items-center bg-white dark:bg-slate-800 border-[3px] border-black rounded-xl px-4 py-2 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+                            <span class="text-xs font-black uppercase text-gray-500 dark:text-gray-400">Nro Nota</span>
+                            <span class="text-3xl font-black text-black bg-[#FFE4B5] px-4 py-1 border-[3px] border-black rounded-lg shadow-[2px_2px_0px_0px_rgba(0,0,0,0.2)]">1</span>
+                        </div>
+                    </div>
+
+                    <!-- Formulario de Herramienta -->
+                    <div class="relative z-10 border-[3px] border-black bg-white dark:bg-slate-800 rounded-2xl shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] overflow-hidden mb-8">
+                        <!-- Header del Card -->
+                        <div class="p-4 bg-[#111A43] dark:bg-slate-900 border-b-[3px] border-black flex justify-between items-center">
+                            <h2 class="text-lg md:text-xl font-black text-white uppercase tracking-wider flex items-center gap-2">
+                                <mat-icon class="scale-100">handyman</mat-icon>
+                                SELECCIONAR HERRAMIENTA
+                            </h2>
+                        </div>
+
+                        <div class="p-6 md:p-8">
+                            <form [formGroup]="externalToolForm">
+                                <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+
+                                    <!-- Columna Izquierda - Campos del Formulario -->
+                                    <div class="lg:col-span-7 flex flex-col gap-4">
+                                        <div class="flex items-center gap-2 mb-2">
+                                            <mat-icon class="text-black dark:text-white">search</mat-icon>
+                                            <h3 class="text-lg font-black uppercase text-black dark:text-white">Buscar Herramienta</h3>
+                                        </div>
+
+                                        <mat-form-field appearance="fill" class="w-full">
+                                            <mat-label>Código, Nombre o P/N</mat-label>
+                                            <mat-select formControlName="buscar" (selectionChange)="selectHerramientaExternal($event.value)">
+                                                <mat-option *ngFor="let h of filteredHerramientasExternal" [value]="h">
+                                                    {{ h.codigo }} - {{ h.nombre }}
+                                                </mat-option>
+                                            </mat-select>
+                                            <mat-icon matSuffix class="text-black font-bold">search</mat-icon>
+                                        </mat-form-field>
+
+                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <mat-form-field appearance="fill" class="w-full">
+                                                <mat-label>Código</mat-label>
+                                                <mat-select formControlName="codigo">
+                                                    <mat-option *ngFor="let h of herramientasExternal" [value]="h.codigo">
+                                                        {{ h.codigo }}
+                                                    </mat-option>
+                                                </mat-select>
+                                                <mat-icon matSuffix class="text-black font-bold">qr_code</mat-icon>
+                                            </mat-form-field>
+
+                                            <mat-form-field appearance="fill" class="w-full">
+                                                <mat-label>Coincidencias</mat-label>
+                                                <input matInput [value]="coincidenciasExternal()" readonly class="!text-center !font-black">
+                                            </mat-form-field>
+                                        </div>
+
+                                        <mat-form-field appearance="fill" class="w-full">
+                                            <mat-label>Nombre</mat-label>
+                                            <input matInput formControlName="nombre">
+                                        </mat-form-field>
+
+                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <mat-form-field appearance="fill" class="w-full">
+                                                <mat-label>P/N</mat-label>
+                                                <input matInput formControlName="pn">
+                                            </mat-form-field>
+
+                                            <mat-form-field appearance="fill" class="w-full">
+                                                <mat-label>S/N</mat-label>
+                                                <input matInput formControlName="sn">
+                                            </mat-form-field>
+                                        </div>
+
+                                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                            <mat-form-field appearance="fill" class="w-full">
+                                                <mat-label>Ubicación</mat-label>
+                                                <input matInput formControlName="ubicacion">
+                                                <mat-icon matSuffix class="text-black font-bold">location_on</mat-icon>
+                                            </mat-form-field>
+
+                                            <mat-form-field appearance="fill" class="w-full">
+                                                <mat-label>Existencia</mat-label>
+                                                <input matInput formControlName="existencia" readonly class="!font-black">
+                                            </mat-form-field>
+
+                                            <mat-form-field appearance="fill" class="w-full">
+                                                <mat-label>Unidad</mat-label>
+                                                <input matInput formControlName="unidad">
+                                            </mat-form-field>
+                                        </div>
+
+                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <mat-form-field appearance="fill" class="w-full">
+                                                <mat-label>Fecha Vencimiento</mat-label>
+                                                <input matInput formControlName="fechaVencimiento">
+                                                <mat-icon matSuffix class="text-black font-bold">event</mat-icon>
+                                            </mat-form-field>
+
+                                            <mat-form-field appearance="fill" class="w-full">
+                                                <mat-label>Estado Físico</mat-label>
+                                                <mat-select formControlName="estadoFisico">
+                                                    <mat-option value="BUENO">BUENO</mat-option>
+                                                    <mat-option value="REGULAR">REGULAR</mat-option>
+                                                    <mat-option value="MALO">MALO</mat-option>
+                                                </mat-select>
+                                            </mat-form-field>
+                                        </div>
+
+                                        <!-- Sección de Costos -->
+                                        <div class="bg-red-50 dark:bg-red-900/20 p-4 border-[3px] border-black rounded-xl shadow-[3px_3px_0px_0px_rgba(0,0,0,0.1)]">
+                                            <div class="flex items-center gap-2 mb-3">
+                                                <mat-icon class="text-black">attach_money</mat-icon>
+                                                <span class="font-black text-sm uppercase">Costos del Préstamo</span>
+                                            </div>
+                                            <div class="grid grid-cols-3 gap-4">
+                                                <mat-form-field appearance="fill" class="w-full">
+                                                    <mat-label>C/Hr. ($us)</mat-label>
+                                                    <input matInput type="number" formControlName="costoHora" step="0.01" class="!font-black">
+                                                    <mat-icon matSuffix class="text-black font-bold">monetization_on</mat-icon>
+                                                </mat-form-field>
+
+                                                <mat-form-field appearance="fill" class="w-full">
+                                                    <mat-label>Hr.</mat-label>
+                                                    <input matInput type="number" formControlName="horas" class="!font-black">
+                                                    <mat-icon matSuffix class="text-black font-bold">schedule</mat-icon>
+                                                </mat-form-field>
+
+                                                <mat-form-field appearance="fill" class="w-full">
+                                                    <mat-label>PTot ($)</mat-label>
+                                                    <input matInput [value]="precioTotalExternal() | number:'1.2-2'" readonly class="!font-black !text-green-600">
+                                                    <mat-icon matSuffix class="text-green-600 font-bold">paid</mat-icon>
+                                                </mat-form-field>
+                                            </div>
+                                        </div>
+
+                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <mat-form-field appearance="fill" class="w-full">
+                                                <mat-label>Cantidad</mat-label>
+                                                <input matInput type="number" formControlName="cantidad" class="!font-black">
+                                            </mat-form-field>
+
+                                            <mat-form-field appearance="fill" class="w-full textarea-field">
+                                                <mat-label>Observación</mat-label>
+                                                <textarea matInput formControlName="observacion" rows="1" class="!resize-none"></textarea>
+                                            </mat-form-field>
+                                        </div>
+                                    </div>
+
+                                    <!-- Columna Derecha - Imagen (Reducida) -->
+                                    <div class="lg:col-span-5 flex flex-col">
+                                        <div class="flex items-center gap-2 mb-4">
+                                            <mat-icon class="text-black dark:text-white">image</mat-icon>
+                                            <h3 class="text-lg font-black uppercase text-black dark:text-white">Referencia Visual</h3>
+                                        </div>
+
+                                        <div class="bg-white dark:bg-[#0f1633] border-[3px] border-black rounded-xl overflow-hidden shadow-[4px_4px_0px_0px_#000] flex-1 flex flex-col relative min-h-[280px] mb-4">
+
+                                            <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-black via-black to-black"></div>
+
+                                            <div *ngIf="selectedImageExternal(); else noImageExternalTemplate" class="flex-1 p-4 flex items-center justify-center bg-gray-50 dark:bg-slate-900/50">
+                                                <img [src]="selectedImageExternal()" alt="Herramienta" class="w-full h-full object-contain drop-shadow-lg">
+                                            </div>
+
+                                            <ng-template #noImageExternalTemplate>
+                                                <div class="flex-1 flex flex-col items-center justify-center text-gray-400 dark:text-gray-600 p-6">
+                                                    <div class="w-16 h-16 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-full flex items-center justify-center mb-2">
+                                                        <mat-icon class="!text-3xl !w-8 !h-8 opacity-50">photo_camera</mat-icon>
+                                                    </div>
+                                                    <p class="font-bold uppercase text-xs opacity-60 text-center">Sin imagen disponible</p>
+                                                </div>
+                                            </ng-template>
+
+                                            <div class="bg-gray-100 dark:bg-slate-800 p-3 border-t-[3px] border-black">
+                                                <button type="button" (click)="fileInputExternal.click()"
+                                                        class="w-full py-2 bg-white dark:bg-[#111A43] text-black dark:text-white font-black border-2 border-black rounded shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-y-0.5 hover:shadow-none transition-all uppercase text-xs flex items-center justify-center gap-2">
+                                                    <mat-icon class="!w-4 !h-4 !text-base">{{ selectedImageExternal() ? 'edit' : 'cloud_upload' }}</mat-icon>
+                                                    {{ selectedImageExternal() ? 'Cambiar Imagen' : 'Subir Imagen' }}
+                                                </button>
+                                            </div>
+
+                                            <input type="file" #fileInputExternal (change)="onImageSelectedExternal($event)" accept="image/*" class="hidden">
+                                        </div>
+
+                                        <!-- Descripción Técnica -->
+                                        <div class="p-4 bg-red-50 dark:bg-red-900/20 border-2 border-dashed border-black dark:border-white/50 rounded-lg relative">
+                                            <mat-icon class="absolute -top-3 -right-3 bg-white dark:bg-slate-800 border-2 border-black rounded-full p-1 text-black dark:text-white !text-base">info</mat-icon>
+                                            <h4 class="font-black text-xs uppercase mb-2 text-black dark:text-white">Descripción:</h4>
+                                            <p class="font-medium text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
+                                                Seleccione una herramienta para ver su descripción técnica y características.
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+
+                    <!-- Tabla de Herramientas Externas -->
+                    <div class="relative z-10 border-[3px] border-black bg-white dark:bg-slate-800 rounded-2xl shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] overflow-hidden mb-8">
+                        <div class="p-4 bg-[#111A43] dark:bg-slate-900 border-b-[3px] border-black flex justify-between items-center">
+                            <h3 class="text-lg md:text-xl font-black text-white uppercase tracking-wider flex items-center gap-2">
+                                <mat-icon class="scale-100">list_alt</mat-icon>
+                                HERRAMIENTAS SELECCIONADAS ({{ externalDataSource().length }})
+                            </h3>
+                        </div>
+
+                        <div class="overflow-x-auto bg-white dark:bg-slate-800">
+                            <table mat-table [dataSource]="externalDataSource()" class="w-full">
+                                <ng-container matColumnDef="codigo">
+                                    <th mat-header-cell *matHeaderCellDef class="!bg-gray-100 dark:!bg-slate-700 !text-black dark:!text-white !font-black !text-xs !border-b-[3px] !border-black !p-4 uppercase">Código</th>
+                                    <td mat-cell *matCellDef="let e" class="!p-4 !font-bold !border-b !border-gray-200 dark:!border-slate-600 !text-black dark:!text-white">{{e.codigo}}</td>
+                                </ng-container>
+                                <ng-container matColumnDef="pn">
+                                    <th mat-header-cell *matHeaderCellDef class="!bg-gray-100 dark:!bg-slate-700 !text-black dark:!text-white !font-black !text-xs !border-b-[3px] !border-black !p-4 uppercase">P/N</th>
+                                    <td mat-cell *matCellDef="let e" class="!p-4 !border-b !border-gray-200 dark:!border-slate-600 !font-mono !font-bold !text-black dark:!text-gray-300">{{e.pn}}</td>
+                                </ng-container>
+                                <ng-container matColumnDef="descripcion">
+                                    <th mat-header-cell *matHeaderCellDef class="!bg-gray-100 dark:!bg-slate-700 !text-black dark:!text-white !font-black !text-xs !border-b-[3px] !border-black !p-4 uppercase">Descripción</th>
+                                    <td mat-cell *matCellDef="let e" class="!p-4 !border-b !border-gray-200 dark:!border-slate-600 !font-bold !text-black dark:!text-gray-300">{{e.descripcion}}</td>
+                                </ng-container>
+                                <ng-container matColumnDef="sn">
+                                    <th mat-header-cell *matHeaderCellDef class="!bg-gray-100 dark:!bg-slate-700 !text-black dark:!text-white !font-black !text-xs !border-b-[3px] !border-black !p-4 uppercase">S/N</th>
+                                    <td mat-cell *matCellDef="let e" class="!p-4 !border-b !border-gray-200 dark:!border-slate-600 !font-mono !font-bold !text-black dark:!text-gray-300">{{e.sn}}</td>
+                                </ng-container>
+                                <ng-container matColumnDef="fechaCalibracion">
+                                    <th mat-header-cell *matHeaderCellDef class="!bg-gray-100 dark:!bg-slate-700 !text-black dark:!text-white !font-black !text-xs !border-b-[3px] !border-black !p-4 uppercase">F. Calib</th>
+                                    <td mat-cell *matCellDef="let e" class="!p-4 !border-b !border-gray-200 dark:!border-slate-600 !text-black dark:!text-gray-400">{{e.fechaCalibracion}}</td>
+                                </ng-container>
+                                <ng-container matColumnDef="cantidad">
+                                    <th mat-header-cell *matHeaderCellDef class="!bg-gray-100 dark:!bg-slate-700 !text-black dark:!text-white !font-black !text-xs !border-b-[3px] !border-black !p-4 uppercase text-center">Cant</th>
+                                    <td mat-cell *matCellDef="let e" class="!p-4 !border-b !border-gray-200 dark:!border-slate-600 text-center">
+                                        <span class="inline-block px-3 py-1 bg-red-100 dark:bg-red-900 border-2 border-black rounded-lg font-black text-red-800 dark:text-red-200">{{e.cantidad}}</span>
+                                    </td>
+                                </ng-container>
+                                <ng-container matColumnDef="horas">
+                                    <th mat-header-cell *matHeaderCellDef class="!bg-gray-100 dark:!bg-slate-700 !text-black dark:!text-white !font-black !text-xs !border-b-[3px] !border-black !p-4 uppercase text-center">Horas</th>
+                                    <td mat-cell *matCellDef="let e" class="!p-4 !border-b !border-gray-200 dark:!border-slate-600 text-center !font-bold !text-black dark:!text-gray-300">{{e.horas}}</td>
+                                </ng-container>
+                                <ng-container matColumnDef="estadoFisico">
+                                    <th mat-header-cell *matHeaderCellDef class="!bg-gray-100 dark:!bg-slate-700 !text-black dark:!text-white !font-black !text-xs !border-b-[3px] !border-black !p-4 uppercase">Est. Fís</th>
+                                    <td mat-cell *matCellDef="let e" class="!p-4 !border-b !border-gray-200 dark:!border-slate-600">
+                                        <span class="inline-block px-2 py-0.5 border-2 border-black rounded text-xs font-black uppercase"
+                                              [class.bg-emerald-100]="e.estadoFisico === 'BUENO'"
+                                              [class.text-emerald-800]="e.estadoFisico === 'BUENO'"
+                                              [class.bg-yellow-100]="e.estadoFisico === 'REGULAR'"
+                                              [class.text-yellow-800]="e.estadoFisico === 'REGULAR'"
+                                              [class.bg-red-100]="e.estadoFisico === 'MALO'"
+                                              [class.text-red-800]="e.estadoFisico === 'MALO'">
+                                            {{e.estadoFisico}}
+                                        </span>
+                                    </td>
+                                </ng-container>
+                                <ng-container matColumnDef="contenido">
+                                    <th mat-header-cell *matHeaderCellDef class="!bg-gray-100 dark:!bg-slate-700 !text-black dark:!text-white !font-black !text-xs !border-b-[3px] !border-black !p-4 uppercase">Contenido</th>
+                                    <td mat-cell *matCellDef="let e" class="!p-4 !border-b !border-gray-200 dark:!border-slate-600 !text-black dark:!text-gray-400">{{e.contenido}}</td>
+                                </ng-container>
+                                <ng-container matColumnDef="precioTotal">
+                                    <th mat-header-cell *matHeaderCellDef class="!bg-gray-100 dark:!bg-slate-700 !text-black dark:!text-white !font-black !text-xs !border-b-[3px] !border-black !p-4 uppercase text-right">Precio T.</th>
+                                    <td mat-cell *matCellDef="let e" class="!p-4 !border-b !border-gray-200 dark:!border-slate-600 text-right">
+                                        <span class="inline-block px-3 py-1 bg-green-100 dark:bg-green-900 border-2 border-black rounded-lg font-black text-green-800 dark:text-green-200">${{e.precioTotal | number:'1.2-2'}}</span>
+                                    </td>
+                                </ng-container>
+
+                                <tr mat-header-row *matHeaderRowDef="displayedColumnsExternal"></tr>
+                                <tr mat-row *matRowDef="let row; columns: displayedColumnsExternal;" class="hover:!bg-slate-50 dark:hover:!bg-slate-700/50 transition-colors"></tr>
+                            </table>
+
+                            <!-- Empty State -->
+                            <div *ngIf="externalDataSource().length === 0" class="p-12 text-center bg-white dark:bg-slate-800">
+                                <mat-icon class="!text-5xl text-gray-300 dark:text-gray-600 mb-3">inventory_2</mat-icon>
+                                <p class="text-gray-500 dark:text-gray-400 font-bold">No hay herramientas seleccionadas</p>
+                            </div>
+                        </div>
+
+                        <!-- Table Footer con Importe Total -->
+                        <div class="bg-gray-50 dark:bg-slate-900 border-t-[3px] border-black px-6 py-4">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center gap-2 text-sm font-bold text-gray-600 dark:text-gray-400">
+                                    <mat-icon class="!text-base">info</mat-icon>
+                                    <span>Total de herramientas: <strong class="text-black dark:text-white">{{ externalDataSource().length }}</strong></span>
+                                </div>
+                                <div class="flex items-center gap-4">
+                                    <span class="font-black uppercase text-xl text-gray-700 dark:text-gray-300">Importe Total:</span>
+                                    <span class="text-3xl font-black text-green-600 bg-green-100 dark:bg-green-900 px-6 py-2 border-[3px] border-black rounded-xl shadow-[3px_3px_0px_0px_rgba(0,0,0,0.2)]">
+                                        ${{ importeTotal() | number:'1.2-2' }}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Botones de Acción -->
+                    <div class="flex flex-wrap justify-between items-center gap-4">
+                        <div class="flex gap-4">
+                            <button (click)="agregarHerramientaExternal()"
+                                    class="px-6 py-3 bg-red-600 dark:bg-red-600 text-white font-black text-lg border-[3px] border-black rounded-full shadow-[3px_3px_0px_0px_#000] hover:shadow-[2px_2px_0px_0px_#000] hover:translate-x-[2px] hover:translate-y-[2px] active:shadow-none transition-all uppercase tracking-wide flex items-center gap-2">
+                                <mat-icon>add</mat-icon> Agregar
+                            </button>
+                            <button (click)="switchView('internal')"
+                                    class="px-6 py-3 bg-[#111A43] hover:bg-[#1a2555] text-white font-black text-lg border-[3px] border-black rounded-full shadow-[3px_3px_0px_0px_#000] hover:shadow-[2px_2px_0px_0px_#000] hover:translate-x-[2px] hover:translate-y-[2px] active:shadow-none transition-all uppercase tracking-wide flex items-center gap-2">
+                                <mat-icon>close</mat-icon> Cerrar
+                            </button>
+                        </div>
+
+                        <button (click)="procesarExterno()"
+                                class="px-6 py-3 bg-yellow-400 dark:bg-yellow-400 text-black font-black text-xl border-[3px] border-black rounded-full shadow-[3px_3px_0px_0px_#000] hover:shadow-[2px_2px_0px_0px_#000] hover:translate-x-[3px] hover:translate-y-[3px] active:shadow-none transition-all uppercase tracking-wide flex items-center gap-3">
+                            <mat-icon>check_circle</mat-icon> Procesar
+                        </button>
+                    </div>
+
+                </div>
+            }
+
+        </div>
+    </div>
+</div>

@@ -1,0 +1,222 @@
+<div class="flex flex-col w-full h-full bg-white dark:bg-[#0f172a] overflow-hidden border-[3px] border-black dark:border-gray-700 rounded-2xl shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] dark:shadow-[8px_8px_0px_0px_rgba(255,255,255,0.1)]">
+
+    <!-- Header -->
+    <div class="flex items-center justify-between px-8 py-6 bg-white dark:bg-[#0f172a] border-b-[3px] border-black dark:border-gray-700 select-none">
+        <div class="flex items-center gap-4">
+            <div class="flex items-center justify-center w-14 h-14 bg-blue-600 border-[3px] border-black dark:border-gray-700 rounded-2xl">
+                <mat-icon class="!text-3xl !w-8 !h-8 text-white">add_circle</mat-icon>
+            </div>
+            <div>
+                <h2 class="text-3xl font-black text-black dark:text-white uppercase tracking-tight leading-none">
+                    NUEVA HERRAMIENTA
+                </h2>
+                <p class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide mt-1">
+                    Registro de nueva herramienta/equipo
+                </p>
+            </div>
+        </div>
+        <button type="button" (click)="cerrar()"
+                class="w-10 h-10 flex items-center justify-center border-2 border-black dark:border-gray-700 bg-white dark:bg-[#1e293b] hover:bg-gray-100 dark:hover:bg-[#334155] rounded-lg shadow-[2px_2px_0px_0px_#000] dark:shadow-[2px_2px_0px_0px_rgba(255,255,255,0.1)] active:translate-y-[2px] active:shadow-none transition-all">
+            <mat-icon class="text-black dark:text-white text-lg">close</mat-icon>
+        </button>
+    </div>
+
+    <!-- Form Content -->
+    <div class="flex-1 overflow-y-auto p-8 bg-white dark:bg-[#0f172a]">
+        <form [formGroup]="herramientaForm" class="space-y-8">
+
+            <!-- Sección 1: Información General -->
+            <div class="bg-gray-50 dark:bg-[#1e293b] border-[3px] border-black dark:border-gray-700 rounded-2xl p-6">
+                <h3 class="text-xl font-black text-black dark:text-white uppercase mb-6 flex items-center gap-2">
+                    <mat-icon class="text-blue-600 dark:text-blue-400">info</mat-icon> INFORMACIÓN GENERAL
+                </h3>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="neo-input-wrapper">
+                        <label class="field-label text-[#111A43] dark:text-gray-300">Part Number (P/N) <span class="text-red-600">*</span></label>
+                        <mat-form-field appearance="outline" class="w-full">
+                            <input matInput formControlName="pn" placeholder="Ej: PN-12345">
+                            <mat-icon matSuffix>tag</mat-icon>
+                        </mat-form-field>
+                    </div>
+
+                    <div class="neo-input-wrapper">
+                        <label class="field-label text-[#111A43] dark:text-gray-300">Serial Number (S/N)</label>
+                        <mat-form-field appearance="outline" class="w-full">
+                            <input matInput formControlName="sn" placeholder="Ej: SN-98765">
+                            <mat-icon matSuffix>fingerprint</mat-icon>
+                        </mat-form-field>
+                    </div>
+
+                    <div class="neo-input-wrapper md:col-span-2">
+                        <label class="field-label text-[#111A43] dark:text-gray-300">Descripción <span class="text-red-600">*</span></label>
+                        <mat-form-field appearance="outline" class="w-full">
+                            <textarea matInput formControlName="descripcion" rows="3"
+                                      placeholder="Descripción detallada de la herramienta..."></textarea>
+                        </mat-form-field>
+                    </div>
+
+                    <div class="neo-input-wrapper">
+                        <label class="field-label text-[#111A43] dark:text-gray-300">Código BOA <span class="text-red-600">*</span></label>
+                        <mat-form-field appearance="outline" class="w-full">
+                            <input matInput formControlName="codigoBoa" placeholder="Ej: BOA-H-12345">
+                            <mat-icon matSuffix>qr_code</mat-icon>
+                        </mat-form-field>
+                    </div>
+
+                    <div class="neo-input-wrapper">
+                        <label class="field-label text-[#111A43] dark:text-gray-300">Ubicación</label>
+                        <mat-form-field appearance="outline" class="w-full">
+                            <input matInput formControlName="ubicacion" placeholder="Ej: 13-SUELO">
+                            <mat-icon matSuffix>place</mat-icon>
+                        </mat-form-field>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sección 2: Detalles de Inventario -->
+            <div class="bg-gray-50 dark:bg-[#1e293b] border-[3px] border-black dark:border-gray-700 rounded-2xl p-6">
+                <h3 class="text-xl font-black text-black dark:text-white uppercase mb-6 flex items-center gap-2">
+                    <mat-icon class="text-green-600 dark:text-green-400">inventory_2</mat-icon> DETALLES DE INVENTARIO
+                </h3>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="neo-input-wrapper">
+                        <label class="field-label text-[#111A43] dark:text-gray-300">Cantidad <span class="text-red-600">*</span></label>
+                        <mat-form-field appearance="outline" class="w-full">
+                            <input matInput type="number" formControlName="cantidad" placeholder="1">
+                            <mat-icon matSuffix>add_shopping_cart</mat-icon>
+                        </mat-form-field>
+                    </div>
+
+                    <div class="neo-input-wrapper">
+                        <label class="field-label text-[#111A43] dark:text-gray-300">Unidad de Medida <span class="text-red-600">*</span></label>
+                        <mat-form-field appearance="outline" class="w-full">
+                            <mat-select formControlName="um">
+                                <mat-option value="UN">Unidad (UN)</mat-option>
+                                <mat-option value="KG">Kilogramo (KG)</mat-option>
+                                <mat-option value="LT">Litro (LT)</mat-option>
+                                <mat-option value="MT">Metro (MT)</mat-option>
+                                <mat-option value="SET">Set (SET)</mat-option>
+                            </mat-select>
+                            <mat-icon matSuffix>straighten</mat-icon>
+                        </mat-form-field>
+                    </div>
+
+                    <div class="neo-input-wrapper">
+                        <label class="field-label text-[#111A43] dark:text-gray-300">Estado <span class="text-red-600">*</span></label>
+                        <mat-form-field appearance="outline" class="w-full">
+                            <mat-select formControlName="estado">
+                                <mat-option value="NUEVO">Nuevo</mat-option>
+                                <mat-option value="USADO">Usado</mat-option>
+                                <mat-option value="REPARADO">Reparado</mat-option>
+                                <mat-option value="CALIBRADO">Calibrado</mat-option>
+                            </mat-select>
+                            <mat-icon matSuffix>verified</mat-icon>
+                        </mat-form-field>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sección 3: Documentación y Recepción -->
+            <div class="bg-gray-50 dark:bg-[#1e293b] border-[3px] border-black dark:border-gray-700 rounded-2xl p-6">
+                <h3 class="text-xl font-black text-black dark:text-white uppercase mb-6 flex items-center gap-2">
+                    <mat-icon class="text-yellow-600 dark:text-yellow-400">description</mat-icon> DOCUMENTACIÓN Y RECEPCIÓN
+                </h3>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="neo-input-wrapper">
+                        <label class="field-label text-[#111A43] dark:text-gray-300">Tipo de Ingreso</label>
+                        <mat-form-field appearance="outline" class="w-full">
+                            <mat-select formControlName="tipoDe">
+                                <mat-option value="COMPRA">Compra</mat-option>
+                                <mat-option value="DONACION">Donación</mat-option>
+                                <mat-option value="TRANSFERENCIA">Transferencia</mat-option>
+                                <mat-option value="PRESTAMO">Préstamo</mat-option>
+                            </mat-select>
+                            <mat-icon matSuffix>category</mat-icon>
+                        </mat-form-field>
+                    </div>
+
+                    <div class="neo-input-wrapper">
+                        <label class="field-label text-[#111A43] dark:text-gray-300">Nro. CMR / NRT</label>
+                        <mat-form-field appearance="outline" class="w-full">
+                            <input matInput formControlName="nroCmr" placeholder="Ej: CMR-2024-001">
+                            <mat-icon matSuffix>assignment</mat-icon>
+                        </mat-form-field>
+                    </div>
+
+                    <div class="neo-input-wrapper">
+                        <label class="field-label text-[#111A43] dark:text-gray-300">Nro. Comprobante</label>
+                        <mat-form-field appearance="outline" class="w-full">
+                            <input matInput formControlName="nroComprobante" placeholder="Ej: COMP-001">
+                            <mat-icon matSuffix>receipt</mat-icon>
+                        </mat-form-field>
+                    </div>
+
+                    <div class="neo-input-wrapper">
+                        <label class="field-label text-[#111A43] dark:text-gray-300">Fecha de Ingreso</label>
+                        <mat-form-field appearance="outline" class="w-full">
+                            <input matInput type="date" formControlName="fecha">
+                            <mat-icon matSuffix>calendar_today</mat-icon>
+                        </mat-form-field>
+                    </div>
+
+                    <div class="neo-input-wrapper">
+                        <label class="field-label text-[#111A43] dark:text-gray-300">Entregado Por</label>
+                        <mat-form-field appearance="outline" class="w-full">
+                            <input matInput formControlName="entregado" placeholder="Nombre del proveedor/persona">
+                            <mat-icon matSuffix>person</mat-icon>
+                        </mat-form-field>
+                    </div>
+
+                    <div class="neo-input-wrapper">
+                        <label class="field-label text-[#111A43] dark:text-gray-300">Recibido Por</label>
+                        <mat-form-field appearance="outline" class="w-full">
+                            <input matInput formControlName="recibidoPor" placeholder="Nombre del receptor">
+                            <mat-icon matSuffix>badge</mat-icon>
+                        </mat-form-field>
+                    </div>
+
+                    <div class="neo-input-wrapper">
+                        <label class="field-label text-[#111A43] dark:text-gray-300">CI Receptor</label>
+                        <mat-form-field appearance="outline" class="w-full">
+                            <input matInput formControlName="ci" placeholder="Ej: 12345678">
+                            <mat-icon matSuffix>credit_card</mat-icon>
+                        </mat-form-field>
+                    </div>
+
+                    <div class="neo-input-wrapper">
+                        <label class="field-label text-[#111A43] dark:text-gray-300">Documentos Adjuntos</label>
+                        <mat-form-field appearance="outline" class="w-full">
+                            <input matInput formControlName="documentos" placeholder="Ej: Factura, Certificado">
+                            <mat-icon matSuffix>attach_file</mat-icon>
+                        </mat-form-field>
+                    </div>
+
+                    <div class="neo-input-wrapper md:col-span-2">
+                        <label class="field-label text-[#111A43] dark:text-gray-300">Observaciones</label>
+                        <mat-form-field appearance="outline" class="w-full">
+                            <textarea matInput formControlName="obs" rows="3"
+                                      placeholder="Observaciones adicionales..."></textarea>
+                        </mat-form-field>
+                    </div>
+                </div>
+            </div>
+
+        </form>
+    </div>
+
+    <!-- Footer con botones -->
+    <div class="flex items-center justify-end gap-4 px-8 py-6 bg-gray-50 dark:bg-[#1e293b] border-t-[3px] border-black dark:border-gray-700">
+        <button type="button" (click)="cerrar()"
+                class="h-12 px-6 bg-white dark:bg-[#0f172a] text-black dark:text-white font-black text-sm border-[3px] border-black dark:border-gray-700 rounded-full shadow-[4px_4px_0px_0px_#000] dark:shadow-[4px_4px_0px_0px_rgba(255,255,255,0.1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_0px_#000] dark:hover:shadow-[2px_2px_0px_0px_rgba(255,255,255,0.1)] active:translate-y-[4px] active:shadow-none transition-all uppercase tracking-wide flex items-center gap-2">
+            <mat-icon class="scale-90">close</mat-icon> CANCELAR
+        </button>
+        <button type="button" (click)="onSubmit()"
+                [disabled]="!herramientaForm.valid"
+                class="h-12 px-6 bg-blue-600 text-white font-black text-sm border-[3px] border-black dark:border-gray-700 rounded-full shadow-[4px_4px_0px_0px_#000] dark:shadow-[4px_4px_0px_0px_rgba(255,255,255,0.1)] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_0px_#000] dark:hover:shadow-[6px_6px_0px_0px_rgba(255,255,255,0.1)] active:translate-y-[2px] active:shadow-[2px_2px_0px_0px_#000] dark:active:shadow-[2px_2px_0px_0px_rgba(255,255,255,0.1)] transition-all uppercase tracking-wide flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-x-0 disabled:hover:translate-y-0 disabled:hover:shadow-[4px_4px_0px_0px_#000] dark:disabled:hover:shadow-[4px_4px_0px_0px_rgba(255,255,255,0.1)]">
+            <mat-icon class="scale-90">save</mat-icon> GUARDAR HERRAMIENTA
+        </button>
+    </div>
+</div>

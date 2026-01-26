@@ -1,236 +1,105 @@
-import { Overlay, OverlayRef } from '@angular/cdk/overlay';
-import { TemplatePortal } from '@angular/cdk/portal';
-import { DatePipe, NgClass, NgTemplateOutlet } from '@angular/common';
-import {
-    ChangeDetectionStrategy,
-    ChangeDetectorRef,
-    Component,
-    OnDestroy,
-    OnInit,
-    TemplateRef,
-    ViewChild,
-    ViewContainerRef,
-    ViewEncapsulation,
-} from '@angular/core';
-import { MatButton, MatButtonModule } from '@angular/material/button';
+import { Component, OnInit, signal, inject, ViewChild, TemplateRef } from '@angular/core';
+import { CommonModule, NgClass } from '@angular/common';
+import { Router } from '@angular/router';
+import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
+import { MatButtonModule } from '@angular/material/button';
+import { MatBadgeModule } from '@angular/material/badge';
 import { MatTooltipModule } from '@angular/material/tooltip';
-import { RouterLink } from '@angular/router';
-import { NotificationsService } from 'app/layout/common/notifications/notifications.service';
-import { Notification } from 'app/layout/common/notifications/notifications.types';
-import { Subject, takeUntil } from 'rxjs';
+
+export interface ToolAlert {
+    id: string;
+    priority: 'critical' | 'high' | 'medium' | 'low';
+    title: string;
+    description: string;
+    count?: number;
+    time: string;
+    link?: string;
+    icon: string;
+}
 
 @Component({
     selector: 'notifications',
-    templateUrl: './notifications.component.html',
-    encapsulation: ViewEncapsulation.None,
-    changeDetection: ChangeDetectionStrategy.OnPush,
-    exportAs: 'notifications',
+    standalone: true,
     imports: [
+        CommonModule,
+        NgClass,
         MatButtonModule,
         MatIconModule,
+        MatDialogModule,
+        MatBadgeModule,
         MatTooltipModule,
-        NgClass,
-        NgTemplateOutlet,
-        RouterLink,
-        DatePipe,
-    ]
+    ],
+    templateUrl: './notifications.component.html',
+    styleUrls: ['./notifications.component.scss']
 })
-export class NotificationsComponent implements OnInit, OnDestroy {
-    @ViewChild('notificationsOrigin') private _notificationsOrigin: MatButton;
-    @ViewChild('notificationsPanel')
-    private _notificationsPanel: TemplateRef<any>;
+export class NotificationsComponent implements OnInit {
+    private router = inject(Router);
+    private dialog = inject(MatDialog);
 
-    notifications: Notification[];
-    unreadCount: number = 0;
-    private _overlayRef: OverlayRef;
-    private _unsubscribeAll: Subject<any> = new Subject<any>();
+    @ViewChild('dialogTemplate') dialogTemplate!: TemplateRef<any>;
 
-    /**
-     * Constructor
-     */
-    constructor(
-        private _changeDetectorRef: ChangeDetectorRef,
-        private _notificationsService: NotificationsService,
-        private _overlay: Overlay,
-        private _viewContainerRef: ViewContainerRef
-    ) {}
+    alerts = signal<ToolAlert[]>([]);
+    unreadCount = signal(0);
+    criticalCount = signal(0);
 
-    // -----------------------------------------------------------------------------------------------------
-    // @ Lifecycle hooks
-    // -----------------------------------------------------------------------------------------------------
-
-    /**
-     * On init
-     */
-    ngOnInit(): void {
-        // Subscribe to notification changes
-        this._notificationsService.notifications$
-            .pipe(takeUntil(this._unsubscribeAll))
-            .subscribe((notifications: Notification[]) => {
-                // Load the notifications
-                this.notifications = notifications;
-
-                // Calculate the unread count
-                this._calculateUnreadCount();
-
-                // Mark for check
-                this._changeDetectorRef.markForCheck();
-            });
+    ngOnInit() {
+        const data: ToolAlert[] = [
+            { id: '1', priority: 'critical', title: 'CALIBRACIONES VENCIDAS', description: '12 herramientas requieren calibración.', count: 12, time: '2h', link: '/inventario', icon: 'heroicons_outline:wrench-screwdriver' },
+            { id: '2', priority: 'high', title: 'PRÉSTAMOS VENCIDOS', description: '5 préstamos fuera de fecha.', count: 5, time: '4h', link: '/salidas', icon: 'heroicons_outline:clock' },
+            { id: '3', priority: 'medium', title: 'EN CUARENTENA', description: '8 herramientas en revisión.', count: 8, time: 'Ayer', link: '/inventario', icon: 'heroicons_outline:exclamation-triangle' },
+            { id: '4', priority: 'low', title: 'STOCK BAJO', description: '3 consumibles bajos.', count: 3, time: '1d', link: '/inventario', icon: 'heroicons_outline:archive-box' }
+        ];
+        this.updateData(data);
     }
 
-    /**
-     * On destroy
-     */
-    ngOnDestroy(): void {
-        // Unsubscribe from all subscriptions
-        this._unsubscribeAll.next(null);
-        this._unsubscribeAll.complete();
-
-        // Dispose the overlay
-        if (this._overlayRef) {
-            this._overlayRef.dispose();
-        }
+    updateData(data: ToolAlert[]) {
+        this.alerts.set(data);
+        this.unreadCount.set(data.length);
+        this.criticalCount.set(data.filter(x => x.priority === 'critical' || x.priority === 'high').length);
     }
 
-    // -----------------------------------------------------------------------------------------------------
-    // @ Public methods
-    // -----------------------------------------------------------------------------------------------------
-
-    /**
-     * Open the notifications panel
-     */
-    openPanel(): void {
-        // Return if the notifications panel or its origin is not defined
-        if (!this._notificationsPanel || !this._notificationsOrigin) {
-            return;
-        }
-
-        // Create the overlay if it doesn't exist
-        if (!this._overlayRef) {
-            this._createOverlay();
-        }
-
-        // Attach the portal to the overlay
-        this._overlayRef.attach(
-            new TemplatePortal(this._notificationsPanel, this._viewContainerRef)
-        );
-    }
-
-    /**
-     * Close the notifications panel
-     */
-    closePanel(): void {
-        this._overlayRef.detach();
-    }
-
-    /**
-     * Mark all notifications as read
-     */
-    markAllAsRead(): void {
-        // Mark all as read
-        this._notificationsService.markAllAsRead().subscribe();
-    }
-
-    /**
-     * Toggle read status of the given notification
-     */
-    toggleRead(notification: Notification): void {
-        // Toggle the read status
-        notification.read = !notification.read;
-
-        // Update the notification
-        this._notificationsService
-            .update(notification.id, notification)
-            .subscribe();
-    }
-
-    /**
-     * Delete the given notification
-     */
-    delete(notification: Notification): void {
-        // Delete the notification
-        this._notificationsService.delete(notification.id).subscribe();
-    }
-
-    /**
-     * Track by function for ngFor loops
-     *
-     * @param index
-     * @param item
-     */
-    trackByFn(index: number, item: any): any {
-        return item.id || index;
-    }
-
-    // -----------------------------------------------------------------------------------------------------
-    // @ Private methods
-    // -----------------------------------------------------------------------------------------------------
-
-    /**
-     * Create the overlay
-     */
-    private _createOverlay(): void {
-        // Create the overlay
-        this._overlayRef = this._overlay.create({
+    openDialog() {
+        this.dialog.open(this.dialogTemplate, {
+            panelClass: 'neo-dialog-container',
             hasBackdrop: true,
-            backdropClass: 'erp-backdrop-on-mobile',
-            scrollStrategy: this._overlay.scrollStrategies.block(),
-            positionStrategy: this._overlay
-                .position()
-                .flexibleConnectedTo(
-                    this._notificationsOrigin._elementRef.nativeElement
-                )
-                .withLockedPosition(true)
-                .withPush(true)
-                .withPositions([
-                    {
-                        originX: 'start',
-                        originY: 'bottom',
-                        overlayX: 'start',
-                        overlayY: 'top',
-                    },
-                    {
-                        originX: 'start',
-                        originY: 'top',
-                        overlayX: 'start',
-                        overlayY: 'bottom',
-                    },
-                    {
-                        originX: 'end',
-                        originY: 'bottom',
-                        overlayX: 'end',
-                        overlayY: 'top',
-                    },
-                    {
-                        originX: 'end',
-                        originY: 'top',
-                        overlayX: 'end',
-                        overlayY: 'bottom',
-                    },
-                ]),
-        });
-
-        // Detach the overlay from the portal on backdrop click
-        this._overlayRef.backdropClick().subscribe(() => {
-            this._overlayRef.detach();
+            autoFocus: false,
+            // IMPORTANTE: maxWidth y width se controlan por CSS para responsividad
+            maxWidth: '100vw',
+            width: 'auto'
         });
     }
 
-    /**
-     * Calculate the unread count
-     *
-     * @private
-     */
-    private _calculateUnreadCount(): void {
-        let count = 0;
+    closeDialog() {
+        this.dialog.closeAll();
+    }
 
-        if (this.notifications && this.notifications.length) {
-            count = this.notifications.filter(
-                (notification) => !notification.read
-            ).length;
-        }
+    navigateToAlert(alert: ToolAlert) {
+        this.closeDialog();
+        if (alert.link) this.router.navigate([alert.link]);
+    }
 
-        this.unreadCount = count;
+    dismissAlert(event: Event, id: string) {
+        event.stopPropagation();
+        const current = this.alerts().filter(x => x.id !== id);
+        this.updateData(current);
+    }
+
+    markAllAsRead() {
+        this.unreadCount.set(0);
+    }
+
+    goToNotificationCenter() {
+        this.closeDialog();
+        this.router.navigate(['/dashboard']);
+    }
+
+    getPriorityClass(priority: string) {
+        return `priority-${priority}`;
+    }
+
+    getPriorityLabel(priority: string) {
+        const map: Record<string, string> = { critical: 'CRÍTICO', high: 'ALTO', medium: 'MEDIO', low: 'BAJO' };
+        return map[priority] || 'INFO';
     }
 }

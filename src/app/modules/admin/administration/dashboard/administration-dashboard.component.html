@@ -1,0 +1,278 @@
+<div class="flex flex-col w-full h-full bg-[#FFF] dark:bg-[#0a0f29] transition-colors duration-300 font-sans overflow-hidden">
+
+    <div class="flex-1 overflow-y-auto p-6 md:p-8 relative">
+
+        <!-- Decorative shapes -->
+        <div class="fixed top-20 right-10 w-40 h-40 bg-[#111A43] rounded-full border-[3px] border-black opacity-5 pointer-events-none"></div>
+        <div class="fixed bottom-10 left-10 w-24 h-24 bg-yellow-400 rotate-12 border-[3px] border-black opacity-10 pointer-events-none"></div>
+
+        <div class="max-w-[1800px] mx-auto relative z-10">
+
+            <!-- Header Section -->
+            <div class="flex flex-col md:flex-row items-start md:items-center justify-between mb-8 gap-4">
+                <div class="flex items-center gap-6">
+                    <div class="flex items-center justify-center w-16 h-16 md:w-20 md:h-20 bg-white dark:bg-slate-800 border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] rounded-xl transform hover:rotate-6 transition-transform duration-300">
+                        <mat-icon class="!text-4xl md:!text-5xl !w-10 md:!w-12 !h-10 md:!h-12 text-black dark:text-white" svgIcon="heroicons_outline:chart-bar"></mat-icon>
+                    </div>
+                    <div>
+                        <h1 class="text-3xl md:text-5xl lg:text-6xl font-black text-black dark:text-white uppercase tracking-tighter drop-shadow-[3px_3px_0px_rgba(255,255,255,0.5)] dark:drop-shadow-none leading-none">
+                            DASHBOARD
+                        </h1>
+                        <div class="flex items-center gap-2 mt-2">
+                            <span class="w-3 h-3 bg-green-500 border-2 border-black rounded-full animate-pulse"></span>
+                            <p class="text-sm font-bold bg-[#111A43] text-white px-3 py-1 inline-block transform -rotate-1 border-2 border-black">
+                                {{ currentDate | date: 'dd/MM/yyyy HH:mm' }}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-3 md:gap-4">
+                    <button (click)="goBack()"
+                            class="h-10 md:h-12 px-4 md:px-6 bg-white hover:bg-gray-200 dark:bg-slate-700 dark:text-white text-black font-black border-[3px] border-black rounded-xl shadow-[4px_4px_0px_0px_#000] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_0px_#000] active:translate-x-[0px] active:translate-y-[0px] active:shadow-none transition-all uppercase tracking-wide flex items-center gap-2 cursor-pointer text-sm md:text-base">
+                        <span class="hidden sm:inline">Volver</span>
+                    </button>
+
+                    <button (click)="refreshData()"
+                            class="h-10 md:h-12 px-4 md:px-6 bg-yellow-400 hover:bg-yellow-300 dark:bg-yellow-400 dark:hover:bg-yellow-300 text-black font-black border-[3px] border-black rounded-xl shadow-[4px_4px_0px_0px_#000] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_0px_#000] active:translate-x-[0px] active:translate-y-[0px] active:shadow-none transition-all uppercase tracking-wide flex items-center gap-2 cursor-pointer text-sm md:text-base">
+                        <span class="hidden sm:inline">Actualizar</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Loading Overlay -->
+            <div *ngIf="loading" class="fixed inset-0 bg-white/80 dark:bg-black/80 backdrop-blur-sm flex items-center justify-center z-50">
+                <div class="bg-white p-8 border-[3px] border-black shadow-[8px_8px_0px_0px_#111A43] flex flex-col items-center gap-4 rounded-xl">
+                    <mat-spinner diameter="50"></mat-spinner>
+                    <p class="font-black uppercase text-[#111A43] tracking-widest">Cargando...</p>
+                </div>
+            </div>
+
+            <div *ngIf="!loading" class="space-y-8">
+
+                <!-- Stats Cards Grid -->
+                <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
+
+                    <!-- USUARIOS Stats Card -->
+                    <div class="neo-card-base dark:bg-slate-800 dark:border-black p-0 group overflow-hidden border-[3px] border-black rounded-2xl shadow-[5px_5px_0px_0px_rgba(0,0,0,1)]">
+                        <div class="bg-blue-600 p-4 border-b-[3px] border-black flex justify-between items-center">
+                            <h3 class="text-lg md:text-xl font-black text-black uppercase drop-shadow-md">Usuarios</h3>
+                            <mat-icon class="!text-3xl md:!text-4xl !w-8 md:!w-10 !h-8 md:!h-10 text-black" svgIcon="heroicons_outline:user-group"></mat-icon>
+                        </div>
+                        <div class="p-5 md:p-6 bg-white dark:bg-slate-800">
+                            <div class="flex items-end justify-between mb-4">
+                                <span class="text-4xl md:text-5xl font-black text-black dark:text-white">{{ stats.usuarios.total }}</span>
+                                <span class="text-xs font-bold px-2 py-1 bg-blue-100 border-2 border-black rounded text-blue-800 mb-2 shadow-[2px_2px_0px_0px_rgba(0,0,0,0.2)]">TOTAL</span>
+                            </div>
+
+                            <div class="space-y-2 mb-6">
+                                <div class="flex items-center justify-between text-xs font-bold border-b-2 border-dashed border-gray-300 pb-2">
+                                    <span class="flex items-center gap-2 dark:text-gray-300"><div class="w-3 h-3 bg-green-500 border-2 border-black rounded-full"></div> Activos</span>
+                                    <span class="text-black dark:text-white font-black">{{ stats.usuarios.activos }}</span>
+                                </div>
+                                <div class="flex items-center justify-between text-xs font-bold border-b-2 border-dashed border-gray-300 pb-2">
+                                    <span class="flex items-center gap-2 dark:text-blakc"><div class="w-3 h-3 bg-red-500 border-2 border-black rounded-full"></div> Inactivos</span>
+                                    <span class="text-black dark:text-white font-black">{{ stats.usuarios.inactivos }}</span>
+                                </div>
+                            </div>
+
+                            <button (click)="navegarA('/administration/usuarios')"
+                                    class="w-full py-2.5 bg-white dark:bg-slate-700 hover:bg-blue-50 dark:hover:bg-slate-600 text-black dark:text-white font-black text-xs border-[3px] border-black rounded-xl shadow-[3px_3px_0px_0px_#000] hover:shadow-[4px_4px_0px_0px_#000] hover:translate-x-[-1px] hover:translate-y-[-1px] active:translate-y-0 active:translate-x-0 active:shadow-none transition-all uppercase flex justify-center gap-2 items-center">
+                                Gestionar <mat-icon class="!text-sm !w-4 !h-4">arrow_forward</mat-icon>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- PROVEEDORES Stats Card -->
+                    <div class="neo-card-base dark:bg-slate-800 dark:border-black p-0 group overflow-hidden border-[3px] border-black rounded-2xl shadow-[5px_5px_0px_0px_rgba(0,0,0,1)]">
+                        <div class="bg-emerald-600 p-4 border-b-[3px] border-black flex justify-between items-center">
+                            <h3 class="text-lg md:text-xl font-black text-black uppercase drop-shadow-md">Proveedores</h3>
+                            <mat-icon class="!text-3xl md:!text-4xl !w-8 md:!w-10 !h-8 md:!h-10 text-black" svgIcon="heroicons_outline:building-office-2"></mat-icon>
+                        </div>
+                        <div class="p-5 md:p-6 bg-white dark:bg-slate-800">
+                            <div class="flex items-end justify-between mb-4">
+                                <span class="text-4xl md:text-5xl font-black text-black dark:text-white">{{ stats.proveedores.total }}</span>
+                                <span class="text-xs font-bold px-2 py-1 bg-emerald-100 border-2 border-black rounded text-emerald-800 mb-2 shadow-[2px_2px_0px_0px_rgba(0,0,0,0.2)]">TOTAL</span>
+                            </div>
+
+                            <div class="space-y-2 mb-6">
+                                <div class="flex items-center justify-between text-xs font-bold border-b-2 border-dashed border-gray-300 pb-2">
+                                    <span class="flex items-center gap-2 dark:text-gray-300"><div class="w-3 h-3 bg-green-500 border-2 border-black rounded-full"></div> Activos</span>
+                                    <span class="text-black dark:text-white font-black">{{ stats.proveedores.activos }}</span>
+                                </div>
+                                <div class="flex flex-wrap gap-1 mt-2">
+                                     <span *ngFor="let item of stats.proveedores.porTipo | slice:0:3"
+                                           class="text-[10px] font-black px-2 py-0.5 bg-gray-100 dark:bg-slate-600 border-2 border-black rounded uppercase shadow-[1px_1px_0px_0px_rgba(0,0,0,0.3)]">
+                                        {{ item.tipo | slice:0:5 }}
+                                    </span>
+                                </div>
+                            </div>
+
+                            <button (click)="navegarA('/administration/proveedores')"
+                                    class="w-full py-2.5 bg-white dark:bg-slate-700 hover:bg-emerald-50 dark:hover:bg-slate-600 text-black dark:text-white font-black text-xs border-[3px] border-black rounded-xl shadow-[3px_3px_0px_0px_#000] hover:shadow-[4px_4px_0px_0px_#000] hover:translate-x-[-1px] hover:translate-y-[-1px] active:translate-y-0 active:translate-x-0 active:shadow-none transition-all uppercase flex justify-center gap-2 items-center">
+                                Gestionar <mat-icon class="!text-sm !w-4 !h-4">arrow_forward</mat-icon>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- CLIENTES Stats Card -->
+                    <div class="neo-card-base dark:bg-slate-800 dark:border-black p-0 group overflow-hidden border-[3px] border-black rounded-2xl shadow-[5px_5px_0px_0px_rgba(0,0,0,1)]">
+                        <div class="bg-amber-500 p-4 border-b-[3px] border-black flex justify-between items-center">
+                            <h3 class="text-lg md:text-xl font-black text-black uppercase drop-shadow-md">Clientes</h3>
+                            <mat-icon class="!text-3xl md:!text-4xl !w-8 md:!w-10 !h-8 md:!h-10 text-black" svgIcon="heroicons_outline:users"></mat-icon>
+                        </div>
+                        <div class="p-5 md:p-6 bg-white dark:bg-slate-800">
+                            <div class="flex items-end justify-between mb-4">
+                                <span class="text-4xl md:text-5xl font-black text-black dark:text-white">{{ stats.clientes.total }}</span>
+                                <span class="text-xs font-bold px-2 py-1 bg-amber-100 border-2 border-black rounded text-amber-800 mb-2 shadow-[2px_2px_0px_0px_rgba(0,0,0,0.2)]">TOTAL</span>
+                            </div>
+
+                            <div class="space-y-2 mb-6">
+                                <div class="flex items-center justify-between text-xs font-bold border-b-2 border-dashed border-gray-300 pb-2">
+                                    <span class="flex items-center gap-2 dark:text-gray-300"><div class="w-3 h-3 bg-green-500 border-2 border-black rounded-full"></div> Activos</span>
+                                    <span class="text-black dark:text-white font-black">{{ stats.clientes.activos }}</span>
+                                </div>
+                                <div class="flex items-center justify-between text-xs font-bold border-b-2 border-dashed border-gray-300 pb-2">
+                                    <span class="flex items-center gap-2 dark:text-gray-300"><div class="w-3 h-3 bg-red-500 border-2 border-black rounded-full"></div> Inactivos</span>
+                                    <span class="text-black dark:text-white font-black">{{ stats.clientes.inactivos }}</span>
+                                </div>
+                            </div>
+
+                            <button (click)="navegarA('/administration/clientes')"
+                                    class="w-full py-2.5 bg-white dark:bg-slate-700 hover:bg-amber-50 dark:hover:bg-slate-600 text-black dark:text-white font-black text-xs border-[3px] border-black rounded-xl shadow-[3px_3px_0px_0px_#000] hover:shadow-[4px_4px_0px_0px_#000] hover:translate-x-[-1px] hover:translate-y-[-1px] active:translate-y-0 active:translate-x-0 active:shadow-none transition-all uppercase flex justify-center gap-2 items-center">
+                                Gestionar <mat-icon class="!text-sm !w-4 !h-4">arrow_forward</mat-icon>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- ROLES Stats Card -->
+                    <div class="neo-card-base dark:bg-slate-800 dark:border-black p-0 group overflow-hidden border-[3px] border-black rounded-2xl shadow-[5px_5px_0px_0px_rgba(0,0,0,1)]">
+                        <div class="bg-purple-600 p-4 border-b-[3px] border-black flex justify-between items-center">
+                            <h3 class="text-lg md:text-xl font-black text-black uppercase drop-shadow-md">Roles</h3>
+                            <mat-icon class="!text-3xl md:!text-4xl !w-8 md:!w-10 !h-8 md:!h-10 text-black" svgIcon="heroicons_outline:shield-check"></mat-icon>
+                        </div>
+                        <div class="p-5 md:p-6 bg-white dark:bg-slate-800">
+                            <div class="flex items-end justify-between mb-4">
+                                <span class="text-4xl md:text-5xl font-black text-black dark:text-white">{{ stats.roles.total }}</span>
+                                <span class="text-xs font-bold px-2 py-1 bg-purple-100 border-2 border-black rounded text-purple-800 mb-2 shadow-[2px_2px_0px_0px_rgba(0,0,0,0.2)]">TOTAL</span>
+                            </div>
+
+                            <div class="space-y-2 mb-6">
+                                <div class="flex items-center justify-between text-xs font-bold border-b-2 border-dashed border-gray-300 pb-2">
+                                    <span class="flex items-center gap-2 dark:text-gray-300"><div class="w-3 h-3 bg-green-500 border-2 border-black rounded-full"></div> Activos</span>
+                                    <span class="text-black dark:text-white font-black">{{ stats.roles.activos }}</span>
+                                </div>
+                                <div class="flex items-center justify-between text-xs font-bold border-b-2 border-dashed border-gray-300 pb-2">
+                                    <span class="flex items-center gap-2 dark:text-gray-300"><div class="w-3 h-3 bg-purple-500 border-2 border-black rounded-full"></div> Custom</span>
+                                    <span class="text-black dark:text-white font-black">{{ stats.roles.personalizados }}</span>
+                                </div>
+                            </div>
+
+                            <button (click)="navegarA('/administration/roles')"
+                                    class="w-full py-2.5 bg-white dark:bg-slate-700 hover:bg-purple-50 dark:hover:bg-slate-600 text-black dark:text-white font-black text-xs border-[3px] border-black rounded-xl shadow-[3px_3px_0px_0px_#000] hover:shadow-[4px_4px_0px_0px_#000] hover:translate-x-[-1px] hover:translate-y-[-1px] active:translate-y-0 active:translate-x-0 active:shadow-none transition-all uppercase flex justify-center gap-2 items-center">
+                                Gestionar <mat-icon class="!text-sm !w-4 !h-4">arrow_forward</mat-icon>
+                            </button>
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- Activity Log & Quick Actions -->
+                <div class="grid grid-cols-1 xl:grid-cols-3 gap-6 md:gap-8">
+
+                    <!-- Activity Log -->
+                    <div class="xl:col-span-2 neo-card-base dark:bg-slate-800 p-0 flex flex-col border-[3px] border-black rounded-2xl shadow-[5px_5px_0px_0px_rgba(0,0,0,1)] overflow-hidden">
+                        <div class="p-4 bg-[#111A43] dark:bg-slate-900 border-b-[3px] border-black flex justify-between items-center">
+                            <h3 class="text-lg md:text-xl font-black uppercase text-white flex items-center gap-2">
+                                <mat-icon class="text-white">history</mat-icon> Registro de Actividad
+                            </h3>
+                            <span class="text-xs font-bold border-2 border-black bg-yellow-400 text-black px-3 py-0.5 rounded-full uppercase">Live</span>
+                        </div>
+
+                        <div class="overflow-x-auto bg-white dark:bg-slate-800">
+                            <table class="w-full">
+                                <thead class="bg-gray-100 dark:bg-slate-900 border-b-[3px] border-black">
+                                <tr>
+                                    <th class="text-left p-3 md:p-4 font-black text-xs uppercase text-black dark:text-white w-28 md:w-32">FECHA</th>
+                                    <th class="text-left p-3 md:p-4 font-black text-xs uppercase text-black dark:text-white w-20 md:w-24">ACCIÓN</th>
+                                    <th class="text-left p-3 md:p-4 font-black text-xs uppercase text-black dark:text-white">DETALLE</th>
+                                    <th class="text-right p-3 md:p-4 font-black text-xs uppercase text-black dark:text-white w-28 md:w-32">USUARIO</th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                <tr *ngFor="let item of actividadReciente"
+                                    class="border-b-2 border-gray-200 dark:border-slate-700/50 hover:bg-yellow-50 dark:hover:bg-slate-700 transition-colors group">
+                                    <td class="p-3 md:p-4">
+                                        <div class="text-xs font-bold text-gray-600 dark:text-gray-400 group-hover:text-black dark:group-hover:text-white font-mono">{{ formatearFecha(item.fecha) }}</div>
+                                    </td>
+                                    <td class="p-3 md:p-4">
+                                            <span [class]="getTipoBgColor(item.tipo)"
+                                                  class="inline-block px-2 py-0.5 border-2 border-black rounded text-[10px] font-black uppercase shadow-[2px_2px_0px_0px_rgba(0,0,0,0.3)]">
+                                                {{ item.tipo }}
+                                            </span>
+                                    </td>
+                                    <td class="p-3 md:p-4">
+                                        <div class="flex flex-col">
+                                            <span class="text-xs font-black uppercase text-black dark:text-white">{{ item.entidad }}</span>
+                                            <span class="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase">{{ item.detalle }}</span>
+                                        </div>
+                                    </td>
+                                    <td class="p-3 md:p-4 text-right">
+                                        <span class="text-xs font-bold bg-[#111A43] text-white px-2 py-1 rounded uppercase">{{ item.usuario }}</span>
+                                    </td>
+                                </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Table Footer -->
+                        <div class="p-3 bg-gray-50 dark:bg-slate-900 border-t-[3px] border-black flex justify-between items-center mt-auto">
+                            <span class="text-xs font-bold text-gray-600 dark:text-gray-400 uppercase">{{ actividadReciente.length }} registros</span>
+                            <span class="text-[10px] font-black text-gray-500 dark:text-gray-500 uppercase tracking-wider">Actualizado en tiempo real</span>
+                        </div>
+                    </div>
+
+                    <!-- Quick Actions -->
+                    <div class="neo-card-base dark:bg-slate-800 p-5 md:p-6 flex flex-col gap-4 border-[3px] border-black rounded-2xl shadow-[5px_5px_0px_0px_rgba(0,0,0,1)]">
+                        <div class="flex justify-between items-start mb-2 border-b-[3px] border-black pb-3">
+                            <h3 class="text-lg font-black uppercase text-black dark:text-white flex items-center gap-2">
+                                <mat-icon class="text-yellow-500">bolt</mat-icon> Acciones Rápidas
+                            </h3>
+                        </div>
+
+                        <button (click)="crearUsuario()"
+                                class="w-full h-14 bg-white hover:bg-blue-50 dark:bg-slate-700 dark:hover:bg-slate-600 text-black dark:text-white font-black text-sm border-[3px] border-black rounded-xl shadow-[4px_4px_0px_0px_#000] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_0px_#000] active:translate-x-0 active:translate-y-0 active:shadow-none transition-all uppercase flex items-center justify-between px-4 group">
+                            <span>Crear Usuario</span>
+                            <div class="w-9 h-9 bg-blue-600 border-2 border-black rounded-lg flex items-center justify-center text-white group-hover:scale-110 transition-transform shadow-[2px_2px_0px_0px_rgba(0,0,0,0.3)]">
+                                <mat-icon class="!text-lg !w-5 !h-5">add</mat-icon>
+                            </div>
+                        </button>
+
+                        <button (click)="crearProveedor()"
+                                class="w-full h-14 bg-white hover:bg-emerald-50 dark:bg-slate-700 dark:hover:bg-slate-600 text-black dark:text-white font-black text-sm border-[3px] border-black rounded-xl shadow-[4px_4px_0px_0px_#000] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_0px_#000] active:translate-x-0 active:translate-y-0 active:shadow-none transition-all uppercase flex items-center justify-between px-4 group">
+                            <span>Crear Proveedor</span>
+                            <div class="w-9 h-9 bg-emerald-600 border-2 border-black rounded-lg flex items-center justify-center text-white group-hover:scale-110 transition-transform shadow-[2px_2px_0px_0px_rgba(0,0,0,0.3)]">
+                                <mat-icon class="!text-lg !w-5 !h-5">add</mat-icon>
+                            </div>
+                        </button>
+
+                        <button (click)="crearCliente()"
+                                class="w-full h-14 bg-white hover:bg-amber-50 dark:bg-slate-700 dark:hover:bg-slate-600 text-black dark:text-white font-black text-sm border-[3px] border-black rounded-xl shadow-[4px_4px_0px_0px_#000] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_0px_#000] active:translate-x-0 active:translate-y-0 active:shadow-none transition-all uppercase flex items-center justify-between px-4 group">
+                            <span>Crear Cliente</span>
+                            <div class="w-9 h-9 bg-amber-500 border-2 border-black rounded-lg flex items-center justify-center text-black group-hover:scale-110 transition-transform shadow-[2px_2px_0px_0px_rgba(0,0,0,0.3)]">
+                                <mat-icon class="!text-lg !w-5 !h-5">add</mat-icon>
+                            </div>
+                        </button>
+
+                        <div class="mt-auto p-4 bg-[#111A43] border-[3px] border-black text-white text-center rounded-xl shadow-[3px_3px_0px_0px_rgba(0,0,0,0.5)]">
+                            <p class="text-[10px] font-black uppercase tracking-wider">Sistema de Administración v2.0</p>
+                        </div>
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+    </div>
+</div>

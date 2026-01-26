@@ -1,0 +1,211 @@
+<div class="flex flex-col w-full h-full bg-[#f8f9fa] dark:bg-[#0a0f29] transition-colors duration-300 font-sans overflow-hidden relative"
+     cdkDrag cdkDragRootElement=".cdk-overlay-pane" cdkDragBoundary=".cdk-overlay-container">
+
+    <div cdkDragHandle class="relative z-20 px-8 py-6 bg-white dark:bg-slate-800 border-b-[3px] border-black flex items-center justify-between cursor-move select-none">
+        <div class="flex items-center gap-4">
+            <div class="w-14 h-14 bg-amber-500 border-[3px] border-black rounded-xl shadow-[4px_4px_0px_0px_#000] flex items-center justify-center transform -rotate-3">
+                <mat-icon class="!text-3xl !w-8 !h-8 text-black" svgIcon="heroicons_outline:users"></mat-icon>
+            </div>
+            <div>
+                <h2 class="text-3xl font-[1000] text-black dark:text-white uppercase tracking-tighter leading-none">
+                    {{ isEditMode ? 'EDITAR CLIENTE' : 'NUEVO CLIENTE' }}
+                </h2>
+                <div class="flex items-center gap-2 mt-1">
+                    <span class="w-2 h-2 bg-amber-500 rounded-full animate-pulse"></span>
+                    <p class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest">
+                        Gestión Comercial
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <button type="button" (click)="onCancel()"
+                class="group w-10 h-10 flex items-center justify-center border-[3px] border-black bg-red-100 hover:bg-red-500 rounded-lg shadow-[3px_3px_0px_0px_#000] active:translate-y-[2px] active:shadow-none transition-all">
+            <mat-icon class="text-black group-hover:text-white font-black">close</mat-icon>
+        </button>
+    </div>
+
+    <div class="flex-1 overflow-y-auto bg-[#f8f9fa] dark:bg-[#0f172a] p-6 md:p-8">
+        <form [formGroup]="clienteForm" class="max-w-[1600px] mx-auto">
+
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+
+                <div class="lg:col-span-4 space-y-6">
+
+                    <div class="bg-white dark:bg-slate-800 border-[3px] border-black rounded-2xl p-6 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] sticky top-0">
+                        <label class="block text-xs font-black uppercase mb-4 text-gray-500 dark:text-gray-400 text-center">
+                            Seleccione Tipo de Cliente
+                        </label>
+
+                        <div class="grid grid-cols-2 gap-3 mb-6">
+                            <div (click)="setClientType('EMPRESA')"
+                                 class="cursor-pointer border-[3px] rounded-xl p-4 flex flex-col items-center gap-2 transition-all duration-200"
+                                 [ngClass]="clienteForm.get('tipo_cliente')?.value === 'EMPRESA'
+                                    ? 'bg-amber-100 border-black shadow-[4px_4px_0px_0px_#000] scale-105'
+                                    : 'bg-white dark:bg-slate-700 border-gray-300 dark:border-gray-600 opacity-60 hover:opacity-100'">
+                                <mat-icon class="!text-4xl !w-10 !h-10"
+                                          [class.text-black]="clienteForm.get('tipo_cliente')?.value === 'EMPRESA'">business</mat-icon>
+                                <span class="text-xs font-black uppercase">Empresa</span>
+                            </div>
+
+                            <div (click)="setClientType('PERSONA')"
+                                 class="cursor-pointer border-[3px] rounded-xl p-4 flex flex-col items-center gap-2 transition-all duration-200"
+                                 [ngClass]="clienteForm.get('tipo_cliente')?.value === 'PERSONA'
+                                    ? 'bg-amber-100 border-black shadow-[4px_4px_0px_0px_#000] scale-105'
+                                    : 'bg-white dark:bg-slate-700 border-gray-300 dark:border-gray-600 opacity-60 hover:opacity-100'">
+                                <mat-icon class="!text-4xl !w-10 !h-10"
+                                          [class.text-black]="clienteForm.get('tipo_cliente')?.value === 'PERSONA'">person</mat-icon>
+                                <span class="text-xs font-black uppercase">Persona</span>
+                            </div>
+                        </div>
+
+                        <div class="flex flex-col items-center py-4 border-t-2 border-dashed border-gray-300 dark:border-gray-600">
+                            <div class="w-24 h-24 bg-gray-100 dark:bg-slate-700 border-[3px] border-black rounded-full flex items-center justify-center mb-4 shadow-sm relative overflow-hidden group">
+                                <mat-icon class="!text-5xl !w-12 !h-12 text-gray-400 group-hover:scale-110 transition-transform">
+                                    {{ clienteForm.get('tipo_cliente')?.value === 'EMPRESA' ? 'store' : 'face' }}
+                                </mat-icon>
+                                <div class="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
+                                    <mat-icon class="text-white">edit</mat-icon>
+                                </div>
+                            </div>
+                            <div class="w-full text-center">
+                                <p class="text-xs font-bold text-gray-400 uppercase mb-1">Nombre Visual</p>
+                                <h3 class="text-lg font-black truncate px-2">
+                                    {{ clienteForm.get('nombre')?.value || 'Nuevo Cliente' }}
+                                </h3>
+                            </div>
+                        </div>
+
+                        <div class="space-y-3 mt-4">
+                            <div class="group">
+                                <label class="field-label">NIT / CI</label>
+                                <input type="text" formControlName="nit" class="neo-input font-mono text-center" placeholder="0000000">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="lg:col-span-8 space-y-6">
+
+                    <div class="bg-white dark:bg-slate-800 border-[3px] border-black rounded-2xl p-6 shadow-[6px_6px_0px_0px_rgba(0,0,0,0.2)]">
+                        <div class="flex items-center gap-2 mb-6 border-b-2 border-gray-100 dark:border-gray-700 pb-2">
+                            <mat-icon class="text-amber-600">badge</mat-icon>
+                            <h3 class="text-lg font-[1000] uppercase">Información Básica</h3>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div class="group md:col-span-2">
+                                <label class="field-label">Nombre Completo <span class="text-red-500">*</span></label>
+                                <input type="text" formControlName="nombre" class="neo-input" placeholder="Nombre del cliente o empresa">
+                                <mat-error *ngIf="clienteForm.get('nombre')?.invalid && clienteForm.get('nombre')?.touched" class="text-[10px] font-bold text-red-500 mt-1">
+                                    Requerido
+                                </mat-error>
+                            </div>
+
+                            <div class="group md:col-span-2" *ngIf="clienteForm.get('tipo_cliente')?.value === 'EMPRESA'">
+                                <label class="field-label">Razón Social <span class="text-red-500">*</span></label>
+                                <input type="text" formControlName="razon_social" class="neo-input bg-amber-50 dark:bg-amber-900/10" placeholder="Nombre legal registrado">
+                            </div>
+
+                            <div class="group">
+                                <label class="field-label">Registro Fiscal</label>
+                                <input type="text" formControlName="registro_fiscal" class="neo-input" placeholder="Opcional">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-white dark:bg-slate-800 border-[3px] border-black rounded-2xl p-6 shadow-[6px_6px_0px_0px_rgba(0,0,0,0.2)]">
+                        <div class="flex items-center gap-2 mb-6 border-b-2 border-gray-100 dark:border-gray-700 pb-2">
+                            <mat-icon class="text-blue-600">contact_mail</mat-icon>
+                            <h3 class="text-lg font-[1000] uppercase">Contacto y Ubicación</h3>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div class="md:col-span-2 group">
+                                <label class="field-label">Dirección</label>
+                                <div class="relative">
+                                    <mat-icon class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">place</mat-icon>
+                                    <input type="text" formControlName="direccion" class="neo-input pl-10" placeholder="Dirección completa">
+                                </div>
+                            </div>
+
+                            <div class="group">
+                                <label class="field-label">Ciudad <span class="text-red-500">*</span></label>
+                                <input type="text" formControlName="ciudad" class="neo-input">
+                            </div>
+                            <div class="group">
+                                <label class="field-label">País <span class="text-red-500">*</span></label>
+                                <input type="text" formControlName="pais" class="neo-input">
+                            </div>
+
+                            <div class="group">
+                                <label class="field-label">Email Principal <span class="text-red-500">*</span></label>
+                                <div class="relative">
+                                    <mat-icon class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">email</mat-icon>
+                                    <input type="email" formControlName="email" class="neo-input pl-10">
+                                </div>
+                            </div>
+                            <div class="group">
+                                <label class="field-label">Teléfono <span class="text-red-500">*</span></label>
+                                <div class="relative">
+                                    <mat-icon class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">phone</mat-icon>
+                                    <input type="text" formControlName="telefono" class="neo-input pl-10">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-amber-50 dark:bg-amber-900/10 border-2 border-dashed border-amber-300 dark:border-amber-700 rounded-xl p-4">
+                        <h4 class="font-black text-amber-800 dark:text-amber-200 uppercase text-sm mb-4 flex items-center gap-2">
+                            <mat-icon class="text-sm">person_pin</mat-icon> Persona de Contacto / Representante
+                        </h4>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div class="group md:col-span-3">
+                                <label class="field-label !text-amber-800 dark:text-amber-200">Nombre del Contacto <span class="text-red-500">*</span></label>
+                                <input type="text" formControlName="contacto_principal" class="neo-input bg-white" placeholder="Ej. Gerente de Compras">
+                            </div>
+                            <div class="group">
+                                <label class="field-label !text-amber-800 dark:text-amber-200">Celular Directo</label>
+                                <input type="text" formControlName="telefono_contacto" class="neo-input bg-white">
+                            </div>
+                            <div class="group md:col-span-2">
+                                <label class="field-label !text-amber-800 dark:text-amber-200">Email Directo</label>
+                                <input type="text" formControlName="email_contacto" class="neo-input bg-white">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-white dark:bg-slate-800 border-[3px] border-black rounded-2xl p-6 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+                        <label class="field-label mb-2 flex items-center gap-2">
+                            <mat-icon class="text-gray-400 text-sm">sticky_note_2</mat-icon> Observaciones Adicionales
+                        </label>
+                        <textarea formControlName="observaciones" rows="3" class="neo-input resize-none h-auto py-3" placeholder="Historial, preferencias, notas importantes..."></textarea>
+                    </div>
+
+                </div>
+
+            </div>
+        </form>
+    </div>
+
+    <div class="px-8 py-5 bg-white dark:bg-slate-800 border-t-[3px] border-black flex justify-between items-center relative z-20 shadow-[0_-4px_20px_rgba(0,0,0,0.1)]">
+        <div class="hidden md:flex items-center gap-2 text-xs font-bold text-gray-500">
+            <mat-icon class="!text-sm">verified_user</mat-icon>
+            <span>Registro seguro y auditado.</span>
+        </div>
+
+        <div class="flex items-center gap-4 w-full md:w-auto justify-end">
+            <button type="button" (click)="onCancel()"
+                    class="px-6 py-3 bg-gray-100 dark:bg-slate-700 text-black dark:text-white font-black text-sm border-[3px] border-black rounded-lg shadow-[4px_4px_0px_0px_#000] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_0px_#000] active:translate-y-[4px] active:shadow-none transition-all uppercase tracking-wide">
+                CANCELAR
+            </button>
+            <button type="button" (click)="onSubmit()"
+                    [disabled]="!clienteForm.valid"
+                    class="px-8 py-3 bg-amber-500 hover:bg-amber-400 text-black font-black text-sm border-[3px] border-black rounded-lg shadow-[4px_4px_0px_0px_#000] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_0px_#000] active:translate-y-[2px] active:shadow-[2px_2px_0px_0px_#000] transition-all uppercase tracking-wide flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
+                <mat-icon>save</mat-icon>
+                {{ isEditMode ? 'GUARDAR CAMBIOS' : 'CREAR CLIENTE' }}
+            </button>
+        </div>
+    </div>
+
+</div>

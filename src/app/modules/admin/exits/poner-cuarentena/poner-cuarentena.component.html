@@ -1,0 +1,323 @@
+<div class="flex flex-col w-full h-full bg-[#FFF] dark:bg-[#0a0f29] transition-colors duration-300 font-sans overflow-hidden"
+     cdkDrag cdkDragRootElement=".cdk-overlay-pane" cdkDragBoundary=".cdk-overlay-container">
+    <div class="flex-1 overflow-y-auto p-6 md:p-8 relative">
+
+        <div class="fixed top-20 right-10 w-40 h-40 bg-[#111A43] rounded-full border-3 border-black opacity-5 pointer-events-none"></div>
+
+        <div class="fixed bottom-10 left-10 w-24 h-24 border-3 border-black opacity-10 pointer-events-none rotate-12 transition-colors duration-500"
+             [class.bg-red-500]="currentView() === 'quarantine'"
+             [class.bg-green-400]="currentView() === 'calibration'">
+        </div>
+
+        @if (currentView() === 'quarantine') {
+            <div class="animate-fadeIn relative z-10">
+
+                <div class="flex flex-col md:flex-row items-center justify-between mb-8 gap-4">
+                    <div class="flex items-center gap-6">
+                        <button (click)="goBack()"
+                                class="w-14 h-14 bg-white dark:bg-slate-800 border-3 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] active:shadow-none active:translate-x-1 active:translate-y-1 hover:bg-white transition-all flex items-center justify-center rounded-lg cursor-pointer">
+                            <mat-icon class="!text-4xl !w-10 !h-10 text-black dark:text-white" svgIcon="heroicons_outline:arrow-left"></mat-icon>
+                        </button>
+                        <div>
+                            <h1 class="text-2xl md:text-5xl font-black text-black dark:text-white uppercase tracking-tighter drop-shadow-[2px_2px_0px_rgba(255,255,255,0.5)] dark:drop-shadow-none leading-none">
+                                PONER EN CUARENTENA
+                            </h1>
+                            <div class="flex items-center gap-2 mt-2">
+                                <span class="w-3 h-3 bg-red-500 border border-black rounded-full animate-pulse"></span>
+                                <p class="text-sm font-bold bg-[#111A43] text-white px-2 py-0.5 inline-block transform -rotate-1 border border-black">
+                                    REPORTE DE DISCREPANCIA
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="flex gap-4">
+                        <button (click)="switchView('calibration')"
+                                class="px-6 py-3 bg-red-600 text-white font-black text-sm border-3 border-black rounded-full shadow-[4px_4px_0px_0px_#000] hover:shadow-[2px_2px_0px_0px_#000] hover:translate-x-[2px] hover:translate-y-[2px] active:shadow-none transition-all uppercase tracking-wide flex items-center gap-2">
+                            Datos Calibracion
+                        </button>
+                        <button (click)="agregar()"
+                                [disabled]="!quarantineForm.valid"
+                                class="px-8 py-3 bg-yellow-600 text-black font-black text-lg border-3 border-black rounded-full shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] active:shadow-none transition-all uppercase tracking-wide disabled:opacity-50">
+                            Agregar
+                        </button>
+                        <button (click)="cerrar()"
+                                class="px-8 py-3 bg-[#111A43] text-white font-black text-lg border-3 border-black rounded-full shadow-[4px_4px_0px_0px_#000] hover:shadow-[2px_2px_0px_0px_#000] hover:translate-x-[2px] hover:translate-y-[2px] active:shadow-none transition-all uppercase tracking-wide">
+                            Cerrar
+                        </button>
+                    </div>
+                </div>
+
+                <div class="neo-card-base bg-white dark:bg-[#151e4a] p-6 md:p-8 relative z-10">
+                    <form [formGroup]="quarantineForm">
+                        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+
+                            <div class="lg:col-span-8">
+                                <h3 class="text-xl font-black uppercase mb-4 border-b-3 border-red-500 inline-block dark:text-white">Datos de la Herramienta</h3>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-2">
+                                    <mat-form-field appearance="fill" class="w-full">
+                                        <mat-label>Código</mat-label>
+                                        <input matInput formControlName="codigo">
+                                        <mat-icon matSuffix class="text-black font-bold">qr_code</mat-icon>
+                                    </mat-form-field>
+                                    <mat-form-field appearance="fill" class="w-full">
+                                        <mat-label>Nombre</mat-label>
+                                        <input matInput formControlName="nombre">
+                                    </mat-form-field>
+                                    <mat-form-field appearance="fill" class="w-full">
+                                        <mat-label>P/N</mat-label>
+                                        <input matInput formControlName="partNumber">
+                                    </mat-form-field>
+                                    <mat-form-field appearance="fill" class="w-full">
+                                        <mat-label>S/N</mat-label>
+                                        <input matInput formControlName="serialNumber">
+                                    </mat-form-field>
+                                    <mat-form-field appearance="fill" class="w-full">
+                                        <mat-label>Ubicación</mat-label>
+                                        <input matInput formControlName="ubicacion">
+                                    </mat-form-field>
+                                    <div class="grid grid-cols-2 gap-4">
+                                        <mat-form-field appearance="fill" class="w-full">
+                                            <mat-label>Existencia</mat-label>
+                                            <input matInput formControlName="existencia">
+                                        </mat-form-field>
+                                        <mat-form-field appearance="fill" class="w-full">
+                                            <mat-label>Unidad</mat-label>
+                                            <input matInput formControlName="unidad">
+                                        </mat-form-field>
+                                    </div>
+                                    <mat-form-field appearance="fill" class="w-full">
+                                        <mat-label>Base</mat-label>
+                                        <input matInput formControlName="base">
+                                    </mat-form-field>
+                                    <mat-form-field appearance="fill" class="w-full">
+                                        <mat-label>Fecha Venc.</mat-label>
+                                        <input matInput [matDatepicker]="pickerVencimiento" formControlName="fechaVencimiento">
+                                        <mat-datepicker-toggle matIconSuffix [for]="pickerVencimiento"></mat-datepicker-toggle>
+                                        <mat-datepicker #pickerVencimiento></mat-datepicker>
+                                    </mat-form-field>
+                                    <mat-form-field appearance="fill" class="w-full md:col-span-2">
+                                        <mat-label>Estado Físico</mat-label>
+                                        <input matInput formControlName="estadoFisico">
+                                    </mat-form-field>
+                                    <mat-form-field appearance="fill" class="w-full md:col-span-2">
+                                        <mat-label>Lista de Contenido</mat-label>
+                                        <textarea matInput formControlName="listaContenido" rows="2" class="!resize-none"></textarea>
+                                    </mat-form-field>
+                                </div>
+                            </div>
+
+                            <div class="lg:col-span-4 flex flex-col">
+                                <h3 class="text-xl font-black uppercase mb-4 border-b-3 border-red-500 inline-block dark:text-white">Evidencia</h3>
+                                <div class="bg-gray-100 dark:bg-gray-800 border-3 border-black rounded-lg overflow-hidden shadow-[4px_4px_0px_0px_#000] h-64 flex flex-col relative group">
+                                    <div *ngIf="selectedImage(); else noImageTemplate" class="flex-1 p-2 flex items-center justify-center bg-white dark:bg-gray-900 overflow-hidden">
+                                        <img [src]="selectedImage()" alt="Tool" class="w-full h-full object-contain">
+                                    </div>
+                                    <ng-template #noImageTemplate>
+                                        <div class="flex-1 flex flex-col items-center justify-center text-gray-400 p-4 border-dashed border-2 border-gray-300 m-4 rounded">
+                                            <mat-icon class="!text-6xl !w-16 !h-16 opacity-20">add_a_photo</mat-icon>
+                                            <p class="font-bold uppercase text-xs opacity-60 mt-2">Sin imagen</p>
+                                        </div>
+                                    </ng-template>
+                                    <div class="bg-[#111A43] py-2 px-4 flex justify-center border-t-3 border-black shrink-0">
+                                        <button type="button" (click)="fileInput.click()"
+                                                class="w-full py-1.5 bg-white text-black font-black border-2 border-black rounded shadow-[2px_2px_0px_0px_#fff] hover:translate-y-0.5 hover:shadow-none transition-all uppercase text-xs flex items-center justify-center gap-2">
+                                            <mat-icon class="!w-4 !h-4 !text-base">{{ selectedImage() ? 'edit' : 'upload' }}</mat-icon>
+                                            {{ selectedImage() ? 'CAMBIAR' : 'SUBIR FOTO' }}
+                                        </button>
+                                    </div>
+                                    <input type="file" #fileInput (change)="onImageSelected($event)" accept="image/*" class="hidden">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="h-1 bg-black w-full my-8 rounded-full opacity-20"></div>
+
+                        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                            <div class="lg:col-span-7">
+                                <h3 class="text-xl font-black uppercase mb-4 border-b-3 border-red-500 inline-block dark:text-white">Detalles del Reporte</h3>
+                                <div class="grid grid-cols-12 gap-4">
+                                    <mat-form-field appearance="fill" class="col-span-12 md:col-span-4">
+                                        <mat-label>Nro. Reporte</mat-label>
+                                        <input matInput formControlName="nroReporteDiscrepancia">
+                                    </mat-form-field>
+                                    <mat-form-field appearance="fill" class="col-span-6 md:col-span-4">
+                                        <mat-label>Cantidad</mat-label>
+                                        <input matInput type="number" formControlName="cantidad">
+                                    </mat-form-field>
+                                    <mat-form-field appearance="fill" class="col-span-6 md:col-span-4">
+                                        <mat-label>Fecha</mat-label>
+                                        <input matInput [matDatepicker]="pickerFecha" formControlName="fecha">
+                                        <mat-datepicker-toggle matIconSuffix [for]="pickerFecha"></mat-datepicker-toggle>
+                                        <mat-datepicker #pickerFecha></mat-datepicker>
+                                    </mat-form-field>
+                                    <mat-form-field appearance="fill" class="col-span-12">
+                                        <mat-label>Descripción del Problema</mat-label>
+                                        <textarea matInput formControlName="descripcion" rows="4" class="!resize-none"></textarea>
+                                    </mat-form-field>
+                                </div>
+                            </div>
+                            <div class="lg:col-span-5">
+                                <h3 class="text-xl font-black uppercase mb-4 border-b-3 border-red-500 inline-block dark:text-white">Personal Reportante</h3>
+                                <div class="flex flex-col gap-2">
+                                    <div class="flex items-start gap-2">
+                                        <mat-form-field appearance="fill" class="w-full">
+                                            <mat-label>Buscar Personal</mat-label>
+                                            <input matInput formControlName="buscar" (keydown.enter)="buscarPersona()">
+                                            <button mat-icon-button matSuffix (click)="buscarPersona()">
+                                                <mat-icon class="text-black font-bold">search</mat-icon>
+                                            </button>
+                                        </mat-form-field>
+                                    </div>
+                                    <div class="grid grid-cols-2 gap-4">
+                                        <mat-form-field appearance="fill" class="w-full">
+                                            <mat-label>Nro. Licencia</mat-label>
+                                            <input matInput formControlName="nroLicencia">
+                                        </mat-form-field>
+                                        <mat-form-field appearance="fill" class="w-full">
+                                            <mat-label>Nombre</mat-label>
+                                            <input matInput formControlName="nombreReportado">
+                                        </mat-form-field>
+                                    </div>
+                                    <mat-form-field appearance="fill" class="w-full">
+                                        <mat-label>Nombre Completo</mat-label>
+                                        <input matInput formControlName="nombreApellido">
+                                    </mat-form-field>
+                                    <mat-form-field appearance="fill" class="w-full opacity-70 pointer-events-none">
+                                        <mat-label>Registrado Por</mat-label>
+                                        <input matInput formControlName="realizadoPor" readonly>
+                                        <mat-icon matSuffix>lock</mat-icon>
+                                    </mat-form-field>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        }
+
+        @if (currentView() === 'calibration') {
+            <div class="animate-fadeIn relative z-10">
+
+                <div class="flex items-center justify-between mb-8">
+                    <div class="flex items-center gap-6">
+                        <button (click)="switchView('quarantine')"
+                                class="w-14 h-14 bg-white dark:bg-slate-800 border-3 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] active:shadow-none active:translate-x-1 active:translate-y-1 hover:bg-white transition-all flex items-center justify-center rounded-lg cursor-pointer">
+                            <mat-icon class="!text-4xl !w-10 !h-10 text-black dark:text-white" svgIcon="heroicons_outline:arrow-left"></mat-icon>
+                        </button>
+                        <div>
+                            <h1 class="text-3xl md:text-5xl font-black text-black dark:text-white uppercase tracking-tighter drop-shadow-[2px_2px_0px_rgba(255,255,255,0.5)] dark:drop-shadow-none leading-none">
+                                DATOS DE TALLER
+                            </h1>
+                            <div class="flex items-center gap-2 mt-2">
+                                <span class="w-3 h-3 bg-green-400 border border-black rounded-full animate-pulse"></span>
+                                <p class="text-sm font-bold bg-[#111A43] text-white px-2 py-0.5 inline-block transform -rotate-1 border border-black">
+                                    CALIBRACIÓN & REPARACIÓN
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="neo-card-base bg-white dark:bg-[#151e4a] p-6 md:p-8 mb-8 border-l-[8px] border-l-green-400 relative z-10">
+                    <form [formGroup]="calibrationForm">
+
+                        <h3 class="text-2xl font-black uppercase text-center mb-8 pb-4 border-b-2 border-black/10">Datos Calibración - Reparación</h3>
+
+                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-12">
+
+                            <div class="flex flex-col gap-4">
+                                <mat-form-field appearance="fill" class="w-full">
+                                    <mat-label>TIPO DE TRABAJO</mat-label>
+                                    <mat-select formControlName="tipoTrabajo">
+                                        <mat-option value="CALIBRACION">CALIBRACIÓN</mat-option>
+                                        <mat-option value="REPARACION">REPARACIÓN</mat-option>
+                                    </mat-select>
+                                </mat-form-field>
+
+                                <mat-form-field appearance="fill" class="w-full">
+                                    <mat-label>NRO. CERTIFICADO</mat-label>
+                                    <input matInput formControlName="nroCertificado">
+                                </mat-form-field>
+
+                                <mat-form-field appearance="fill" class="w-full">
+                                    <mat-label>FECHA CALIBRACIÓN</mat-label>
+                                    <input matInput [matDatepicker]="pickerCal" formControlName="fechaCalibracion">
+                                    <mat-datepicker-toggle matIconSuffix [for]="pickerCal"></mat-datepicker-toggle>
+                                    <mat-datepicker #pickerCal></mat-datepicker>
+                                </mat-form-field>
+
+                                <mat-form-field appearance="fill" class="w-full">
+                                    <mat-label>FECHA VENCIMIENTO</mat-label>
+                                    <input matInput [matDatepicker]="pickerVenc" formControlName="fechaVencimiento" >
+                                    <mat-datepicker-toggle matIconSuffix [for]="pickerVenc"></mat-datepicker-toggle>
+                                    <mat-datepicker #pickerVenc></mat-datepicker>
+                                </mat-form-field>
+
+                                <mat-form-field appearance="fill" class="w-full textarea-field">
+                                    <mat-label>OBSERVACIÓN</mat-label>
+                                    <textarea matInput formControlName="observacion" rows="4" class="!resize-none"></textarea>
+                                </mat-form-field>
+
+                                <div class="mt-4 pt-4 border-t-2 border-dashed border-black/20">
+                                    <mat-form-field appearance="fill" class="w-full">
+                                        <mat-label>RECIBIDO POR</mat-label>
+                                        <input matInput formControlName="recibidoPor">
+                                    </mat-form-field>
+                                    <mat-form-field appearance="fill" class="w-full">
+                                        <mat-label>FECHA RECEPCIÓN</mat-label>
+                                        <input matInput [matDatepicker]="pickerRec" formControlName="fechaRecpcion">
+                                        <mat-datepicker-toggle matIconSuffix [for]="pickerRec"></mat-datepicker-toggle>
+                                        <mat-datepicker #pickerRec></mat-datepicker>
+                                    </mat-form-field>
+                                </div>
+                            </div>
+
+                            <div class="flex flex-col gap-4 border-l-0 lg:border-l-2 border-black/10 pl-0 lg:pl-12">
+                                <mat-form-field appearance="fill" class="w-full">
+                                    <mat-label>CASO REPARACIÓN</mat-label>
+                                    <input matInput formControlName="casoReparacion">
+                                </mat-form-field>
+
+                                <mat-form-field appearance="fill" class="w-full">
+                                    <mat-label>¿SE PUDO REPARAR?</mat-label>
+                                    <mat-select formControlName="sePudoReparar">
+                                        <mat-option value="SI">SI</mat-option>
+                                        <mat-option value="NO">NO</mat-option>
+                                    </mat-select>
+                                </mat-form-field>
+
+                                <div class="my-6 p-4 border-2 border-black rounded-lg bg-gray-50 dark:bg-slate-800/50">
+                                    <span class="font-black uppercase text-sm mb-4 block underline">Datos para solicitar la baja:</span>
+
+                                    <mat-form-field appearance="fill" class="w-full">
+                                        <mat-label>NRO. INFORME TÉCNICO</mat-label>
+                                        <input matInput formControlName="nroInformeTecnico">
+                                    </mat-form-field>
+
+                                    <mat-form-field appearance="fill" class="w-full textarea-field">
+                                        <mat-label>DESCRIPCIÓN DE BAJA</mat-label>
+                                        <textarea matInput formControlName="descripcionBaja" rows="5" class="!resize-none"></textarea>
+                                    </mat-form-field>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="flex justify-end gap-4 mt-8 pt-6 border-t-3 border-black">
+                            <button (click)="switchView('quarantine')"
+                                    class="px-8 py-3 bg-[#111A43] text-white font-bold border-3 border-black rounded-full shadow-[4px_4px_0px_0px_#000] hover:shadow-[2px_2px_0px_0px_#000] hover:translate-x-[2px] hover:translate-y-[2px] active:shadow-none transition-all uppercase tracking-wide">
+                                Cancelar
+                            </button>
+                            <button (click)="switchView('quarantine')"
+                                    class="px-8 py-3 bg-yellow-500 text-white font-black border-3 border-black rounded-full shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] active:shadow-none transition-all uppercase tracking-wide">
+                                Aceptar
+                            </button>
+                        </div>
+
+                    </form>
+                </div>
+            </div>
+        }
+
+    </div>
+</div>

@@ -1,0 +1,182 @@
+<div class="flex flex-col w-full h-full bg-white overflow-hidden" cdkDrag cdkDragRootElement=".cdk-overlay-pane" cdkDragBoundary=".cdk-overlay-container">
+
+    <!-- Header draggable -->
+    <div cdkDragHandle class="flex items-center justify-between px-8 py-6 bg-white border-b-[3px] border-black cursor-move select-none">
+        <div class="flex items-center gap-4">
+            <div class="flex items-center justify-center w-14 h-14 bg-emerald-600 border-[3px] border-black rounded-2xl">
+                <mat-icon class="!text-3xl !w-8 !h-8 text-white" svgIcon="heroicons_outline:building-office-2"></mat-icon>
+            </div>
+            <div>
+                <h2 class="text-3xl font-black text-black uppercase tracking-tight leading-none">
+                    DETALLE DEL PROVEEDOR
+                </h2>
+                <p class="text-xs font-bold text-gray-500 uppercase tracking-wide mt-1">
+                    Información completa del proveedor
+                </p>
+            </div>
+        </div>
+        <button type="button" (click)="cerrar()"
+                class="w-10 h-10 flex items-center justify-center border-2 border-black bg-white hover:bg-gray-100 rounded-lg shadow-[2px_2px_0px_0px_#000] active:translate-y-[2px] active:shadow-none transition-all">
+            <mat-icon class="text-black text-lg">close</mat-icon>
+        </button>
+    </div>
+
+    <!-- Content -->
+    <div class="flex-1 overflow-y-auto p-8">
+        <div class="space-y-6">
+
+            <!-- Información General -->
+            <div class="bg-gray-50 border-[3px] border-black rounded-2xl p-6">
+                <h3 class="text-xl font-black text-black uppercase mb-4 flex items-center gap-2">
+                    <mat-icon class="text-emerald-600">info</mat-icon> INFORMACIÓN GENERAL
+                </h3>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                        <p class="text-xs font-black text-gray-500 uppercase mb-1">Código</p>
+                        <p class="text-sm font-bold text-black">{{ data.proveedor.codigo || '-' }}</p>
+                    </div>
+                    <div>
+                        <p class="text-xs font-black text-gray-500 uppercase mb-1">Nombre Comercial</p>
+                        <p class="text-sm font-bold text-black">{{ data.proveedor.nombre_comercial || data.proveedor.name || '-' }}</p>
+                    </div>
+                    <div>
+                        <p class="text-xs font-black text-gray-500 uppercase mb-1">Razón Social</p>
+                        <p class="text-sm font-bold text-black">{{ data.proveedor.razon_social || '-' }}</p>
+                    </div>
+                    <div>
+                        <p class="text-xs font-black text-gray-500 uppercase mb-1">NIT</p>
+                        <p class="text-sm font-bold text-black">{{ data.proveedor.nit || data.proveedor.taxId || '-' }}</p>
+                    </div>
+                    <div>
+                        <p class="text-xs font-black text-gray-500 uppercase mb-1">Tipo de Proveedor</p>
+                        <span class="inline-block px-3 py-1 border-2 border-black rounded-lg text-xs font-black uppercase"
+                              [class.bg-blue-100]="data.proveedor.tipo_proveedor === 'HERRAMIENTAS' || data.proveedor.type === 'tools'"
+                              [class.text-blue-800]="data.proveedor.tipo_proveedor === 'HERRAMIENTAS' || data.proveedor.type === 'tools'"
+                              [class.bg-green-100]="data.proveedor.tipo_proveedor === 'CALIBRACION' || data.proveedor.type === 'calibration'"
+                              [class.text-green-800]="data.proveedor.tipo_proveedor === 'CALIBRACION' || data.proveedor.type === 'calibration'"
+                              [class.bg-orange-100]="data.proveedor.tipo_proveedor === 'REPARACION' || data.proveedor.type === 'maintenance'"
+                              [class.text-orange-800]="data.proveedor.tipo_proveedor === 'REPARACION' || data.proveedor.type === 'maintenance'"
+                              [class.bg-purple-100]="data.proveedor.tipo_proveedor === 'MIXTO' || data.proveedor.type === 'general'"
+                              [class.text-purple-800]="data.proveedor.tipo_proveedor === 'MIXTO' || data.proveedor.type === 'general'">
+                            {{ data.proveedor.tipo_proveedor || data.proveedor.type || '-' }}
+                        </span>
+                    </div>
+                    <div>
+                        <p class="text-xs font-black text-gray-500 uppercase mb-1">Estado</p>
+                        <span class="inline-block px-3 py-1 border-2 border-black rounded-lg text-xs font-black uppercase"
+                              [class.bg-green-100]="data.proveedor.estado === 'ACTIVO' || data.proveedor.active"
+                              [class.text-green-800]="data.proveedor.estado === 'ACTIVO' || data.proveedor.active"
+                              [class.bg-red-100]="data.proveedor.estado === 'INACTIVO' || !data.proveedor.active"
+                              [class.text-red-800]="data.proveedor.estado === 'INACTIVO' || !data.proveedor.active">
+                            {{ data.proveedor.estado || (data.proveedor.active ? 'ACTIVO' : 'INACTIVO') }}
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Ubicación y Contacto -->
+            <div class="bg-gray-50 border-[3px] border-black rounded-2xl p-6">
+                <h3 class="text-xl font-black text-black uppercase mb-4 flex items-center gap-2">
+                    <mat-icon class="text-blue-600">location_on</mat-icon> UBICACIÓN Y CONTACTO
+                </h3>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="md:col-span-3">
+                        <p class="text-xs font-black text-gray-500 uppercase mb-1">Dirección</p>
+                        <p class="text-sm font-bold text-black">{{ data.proveedor.direccion || data.proveedor.address || '-' }}</p>
+                    </div>
+                    <div>
+                        <p class="text-xs font-black text-gray-500 uppercase mb-1">Ciudad</p>
+                        <p class="text-sm font-bold text-black">{{ data.proveedor.ciudad || '-' }}</p>
+                    </div>
+                    <div>
+                        <p class="text-xs font-black text-gray-500 uppercase mb-1">País</p>
+                        <p class="text-sm font-bold text-black">{{ data.proveedor.pais || '-' }}</p>
+                    </div>
+                    <div>
+                        <p class="text-xs font-black text-gray-500 uppercase mb-1">Teléfono</p>
+                        <p class="text-sm font-bold text-black">{{ data.proveedor.telefono || data.proveedor.phone || '-' }}</p>
+                    </div>
+                    <div>
+                        <p class="text-xs font-black text-gray-500 uppercase mb-1">Email</p>
+                        <p class="text-sm font-bold text-black">{{ data.proveedor.email || '-' }}</p>
+                    </div>
+                    <div>
+                        <p class="text-xs font-black text-gray-500 uppercase mb-1">Sitio Web</p>
+                        <p class="text-sm font-bold text-blue-600">{{ data.proveedor.sitio_web || '-' }}</p>
+                    </div>
+                    <div>
+                        <p class="text-xs font-black text-gray-500 uppercase mb-1">Contacto Principal</p>
+                        <p class="text-sm font-bold text-black">{{ data.proveedor.contacto_principal || data.proveedor.contactPerson || '-' }}</p>
+                    </div>
+                    <div>
+                        <p class="text-xs font-black text-gray-500 uppercase mb-1">Teléfono de Contacto</p>
+                        <p class="text-sm font-bold text-black">{{ data.proveedor.telefono_contacto || '-' }}</p>
+                    </div>
+                    <div>
+                        <p class="text-xs font-black text-gray-500 uppercase mb-1">Email de Contacto</p>
+                        <p class="text-sm font-bold text-black">{{ data.proveedor.email_contacto || '-' }}</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Información Comercial -->
+            <div class="bg-gray-50 border-[3px] border-black rounded-2xl p-6">
+                <h3 class="text-xl font-black text-black uppercase mb-4 flex items-center gap-2">
+                    <mat-icon class="text-amber-600">attach_money</mat-icon> INFORMACIÓN COMERCIAL
+                </h3>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                        <p class="text-xs font-black text-gray-500 uppercase mb-1">Calificación</p>
+                        <p class="text-sm font-bold text-black">{{ getEstrellas(data.proveedor.calificacion || 0) }} ({{ data.proveedor.calificacion || 0 }}/5)</p>
+                    </div>
+                    <div>
+                        <p class="text-xs font-black text-gray-500 uppercase mb-1">Tiempo de Entrega</p>
+                        <p class="text-sm font-bold text-black">{{ data.proveedor.tiempo_entrega_dias || 0 }} días</p>
+                    </div>
+                    <div class="md:col-span-3">
+                        <p class="text-xs font-black text-gray-500 uppercase mb-1">Condiciones de Pago</p>
+                        <p class="text-sm font-bold text-black">{{ data.proveedor.condiciones_pago || '-' }}</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Observaciones -->
+            <div class="bg-gray-50 border-[3px] border-black rounded-2xl p-6" *ngIf="data.proveedor.observaciones || data.proveedor.notes">
+                <h3 class="text-xl font-black text-black uppercase mb-4 flex items-center gap-2">
+                    <mat-icon class="text-purple-600">notes</mat-icon> OBSERVACIONES
+                </h3>
+                <p class="text-sm font-semibold text-gray-700">{{ data.proveedor.observaciones || data.proveedor.notes }}</p>
+            </div>
+
+            <!-- Información de Auditoría -->
+            <div class="bg-gray-50 border-[3px] border-black rounded-2xl p-6">
+                <h3 class="text-xl font-black text-black uppercase mb-4 flex items-center gap-2">
+                    <mat-icon class="text-gray-600">history</mat-icon> AUDITORÍA
+                </h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <p class="text-xs font-black text-gray-500 uppercase mb-1">Fecha de Creación</p>
+                        <p class="text-sm font-bold text-black">{{ (data.proveedor.fecha_creacion || data.proveedor.createdAt) ? ((data.proveedor.fecha_creacion || data.proveedor.createdAt) | date:'dd/MM/yyyy HH:mm') : '-' }}</p>
+                    </div>
+                    <div>
+                        <p class="text-xs font-black text-gray-500 uppercase mb-1">Fecha de Modificación</p>
+                        <p class="text-sm font-bold text-black">{{ (data.proveedor.fecha_modificacion || data.proveedor.updatedAt) ? ((data.proveedor.fecha_modificacion || data.proveedor.updatedAt) | date:'dd/MM/yyyy HH:mm') : '-' }}</p>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Footer con botones -->
+    <div class="flex items-center justify-end gap-4 px-8 py-6 bg-gray-50 border-t-[3px] border-black">
+        <button type="button" (click)="cerrar()"
+                class="h-12 px-6 bg-white text-black font-black text-sm border-[3px] border-black rounded-full shadow-[4px_4px_0px_0px_#000] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_0px_#000] active:translate-y-[4px] active:shadow-none transition-all uppercase tracking-wide flex items-center gap-2">
+            <mat-icon class="scale-90">close</mat-icon> CERRAR
+        </button>
+        <button type="button" (click)="editarProveedor()"
+                class="h-12 px-6 bg-emerald-600 text-white font-black text-sm border-[3px] border-black rounded-full shadow-[4px_4px_0px_0px_#000] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_0px_#000] active:translate-y-[2px] active:shadow-[2px_2px_0px_0px_#000] transition-all uppercase tracking-wide flex items-center gap-2">
+            <mat-icon class="scale-90">edit</mat-icon> EDITAR
+        </button>
+    </div>
+</div>

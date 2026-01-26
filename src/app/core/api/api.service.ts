@@ -21,11 +21,12 @@ export class ErpApiService {
         });
     }
 
-    post (url: string,params: any) {
+    post (url: string, params: any, options: any = {}) {
         this._load.show();
         return PxpClient.doRequest({
             url: url,
-            params:params,
+            params: params,
+            ...options,
         })
             .then( (resp) => {
                 this._load.hide();

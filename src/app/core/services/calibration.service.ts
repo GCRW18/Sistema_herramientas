@@ -1,6 +1,14 @@
 import { Injectable, inject } from '@angular/core';
 import { from, Observable, of, ReplaySubject, switchMap, tap, catchError } from 'rxjs';
-import { CalibrationAlert, CalibrationRecord, MaintenanceRecord } from '../models';
+import {
+    CalibrationAlert,
+    CalibrationRecord,
+    MaintenanceRecord,
+    CalibrationDashboard,
+    CalibrationLaboratory,
+    CalibrationFilters,
+    CalibrationReportMGH102
+} from '../models';
 import { ErpApiService } from '../api/api.service';
 
 @Injectable({ providedIn: 'root' })
@@ -9,6 +17,8 @@ export class CalibrationService {
     private _calibrations: ReplaySubject<CalibrationRecord[]> = new ReplaySubject<CalibrationRecord[]>(1);
     private _maintenances: ReplaySubject<MaintenanceRecord[]> = new ReplaySubject<MaintenanceRecord[]>(1);
     private _alerts: ReplaySubject<CalibrationAlert[]> = new ReplaySubject<CalibrationAlert[]>(1);
+    private _laboratories: ReplaySubject<CalibrationLaboratory[]> = new ReplaySubject<CalibrationLaboratory[]>(1);
+    private _dashboard: ReplaySubject<CalibrationDashboard | null> = new ReplaySubject<CalibrationDashboard | null>(1);
 
     // -----------------------------------------------------------------------------------------------------
     // @ Accessors
@@ -33,6 +43,20 @@ export class CalibrationService {
      */
     get alerts$(): Observable<CalibrationAlert[]> {
         return this._alerts.asObservable();
+    }
+
+    /**
+     * Getter for laboratories
+     */
+    get laboratories$(): Observable<CalibrationLaboratory[]> {
+        return this._laboratories.asObservable();
+    }
+
+    /**
+     * Getter for dashboard
+     */
+    get dashboard$(): Observable<CalibrationDashboard | null> {
+        return this._dashboard.asObservable();
     }
 
     // -----------------------------------------------------------------------------------------------------
@@ -294,6 +318,243 @@ export class CalibrationService {
      */
     getExpiredAlerts(): Observable<CalibrationAlert[]> {
         return from(this._api.post('herramientas/calibrations/getExpiredCalibrationAlerts', {})).pipe(
+            switchMap((response: any) => {
+                return of(response?.datos || []);
+            })
+        );
+    }
+
+    // -----------------------------------------------------------------------------------------------------
+    // @ Public methods - Dashboard & KPIs
+    // -----------------------------------------------------------------------------------------------------
+
+    /**
+     * Get calibration dashboard with KPIs
+     */
+    getDashboard(): Observable<CalibrationDashboard> {
+        return from(this._api.post('herramientas/calibrations/getDashboard', {})).pipe(
+            switchMap((response: any) => {
+                const dashboard = response?.datos || this._getDefaultDashboard();
+                this._dashboard.next(dashboard);
+                return of(dashboard);
+            }),
+            catchError(() => {
+                const defaultDashboard = this._getDefaultDashboard();
+                this._dashboard.next(defaultDashboard);
+                return of(defaultDashboard);
+            })
+        );
+    }
+
+    /**
+     * Get default dashboard structure
+     * @private
+     */
+    private _getDefaultDashboard(): CalibrationDashboard {
+        return {
+            totalToolsRequiringCalibration: 0,
+            toolsInCalibration: 0,
+            calibrationsValid: 0,
+            calibrationsExpiringSoon: 0,
+            calibrationsExpired: 0,
+            calibrationsPending: 0,
+            calibrationsSent: 0,
+            calibrationsInProcess: 0,
+            calibrationsReturned: 0,
+            calibrationsApproved: 0,
+            calibrationsRejected: 0,
+            calibrationsConditional: 0,
+            totalCostThisMonth: 0,
+            totalCostThisYear: 0,
+            averageCostPerCalibration: 0,
+            averageDaysInLaboratory: 0,
+            calibrationsByMonth: [],
+            costsByMonth: []
+        };
+    }
+
+    // -----------------------------------------------------------------------------------------------------
+    // @ Public methods - Laboratories
+    // -----------------------------------------------------------------------------------------------------
+
+    /**
+     * Get all laboratories
+     */
+    getLaboratories(): Observable<CalibrationLaboratory[]> {
+        return from(this._api.post('herramientas/laboratories/listLaboratories', {
+            start: 0,
+            limit: 100,
+            active: true
+        })).pipe(
+            switchMap((response: any) => {
+                const labs = response?.datos || [];
+                this._laboratories.next(labs);
+                return of(labs);
+            })
+        );
+    }
+
+    /**
+     * Get laboratory by id
+     */
+    getLaboratoryById(id: string): Observable<CalibrationLaboratory> {
+        return from(this._api.post('herramientas/laboratories/listLaboratories', {
+            start: 0,
+            limit: 1,
+            id_laboratory: id
+        })).pipe(
+            switchMap((response: any) => {
+                return of(response?.datos?.[0] || null);
+            })
+        );
+    }
+
+    /**
+     * Create or update laboratory
+     */
+    saveLaboratory(laboratory: Partial<CalibrationLaboratory>): Observable<CalibrationLaboratory> {
+        return from(this._api.post('herramientas/laboratories/saveLaboratory', laboratory)).pipe(
+            switchMap((response: any) => {
+                return of(response?.datos || laboratory);
+            }),
+            tap(() => {
+                // Refresh laboratories list
+                this.getLaboratories().subscribe();
+            })
+        );
+    }
+
+    /**
+     * Delete laboratory
+     */
+    deleteLaboratory(id: string): Observable<boolean> {
+        return from(this._api.post('herramientas/laboratories/deleteLaboratory', {
+            id_laboratory: id
+        })).pipe(
+            switchMap((response: any) => {
+                return of(response?.success || true);
+            }),
+            tap(() => {
+                // Refresh laboratories list
+                this.getLaboratories().subscribe();
+            })
+        );
+    }
+
+    // -----------------------------------------------------------------------------------------------------
+    // @ Public methods - Reports (MGH)
+    // -----------------------------------------------------------------------------------------------------
+
+    /**
+     * Generate MGH-102 Report: Herramientas sujetas a calibración
+     */
+    getReportMGH102(filters?: any): Observable<CalibrationReportMGH102> {
+        return from(this._api.post('herramientas/calibrations/generateReportMGH102', filters || {})).pipe(
+            switchMap((response: any) => {
+                return of(response?.datos || { tools: [], generatedAt: new Date().toISOString() });
+            })
+        );
+    }
+
+    /**
+     * Generate MGH-103 Report: Reporte mensual de calibraciones
+     */
+    getReportMGH103(year: number, month: number): Observable<any> {
+        return from(this._api.post('herramientas/calibrations/generateReportMGH103', {
+            year,
+            month
+        })).pipe(
+            switchMap((response: any) => {
+                return of(response?.datos || { calibrations: [], month, year });
+            })
+        );
+    }
+
+    /**
+     * Generate MGH-104 Report: Próximas a vencer
+     */
+    getReportMGH104(daysAhead: number = 30): Observable<any> {
+        return from(this._api.post('herramientas/calibrations/generateReportMGH104', {
+            days_ahead: daysAhead
+        })).pipe(
+            switchMap((response: any) => {
+                return of(response?.datos || { tools: [], daysAhead });
+            })
+        );
+    }
+
+    /**
+     * Export report to Excel
+     */
+    exportReportToExcel(reportCode: string, filters?: any): Observable<Blob> {
+        return from(this._api.post('herramientas/calibrations/exportReport', {
+            report_code: reportCode,
+            format: 'excel',
+            ...filters
+        }, {
+            responseType: 'blob'
+        })).pipe(
+            switchMap((response: any) => {
+                return of(response);
+            })
+        );
+    }
+
+    /**
+     * Export report to PDF
+     */
+    exportReportToPDF(reportCode: string, filters?: any): Observable<Blob> {
+        return from(this._api.post('herramientas/calibrations/exportReport', {
+            report_code: reportCode,
+            format: 'pdf',
+            ...filters
+        }, {
+            responseType: 'blob'
+        })).pipe(
+            switchMap((response: any) => {
+                return of(response);
+            })
+        );
+    }
+
+    // -----------------------------------------------------------------------------------------------------
+    // @ Public methods - Statistics & Analytics
+    // -----------------------------------------------------------------------------------------------------
+
+    /**
+     * Get calibration statistics by date range
+     */
+    getStatistics(dateFrom: string, dateTo: string): Observable<any> {
+        return from(this._api.post('herramientas/calibrations/getStatistics', {
+            date_from: dateFrom,
+            date_to: dateTo
+        })).pipe(
+            switchMap((response: any) => {
+                return of(response?.datos || {});
+            })
+        );
+    }
+
+    /**
+     * Get calibration trends (by month)
+     */
+    getTrends(months: number = 6): Observable<any> {
+        return from(this._api.post('herramientas/calibrations/getTrends', {
+            months
+        })).pipe(
+            switchMap((response: any) => {
+                return of(response?.datos || []);
+            })
+        );
+    }
+
+    /**
+     * Get top laboratories by usage
+     */
+    getTopLaboratories(limit: number = 5): Observable<any[]> {
+        return from(this._api.post('herramientas/calibrations/getTopLaboratories', {
+            limit
+        })).pipe(
             switchMap((response: any) => {
                 return of(response?.datos || []);
             })

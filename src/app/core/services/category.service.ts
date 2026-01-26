@@ -239,6 +239,96 @@ export class CategoryService {
     }
 
     // -----------------------------------------------------------------------------------------------------
+    // @ Public methods - Aeronautical Tool Management
+    // -----------------------------------------------------------------------------------------------------
+
+    /**
+     * Buscar herramientas por código dentro de una categoría específica
+     * @param categoryId - ID de la categoría
+     * @param toolCode - Código de la herramienta a buscar
+     */
+    searchToolsByCodeInCategory(categoryId: string, toolCode: string): Observable<any[]> {
+        return from(this._api.post('herramientas/tools/listTools', {
+            start: 0,
+            limit: 100,
+            id_category: categoryId,
+            code: toolCode, // Búsqueda por código de herramienta
+            sort: 'code',
+            dir: 'asc'
+        })).pipe(
+            switchMap((response: any) => {
+                return of(response?.datos || []);
+            })
+        );
+    }
+
+    /**
+     * Obtener herramientas de una categoría (para tabla de herramientas)
+     * @param categoryId - ID de la categoría
+     * @param filters - Filtros adicionales (código, nombre, estado)
+     */
+    getToolsByCategory(categoryId: string, filters?: {
+        code?: string;
+        name?: string;
+        status?: string;
+        start?: number;
+        limit?: number;
+    }): Observable<any> {
+        const params: any = {
+            start: filters?.start || 0,
+            limit: filters?.limit || 50,
+            id_category: categoryId,
+            sort: 'code',
+            dir: 'asc'
+        };
+
+        if (filters?.code) {
+            params.code = filters.code;
+        }
+        if (filters?.name) {
+            params.name = filters.name;
+        }
+        if (filters?.status) {
+            params.status = filters.status;
+        }
+
+        return from(this._api.post('herramientas/tools/listTools', params)).pipe(
+            switchMap((response: any) => {
+                return of({
+                    tools: response?.datos || [],
+                    total: response?.total || 0
+                });
+            })
+        );
+    }
+
+    /**
+     * Inicializar categorías fijas del sistema (Misceláneos y Herramientas)
+     * Solo se ejecuta si no existen estas categorías
+     */
+    initializeFixedCategories(): Observable<Category[]> {
+        return from(this._api.post('herramientas/categories/initializeFixed', {})).pipe(
+            switchMap((response: any) => {
+                return of(response?.datos || []);
+            })
+        );
+    }
+
+    /**
+     * Actualizar el orden de las categorías (para drag & drop)
+     * @param categoryOrders - Array de {id_category, order}
+     */
+    updateCategoryOrder(categoryOrders: Array<{ id_category: number; order: number }>): Observable<any> {
+        return from(this._api.post('herramientas/categories/updateOrder', {
+            categories: categoryOrders
+        })).pipe(
+            switchMap((response: any) => {
+                return of(response?.datos || []);
+            })
+        );
+    }
+
+    // -----------------------------------------------------------------------------------------------------
     // @ Public methods - Subcategories (if needed separately)
     // -----------------------------------------------------------------------------------------------------
 

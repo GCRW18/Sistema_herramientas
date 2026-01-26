@@ -1,0 +1,262 @@
+<div class="flex flex-col w-full h-full bg-[#FFF] dark:bg-[#0a0f29] transition-colors duration-300 font-sans overflow-hidden">
+
+    <div class="fixed top-20 right-10 w-40 h-40 bg-[#111A43] rounded-full border-3 border-black opacity-5 pointer-events-none"></div>
+    <div class="fixed bottom-10 left-10 w-24 h-24 bg-[#FFBD2E] rotate-12 border-3 border-black opacity-10 pointer-events-none"></div>
+
+    <div class="flex-1 overflow-y-auto p-6 md:p-8 relative">
+        <div class="max-w-[1800px] mx-auto relative z-10" *ngIf="showCards()">
+
+            <div class="flex flex-col md:flex-row items-center justify-between mb-8 gap-6">
+                <div class="flex items-center gap-6 self-start md:self-auto">
+
+                    <button [routerLink]="['/']"
+                            class="w-16 h-16 bg-white dark:bg-slate-800 border-3 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] active:translate-y-1 active:translate-x-1 active:shadow-none hover:bg-yellow-50 dark:hover:bg-slate-700 transition-all flex items-center justify-center rounded-xl cursor-pointer group">
+                        <mat-icon class="!text-3xl !w-8 !h-8 text-black dark:text-white group-hover:-translate-x-1 transition-transform" svgIcon="heroicons_outline:arrow-left"></mat-icon>
+                    </button>
+
+                    <div>
+                        <h1 class="text-3xl md:text-5xl font-black text-black dark:text-white uppercase tracking-tighter drop-shadow-[2px_2px_0px_rgba(255,255,255,0.5)] dark:drop-shadow-none leading-none">
+                            REPORTES
+                        </h1>
+                        <div class="flex items-center gap-2 mt-2">
+                            <span class="w-4 h-4 bg-slate-600 border-2 border-black rounded-full animate-pulse"></span>
+                            <p class="text-sm font-bold bg-[#111A43] text-white px-2 py-0.5 inline-block transform -rotate-1 border border-black uppercase">
+                                Centro de Documentación
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex gap-3 items-center w-full md:w-auto">
+                    <div class="relative w-full md:w-auto group">
+                        <mat-icon svgIcon="heroicons_outline:magnifying-glass" class="absolute left-4 top-1/2 -translate-y-1/2 text-black dark:text-white z-10 pointer-events-none !w-5 !h-5 font-bold"></mat-icon>
+                        <input type="text"
+                               [ngModel]="searchTerm()"
+                               (ngModelChange)="searchTerm.set($event)"
+                               placeholder="BUSCAR REPORTE..."
+                               class="w-full md:w-80 h-12 pl-12 pr-4 bg-white dark:bg-slate-800 text-black dark:text-white border-3 border-black rounded-xl font-black text-sm uppercase shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] focus:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] focus:-translate-x-0.5 focus:-translate-y-0.5 transition-all outline-none placeholder:text-gray-400">
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 mb-10">
+                <div class="neo-card-base dark:bg-slate-800 dark:border-black p-6 cursor-pointer group">
+                    <div class="flex items-start justify-between relative z-10">
+                        <div class="flex-1">
+                            <p class="text-xs font-black uppercase text-gray-500 dark:text-gray-400 tracking-wider mb-1">Total Reportes</p>
+                            <p class="text-4xl font-black text-black dark:text-white mb-2">{{ stats().totalReportes }}</p>
+                            <p class="text-[10px] font-bold px-2 py-0.5 inline-block transform -rotate-1 border border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] bg-[#111A43] text-white">
+                                DISPONIBLES
+                            </p>
+                        </div>
+                        <div class="w-14 h-14 flex items-center justify-center border-2 border-black rounded-xl bg-white dark:bg-slate-700 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] group-hover:scale-105 group-hover:rotate-3 transition-all duration-300 flex-shrink-0">
+                            <mat-icon svgIcon="heroicons_outline:document-text" class="!text-black dark:!text-white !text-3xl !w-8 !h-8"></mat-icon>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="neo-card-base dark:bg-slate-800 dark:border-black p-6 cursor-pointer group">
+                    <div class="flex items-start justify-between relative z-10">
+                        <div class="flex-1">
+                            <p class="text-xs font-black uppercase text-gray-500 dark:text-gray-400 tracking-wider mb-1">Generados Hoy</p>
+                            <p class="text-4xl font-black text-black dark:text-white mb-2">{{ stats().reportesHoy }}</p>
+                            <p class="text-[10px] font-bold px-2 py-0.5 inline-block transform -rotate-1 border border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] bg-[#05f65d] text-black">
+                                HOY
+                            </p>
+                        </div>
+                        <div class="w-14 h-14 flex items-center justify-center border-2 border-black rounded-xl bg-white dark:bg-slate-700 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] group-hover:scale-105 group-hover:rotate-3 transition-all duration-300 flex-shrink-0">
+                            <mat-icon svgIcon="heroicons_outline:calendar" class="!text-black dark:!text-white !text-3xl !w-8 !h-8"></mat-icon>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="neo-card-base dark:bg-slate-800 dark:border-black p-6 cursor-pointer group">
+                    <div class="flex items-start justify-between relative z-10">
+                        <div class="flex-1">
+                            <p class="text-xs font-black uppercase text-gray-500 dark:text-gray-400 tracking-wider mb-1">Este Mes</p>
+                            <p class="text-4xl font-black text-black dark:text-white mb-2">{{ stats().reportesMes }}</p>
+                            <p class="text-[10px] font-bold px-2 py-0.5 inline-block transform -rotate-1 border border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] bg-[#ff0000] text-white">
+                                MENSUAL
+                            </p>
+                        </div>
+                        <div class="w-14 h-14 flex items-center justify-center border-2 border-black rounded-xl bg-white dark:bg-slate-700 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] group-hover:scale-105 group-hover:rotate-3 transition-all duration-300 flex-shrink-0">
+                            <mat-icon svgIcon="heroicons_outline:chart-bar-square" class="!text-black dark:!text-white !text-3xl !w-8 !h-8"></mat-icon>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="neo-card-base dark:bg-slate-800 dark:border-black p-6 cursor-pointer group">
+                    <div class="flex items-start justify-between relative z-10">
+                        <div class="flex-1">
+                            <p class="text-xs font-black uppercase text-gray-500 dark:text-gray-400 tracking-wider mb-1">Más Usado</p>
+                            <p class="text-lg font-black text-black dark:text-white mb-2 truncate leading-tight" [matTooltip]="stats().masUsado">{{ stats().masUsado }}</p>
+                            <p class="text-[10px] font-bold px-2 py-0.5 inline-block transform -rotate-1 border border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] bg-[#FFBD2E] text-black">
+                                POPULAR
+                            </p>
+                        </div>
+                        <div class="w-14 h-14 flex items-center justify-center border-2 border-black rounded-xl bg-white dark:bg-slate-700 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] group-hover:scale-105 group-hover:rotate-3 transition-all duration-300 flex-shrink-0">
+                            <mat-icon svgIcon="heroicons_outline:star" class="!text-black dark:!text-white !text-3xl !w-8 !h-8"></mat-icon>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 mb-12">
+                <div *ngFor="let categoria of categoriasFiltradas()"
+                     (click)="selectCategory(categoria)"
+                     class="neo-card-base dark:bg-slate-800 dark:border-black cursor-pointer group h-full flex flex-col focus:outline-none hover:-translate-y-2 hover:shadow-[8px_8px_0px_0px_#000] transition-all duration-200"
+                     tabindex="0">
+
+                    <div class="p-4 border-b-3 border-black flex justify-between items-center relative overflow-hidden"
+                         [ngClass]="categoria.headerBgClass">
+                        <div class="absolute inset-0 bg-[radial-gradient(rgba(255,255,255,0.2)_1px,transparent_1px)] [background-size:8px_8px] pointer-events-none"></div>
+
+                        <div class="flex items-center gap-3 relative z-10">
+                            <div class="w-12 h-12 bg-white border-[3px] border-black rounded-xl flex items-center justify-center shadow-[3px_3px_0px_0px_#000] group-hover:scale-110 group-hover:rotate-3 transition-all duration-300">
+                                <mat-icon class="!text-2xl !w-7 !h-7" [ngClass]="getIconColor(categoria.color)" [svgIcon]="categoria.icono"></mat-icon>
+                            </div>
+                            <div>
+                                <h3 class="text-lg font-black uppercase tracking-tight leading-none" [ngClass]="categoria.textClass">{{ categoria.nombre }}</h3>
+                                <span class="text-[10px] font-bold uppercase tracking-wider block mt-0.5" [ngClass]="categoria.textClass" style="opacity: 0.9">{{ categoria.codigo }}</span>
+                            </div>
+                        </div>
+                        <span class="relative z-10 text-xs font-black border-2 border-black px-2 py-1 bg-white text-black rounded-lg shadow-[2px_2px_0px_0px_rgba(0,0,0,0.2)]">
+                            {{ categoria.reportes.length }}
+                        </span>
+                    </div>
+
+                    <div class="p-5 bg-white dark:bg-slate-800 flex-1 flex flex-col">
+                        <p class="text-xs font-bold text-gray-600 dark:text-gray-300 mb-4 flex-1 leading-relaxed">
+                            {{ categoria.descripcion }}
+                        </p>
+
+                        <div class="space-y-2 mb-4 p-3 bg-gray-50 dark:bg-slate-900 border-2 border-black rounded-lg shadow-sm">
+                            <div *ngFor="let reporte of categoria.reportes.slice(0, 2)"
+                                 class="flex items-center gap-2 text-xs border-b border-gray-200 dark:border-gray-700 last:border-0 pb-1 last:pb-0">
+                                <mat-icon class="!text-[10px] !w-3 !h-3 text-black dark:text-white" svgIcon="heroicons_outline:document"></mat-icon>
+                                <span class="text-gray-800 dark:text-gray-200 font-bold truncate">{{ reporte.nombre }}</span>
+                            </div>
+                            <p *ngIf="categoria.reportes.length > 2" class="text-[10px] font-black text-[#111A43] dark:text-blue-300 text-right mt-1">
+                                +{{ categoria.reportes.length - 2 }} más...
+                            </p>
+                        </div>
+
+                        <div class="flex items-center justify-between pt-3 mt-auto">
+                            <span class="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest">
+                                CLICK PARA ABRIR
+                            </span>
+                            <div class="w-8 h-8 rounded-lg border-2 border-black bg-[#FFBD2E] flex items-center justify-center shadow-[2px_2px_0px_0px_#000] group-hover:translate-x-1 transition-transform">
+                                <mat-icon svgIcon="heroicons_outline:arrow-right" class="!w-4 !h-4 text-black"></mat-icon>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+        <router-outlet></router-outlet>
+    </div>
+
+    <div *ngIf="selectedCategory()"
+         (click)="closeModal()"
+         class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in cursor-pointer">
+
+        <div (click)="handleModalClick($event)"
+             class="w-full max-w-4xl max-h-[85vh] bg-white dark:bg-slate-800 border-[4px] border-black shadow-[12px_12px_0px_0px_#000] flex flex-col rounded-2xl animate-pop-up cursor-default overflow-hidden">
+
+            <div class="p-6 border-b-[4px] border-black flex justify-between items-center relative overflow-hidden shrink-0"
+                 [ngClass]="selectedCategory()!.headerBgClass">
+
+                <div class="absolute inset-0 bg-[linear-gradient(45deg,rgba(0,0,0,0.1)_25%,transparent_25%,transparent_50%,rgba(0,0,0,0.1)_50%,rgba(0,0,0,0.1)_75%,transparent_75%,transparent)] bg-[length:20px_20px] opacity-20 pointer-events-none"></div>
+
+                <div class="flex items-center gap-4 relative z-10">
+                    <div class="w-16 h-16 bg-white border-[3px] border-black rounded-xl flex items-center justify-center shadow-[4px_4px_0px_0px_rgba(0,0,0,0.3)]">
+                        <mat-icon class="!text-4xl !w-10 !h-10" [ngClass]="getIconColor(selectedCategory()!.color)" [svgIcon]="selectedCategory()!.icono"></mat-icon>
+                    </div>
+                    <div [ngClass]="selectedCategory()!.textClass">
+                        <span class="text-[10px] font-black bg-black text-white px-2 py-1 rounded border-2 border-white uppercase tracking-widest block w-fit mb-1 shadow-sm">
+                            CAT: {{ selectedCategory()!.codigo }}
+                        </span>
+                        <h2 class="text-2xl md:text-4xl font-black uppercase tracking-tighter leading-none drop-shadow-md">
+                            {{ selectedCategory()!.nombre }}
+                        </h2>
+                    </div>
+                </div>
+
+                <button (click)="closeModal()"
+                        class="w-12 h-12 bg-white text-black border-[3px] border-black rounded-xl flex items-center justify-center hover:bg-red-500 hover:text-white transition-all shadow-[4px_4px_0px_0px_#000] active:translate-y-[2px] active:shadow-none z-10">
+                    <mat-icon svgIcon="heroicons_outline:x-mark" class="!w-8 !h-8 font-bold"></mat-icon>
+                </button>
+            </div>
+
+            <div class="flex-1 overflow-y-auto p-6 bg-[#f0f0f0] dark:bg-slate-900">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div *ngFor="let reporte of selectedCategory()!.reportes"
+                         class="bg-white dark:bg-slate-800 border-3 border-black rounded-xl p-4 flex flex-col group h-full hover:-translate-y-1 hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-all duration-200">
+
+                        <div class="flex justify-between items-start mb-3">
+                            <span class="px-2 py-1 bg-gray-100 dark:bg-slate-700 border-2 border-black rounded text-[10px] font-black uppercase tracking-wider text-black dark:text-white">
+                                {{ reporte.codigo }}
+                            </span>
+                            <span class="inline-flex items-center justify-center px-2 py-1 text-[10px] font-black uppercase rounded border-2 border-black shadow-sm"
+                                  [class.bg-red-100]="reporte.tipo === 'PDF'"
+                                  [class.text-red-900]="reporte.tipo === 'PDF'"
+                                  [class.bg-green-100]="reporte.tipo === 'EXCEL'"
+                                  [class.text-green-900]="reporte.tipo === 'EXCEL'"
+                                  [class.bg-purple-100]="reporte.tipo === 'AMBOS'"
+                                  [class.text-purple-900]="reporte.tipo === 'AMBOS'">
+                                {{ reporte.tipo }}
+                            </span>
+                        </div>
+
+                        <h4 class="text-sm md:text-base font-black text-black dark:text-white uppercase leading-tight mb-2 group-hover:text-[#111A43] dark:group-hover:text-blue-400 transition-colors">
+                            {{ reporte.nombre }}
+                        </h4>
+
+                        <p class="text-xs font-bold text-gray-500 dark:text-gray-400 mb-4 flex-1 border-t-2 border-dashed border-gray-200 dark:border-gray-700 pt-2">
+                            {{ reporte.descripcion }}
+                        </p>
+
+                        <div class="mt-auto flex gap-2 pt-2">
+                            <button *ngIf="reporte.preview"
+                                    (click)="previewReport(reporte)"
+                                    class="flex-1 h-10 bg-white dark:bg-slate-700 hover:bg-[#FFBD2E] hover:text-black text-black dark:text-white border-2 border-black rounded-lg font-black text-[10px] uppercase shadow-[3px_3px_0px_0px_#000] active:translate-y-[2px] active:shadow-none transition-all flex items-center justify-center gap-2">
+                                <mat-icon svgIcon="heroicons_outline:eye" class="!text-sm !w-4 !h-4"></mat-icon> Vista Previa
+                            </button>
+
+                            <div class="flex gap-2">
+                                <button *ngIf="reporte.tipo === 'EXCEL' || reporte.tipo === 'AMBOS'"
+                                        (click)="generateReport(reporte, 'EXCEL')"
+                                        class="h-10 w-10 bg-[#05f65d] hover:bg-green-400 text-black border-2 border-black rounded-lg shadow-[3px_3px_0px_0px_#000] active:translate-y-[2px] active:shadow-none transition-all flex items-center justify-center"
+                                        matTooltip="Descargar Excel">
+                                    <mat-icon svgIcon="heroicons_outline:table-cells" class="!text-lg !w-5 !h-5"></mat-icon>
+                                </button>
+
+                                <button *ngIf="reporte.tipo === 'PDF' || reporte.tipo === 'AMBOS'"
+                                        (click)="generateReport(reporte, 'PDF')"
+                                        class="h-10 w-10 bg-[#ff0000] hover:bg-red-400 text-white border-2 border-black rounded-lg shadow-[3px_3px_0px_0px_#000] active:translate-y-[2px] active:shadow-none transition-all flex items-center justify-center"
+                                        matTooltip="Descargar PDF">
+                                    <mat-icon svgIcon="heroicons_outline:document-arrow-down" class="!text-lg !w-5 !h-5"></mat-icon>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div *ngIf="selectedCategory()!.reportes.length === 0" class="flex flex-col items-center justify-center py-16 opacity-50">
+                    <div class="w-20 h-20 bg-gray-200 border-3 border-black rounded-full flex items-center justify-center mb-4">
+                        <mat-icon svgIcon="heroicons_outline:folder-open" class="!text-4xl !w-10 !h-10 text-gray-500"></mat-icon>
+                    </div>
+                    <p class="text-sm font-black uppercase text-gray-500">Carpeta Vacía</p>
+                </div>
+            </div>
+
+            <div class="p-4 bg-white dark:bg-[#1e293b] border-t-[4px] border-black flex justify-end shrink-0">
+                <button (click)="closeModal()"
+                        class="px-6 py-3 bg-gray-200 dark:bg-slate-700 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black text-black dark:text-white font-black uppercase text-xs rounded-xl border-3 border-black shadow-[4px_4px_0px_0px_#000] active:shadow-none active:translate-y-[2px] transition-all">
+                    Cerrar Ventana
+                </button>
+            </div>
+        </div>
+    </div>
+</div>

@@ -35,7 +35,9 @@ export type ExitReason =
     | 'calibration_send'  // Envío a calibración
     | 'maintenance_send'  // Envío a mantenimiento
     | 'decommission'      // Baja
-    | 'lost';             // Perdido
+    | 'lost'              // Perdido
+    | 'quarantine'        // Cuarentena
+    | 'consumption';      // Consumo
 
 /**
  * Estado del movimiento

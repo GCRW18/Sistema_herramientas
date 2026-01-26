@@ -19,5 +19,10 @@ export * from './roster.service';
 export * from './decommission.service';
 export * from './supplier.service';
 
+// Export workflow and validation services
+export * from './calibration-workflow.service';
+export * from './movement-validation.service';
+export * from './minimized-dialogs.service';
+
 // Re-export UserService from core/user
 export { UserService } from '../user/user.service';

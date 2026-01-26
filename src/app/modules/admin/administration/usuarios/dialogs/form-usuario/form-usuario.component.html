@@ -1,0 +1,206 @@
+<div class="flex flex-col w-full h-full bg-[#FFF] dark:bg-[#0a0f29] transition-colors duration-300 font-sans overflow-hidden relative"
+     cdkDrag cdkDragRootElement=".cdk-overlay-pane" cdkDragBoundary=".cdk-overlay-container">
+
+    <div cdkDragHandle class="relative z-20 px-6 py-5 bg-[#111A43] dark:bg-slate-900 border-b-[3px] border-black flex items-center justify-between cursor-move select-none">
+        <div class="flex items-center gap-4">
+            <div class="w-14 h-14 bg-white dark:bg-slate-700 border-[3px] border-black rounded-xl shadow-[4px_4px_0px_0px_#000] flex items-center justify-center transform -rotate-3">
+                <mat-icon class="!text-3xl !w-8 !h-8 text-black dark:text-white" svgIcon="heroicons_outline:user-plus"></mat-icon>
+            </div>
+            <div>
+                <h2 class="text-2xl md:text-3xl font-black text-white uppercase tracking-tighter leading-none">
+                    {{ isEditMode ? 'EDITAR USUARIO' : 'NUEVO USUARIO' }}
+                </h2>
+                <div class="flex items-center gap-2 mt-1">
+                    <span class="w-2 h-2 bg-blue-400 rounded-full animate-pulse"></span>
+                    <p class="text-xs font-bold text-gray-300 uppercase tracking-widest">
+                        Gestión de Accesos
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <button type="button" (click)="onCancel()"
+                class="group w-10 h-10 flex items-center justify-center border-[3px] border-black bg-white hover:bg-red-500 rounded-lg shadow-[3px_3px_0px_0px_#000] active:translate-y-[2px] active:shadow-none transition-all">
+            <mat-icon class="text-black group-hover:text-white font-black">close</mat-icon>
+        </button>
+    </div>
+
+    <div class="flex-1 overflow-y-auto bg-[#FFF] dark:bg-[#0f172a] p-6 md:p-8">
+        <form [formGroup]="usuarioForm" class="max-w-[1600px] mx-auto">
+
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+
+                <div class="lg:col-span-4 space-y-6">
+
+                    <div class="bg-white dark:bg-slate-800 border-[3px] border-black rounded-2xl p-6 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] sticky top-0">
+                        <div class="flex flex-col items-center mb-6 pt-4">
+                            <div class="relative group cursor-pointer">
+                                <div class="w-32 h-32 bg-blue-100 dark:bg-slate-700 border-[3px] border-black rounded-full flex items-center justify-center mb-4 shadow-sm overflow-hidden">
+                                    <mat-icon class="!text-7xl !w-20 !h-20 text-blue-300 dark:text-blue-500">account_circle</mat-icon>
+                                </div>
+                                <div class="absolute bottom-4 right-0 bg-black text-white p-2 rounded-full border-2 border-white shadow-lg group-hover:scale-110 transition-transform">
+                                    <mat-icon class="!text-sm !w-4 !h-4">camera_alt</mat-icon>
+                                </div>
+                            </div>
+
+                            <div class="w-full text-center mt-2">
+                                <label class="block text-xs font-black uppercase mb-2 text-gray-500">Nombre de Usuario (Login)</label>
+                                <div class="relative">
+                                    <mat-icon class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">alternate_email</mat-icon>
+                                    <input type="text" formControlName="username"
+                                           class="w-full h-12 pl-10 pr-4 bg-gray-50 dark:bg-slate-700 border-[3px] border-black rounded-xl font-bold text-center focus:outline-none focus:shadow-[4px_4px_0px_0px_#2563EB] focus:border-blue-600 transition-all"
+                                           placeholder="usuario.sistema">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-gray-100 dark:bg-slate-700 p-4 rounded-xl border-2 border-dashed border-gray-400 flex items-center justify-between mt-6">
+                            <div>
+                                <span class="block text-xs font-black uppercase text-gray-500 dark:text-gray-400">Estado de Cuenta</span>
+                                <span class="text-sm font-black" [ngClass]="usuarioForm.get('active')?.value ? 'text-green-600' : 'text-red-500'">
+                                    {{ usuarioForm.get('active')?.value ? 'HABILITADO' : 'BLOQUEADO' }}
+                                </span>
+                            </div>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" formControlName="active" class="sr-only peer">
+                                <div class="w-14 h-8 bg-gray-300 peer-focus:outline-none rounded-full peer dark:bg-gray-600 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[4px] after:left-[4px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-blue-600 border-2 border-black"></div>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="lg:col-span-8 space-y-6">
+
+                    <div class="bg-white dark:bg-slate-800 border-[3px] border-black rounded-2xl p-6 shadow-[6px_6px_0px_0px_rgba(0,0,0,0.2)]">
+                        <div class="flex items-center gap-2 mb-6 border-b-2 border-gray-100 dark:border-gray-700 pb-2">
+                            <mat-icon class="text-blue-600">badge</mat-icon>
+                            <h3 class="text-lg font-[1000] uppercase">Información Personal</h3>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div class="group">
+                                <label class="field-label">Nombres <span class="text-red-500">*</span></label>
+                                <input type="text" formControlName="nombres" class="neo-input" placeholder="Ej. Juan Carlos">
+                            </div>
+                            <div class="group">
+                                <label class="field-label">Apellidos <span class="text-red-500">*</span></label>
+                                <input type="text" formControlName="apellidos" class="neo-input" placeholder="Ej. Perez Gomez">
+                            </div>
+                            <div class="group">
+                                <label class="field-label">CI / Documento <span class="text-red-500">*</span></label>
+                                <input type="text" formControlName="ci" class="neo-input" placeholder="Número de documento">
+                            </div>
+                            <div class="group">
+                                <label class="field-label">Teléfono / Celular</label>
+                                <div class="relative">
+                                    <mat-icon class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">phone</mat-icon>
+                                    <input type="text" formControlName="telefono" class="neo-input pl-10" placeholder="+591 ...">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-blue-50 dark:bg-blue-900/10 border-2 border-dashed border-blue-300 dark:border-blue-700 rounded-xl p-6">
+                        <div class="flex items-center gap-2 mb-4">
+                            <mat-icon class="text-blue-700 dark:text-blue-300">security</mat-icon>
+                            <h3 class="text-lg font-[1000] uppercase text-blue-900 dark:text-blue-200">Nivel de Acceso</h3>
+                        </div>
+
+                        <div class="group">
+                            <label class="field-label !text-blue-800 dark:!text-blue-200">Rol Asignado <span class="text-red-500">*</span></label>
+                            <mat-form-field appearance="outline" class="w-full neo-select">
+                                <mat-select formControlName="role_id" placeholder="Seleccionar un rol...">
+                                    <mat-option *ngFor="let rol of rolesList" [value]="rol.id">
+                                        {{ rol.nombre }}
+                                    </mat-option>
+                                </mat-select>
+                            </mat-form-field>
+                            <p class="text-[10px] font-bold text-blue-600/70 mt-1 pl-1">
+                                El rol define los permisos y módulos que el usuario podrá visualizar.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="bg-white dark:bg-slate-800 border-[3px] border-black rounded-2xl p-6 shadow-[6px_6px_0px_0px_rgba(0,0,0,0.2)]">
+                        <div class="flex items-center justify-between mb-6 border-b-2 border-gray-100 dark:border-gray-700 pb-2">
+                            <div class="flex items-center gap-2">
+                                <mat-icon class="text-purple-600">password</mat-icon>
+                                <h3 class="text-lg font-[1000] uppercase">Credenciales de Acceso</h3>
+                            </div>
+                            <span class="text-[10px] bg-yellow-300 text-black px-2 py-1 rounded border border-black font-bold" *ngIf="isEditMode">
+                                DEJAR VACÍO PARA NO CAMBIAR
+                            </span>
+                        </div>
+
+                        <div class="space-y-4">
+                            <div class="group">
+                                <label class="field-label">Correo Electrónico <span class="text-red-500">*</span></label>
+                                <div class="relative">
+                                    <mat-icon class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">email</mat-icon>
+                                    <input type="email" formControlName="email" class="neo-input pl-10" placeholder="usuario@sistema.com">
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div class="group">
+                                    <label class="field-label">Contraseña <span class="text-red-500" *ngIf="!isEditMode">*</span></label>
+                                    <div class="relative">
+                                        <input [type]="hidePassword ? 'password' : 'text'"
+                                               formControlName="password"
+                                               class="neo-input pr-10"
+                                               placeholder="••••••••">
+                                        <button type="button" (click)="hidePassword = !hidePassword"
+                                                class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-blue-600 focus:outline-none">
+                                            <mat-icon class="!text-lg">{{ hidePassword ? 'visibility_off' : 'visibility' }}</mat-icon>
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div class="group">
+                                    <label class="field-label">Confirmar Contraseña <span class="text-red-500" *ngIf="!isEditMode">*</span></label>
+                                    <div class="relative">
+                                        <input [type]="hideConfirmPassword ? 'password' : 'text'"
+                                               formControlName="confirm_password"
+                                               class="neo-input pr-10"
+                                               [class.border-red-500]="usuarioForm.hasError('mismatch')"
+                                               placeholder="••••••••">
+                                        <button type="button" (click)="hideConfirmPassword = !hideConfirmPassword"
+                                                class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-blue-600 focus:outline-none">
+                                            <mat-icon class="!text-lg">{{ hideConfirmPassword ? 'visibility_off' : 'visibility' }}</mat-icon>
+                                        </button>
+                                    </div>
+                                    <mat-error *ngIf="usuarioForm.hasError('mismatch') && usuarioForm.get('confirm_password')?.touched" class="text-[10px] font-bold text-red-500 mt-1 pl-1">
+                                        * Las contraseñas no coinciden
+                                    </mat-error>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+            </div>
+        </form>
+    </div>
+
+    <div class="px-6 py-4 bg-gray-50 dark:bg-slate-900 border-t-[3px] border-black flex justify-between items-center relative z-20">
+        <div class="hidden md:flex items-center gap-2 text-xs font-bold text-gray-500 dark:text-gray-400">
+            <mat-icon class="!text-sm">admin_panel_settings</mat-icon>
+            <span>Acción registrada por seguridad.</span>
+        </div>
+
+        <div class="flex items-center gap-4 w-full md:w-auto justify-end">
+            <button type="button" (click)="onCancel()"
+                    class="px-6 py-3 bg-white dark:bg-slate-700 text-black dark:text-white font-black text-sm border-[3px] border-black rounded-full shadow-[3px_3px_0px_0px_#000] hover:translate-y-[2px] hover:shadow-[1px_1px_0px_0px_#000] active:shadow-none transition-all uppercase tracking-wide">
+                CANCELAR
+            </button>
+            <button type="button" (click)="onSubmit()"
+                    [disabled]="!usuarioForm.valid"
+                    class="px-8 py-3 bg-yellow-400 hover:bg-yellow-300 text-black font-black text-sm border-[3px] border-black rounded-full shadow-[3px_3px_0px_0px_#000] hover:translate-y-[2px] hover:shadow-[1px_1px_0px_0px_#000] active:shadow-none transition-all uppercase tracking-wide flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
+                <mat-icon>save</mat-icon>
+                {{ isEditMode ? 'GUARDAR' : 'CREAR USUARIO' }}
+            </button>
+        </div>
+    </div>
+
+</div>

@@ -132,7 +132,9 @@ erp-vertical-navigation {
         overflow: hidden;
         z-index: 10;
         background: inherit;
-        box-shadow: inset -1px 0 0 var(--erp-border);
+        /* Neo-Brutal border */
+        border-right: 3px solid #000;
+        box-shadow: 4px 0 0 0 rgba(0, 0, 0, 0.1);
 
         /* Header */
         .erp-vertical-navigation-header {
@@ -235,6 +237,11 @@ erp-vertical-navigation {
 
                 .erp-vertical-navigation-item-icon {
                     margin-right: 16px;
+                    /* Neo-Brutal icon styling */
+                    font-size: 22px;
+                    width: 22px;
+                    height: 22px;
+                    transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
                 }
 
                 .erp-vertical-navigation-item-title-wrapper {
@@ -252,9 +259,19 @@ erp-vertical-navigation {
                         align-items: center;
                         justify-content: center;
                         font-size: 10px;
-                        font-weight: 600;
+                        font-weight: 900;
                         white-space: nowrap;
-                        height: 20px;
+                        height: 22px;
+                        min-width: 22px;
+                        padding: 0 8px;
+                        /* Neo-Brutal badge styling */
+                        border: 2px solid #000;
+                        border-radius: 6px;
+                        background: #FFBD2E;
+                        color: #000;
+                        box-shadow: 2px 2px 0px 0px rgba(0,0,0,1);
+                        transform: rotate(-2deg);
+                        letter-spacing: 0.05em;
                     }
                 }
             }
@@ -275,10 +292,15 @@ erp-vertical-navigation {
     erp-vertical-navigation-aside-item,
     erp-vertical-navigation-basic-item,
     erp-vertical-navigation-collapsable-item {
-        margin-bottom: 4px;
+        margin-bottom: 8px;
 
         .erp-vertical-navigation-item {
             cursor: pointer;
+            /* Neo-Brutal styles */
+            border: 2px solid transparent;
+            font-weight: 700;
+            transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+            letter-spacing: 0.025em;
         }
     }
 
@@ -372,13 +394,20 @@ erp-vertical-navigation {
         }
     }
 
-    /* Divider */
+    /* Divider - NEO-BRUTAL */
     erp-vertical-navigation-divider-item {
-        margin: 12px 0;
+        margin: 16px 0;
 
         .erp-vertical-navigation-item-wrapper {
-            height: 1px;
-            box-shadow: 0 1px 0 0;
+            height: 3px;
+            background: repeating-linear-gradient(
+                90deg,
+                currentColor 0,
+                currentColor 8px,
+                transparent 8px,
+                transparent 16px
+            );
+            opacity: 0.3;
         }
     }
 
@@ -477,35 +506,47 @@ erp-vertical-navigation-basic-item,
 erp-vertical-navigation-collapsable-item {
     > .erp-vertical-navigation-item-wrapper {
         .erp-vertical-navigation-item {
-            /* Active state */
+            /* Active state - NEO-BRUTAL */
             &:not(.erp-vertical-navigation-item-disabled) {
                 &.erp-vertical-navigation-item-active,
                 &.erp-vertical-navigation-item-active-forced {
-                    @apply bg-gray-800 bg-opacity-5 dark:bg-white dark:bg-opacity-12;
+                    @apply bg-yellow-300 dark:bg-yellow-500;
+                    border: 2px solid #000;
+                    box-shadow: 3px 3px 0px 0px rgba(0,0,0,1);
+                    transform: translate(-2px, -2px);
+                    color: #000 !important;
 
                     .erp-vertical-navigation-item-icon {
                         @apply opacity-100;
+                        color: #000 !important;
                     }
 
                     .erp-vertical-navigation-item-title {
                         @apply opacity-100;
+                        color: #000 !important;
+                        font-weight: 900;
                     }
 
                     .erp-vertical-navigation-item-subtitle {
                         @apply opacity-100;
+                        color: #000 !important;
                     }
                 }
             }
 
-            /* Hover state */
+            /* Hover state - NEO-BRUTAL */
             &:not(.erp-vertical-navigation-item-active-forced):not(
                     .erp-vertical-navigation-item-active
                 ):not(.erp-vertical-navigation-item-disabled) {
                 &:hover {
-                    @apply bg-gray-800 bg-opacity-5 dark:bg-white dark:bg-opacity-12;
+                    @apply bg-slate-700 dark:bg-slate-600;
+                    border: 2px solid rgba(255, 255, 255, 0.2);
+                    box-shadow: 2px 2px 0px 0px rgba(255, 255, 255, 0.1);
+                    transform: translate(-1px, -1px);
 
                     .erp-vertical-navigation-item-icon {
                         @apply opacity-100;
+                        transform: scale(1.1);
                     }
 
                     .erp-vertical-navigation-item-title,
@@ -545,13 +586,32 @@ erp-vertical-navigation-collapsable-item {
     }
 }
 
-/* Group */
+/* Group - NEO-BRUTAL */
 erp-vertical-navigation-group-item {
     > .erp-vertical-navigation-item-wrapper {
         .erp-vertical-navigation-item {
+            padding: 12px 16px 8px;
+
             .erp-vertical-navigation-item-title-wrapper {
                 .erp-vertical-navigation-item-title {
-                    @apply text-primary-600 opacity-100 dark:text-primary-400;
+                    @apply text-yellow-300 dark:text-yellow-400;
+                    opacity: 1;
+                    font-weight: 900;
+                    font-size: 11px;
+                    letter-spacing: 0.1em;
+                    text-transform: uppercase;
+                    text-shadow: 1px 1px 0px rgba(0, 0, 0, 0.3);
+                    position: relative;
+
+                    &::after {
+                        content: '';
+                        position: absolute;
+                        bottom: -4px;
+                        left: 0;
+                        width: 40px;
+                        height: 2px;
+                        background: currentColor;
+                    }
                 }
             }
         }

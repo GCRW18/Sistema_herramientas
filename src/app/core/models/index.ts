@@ -5,6 +5,7 @@ export * from './tool.types';
 export * from './movement.types';
 export * from './kit.types';
 export * from './calibration.types';
+export * from './maintenance.types';
 export * from './quarantine.types';
 export * from './user.types';
 export * from './role.types';

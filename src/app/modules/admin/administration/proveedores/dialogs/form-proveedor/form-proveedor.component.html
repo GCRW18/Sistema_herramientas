@@ -1,0 +1,208 @@
+<div class="flex flex-col w-full h-full bg-[#f8f9fa] dark:bg-[#0a0f29] transition-colors duration-300 font-sans overflow-hidden relative"
+     cdkDrag cdkDragRootElement=".cdk-overlay-pane" cdkDragBoundary=".cdk-overlay-container">
+
+    <div cdkDragHandle class="relative z-20 px-8 py-6 bg-white dark:bg-slate-800 border-b-[3px] border-black flex items-center justify-between cursor-move select-none">
+        <div class="flex items-center gap-4">
+            <div class="w-14 h-14 bg-emerald-600 border-[3px] border-black rounded-xl shadow-[4px_4px_0px_0px_#000] flex items-center justify-center transform -rotate-3">
+                <mat-icon class="!text-3xl !w-8 !h-8 text-white" svgIcon="heroicons_outline:building-office-2"></mat-icon>
+            </div>
+            <div>
+                <h2 class="text-3xl font-[1000] text-black dark:text-white uppercase tracking-tighter leading-none">
+                    {{ isEditMode ? 'EDITAR PROVEEDOR' : 'NUEVO PROVEEDOR' }}
+                </h2>
+                <div class="flex items-center gap-2 mt-1">
+                    <span class="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></span>
+                    <p class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest">
+                        Gestión de Compras
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <button type="button" (click)="onCancel()"
+                class="group w-10 h-10 flex items-center justify-center border-[3px] border-black bg-red-100 hover:bg-red-500 rounded-lg shadow-[3px_3px_0px_0px_#000] active:translate-y-[2px] active:shadow-none transition-all">
+            <mat-icon class="text-black group-hover:text-white font-black">close</mat-icon>
+        </button>
+    </div>
+
+    <div class="flex-1 overflow-y-auto bg-[#f8f9fa] dark:bg-[#0f172a] p-6 md:p-8">
+        <form [formGroup]="proveedorForm" class="max-w-[1600px] mx-auto">
+
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+
+                <div class="lg:col-span-4 space-y-6">
+
+                    <div class="bg-white dark:bg-slate-800 border-[3px] border-black rounded-2xl p-6 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] sticky top-0">
+                        <div class="flex flex-col items-center mb-6">
+                            <div class="w-24 h-24 bg-gray-100 dark:bg-slate-700 border-[3px] border-black rounded-full flex items-center justify-center mb-4 shadow-sm">
+                                <mat-icon class="!text-5xl !w-12 !h-12 text-gray-400">store</mat-icon>
+                            </div>
+                            <div class="w-full text-center">
+                                <label class="block text-xs font-black uppercase mb-1 text-gray-500">Nombre Comercial</label>
+                                <input type="text" formControlName="nombre_comercial"
+                                       class="w-full text-center text-xl font-black bg-transparent border-b-2 border-dashed border-gray-300 focus:border-emerald-600 focus:outline-none py-1 placeholder:font-normal"
+                                       placeholder="Ej. Ferretería Central">
+                            </div>
+                        </div>
+
+                        <div class="space-y-4">
+                            <div class="bg-gray-50 dark:bg-slate-700 p-3 rounded-xl border-2 border-black flex items-center gap-3">
+                                <div class="bg-black text-white px-2 py-1 rounded text-xs font-bold">ID</div>
+                                <input formControlName="codigo" class="bg-transparent font-mono font-bold w-full focus:outline-none" placeholder="COD-000">
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-black uppercase mb-2 text-gray-500">Tipo de Servicio</label>
+                                <div class="grid grid-cols-2 gap-2">
+                                    <div *ngFor="let tipo of tiposProveedor"
+                                         (click)="proveedorForm.patchValue({tipo_proveedor: tipo.value})"
+                                         class="cursor-pointer border-2 rounded-lg p-2 text-center text-xs font-bold transition-all"
+                                         [ngClass]="proveedorForm.get('tipo_proveedor')?.value === tipo.value
+                                            ? 'bg-emerald-600 text-white border-black shadow-[2px_2px_0px_0px_#000]'
+                                            : 'bg-white dark:bg-slate-700 text-gray-600 dark:text-gray-300 border-gray-300 hover:border-gray-400'">
+                                        {{ tipo.label }}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-black uppercase mb-2 text-gray-500">Reputación / Calificación</label>
+                                <div class="flex justify-center gap-1 bg-yellow-50 dark:bg-yellow-900/10 border-2 border-yellow-400 rounded-xl p-2">
+                                    <mat-icon *ngFor="let star of [1,2,3,4,5]"
+                                              (click)="setRating(star)"
+                                              class="cursor-pointer transition-transform hover:scale-110"
+                                              [class.text-yellow-400]="(proveedorForm.get('calificacion')?.value || 0) >= star"
+                                              [class.text-gray-300]="(proveedorForm.get('calificacion')?.value || 0) < star">
+                                        star
+                                    </mat-icon>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="lg:col-span-8 space-y-6">
+
+                    <div class="bg-white dark:bg-slate-800 border-[3px] border-black rounded-2xl p-6 shadow-[6px_6px_0px_0px_rgba(0,0,0,0.2)]">
+                        <div class="flex items-center gap-2 mb-6 border-b-2 border-gray-100 dark:border-gray-700 pb-2">
+                            <mat-icon class="text-emerald-600">gavel</mat-icon>
+                            <h3 class="text-lg font-[1000] uppercase">Datos Legales</h3>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div class="group">
+                                <label class="field-label">Razón Social</label>
+                                <input type="text" formControlName="razon_social" class="neo-input" placeholder="Nombre legal de la empresa">
+                            </div>
+                            <div class="group">
+                                <label class="field-label">NIT / RUC</label>
+                                <input type="text" formControlName="nit" class="neo-input" placeholder="Número de identificación tributaria">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-white dark:bg-slate-800 border-[3px] border-black rounded-2xl p-6 shadow-[6px_6px_0px_0px_rgba(0,0,0,0.2)]">
+                        <div class="flex items-center gap-2 mb-6 border-b-2 border-gray-100 dark:border-gray-700 pb-2">
+                            <mat-icon class="text-blue-600">contact_phone</mat-icon>
+                            <h3 class="text-lg font-[1000] uppercase">Contacto y Ubicación</h3>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div class="md:col-span-2 group">
+                                <label class="field-label">Dirección Completa</label>
+                                <div class="relative">
+                                    <mat-icon class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">place</mat-icon>
+                                    <input type="text" formControlName="direccion" class="neo-input pl-10" placeholder="Av. Principal #123">
+                                </div>
+                            </div>
+
+                            <div class="group">
+                                <label class="field-label">Ciudad</label>
+                                <input type="text" formControlName="ciudad" class="neo-input">
+                            </div>
+                            <div class="group">
+                                <label class="field-label">País</label>
+                                <input type="text" formControlName="pais" class="neo-input">
+                            </div>
+
+                            <div class="group">
+                                <label class="field-label">Teléfono Empresa</label>
+                                <div class="relative">
+                                    <mat-icon class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">phone</mat-icon>
+                                    <input type="text" formControlName="telefono" class="neo-input pl-10" placeholder="+591 ...">
+                                </div>
+                            </div>
+                            <div class="group">
+                                <label class="field-label">Correo Electrónico</label>
+                                <div class="relative">
+                                    <mat-icon class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">email</mat-icon>
+                                    <input type="email" formControlName="email" class="neo-input pl-10" placeholder="contacto@empresa.com">
+                                </div>
+                            </div>
+
+                            <div class="group">
+                                <label class="field-label">Sitio Web</label>
+                                <div class="relative">
+                                    <mat-icon class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">language</mat-icon>
+                                    <input type="text" formControlName="sitio_web" class="neo-input pl-10" placeholder="www.empresa.com">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-blue-50 dark:bg-blue-900/10 border-2 border-dashed border-blue-300 rounded-xl p-4">
+                        <h4 class="font-black text-blue-800 dark:text-blue-300 uppercase text-sm mb-4">Persona de Contacto</h4>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div class="group">
+                                <label class="field-label !text-blue-800">Nombre</label>
+                                <input type="text" formControlName="contacto_principal" class="neo-input bg-white" placeholder="Ej. Juan Perez">
+                            </div>
+                            <div class="group">
+                                <label class="field-label !text-blue-800">Celular</label>
+                                <input type="text" formControlName="telefono_contacto" class="neo-input bg-white">
+                            </div>
+                            <div class="group">
+                                <label class="field-label !text-blue-800">Email Directo</label>
+                                <input type="text" formControlName="email_contacto" class="neo-input bg-white">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="bg-white dark:bg-slate-800 border-[3px] border-black rounded-2xl p-6 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+                            <label class="field-label mb-2">Condiciones de Pago</label>
+                            <textarea formControlName="condiciones_pago" rows="3" class="neo-input resize-none" placeholder="Ej. Crédito 30 días"></textarea>
+                        </div>
+                        <div class="bg-white dark:bg-slate-800 border-[3px] border-black rounded-2xl p-6 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+                            <label class="field-label mb-2">Observaciones</label>
+                            <textarea formControlName="observaciones" rows="3" class="neo-input resize-none" placeholder="Notas internas..."></textarea>
+                        </div>
+                    </div>
+
+                </div>
+
+            </div>
+        </form>
+    </div>
+
+    <div class="px-8 py-5 bg-white dark:bg-slate-800 border-t-[3px] border-black flex justify-between items-center relative z-20 shadow-[0_-4px_20px_rgba(0,0,0,0.1)]">
+        <div class="hidden md:flex items-center gap-2 text-xs font-bold text-gray-500">
+            <mat-icon class="!text-sm">verified</mat-icon>
+            <span>Información sujeta a validación fiscal.</span>
+        </div>
+
+        <div class="flex items-center gap-4 w-full md:w-auto justify-end">
+            <button type="button" (click)="onCancel()"
+                    class="px-6 py-3 bg-gray-100 dark:bg-slate-700 text-black dark:text-white font-black text-sm border-[3px] border-black rounded-lg shadow-[4px_4px_0px_0px_#000] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_0px_#000] active:translate-y-[4px] active:shadow-none transition-all uppercase tracking-wide">
+                CANCELAR
+            </button>
+            <button type="button" (click)="onSubmit()"
+                    [disabled]="!proveedorForm.valid"
+                    class="px-8 py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-black text-sm border-[3px] border-black rounded-lg shadow-[4px_4px_0px_0px_#000] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_0px_#000] active:translate-y-[2px] active:shadow-[2px_2px_0px_0px_#000] transition-all uppercase tracking-wide flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
+                <mat-icon>save</mat-icon>
+                {{ isEditMode ? 'GUARDAR CAMBIOS' : 'CREAR PROVEEDOR' }}
+            </button>
+        </div>
+    </div>
+
+</div>

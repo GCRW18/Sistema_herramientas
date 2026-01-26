@@ -1,0 +1,337 @@
+:host {
+    display: flex;
+    align-items: center;
+}
+
+// --- BOTÓN CAMPANA (Trigger) ---
+.neo-bell-button {
+    position: relative;
+    width: 40px; height: 40px; // Un poco más grande para mejor tacto
+    border: 2px solid #000 !important;
+    border-radius: 12px;
+    background: #fff;
+    box-shadow: 4px 4px 0px 0px rgba(0,0,0,1);
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    margin-right: 8px;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+
+    mat-icon {
+        color: #000;
+        font-size: 24px; width: 24px; height: 24px;
+    }
+
+    &:active {
+        transform: translate(2px, 2px);
+        box-shadow: 2px 2px 0px 0px rgba(0,0,0,1);
+    }
+
+    &.has-critical {
+        animation: criticalPulse 2s infinite;
+        border-color: #000 !important;
+    }
+}
+
+.neo-badge {
+    position: absolute; top: -8px; right: -8px;
+    min-width: 22px; height: 22px;
+    padding: 0 4px;
+    display: flex; align-items: center; justify-content: center;
+    background: #fff; border: 2px solid #000; border-radius: 6px;
+    font-size: 11px; font-weight: 900; color: #000;
+    box-shadow: 2px 2px 0px 0px rgba(0,0,0,1);
+    z-index: 10;
+
+    &.critical-pulse {
+        background: #DC2626; color: #fff;
+        animation: badgePulse 1.5s infinite;
+    }
+}
+
+// --- CONFIGURACIÓN DEL DIÁLOGO (IMPORTANTE PARA RESPONSIVE) ---
+::ng-deep .neo-dialog-container {
+    .mat-mdc-dialog-container {
+        padding: 0 !important;
+        --mdc-dialog-container-shape: 0px;
+    }
+    // Eliminar sombras por defecto de Material para usar las nuestras
+    .mat-mdc-dialog-surface {
+        background: transparent !important;
+        box-shadow: none !important;
+        overflow: visible !important;
+    }
+}
+
+// --- CONTENEDOR PRINCIPAL DEL MODAL ---
+.neo-window-wrapper {
+    // Por defecto (Móvil First logic o adaptativo)
+    width: 90vw;
+    max-width: 800px; // Tope en escritorio
+    height: 85vh;
+    max-height: 900px;
+
+    display: flex; flex-direction: column;
+    background: #fff;
+    border: 3px solid #000;
+    border-radius: 16px;
+    // Sombra dura responsiva
+    box-shadow: 8px 8px 0px 0px rgba(0,0,0,1);
+    overflow: hidden;
+
+    // Ajuste para móviles muy pequeños
+    @media (max-width: 600px) {
+        width: 95vw; // Ocupar casi todo el ancho
+        height: 90vh;
+        border-width: 2px;
+        box-shadow: 4px 4px 0px 0px rgba(0,0,0,1); // Sombra más pequeña
+    }
+}
+
+// --- HEADER ---
+.neo-header {
+    flex-shrink: 0;
+    padding: 16px 24px;
+    background: linear-gradient(135deg, #111A43 0%, #0f172a 100%);
+    border-bottom: 3px solid #000;
+    display: flex; justify-content: space-between; align-items: center;
+    position: relative;
+
+    @media (max-width: 600px) {
+        padding: 12px 16px; // Menos padding en móvil
+    }
+}
+
+.neo-header-content {
+    display: flex; align-items: center; gap: 16px; overflow: hidden;
+
+    @media (max-width: 600px) {
+        gap: 10px;
+    }
+}
+
+.neo-header-icon {
+    color: #FFBD2E !important;
+    font-size: 28px !important; width: 28px !important; height: 28px !important;
+    animation: alertBounce 2s infinite;
+    flex-shrink: 0;
+}
+
+.neo-header-title {
+    margin: 0;
+    font-size: 18px; font-weight: 900; color: #fff;
+    text-transform: uppercase; letter-spacing: 0.05em;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+
+    @media (max-width: 600px) {
+        font-size: 16px; // Texto más pequeño en móvil
+    }
+}
+
+.critical-badge {
+    display: flex; align-items: center; gap: 6px;
+    padding: 4px 10px;
+    background: #fff; border: 2px solid #000; border-radius: 6px;
+    transform: rotate(-2deg); flex-shrink: 0;
+
+    .critical-count { font-size: 14px; font-weight: 900; color: #000; line-height: 1; }
+    .critical-label { font-size: 10px; font-weight: 900; color: #000; text-transform: uppercase; }
+
+    @media (max-width: 450px) {
+        .critical-label { display: none; } // Ocultar texto "URGENTE" en pantallas muy pequeñas
+    }
+}
+
+.neo-header-actions {
+    display: flex; gap: 8px; flex-shrink: 0;
+}
+
+.neo-action-btn {
+    width: 36px !important; height: 36px !important;
+    border: 2px solid #fff !important; border-radius: 8px !important;
+    background: rgba(255,255,255,0.1) !important;
+    mat-icon { color: #fff !important; font-size: 20px; }
+}
+
+// --- LISTA DE ALERTAS ---
+.neo-alerts-container {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px;
+    background: #fff;
+
+    // Scrollbar personalizado
+    &::-webkit-scrollbar { width: 6px; }
+    &::-webkit-scrollbar-track { background: #f1f1f1; }
+    &::-webkit-scrollbar-thumb { background: #333; border-radius: 10px; }
+
+    @media (max-width: 600px) {
+        padding: 12px; // Menos padding lateral en móvil
+    }
+}
+
+.neo-alert-item {
+    position: relative;
+    display: flex; align-items: flex-start; gap: 16px;
+    padding: 16px;
+    border: 2px solid #e5e7eb; border-radius: 12px; // Ahora son tarjetas individuales
+    margin-bottom: 12px;
+    cursor: pointer;
+    background: #fff;
+    transition: all 0.2s;
+
+    &:hover {
+        border-color: #000;
+        box-shadow: 4px 4px 0px 0px rgba(0,0,0,0.1);
+        transform: translateY(-2px);
+    }
+
+    @media (max-width: 600px) {
+        gap: 12px;
+        padding: 12px;
+    }
+
+    // Banda lateral de color
+    .priority-stripe {
+        position: absolute; left: 0; top: 12px; bottom: 12px; width: 4px;
+        border-radius: 0 4px 4px 0;
+    }
+
+    // Colores por prioridad
+    &.priority-critical {
+        .priority-stripe { background: #dc2626; }
+        .alert-icon-container { background: #ffffff; color: #020202; border-color: #000000; }
+        .alert-priority-label { background: #DC2626; border-color: #000; }
+    }
+    &.priority-high {
+        .priority-stripe { background: #f59e0b; }
+        .alert-icon-container { background: #fdfdfd; color: #020202; border-color: #000000; }
+        .alert-priority-label { background: #F59E0B; border-color: #000; }
+    }
+    &.priority-medium {
+        .priority-stripe { background: #3b82f6; }
+        .alert-icon-container { background: #fbfbfb; color: #000000; border-color: #000000; }
+        .alert-priority-label { background: #3B82F6; border-color: #000; }
+    }
+    &.priority-low {
+        .priority-stripe { background: #10b913; }
+        .alert-icon-container { background: #ffffff; color: #000000; border-color: #000000; }
+        .alert-priority-label { background: #10b913; border-color: #000; }
+    }
+}
+
+.alert-icon-container {
+    display: flex; align-items: center; justify-content: center;
+    width: 48px; height: 48px; min-width: 48px; // Tamaño fijo
+    border: 2px solid; border-radius: 10px;
+    margin-left: 8px; // Espacio para la stripe
+
+    @media (max-width: 600px) {
+        width: 40px; height: 40px; min-width: 40px;
+        border-radius: 8px;
+    }
+
+    .alert-icon { font-size: 24px; width: 24px; height: 24px; }
+}
+
+.alert-content {
+    flex: 1; min-width: 0; // Vital para texto responsivo
+}
+
+.alert-header {
+    display: flex; justify-content: space-between; align-items: flex-start;
+    margin-bottom: 4px; gap: 8px;
+}
+
+.alert-title {
+    margin: 0; font-size: 14px; font-weight: 800; color: #111827;
+    line-height: 1.2;
+    text-transform: uppercase;
+}
+
+.alert-priority-label {
+    font-size: 9px; font-weight: 800; color: #fff; padding: 2px 6px;
+    border: 1px solid; border-radius: 4px; text-transform: uppercase;
+    white-space: nowrap;
+}
+
+.alert-description {
+    margin: 0 0 8px 0; font-size: 13px; color: #4B5563; line-height: 1.4;
+    font-weight: 500;
+
+    // Truncar texto en móvil si es muy largo
+    @media (max-width: 600px) {
+        font-size: 12px;
+    }
+}
+
+.alert-footer {
+    display: flex; justify-content: space-between; align-items: center;
+}
+
+.alert-time {
+    font-size: 11px; font-weight: 700; color: #9CA3AF;
+}
+
+// Botón cerrar dentro del item
+.alert-close-btn {
+    width: 28px !important; height: 28px !important; min-width: 28px !important;
+    padding: 0;
+    border: 1px solid #E5E7EB !important;
+    background: transparent;
+
+    mat-icon { font-size: 16px; width: 16px; height: 16px; color: #9CA3AF; }
+
+    // En móvil, el botón es siempre visible pero discreto
+    // En escritorio, aparece al hover
+    @media (min-width: 601px) {
+        opacity: 0;
+        .neo-alert-item:hover & { opacity: 1; }
+    }
+}
+
+// --- ESTADO VACÍO ---
+.neo-empty-state {
+    padding: 40px 20px; text-align: center;
+    .empty-icon-wrapper {
+        width: 80px; height: 80px; margin: 0 auto 16px;
+        background: #DCFCE7; border: 3px solid #22C55E; border-radius: 50%;
+        display: flex; align-items: center; justify-content: center;
+        .empty-icon { font-size: 40px; width: 40px; height: 40px; color: #22C55E; }
+    }
+    .empty-title { font-size: 18px; font-weight: 900; margin-bottom: 4px; }
+    .empty-subtitle { font-size: 13px; color: #6B7280; }
+}
+
+// --- FOOTER ---
+.neo-footer {
+    flex-shrink: 0; padding: 16px 20px;
+    border-top: 2px solid #e5e7eb; background: #F9FAFB;
+}
+
+.neo-footer-btn {
+    width: 100%; height: 44px !important;
+    border: 2px solid #000 !important; border-radius: 10px !important;
+    background: #f3a702 !important;
+    font-size: 13px !important; font-weight: 900 !important; color: #000 !important;
+    text-transform: uppercase !important; letter-spacing: 0.05em;
+    box-shadow: 3px 3px 0px 0px rgba(0,0,0,1) !important;
+
+    &:active {
+        transform: translate(2px, 2px);
+        box-shadow: 1px 1px 0px 0px rgba(0,0,0,1) !important;
+    }
+}
+
+// Animaciones
+@keyframes criticalPulse {
+    0%, 100% { box-shadow: 4px 4px 0px 0px #000; border-color: #000; }
+    50% { box-shadow: 4px 4px 0px 0px #DC2626; border-color: #DC2626; }
+}
+@keyframes badgePulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.2); }
+}
+@keyframes alertBounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-3px); }
+}

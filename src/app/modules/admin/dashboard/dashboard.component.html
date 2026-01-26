@@ -1,180 +1,164 @@
-<div class="flex flex-col flex-auto min-w-0">
-    <!-- Header -->
-    <div class="flex flex-col sm:flex-row flex-0 sm:items-center sm:justify-between p-6 sm:py-8 sm:px-10 border-b bg-card dark:bg-transparent">
-        <div class="flex-1 min-w-0">
-            <!-- Title -->
-            <div class="flex items-center">
-                <mat-icon class="icon-size-12 text-hint mr-3" [svgIcon]="'heroicons_outline:chart-pie'"></mat-icon>
-                <h2 class="text-3xl font-extrabold tracking-tight leading-7 sm:leading-10 truncate">
-                    Dashboard
-                </h2>
-            </div>
-            <!-- Description -->
-            <div class="ml-15 mt-2">
-                <p class="text-secondary">
-                    Panel de control del Sistema de Gestión de Herramientas
-                </p>
-            </div>
-        </div>
-        <!-- Actions -->
-        <div class="flex shrink-0 items-center mt-6 sm:mt-0 sm:ml-4">
-            <button mat-icon-button (click)="refresh()" [matTooltip]="'Actualizar'">
-                <mat-icon [svgIcon]="'heroicons_outline:arrow-path'"></mat-icon>
-            </button>
-        </div>
-    </div>
+<div class="flex flex-col w-full h-full bg-[#FFF] dark:bg-[#0a0f29] transition-colors duration-300 font-sans overflow-hidden">
+    <div class="flex-1 overflow-y-auto p-6 md:p-8 relative">
 
-    <!-- Main -->
-    <div class="flex-auto p-6 sm:p-10">
-        <!-- Loading -->
-        <div *ngIf="loading" class="flex items-center justify-center h-96">
-            <mat-icon class="animate-spin icon-size-16" [svgIcon]="'heroicons_outline:arrow-path'"></mat-icon>
-        </div>
+        <div class="fixed top-20 right-10 w-40 h-40 bg-[#111A43] rounded-full border-3 border-black opacity-5 pointer-events-none"></div>
+        <div class="fixed bottom-10 left-10 w-24 h-24 bg-yellow-400 rotate-12 border-3 border-black opacity-10 pointer-events-none"></div>
 
-        <!-- Content -->
-        <div *ngIf="!loading" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            <!-- Total Tools -->
-            <div class="flex flex-col flex-auto p-6 bg-card shadow rounded-2xl overflow-hidden">
-                <div class="flex items-start justify-between">
-                    <div class="text-lg font-medium tracking-tight leading-6 truncate">Total Herramientas</div>
-                    <div class="ml-2">
-                        <mat-icon class="icon-size-8 text-hint" [svgIcon]="'heroicons_outline:wrench-screwdriver'"></mat-icon>
+        <div class="max-w-[1600px] mx-auto relative z-10">
+
+            <div class="flex items-center justify-between mb-8">
+                <div class="flex items-center gap-6">
+                    <div class="flex items-center justify-center w-16 h-16 md:w-20 md:h-20 bg-white dark:bg-slate-800 border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] rounded-xl transform hover:rotate-6 transition-transform duration-300">
+                        <mat-icon class="!text-4xl !w-10 !h-10 text-black dark:text-white" svgIcon="heroicons_outline:chart-bar"></mat-icon>
                     </div>
-                </div>
-                <div class="flex flex-col items-center justify-center flex-auto mt-2">
-                    <div class="text-7xl sm:text-8xl font-bold tracking-tight leading-none text-primary">
-                        {{ stats.totalTools }}
+                    <div>
+                        <h1 class="text-3xl md:text-5xl font-black text-black dark:text-white uppercase tracking-tighter drop-shadow-[2px_2px_0px_rgba(255,255,255,0.5)] dark:drop-shadow-none leading-none">
+                            DASHBOARD GENERAL
+                        </h1>
+                        <div class="flex items-center gap-2 mt-2">
+                            <span class="w-4 h-4 bg-yellow-400 border-2 border-black rounded-full animate-pulse"></span>
+                            <p class="text-sm font-bold bg-[#111A43] text-white px-2 py-0.5 inline-block transform -rotate-1 border border-black">
+                                SISTEMA DE GESTION DE HERRAMIENTAS
+                            </p>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Available Tools -->
-            <div class="flex flex-col flex-auto p-6 bg-card shadow rounded-2xl overflow-hidden">
-                <div class="flex items-start justify-between">
-                    <div class="text-lg font-medium tracking-tight leading-6 truncate">Disponibles</div>
-                    <div class="ml-2">
-                        <mat-icon class="icon-size-8 text-green-500" [svgIcon]="'heroicons_outline:check-circle'"></mat-icon>
-                    </div>
-                </div>
-                <div class="flex flex-col items-center justify-center flex-auto mt-2">
-                    <div class="text-7xl sm:text-8xl font-bold tracking-tight leading-none text-green-500">
-                        {{ stats.availableTools }}
+            <div class="mb-8 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+                <div *ngFor="let kpi of kpiCardsData()"
+                     class="neo-card-base dark:bg-slate-800 dark:border-black dark:shadow-[6px_6px_0px_0px_rgba(71,85,105,1)] p-6 cursor-pointer group">
+
+                    <div class="flex items-start justify-between relative z-10">
+                        <div class="flex-1">
+                            <p class="text-xs font-black uppercase text-gray-500 dark:text-gray-400 tracking-wider mb-1">{{ kpi.title }}</p>
+                            <p class="text-4xl font-black text-black dark:text-white mb-2">{{ kpi.value }}</p>
+
+                            <p *ngIf="kpi.subtitle"
+                               class="text-[10px] font-bold px-2 py-0.5 inline-block transform -rotate-1 border border-black dark:border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] group-hover:scale-105 group-hover:rotate-3 transition-all duration-300 flex-shrink-0"
+                               [ngClass]="getVariantColor(kpi.variant)">
+                                {{ kpi.subtitle }}
+                            </p>
+                        </div>
+
+                        <div class="w-14 h-14 flex items-center justify-center border-2 border-black dark:border-black rounded-xl bg-white dark:bg-slate-700 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] group-hover:scale-105 group-hover:rotate-3 transition-all duration-300 flex-shrink-0">
+                            <mat-icon [svgIcon]="kpi.icon" class="!text-black dark:!text-white !text-3xl !w-8 !h-8"></mat-icon>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Tools In Use -->
-            <div class="flex flex-col flex-auto p-6 bg-card shadow rounded-2xl overflow-hidden">
-                <div class="flex items-start justify-between">
-                    <div class="text-lg font-medium tracking-tight leading-6 truncate">En Uso</div>
-                    <div class="ml-2">
-                        <mat-icon class="icon-size-8 text-blue-500" [svgIcon]="'heroicons_outline:arrow-right-circle'"></mat-icon>
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+                <div class="neo-card-base dark:bg-slate-800 dark:border-black dark:shadow-[6px_6px_0px_0px_rgba(71,85,105,1)] p-6">
+                    <div class="flex justify-between items-start mb-6 border-b-2 border-black dark:border-black pb-2">
+                        <div>
+                            <h3 class="text-xl font-black uppercase text-black dark:text-white">Movimientos</h3>
+                            <p class="text-xs font-bold text-black dark:text-gray-400 uppercase">Entradas vs Salidas (6 Meses)</p>
+                        </div>
+
+                    </div>
+                    <div class="h-[300px] w-full bg-gray-50 dark:bg-slate-700 border-2 border-black dark:border-black p-2 rounded">
+                        <canvas #movementsChart></canvas>
                     </div>
                 </div>
-                <div class="flex flex-col items-center justify-center flex-auto mt-2">
-                    <div class="text-7xl sm:text-8xl font-bold tracking-tight leading-none text-blue-500">
-                        {{ stats.toolsInUse }}
+
+                <div class="neo-card-base dark:bg-slate-800 dark:border-black dark:shadow-[6px_6px_0px_0px_rgba(71,85,105,1)] p-6">
+                    <div class="flex justify-between items-start mb-6 border-b-2 border-black dark:border-black pb-2">
+                        <div>
+                            <h3 class="text-xl font-black uppercase text-black dark:text-white">Top Herramientas</h3>
+                            <p class="text-xs font-bold text-black dark:text-gray-400 uppercase">Más Prestadas</p>
+                        </div>
+                    </div>
+                    <div class="h-[300px] w-full bg-gray-50 dark:bg-slate-700 border-2 border-black dark:border-black p-2 rounded">
+                        <canvas #topToolsChart></canvas>
                     </div>
                 </div>
             </div>
 
-            <!-- Critical Alerts -->
-            <div class="flex flex-col flex-auto p-6 bg-card shadow rounded-2xl overflow-hidden">
-                <div class="flex items-start justify-between">
-                    <div class="text-lg font-medium tracking-tight leading-6 truncate">Alertas Críticas</div>
-                    <div class="ml-2">
-                        <mat-icon class="icon-size-8 text-red-500" [svgIcon]="'heroicons_outline:exclamation-triangle'"></mat-icon>
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
+
+                <div class="neo-card-base dark:bg-slate-800 dark:border-black dark:shadow-[6px_6px_0px_0px_rgba(71,85,105,1)] p-0 flex flex-col h-full">
+                    <div class="p-4 bg-red-600 dark:bg-red-600 border-b-3 border-black dark:border-black flex justify-between items-center">
+                        <h3 class="font-black uppercase text-white flex items-center gap-2">
+                            <mat-icon class="text-amber-400">notifications_active</mat-icon> Alertas
+                        </h3>
+                        <span class="text-xs font-bold border-2 border-black dark:border-black px-2 bg-white dark:bg-slate-800 text-black dark:text-white rounded-full">{{ alertsData().length }}</span>
+                    </div>
+                    <div class="p-4 space-y-3 overflow-y-auto max-h-[400px]">
+                        <div *ngFor="let alert of alertsData()"
+                             class="flex gap-3 p-3 border-2 border-black dark:border-black rounded bg-white dark:bg-slate-700 hover:bg-gray-50 dark:hover:bg-slate-600 transition-colors shadow-[2px_2px_0px_0px_rgba(0,0,0,0.1)] dark:shadow-[2px_2px_0px_0px_rgba(71,85,105,0.3)] cursor-pointer">
+                            <div class="flex-shrink-0 mt-1">
+                                <mat-icon [class]="getAlertIconColor(alert.type)" [svgIcon]="alert.icon"></mat-icon>
+                            </div>
+                            <div>
+                                <h4 class="text-sm font-black uppercase text-black dark:text-white leading-tight">{{ alert.title }}</h4>
+                                <p class="text-xs text-black dark:text-gray-400 font-bold mt-1">{{ alert.description }}</p>
+                                <span class="text-[10px] font-black text-black dark:text-white mt-1 block uppercase">{{ alert.time }}</span>
+                            </div>
+                        </div>
                     </div>
                 </div>
-                <div class="flex flex-col items-center justify-center flex-auto mt-2">
-                    <div class="text-7xl sm:text-8xl font-bold tracking-tight leading-none text-red-500">
-                        {{ stats.criticalAlerts }}
+
+                <div class="flex flex-col gap-6">
+                    <div class="neo-card-base dark:bg-slate-800 dark:border-black dark:shadow-[6px_6px_0px_0px_rgba(71,85,105,1)] p-6">
+                        <div class="flex justify-between items-start mb-4 border-b-2 border-black dark:border-black pb-2">
+                            <h3 class="text-lg font-black uppercase text-black dark:text-white">Estado Calibración</h3>
+                        </div>
+                        <div class="h-[200px] w-full flex justify-center">
+                            <canvas #calibrationChart></canvas>
+                        </div>
                     </div>
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <button *ngFor="let action of quickActionsData()"
+                                (click)="navigateTo(action.route)"
+                                class="neo-card-base dark:bg-slate-800 dark:border-black dark:shadow-[6px_6px_0px_0px_rgba(71,85,105,1)] p-4 bg-white hover:bg-white dark:hover:bg-slate-700 active:translate-y-1 active:shadow-none transition-all flex flex-col items-center justify-center gap-2 group cursor-pointer text-center h-28">
+                            <mat-icon [svgIcon]="action.icon" class="!text-3xl !w-8 !h-8 text-black dark:text-white group-hover:scale-110 transition-transform"></mat-icon>
+                            <span class="text-xs font-black uppercase text-black dark:text-white">{{ action.label }}</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="neo-card-base dark:bg-slate-800 dark:border-black dark:shadow-[6px_6px_0px_0px_rgba(71,85,105,1)] p-0 flex flex-col h-full">
+                    <div class="p-4 bg-[#111A43] dark:bg-slate-700 border-b-3 border-black dark:border-black">
+                        <h3 class="font-black uppercase text-white flex items-center gap-2">
+                            <mat-icon class="text-white">history</mat-icon> Actividad Reciente
+                        </h3>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full">
+                            <tbody>
+                            <tr *ngFor="let activity of activitiesData()" class="border-b border-black dark:border-black last:border-0 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors">
+                                <td class="p-3 w-12 text-center">
+                                    <div class="w-8 h-8 rounded-full border-2 border-black dark:border-black flex items-center justify-center bg-white dark:bg-slate-600 shadow-sm">
+                                        <mat-icon class="!text-sm !w-4 !h-4 text-black dark:text-white"
+                                                  [svgIcon]="activity.type === 'entrada' ? 'heroicons_outline:arrow-down' : 'heroicons_outline:arrow-up'">
+                                        </mat-icon>
+                                    </div>
+                                </td>
+                                <td class="p-3">
+                                    <p class="text-xs font-black uppercase text-black dark:text-white">{{ activity.title }}</p>
+                                    <p class="text-[10px] text-gray-600 dark:text-gray-400 font-bold uppercase">{{ activity.description }}</p>
+                                </td>
+                                <td class="p-3 text-right">
+                                    <span class="text-[10px] font-bold text-gray-400 dark:text-white whitespace-nowrap bg-gray-100 dark:bg-slate-700 px-1 rounded">{{ activity.time }}</span>
+                                </td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+            </div>
+
+            <div *ngIf="isLoading()"
+                 class="fixed inset-0 bg-white/80 dark:bg-black/80 backdrop-blur-sm flex items-center justify-center z-50">
+                <div class="bg-white p-8 border-3 border-black shadow-[8px_8px_0px_0px_#111A43] flex flex-col items-center gap-4 rounded-xl">
+                    <mat-spinner diameter="50"></mat-spinner>
+                    <p class="font-black uppercase text-[#111A43] tracking-widest">Cargando...</p>
                 </div>
             </div>
 
-            <!-- Tools In Calibration -->
-            <div class="flex flex-col flex-auto p-6 bg-card shadow rounded-2xl overflow-hidden">
-                <div class="flex items-start justify-between">
-                    <div class="text-lg font-medium tracking-tight leading-6 truncate">En Calibración</div>
-                    <div class="ml-2">
-                        <mat-icon class="icon-size-8 text-orange-500" [svgIcon]="'heroicons_outline:cog-6-tooth'"></mat-icon>
-                    </div>
-                </div>
-                <div class="flex flex-col items-center justify-center flex-auto mt-2">
-                    <div class="text-5xl sm:text-6xl font-bold tracking-tight leading-none text-orange-500">
-                        {{ stats.toolsInCalibration }}
-                    </div>
-                </div>
-            </div>
-
-            <!-- Calibration Expired -->
-            <div class="flex flex-col flex-auto p-6 bg-card shadow rounded-2xl overflow-hidden">
-                <div class="flex items-start justify-between">
-                    <div class="text-lg font-medium tracking-tight leading-6 truncate">Calibración Vencida</div>
-                    <div class="ml-2">
-                        <mat-icon class="icon-size-8 text-red-500" [svgIcon]="'heroicons_outline:clock'"></mat-icon>
-                    </div>
-                </div>
-                <div class="flex flex-col items-center justify-center flex-auto mt-2">
-                    <div class="text-5xl sm:text-6xl font-bold tracking-tight leading-none text-red-500">
-                        {{ stats.calibrationExpired }}
-                    </div>
-                </div>
-            </div>
-
-            <!-- Tools In Quarantine -->
-            <div class="flex flex-col flex-auto p-6 bg-card shadow rounded-2xl overflow-hidden">
-                <div class="flex items-start justify-between">
-                    <div class="text-lg font-medium tracking-tight leading-6 truncate">En Cuarentena</div>
-                    <div class="ml-2">
-                        <mat-icon class="icon-size-8 text-yellow-500" [svgIcon]="'heroicons_outline:exclamation-circle'"></mat-icon>
-                    </div>
-                </div>
-                <div class="flex flex-col items-center justify-center flex-auto mt-2">
-                    <div class="text-5xl sm:text-6xl font-bold tracking-tight leading-none text-yellow-500">
-                        {{ stats.toolsInQuarantine }}
-                    </div>
-                </div>
-            </div>
-
-            <!-- Decommissioned Tools -->
-            <div class="flex flex-col flex-auto p-6 bg-card shadow rounded-2xl overflow-hidden">
-                <div class="flex items-start justify-between">
-                    <div class="text-lg font-medium tracking-tight leading-6 truncate">Dados de Baja</div>
-                    <div class="ml-2">
-                        <mat-icon class="icon-size-8 text-gray-500" [svgIcon]="'heroicons_outline:x-circle'"></mat-icon>
-                    </div>
-                </div>
-                <div class="flex flex-col items-center justify-center flex-auto mt-2">
-                    <div class="text-5xl sm:text-6xl font-bold tracking-tight leading-none text-gray-500">
-                        {{ stats.decommissionedTools }}
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Quick Actions -->
-        <div class="mt-12">
-            <h3 class="text-2xl font-bold tracking-tight">Acciones Rápidas</h3>
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mt-6">
-                <button mat-flat-button class="h-24" [routerLink]="['/inventory/tools/new']">
-                    <mat-icon class="mr-2" [svgIcon]="'heroicons_outline:plus'"></mat-icon>
-                    Registrar Herramienta
-                </button>
-                <button mat-flat-button class="h-24" [routerLink]="['/movements/entries']">
-                    <mat-icon class="mr-2" [svgIcon]="'heroicons_outline:arrow-down-tray'"></mat-icon>
-                    Nueva Entrada
-                </button>
-                <button mat-flat-button class="h-24" [routerLink]="['/movements/exits']">
-                    <mat-icon class="mr-2" [svgIcon]="'heroicons_outline:arrow-up-tray'"></mat-icon>
-                    Nueva Salida
-                </button>
-                <button mat-flat-button class="h-24" [routerLink]="['/calibration/alerts']">
-                    <mat-icon class="mr-2" [svgIcon]="'heroicons_outline:bell'"></mat-icon>
-                    Ver Alertas
-                </button>
-            </div>
         </div>
     </div>
 </div>

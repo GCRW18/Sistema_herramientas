@@ -1,0 +1,225 @@
+<div class="flex flex-col w-full h-full bg-[#f8f9fa] dark:bg-[#0a0f29] transition-colors duration-300 font-sans overflow-hidden">
+
+    <div class="flex-1 overflow-y-auto p-6 md:p-8 relative">
+
+        <!-- Decorative shapes -->
+        <div class="fixed top-20 right-10 w-64 h-64 bg-emerald-600 rounded-full border-[3px] border-black opacity-5 pointer-events-none blur-2xl"></div>
+        <div class="fixed bottom-10 left-10 w-40 h-40 bg-teal-600 rotate-12 border-[3px] border-black opacity-10 pointer-events-none blur-xl"></div>
+
+        <div class="max-w-[1800px] mx-auto relative z-10">
+
+            <!-- Header -->
+            <div class="flex items-center justify-between mb-10">
+                <div class="flex items-center gap-6">
+                    <div class="flex items-center justify-center w-20 h-20 bg-emerald-600 dark:bg-emerald-700 border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] rounded-2xl">
+                        <mat-icon class="!text-5xl !w-12 !h-12 text-white" svgIcon="heroicons_outline:building-office-2"></mat-icon>
+                    </div>
+                    <div>
+                        <h1 class="text-4xl md:text-6xl font-black text-black dark:text-white uppercase tracking-tighter drop-shadow-[2px_2px_0px_rgba(255,255,255,0.5)] dark:drop-shadow-none leading-none">
+                            PROVEEDORES
+                        </h1>
+                        <div class="flex items-center gap-2 mt-3">
+                            <span class="w-3 h-3 bg-emerald-600 border-2 border-black rounded-full animate-pulse"></span>
+                            <p class="text-xs font-bold bg-[#111A43] text-white px-3 py-1 inline-block transform -rotate-1 border-2 border-black uppercase tracking-widest rounded-md">
+                                Gestión de Contactos
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <button (click)="volver()"
+                        class="h-14 px-8 bg-white dark:bg-slate-700 text-black dark:text-white font-black text-lg border-[3px] border-black rounded-full shadow-[5px_5px_0px_0px_#000] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_0px_#000] active:translate-y-[5px] active:shadow-none transition-all uppercase tracking-wide flex items-center gap-3">
+                    <mat-icon class="scale-110">arrow_back</mat-icon> Volver
+                </button>
+            </div>
+
+            <!-- Search and Actions -->
+            <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-8">
+                <div class="flex flex-col md:flex-row gap-4 w-full md:w-auto">
+                    <div class="w-full md:w-96">
+                        <div class="relative">
+                            <input type="text"
+                                   [formControl]="searchControl"
+                                   placeholder="Buscar proveedores..."
+                                   class="w-full h-14 pl-14 pr-4 bg-white dark:bg-slate-800 text-black dark:text-white border-[3px] border-black rounded-2xl font-semibold text-sm focus:outline-none focus:ring-4 focus:ring-emerald-300 dark:focus:ring-emerald-500 transition-all shadow-[4px_4px_0px_0px_rgba(0,0,0,0.15)]">
+                            <mat-icon class="absolute left-4 top-4 text-gray-400 dark:text-gray-500 !text-2xl">search</mat-icon>
+                        </div>
+                    </div>
+
+                    <div class="w-full md:w-64">
+                        <mat-form-field appearance="outline" class="w-full">
+                            <mat-select [formControl]="filterTipo" placeholder="Filtrar por tipo">
+                                <mat-option *ngFor="let tipo of tiposProveedor" [value]="tipo.value">
+                                    {{ tipo.label }}
+                                </mat-option>
+                            </mat-select>
+                        </mat-form-field>
+                    </div>
+                </div>
+
+                <button (click)="nuevoProveedor()"
+                        class="h-14 px-8 bg-emerald-600 hover:bg-emerald-500 text-white font-black text-lg border-[3px] border-black rounded-full shadow-[5px_5px_0px_0px_#000] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_0px_#000] active:shadow-none transition-all uppercase tracking-wide flex items-center gap-3">
+                    <mat-icon class="scale-110">add</mat-icon> Nuevo Proveedor
+                </button>
+            </div>
+
+            <!-- Tabla de Proveedores -->
+            <div class="bg-white dark:bg-slate-800 border-[3px] border-black rounded-3xl shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] overflow-hidden">
+                <div class="p-6 bg-emerald-600 dark:bg-emerald-700 border-b-[3px] border-black flex justify-between items-center">
+                    <h2 class="text-xl font-black text-white uppercase tracking-wider flex items-center gap-3">
+                        <mat-icon class="scale-125 text-white">business</mat-icon>
+                        PROVEEDORES DEL SISTEMA ({{ filteredProveedores.length }})
+                    </h2>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full">
+                        <thead>
+                            <tr class="border-b-[3px] border-black bg-gray-100 dark:bg-slate-700">
+                                <th class="text-left p-4 font-black text-xs uppercase text-black dark:text-white w-32">CÓDIGO</th>
+                                <th class="text-left p-4 font-black text-xs uppercase text-black dark:text-white">NOMBRE COMERCIAL</th>
+                                <th class="text-left p-4 font-black text-xs uppercase text-black dark:text-white w-40">TIPO</th>
+                                <th class="text-left p-4 font-black text-xs uppercase text-black dark:text-white w-48">CONTACTO</th>
+                                <th class="text-left p-4 font-black text-xs uppercase text-black dark:text-white w-40">TELÉFONO</th>
+                                <th class="text-left p-4 font-black text-xs uppercase text-black dark:text-white w-52">EMAIL</th>
+                                <th class="text-left p-4 font-black text-xs uppercase text-black dark:text-white w-36">CIUDAD</th>
+                                <th class="text-center p-4 font-black text-xs uppercase text-black dark:text-white w-32">CALIF.</th>
+                                <th class="text-center p-4 font-black text-xs uppercase text-black dark:text-white w-32">ESTADO</th>
+                                <th class="text-center p-4 font-black text-xs uppercase text-black dark:text-white w-48">ACCIONES</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white dark:bg-slate-800">
+                            <tr *ngFor="let proveedor of filteredProveedores; let last = last"
+                                [class.border-b]="!last"
+                                class="border-gray-200 dark:border-slate-600 hover:bg-emerald-50 dark:hover:bg-slate-700 transition-colors">
+
+                                <!-- CÓDIGO -->
+                                <td class="p-4">
+                                    <span class="font-mono font-bold text-gray-900 dark:text-gray-300 text-xs">{{ proveedor.codigo }}</span>
+                                </td>
+
+                                <!-- NOMBRE COMERCIAL -->
+                                <td class="p-4">
+                                    <span class="font-bold text-gray-900 dark:text-white text-sm">{{ proveedor.nombre_comercial }}</span>
+                                </td>
+
+                                <!-- TIPO -->
+                                <td class="p-4">
+                                    <span class="inline-block px-3 py-1 border-2 border-black rounded-lg text-xs font-black uppercase"
+                                          [class.bg-blue-100]="proveedor.tipo_proveedor === 'HERRAMIENTAS'"
+                                          [class.text-blue-800]="proveedor.tipo_proveedor === 'HERRAMIENTAS'"
+                                          [class.bg-green-100]="proveedor.tipo_proveedor === 'CALIBRACION'"
+                                          [class.text-green-800]="proveedor.tipo_proveedor === 'CALIBRACION'"
+                                          [class.bg-orange-100]="proveedor.tipo_proveedor === 'REPARACION'"
+                                          [class.text-orange-800]="proveedor.tipo_proveedor === 'REPARACION'"
+                                          [class.bg-purple-100]="proveedor.tipo_proveedor === 'MIXTO'"
+                                          [class.text-purple-800]="proveedor.tipo_proveedor === 'MIXTO'">
+                                        {{ proveedor.tipo_proveedor }}
+                                    </span>
+                                </td>
+
+                                <!-- CONTACTO -->
+                                <td class="p-4">
+                                    <span class="text-gray-700 dark:text-gray-300 font-semibold text-sm">{{ proveedor.contacto_principal }}</span>
+                                </td>
+
+                                <!-- TELÉFONO -->
+                                <td class="p-4">
+                                    <span class="text-gray-700 dark:text-gray-300 font-semibold text-sm">{{ proveedor.telefono }}</span>
+                                </td>
+
+                                <!-- EMAIL -->
+                                <td class="p-4">
+                                    <span class="text-gray-700 dark:text-gray-300 font-semibold text-sm">{{ proveedor.email }}</span>
+                                </td>
+
+                                <!-- CIUDAD -->
+                                <td class="p-4">
+                                    <span class="text-gray-600 dark:text-gray-400 font-semibold text-sm">{{ proveedor.ciudad }}</span>
+                                </td>
+
+                                <!-- CALIFICACIÓN -->
+                                <td class="p-4 text-center">
+                                    <span class="text-lg">{{ getEstrellas(proveedor.calificacion) }}</span>
+                                    <span class="text-xs text-gray-600 dark:text-gray-400 block font-bold">{{ proveedor.calificacion }}/5</span>
+                                </td>
+
+                                <!-- ESTADO -->
+                                <td class="p-4 text-center">
+                                    <span *ngIf="proveedor.estado === 'ACTIVO' || proveedor.active"
+                                          class="inline-block px-3 py-1 bg-emerald-100 border-2 border-emerald-500 rounded-lg text-emerald-800 font-black text-xs uppercase">
+                                        ACTIVO
+                                    </span>
+                                    <span *ngIf="proveedor.estado === 'INACTIVO' || !proveedor.active"
+                                          class="inline-block px-3 py-1 bg-red-100 border-2 border-red-500 rounded-lg text-red-800 font-black text-xs uppercase">
+                                        INACTIVO
+                                    </span>
+                                </td>
+
+                                <!-- ACCIONES -->
+                                <td class="p-4">
+                                    <div class="flex gap-2 justify-center">
+                                        <button (click)="verDetalles(proveedor)"
+                                                class="w-10 h-10 flex items-center justify-center border-2 border-black bg-white dark:bg-slate-600 hover:bg-gray-100 dark:hover:bg-slate-500 rounded-lg shadow-[2px_2px_0px_0px_#000] active:translate-y-[2px] active:shadow-none transition-all">
+                                            <mat-icon class="text-blue-600 dark:text-blue-400 text-lg">visibility</mat-icon>
+                                        </button>
+                                        <button (click)="editarProveedor(proveedor)"
+                                                class="w-10 h-10 flex items-center justify-center border-2 border-black bg-yellow-400 hover:bg-yellow-300 rounded-lg shadow-[2px_2px_0px_0px_#000] active:translate-y-[2px] active:shadow-none transition-all">
+                                            <mat-icon class="text-black text-lg">edit</mat-icon>
+                                        </button>
+                                        <button (click)="toggleEstado(proveedor)"
+                                                class="w-10 h-10 flex items-center justify-center border-2 border-black rounded-lg shadow-[2px_2px_0px_0px_#000] active:translate-y-[2px] active:shadow-none transition-all"
+                                                [class.bg-white]="!proveedor.active"
+                                                [class.dark:bg-slate-600]="!proveedor.active"
+                                                [class.hover:bg-green-50]="!proveedor.active"
+                                                [class.bg-red-50]="proveedor.active"
+                                                [class.hover:bg-red-100]="proveedor.active">
+                                            <mat-icon class="text-lg" [class.text-green-600]="!proveedor.active" [class.text-red-600]="proveedor.active">
+                                                {{ proveedor.active ? 'block' : 'check_circle' }}
+                                            </mat-icon>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+
+                            <!-- Empty State -->
+                            <tr *ngIf="filteredProveedores.length === 0">
+                                <td colspan="10" class="p-12 text-center bg-white dark:bg-slate-800">
+                                    <mat-icon class="!text-5xl text-gray-300 dark:text-gray-600 mb-3">store_mall_directory</mat-icon>
+                                    <p class="text-gray-500 dark:text-gray-400 font-bold">
+                                        {{ searchControl.value || filterTipo.value ? 'No se encontraron proveedores' : 'No hay proveedores registrados' }}
+                                    </p>
+                                    <button *ngIf="!searchControl.value && !filterTipo.value"
+                                            (click)="nuevoProveedor()"
+                                            class="mt-4 h-12 px-6 bg-emerald-600 hover:bg-emerald-500 text-white font-black text-sm border-[3px] border-black rounded-full shadow-[4px_4px_0px_0px_#000] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_0px_#000] transition-all uppercase">
+                                        Crear el primer proveedor
+                                    </button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Table Footer -->
+                <div class="bg-gray-50 dark:bg-slate-900 border-t-[3px] border-black px-6 py-4">
+                    <div class="flex items-center justify-between text-sm font-bold text-gray-600 dark:text-gray-400">
+                        <div class="flex items-center gap-2">
+                            <mat-icon class="!text-base">info</mat-icon>
+                            <span>Total de proveedores registrados: <strong class="text-black dark:text-white">{{ proveedores.length }}</strong></span>
+                        </div>
+                        <div class="flex items-center gap-6">
+                            <span class="flex items-center gap-2">
+                                <span class="w-3 h-3 bg-emerald-500 border border-black rounded-full"></span>
+                                Activos: {{ getProveedoresActivos() }}
+                            </span>
+                            <span class="flex items-center gap-2">
+                                <span class="w-3 h-3 bg-red-500 border border-black rounded-full"></span>
+                                Inactivos: {{ getProveedoresInactivos() }}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
