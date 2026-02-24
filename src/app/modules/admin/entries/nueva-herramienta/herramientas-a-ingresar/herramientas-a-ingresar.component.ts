@@ -39,80 +39,30 @@ interface HerramientaOption {
         :host {
             display: block;
             height: 100%;
-            --neo-border: 3px solid black;
-            --neo-shadow: 5px 5px 0px 0px rgba(0,0,0,1);
+            --neo-border: 2px solid black;
+            --neo-shadow: 4px 4px 0px 0px rgba(0,0,0,1);
+        }
+
+        /* Forzar esquema oscuro para inputs nativos en modo dark */
+        :host-context(.dark) {
+            color-scheme: dark;
         }
 
         .neo-card-base {
             border: var(--neo-border) !important;
             box-shadow: var(--neo-shadow) !important;
-            border-radius: 12px !important;
-        }
-
-        /* ESTILOS DE INPUTS */
-        :host ::ng-deep .mat-mdc-text-field-wrapper {
-            background-color: white !important;
-            border: 2px solid black !important;
             border-radius: 8px !important;
-            padding: 0 12px !important;
-            min-height: 48px;
-            box-shadow: 3px 3px 0px 0px rgba(0, 0, 0, 0.1);
-            transition: all 0.2s;
-            display: flex;
-            align-items: center;
+            background-color: white;
         }
 
-        :host ::ng-deep .mat-mdc-form-field.mat-focused .mat-mdc-text-field-wrapper {
-            background-color: white !important;
-            border-color: black !important;
-            box-shadow: 3px 3px 0px 0px rgba(0,0,0,1);
-            transform: translate(-1px, -1px);
+        :host-context(.dark) .neo-card-base {
+            background-color: #1e293b !important;
         }
 
-        :host ::ng-deep .mat-mdc-input-element {
-            font-weight: 700 !important;
-            color: black !important;
-        }
-
-        :host ::ng-deep .mat-mdc-floating-label {
-            font-weight: 800 !important;
-            color: #6B7280 !important;
-            text-transform: uppercase;
-            font-size: 11px !important;
-        }
-
-        :host ::ng-deep .mat-mdc-form-field.mat-focused .mat-mdc-floating-label {
-            color: black !important;
-        }
-
-        :host ::ng-deep .mat-mdc-icon-button {
-            color: black !important;
-        }
-
-        :host ::ng-deep .mat-mdc-form-field-focus-overlay,
-        :host ::ng-deep .mat-mdc-notched-outline,
-        :host ::ng-deep .mat-mdc-form-field-subscript-wrapper {
-            display: none !important;
-        }
-
-        :host ::ng-deep .mat-mdc-select-value {
-            font-weight: 700 !important;
-            color: black !important;
-        }
-
-        :host ::ng-deep .mat-mdc-select-arrow {
-            color: black !important;
-        }
-
-        :host ::ng-deep textarea.mat-mdc-input-element {
-            margin-top: 8px !important;
-        }
-
-        :host ::ng-deep .textarea-field .mat-mdc-text-field-wrapper {
-            align-items: flex-start;
-            padding-top: 8px !important;
-            min-height: 80px;
-        }
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #000; border-radius: 3px; }
+        :host-context(.dark) .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; }
     `]
 })
 export class HerramientasAIngresarComponent implements OnInit {
@@ -167,17 +117,25 @@ export class HerramientasAIngresarComponent implements OnInit {
         this.coincidencias.set(this.filteredHerramientas.length);
     }
 
-    selectHerramienta(herramienta: HerramientaOption): void {
-        this.ingresoForm.patchValue({
-            codigo: herramienta.codigo,
-            pn: herramienta.pn,
-            nombre: herramienta.nombre,
-            sn: herramienta.sn,
-            estado: herramienta.estado,
-            ubicacion: herramienta.ubicacion,
-            um: herramienta.um
-        });
-        this.coincidencias.set(1);
+    selectHerramienta(codigoValue: string): void {
+        if (!codigoValue) {
+            this.coincidencias.set(0);
+            return;
+        }
+
+        const herramienta = this.herramientas.find(h => h.codigo === codigoValue);
+        if (herramienta) {
+            this.ingresoForm.patchValue({
+                codigo: herramienta.codigo,
+                pn: herramienta.pn,
+                nombre: herramienta.nombre,
+                sn: herramienta.sn,
+                estado: herramienta.estado,
+                ubicacion: herramienta.ubicacion,
+                um: herramienta.um
+            });
+            this.coincidencias.set(1);
+        }
     }
 
     onImageSelected(event: Event): void {
@@ -193,6 +151,12 @@ export class HerramientasAIngresarComponent implements OnInit {
 
     crearItem(): void {
         console.log('Crear nuevo item');
+        // Limpiar formulario para permitir nuevo item
+        this.ingresoForm.reset({
+            cantidad: 1
+        });
+        this.selectedImage.set(null);
+        this.coincidencias.set(0);
     }
 
     procesar(): void {

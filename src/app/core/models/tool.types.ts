@@ -72,6 +72,15 @@ export interface Tool {
     nextCalibrationDate?: string;
     calibrationCertificate?: string;
 
+    // Gatas (Jacks) - Servicios especiales
+    isJack?: boolean;
+    lastSemiannualService?: string;
+    nextSemiannualService?: string;
+    semiannualServiceInterval?: number; // Default 180 días
+    lastAnnualService?: string;
+    nextAnnualService?: string;
+    annualServiceInterval?: number; // Default 365 días
+
     // Información adicional
     purchaseDate?: string;
     purchasePrice?: number;

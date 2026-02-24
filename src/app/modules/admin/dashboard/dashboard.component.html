@@ -8,16 +8,15 @@
 
             <div class="flex items-center justify-between mb-8">
                 <div class="flex items-center gap-6">
-                    <div class="flex items-center justify-center w-16 h-16 md:w-20 md:h-20 bg-white dark:bg-slate-800 border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] rounded-xl transform hover:rotate-6 transition-transform duration-300">
-                        <mat-icon class="!text-4xl !w-10 !h-10 text-black dark:text-white" svgIcon="heroicons_outline:chart-bar"></mat-icon>
+                    <div class="flex items-center justify-center w-16 h-16 md:w-20 md:h-20 bg-[#0F172AFF] dark:bg-[#0F172AFF] border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] rounded-xl transform hover:rotate-6 transition-transform duration-300">
+                        <mat-icon class="!text-4xl !w-10 !h-10 text-white dark:text-white" svgIcon="heroicons_outline:chart-bar"></mat-icon>
                     </div>
                     <div>
                         <h1 class="text-3xl md:text-5xl font-black text-black dark:text-white uppercase tracking-tighter drop-shadow-[2px_2px_0px_rgba(255,255,255,0.5)] dark:drop-shadow-none leading-none">
                             DASHBOARD GENERAL
                         </h1>
                         <div class="flex items-center gap-2 mt-2">
-                            <span class="w-4 h-4 bg-yellow-400 border-2 border-black rounded-full animate-pulse"></span>
-                            <p class="text-sm font-bold bg-[#111A43] text-white px-2 py-0.5 inline-block transform -rotate-1 border border-black">
+                            <p class="text-sm font-bold bg-[#F8B400FF] text-black px-2 py-0.5 inline-block transform -rotate-1 border border-black">
                                 SISTEMA DE GESTION DE HERRAMIENTAS
                             </p>
                         </div>
@@ -31,7 +30,7 @@
 
                     <div class="flex items-start justify-between relative z-10">
                         <div class="flex-1">
-                            <p class="text-xs font-black uppercase text-gray-500 dark:text-gray-400 tracking-wider mb-1">{{ kpi.title }}</p>
+                            <p class="text-xs font-black uppercase text-black dark:text-gray-400 tracking-wider mb-1">{{ kpi.title }}</p>
                             <p class="text-4xl font-black text-black dark:text-white mb-2">{{ kpi.value }}</p>
 
                             <p *ngIf="kpi.subtitle"
@@ -138,10 +137,10 @@
                                 </td>
                                 <td class="p-3">
                                     <p class="text-xs font-black uppercase text-black dark:text-white">{{ activity.title }}</p>
-                                    <p class="text-[10px] text-gray-600 dark:text-gray-400 font-bold uppercase">{{ activity.description }}</p>
+                                    <p class="text-[10px] text-black dark:text-gray-400 font-bold uppercase">{{ activity.description }}</p>
                                 </td>
                                 <td class="p-3 text-right">
-                                    <span class="text-[10px] font-bold text-gray-400 dark:text-white whitespace-nowrap bg-gray-100 dark:bg-slate-700 px-1 rounded">{{ activity.time }}</span>
+                                    <span class="text-[10px] font-bold text-black dark:text-white whitespace-nowrap bg-gray-100 dark:bg-slate-700 px-1 rounded">{{ activity.time }}</span>
                                 </td>
                             </tr>
                             </tbody>

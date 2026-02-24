@@ -68,18 +68,14 @@ export const appRoutes: Route[] = [
             // SALIDAS - Gestión de salidas de herramientas
             {path: 'salidas', loadChildren: () => import('app/modules/admin/exits/exits.routes')},
 
-            // KITS - Gestión de kits de herramientas
-            {path: 'kits', loadChildren: () => import('app/modules/admin/kits/kits.routes')},
+            // CALIBRACIONES - Gestión de calibraciones, alertas, laboratorios y gatas
+            {path: 'calibraciones', loadChildren: () => import('app/modules/admin/calibraciones/calibraciones.routes')},
 
-
-            // INVENTARIO - Consultas y gestión de inventario
+            // INVENTARIO - Módulo unificado (inventario + kits + reportes)
             {path: 'inventario', loadChildren: () => import('app/modules/admin/inventory/inventory.routes')},
 
             // ADMINISTRACIÓN - Gestión de usuarios, roles, proveedores y clientes
-            {path: 'administration', loadChildren: () => import('app/modules/admin/administration/administration.routes')},
-
-            // REPORTES - Reportes y analíticas
-            {path: 'reportes', loadChildren: () => import('app/modules/admin/reports/reports.routes')}
+            {path: 'administration', loadChildren: () => import('app/modules/admin/administration/administration.routes')}
         ]
     }
 ];

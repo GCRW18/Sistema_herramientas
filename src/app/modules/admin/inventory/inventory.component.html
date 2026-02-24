@@ -1,166 +1,132 @@
-<div class="flex flex-col w-full h-full bg-[#FFF] dark:bg-[#0a0f29] transition-colors duration-300 font-sans overflow-hidden">
+<div class="flex flex-col w-full h-full bg-white dark:bg-[#0F172AFF] transition-colors duration-300 font-sans overflow-hidden">
 
-    <div class="flex-1 overflow-y-auto p-6 md:p-8 relative">
+    <div class="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8 relative">
 
-        <div class="fixed top-20 right-10 w-40 h-40 bg-[#111A43] rounded-full border-[3px] border-black opacity-5 pointer-events-none"></div>
-        <div class="fixed bottom-10 left-10 w-24 h-24 bg-emerald-500 rotate-12 border-[3px] border-black opacity-10 pointer-events-none"></div>
-
-        <div class="max-w-[1800px] mx-auto relative z-10" *ngIf="showCards">
-
-            <div class="flex items-center justify-between mb-10">
-                <div class="flex items-center gap-6">
-                    <div class="flex items-center justify-center w-16 h-16 md:w-20 md:h-20 bg-white dark:bg-slate-800 border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] rounded-xl transform hover:rotate-6 transition-transform duration-300">
-                        <mat-icon class="!text-5xl !w-12 !h-12 text-black dark:text-white" svgIcon="heroicons_outline:archive-box"></mat-icon>
-                    </div>
-                    <div>
-                        <h1 class="text-4xl md:text-6xl font-black text-black dark:text-white uppercase tracking-tighter drop-shadow-[3px_3px_0px_rgba(255,255,255,0.5)] dark:drop-shadow-none leading-none">
-                            INVENTARIO
-                        </h1>
-                        <div class="flex items-center gap-2 mt-3">
-                            <span class="w-4 h-4 bg-blue-600 border-2 border-black rounded-full animate-pulse"></span>
-                            <p class="text-base font-bold bg-slate-800 text-white px-3 py-1 inline-block transform -rotate-1 border-2 border-black">
-                                CONTROL DE STOCK
-                            </p>
-                        </div>
-                    </div>
-                </div>
-
-                <button [routerLink]="['dashboard']"
-                        class="px-6 py-3 bg-yellow-400 dark:bg-yellow-400 text-black font-black text-xl border-[3px] border-black dark:border-black rounded-full shadow-[3px_3px_0px_0px_#000] dark:shadow-black hover:shadow-[2px_2px_0px_0px_#000] hover:translate-x-[3px] hover:translate-y-[3px] active:shadow-none transition-all uppercase tracking-wide flex items-center gap-3">
-                    Dashboard
-                </button>
-            </div>
-
-            <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 mb-12">
-
-                <div class="neo-card-action group hover:bg-green-600 dark:hover:bg-emerald-900/20 min-h-[200px] flex flex-col justify-center border-[3px] border-black dark:border-black rounded-2xl p-4 transition-all duration-300" (click)="openConsultarInventario()">
-                    <div class="flex flex-col xl:flex-row items-center gap-3 xl:gap-3 relative z-10 text-center xl:text-left">
-                        <div class="w-15 h-15 xl:w-24 xl:h-24 border-[3px] border-black dark:border-black bg-white dark:bg-slate-700 rounded-2xl flex items-center justify-center shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] group-hover:scale-105 group-hover:rotate-3 transition-all duration-300 flex-shrink-0">
-                            <mat-icon class="!text-5xl !w-12 !h-12 text-black dark:text-white" svgIcon="heroicons_outline:clipboard-document-check"></mat-icon>
-                        </div>
-                        <div>
-                            <h2 class="text-2xl xl:text-2xl font-black text-black dark:text-white leading-none uppercase tracking-tight">CONSULTAR</h2>
-                            <span class="text-xs font-black text-white dark:text-white uppercase tracking-widest bg-green-600 dark:bg-emerald-600 px-2 py-0.5 rounded border border-black inline-block w-fit">
-                                INVENTARIO
-                            </span>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="neo-card-action group hover:bg-orange-600 dark:hover:bg-orange-900/20 min-h-[200px] flex flex-col justify-center border-[3px] border-black dark:border-black  rounded-2xl p-4 transition-all duration-300" (click)="openAjustarStock()">
-                    <div class="flex flex-col xl:flex-row items-center gap-3 xl:gap-3 relative z-10 text-center xl:text-left">
-                        <div class="w-15 h-15 xl:w-24 xl:h-24 border-[3px] border-black dark:border-black bg-white dark:bg-slate-700 rounded-2xl flex items-center justify-center shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] group-hover:scale-105 group-hover:rotate-3 transition-all duration-300 flex-shrink-0">
-                            <mat-icon class="!text-4xl !w-12 !h-12 text-black dark:text-white" svgIcon="heroicons_outline:adjustments-horizontal"></mat-icon>
-                        </div>
-                        <div>
-                            <h2 class="text-2xl xl:text-3xl font-black text-black dark:text-white leading-none uppercase tracking-tight">AJUSTAR</h2>
-                            <span class="text-xs font-black text-white dark:text-white uppercase tracking-widest bg-orange-600 dark:bg-orange-600 px-2 py-0.5 rounded border border-black inline-block w-fit">
-                                STOCK
-                            </span>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="neo-card-action group hover:bg-purple-600 dark:hover:bg-purple-900/20 min-h-[200px] flex flex-col justify-center border-[3px] border-black dark:border-black rounded-2xl p-4 transition-all duration-300" (click)="openGestionUbicaciones()">
-                    <div class="flex flex-col xl:flex-row items-center gap-3 xl:gap-3 relative z-10 text-center xl:text-left">
-                        <div class="w-15 h-15 xl:w-24 xl:h-24 border-[3px] border-black dark:border-black bg-white dark:bg-slate-700 rounded-2xl flex items-center justify-center shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] group-hover:scale-105 group-hover:rotate-3 transition-all duration-300 flex-shrink-0">
-                            <mat-icon class="!text-4xl !w-12 !h-12 text-black dark:text-white" svgIcon="heroicons_outline:map-pin"></mat-icon>
-                        </div>
-                        <div>
-                            <h2 class="text-2xl xl:text-2xl font-black text-black dark:text-white leading-none uppercase tracking-tight">UBICACIONES</h2>
-                            <span class="text-xs font-black text-white dark:text-white uppercase tracking-widest bg-purple-600 dark:bg-purple-600 px-2 py-0.5 rounded border border-black inline-block w-fit">
-                                GESTION
-                            </span>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="neo-card-action group hover:bg-blue-900 dark:hover:bg-blue-900/20 min-h-[200px] flex flex-col justify-center border-[3px] border-black dark:border-black rounded-2xl p-4 transition-all duration-300" (click)="crearNuevaHerramienta()">
-                    <div class="flex flex-col xl:flex-row items-center gap-3 xl:gap-3 relative z-10 text-center xl:text-left">
-                        <div class="w-20 h-20 xl:w-24 xl:h-24 border-[3px] border-black dark:border-black bg-white dark:bg-slate-700 rounded-2xl flex items-center justify-center shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] group-hover:scale-105 group-hover:rotate-3 transition-all duration-300 flex-shrink-0">
-                            <mat-icon class="!text-5xl !w-12 !h-12 text-black dark:text-white" svgIcon="heroicons_outline:plus-circle"></mat-icon>
-                        </div>
-                        <div>
-                            <h2 class="text-2xl xl:text-3xl font-black text-black dark:text-white leading-none uppercase tracking-tight">NUEVA</h2>
-                            <span class="text-xs font-black text-white dark:text-white uppercase tracking-widest bg-blue-900 dark:bg-blue-900 px-2 py-0.5 rounded border border-black inline-block w-fit">
-                                HERRAMIENTA
-                            </span>
-                        </div>
-                    </div>
-                </div>
-
-            </div>
-
-            <div class="relative z-10 min-h-[200px] border-[3px] border-black dark:border-black bg-white dark:bg-slate-800 rounded-2xl shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] overflow-hidden flex flex-col">
-
-                <div class="p-4 bg-[#111A43] dark:bg-slate-900 border-b-[3px] border-black dark:border-black flex justify-between items-center">
-                    <h3 class="text-lg md:text-xl font-black text-white uppercase tracking-wider flex items-center gap-2">
-                        <mat-icon class="scale-100">history</mat-icon> Movimientos de Stock
-                    </h3>
-                </div>
-
-                <div class="overflow-auto flex-1 p-0 bg-white dark:bg-slate-800">
-                    <table mat-table [dataSource]="recentRecords" class="w-full">
-
-                        <ng-container matColumnDef="fecha">
-                            <th mat-header-cell *matHeaderCellDef class="header-neo text-sm py-3 px-4">FECHA</th>
-                            <td mat-cell *matCellDef="let element" class="cell-neo font-mono font-bold text-sm px-4 text-black dark:text-white">
-                                {{ element.fecha }}
-                            </td>
-                        </ng-container>
-
-                        <ng-container matColumnDef="tipo">
-                            <th mat-header-cell *matHeaderCellDef class="header-neo text-sm py-3 px-4">TIPO</th>
-                            <td mat-cell *matCellDef="let element" class="cell-neo px-4">
-                                <span class="inline-block  sm:text-xs font-black text-black dark:text-white">
-                                    {{ element.tipo }}
-                                </span>
-                            </td>
-                        </ng-container>
-
-                        <ng-container matColumnDef="item">
-                            <th mat-header-cell *matHeaderCellDef class="header-neo text-sm py-3 px-4">ITEM</th>
-                            <td mat-cell *matCellDef="let element" class="cell-neo font-bold text-xs sm:text-sm px-4 text-black dark:text-white">
-                                {{ element.item }}
-                            </td>
-                        </ng-container>
-
-                        <ng-container matColumnDef="cantidad">
-                            <th mat-header-cell *matHeaderCellDef class="header-neo text-sm py-3 px-4">CANTIDAD</th>
-                            <td mat-cell *matCellDef="let element" class="cell-neo px-4">
-                                <span class="inline-block px-2 py-0.5 rounded text-[10px] sm:text-xs font-black text-black dark:text-white">
-                                    {{ element.cantidad }}
-                                </span>
-                            </td>
-                        </ng-container>
-
-                        <ng-container matColumnDef="responsable">
-                            <th mat-header-cell *matHeaderCellDef class="header-neo text-sm py-3 px-4">RESPONSABLE</th>
-                            <td mat-cell *matCellDef="let element" class="cell-neo font-bold text-xs sm:text-sm px-4 text-black dark:text-white">
-                                {{ element.responsable }}
-                            </td>
-                        </ng-container>
-
-                        <ng-container matColumnDef="acciones">
-                            <th mat-header-cell *matHeaderCellDef class="header-neo text-right text-sm py-3 px-4">ACCIONES</th>
-                            <td mat-cell *matCellDef="let element" class="cell-neo text-right px-4">
-                                <div class="flex gap-2 justify-end">
-                                    <button class="w-8 h-8 flex items-center justify-center border-2 border-black dark:border-black bg-white dark:bg-slate-700 hover:bg-gray-100 dark:hover:bg-slate-600 rounded-lg shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] active:translate-y-[1px] active:shadow-none transition-all">
-                                        <mat-icon class="text-black dark:text-white !text-lg !w-5 !h-5 flex items-center justify-center">visibility</mat-icon>
-                                    </button>
-                                    <button class="w-8 h-8 flex items-center justify-center border-2 border-black dark:border-black bg-yellow-500 dark:bg-yellow-500 hover:bg-yellow-400 dark:hover:bg-yellow-600 rounded-lg shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] active:translate-y-[1px] active:shadow-none transition-all">
-                                        <mat-icon class="text-black dark:text-black !text-lg !w-5 !h-5 flex items-center justify-center">edit</mat-icon>
-                                    </button>
-                                </div>
-                            </td>
-                        </ng-container>
-
-                        <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
-                        <tr mat-row *matRowDef="let row; columns: displayedColumns;" class="hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors border-b border-gray-200 dark:border-slate-700/50 h-12"></tr>
-                    </table>
+        <div class="max-w-[1600px] mx-auto relative z-10" *ngIf="showCards">
+            <div class="flex items-start gap-1 mt-1 md:gap-2 mb-3">
+                <div>
+                    <h1 class="text-3xl md:text-5xl font-black text-black dark:text-white uppercase tracking-tighter drop-shadow-[3px_3px_0px_rgba(255,255,255,0.5)] dark:drop-shadow-none leading-none">
+                        INVENTARIO
+                    </h1>
                 </div>
             </div>
+
+            <!-- ========== MAIN GRID: Sidebar LEFT + Cards ========== -->
+            <div class="grid grid-cols-1 lg:grid-cols-[250px_1fr] xl:grid-cols-[280px_1fr] gap-3 md:gap-4 mb-6">
+
+                <!-- ===== LEFT SIDEBAR ===== -->
+                <div class="flex flex-col gap-2 md:gap-3">
+
+                    <!-- Dashboard Button -->
+                    <button [routerLink]="['dashboard']"
+                            class="inv-sidebar-btn group hover:bg-cyan-600">
+                        <span>DASHBOARD</span>
+                    </button>
+
+                    <!-- Movimientos Button -->
+                    <button [routerLink]="['movimientos']"
+                            class="inv-sidebar-btn group hover:bg-slate-600">
+                        <span>MOVIMIENTOS</span>
+                    </button>
+
+                    <!-- Card 1: Almacen y Ubicaciones (tall) -->
+                    <div class="neo-card-inv group flex-1 min-h-[200px] lg:min-h-[260px] hover:bg-[#FF6A00FF] dark:hover:bg-blue-800/20" (click)="openGestionUbicaciones()">
+                        <div class="flex flex-col h-full p-4 md:p-5">
+                            <span class="inv-number">1</span>
+                            <p class="inv-label inv-label-lg mt-2">ALMACEN Y<br>UBICACIONES</p>
+                            <div class="flex-1 flex items-center justify-center mt-3">
+                                <mat-icon class="inv-icon-xl group-hover:rotate-[25deg] transition-transform duration-300" svgIcon="heroicons_outline:building-storefront"></mat-icon>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- ===== RIGHT: Cards Grid (2 columns) ===== -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4 auto-rows-min">
+
+                    <!-- Card 2: Consultar Inventario -->
+                    <div class="neo-card-inv group hover:bg-[#1A3EDCFF] dark:hover:bg-blue-800/20" (click)="openConsultarInventario()">
+                        <div class="flex flex-col h-full p-4 md:p-5 min-h-[150px]">
+                            <span class="inv-number">2</span>
+                            <div class="flex-1 flex flex-col items-center justify-center gap-1">
+                                <mat-icon class="inv-icon-lg group-hover:rotate-[20deg] transition-transform duration-300" svgIcon="heroicons_outline:wrench-screwdriver"></mat-icon>
+                                <p class="inv-label text-center">CONSULTAR<br>INVENTARIO</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Card 3: Gestion Kits -->
+                    <div class="neo-card-inv group hover:bg-[#1AAA1FFF] dark:hover:bg-blue-800/20" [routerLink]="['lista-kits']">
+                        <div class="flex flex-col h-full p-4 md:p-5 min-h-[150px]">
+                            <span class="inv-number">3</span>
+                            <div class="flex-1 flex flex-col items-center justify-center gap-1">
+                                <mat-icon class="inv-icon-lg group-hover:scale-110 transition-transform duration-300" svgIcon="heroicons_outline:cube"></mat-icon>
+                                <p class="inv-label text-center">GESTION<br>KITS</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Card 5: Crear -->
+                    <div class="neo-card-inv group hover:bg-[#FFC501FF] dark:hover:bg-blue-800/20" (click)="openCrearMaterial()">
+                        <div class="flex items-center h-full p-3 md:p-4 min-h-[120px] gap-3">
+                            <span class="inv-number inv-number-sm shrink-0">5</span>
+                            <p class="inv-label inv-label-sm flex-1">CREAR<br>MATERIAL</p>
+                            <mat-icon class="inv-icon-md group-hover:rotate-[-15deg] transition-transform duration-300 shrink-0" svgIcon="heroicons_outline:plus-circle"></mat-icon>
+                        </div>
+                    </div>
+
+                    <!-- Card 6: Entrada -->
+                    <div class="neo-card-inv group hover:bg-[#e94125] dark:hover:bg-blue-800/20" (click)="openEntradaMaterial()">
+                        <div class="flex items-center h-full p-3 md:p-4 min-h-[120px] gap-3">
+                            <span class="inv-number inv-number-sm shrink-0">6</span>
+                            <p class="inv-label inv-label-sm flex-1">ENTRADA<br>MATERIAL</p>
+                            <mat-icon class="inv-icon-md group-hover:scale-110 transition-transform duration-300 shrink-0" svgIcon="heroicons_outline:arrow-down-tray"></mat-icon>
+                        </div>
+                    </div>
+
+                    <!-- Card 4: Reportes (wide - spans 2 cols) -->
+                    <div class="neo-card-inv group col-span-1 sm:col-span-2 hover:bg-[#7113CFFF] dark:hover:bg-blue-800/20" [routerLink]="['reportes']">
+                        <div class="flex items-center h-full p-4 md:p-5 min-h-[100px] gap-4">
+                            <span class="inv-number shrink-0">4</span>
+                            <p class="inv-label inv-label-lg flex-1">REPORTES</p>
+                            <mat-icon class="inv-icon-lg group-hover:rotate-[15deg] transition-transform duration-300 shrink-0" svgIcon="heroicons_outline:chart-bar"></mat-icon>
+                        </div>
+                    </div>
+
+                    <!-- Card 7: Salida (wide) -->
+                    <div class="neo-card-inv group col-span-1 sm:col-span-2 hover:bg-[#203f77] dark:hover:bg-blue-800/20" (click)="openSalidaMaterial()">
+                        <div class="flex items-center h-full p-3 md:p-4 min-h-[100px] gap-4">
+                            <span class="inv-number inv-number-sm shrink-0">7</span>
+                            <p class="inv-label inv-label-sm flex-1">SALIDA<br>MATERIAL</p>
+                            <mat-icon class="inv-icon-md group-hover:rotate-[15deg] transition-transform duration-300 shrink-0" svgIcon="heroicons_outline:arrow-up-tray"></mat-icon>
+                        </div>
+                    </div>
+
+                    <!-- Card 8: Historial de Estados -->
+                    <div class="neo-card-inv group hover:bg-[#0891b2] dark:hover:bg-blue-800/20" (click)="openHistorialEstados()">
+                        <div class="flex items-center h-full p-3 md:p-4 min-h-[120px] gap-3">
+                            <span class="inv-number inv-number-sm shrink-0">8</span>
+                            <p class="inv-label inv-label-sm flex-1">HISTORIAL<br>ESTADOS</p>
+                            <mat-icon class="inv-icon-md group-hover:scale-110 transition-transform duration-300 shrink-0" svgIcon="heroicons_outline:clock"></mat-icon>
+                        </div>
+                    </div>
+
+                    <!-- Card 9: Migracion Excel -->
+                    <div class="neo-card-inv group hover:bg-[#16a34a] dark:hover:bg-blue-800/20" (click)="openMigracionExcel()">
+                        <div class="flex items-center h-full p-3 md:p-4 min-h-[120px] gap-3">
+                            <span class="inv-number inv-number-sm shrink-0">9</span>
+                            <p class="inv-label inv-label-sm flex-1">MIGRACION<br>EXCEL</p>
+                            <mat-icon class="inv-icon-md group-hover:rotate-[-15deg] transition-transform duration-300 shrink-0" svgIcon="heroicons_outline:cloud-arrow-up"></mat-icon>
+                        </div>
+                    </div>
+
+                </div>
+
+            </div>
+
         </div>
+
         <router-outlet></router-outlet>
     </div>
 </div>

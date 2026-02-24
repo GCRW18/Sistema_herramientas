@@ -1,18 +1,28 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject, ViewChild, TemplateRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterModule, NavigationEnd } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { MatTableModule } from '@angular/material/table';
+import { MatPaginatorModule, MatPaginator, PageEvent } from '@angular/material/paginator';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
-import { filter } from 'rxjs/operators';
+import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatTooltipModule } from '@angular/material/tooltip';
+import { DragDropModule } from '@angular/cdk/drag-drop';
+import { filter, takeUntil, finalize } from 'rxjs/operators';
+import { Subject } from 'rxjs';
+import { MovementService } from '../../../core/services/movement.service';
 
 interface EntryRecord {
+    id: string;
     fecha: string;
     tipo: string;
     estado: string;
     responsable: string;
+    nroComprobante?: string;
+    items?: number;
 }
 
 @Component({
@@ -25,7 +35,12 @@ interface EntryRecord {
         MatIconModule,
         MatButtonModule,
         MatTableModule,
-        MatDialogModule
+        MatPaginatorModule,
+        MatDialogModule,
+        MatSnackBarModule,
+        MatProgressSpinnerModule,
+        MatTooltipModule,
+        DragDropModule
     ],
     templateUrl: './entries.component.html',
 
@@ -33,60 +48,154 @@ interface EntryRecord {
         :host {
             display: block;
             height: 100%;
-            --neo-border: 3px solid black;
-            --neo-shadow: 5px 5px 0px 0px rgba(0, 0, 0, 1);
+            --neo-border: 3px solid #1a1a1a;
+            --neo-shadow: 4px 4px 0px 0px rgba(0, 0, 0, 1);
         }
 
-        /* CARD ACTION STYLE - TAMAÑO AUMENTADO */
-        .neo-card-action {
+        /* ===== ENTRY CARDS ===== */
+        .neo-card-entry {
             border: var(--neo-border);
             box-shadow: var(--neo-shadow);
-            border-radius: 16px; /* Borde más redondeado para tarjetas grandes */
-            background-color: white;
-            padding: 40px; /* Padding masivo */
+            border-radius: 20px;
+            background-color: #ffffff;
             cursor: pointer;
             transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
             position: relative;
             overflow: hidden;
         }
 
-        .neo-card-action:hover {
-            transform: translate(-4px, -4px); /* Movimiento más pronunciado */
-            box-shadow: 10px 10px 0px 0px rgba(0, 0, 0, 1); /* Sombra más larga */
+        .neo-card-entry:hover {
+            transform: translate(-3px, -3px);
+            box-shadow: 8px 8px 0px 0px rgba(0, 0, 0, 1);
         }
 
-        .neo-card-action:active {
+        .neo-card-entry:active {
             transform: translate(0px, 0px);
             box-shadow: 2px 2px 0px 0px rgba(0, 0, 0, 1);
         }
 
-        /* Dark mode overrides */
-        :host-context(.dark) .neo-card-action {
-            background-color: #1e293b;
-            border-color: #040404;
-            box-shadow: 5px 5px 0px 0px rgba(71, 85, 105, 1);
+        :host-context(.dark) .neo-card-entry {
+            background-color: #203f77;
+            border-color: #000000;
+            box-shadow: 4px 4px 0px 0px rgb(0, 0, 0);
         }
 
-        :host-context(.dark) .neo-card-action:hover {
-            box-shadow: 10px 10px 0px 0px rgb(0, 0, 0);
+        :host-context(.dark) .neo-card-entry:hover {
+            box-shadow: 8px 8px 0px 0px rgb(0, 0, 0);
         }
 
-        :host-context(.dark) .neo-card-action:active {
-            box-shadow: 2px 2px 0px 0px rgb(9, 9, 9);
+        :host-context(.dark) .neo-card-entry:active {
+            box-shadow: 2px 2px 0px 0px rgba(30, 41, 59, 1);
         }
 
-        /* TABLE STYLES */
-        .neo-card-base {
-            border: var(--neo-border);
-            box-shadow: var(--neo-shadow);
-            border-radius: 12px;
+        /* ===== CARD NUMBERS ===== */
+        .entry-number {
+            font-size: 4rem;
+            font-weight: 900;
+            line-height: 1;
+            color: #1a1a1a;
+            letter-spacing: -0.03em;
         }
 
+        .entry-number-sm {
+            font-size: 2.5rem;
+        }
+
+        :host-context(.dark) .entry-number {
+            color: #fff6f6;
+        }
+
+        /* ===== CARD LABELS ===== */
+        .entry-label {
+            font-size: 0.95rem;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 0.01em;
+            line-height: 1.25;
+            color: #1a1a1a;
+        }
+
+        .entry-label-lg {
+            font-size: 1.35rem;
+        }
+
+        .entry-label-sm {
+            font-size: 0.85rem;
+        }
+
+        :host-context(.dark) .entry-label {
+            color: #c2cee6;
+        }
+
+        /* ===== CARD ICONS ===== */
+        .entry-icon-lg {
+            width: 70px !important;
+            height: 70px !important;
+            font-size: 70px !important;
+            color: #1a1a1a;
+        }
+
+        .entry-icon-md {
+            width: 48px !important;
+            height: 48px !important;
+            font-size: 48px !important;
+            color: #1a1a1a;
+        }
+
+        .entry-icon-xl {
+            width: 130px !important;
+            height: 130px !important;
+            font-size: 130px !important;
+            color: #1a1a1a;
+        }
+
+        :host-context(.dark) .entry-icon-lg,
+        :host-context(.dark) .entry-icon-md,
+        :host-context(.dark) .entry-icon-xl {
+            color: #ffffff;
+        }
+
+        /* ===== SIDEBAR BUTTONS ===== */
+        .entry-sidebar-btn {
+            width: 100%;
+            padding: 14px 20px;
+            font-weight: 900;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            background-color: #ffffff;
+            color: #1a1a1a;
+            border: 3px solid #1a1a1a;
+            border-radius: 14px;
+            box-shadow: 3px 3px 0px 0px rgba(0, 0, 0, 1);
+            cursor: pointer;
+            transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .entry-sidebar-btn:hover {
+            transform: translate(-2px, -2px);
+            box-shadow: 5px 5px 0px 0px rgba(0, 0, 0, 1);
+            color: #ffffff;
+        }
+
+        .entry-sidebar-btn:active {
+            transform: translate(0, 0);
+            box-shadow: 1px 1px 0px 0px rgba(0, 0, 0, 1);
+        }
+
+        :host-context(.dark) .entry-sidebar-btn {
+            background-color: #203f77;
+            color: #ffffff;
+            border-color: #000000;
+            box-shadow: 3px 3px 0px 0px rgb(30, 41, 59);
+        }
+
+        /* ===== TABLE STYLES ===== */
         .header-neo {
             background-color: white !important;
             color: #111A43 !important;
             font-weight: 900 !important;
-            font-size: 14px !important; /* Fuente más grande en headers */
+            font-size: 14px !important;
             border-bottom: 3px solid black !important;
             padding: 20px !important;
             text-transform: uppercase;
@@ -106,58 +215,225 @@ interface EntryRecord {
         }
 
         :host-context(.dark) .cell-neo {
-            color: #000000;
+            color: white;
             border-bottom-color: #333;
         }
+
+        /* ===== DIALOG: Neo Card Base ===== */
+        .neo-card-base-entry {
+            border: 2px solid black !important;
+            box-shadow: 4px 4px 0px 0px rgba(0,0,0,1) !important;
+            border-radius: 8px !important;
+            background-color: white;
+        }
+
+        :host-context(.dark) .neo-card-base-entry {
+            background-color: #1e293b !important;
+        }
+
+        /* ===== DIALOG: Spinner Overlay ===== */
+        .spinner-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255,255,255,0.8);
+            backdrop-filter: blur(4px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+        }
+
+        :host-context(.dark) .spinner-overlay {
+            background: rgba(0,0,0,0.7);
+        }
+
+        /* ===== DIALOG: Custom Scrollbar ===== */
+        .custom-scrollbar-entry::-webkit-scrollbar { width: 6px; height: 6px; }
+        .custom-scrollbar-entry::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar-entry::-webkit-scrollbar-thumb { background: #000; border-radius: 3px; }
+        :host-context(.dark) .custom-scrollbar-entry::-webkit-scrollbar-thumb { background: #cbd5e1; }
+
     `]
 })
-export class EntriesComponent implements OnInit {
+export class EntriesComponent implements OnInit, OnDestroy {
     private router = inject(Router);
     private dialog = inject(MatDialog);
-    showCards = true;
+    private snackBar = inject(MatSnackBar);
+    private movementService = inject(MovementService);
 
-    displayedColumns: string[] = ['fecha', 'tipo', 'estado', 'responsable', 'acciones'];
-    recentEntries: EntryRecord[] = [
-        {
-            fecha: '29/12/2025',
-            tipo: 'RETORNO CALIBRACION',
-            estado: 'REVISION',
-            responsable: 'GABRIEL'
-        },
-        {
-            fecha: '28/12/2025',
-            tipo: 'NUEVA HERRAMIENTA',
-            estado: 'COMPLETADO',
-            responsable: 'MARIA'
-        },
-        {
-            fecha: '27/12/2025',
-            tipo: 'DEVOLUCION TERCEROS',
-            estado: 'PENDIENTE',
-            responsable: 'CARLOS'
-        }
-    ];
+    private _unsubscribeAll = new Subject<void>();
+
+    @ViewChild(MatPaginator) paginator!: MatPaginator;
+    @ViewChild('entradasRecientesDialog') entradasRecientesDialog!: TemplateRef<any>;
+
+    showCards = true;
+    isLoading = false;
+
+    // Paginacion
+    totalRecords = 0;
+    pageSize = 10;
+    pageIndex = 0;
+    pageSizeOptions = [5, 10, 25, 50];
+
+    displayedColumns: string[] = ['fecha', 'tipo', 'nroComprobante', 'estado', 'responsable', 'acciones'];
+    recentEntries: EntryRecord[] = [];
 
     ngOnInit(): void {
         this.updateCardVisibility(this.router.url);
+        this.loadRecentEntries();
 
         this.router.events.pipe(
-            filter(event => event instanceof NavigationEnd)
+            filter(event => event instanceof NavigationEnd),
+            takeUntil(this._unsubscribeAll)
         ).subscribe((event: any) => {
             this.updateCardVisibility(event.url);
         });
+    }
+
+    ngOnDestroy(): void {
+        this._unsubscribeAll.next();
+        this._unsubscribeAll.complete();
     }
 
     private updateCardVisibility(url: string): void {
         this.showCards = url === '/entradas' || url === '/entradas/' || url.endsWith('/entradas');
     }
 
-    // Modal Openers (Dynamic Imports to keep initial bundle small)
-    async openRetornoCalibracion(): Promise<void> {
-        const { RetornoCalibracionComponent } = await import('./retorno-calibracion/retorno-calibracion.component');
-        this.openDialog(RetornoCalibracionComponent);
+    loadRecentEntries(): void {
+        this.isLoading = true;
+
+        this.movementService.getHistorialMovimientos({
+            movement_type: 'entry',
+            page: this.pageIndex + 1,
+            limit: this.pageSize
+        }).pipe(
+            takeUntil(this._unsubscribeAll),
+            finalize(() => this.isLoading = false)
+        ).subscribe({
+            next: (response) => {
+                if (response.data && response.data.length > 0) {
+                    this.recentEntries = response.data.map((item: any) => ({
+                        id: item.id || item.id_movement,
+                        fecha: this.formatDate(item.date || item.fecha),
+                        tipo: this.mapEntryType(item.entryReason || item.tipo),
+                        estado: this.mapStatus(item.status || item.estado),
+                        responsable: item.requestedBy?.fullName || item.responsable || 'N/A',
+                        nroComprobante: item.movementNumber || item.nroComprobante || '-',
+                        items: item.items?.length || 0
+                    }));
+                    this.totalRecords = response.total || this.recentEntries.length;
+                } else {
+                    this.loadMockData();
+                }
+            },
+            error: () => {
+                this.loadMockData();
+            }
+        });
     }
 
+    private loadMockData(): void {
+        this.recentEntries = [
+            { id: '1', fecha: '28/01/2026', tipo: 'RETORNO CALIBRACION', estado: 'COMPLETADO', responsable: 'GABRIEL CRUZ', nroComprobante: 'ENT-2026-001', items: 3 },
+            { id: '2', fecha: '27/01/2026', tipo: 'NUEVA HERRAMIENTA', estado: 'COMPLETADO', responsable: 'MARIA LOPEZ', nroComprobante: 'ENT-2026-002', items: 5 },
+            { id: '3', fecha: '26/01/2026', tipo: 'DEVOLUCION', estado: 'PENDIENTE', responsable: 'CARLOS RODRIGUEZ', nroComprobante: 'ENT-2026-003', items: 2 },
+            { id: '4', fecha: '25/01/2026', tipo: 'AJUSTE INGRESO', estado: 'REVISION', responsable: 'ANA MARTINEZ', nroComprobante: 'ENT-2026-004', items: 1 },
+            { id: '5', fecha: '24/01/2026', tipo: 'RETORNO TRASPASO', estado: 'COMPLETADO', responsable: 'PEDRO SANCHEZ', nroComprobante: 'ENT-2026-005', items: 4 }
+        ];
+        this.totalRecords = 25;
+    }
+
+    private formatDate(date: string): string {
+        if (!date) return '-';
+        try {
+            const d = new Date(date);
+            return d.toLocaleDateString('es-BO', { day: '2-digit', month: '2-digit', year: 'numeric' });
+        } catch {
+            return date;
+        }
+    }
+
+    private mapEntryType(type: string): string {
+        const typeMap: Record<string, string> = {
+            'purchase':           'NUEVA HERRAMIENTA',
+            'return':             'RECEPCION DEVOLUCIÓN',
+            'adjustment':         'AJUSTE INGRESO',
+            'donation':           'DONACION',
+            'calibration_return': 'RETORNO CALIBRACION',
+            'transfer_return':    'RETORNO TRASPASO',
+            'base_return':        'RETORNO BASE',
+            'third_party_return': 'DEVOLUCIÓN TERCEROS'
+        };
+        return typeMap[type] || type?.toUpperCase() || 'N/A';
+    }
+
+    private mapStatus(status: string): string {
+        const statusMap: Record<string, string> = {
+            'pending': 'PENDIENTE',
+            'approved': 'APROBADO',
+            'completed': 'COMPLETADO',
+            'cancelled': 'CANCELADO',
+            'review': 'REVISION'
+        };
+        return statusMap[status] || status?.toUpperCase() || 'N/A';
+    }
+
+    onPageChange(event: PageEvent): void {
+        this.pageIndex = event.pageIndex;
+        this.pageSize = event.pageSize;
+        this.loadRecentEntries();
+    }
+
+    verDetalle(entry: EntryRecord): void {
+        this.showMessage(`Ver detalle de entrada ${entry.nroComprobante}`, 'info');
+    }
+
+    editarEntrada(entry: EntryRecord): void {
+        this.showMessage(`Editar entrada ${entry.nroComprobante}`, 'info');
+    }
+
+    getStatusClass(estado: string): string {
+        switch (estado) {
+            case 'COMPLETADO':
+                return 'bg-[#177f0f] text-black';
+            case 'PENDIENTE':
+                return 'bg-[#F8B400FF] text-black';
+            case 'REVISION':
+                return 'bg-[#203F77FF] text-black';
+            case 'CANCELADO':
+                return 'bg-red-800 text-black';
+            default:
+                return 'bg-gray-100 text-gray-800 border-gray-300';
+        }
+    }
+
+    private showMessage(message: string, type: 'success' | 'error' | 'warning' | 'info'): void {
+        this.snackBar.open(message, 'Cerrar', {
+            duration: 3000,
+            horizontalPosition: 'end',
+            verticalPosition: 'top',
+            panelClass: [`snackbar-${type}`]
+        });
+    }
+
+    openEntradasRecientes(): void {
+        this.loadRecentEntries();
+        this.dialog.open(this.entradasRecientesDialog, {
+            width: '1100px',
+            maxWidth: '95vw',
+            height: '85vh',
+            maxHeight: '90vh',
+            panelClass: 'neo-dialog-entradas',
+            hasBackdrop: true,
+            disableClose: false,
+            autoFocus: false
+        });
+    }
+
+    // Modal Openers
     async openRetornoTraspaso(): Promise<void> {
         const { RetornoTraspasoComponent } = await import('./retorno-traspaso/retorno-traspaso.component');
         this.openDialog(RetornoTraspasoComponent);
@@ -196,8 +472,9 @@ export class EntriesComponent implements OnInit {
         });
 
         dialogRef.afterClosed().subscribe(result => {
-            if (result) {
-                console.log('Operación guardada:', result);
+            if (result?.success) {
+                this.showMessage('Operacion completada exitosamente', 'success');
+                this.loadRecentEntries();
             }
         });
     }

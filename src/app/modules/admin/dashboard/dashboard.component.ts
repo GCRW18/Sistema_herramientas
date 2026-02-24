@@ -64,29 +64,25 @@ interface QuickAction {
             height: 100%;
         }
 
-        /* --- CLASE MAESTRA NEO-BRUTALISTA --- */
         .neo-card-base {
             background-color: white;
             border: 3px solid black;
             border-radius: 12px;
-            box-shadow: 6px 6px 0px 0px rgba(0, 0, 0, 1); /* Sombra dura negra */
+            box-shadow: 6px 6px 0px 0px rgba(0, 0, 0, 1);
             transition: all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1);
             position: relative;
             overflow: hidden;
         }
 
-        /* Efecto Hover para las tarjetas */
         .neo-card-base:hover {
             transform: translate(-2px, -2px); /* Se mueve arriba/izquierda */
             box-shadow: 8px 8px 0px 0px rgba(0, 0, 0, 1); /* Sombra crece */
         }
 
-        /* Efecto Hover en modo oscuro */
         :host-context(.dark) .neo-card-base:hover {
             box-shadow: 8px 8px 0px 0px rgb(9, 16, 55);
         }
 
-        /* Efecto Active (Click) */
         .neo-card-base:active {
             transform: translate(2px, 2px);
             box-shadow: 2px 2px 0px 0px rgba(0, 0, 0, 1);
@@ -99,7 +95,7 @@ interface QuickAction {
 
         /* Variantes de colores para subtítulos/etiquetas */
         .variant-info {
-            background-color: #111A43;
+            background-color: #203f77;
             color: #fffefe;
         }
 

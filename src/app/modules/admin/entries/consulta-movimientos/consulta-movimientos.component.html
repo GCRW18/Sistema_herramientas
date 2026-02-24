@@ -1,0 +1,473 @@
+<div class="flex flex-col w-full h-full bg-[#f8f9fc] dark:bg-[#0F172AFF] transition-colors duration-300 font-sans overflow-hidden relative"
+     cdkDrag cdkDragRootElement=".cdk-overlay-pane" cdkDragBoundary=".cdk-overlay-container">
+
+    <!-- Spinner de carga -->
+    <div *ngIf="isSearching" class="spinner-overlay z-[100]">
+        <div class="neo-card-base p-6 flex flex-col items-center gap-4 bg-white dark:bg-slate-800">
+            <mat-spinner diameter="50"></mat-spinner>
+            <span class="font-black text-black dark:text-white uppercase tracking-wider">Consultando movimientos...</span>
+        </div>
+    </div>
+
+    <div class="flex-1 overflow-y-auto p-6 md:p-8 relative">
+
+        <!-- Decoraciones -->
+        <div class="fixed top-20 right-10 w-40 h-40 bg-[#111A43] rounded-full border-3 border-black opacity-5 pointer-events-none"></div>
+        <div class="fixed bottom-10 left-10 w-24 h-24 bg-cyan-400 rotate-12 border-3 border-black opacity-10 pointer-events-none"></div>
+
+        <!-- HEADER -->
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 relative z-10">
+            <div class="flex items-center gap-6">
+                <button (click)="goBack()"
+                        class="w-14 h-14 bg-white dark:bg-slate-800 border-3 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] active:shadow-none active:translate-x-1 active:translate-y-1 hover:bg-white transition-all flex items-center justify-center rounded-lg cursor-pointer"
+                        (mousedown)="$event.stopPropagation()">
+                    <mat-icon class="!text-4xl !w-10 !h-10 text-black dark:text-white" svgIcon="heroicons_outline:arrow-left"></mat-icon>
+                </button>
+                <div>
+                    <h1 class="text-2xl md:text-4xl font-black text-black dark:text-white uppercase tracking-tighter drop-shadow-[2px_2px_0px_rgba(255,255,255,0.5)] dark:drop-shadow-none">
+                        Consulta de Movimientos
+                    </h1>
+                    <div class="flex items-center gap-2 mt-1">
+                        <span class="w-3 h-3 bg-cyan-500 border border-white rounded-full animate-pulse"></span>
+                        <p class="text-sm font-bold bg-[#111A43] text-white px-2 py-0.5 inline-block transform -rotate-1 border border-white">
+                            HISTORIAL POR RANGO DE FECHA
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Botones de acción -->
+            <div class="flex flex-wrap gap-3">
+                <button (click)="exportarExcel()" [disabled]="dataSource.length === 0"
+                        class="px-4 py-2 bg-green-600 text-white font-black text-sm border-2 border-black rounded-lg shadow-[3px_3px_0px_0px_#000] hover:shadow-[1px_1px_0px_0px_#000] hover:translate-x-[2px] hover:translate-y-[2px] transition-all uppercase flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
+                    <mat-icon class="!text-lg">table_chart</mat-icon>
+                    Excel
+                </button>
+                <button (click)="exportarPDF()" [disabled]="dataSource.length === 0"
+                        class="px-4 py-2 bg-red-600 text-white font-black text-sm border-2 border-black rounded-lg shadow-[3px_3px_0px_0px_#000] hover:shadow-[1px_1px_0px_0px_#000] hover:translate-x-[2px] hover:translate-y-[2px] transition-all uppercase flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
+                    <mat-icon class="!text-lg">picture_as_pdf</mat-icon>
+                    PDF
+                </button>
+            </div>
+        </div>
+
+        <!-- FILTROS -->
+        <form [formGroup]="filtroForm">
+            <div class="neo-card-base bg-white dark:bg-slate-800 p-6 mb-6 relative z-10">
+
+                <!-- Fila 1: Búsqueda principal -->
+                <div class="grid grid-cols-1 md:grid-cols-12 gap-4 mb-4">
+                    <!-- Tipo de búsqueda -->
+                    <mat-form-field appearance="fill" class="md:col-span-2">
+                        <mat-label>Buscar por</mat-label>
+                        <mat-select formControlName="tipoBusqueda">
+                            <mat-option value="codigo">Código</mat-option>
+                            <mat-option value="pn">P/N</mat-option>
+                            <mat-option value="sn">S/N</mat-option>
+                            <mat-option value="nombre">Nombre</mat-option>
+                        </mat-select>
+                    </mat-form-field>
+
+                    <!-- Campo de búsqueda -->
+                    <mat-form-field appearance="fill" class="md:col-span-4">
+                        <mat-label>Buscar herramienta...</mat-label>
+                        <input matInput formControlName="busqueda" placeholder="Ingrese código, P/N, S/N o nombre...">
+                        <mat-icon matSuffix class="text-black dark:text-white">search</mat-icon>
+                    </mat-form-field>
+
+                    <!-- Tipo de movimiento -->
+                    <mat-form-field appearance="fill" class="md:col-span-2">
+                        <mat-label>Tipo Movimiento</mat-label>
+                        <mat-select formControlName="tipoMovimiento">
+                            <mat-option *ngFor="let tipo of tiposMovimiento" [value]="tipo.value">
+                                {{ tipo.label }}
+                            </mat-option>
+                        </mat-select>
+                    </mat-form-field>
+
+                    <!-- Subtipo Entrada (visible solo si tipo = ENTRADA) -->
+                    <mat-form-field appearance="fill" class="md:col-span-2" *ngIf="filtroForm.get('tipoMovimiento')?.value === 'ENTRADA'">
+                        <mat-label>Tipo Entrada</mat-label>
+                        <mat-select formControlName="subtipoEntrada">
+                            <mat-option *ngFor="let sub of tiposEntrada" [value]="sub.value">
+                                {{ sub.label }}
+                            </mat-option>
+                        </mat-select>
+                    </mat-form-field>
+
+                    <!-- Subtipo Salida (visible solo si tipo = SALIDA) -->
+                    <mat-form-field appearance="fill" class="md:col-span-2" *ngIf="filtroForm.get('tipoMovimiento')?.value === 'SALIDA'">
+                        <mat-label>Tipo Salida</mat-label>
+                        <mat-select formControlName="subtipoSalida">
+                            <mat-option *ngFor="let sub of tiposSalida" [value]="sub.value">
+                                {{ sub.label }}
+                            </mat-option>
+                        </mat-select>
+                    </mat-form-field>
+
+                    <!-- Checkbox solo calibración -->
+                    <div class="md:col-span-2 flex items-center">
+                        <mat-checkbox formControlName="soloConCalibracion" color="primary" class="font-bold text-sm">
+                            Solo Calibración
+                        </mat-checkbox>
+                    </div>
+                </div>
+
+                <!-- Fila 2: Fechas y botones -->
+                <div class="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
+                    <!-- Gestión -->
+                    <mat-form-field appearance="fill" class="md:col-span-2">
+                        <mat-label>Gestión</mat-label>
+                        <mat-select formControlName="gestion">
+                            <mat-option *ngFor="let year of gestionOptions" [value]="year">{{ year }}</mat-option>
+                        </mat-select>
+                    </mat-form-field>
+
+                    <!-- Fecha desde -->
+                    <mat-form-field appearance="fill" class="md:col-span-2">
+                        <mat-label>Fecha desde</mat-label>
+                        <input matInput [matDatepicker]="pickerDesde" formControlName="fechaDesde">
+                        <mat-datepicker-toggle matIconSuffix [for]="pickerDesde"></mat-datepicker-toggle>
+                        <mat-datepicker #pickerDesde></mat-datepicker>
+                    </mat-form-field>
+
+                    <!-- Fecha hasta -->
+                    <mat-form-field appearance="fill" class="md:col-span-2">
+                        <mat-label>Fecha hasta</mat-label>
+                        <input matInput [matDatepicker]="pickerHasta" formControlName="fechaHasta">
+                        <mat-datepicker-toggle matIconSuffix [for]="pickerHasta"></mat-datepicker-toggle>
+                        <mat-datepicker #pickerHasta></mat-datepicker>
+                    </mat-form-field>
+
+                    <!-- Espaciador -->
+                    <div class="md:col-span-2"></div>
+
+                    <!-- Botones -->
+                    <div class="md:col-span-4 flex gap-3 justify-end">
+                        <button type="button" (click)="limpiarFormulario()"
+                                class="h-[48px] px-6 bg-gray-200 dark:bg-slate-700 text-black dark:text-white font-black text-sm border-2 border-black rounded-lg shadow-[3px_3px_0px_0px_#000] hover:shadow-[1px_1px_0px_0px_#000] hover:translate-x-[2px] hover:translate-y-[2px] transition-all uppercase flex items-center gap-2">
+                            <mat-icon>clear</mat-icon>
+                            Limpiar
+                        </button>
+                        <button type="button" (click)="consultar()" [disabled]="isSearching"
+                                class="h-[48px] px-8 bg-cyan-600 text-white font-black text-sm border-2 border-black rounded-lg shadow-[3px_3px_0px_0px_#000] hover:shadow-[1px_1px_0px_0px_#000] hover:translate-x-[2px] hover:translate-y-[2px] transition-all uppercase flex items-center gap-2 disabled:opacity-50">
+                            <mat-spinner *ngIf="isSearching" diameter="20" class="!w-5 !h-5"></mat-spinner>
+                            <mat-icon *ngIf="!isSearching">search</mat-icon>
+                            {{ isSearching ? 'Buscando...' : 'Consultar' }}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </form>
+
+        <!-- RESUMEN DE RESULTADOS -->
+        <div *ngIf="hasSearched" class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6 relative z-10">
+            <!-- Total Movimientos -->
+            <div class="neo-card-base bg-white dark:bg-slate-800 p-4 flex items-center gap-3">
+                <div class="w-12 h-12 bg-[#111A43] rounded-full flex items-center justify-center border-2 border-black">
+                    <mat-icon class="text-white">swap_horiz</mat-icon>
+                </div>
+                <div>
+                    <p class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase">Total</p>
+                    <p class="text-2xl font-black text-black dark:text-white">{{ totalRecords }}</p>
+                </div>
+            </div>
+
+            <!-- Entradas -->
+            <div class="neo-card-base bg-green-50 dark:bg-green-900/20 p-4 flex items-center gap-3">
+                <div class="w-12 h-12 bg-green-500 rounded-full flex items-center justify-center border-2 border-black">
+                    <mat-icon class="text-white">arrow_downward</mat-icon>
+                </div>
+                <div>
+                    <p class="text-xs font-bold text-green-600 dark:text-green-400 uppercase">Entradas</p>
+                    <p class="text-2xl font-black text-green-800 dark:text-green-200">{{ resumen.totalEntradas }}</p>
+                    <p class="text-xs text-green-600 dark:text-green-400">{{ resumen.cantidadEntradas }} unid.</p>
+                </div>
+            </div>
+
+            <!-- Salidas -->
+            <div class="neo-card-base bg-amber-50 dark:bg-amber-900/20 p-4 flex items-center gap-3">
+                <div class="w-12 h-12 bg-amber-500 rounded-full flex items-center justify-center border-2 border-black">
+                    <mat-icon class="text-white">arrow_upward</mat-icon>
+                </div>
+                <div>
+                    <p class="text-xs font-bold text-amber-600 dark:text-amber-400 uppercase">Salidas</p>
+                    <p class="text-2xl font-black text-amber-800 dark:text-amber-200">{{ resumen.totalSalidas }}</p>
+                    <p class="text-xs text-amber-600 dark:text-amber-400">{{ resumen.cantidadSalidas }} unid.</p>
+                </div>
+            </div>
+
+            <!-- Saldo -->
+            <div class="neo-card-base p-4 flex items-center gap-3"
+                 [ngClass]="resumen.saldoFinal >= 0 ? 'bg-blue-50 dark:bg-blue-900/20' : 'bg-red-50 dark:bg-red-900/20'">
+                <div class="w-12 h-12 rounded-full flex items-center justify-center border-2 border-black"
+                     [ngClass]="resumen.saldoFinal >= 0 ? 'bg-blue-500' : 'bg-red-500'">
+                    <mat-icon class="text-white">{{ resumen.saldoFinal >= 0 ? 'trending_up' : 'trending_down' }}</mat-icon>
+                </div>
+                <div>
+                    <p class="text-xs font-bold uppercase"
+                       [ngClass]="resumen.saldoFinal >= 0 ? 'text-blue-600 dark:text-blue-400' : 'text-red-600 dark:text-red-400'">
+                        Saldo
+                    </p>
+                    <p class="text-2xl font-black"
+                       [ngClass]="resumen.saldoFinal >= 0 ? 'text-blue-800 dark:text-blue-200' : 'text-red-800 dark:text-red-200'">
+                        {{ resumen.saldoFinal >= 0 ? '+' : '' }}{{ resumen.saldoFinal }}
+                    </p>
+                </div>
+            </div>
+
+            <!-- Logo BoA -->
+            <div class="neo-card-base bg-white dark:bg-slate-800 p-4 flex items-center justify-center">
+                <div class="text-center">
+                    <span class="font-black text-[#111A43] dark:text-white text-2xl">BoA</span>
+                    <p class="text-xs text-gray-500 dark:text-gray-400">Herramientas</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- CONTENIDO PRINCIPAL -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 relative z-10">
+
+            <!-- Panel Izquierdo: Detalle de Herramienta Seleccionada -->
+            <div class="lg:col-span-3">
+                <div class="neo-card-base bg-white dark:bg-slate-800 p-5 h-full">
+                    <div class="flex items-center gap-2 mb-4 border-b-2 border-black/10 dark:border-white/20 pb-2">
+                        <mat-icon class="text-cyan-600 scale-110">inventory_2</mat-icon>
+                        <h3 class="font-black text-sm uppercase text-black dark:text-white">Detalle Herramienta</h3>
+                    </div>
+
+                    <div *ngIf="herramientaSeleccionada" class="space-y-3">
+                        <div>
+                            <label class="block text-xs font-black uppercase text-gray-500 dark:text-gray-400 mb-1">Código</label>
+                            <div class="h-10 bg-cyan-100 dark:bg-cyan-900/30 border-2 border-black rounded-lg px-3 flex items-center font-bold text-black dark:text-white text-sm">
+                                {{ herramientaSeleccionada.codigo }}
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-black uppercase text-gray-500 dark:text-gray-400 mb-1">Nombre</label>
+                            <div class="min-h-[40px] bg-cyan-100 dark:bg-cyan-900/30 border-2 border-black rounded-lg px-3 py-2 font-bold text-black dark:text-white text-sm">
+                                {{ herramientaSeleccionada.nombre }}
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-2">
+                            <div>
+                                <label class="block text-xs font-black uppercase text-gray-500 dark:text-gray-400 mb-1">P/N</label>
+                                <div class="h-10 bg-cyan-100 dark:bg-cyan-900/30 border-2 border-black rounded-lg px-3 flex items-center font-mono font-bold text-black dark:text-white text-xs">
+                                    {{ herramientaSeleccionada.pn }}
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-black uppercase text-gray-500 dark:text-gray-400 mb-1">S/N</label>
+                                <div class="h-10 bg-cyan-100 dark:bg-cyan-900/30 border-2 border-black rounded-lg px-3 flex items-center font-mono font-bold text-black dark:text-white text-xs">
+                                    {{ herramientaSeleccionada.sn }}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-black uppercase text-gray-500 dark:text-gray-400 mb-1">Ubicación</label>
+                            <div class="h-10 bg-cyan-100 dark:bg-cyan-900/30 border-2 border-black rounded-lg px-3 flex items-center font-bold text-black dark:text-white text-sm">
+                                {{ herramientaSeleccionada.ubicacion }}
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-black uppercase text-gray-500 dark:text-gray-400 mb-1">Estado</label>
+                            <div class="h-10 border-2 border-black rounded-lg px-3 flex items-center font-black text-sm"
+                                 [ngClass]="herramientaSeleccionada.estado === 'DISPONIBLE' ? 'bg-green-200 text-green-800' : 'bg-amber-200 text-amber-800'">
+                                {{ herramientaSeleccionada.estado }}
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-black uppercase text-gray-500 dark:text-gray-400 mb-1">Último Movimiento</label>
+                            <div class="h-10 bg-gray-100 dark:bg-slate-700 border-2 border-black rounded-lg px-3 flex items-center font-bold text-black dark:text-white text-xs">
+                                {{ herramientaSeleccionada.ultimoMovimiento }}
+                            </div>
+                        </div>
+
+                        <div *ngIf="herramientaSeleccionada.requiereCalibracion" class="p-3 bg-purple-100 dark:bg-purple-900/30 rounded-lg border-2 border-purple-300">
+                            <div class="flex items-center gap-2 mb-1">
+                                <mat-icon class="text-purple-600 !text-lg">verified</mat-icon>
+                                <span class="text-xs font-black uppercase text-purple-700 dark:text-purple-300">Requiere Calibración</span>
+                            </div>
+                            <p class="text-sm font-bold text-purple-800 dark:text-purple-200">
+                                Próxima: {{ herramientaSeleccionada.fechaProximaCalibracion || 'N/A' }}
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Estado vacío -->
+                    <div *ngIf="!herramientaSeleccionada" class="flex flex-col items-center justify-center py-8 text-gray-400">
+                        <mat-icon class="!text-5xl !w-12 !h-12 mb-2">touch_app</mat-icon>
+                        <p class="text-sm font-bold text-center">Seleccione un movimiento para ver el detalle</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Panel Derecho: Tabla de Movimientos -->
+            <div class="lg:col-span-9">
+                <div class="neo-card-base bg-white dark:bg-[#0f1633] overflow-hidden">
+
+                    <!-- Header de tabla -->
+                    <div class="bg-[#111A43] text-white px-4 py-3 flex items-center justify-between border-b-3 border-black">
+                        <div class="flex items-center gap-2">
+                            <mat-icon>list_alt</mat-icon>
+                            <span class="font-black uppercase text-sm">Movimientos</span>
+                        </div>
+                        <span class="bg-white text-[#111A43] px-3 py-1 rounded-full font-black text-sm">
+                            {{ totalRecords }} registro(s)
+                        </span>
+                    </div>
+
+                    <!-- Tabla -->
+                    <div class="overflow-auto max-h-[450px]">
+                        <table mat-table [dataSource]="dataSource" class="w-full">
+
+                            <!-- Columna Fecha -->
+                            <ng-container matColumnDef="fecha">
+                                <th mat-header-cell *matHeaderCellDef class="!bg-gray-100 dark:!bg-[#111A43] !text-black dark:!text-white !font-black !text-xs !border-b-2 !border-black !p-3 uppercase !min-w-[90px]">Fecha</th>
+                                <td mat-cell *matCellDef="let element" class="!p-3 !text-sm !border-b !border-gray-200 dark:!border-black/30 font-bold">{{ element.fecha }}</td>
+                            </ng-container>
+
+                            <!-- Columna Hora -->
+                            <ng-container matColumnDef="hora">
+                                <th mat-header-cell *matHeaderCellDef class="!bg-gray-100 dark:!bg-[#111A43] !text-black dark:!text-white !font-black !text-xs !border-b-2 !border-black !p-3 uppercase">Hora</th>
+                                <td mat-cell *matCellDef="let element" class="!p-3 !text-sm !border-b !border-gray-200 dark:!border-black/30">{{ element.hora }}</td>
+                            </ng-container>
+
+                            <!-- Columna Comprobante -->
+                            <ng-container matColumnDef="comprobante">
+                                <th mat-header-cell *matHeaderCellDef class="!bg-gray-100 dark:!bg-[#111A43] !text-black dark:!text-white !font-black !text-xs !border-b-2 !border-black !p-3 uppercase">Comprb.</th>
+                                <td mat-cell *matCellDef="let element" class="!p-3 !text-sm !border-b !border-gray-200 dark:!border-black/30 font-mono font-bold">{{ element.comprobante }}</td>
+                            </ng-container>
+
+                            <!-- Columna Tipo -->
+                            <ng-container matColumnDef="tipo">
+                                <th mat-header-cell *matHeaderCellDef class="!bg-gray-100 dark:!bg-[#111A43] !text-black dark:!text-white !font-black !text-xs !border-b-2 !border-black !p-3 uppercase">Tipo</th>
+                                <td mat-cell *matCellDef="let element" class="!p-3 !text-sm !border-b !border-gray-200 dark:!border-black/30">
+                                    <span class="px-2 py-1 rounded text-xs font-black border-2 border-black" [ngClass]="getTipoClass(element.tipo)">
+                                        {{ element.tipo === 'ENTRADA' ? 'ENT' : 'SAL' }}
+                                    </span>
+                                </td>
+                            </ng-container>
+
+                            <!-- Columna Subtipo -->
+                            <ng-container matColumnDef="subtipo">
+                                <th mat-header-cell *matHeaderCellDef class="!bg-gray-100 dark:!bg-[#111A43] !text-black dark:!text-white !font-black !text-xs !border-b-2 !border-black !p-3 uppercase">Motivo</th>
+                                <td mat-cell *matCellDef="let element" class="!p-3 !text-sm !border-b !border-gray-200 dark:!border-black/30">
+                                    <span class="px-2 py-0.5 rounded text-xs font-bold border" [ngClass]="getSubtipoClass(element.subtipo)">
+                                        {{ element.subtipo }}
+                                    </span>
+                                </td>
+                            </ng-container>
+
+                            <!-- Columna Código -->
+                            <ng-container matColumnDef="codigo">
+                                <th mat-header-cell *matHeaderCellDef class="!bg-gray-100 dark:!bg-[#111A43] !text-black dark:!text-white !font-black !text-xs !border-b-2 !border-black !p-3 uppercase">Código</th>
+                                <td mat-cell *matCellDef="let element" class="!p-3 !text-sm !border-b !border-gray-200 dark:!border-black/30 font-mono font-bold text-cyan-700 dark:text-cyan-400">{{ element.codigo }}</td>
+                            </ng-container>
+
+                            <!-- Columna Descripción -->
+                            <ng-container matColumnDef="descripcion">
+                                <th mat-header-cell *matHeaderCellDef class="!bg-gray-100 dark:!bg-[#111A43] !text-black dark:!text-white !font-black !text-xs !border-b-2 !border-black !p-3 uppercase !min-w-[200px]">Descripción</th>
+                                <td mat-cell *matCellDef="let element" class="!p-3 !text-sm !border-b !border-gray-200 dark:!border-black/30 !max-w-[250px] truncate" [matTooltip]="element.descripcion">{{ element.descripcion }}</td>
+                            </ng-container>
+
+                            <!-- Columna Cantidad -->
+                            <ng-container matColumnDef="cantidad">
+                                <th mat-header-cell *matHeaderCellDef class="!bg-gray-100 dark:!bg-[#111A43] !text-black dark:!text-white !font-black !text-xs !border-b-2 !border-black !p-3 uppercase text-center">Cant.</th>
+                                <td mat-cell *matCellDef="let element" class="!p-3 !text-sm !border-b !border-gray-200 dark:!border-black/30 !font-black text-center">{{ element.cantidad }}</td>
+                            </ng-container>
+
+                            <!-- Columna Origen/Destino -->
+                            <ng-container matColumnDef="origenDestino">
+                                <th mat-header-cell *matHeaderCellDef class="!bg-gray-100 dark:!bg-[#111A43] !text-black dark:!text-white !font-black !text-xs !border-b-2 !border-black !p-3 uppercase">Origen/Destino</th>
+                                <td mat-cell *matCellDef="let element" class="!p-3 !text-sm !border-b !border-gray-200 dark:!border-black/30 !max-w-[150px] truncate" [matTooltip]="element.origenDestino">{{ element.origenDestino }}</td>
+                            </ng-container>
+
+                            <!-- Columna Responsable -->
+                            <ng-container matColumnDef="responsable">
+                                <th mat-header-cell *matHeaderCellDef class="!bg-gray-100 dark:!bg-[#111A43] !text-black dark:!text-white !font-black !text-xs !border-b-2 !border-black !p-3 uppercase">Responsable</th>
+                                <td mat-cell *matCellDef="let element" class="!p-3 !text-sm !border-b !border-gray-200 dark:!border-black/30">{{ element.responsable }}</td>
+                            </ng-container>
+
+                            <!-- Columna Observación -->
+                            <ng-container matColumnDef="observacion">
+                                <th mat-header-cell *matHeaderCellDef class="!bg-gray-100 dark:!bg-[#111A43] !text-black dark:!text-white !font-black !text-xs !border-b-2 !border-black !p-3 uppercase">Observación</th>
+                                <td mat-cell *matCellDef="let element" class="!p-3 !text-sm !border-b !border-gray-200 dark:!border-black/30 !max-w-[180px] truncate" [matTooltip]="element.observacion">{{ element.observacion }}</td>
+                            </ng-container>
+
+                            <tr mat-header-row *matHeaderRowDef="displayedColumns; sticky: true"></tr>
+                            <tr mat-row *matRowDef="let row; columns: displayedColumns;"
+                                class="cursor-pointer hover:!bg-cyan-50 dark:hover:!bg-cyan-900/20 transition-colors"
+                                [ngClass]="getRowClass(row)"
+                                (click)="seleccionarMovimiento(row)">
+                            </tr>
+                        </table>
+
+                        <!-- Estado vacío -->
+                        <div *ngIf="dataSource.length === 0 && !isSearching" class="flex flex-col items-center justify-center py-16 text-gray-400">
+                            <div class="w-20 h-20 bg-gray-100 dark:bg-slate-700 rounded-full flex items-center justify-center mb-4 border-2 border-gray-300">
+                                <mat-icon class="!text-4xl !w-10 !h-10">search_off</mat-icon>
+                            </div>
+                            <h3 class="text-lg font-black uppercase">{{ hasSearched ? 'Sin resultados' : 'Realice una consulta' }}</h3>
+                            <p class="text-sm font-bold mt-1">
+                                {{ hasSearched ? 'No se encontraron movimientos con los filtros seleccionados' : 'Configure los filtros y presione "Consultar"' }}
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Paginador -->
+                    <div *ngIf="totalRecords > 0" class="border-t-2 border-black">
+                        <mat-paginator
+                            [length]="totalRecords"
+                            [pageSize]="pageSize"
+                            [pageIndex]="pageIndex"
+                            [pageSizeOptions]="pageSizeOptions"
+                            (page)="onPageChange($event)"
+                            showFirstLastButtons
+                            class="!bg-gray-50 dark:!bg-slate-800">
+                        </mat-paginator>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- LEYENDA -->
+        <div class="mt-6 neo-card-base bg-white dark:bg-slate-800 p-4 relative z-10">
+            <div class="flex items-center gap-2 mb-3">
+                <mat-icon class="text-gray-600 dark:text-gray-300">info</mat-icon>
+                <span class="font-black text-sm uppercase text-black dark:text-white">Leyenda de Colores</span>
+            </div>
+            <div class="flex flex-wrap gap-4">
+                <div class="flex items-center gap-2">
+                    <div class="w-4 h-4 bg-green-500 border border-black rounded"></div>
+                    <span class="text-sm font-bold text-gray-700 dark:text-gray-300">Entrada</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <div class="w-4 h-4 bg-amber-500 border border-black rounded"></div>
+                    <span class="text-sm font-bold text-gray-700 dark:text-gray-300">Salida</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <div class="w-4 h-4 bg-purple-400 border border-black rounded"></div>
+                    <span class="text-sm font-bold text-gray-700 dark:text-gray-300">Calibración</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <div class="w-4 h-4 bg-blue-400 border border-black rounded"></div>
+                    <span class="text-sm font-bold text-gray-700 dark:text-gray-300">Préstamo</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <div class="w-4 h-4 bg-orange-400 border border-black rounded"></div>
+                    <span class="text-sm font-bold text-gray-700 dark:text-gray-300">Envío</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <div class="w-4 h-4 bg-cyan-400 border border-black rounded"></div>
+                    <span class="text-sm font-bold text-gray-700 dark:text-gray-300">Devolución/Retorno</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

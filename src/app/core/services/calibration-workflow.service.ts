@@ -1,6 +1,18 @@
-import { Injectable, signal, computed } from '@angular/core';
+import { Injectable, signal, computed, inject } from '@angular/core';
 import { Observable, of, BehaviorSubject } from 'rxjs';
-import { map, tap } from 'rxjs/operators';
+import { map, tap, catchError } from 'rxjs/operators';
+import { CalibrationService } from './calibration.service';
+import {
+    ScanToolResult,
+    CalibrationRecord,
+    AlertUrgency,
+    URGENCY_COLORS,
+    URGENCY_LABELS
+} from '../models/calibration.types';
+import {
+    CalibrationBatch,
+    CalibrationBatchItem
+} from '../models/calibration-batch.types';
 
 /**
  * Estados del workflow de calibración
@@ -83,6 +95,32 @@ export interface WorkflowValidation {
     warnings: string[];
 }
 
+/**
+ * Item escaneado en modo supermercado (extiende CalibrationBatchItem)
+ */
+export interface BatchScanItem {
+    id_batch_item: number;
+    batch_id: number;
+    tool_id: number;
+    calibration_id: number | null;
+    scan_order: number;
+    tool_code: string;
+    tool_name: string;
+    tool_serial: string;
+    tool_status_snapshot: string | null;
+    calibration_date_snapshot: string | null;
+    next_calibration_snapshot: string | null;
+    is_jack: boolean;
+    requires_semiannual: boolean;
+    requires_annual: boolean;
+    scanned_by_barcode: boolean;
+    scan_timestamp: string;
+    validation_result: 'valid' | 'warning' | 'rejected';
+    validation_message: string | null;
+    notes: string | null;
+    scanned_at: string;
+}
+
 @Injectable({
     providedIn: 'root'
 })
@@ -115,25 +153,134 @@ export class CalibrationWorkflowService {
         })
     );
 
+    // =========================================================================
+    // MODO SUPERMERCADO - Lotes de Calibración (Signals)
+    // =========================================================================
+
+    private _calibrationService = inject(CalibrationService);
+
+    /** Lote activo (cabecera) */
+    public activeBatchSignal = signal<CalibrationBatch | null>(null);
+
+    /** Items escaneados en el lote activo */
+    public batchItemsSignal = signal<BatchScanItem[]>([]);
+
+    /** Último resultado de escaneo */
+    public lastScanResult = signal<ScanToolResult | null>(null);
+
+    /** Estado del modo supermercado */
+    public supermarketMode = signal<boolean>(false);
+
+    /** Conteo de items en el lote */
+    public batchItemCount = computed(() => this.batchItemsSignal().length);
+
+    /** Conteo de gatas en el lote */
+    public batchJackCount = computed(() =>
+        this.batchItemsSignal().filter(i => i.is_jack).length
+    );
+
+    /** Items válidos en el lote */
+    public batchValidItems = computed(() =>
+        this.batchItemsSignal().filter(i => i.validation_result === 'valid')
+    );
+
+    /** Items con advertencia en el lote */
+    public batchWarningItems = computed(() =>
+        this.batchItemsSignal().filter(i => i.validation_result === 'warning')
+    );
+
     constructor() {
-        this.loadProcesses();
+        this.loadProcesses().subscribe();
     }
 
     /**
-     * Cargar procesos de calibración
+     * Cargar procesos de calibración desde el backend PXP
      */
     loadProcesses(): Observable<CalibrationProcess[]> {
-        // TODO: Reemplazar con llamada real a API
-        return this.getMockProcesses().pipe(
+        return this._calibrationService.getCalibrations({ limit: 200 }).pipe(
+            map((records: CalibrationRecord[]) => records.map(r => this.mapRecordToProcess(r))),
             tap(processes => {
                 this.processesSignal.set(processes);
                 this.processesSubject.next(processes);
+            }),
+            catchError(() => {
+                // Mantener estado actual si falla la API
+                return of(this.processesSignal());
             })
         );
     }
 
     /**
-     * Iniciar proceso de calibración (Enviar)
+     * Mapear CalibrationRecord del backend a CalibrationProcess del workflow.
+     * Maneja tanto los campos camelCase del type CalibrationRecord como los
+     * campos snake_case que llegan directamente del API PXP.
+     */
+    private mapRecordToProcess(record: any): CalibrationProcess {
+        const statusMap: Record<string, CalibrationStatus> = {
+            'pending': 'pending',
+            'sent': 'in_transit',
+            'in_process': 'in_calibration',
+            'in_calibration': 'in_calibration',
+            'completed': 'verified',
+            'approved': 'verified',
+            'rejected': 'rejected',
+            'cancelled': 'cancelled',
+            'returned': 'returned',
+            'calibrated': 'calibrated'
+        };
+
+        // Resolver campos: el API puede devolver snake_case o el tipo usa camelCase
+        const id = record.id_calibration || record.id || '';
+        const toolId = record.tool_id || record.toolId || 0;
+        const toolCode = record.tool_code || record.code || '';
+        const toolName = record.tool_name || record.name || '';
+        const status = record.status || 'pending';
+        const sendDate = record.send_date || record.sentDate || record.requestDate;
+        const provider = record.supplier_name || record.laboratory_name || '';
+        const calibrationType = record.calibration_type || record.type || 'calibration';
+        const expectedReturn = record.expected_return_date || record.expectedReturnDate;
+        const actualReturn = record.actual_return_date || record.actualReturnDate;
+        const cost = record.cost;
+        const certNumber = record.certificate_number || record.certificateNumber;
+        const certDate = record.certificate_date || record.certificateDate;
+        const nextCalib = record.next_calibration_date || record.nextCalibrationDate;
+        const result = record.result;
+        const notes = record.observations || record.notes || '';
+        const createdBy = record.id_usuario_reg || record.createdById || 0;
+        const createdByName = record.usr_reg || '';
+        const createdAt = record.fecha_reg || record.createdAt;
+        const updatedAt = record.fecha_mod || record.updatedAt;
+
+        return {
+            id: String(id),
+            toolId,
+            toolCode,
+            toolName,
+            status: statusMap[status] || 'pending',
+            sendDate: sendDate ? new Date(sendDate) : new Date(),
+            provider,
+            calibrationType: calibrationType as any,
+            estimatedReturnDate: expectedReturn ? new Date(expectedReturn) : new Date(),
+            actualReturnDate: actualReturn ? new Date(actualReturn) : undefined,
+            cost,
+            certificateNumber: certNumber,
+            certificateDate: certDate ? new Date(certDate) : undefined,
+            nextCalibrationDate: nextCalib ? new Date(nextCalib) : undefined,
+            result: result === 'approved' ? 'approved'
+                : result === 'conditional' ? 'approved_with_adjustments'
+                : result === 'rejected' ? 'rejected'
+                : undefined,
+            resultNotes: notes || undefined,
+            createdBy: Number(createdBy),
+            createdByName,
+            createdAt: createdAt ? new Date(createdAt) : new Date(),
+            updatedAt: updatedAt ? new Date(updatedAt) : new Date(),
+            history: []
+        };
+    }
+
+    /**
+     * Iniciar proceso de calibración (Enviar) - Llama al backend PXP HE_CLS_SEND
      */
     startCalibrationProcess(data: Partial<CalibrationProcess>): Observable<CalibrationProcess> {
         const validation = this.validateStartCalibration(data);
@@ -142,36 +289,55 @@ export class CalibrationWorkflowService {
             throw new Error(validation.errors.join(', '));
         }
 
-        const newProcess: CalibrationProcess = {
-            id: this.generateId(),
-            toolId: data.toolId!,
-            toolCode: data.toolCode!,
-            toolName: data.toolName!,
-            status: 'in_transit',
-            sendDate: data.sendDate || new Date(),
-            provider: data.provider!,
-            calibrationType: data.calibrationType || 'calibration',
-            estimatedReturnDate: data.estimatedReturnDate!,
-            cost: data.cost,
-            createdBy: 1, // TODO: Obtener usuario actual
-            createdByName: 'Usuario Actual',
-            createdAt: new Date(),
-            updatedAt: new Date(),
-            history: [{
-                status: 'in_transit',
-                date: new Date(),
-                userId: 1,
-                userName: 'Usuario Actual',
-                notes: 'Herramienta enviada a calibración'
-            }]
+        const sendDate = data.sendDate || new Date();
+        const formatDate = (d: Date) => {
+            const y = d.getFullYear();
+            const m = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            return `${y}-${m}-${day}`;
         };
 
-        // TODO: Llamada a API
-        const processes = [...this.processesSignal(), newProcess];
-        this.processesSignal.set(processes);
-        this.processesSubject.next(processes);
+        return this._calibrationService.sendToCalibrationPxp({
+            tool_id: Number(data.toolId),
+            calibration_type: data.calibrationType || 'calibration',
+            supplier_name: data.provider,
+            send_date: formatDate(sendDate),
+            expected_return_date: data.estimatedReturnDate ? formatDate(new Date(data.estimatedReturnDate)) : undefined,
+            cost: data.cost,
+            notes: data.resultNotes
+        }).pipe(
+            map((response: any) => {
+                const newProcess: CalibrationProcess = {
+                    id: String(response?.id_calibration || this.generateId()),
+                    toolId: data.toolId!,
+                    toolCode: data.toolCode!,
+                    toolName: data.toolName!,
+                    status: 'in_transit',
+                    sendDate,
+                    provider: data.provider!,
+                    calibrationType: data.calibrationType || 'calibration',
+                    estimatedReturnDate: data.estimatedReturnDate!,
+                    cost: data.cost,
+                    createdBy: response?.id_usuario_reg || 0,
+                    createdByName: response?.usr_reg || '',
+                    createdAt: new Date(),
+                    updatedAt: new Date(),
+                    history: [{
+                        status: 'in_transit',
+                        date: new Date(),
+                        userId: response?.id_usuario_reg || 0,
+                        userName: response?.usr_reg || '',
+                        notes: 'Herramienta enviada a calibracion'
+                    }]
+                };
 
-        return of(newProcess);
+                const processes = [...this.processesSignal(), newProcess];
+                this.processesSignal.set(processes);
+                this.processesSubject.next(processes);
+
+                return newProcess;
+            })
+        );
     }
 
     /**
@@ -393,6 +559,149 @@ export class CalibrationWorkflowService {
         return colors[status];
     }
 
+    // =========================================================================
+    // MODO SUPERMERCADO - Métodos de Lote
+    // =========================================================================
+
+    /**
+     * Activar modo supermercado y crear lote
+     */
+    startSupermarketMode(params: {
+        laboratory_id?: number;
+        laboratory_name?: string;
+        base_id?: number;
+        base_name?: string;
+        send_date?: string;
+        expected_return_date?: string;
+        service_order?: string;
+        notes?: string;
+    }): Observable<CalibrationBatch> {
+        return this._calibrationService.createCalibrationBatch(params).pipe(
+            tap((batch) => {
+                this.activeBatchSignal.set(batch);
+                this.batchItemsSignal.set([]);
+                this.supermarketMode.set(true);
+            })
+        );
+    }
+
+    /**
+     * Escanear herramienta y agregarla al lote activo
+     * Detecta automáticamente si es gata
+     */
+    scanAndAddToBatch(barcode: string): Observable<BatchScanItem> {
+        const batch = this.activeBatchSignal();
+        if (!batch) {
+            throw new Error('No hay lote activo. Inicie el modo supermercado primero.');
+        }
+
+        return this._calibrationService.addToolToBatch({
+            batch_id: batch.id_batch,
+            barcode_scan: barcode
+        }).pipe(
+            tap((item: any) => {
+                const scanItem: BatchScanItem = {
+                    ...item,
+                    scanned_at: new Date().toISOString()
+                };
+                this.batchItemsSignal.update(items => [...items, scanItem]);
+                // Actualizar total en la cabecera
+                this.activeBatchSignal.update(b => b ? { ...b, total_items: (b.total_items || 0) + 1 } : null);
+            })
+        );
+    }
+
+    /**
+     * Escanear herramienta para obtener info sin agregar al lote
+     */
+    scanToolPreview(barcode: string): Observable<ScanToolResult> {
+        return this._calibrationService.scanToolForCalibration(barcode).pipe(
+            tap((result) => {
+                this.lastScanResult.set(result);
+            })
+        );
+    }
+
+    /**
+     * Eliminar item del lote
+     */
+    removeItemFromBatch(batchItemId: number): Observable<any> {
+        return this._calibrationService.removeFromBatch(batchItemId).pipe(
+            tap(() => {
+                this.batchItemsSignal.update(items =>
+                    items.filter(i => i.id_batch_item !== batchItemId)
+                );
+                this.activeBatchSignal.update(b =>
+                    b ? { ...b, total_items: Math.max(0, (b.total_items || 0) - 1) } : null
+                );
+            })
+        );
+    }
+
+    /**
+     * Confirmar y enviar lote completo al laboratorio
+     */
+    confirmAndSendBatch(approvedBy?: { id: number; name: string }): Observable<any> {
+        const batch = this.activeBatchSignal();
+        if (!batch) {
+            throw new Error('No hay lote activo para confirmar.');
+        }
+
+        return this._calibrationService.confirmCalibrationBatch({
+            batch_id: batch.id_batch,
+            approved_by_id: approvedBy?.id,
+            approved_by_name: approvedBy?.name
+        }).pipe(
+            tap(() => {
+                this.activeBatchSignal.update(b => b ? { ...b, status: 'sent' } : null);
+                this.supermarketMode.set(false);
+            })
+        );
+    }
+
+    /**
+     * Cancelar modo supermercado y limpiar estado
+     */
+    cancelSupermarketMode(): void {
+        this.activeBatchSignal.set(null);
+        this.batchItemsSignal.set([]);
+        this.lastScanResult.set(null);
+        this.supermarketMode.set(false);
+    }
+
+    /**
+     * Cargar items de un lote existente
+     */
+    loadBatchItems(batchId: number): Observable<CalibrationBatchItem[]> {
+        return this._calibrationService.getBatchItems(batchId).pipe(
+            tap((items) => {
+                const scanItems: BatchScanItem[] = items.map(i => ({
+                    ...i,
+                    scanned_at: i.scan_timestamp
+                }));
+                this.batchItemsSignal.set(scanItems);
+            })
+        );
+    }
+
+    // =========================================================================
+    // UTILIDADES DE URGENCIA
+    // =========================================================================
+
+    /**
+     * Obtener color para nivel de urgencia
+     */
+    getUrgencyColor(urgency: AlertUrgency): string {
+        return URGENCY_COLORS[urgency] || '#6b7280';
+    }
+
+    /**
+     * Obtener label para nivel de urgencia
+     */
+    getUrgencyLabel(urgency: AlertUrgency): string {
+        return URGENCY_LABELS[urgency] || 'Desconocido';
+    }
+
     /**
      * Generar ID temporal
      */
@@ -400,97 +709,4 @@ export class CalibrationWorkflowService {
         return `cal-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
     }
 
-    /**
-     * Datos mock para desarrollo
-     */
-    private getMockProcesses(): Observable<CalibrationProcess[]> {
-        const mockProcesses: CalibrationProcess[] = [
-            {
-                id: 'cal-001',
-                toolId: 123,
-                toolCode: 'BOA-H-00123',
-                toolName: 'Torquímetro Digital 50-250 Nm',
-                status: 'in_calibration',
-                sendDate: new Date(2024, 10, 15),
-                provider: 'Calibraciones Técnicas S.A.',
-                calibrationType: 'calibration',
-                estimatedReturnDate: new Date(2024, 11, 15),
-                cost: 350,
-                createdBy: 1,
-                createdByName: 'Juan Pérez',
-                createdAt: new Date(2024, 10, 15),
-                updatedAt: new Date(2024, 10, 20),
-                history: [
-                    {
-                        status: 'in_transit',
-                        date: new Date(2024, 10, 15),
-                        userId: 1,
-                        userName: 'Juan Pérez',
-                        notes: 'Enviada a calibración'
-                    },
-                    {
-                        status: 'in_calibration',
-                        date: new Date(2024, 10, 20),
-                        userId: 2,
-                        userName: 'María García',
-                        notes: 'Confirmada recepción por el proveedor'
-                    }
-                ]
-            },
-            {
-                id: 'cal-002',
-                toolId: 456,
-                toolCode: 'BOA-H-00456',
-                toolName: 'Micrómetro Digital 0-25mm',
-                status: 'returned',
-                sendDate: new Date(2024, 10, 1),
-                provider: 'Metrología Andina',
-                calibrationType: 'calibration',
-                estimatedReturnDate: new Date(2024, 10, 25),
-                actualReturnDate: new Date(2024, 10, 24),
-                cost: 280,
-                certificateNumber: 'CERT-2024-1234',
-                certificateDate: new Date(2024, 10, 24),
-                nextCalibrationDate: new Date(2025, 10, 24),
-                result: 'approved',
-                resultNotes: 'Calibración exitosa, dentro de tolerancias',
-                createdBy: 1,
-                createdByName: 'Juan Pérez',
-                createdAt: new Date(2024, 10, 1),
-                updatedAt: new Date(2024, 10, 24),
-                history: [
-                    {
-                        status: 'in_transit',
-                        date: new Date(2024, 10, 1),
-                        userId: 1,
-                        userName: 'Juan Pérez',
-                        notes: 'Enviada a calibración'
-                    },
-                    {
-                        status: 'in_calibration',
-                        date: new Date(2024, 10, 5),
-                        userId: 2,
-                        userName: 'María García',
-                        notes: 'Confirmada recepción por el proveedor'
-                    },
-                    {
-                        status: 'calibrated',
-                        date: new Date(2024, 10, 20),
-                        userId: 2,
-                        userName: 'María García',
-                        notes: 'Calibración completada'
-                    },
-                    {
-                        status: 'returned',
-                        date: new Date(2024, 10, 24),
-                        userId: 1,
-                        userName: 'Juan Pérez',
-                        notes: 'Recibida del proveedor'
-                    }
-                ]
-            }
-        ];
-
-        return of(mockProcesses);
-    }
 }

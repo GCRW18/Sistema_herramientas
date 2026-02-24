@@ -23,6 +23,12 @@ export * from './supplier.service';
 export * from './calibration-workflow.service';
 export * from './movement-validation.service';
 export * from './minimized-dialogs.service';
+export * from './barcode-scanner.service';
+
+// Export new v2 services
+export * from './calibration-batch.service';
+export * from './state-history.service';
+export * from './migration.service';
 
 // Re-export UserService from core/user
 export { UserService } from '../user/user.service';

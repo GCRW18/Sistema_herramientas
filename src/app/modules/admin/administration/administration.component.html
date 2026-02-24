@@ -1,165 +1,201 @@
-<div class="flex flex-col w-full h-full bg-[#FFF] dark:bg-[#0a0f29] transition-colors duration-300 font-sans overflow-hidden">
+<div class="flex flex-col w-full h-full bg-white dark:bg-[#0F172AFF] transition-colors duration-300 font-sans overflow-hidden">
 
-    <div class="flex-1 overflow-y-auto p-6 md:p-8 relative">
+    <div class="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8 relative">
 
-        <div class="fixed top-20 right-10 w-40 h-40 bg-[#111A43] rounded-full border-[3px] border-black opacity-5 pointer-events-none"></div>
-        <div class="fixed bottom-10 left-10 w-24 h-24 bg-indigo-600 rotate-12 border-[3px] border-black opacity-10 pointer-events-none"></div>
+        <div class="max-w-[1600px] mx-auto relative z-10" *ngIf="showCards">
+            <div class="flex items-start gap-1 mt-1 md:gap-2 mb-4">
+                <div>
+                    <h1 class="text-3xl md:text-5xl font-black text-black dark:text-white uppercase tracking-tighter drop-shadow-[3px_3px_0px_rgba(255,255,255,0.5)] dark:drop-shadow-none leading-none">
+                        ADMINISTRACION
+                    </h1>
+                </div>
+            </div>
 
-        <div class="max-w-[1800px] mx-auto relative z-10" *ngIf="showCards">
+            <!-- ========== MAIN GRID: Sidebar LEFT + Cards ========== -->
+            <div class="grid grid-cols-1 lg:grid-cols-[280px_1fr] xl:grid-cols-[320px_1fr] gap-4 md:gap-5 mb-8">
 
-            <div class="flex flex-col md:flex-row items-center justify-between mb-10 gap-6">
-                <div class="flex items-center gap-6">
-                    <div class="flex items-center justify-center w-16 h-16 md:w-20 md:h-20 bg-white dark:bg-slate-800 border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] rounded-xl transform hover:rotate-6 transition-transform duration-300">
-                        <mat-icon class="!text-4xl md:!text-5xl !w-10 md:!w-12 !h-10 md:!h-12 text-black dark:text-white" svgIcon="heroicons_outline:cog-6-tooth"></mat-icon>
+                <!-- ===== LEFT SIDEBAR ===== -->
+                <div class="flex flex-col gap-3 md:gap-4">
+
+                    <!-- Dashboard Button -->
+                    <button [routerLink]="['dashboard']"
+                            class="admin-sidebar-btn group hover:bg-red-600">
+                        <span>DASHBOARD</span>
+                    </button>
+
+                    <!-- Actividad Reciente Button -->
+                    <button (click)="openActividadReciente()"
+                            class="admin-sidebar-btn group hover:bg-slate-600">
+                        <span>ACTIVIDAD RECIENTE</span>
+                    </button>
+
+                    <!-- Card 1: Usuarios (tall) -->
+                    <div class="neo-card-admin group flex-1 min-h-[280px] lg:min-h-[340px] hover:bg-[#1A3EDCFF] dark:hover:bg-blue-800/20" [routerLink]="['usuarios']">
+                        <div class="flex flex-col h-full p-5 md:p-7">
+                            <span class="admin-number">1</span>
+                            <p class="admin-label admin-label-lg mt-3">USUARIOS</p>
+                            <div class="flex-1 flex items-center justify-center mt-4">
+                                <mat-icon class="admin-icon-xl group-hover:rotate-[25deg] transition-transform duration-300" svgIcon="heroicons_outline:user-group"></mat-icon>
+                            </div>
+                        </div>
                     </div>
+
+                </div>
+
+                <!-- ===== RIGHT: Cards Grid (2 columns) ===== -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-5 auto-rows-min">
+
+                    <!-- Card 2: Proveedores -->
+                    <div class="neo-card-admin group hover:bg-[#FF6A00FF] dark:hover:bg-blue-800/20" [routerLink]="['proveedores']">
+                        <div class="flex flex-col h-full p-5 md:p-7 min-h-[180px]">
+                            <span class="admin-number">2</span>
+                            <div class="flex-1 flex flex-col items-center justify-center gap-2">
+                                <mat-icon class="admin-icon-lg group-hover:rotate-[20deg] transition-transform duration-300" svgIcon="heroicons_outline:building-office-2"></mat-icon>
+                                <p class="admin-label text-center">PROVEEDORES</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Card 3: Clientes -->
+                    <div class="neo-card-admin group hover:bg-[#1AAA1FFF] dark:hover:bg-blue-800/20" [routerLink]="['clientes']">
+                        <div class="flex flex-col h-full p-5 md:p-7 min-h-[180px]">
+                            <span class="admin-number">3</span>
+                            <div class="flex-1 flex flex-col items-center justify-center gap-2">
+                                <mat-icon class="admin-icon-lg group-hover:scale-110 transition-transform duration-300" svgIcon="heroicons_outline:users"></mat-icon>
+                                <p class="admin-label text-center">CLIENTES</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Card 4: Roles (wide - spans 2 cols) -->
+                    <div class="neo-card-admin group col-span-1 sm:col-span-2 hover:bg-[#7113CFFF] dark:hover:bg-blue-800/20" [routerLink]="['roles']">
+                        <div class="flex items-center h-full p-5 md:p-7 min-h-[140px] gap-5">
+                            <span class="admin-number shrink-0">4</span>
+                            <p class="admin-label admin-label-lg flex-1">ROLES Y<br>PERMISOS</p>
+                            <mat-icon class="admin-icon-lg group-hover:rotate-[15deg] transition-transform duration-300 shrink-0" svgIcon="heroicons_outline:shield-check"></mat-icon>
+                        </div>
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+        <router-outlet></router-outlet>
+    </div>
+</div>
+
+<!-- ========== DIALOG: ACTIVIDAD RECIENTE (ng-template) ========== -->
+<ng-template #actividadRecienteDialog>
+    <div class="flex flex-col w-full h-full bg-[#f8f9fc] dark:bg-[#0F172AFF] transition-colors duration-300 font-sans overflow-hidden relative"
+         cdkDrag cdkDragRootElement=".cdk-overlay-pane" cdkDragBoundary=".cdk-overlay-container">
+
+        <!-- Decorative background shapes -->
+        <div class="fixed top-16 left-10 w-64 h-64 bg-[#111A43] rounded-full border-4 border-black opacity-5 pointer-events-none"></div>
+        <div class="fixed bottom-10 right-10 w-32 h-32 bg-[#F8B400FF] rotate-45 border-4 border-black opacity-5 pointer-events-none"></div>
+
+        <div class="flex-1 flex flex-col p-4 md:p-6 relative h-full overflow-hidden gap-4">
+
+            <!-- ===== HEADER: Back + Title ===== -->
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 shrink-0 relative z-10">
+                <div class="flex items-center gap-4">
+                    <button mat-dialog-close
+                            class="w-12 h-12 bg-white dark:bg-slate-800 border-2 border-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] active:shadow-none active:translate-x-1 active:translate-y-1 hover:bg-white hover:scale-105 transition-all flex items-center justify-center rounded-lg cursor-pointer"
+                            (mousedown)="$event.stopPropagation()">
+                        <mat-icon class="!text-2xl text-black dark:text-white">arrow_back</mat-icon>
+                    </button>
                     <div>
-                        <h1 class="text-3xl md:text-5xl lg:text-6xl font-black text-black dark:text-white uppercase tracking-tighter drop-shadow-[3px_3px_0px_rgba(255,255,255,0.5)] dark:drop-shadow-none leading-none">
-                            ADMINISTRACIÓN
+                        <h1 class="text-2xl md:text-3xl font-black text-black dark:text-white uppercase tracking-tight leading-none">
+                            Actividad Reciente
                         </h1>
-                        <div class="flex items-center gap-2 mt-3">
-                            <span class="w-4 h-4 bg-orange-600 border-2 border-black rounded-full animate-pulse"></span>
-                            <p class="text-sm md:text-base font-bold bg-slate-800 text-white px-3 py-1 inline-block transform -rotate-1 border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
-                                Gestion del Sistema
+                        <div class="flex items-center gap-2 mt-1">
+                            <p class="text-xs font-bold bg-[#F8B400FF] text-black px-2 py-0.5 rounded-sm border border-black">
+                                REGISTRO DEL SISTEMA
                             </p>
                         </div>
                     </div>
                 </div>
-
-                <button [routerLink]="['dashboard']"
-                        class="px-6 py-3 bg-yellow-400 dark:bg-yellow-400 text-black font-black text-lg border-[3px] border-black dark:border-black rounded-full shadow-[4px_4px_0px_0px_#000] dark:shadow-black hover:shadow-[2px_2px_0px_0px_#000] hover:translate-x-[2px] hover:translate-y-[2px] active:translate-y-[4px] active:shadow-none transition-all uppercase tracking-wide flex items-center gap-2">
-                    <span class="hidden sm:inline">Dashboard</span>
-                </button>
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 md:gap-8 mb-12 auto-rows-fr">
+            <!-- ===== TABLE CONTAINER ===== -->
+            <div class="neo-card-base-admin bg-white dark:bg-slate-800 overflow-hidden flex flex-col flex-1 relative z-10 border-2 border-black dark:border-black">
 
-                <div class="neo-card-action group hover:bg-blue-600 dark:hover:bg-blue-900/20 min-h-[200px] flex flex-col justify-center border-[3px] border-black dark:border-black rounded-2xl p-4 transition-all duration-300" [routerLink]="['usuarios']">
-                    <div class="flex flex-col xl:flex-row items-center gap-3 xl:gap-3 relative z-10 text-center xl:text-left">
-                        <div class="w-15 h-15 xl:w-24 xl:h-24 border-[3px] border-black dark:border-black bg-white dark:bg-slate-700 rounded-2xl flex items-center justify-center shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] group-hover:scale-105 group-hover:rotate-3 transition-all duration-300 flex-shrink-0">
-                            <mat-icon class="!text-4xl !w-10 !h-10 text-black dark:text-white" svgIcon="heroicons_outline:user-group"></mat-icon>
-                        </div>
-                        <div class="flex flex-col justify-center">
-                            <h2 class="text-2xl font-black text-black dark:text-white leading-none uppercase tracking-tight mb-1">USUARIOS</h2>
-                            <span class="text-xs font-black text-white dark:text-white uppercase tracking-widest bg-blue-600 dark:bg-blue-600 px-2 py-0.5 rounded border border-black inline-block w-fit">
-                                ACCESOS
-                            </span>
-                        </div>
+                <!-- Table header bar -->
+                <div class="bg-[#0F172AFF] px-4 py-2 border-b-2 border-black flex items-center justify-between shrink-0 h-12">
+                    <div class="flex items-center gap-3">
+                        <mat-icon class="text-white !text-xl">history</mat-icon>
+                        <span class="font-black text-xs md:text-sm uppercase text-white">
+                            Registro de Actividad
+                        </span>
                     </div>
+                    <span class="bg-white text-black px-2 py-0.5 rounded text-xs font-black border border-black shadow-[2px_2px_0px_0px_#000]">
+                        Total: {{ recentRecords.length }}
+                    </span>
                 </div>
 
-                <div class="neo-card-action group hover:bg-green-600 dark:hover:bg-green-900/20 min-h-[200px] flex flex-col justify-center border-[3px] border-black dark:border-black rounded-2xl p-4 transition-all duration-300" [routerLink]="['proveedores']">
-                    <div class="flex flex-col xl:flex-row items-center gap-3 xl:gap-3 relative z-10 text-center xl:text-left">
-                        <div class="w-15 h-15 xl:w-24 xl:h-24 border-[3px] border-black dark:border-black bg-white dark:bg-slate-700 rounded-2xl flex items-center justify-center shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] group-hover:scale-105 group-hover:rotate-3 transition-all duration-300 flex-shrink-0">
-                            <mat-icon class="!text-4xl !w-10 !h-10 text-black dark:text-white" svgIcon="heroicons_outline:building-office-2"></mat-icon>
-                        </div>
-                        <div class="flex flex-col justify-center">
-                            <h2 class="text-1xl font-black text-black dark:text-white leading-none uppercase tracking-tight mb-1">PROVEEDORES</h2>
-                            <span class="text-xs font-black text-white dark:text-white uppercase tracking-widest bg-green-600 dark:bg-green-600 px-2 py-0.5 rounded border border-black inline-block w-fit">
-                                EMPRESAS
-                            </span>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="neo-card-action group hover:bg-amber-600 dark:hover:bg-amber-900/20 min-h-[200px] flex flex-col justify-center border-[3px] border-black dark:border-black rounded-2xl p-4 transition-all duration-300" [routerLink]="['clientes']">
-                    <div class="flex flex-col xl:flex-row items-center gap-3 xl:gap-3 relative z-10 text-center xl:text-left">
-                        <div class="w-15 h-15 xl:w-24 xl:h-24 border-[3px] border-black dark:border-black bg-white dark:bg-slate-700 rounded-2xl flex items-center justify-center shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] group-hover:scale-105 group-hover:rotate-3 transition-all duration-300 flex-shrink-0">
-                            <mat-icon class="!text-4xl !w-10 !h-10 text-black dark:text-white" svgIcon="heroicons_outline:users"></mat-icon>
-                        </div>
-                        <div class="flex flex-col justify-center">
-                            <h2 class="text-2xl font-black text-black dark:text-white leading-none uppercase tracking-tight mb-1">CLIENTES</h2>
-                            <span class="text-xs font-black text-white dark:text-white uppercase tracking-widest bg-amber-600 dark:bg-amber-600 px-2 py-0.5 rounded border border-black inline-block w-fit">
-                                REGISTRO
-                            </span>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="neo-card-action group hover:bg-purple-600 dark:hover:bg-purple-900/20 min-h-[200px] flex flex-col justify-center border-[3px] border-black dark:border-black rounded-2xl p-4 transition-all duration-300" [routerLink]="['roles']">
-                    <div class="flex flex-col xl:flex-row items-center gap-3 xl:gap-3 relative z-10 text-center xl:text-left">
-                        <div class="w-15 h-15 xl:w-24 xl:h-24 border-[3px] border-black dark:border-black bg-white dark:bg-slate-700 rounded-2xl flex items-center justify-center shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] group-hover:scale-105 group-hover:rotate-3 transition-all duration-300 flex-shrink-0">
-                            <mat-icon class="!text-4xl !w-10 !h-10 text-black dark:text-white" svgIcon="heroicons_outline:shield-check"></mat-icon>
-                        </div>
-                        <div class="flex flex-col justify-center">
-                            <h2 class="text-2xl font-black text-black dark:text-white leading-none uppercase tracking-tight mb-1">ROLES</h2>
-                            <span class="text-xs font-black text-white dark:text-white uppercase tracking-widest bg-purple-600 dark:bg-purple-600 px-2 py-0.5 rounded border border-black inline-block w-fit">
-                                PERMISOS
-                            </span>
-                        </div>
-                    </div>
-                </div>
-
-            </div>
-
-            <div class="relative z-10 min-h-[300px] border-[3px] border-black dark:border-black bg-white dark:bg-slate-800 rounded-2xl shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] overflow-hidden flex flex-col">
-
-                <div class="p-5 bg-[#111A43] border-b-[3px] border-black dark:border-black flex justify-between items-center">
-                    <h3 class="text-xl font-black text-white uppercase tracking-wider flex items-center gap-2">
-                        <mat-icon class="scale-110">history</mat-icon> Actividad Reciente
-                    </h3>
-                    <div class="flex items-center gap-2">
-                    </div>
-                </div>
-
-                <div class="overflow-auto flex-1 p-0 bg-white dark:bg-slate-800">
+                <!-- Table content -->
+                <div class="overflow-auto flex-1 bg-[#f8f9fc] dark:bg-slate-900/50 custom-scrollbar-admin">
                     <table mat-table [dataSource]="recentRecords" class="w-full">
 
                         <ng-container matColumnDef="fecha">
-                            <th mat-header-cell *matHeaderCellDef class="header-neo text-sm w-[20%]">FECHA</th>
-                            <td mat-cell *matCellDef="let element" class="cell-neo font-mono font-bold text-sm text-black dark:text-white">
+                            <th mat-header-cell *matHeaderCellDef class="header-neo text-sm py-3 px-4">FECHA</th>
+                            <td mat-cell *matCellDef="let element" class="cell-neo font-mono font-bold text-sm px-4 text-black dark:text-white">
                                 {{ element.fecha }}
                             </td>
                         </ng-container>
 
                         <ng-container matColumnDef="tipo">
-                            <th mat-header-cell *matHeaderCellDef class="header-neo text-sm w-[20%]">TIPO</th>
-                            <td mat-cell *matCellDef="let element" class="cell-neo font-bold text-sm text-black dark:text-white">
+                            <th mat-header-cell *matHeaderCellDef class="header-neo text-sm py-3 px-4">TIPO</th>
+                            <td mat-cell *matCellDef="let element" class="cell-neo px-4">
+                                <span class="inline-block px-2 py-1 rounded text-[10px] sm:text-xs font-black border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,0.5)] bg-[#0F172AFF] text-white">
                                     {{ element.tipo }}
+                                </span>
                             </td>
                         </ng-container>
 
                         <ng-container matColumnDef="entidad">
-                            <th mat-header-cell *matHeaderCellDef class="header-neo text-sm w-[20%]">ENTIDAD</th>
-                            <td mat-cell *matCellDef="let element" class="cell-neo font-bold text-sm text-black dark:text-white">
+                            <th mat-header-cell *matHeaderCellDef class="header-neo text-sm py-3 px-4">ENTIDAD</th>
+                            <td mat-cell *matCellDef="let element" class="cell-neo font-black text-sm px-4 text-black dark:text-white">
                                 {{ element.entidad }}
                             </td>
                         </ng-container>
 
                         <ng-container matColumnDef="usuario">
-                            <th mat-header-cell *matHeaderCellDef class="header-neo text-sm w-[20%]">USUARIO</th>
-                            <td mat-cell *matCellDef="let element" class="cell-neo font-bold text-sm text-black dark:text-white">
-                                    {{ element.usuario }}
+                            <th mat-header-cell *matHeaderCellDef class="header-neo text-sm py-3 px-4">USUARIO</th>
+                            <td mat-cell *matCellDef="let element" class="cell-neo font-black text-xs sm:text-sm px-4 text-black dark:text-white">
+                                {{ element.usuario }}
                             </td>
                         </ng-container>
 
                         <ng-container matColumnDef="acciones">
-                            <th mat-header-cell *matHeaderCellDef class="header-neo text-right text-sm w-[20%]">ACCIONES</th>
-                            <td mat-cell *matCellDef="let element" class="cell-neo text-right">
+                            <th mat-header-cell *matHeaderCellDef class="header-neo text-right text-sm py-3 px-4">ACCIONES</th>
+                            <td mat-cell *matCellDef="let element" class="cell-neo text-right px-4">
                                 <div class="flex gap-2 justify-end">
-                                    <button class="w-9 h-9 flex items-center justify-center border-2 border-black dark:border-black bg-white dark:bg-slate-700 hover:bg-gray-100 dark:hover:bg-slate-600 rounded-lg shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] active:translate-y-[1px] active:shadow-none transition-all">
+                                    <button class="w-8 h-8 flex items-center justify-center border-2 border-black bg-white dark:bg-slate-700 hover:bg-gray-100 dark:hover:bg-slate-600 hover:scale-110 rounded-lg shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] active:translate-y-[1px] active:shadow-none transition-all">
                                         <mat-icon class="text-black dark:text-white !text-lg !w-5 !h-5 flex items-center justify-center">visibility</mat-icon>
                                     </button>
-                                    <button class="w-9 h-9 flex items-center justify-center border-2 border-black dark:border-black bg-yellow-500 dark:bg-yellow-500 hover:bg-yellow-400 dark:hover:bg-yellow-600 rounded-lg shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] active:translate-y-[1px] active:shadow-none transition-all">
-                                        <mat-icon class="text-black dark:text-black !text-lg !w-5 !h-5 flex items-center justify-center">edit</mat-icon>
+                                    <button class="w-8 h-8 flex items-center justify-center border-2 border-black bg-[#F8B400FF] hover:bg-yellow-400 hover:scale-110 rounded-lg shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] active:translate-y-[1px] active:shadow-none transition-all">
+                                        <mat-icon class="text-black !text-lg !w-5 !h-5 flex items-center justify-center">edit</mat-icon>
                                     </button>
                                 </div>
                             </td>
                         </ng-container>
 
                         <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
-                        <tr mat-row *matRowDef="let row; columns: displayedColumns;" class="hover:bg-yellow-50 dark:hover:bg-slate-700/50 transition-colors border-b-2 border-gray-100 dark:border-slate-700 h-16"></tr>
+                        <tr mat-row *matRowDef="let row; columns: displayedColumns;"
+                            class="hover:bg-white hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,0.1)] hover:-translate-y-0.5
+                                   dark:hover:bg-slate-900 dark:hover:shadow-none
+                                   transition-all border-b-2 border-black dark:border-slate-700/50 h-14 cursor-pointer"></tr>
                     </table>
-                </div>
 
-                <div class="p-4 bg-gray-50 dark:bg-slate-900 border-t-[3px] border-black dark:border-black flex justify-between items-center">
-                    <span class="text-xs font-bold text-gray-600 dark:text-gray-400 uppercase flex items-center gap-2">
-                        <mat-icon class="!w-4 !h-4 !text-sm">analytics</mat-icon>
-                        Total registros: {{ recentRecords.length }}
-                    </span>
-                    <span class="text-[10px] font-black text-gray-500 dark:text-gray-500 uppercase tracking-wider">Sistema MGH v2.0</span>
+                    <!-- Empty State -->
+                    <div *ngIf="recentRecords.length === 0" class="flex flex-col items-center justify-center h-full py-16 opacity-50">
+                        <mat-icon class="!text-6xl text-black dark:text-gray-500">analytics</mat-icon>
+                        <p class="text-sm font-black mt-2 uppercase text-black dark:text-gray-500">No hay actividad reciente</p>
+                    </div>
                 </div>
             </div>
         </div>
-        <router-outlet></router-outlet>
     </div>
-</div>
+</ng-template>

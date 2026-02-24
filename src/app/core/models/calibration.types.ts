@@ -30,6 +30,34 @@ export type CalibrationResult =
 export type AlertSeverity = 'critical' | 'warning' | 'info';
 
 /**
+ * Nivel de urgencia PXP (del backend v3)
+ */
+export type AlertUrgency =
+    | 'EXPIRED'       // Vencida
+    | 'CRITICAL_7D'   // Crítico - 7 días
+    | 'URGENT_15D'    // Urgente - 15 días
+    | 'UPCOMING_30D'  // Próxima - 30 días
+    | 'VALID'         // Vigente
+    | 'IN_LAB';       // En laboratorio
+
+/**
+ * Estado de lote de calibración
+ * @deprecated Usar CalibrationBatchStatus de calibration-batch.types.ts
+ */
+export type BatchStatus =
+    | 'open'        // Abierto para escaneo
+    | 'confirmed'   // Confirmado
+    | 'sent'        // Enviado a laboratorio
+    | 'in_process'  // En proceso en laboratorio
+    | 'completed'   // Completado
+    | 'cancelled';  // Cancelado
+
+/**
+ * Tipo de servicio para Gatas (Jacks)
+ */
+export type JackServiceType = 'semiannual' | 'annual' | 'both';
+
+/**
  * Tipo de calibración
  */
 export type CalibrationType =
@@ -362,6 +390,153 @@ export interface CalibrationReportTool {
     status: 'VIGENTE' | 'POR VENCER' | 'VENCIDA' | 'NO APLICA';
     statusColor: 'green' | 'yellow' | 'red' | 'gray';
 }
+
+// =========================================================================
+// PXP BACKEND v3 - Interfaces para respuestas del backend
+// =========================================================================
+
+/**
+ * Resultado de escaneo de herramienta (PXP: HE_CLS_SCAN)
+ */
+export interface ScanToolResult {
+    id_tool: number;
+    code: string;
+    name: string;
+    serial_number: string;
+    part_number: string;
+    status: string;
+    requires_calibration: boolean;
+    calibration_interval: number;
+    last_calibration_date: string | null;
+    next_calibration_date: string | null;
+    is_jack: boolean;
+    // Servicios de gata (solo si is_jack = true)
+    last_semiannual_service: string | null;
+    next_semiannual_service: string | null;
+    semiannual_service_interval: number | null;
+    last_annual_service: string | null;
+    next_annual_service: string | null;
+    annual_service_interval: number | null;
+    // Advertencia de estado
+    scan_warning: string | null;
+}
+
+// CalibrationBatch y CalibrationBatchItem se definen en calibration-batch.types.ts
+// (version canonica con todos los campos del backend PXP incluyendo Jack/Gata)
+
+/**
+ * Alerta de calibración PXP (HE_CLS_ALERTS)
+ */
+export interface PxpCalibrationAlert {
+    id_tool: number;
+    code: string;
+    name: string;
+    serial_number: string;
+    part_number: string;
+    status: string;
+    is_jack: boolean;
+    category_name: string | null;
+    warehouse_name: string | null;
+    base_name: string | null;
+    // Calibración
+    last_calibration_date: string | null;
+    next_calibration_date: string | null;
+    calibration_interval: number | null;
+    cal_days_remaining: number | null;
+    cal_urgency: AlertUrgency;
+    // Servicio semestral (solo gatas)
+    last_semiannual_service: string | null;
+    next_semiannual_service: string | null;
+    semi_days_remaining: number | null;
+    semi_urgency: AlertUrgency | null;
+    // Servicio anual (solo gatas)
+    last_annual_service: string | null;
+    next_annual_service: string | null;
+    annual_days_remaining: number | null;
+    annual_urgency: AlertUrgency | null;
+    // Laboratorio
+    laboratory_name: string | null;
+}
+
+/**
+ * Dashboard de calibración PXP (HE_CLS_DASH) - 14 métricas
+ */
+export interface PxpCalibrationDashboard {
+    // Métricas generales
+    cal_valid: number;
+    cal_expiring_30d: number;
+    cal_expiring_7d: number;
+    cal_expired: number;
+    cal_in_lab: number;
+    total_calibratable: number;
+    // Métricas de Gatas - Semestral
+    jacks_semi_expired: number;
+    jacks_semi_expiring_30d: number;
+    // Métricas de Gatas - Anual
+    jacks_annual_expired: number;
+    jacks_annual_expiring_30d: number;
+    // Totales gatas
+    total_jacks: number;
+    // Lotes
+    open_batches: number;
+    // Calibraciones activas
+    active_calibrations: number;
+    overdue_calibrations: number;
+}
+
+/**
+ * Estado de servicios de una Gata (PXP: HE_CLS_JACK_SEL)
+ */
+export interface JackServiceStatus {
+    id_tool: number;
+    code: string;
+    name: string;
+    serial_number: string;
+    status: string;
+    // Calibración
+    last_calibration_date: string | null;
+    next_calibration_date: string | null;
+    cal_days_remaining: number | null;
+    cal_status: string; // VIGENTE, POR_VENCER, VENCIDO, SIN_FECHA
+    // Servicio semestral
+    last_semiannual_service: string | null;
+    next_semiannual_service: string | null;
+    semi_days_remaining: number | null;
+    semi_status: string;
+    // Servicio anual
+    last_annual_service: string | null;
+    next_annual_service: string | null;
+    annual_days_remaining: number | null;
+    annual_status: string;
+    // Metadata
+    category_name: string | null;
+    warehouse_name: string | null;
+    base_name: string | null;
+}
+
+/**
+ * Mapa de colores para niveles de urgencia
+ */
+export const URGENCY_COLORS: Record<AlertUrgency, string> = {
+    EXPIRED: '#ef4444',      // Rojo
+    CRITICAL_7D: '#dc2626',  // Rojo oscuro
+    URGENT_15D: '#f97316',   // Naranja
+    UPCOMING_30D: '#eab308', // Amarillo
+    VALID: '#22c55e',        // Verde
+    IN_LAB: '#8b5cf6'        // Púrpura
+};
+
+/**
+ * Mapa de labels para niveles de urgencia
+ */
+export const URGENCY_LABELS: Record<AlertUrgency, string> = {
+    EXPIRED: 'Vencida',
+    CRITICAL_7D: 'Crítico (7 días)',
+    URGENT_15D: 'Urgente (15 días)',
+    UPCOMING_30D: 'Próxima (30 días)',
+    VALID: 'Vigente',
+    IN_LAB: 'En Laboratorio'
+};
 
 // Alias for CalibrationRecord
 export type Calibration = CalibrationRecord;

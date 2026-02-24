@@ -9,7 +9,7 @@ export default [
             {
                 path: 'dashboard',
                 loadComponent: () => import('./dashboard/exits-dashboard.component').then(m => m.ExitsDashboardComponent)
-            }
+            },
         ]
     }
 ] as Routes;

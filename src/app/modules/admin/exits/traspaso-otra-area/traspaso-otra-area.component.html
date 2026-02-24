@@ -1,217 +1,527 @@
-<div class="flex flex-col w-full h-full bg-[#FFF] dark:bg-[#0a0f29] transition-colors duration-300 font-sans overflow-hidden"
+<div class="flex flex-col w-full h-full bg-[#f8f9fc] dark:bg-[#0F172AFF] transition-colors duration-300 font-sans overflow-hidden relative"
      cdkDrag cdkDragRootElement=".cdk-overlay-pane" cdkDragBoundary=".cdk-overlay-container">
-    <div class="flex-1 overflow-y-auto p-6 md:p-8 relative">
 
-        <div class="fixed top-20 right-10 w-40 h-40 bg-[#111A43] rounded-full border-3 border-black opacity-5 pointer-events-none"></div>
-        <div class="fixed bottom-10 left-10 w-24 h-24 bg-green-400 rotate-12 border-3 border-black opacity-10 pointer-events-none"></div>
+    <!-- SPINNER OVERLAY -->
+    <div *ngIf="isSaving" class="spinner-overlay z-[100]">
+        <div class="neo-card-base p-6 flex flex-col items-center gap-4 bg-white dark:bg-slate-800">
+            <mat-spinner diameter="50"></mat-spinner>
+            <span class="font-black text-black dark:text-white uppercase tracking-wider">Procesando Traspaso...</span>
+        </div>
+    </div>
 
-        <div class="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8 relative z-10">
-            <div class="flex items-center gap-6">
+    <!-- DECORATIVE ELEMENTS -->
+    <div class="fixed top-20 right-10 w-64 h-64 bg-[#111A43] rounded-full border-4 border-black opacity-5 pointer-events-none"></div>
+    <div class="fixed bottom-10 left-10 w-32 h-32 bg-green-600 rotate-12 border-4 border-black opacity-5 pointer-events-none"></div>
+
+    <div class="flex-1 overflow-y-auto p-4 md:p-6 relative custom-scrollbar">
+
+        <!-- HEADER -->
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 relative z-10">
+            <div class="flex items-center gap-4">
                 <button (click)="goBack()"
-                        class="w-14 h-14 bg-white dark:bg-slate-800 border-3 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] active:shadow-none active:translate-x-1 active:translate-y-1 hover:bg-white transition-all flex items-center justify-center rounded-lg cursor-pointer"
+                        class="w-12 h-12 bg-white dark:bg-slate-800 border-2 border-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] active:shadow-none active:translate-x-1 active:translate-y-1 hover:bg-white hover:scale-105 transition-all flex items-center justify-center rounded-lg cursor-pointer"
                         (mousedown)="$event.stopPropagation()">
-                    <mat-icon class="!text-4xl !w-10 !h-10 text-black dark:text-white" svgIcon="heroicons_outline:arrow-left"></mat-icon>
+                    <mat-icon class="!text-2xl text-black dark:text-white">arrow_back</mat-icon>
                 </button>
                 <div>
-                    <h1 class="text-3xl md:text-5xl font-black text-black dark:text-white uppercase tracking-tighter drop-shadow-[2px_2px_0px_rgba(255,255,255,0.5)] dark:drop-shadow-none leading-none">
-                        TRASPASO A OTRA AREA
+                    <h1 class="text-2xl md:text-3xl font-black text-black dark:text-white uppercase tracking-tight leading-none">
+                        Traspaso a Otra Área
                     </h1>
-                    <div class="flex items-center gap-2 mt-2">
-                        <span class="w-3 h-3 bg-yellow-400 border border-black rounded-full animate-pulse"></span>
-                        <p class="text-sm font-bold bg-[#111A43] text-white px-2 py-0.5 inline-block transform -rotate-1 border border-white">
-                            MOVIMIENTO DE HERRAMIENTAS Y EQUIPOS
+                    <div class="flex items-center gap-2 mt-1">
+                        <p class="text-xs font-bold bg-[#111A43] text-white px-2 py-0.5 rounded-sm border border-white">
+                            MOVIMIENTO DE HERRAMIENTAS
                         </p>
                     </div>
                 </div>
             </div>
 
-            <div class="flex gap-4">
-                <button (click)="openTraspasoHerramienta()"
-                        class="px-8 py-3 bg-amber-400 text-white font-black text-lg border-3 border-black rounded-full shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[1px] hover:translate-y-[1px] active:shadow-none transition-all uppercase tracking-wide flex items-center gap-2">
-                     Traspaso
-                </button>
+            <div class="flex flex-wrap gap-3 justify-end">
                 <button (click)="imprimir()"
-                        class="px-8 py-3 bg-[#151e4a] text-white font-black text-lg border-3 border-black rounded-full shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] active:shadow-none transition-all uppercase tracking-wide flex items-center gap-2">
-                    <mat-icon>print</mat-icon> IMPRIMIR
+                        class="px-5 py-2 bg-[#111A43] text-white font-bold text-sm border-2 border-black rounded-full shadow-[3px_3px_0px_0px_#000] hover:translate-y-[1px] hover:shadow-[2px_2px_0px_0px_#000] active:shadow-none transition-all uppercase flex items-center gap-2">
+                    <mat-icon class="!w-5 !h-5 !text-lg">print</mat-icon>
+                    Imprimir
                 </button>
-                <button (click)="finalizar()"
-                        class="px-8 py-3 bg-red-600 text-white font-black text-lg border-3 border-black rounded-full shadow-[4px_4px_0px_0px_#000] hover:shadow-[2px_2px_0px_0px_#000] hover:translate-x-[2px] hover:translate-y-[2px] active:shadow-none transition-all uppercase tracking-wide flex items-center gap-2">
-                    <mat-icon>check_circle</mat-icon> FINALIZAR
+                <button type="button" (click)="openTraspasoHerramienta()"
+                        class="px-5 py-2 bg-green-500 text-white font-black text-sm border-2 border-black rounded-full shadow-[3px_3px_0px_0px_#000] hover:translate-y-[1px] hover:shadow-[2px_2px_0px_0px_#000] active:shadow-none transition-all uppercase flex items-center gap-2">
+                    <mat-icon class="!w-5 !h-5 !text-lg">add_circle</mat-icon>
+                    Agregar
+                </button>
+                <button (click)="openConfirmModal()" [disabled]="isSaving || dataSource().length === 0"
+                        class="px-5 py-2 bg-amber-400 text-black font-black text-sm border-2 border-black rounded-full shadow-[3px_3px_0px_0px_#000] hover:translate-y-[1px] hover:shadow-[2px_2px_0px_0px_#000] active:shadow-none transition-all uppercase flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
+                    <mat-icon class="!w-5 !h-5 !text-lg">check_circle</mat-icon>
+                    Finalizar ({{ dataSource().length }})
                 </button>
             </div>
         </div>
 
-        <div class="neo-card-base bg-white dark:bg-[#151e4a] p-6 md:p-8 mb-8 relative z-10">
-            <form [formGroup]="transferForm">
+        <!-- FORMULARIO COMPACTO -->
+        <form [formGroup]="transferForm">
+            <div class="neo-card-base bg-white dark:bg-slate-800 p-5 mb-6 relative z-10">
 
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
-                    <mat-form-field appearance="fill" class="w-full">
-                        <mat-label>BUSCAR PERSONAL</mat-label>
-                        <input matInput formControlName="buscar" (keydown.enter)="buscarPersona()" placeholder="Nombre o ID">
-                        <button mat-icon-button matSuffix (click)="buscarPersona()">
-                            <mat-icon class="text-black font-bold">search</mat-icon>
+                <div class="flex items-center gap-2 mb-4 pb-2 border-b-2 border-black dark:border-gray-600">
+                    <mat-icon class="text-black dark:text-white !text-xl">swap_horiz</mat-icon>
+                    <h3 class="font-black text-base uppercase text-black dark:text-white">Datos del Traspaso</h3>
+                </div>
+
+                <!-- Fila 1: Buscar Personal + Tipo Traspaso + Base + Buscar btn -->
+                <div class="flex flex-col lg:flex-row gap-4 mb-4 items-start">
+                    <div class="flex-1 w-full lg:w-auto form-group">
+                        <label class="text-[11px] font-black uppercase text-gray-700 dark:text-gray-300 mb-1.5 block">
+                            Buscar Personal *
+                        </label>
+                        <div class="relative">
+                            <input type="text" formControlName="buscar"
+                                   placeholder="Nombre o ID..."
+                                   (keydown.enter)="buscarPersona()"
+                                   class="w-full h-11 text-sm font-bold border-2 border-black dark:border-slate-600 rounded-lg pl-10 pr-4 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[3px_3px_0px_0px_#000] transition-shadow outline-none placeholder:text-gray-400">
+                            <mat-icon class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 !text-lg">person_search</mat-icon>
+                        </div>
+                    </div>
+
+                    <div class="w-full lg:w-48 form-group">
+                        <label class="text-[11px] font-black uppercase text-gray-700 dark:text-gray-300 mb-1.5 block">
+                            Tipo Traspaso *
+                        </label>
+                        <select formControlName="tipoTraspaso"
+                                class="w-full h-11 text-sm font-bold border-2 border-black dark:border-slate-600 rounded-lg px-4 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[3px_3px_0px_0px_#000] transition-shadow outline-none appearance-none cursor-pointer"
+                                [class.border-red-500]="hasError('tipoTraspaso', 'required')">
+                            <option value="">-- Seleccionar --</option>
+                            <option value="TEMPORAL">Temporal</option>
+                            <option value="PERMANENTE">Permanente</option>
+                            <option value="REASIGNACION">Reasignación</option>
+                            <option value="PRESTAMO">Préstamo</option>
+                        </select>
+                    </div>
+
+                    <div class="w-full lg:w-48 form-group">
+                        <label class="text-[11px] font-black uppercase text-gray-700 dark:text-gray-300 mb-1.5 block">
+                            Base *
+                        </label>
+                        <select formControlName="base"
+                                class="w-full h-11 text-sm font-bold border-2 border-black dark:border-slate-600 rounded-lg px-4 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[3px_3px_0px_0px_#000] transition-shadow outline-none appearance-none cursor-pointer"
+                                [class.border-red-500]="hasError('base', 'required')">
+                            <option value="">-- Base --</option>
+                            <option value="VVI">Viru Viru (VVI)</option>
+                            <option value="LPB">El Alto (LPB)</option>
+                            <option value="CBB">J. Wilstermann (CBB)</option>
+                            <option value="SRE">J. A. de Padilla (SRE)</option>
+                            <option value="TJA">Oriel Lea Plaza (TJA)</option>
+                            <option value="TDD">T. J. Henrich (TDD)</option>
+                            <option value="CIJ">Cap. A. Arab (CIJ)</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="text-[11px] font-black uppercase text-gray-700 dark:text-gray-300 mb-1.5 block opacity-0">Acción</label>
+                        <button type="button" (click)="buscarPersona()"
+                                class="h-11 px-6 bg-red-600 border-2 border-black font-black text-white rounded-full shadow-[3px_3px_0px_0px_#000] hover:shadow-[2px_2px_0px_0px_#000] hover:translate-x-[2px] hover:translate-y-[2px] active:shadow-none transition-all uppercase flex items-center gap-2 whitespace-nowrap">
+                            <mat-icon class="!text-lg">search</mat-icon>
+                            Buscar
                         </button>
-                    </mat-form-field>
-
-                    <mat-form-field appearance="fill" class="w-full">
-                        <mat-label>NOMBRES</mat-label>
-                        <input matInput formControlName="nombres">
-                    </mat-form-field>
-
-                    <mat-form-field appearance="fill" class="w-full">
-                        <mat-label>AP. PATERNO</mat-label>
-                        <input matInput formControlName="apPaterno">
-                    </mat-form-field>
-
-                    <mat-form-field appearance="fill" class="w-full">
-                        <mat-label>AP. MATERNO</mat-label>
-                        <input matInput formControlName="apMaterno">
-                    </mat-form-field>
-                </div>
-
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                    <mat-form-field appearance="fill" class="w-full">
-                        <mat-label>NRO. LICENCIA</mat-label>
-                        <input matInput formControlName="nroLicencia">
-                        <mat-icon matSuffix class="text-black font-bold">badge</mat-icon>
-                    </mat-form-field>
-
-                    <mat-form-field appearance="fill" class="w-full">
-                        <mat-label>CARGO</mat-label>
-                        <input matInput formControlName="cargo">
-                        <mat-icon matSuffix class="text-black font-bold">work</mat-icon>
-                    </mat-form-field>
-
-                    <mat-form-field appearance="fill" class="w-full">
-                        <mat-label>FECHA</mat-label>
-                        <input matInput [matDatepicker]="pickerFecha" formControlName="fecha">
-                        <mat-datepicker-toggle matIconSuffix [for]="pickerFecha"></mat-datepicker-toggle>
-                        <mat-datepicker #pickerFecha></mat-datepicker>
-                    </mat-form-field>
-
-                    <mat-form-field appearance="fill" class="w-full">
-                        <mat-label>HORA</mat-label>
-                        <input matInput type="time" formControlName="hora">
-                        <mat-icon matSuffix class="text-black font-bold">schedule</mat-icon>
-                    </mat-form-field>
-                </div>
-
-                <div class="relative py-6 mb-8 mt-4">
-                    <div class="absolute inset-0 flex items-center">
-                        <div class="w-full border-t-[3px] border-black/20 border-dashed"></div>
-                    </div>
-                    <div class="relative flex justify-center">
-                        <span class="bg-[#111A43] px-6 py-2 text-white font-black text-sm uppercase tracking-widest border-2 border-black transform -rotate-1 shadow-[3px_3px_0px_0px_rgba(0,0,0,0.3)]">
-                            DATOS DE DESTINO
-                        </span>
                     </div>
                 </div>
 
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <mat-form-field appearance="fill" class="w-full">
-                        <mat-label>GERENCIA</mat-label>
-                        <input matInput formControlName="gerencia">
-                        <mat-icon matSuffix class="text-black font-bold">apartment</mat-icon>
-                    </mat-form-field>
+                <!-- Fila 2: Nombres + Ap. Paterno + Ap. Materno + Nro. Licencia -->
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+                    <div class="form-group">
+                        <label class="text-[11px] font-black uppercase text-gray-700 dark:text-gray-300 mb-1.5 block">
+                            Nombres *
+                        </label>
+                        <input type="text" formControlName="nombres"
+                               placeholder="Ej: JUAN CARLOS"
+                               class="w-full h-11 text-sm font-bold border-2 border-black dark:border-slate-600 rounded-lg px-4 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[3px_3px_0px_0px_#000] transition-shadow outline-none placeholder:text-gray-400 uppercase"
+                               [class.border-red-500]="hasError('nombres', 'required')">
+                    </div>
 
-                    <mat-form-field appearance="fill" class="w-full">
-                        <mat-label>UNIDAD</mat-label>
-                        <input matInput formControlName="unidad">
-                    </mat-form-field>
+                    <div class="form-group">
+                        <label class="text-[11px] font-black uppercase text-gray-700 dark:text-gray-300 mb-1.5 block">
+                            Ap. Paterno *
+                        </label>
+                        <input type="text" formControlName="apPaterno"
+                               placeholder="Ej: PEREZ"
+                               class="w-full h-11 text-sm font-bold border-2 border-black dark:border-slate-600 rounded-lg px-4 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[3px_3px_0px_0px_#000] transition-shadow outline-none placeholder:text-gray-400 uppercase"
+                               [class.border-red-500]="hasError('apPaterno', 'required')">
+                    </div>
 
-                    <mat-form-field appearance="fill" class="w-full">
-                        <mat-label>BASE</mat-label>
-                        <input matInput formControlName="base">
-                        <mat-icon matSuffix class="text-black font-bold">location_on</mat-icon>
-                    </mat-form-field>
+                    <div class="form-group">
+                        <label class="text-[11px] font-black uppercase text-gray-700 dark:text-gray-300 mb-1.5 block">
+                            Ap. Materno *
+                        </label>
+                        <input type="text" formControlName="apMaterno"
+                               placeholder="Ej: GONZALES"
+                               class="w-full h-11 text-sm font-bold border-2 border-black dark:border-slate-600 rounded-lg px-4 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[3px_3px_0px_0px_#000] transition-shadow outline-none placeholder:text-gray-400 uppercase"
+                               [class.border-red-500]="hasError('apMaterno', 'required')">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="text-[11px] font-black uppercase text-gray-700 dark:text-gray-300 mb-1.5 block">
+                            Nro. Licencia *
+                        </label>
+                        <input type="text" formControlName="nroLicencia"
+                               placeholder="Ej: BOA-001"
+                               class="w-full h-11 text-sm font-bold border-2 border-black dark:border-slate-600 rounded-lg px-4 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[3px_3px_0px_0px_#000] transition-shadow outline-none placeholder:text-gray-400 font-mono tracking-wider"
+                               [class.border-red-500]="hasError('nroLicencia', 'required')">
+                    </div>
                 </div>
 
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-                    <mat-form-field appearance="fill" class="w-full">
-                        <mat-label>DEPARTAMENTO</mat-label>
-                        <textarea matInput formControlName="departamento">rows="1" class="!resize-none"></textarea>
-                    </mat-form-field>
+                <!-- Fila 3: Cargo + Gerencia + Unidad + Fecha -->
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+                    <div class="form-group">
+                        <label class="text-[11px] font-black uppercase text-gray-700 dark:text-gray-300 mb-1.5 block">
+                            Cargo *
+                        </label>
+                        <input type="text" formControlName="cargo"
+                               placeholder="Ej: TÉCNICO"
+                               class="w-full h-11 text-sm font-bold border-2 border-black dark:border-slate-600 rounded-lg px-4 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[3px_3px_0px_0px_#000] transition-shadow outline-none placeholder:text-gray-400 uppercase"
+                               [class.border-red-500]="hasError('cargo', 'required')">
+                    </div>
 
-                    <mat-form-field appearance="fill" class="w-full">
-                        <mat-label>TIPO TRASPASO</mat-label>
-                        <textarea matInput formControlName="tipoTraspaso" rows="1" class="!resize-none"></textarea>
-                    </mat-form-field>
+                    <div class="form-group">
+                        <label class="text-[11px] font-black uppercase text-gray-700 dark:text-gray-300 mb-1.5 block">
+                            Gerencia *
+                        </label>
+                        <select formControlName="gerencia"
+                                class="w-full h-11 text-sm font-bold border-2 border-black dark:border-slate-600 rounded-lg px-4 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[3px_3px_0px_0px_#000] transition-shadow outline-none appearance-none cursor-pointer"
+                                [class.border-red-500]="hasError('gerencia', 'required')">
+                            <option value="">-- Gerencia --</option>
+                            <option value="GERENCIA DE OPERACIONES">Ger. Operaciones</option>
+                            <option value="GERENCIA DE MANTENIMIENTO">Ger. Mantenimiento</option>
+                            <option value="GERENCIA DE CALIDAD">Ger. Calidad</option>
+                            <option value="GERENCIA TÉCNICA">Ger. Técnica</option>
+                            <option value="GERENCIA ADMINISTRATIVA">Ger. Administrativa</option>
+                        </select>
+                    </div>
 
-                    <mat-form-field appearance="fill" class="w-full">
-                        <mat-label>OBSERVACIONES</mat-label>
-                        <textarea matInput formControlName="observaciones" rows="1" class="!resize-none"></textarea>
-                    </mat-form-field>
+                    <div class="form-group">
+                        <label class="text-[11px] font-black uppercase text-gray-700 dark:text-gray-300 mb-1.5 block">
+                            Unidad *
+                        </label>
+                        <input type="text" formControlName="unidad"
+                               placeholder="Ej: HERRAMIENTAS"
+                               class="w-full h-11 text-sm font-bold border-2 border-black dark:border-slate-600 rounded-lg px-4 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[3px_3px_0px_0px_#000] transition-shadow outline-none placeholder:text-gray-400 uppercase"
+                               [class.border-red-500]="hasError('unidad', 'required')">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="text-[11px] font-black uppercase text-gray-700 dark:text-gray-300 mb-1.5 block">
+                            Fecha *
+                        </label>
+                        <input type="date" formControlName="fecha"
+                               class="w-full h-11 text-sm font-bold border-2 border-black dark:border-slate-600 rounded-lg px-4 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[3px_3px_0px_0px_#000] transition-shadow outline-none"
+                               [class.border-red-500]="hasError('fecha', 'required')">
+                    </div>
                 </div>
 
-            </form>
-        </div>
+                <!-- Fila 4: Hora + Observaciones -->
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div class="form-group">
+                        <label class="text-[11px] font-black uppercase text-gray-700 dark:text-gray-300 mb-1.5 block">
+                            Hora *
+                        </label>
+                        <input type="time" formControlName="hora"
+                               class="w-full h-11 text-sm font-bold border-2 border-black dark:border-slate-600 rounded-lg px-4 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[3px_3px_0px_0px_#000] transition-shadow outline-none"
+                               [class.border-red-500]="hasError('hora', 'required')">
+                    </div>
 
-        <div class="neo-card-base bg-white dark:bg-[#0f1633] overflow-hidden flex flex-col relative z-10 min-h-[300px]">
+                    <div class="form-group md:col-span-3">
+                        <label class="text-[11px] font-black uppercase text-gray-700 dark:text-gray-300 mb-1.5 block">
+                            Observaciones
+                        </label>
+                        <input type="text" formControlName="observaciones"
+                               placeholder="Observaciones adicionales sobre el traspaso..."
+                               class="w-full h-11 text-sm font-bold border-2 border-black dark:border-slate-600 rounded-lg px-4 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[3px_3px_0px_0px_#000] transition-shadow outline-none placeholder:text-gray-400">
+                    </div>
+                </div>
+            </div>
+        </form>
+
+        <!-- TABLA DE HERRAMIENTAS -->
+        <div class="neo-card-base bg-white dark:bg-slate-800 overflow-hidden flex flex-col relative z-10 min-h-[300px]">
+
+            <!-- Dark Header Bar -->
+            <div class="bg-[#0F172AFF] px-4 py-2 border-b-2 border-black flex items-center justify-between h-12 shrink-0">
+                <div class="flex items-center gap-3">
+                    <mat-checkbox
+                        *ngIf="dataSource().length > 0"
+                        [checked]="isAllSelected()"
+                        [indeterminate]="isSomeSelected()"
+                        (change)="toggleAllSelection($event)"
+                        class="white-checkbox">
+                    </mat-checkbox>
+                    <span class="font-black text-white uppercase text-sm flex items-center gap-2">
+                        <mat-icon class="!text-lg">inventory_2</mat-icon>
+                        Herramientas para Traspaso
+                    </span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <span *ngIf="getSelectedCount() > 0"
+                          class="bg-yellow-400 text-black px-2 py-0.5 rounded-full font-black text-xs border-2 border-black">
+                        {{ getSelectedCount() }} seleccionado(s)
+                    </span>
+                    <span class="bg-white text-black px-2 py-0.5 rounded-full font-black text-xs">
+                        Total: {{ dataSource().length }}
+                    </span>
+                    <button (click)="openTraspasoHerramienta()"
+                            class="px-3 py-1.5 bg-green-500 text-white text-xs font-black uppercase border-2 border-black rounded hover:bg-green-400 transition-colors flex items-center gap-1">
+                        <mat-icon class="!text-sm !w-4 !h-4">add</mat-icon>
+                        Agregar
+                    </button>
+                </div>
+            </div>
+
+            <!-- Mat Table -->
             <div class="overflow-auto flex-1 p-0">
-                <table mat-table [dataSource]="dataSource()" class="w-full min-w-[1000px]">
+                <table mat-table [dataSource]="dataSource()" class="w-full" *ngIf="dataSource().length > 0">
 
-                    <ng-container matColumnDef="codigo">
-                        <th mat-header-cell *matHeaderCellDef class="!bg-white dark:!bg-[#111A43] !text-black dark:!text-white !font-black !text-sm !border-b-2 !border-black !p-4 uppercase text-center w-24">CODIGO</th>
-                        <td mat-cell *matCellDef="let element" class="!p-4 !font-black !text-center !border-b !border-gray-200 dark:!border-black/30 bg-gray-50 dark:bg-slate-800">{{ element.codigo }}</td>
-                    </ng-container>
-
-                    <ng-container matColumnDef="partNumber">
-                        <th mat-header-cell *matHeaderCellDef class="!bg-white dark:!bg-[#111A43] !text-black dark:!text-white !font-black !text-sm !border-b-2 !border-black !p-4 uppercase">P/N</th>
-                        <td mat-cell *matCellDef="let element" class="!p-4 !font-mono !text-blue-700 dark:!text-blue-400 !font-bold !border-b !border-gray-200 dark:!border-black/30">{{ element.partNumber }}</td>
-                    </ng-container>
-
-                    <ng-container matColumnDef="serialNumber">
-                        <th mat-header-cell *matHeaderCellDef class="!bg-white dark:!bg-[#111A43] !text-black dark:!text-white !font-black !text-sm !border-b-2 !border-black !p-4 uppercase">S/N</th>
-                        <td mat-cell *matCellDef="let element" class="!p-4 !font-mono !border-b !border-gray-200 dark:!border-black/30">{{ element.serialNumber }}</td>
-                    </ng-container>
-
-                    <ng-container matColumnDef="unidad">
-                        <th mat-header-cell *matHeaderCellDef class="!bg-white dark:!bg-[#111A43] !text-black dark:!text-white !font-black !text-sm !border-b-2 !border-black !p-4 uppercase text-center">UNIDAD</th>
-                        <td mat-cell *matCellDef="let element" class="!p-4 !border-b !border-gray-200 dark:!border-black/30 text-center">{{ element.unidad }}</td>
-                    </ng-container>
-
-                    <ng-container matColumnDef="cantidad">
-                        <th mat-header-cell *matHeaderCellDef class="!bg-white dark:!bg-[#111A43] !text-black dark:!text-white !font-black !text-sm !border-b-2 !border-black !p-4 uppercase text-center">CANT.</th>
-                        <td mat-cell *matCellDef="let element" class="!p-4 !border-b !border-gray-200 dark:!border-black/30 text-center">
-                            <span class="bg-green-100 text-green-800 border-2 border-black rounded px-3 py-0.5 font-bold shadow-sm">{{ element.cantidad }}</span>
+                    <!-- Select Column -->
+                    <ng-container matColumnDef="select">
+                        <th mat-header-cell *matHeaderCellDef class="!bg-white dark:!bg-[#0F172AFF] !text-black dark:!text-white !font-black !text-xs !border-b-2 !border-black !p-3 !w-12">
+                            <mat-checkbox
+                                [checked]="isAllSelected()"
+                                [indeterminate]="isSomeSelected()"
+                                (change)="toggleAllSelection($event)"
+                                color="primary">
+                            </mat-checkbox>
+                        </th>
+                        <td mat-cell *matCellDef="let element" class="!p-3 !border-b !border-gray-200 dark:!border-black/30 !w-12">
+                            <mat-checkbox
+                                [checked]="element.selected"
+                                (change)="toggleSelection(element)"
+                                (click)="$event.stopPropagation()"
+                                color="primary">
+                            </mat-checkbox>
                         </td>
                     </ng-container>
 
+                    <!-- Fila -->
+                    <ng-container matColumnDef="fila">
+                        <th mat-header-cell *matHeaderCellDef class="!bg-white dark:!bg-[#0F172AFF] !text-black dark:!text-white !font-black !text-xs !border-b-2 !border-black !p-3 uppercase">#</th>
+                        <td mat-cell *matCellDef="let element; let i = index" class="!p-3 !font-bold !border-b !border-gray-200 dark:!border-black/30 text-black dark:text-white">{{ i + 1 }}</td>
+                    </ng-container>
+
+                    <!-- Codigo -->
+                    <ng-container matColumnDef="codigo">
+                        <th mat-header-cell *matHeaderCellDef class="!bg-white dark:!bg-[#0F172AFF] !text-black dark:!text-white !font-black !text-xs !border-b-2 !border-black !p-3 uppercase">Código</th>
+                        <td mat-cell *matCellDef="let element" class="!p-3 !border-b !border-gray-200 dark:!border-black/30">
+                            <span class="bg-[#0F172AFF] text-white font-mono font-bold px-2 py-1 rounded text-xs border-2 border-black shadow-[2px_2px_0px_0px_#000]">
+                                {{ element.codigo }}
+                            </span>
+                        </td>
+                    </ng-container>
+
+                    <!-- Descripcion -->
                     <ng-container matColumnDef="descripcion">
-                        <th mat-header-cell *matHeaderCellDef class="!bg-white dark:!bg-[#111A43] !text-black dark:!text-white !font-black !text-sm !border-b-2 !border-black !p-4 uppercase">DESCRIPCION</th>
-                        <td mat-cell *matCellDef="let element" class="!p-4 !font-medium !border-b !border-gray-200 dark:!border-black/30">{{ element.descripcion }}</td>
+                        <th mat-header-cell *matHeaderCellDef class="!bg-white dark:!bg-[#0F172AFF] !text-black dark:!text-white !font-black !text-xs !border-b-2 !border-black !p-3 uppercase">Descripción</th>
+                        <td mat-cell *matCellDef="let element" class="!p-3 !border-b !border-gray-200 dark:!border-black/30">
+                            <div class="font-medium text-sm text-black dark:text-gray-300 max-w-[200px] truncate" [matTooltip]="element.descripcion">{{ element.descripcion }}</div>
+                            <span class="text-xs bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 px-2 py-0.5 rounded font-bold mt-1 inline-block">
+                                {{ element.marca }}
+                            </span>
+                        </td>
                     </ng-container>
 
+                    <!-- P/N -->
+                    <ng-container matColumnDef="partNumber">
+                        <th mat-header-cell *matHeaderCellDef class="!bg-white dark:!bg-[#0F172AFF] !text-black dark:!text-white !font-black !text-xs !border-b-2 !border-black !p-3 uppercase">P/N</th>
+                        <td mat-cell *matCellDef="let element" class="!p-3 !font-mono !text-xs !border-b !border-gray-200 dark:!border-black/30 dark:text-gray-300">{{ element.partNumber }}</td>
+                    </ng-container>
+
+                    <!-- S/N -->
+                    <ng-container matColumnDef="serialNumber">
+                        <th mat-header-cell *matHeaderCellDef class="!bg-white dark:!bg-[#0F172AFF] !text-black dark:!text-white !font-black !text-xs !border-b-2 !border-black !p-3 uppercase">S/N</th>
+                        <td mat-cell *matCellDef="let element" class="!p-3 !font-mono !text-xs !border-b !border-gray-200 dark:!border-black/30 dark:text-gray-300">{{ element.serialNumber || '-' }}</td>
+                    </ng-container>
+
+                    <!-- Unidad -->
+                    <ng-container matColumnDef="unidadItem">
+                        <th mat-header-cell *matHeaderCellDef class="!bg-white dark:!bg-[#0F172AFF] !text-black dark:!text-white !font-black !text-xs !border-b-2 !border-black !p-3 uppercase">Unidad</th>
+                        <td mat-cell *matCellDef="let element" class="!p-3 !border-b !border-gray-200 dark:!border-black/30">
+                            <span class="px-2 py-1 bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300 text-xs font-black rounded border border-amber-300 dark:border-amber-700">
+                                {{ element.unidad }}
+                            </span>
+                        </td>
+                    </ng-container>
+
+                    <!-- Cantidad -->
+                    <ng-container matColumnDef="cantidad">
+                        <th mat-header-cell *matHeaderCellDef class="!bg-white dark:!bg-[#0F172AFF] !text-black dark:!text-white !font-black !text-xs !border-b-2 !border-black !p-3 uppercase text-center">Cant.</th>
+                        <td mat-cell *matCellDef="let element" class="!p-3 !border-b !border-gray-200 dark:!border-black/30 text-center">
+                            <span class="bg-green-500 text-white border-2 border-black rounded-full px-3 py-0.5 font-black text-xs shadow-[2px_2px_0px_0px_rgba(0,0,0,0.3)]">
+                                {{ element.cantidad }}
+                            </span>
+                        </td>
+                    </ng-container>
+
+                    <!-- Contenido -->
                     <ng-container matColumnDef="contenido">
-                        <th mat-header-cell *matHeaderCellDef class="!bg-white dark:!bg-[#111A43] !text-black dark:!text-white !font-black !text-sm !border-b-2 !border-black !p-4 uppercase">CONTENIDO</th>
-                        <td mat-cell *matCellDef="let element" class="!p-4 !border-b !border-gray-200 dark:!border-black/30 text-xs text-gray-600 dark:text-gray-400">{{ element.contenido }}</td>
+                        <th mat-header-cell *matHeaderCellDef class="!bg-white dark:!bg-[#0F172AFF] !text-black dark:!text-white !font-black !text-xs !border-b-2 !border-black !p-3 uppercase">Contenido</th>
+                        <td mat-cell *matCellDef="let element" class="!p-3 !text-xs !border-b !border-gray-200 dark:!border-black/30 dark:text-gray-400 text-gray-600">{{ element.contenido || '-' }}</td>
                     </ng-container>
 
-                    <ng-container matColumnDef="marca">
-                        <th mat-header-cell *matHeaderCellDef class="!bg-white dark:!bg-[#111A43] !text-black dark:!text-white !font-black !text-sm !border-b-2 !border-black !p-4 uppercase">MARCA</th>
-                        <td mat-cell *matCellDef="let element" class="!p-4 !font-bold !border-b !border-gray-200 dark:!border-black/30">{{ element.marca }}</td>
+                    <!-- Acciones -->
+                    <ng-container matColumnDef="acciones">
+                        <th mat-header-cell *matHeaderCellDef class="!bg-white dark:!bg-[#0F172AFF] !text-black dark:!text-white !font-black !text-xs !border-b-2 !border-black !p-3 uppercase text-center">Acc.</th>
+                        <td mat-cell *matCellDef="let element; let i = index" class="!p-3 !border-b !border-gray-200 dark:!border-black/30">
+                            <button (click)="removerItem(i); $event.stopPropagation()"
+                                    class="w-7 h-7 bg-red-500 text-white rounded border-2 border-black shadow-[2px_2px_0px_0px_#000] hover:shadow-none hover:translate-x-[1px] hover:translate-y-[1px] transition-all flex items-center justify-center"
+                                    matTooltip="Eliminar">
+                                <mat-icon class="!text-sm !w-4 !h-4">delete</mat-icon>
+                            </button>
+                        </td>
                     </ng-container>
 
-                    <ng-container matColumnDef="fecha">
-                        <th mat-header-cell *matHeaderCellDef class="!bg-white dark:!bg-[#111A43] !text-black dark:!text-white !font-black !text-sm !border-b-2 !border-black !p-4 uppercase text-right">FECHA</th>
-                        <td mat-cell *matCellDef="let element" class="!p-4 !border-b !border-gray-200 dark:!border-black/30 text-right font-mono">{{ element.fecha }}</td>
-                    </ng-container>
-
-                    <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
-                    <tr mat-row *matRowDef="let row; columns: displayedColumns;" class="hover:bg-green-50 dark:hover:bg-[#111A43]/20 transition-colors"></tr>
+                    <tr mat-header-row *matHeaderRowDef="displayedColumns; sticky: true"></tr>
+                    <tr mat-row *matRowDef="let row; columns: displayedColumns;"
+                        [class.row-selected]="row.selected"
+                        (click)="toggleSelection(row)"
+                        class="hover:bg-yellow-50 dark:hover:bg-[#111A43]/20 transition-colors cursor-pointer"></tr>
                 </table>
             </div>
 
-            <div *ngIf="dataSource().length === 0" class="flex flex-col items-center justify-center py-16 text-black dark:text-gray-300 border-t border-gray-200">
-                <div class="w-24 h-24 bg-white border-3 border-black rounded-full flex items-center justify-center mb-4 shadow-[4px_4px_0px_0px_#000]">
-                    <mat-icon class="!text-5xl !w-12 !h-12 text-[#111A43]" svgIcon="heroicons_outline:inbox"></mat-icon>
+            <!-- Empty State -->
+            <div *ngIf="dataSource().length === 0" class="flex flex-col items-center justify-center py-16 text-black dark:text-gray-300">
+                <div class="w-24 h-24 bg-white border-2 border-black rounded-full flex items-center justify-center mb-4 shadow-[3px_3px_0px_0px_#000]">
+                    <mat-icon class="!text-5xl !w-12 !h-12 text-[#111A43]">inventory</mat-icon>
                 </div>
-                <h3 class="text-2xl font-black uppercase tracking-tight">Sin Items</h3>
-                <p class="text-base font-bold bg-green-300 px-3 py-1 mt-2 border-2 border-black transform -rotate-1 text-black">
-                    Agregue items para realizar el traspaso
+                <h3 class="text-2xl font-black uppercase tracking-tight">Sin Herramientas</h3>
+                <p class="text-base font-bold bg-yellow-300 px-3 py-1 mt-2 border-2 border-black transform -rotate-1 text-black">
+                    Agregue herramientas para el traspaso
                 </p>
+                <p class="text-sm text-gray-500 dark:text-gray-400 mt-4 max-w-md text-center">
+                    Las herramientas agregadas aparecerán aquí para su procesamiento.
+                </p>
+            </div>
+
+            <!-- Footer Summary -->
+            <div *ngIf="getSelectedCount() > 0"
+                 class="bg-green-50 dark:bg-green-900/20 px-4 py-3 border-t-2 border-black flex items-center justify-between shrink-0">
+                <div class="flex items-center gap-4">
+                    <span class="text-sm font-black text-green-800 dark:text-green-300">
+                        {{ getSelectedCount() }} item(s) seleccionado(s)
+                    </span>
+                    <span class="text-sm font-bold text-gray-700 dark:text-gray-300">
+                        Total unidades: {{ getTotalSelectedCantidad() }}
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Mensaje del sistema -->
+    <div *ngIf="showSystemMsg"
+         class="fixed top-6 right-6 z-50 px-6 py-3 border-2 border-black rounded-lg shadow-[4px_4px_0px_0px_#000] font-bold animate-pulse"
+         [ngClass]="{
+             'bg-green-400 text-green-900': systemMsgType === 'success',
+             'bg-red-400 text-red-900': systemMsgType === 'error',
+             'bg-blue-400 text-blue-900': systemMsgType === 'info',
+             'bg-amber-400 text-amber-900': systemMsgType === 'warning'
+         }">
+        {{ systemMsg }}
+    </div>
+</div>
+
+<!-- CONFIRMATION MODAL -->
+<div *ngIf="showConfirmModal"
+     class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[9999] p-4 animate-fadeIn"
+     (click)="closeConfirmModal()">
+    <div class="neo-card-base bg-white dark:bg-slate-800 w-full max-w-lg overflow-hidden flex flex-col shadow-2xl"
+         (click)="$event.stopPropagation()">
+
+        <!-- Modal Header -->
+        <div class="bg-[#0F172AFF] text-white px-5 py-3 border-b-2 border-black flex justify-between items-center">
+            <h2 class="text-lg font-black uppercase flex items-center gap-2">
+                <mat-icon>check_circle</mat-icon>
+                Confirmar Traspaso
+            </h2>
+            <button (click)="closeConfirmModal()" class="hover:bg-white/20 rounded p-1">
+                <mat-icon class="text-white">close</mat-icon>
+            </button>
+        </div>
+
+        <!-- Modal Content -->
+        <div class="p-5 max-h-[70vh] overflow-y-auto custom-scrollbar">
+            <!-- Transfer Data -->
+            <div class="bg-gray-50 dark:bg-[#0F172AFF] border-2 border-black dark:border-slate-700 rounded p-4 mb-4 text-sm space-y-1">
+                <p class="dark:text-white flex justify-between">
+                    <strong>Personal:</strong>
+                    <span>{{ transferForm.value.nombres }} {{ transferForm.value.apPaterno }}</span>
+                </p>
+                <p class="dark:text-white flex justify-between">
+                    <strong>Licencia:</strong>
+                    <span class="font-mono">{{ transferForm.value.nroLicencia }}</span>
+                </p>
+                <p class="dark:text-white flex justify-between">
+                    <strong>Cargo:</strong>
+                    <span>{{ transferForm.value.cargo }}</span>
+                </p>
+                <p class="dark:text-white flex justify-between">
+                    <strong>Gerencia:</strong>
+                    <span>{{ transferForm.value.gerencia }}</span>
+                </p>
+                <p class="dark:text-white flex justify-between">
+                    <strong>Base:</strong>
+                    <span>{{ transferForm.value.base }}</span>
+                </p>
+                <p class="dark:text-white flex justify-between">
+                    <strong>Tipo:</strong>
+                    <span class="font-black text-green-700 dark:text-green-400">{{ transferForm.value.tipoTraspaso }}</span>
+                </p>
+                <p class="dark:text-white flex justify-between">
+                    <strong>Fecha:</strong>
+                    <span>{{ transferForm.value.fecha }} {{ transferForm.value.hora }}</span>
+                </p>
+            </div>
+
+            <!-- Quantities Summary -->
+            <div class="grid grid-cols-2 gap-3 mb-4">
+                <div class="bg-green-50 dark:bg-green-900/30 p-3 rounded border-2 border-green-300 text-center">
+                    <span class="text-xs font-bold text-green-600 dark:text-green-400 uppercase block">Total Items</span>
+                    <span class="text-2xl font-black text-green-800 dark:text-green-200">{{ dataSource().length }}</span>
+                </div>
+                <div class="bg-blue-50 dark:bg-blue-900/30 p-3 rounded border-2 border-blue-300 text-center">
+                    <span class="text-xs font-bold text-blue-600 dark:text-blue-400 uppercase block">Total Unidades</span>
+                    <span class="text-2xl font-black text-blue-800 dark:text-blue-200">{{ getTotalCantidad() }}</span>
+                </div>
+            </div>
+
+            <!-- Items Detail -->
+            <p class="font-bold mb-2 dark:text-white text-sm uppercase">Herramientas a Traspasar:</p>
+            <div class="space-y-2 mb-4 max-h-48 overflow-y-auto custom-scrollbar">
+                <div *ngFor="let item of dataSource()"
+                     class="flex items-center justify-between p-2 rounded border-2 border-black bg-white dark:bg-slate-700 text-xs">
+                    <div class="flex-1">
+                        <span class="font-black text-black dark:text-white">{{ item.codigo }}</span>
+                        <span class="text-gray-600 dark:text-gray-400 mx-2">|</span>
+                        <span class="text-gray-700 dark:text-gray-300">{{ item.descripcion }}</span>
+                    </div>
+                    <span class="bg-green-500 text-white px-2 py-0.5 rounded-full font-black text-xs border border-black">
+                        {{ item.cantidad }} {{ item.unidad }}
+                    </span>
+                </div>
+            </div>
+
+            <!-- Observaciones -->
+            <div *ngIf="transferForm.value.observaciones" class="mb-4 p-3 bg-amber-50 dark:bg-amber-900/20 rounded border-2 border-amber-400">
+                <span class="text-xs text-amber-700 dark:text-amber-400 uppercase font-bold">Observaciones:</span>
+                <p class="text-amber-900 dark:text-amber-200 text-sm">{{ transferForm.value.observaciones }}</p>
+            </div>
+
+            <div class="text-xs text-gray-500 dark:text-gray-400 italic text-center bg-gray-100 dark:bg-slate-800 p-2 rounded border border-gray-300 dark:border-slate-600">
+                Se traspasarán <strong class="text-black dark:text-white">{{ dataSource().length }}</strong> herramienta(s) al área destino.
             </div>
         </div>
 
+        <!-- Modal Footer -->
+        <div class="border-t-2 border-black p-4 bg-white dark:bg-slate-800">
+            <div class="flex justify-end gap-3">
+                <button (click)="closeConfirmModal()" class="px-4 py-2 bg-gray-200 dark:bg-slate-700 text-black dark:text-white border-2 border-black dark:border-slate-500 rounded font-bold uppercase hover:bg-gray-300 dark:hover:bg-slate-600 text-sm">
+                    Cancelar
+                </button>
+                <button (click)="finalizar()" class="px-5 py-2 bg-green-500 text-white border-2 border-black rounded font-black uppercase hover:bg-green-400 shadow-[3px_3px_0px_0px_#000] active:translate-y-[1px] active:shadow-none text-sm flex items-center gap-2">
+                    <mat-icon class="!text-lg !w-5 !h-5">check</mat-icon>
+                    Confirmar Traspaso
+                </button>
+            </div>
+        </div>
     </div>
 </div>

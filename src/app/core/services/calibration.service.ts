@@ -7,7 +7,14 @@ import {
     CalibrationDashboard,
     CalibrationLaboratory,
     CalibrationFilters,
-    CalibrationReportMGH102
+    CalibrationReportMGH102,
+    ScanToolResult,
+    CalibrationBatch,
+    CalibrationBatchItem,
+    PxpCalibrationAlert,
+    PxpCalibrationDashboard,
+    JackServiceStatus,
+    JackServiceType
 } from '../models';
 import { ErpApiService } from '../api/api.service';
 
@@ -176,6 +183,306 @@ export class CalibrationService {
      */
     getActiveCalibrations(): Observable<CalibrationRecord[]> {
         return this.getCalibrations({ status: 'in_process' });
+    }
+
+    // -----------------------------------------------------------------------------------------------------
+    // @ Public methods - PXP Backend v3: Flujo de Calibración
+    // -----------------------------------------------------------------------------------------------------
+
+    /**
+     * Enviar herramienta a calibración (PXP: HE_CLS_SEND)
+     * Crea registro de calibración con status 'sent', genera record_number EC-XXXX/YYYY
+     */
+    sendToCalibrationPxp(params: {
+        tool_id: number;
+        calibration_type?: string;
+        supplier_id?: number;
+        supplier_name?: string;
+        send_date?: string;
+        expected_return_date?: string;
+        service_order?: string;
+        cost?: number;
+        currency?: string;
+        notes?: string;
+    }): Observable<any> {
+        return from(this._api.post('herramientas/calibrations/sendToCalibration', params)).pipe(
+            switchMap((response: any) => {
+                return of(response?.datos || response);
+            })
+        );
+    }
+
+    /**
+     * Procesar retorno de calibración (PXP: HE_CLS_PROC)
+     * Auto-actualiza ttools: last_calibration_date, next_calibration_date, status
+     */
+    processCalibrationReturnPxp(params: {
+        id_calibration: number;
+        result: 'approved' | 'conditional' | 'rejected';
+        calibration_date?: string;
+        certificate_number?: string;
+        certificate_date?: string;
+        next_calibration_date?: string;
+        physical_condition?: string;
+        calibration_performed?: boolean;
+        notes?: string;
+        observations?: string;
+        // Campos para gatas
+        jack_semiannual_date?: string;
+        jack_annual_date?: string;
+    }): Observable<any> {
+        return from(this._api.post('herramientas/calibrations/processCalibrationReturn', params)).pipe(
+            switchMap((response: any) => {
+                return of(response?.datos || response);
+            })
+        );
+    }
+
+    /**
+     * Escanear herramienta por código de barras (PXP: HE_CLS_SCAN)
+     * Retorna info completa incluyendo detección de gata y advertencias
+     */
+    scanToolForCalibration(barcode: string): Observable<ScanToolResult> {
+        return from(this._api.post('herramientas/calibrations/scanToolForCalibration', {
+            barcode_scan: barcode
+        })).pipe(
+            switchMap((response: any) => {
+                const data = response?.datos?.[0] || response?.datos || null;
+                return of(data);
+            })
+        );
+    }
+
+    // -----------------------------------------------------------------------------------------------------
+    // @ Public methods - PXP Backend v3: Lotes de Calibración (Supermercado)
+    // -----------------------------------------------------------------------------------------------------
+
+    /**
+     * Crear cabecera de lote de calibración (PXP: HE_CLS_BATCH_INS)
+     * Genera batch_number LC-XXXX/YYYY automáticamente
+     */
+    createCalibrationBatch(params: {
+        laboratory_id?: number;
+        laboratory_name?: string;
+        base_id?: number;
+        base_name?: string;
+        send_date?: string;
+        expected_return_date?: string;
+        service_order?: string;
+        notes?: string;
+    }): Observable<CalibrationBatch> {
+        return from(this._api.post('herramientas/calibrations/createCalibrationBatch', params)).pipe(
+            switchMap((response: any) => {
+                return of(response?.datos || response);
+            })
+        );
+    }
+
+    /**
+     * Agregar herramienta escaneada al lote (PXP: HE_CLS_BATCH_ITEM)
+     * Acepta barcode_scan o tool_id directo
+     */
+    addToolToBatch(params: {
+        batch_id: number;
+        barcode_scan?: string;
+        tool_id?: number;
+        notes?: string;
+    }): Observable<CalibrationBatchItem> {
+        return from(this._api.post('herramientas/calibrations/addToolToBatch', params)).pipe(
+            switchMap((response: any) => {
+                return of(response?.datos || response);
+            })
+        );
+    }
+
+    /**
+     * Confirmar y enviar lote a laboratorio (PXP: HE_CLS_BATCH_CONF)
+     * Crea registros individuales de calibración por cada herramienta
+     */
+    confirmCalibrationBatch(params: {
+        batch_id: number;
+        approved_by_id?: number;
+        approved_by_name?: string;
+    }): Observable<any> {
+        return from(this._api.post('herramientas/calibrations/confirmCalibrationBatch', params)).pipe(
+            switchMap((response: any) => {
+                return of(response?.datos || response);
+            })
+        );
+    }
+
+    /**
+     * Eliminar item de lote abierto (PXP: HE_CLS_BATCH_DEL)
+     */
+    removeFromBatch(batchItemId: number): Observable<any> {
+        return from(this._api.post('herramientas/calibrations/removeFromBatch', {
+            id_batch_item: batchItemId
+        })).pipe(
+            switchMap((response: any) => {
+                return of(response?.datos || response);
+            })
+        );
+    }
+
+    /**
+     * Listar lotes de calibración (PXP: HE_CLS_BATCH_SEL)
+     */
+    getCalibrationBatches(filters?: any): Observable<CalibrationBatch[]> {
+        const params = {
+            start: 0,
+            limit: 50,
+            sort: 'id_batch',
+            dir: 'desc',
+            ...filters
+        };
+        return from(this._api.post('herramientas/calibrations/listarCalibrationBatches', params)).pipe(
+            switchMap((response: any) => {
+                return of(response?.datos || []);
+            })
+        );
+    }
+
+    /**
+     * Listar items de un lote específico (PXP: HE_CLS_BATCH_DET)
+     */
+    getBatchItems(batchId: number): Observable<CalibrationBatchItem[]> {
+        return from(this._api.post('herramientas/calibrations/listarBatchItems', {
+            start: 0,
+            limit: 200,
+            id_batch: batchId,
+            sort: 'scan_order',
+            dir: 'asc'
+        })).pipe(
+            switchMap((response: any) => {
+                return of(response?.datos || []);
+            })
+        );
+    }
+
+    /**
+     * Procesar retorno de lote completo desde laboratorio (PXP: HE_CBT_RET)
+     * Actualiza resultado, fechas y estado de cada herramienta del lote
+     */
+    processReturnBatch(params: {
+        batch_id: number;
+        actual_return_date?: string;
+        notes?: string;
+        items?: Array<{
+            id_batch_item: number;
+            result: 'approved' | 'conditional' | 'rejected';
+            certificate_number?: string;
+            certificate_date?: string;
+            next_calibration_date?: string;
+            cost?: number;
+        }>;
+    }): Observable<any> {
+        return from(this._api.post('herramientas/calibrationBatches/processReturnBatch', params)).pipe(
+            switchMap((response: any) => {
+                return of(response?.datos || response);
+            })
+        );
+    }
+
+    // -----------------------------------------------------------------------------------------------------
+    // @ Public methods - PXP Backend v3: Dashboard y Alertas Mejoradas
+    // -----------------------------------------------------------------------------------------------------
+
+    /**
+     * Dashboard de calibraciones en tiempo real (PXP: HE_CLS_DASH)
+     * Retorna 14 métricas incluyendo gatas y lotes
+     */
+    getCalibrationDashboardPxp(): Observable<PxpCalibrationDashboard> {
+        return from(this._api.post('herramientas/calibrations/getCalibrationDashboard', {})).pipe(
+            switchMap((response: any) => {
+                const data = response?.datos?.[0] || response?.datos || this._getDefaultPxpDashboard();
+                return of(data);
+            }),
+            catchError(() => {
+                return of(this._getDefaultPxpDashboard());
+            })
+        );
+    }
+
+    /**
+     * Alertas mejoradas con niveles de urgencia (PXP: HE_CLS_ALERTS)
+     */
+    getCalibrationAlertsPxp(filters?: any): Observable<PxpCalibrationAlert[]> {
+        const params = {
+            start: 0,
+            limit: 100,
+            sort: 'next_calibration_date',
+            dir: 'asc',
+            ...filters
+        };
+        return from(this._api.post('herramientas/calibrations/getCalibrationAlerts', params)).pipe(
+            switchMap((response: any) => {
+                const alerts = response?.datos || [];
+                return of(alerts);
+            }),
+            catchError(() => of([]))
+        );
+    }
+
+    // -----------------------------------------------------------------------------------------------------
+    // @ Public methods - PXP Backend v3: Gatas (Jacks)
+    // -----------------------------------------------------------------------------------------------------
+
+    /**
+     * Listado de gatas con estado de servicios (PXP: HE_CLS_JACK_SEL)
+     */
+    getJackServiceStatus(filters?: any): Observable<JackServiceStatus[]> {
+        const params = {
+            start: 0,
+            limit: 100,
+            sort: 'next_calibration_date',
+            dir: 'asc',
+            ...filters
+        };
+        return from(this._api.post('herramientas/calibrations/listarJackServiceStatus', params)).pipe(
+            switchMap((response: any) => {
+                return of(response?.datos || []);
+            })
+        );
+    }
+
+    /**
+     * Registrar servicio preventivo de gata (PXP: HE_CLS_JACK_SVC)
+     * Tipos: 'semiannual', 'annual', 'both'
+     */
+    registerJackService(params: {
+        tool_id: number;
+        service_type: JackServiceType;
+        service_date?: string;
+        notes?: string;
+    }): Observable<any> {
+        return from(this._api.post('herramientas/calibrations/registerJackService', params)).pipe(
+            switchMap((response: any) => {
+                return of(response?.datos || response);
+            })
+        );
+    }
+
+    /**
+     * Dashboard PXP por defecto
+     * @private
+     */
+    private _getDefaultPxpDashboard(): PxpCalibrationDashboard {
+        return {
+            cal_valid: 0,
+            cal_expiring_30d: 0,
+            cal_expiring_7d: 0,
+            cal_expired: 0,
+            cal_in_lab: 0,
+            total_calibratable: 0,
+            jacks_semi_expired: 0,
+            jacks_semi_expiring_30d: 0,
+            jacks_annual_expired: 0,
+            jacks_annual_expiring_30d: 0,
+            total_jacks: 0,
+            open_batches: 0,
+            active_calibrations: 0,
+            overdue_calibrations: 0
+        };
     }
 
     // -----------------------------------------------------------------------------------------------------

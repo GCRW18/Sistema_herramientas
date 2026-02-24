@@ -1,6 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { from, Observable, of, ReplaySubject, switchMap, tap } from 'rxjs';
-import { Movement, MovementVoucher } from '../models';
+import { Movement, MovementVoucher, CreateMovement } from '../models';
 import { ErpApiService } from '../api/api.service';
 
 @Injectable({ providedIn: 'root' })
@@ -132,21 +132,21 @@ export class MovementService {
     /**
      * Create entry movement
      */
-    createEntry(movement: Partial<Movement>): Observable<Movement> {
+    createEntry(movement: CreateMovement | Partial<Movement>): Observable<Movement> {
         return this.createMovement({
             ...movement,
             type: movement.type || 'entry'
-        });
+        } as Partial<Movement>);
     }
 
     /**
      * Create exit movement
      */
-    createExit(movement: Partial<Movement>): Observable<Movement> {
+    createExit(movement: CreateMovement | Partial<Movement>): Observable<Movement> {
         return this.createMovement({
             ...movement,
             type: movement.type || 'exit'
-        });
+        } as Partial<Movement>);
     }
 
     /**
@@ -340,11 +340,12 @@ export class MovementService {
     /**
      * Get herramientas disponibles
      */
-    getHerramientasDisponibles(): Observable<any[]> {
+    getHerramientasDisponibles(filters?: any): Observable<any[]> {
         return from(this._api.post('herramientas/herramientas/listar', {
             start: 0,
             limit: 500,
-            estado: 'activo'
+            estado: 'activo',
+            ...filters
         })).pipe(
             switchMap((response: any) => of(response?.datos || []))
         );
@@ -477,6 +478,237 @@ export class MovementService {
         return from(this._api.post('herramientas/terceros/listar', {
             start: 0,
             limit: 100
+        })).pipe(
+            switchMap((response: any) => of(response?.datos || []))
+        );
+    }
+
+    /**
+     * Get warehouses list (almacenes y bases operativas)
+     */
+    getWarehouses(): Observable<any[]> {
+        return from(this._api.post('herramientas/almacenes/listar', {
+            start: 0,
+            limit: 100
+        })).pipe(
+            switchMap((response: any) => of(response?.datos || []))
+        );
+    }
+
+    /**
+     * Get funcionarios list (personal que puede recibir/entregar herramientas)
+     */
+    getFuncionarios(): Observable<any[]> {
+        return from(this._api.post('herramientas/funcionarios/listar', {
+            start: 0,
+            limit: 500,
+            estado: 'activo'
+        })).pipe(
+            switchMap((response: any) => of(response?.datos || []))
+        );
+    }
+
+    // -----------------------------------------------------------------------------------------------------
+    // @ Métodos específicos para flujo de CALIBRACIÓN
+    // -----------------------------------------------------------------------------------------------------
+
+    /**
+     * Get herramientas enviadas a calibración pendientes de retorno
+     * Estas son las que aparecerán en retorno-calibracion para procesar
+     */
+    getHerramientasEnCalibracion(baseOrigen?: string): Observable<any[]> {
+        const params: any = {
+            start: 0,
+            limit: 100,
+            movement_type: 'exit',
+            exitReason: 'calibration_send',
+            status: 'completed', // Envíos completados pendientes de retorno
+            pendingReturn: true
+        };
+
+        if (baseOrigen) {
+            params.baseOrigen = baseOrigen;
+        }
+
+        return from(this._api.post('herramientas/movements/listMovement', params)).pipe(
+            switchMap((response: any) => of(response?.datos || []))
+        );
+    }
+
+    /**
+     * Vincular retorno de calibración con el envío original
+     * Actualiza el movimiento de envío para marcarlo como retornado
+     */
+    vincularRetornoConEnvio(envioId: string, retornoId: string): Observable<any> {
+        return from(this._api.post('herramientas/movements/linkCalibrationReturn', {
+            envio_id: envioId,
+            retorno_id: retornoId
+        })).pipe(
+            switchMap((response: any) => of(response?.datos || {}))
+        );
+    }
+
+    /**
+     * Obtener el próximo número correlativo para notas de envío de calibración
+     * Formato: EC-XXX/YYYY
+     */
+    getNextEnvioCalibrationNumber(): Observable<string> {
+        const year = new Date().getFullYear();
+
+        return from(this._api.post('herramientas/movements/getNextCorrelative', {
+            type: 'calibration_send',
+            prefix: 'EC',
+            year: year
+        })).pipe(
+            switchMap((response: any) => {
+                const number = response?.numero || 1;
+                return of(`EC-${String(number).padStart(3, '0')}/${year}`);
+            })
+        );
+    }
+
+    /**
+     * Obtener el próximo número correlativo para notas de retorno de calibración
+     * Formato: RC-XXX/YYYY
+     */
+    getNextRetornoCalibrationNumber(): Observable<string> {
+        const year = new Date().getFullYear();
+
+        return from(this._api.post('herramientas/movements/getNextCorrelative', {
+            type: 'calibration_return',
+            prefix: 'RC',
+            year: year
+        })).pipe(
+            switchMap((response: any) => {
+                const number = response?.numero || 1;
+                return of(`RC-${String(number).padStart(3, '0')}/${year}`);
+            })
+        );
+    }
+
+    /**
+     * Obtener herramientas que requieren calibración (próximas a vencer o vencidas)
+     * Para mostrar alertas y sugerencias de envío
+     */
+    getHerramientasRequierenCalibracion(diasAnticipacion: number = 30): Observable<any[]> {
+        return from(this._api.post('herramientas/herramientas/listRequierenCalibracion', {
+            start: 0,
+            limit: 100,
+            dias_anticipacion: diasAnticipacion
+        })).pipe(
+            switchMap((response: any) => of(response?.datos || []))
+        );
+    }
+
+    // -----------------------------------------------------------------------------------------------------
+    // @ Métodos específicos para flujo de RECEPCIÓN / DEVOLUCIÓN
+    // -----------------------------------------------------------------------------------------------------
+
+    /**
+     * Procesa la recepción de herramientas devueltas.
+     * Crea el movimiento 'entry/return', actualiza tloan_items y ttools atómicamente.
+     * Condición DAÑADO/IRREPARABLE → ttools.status = 'quarantine'
+     * Condición BUENO/REQUIERE_CALIBRACION → ttools.status = 'available'
+     */
+    procesarRecepcion(data: {
+        movementNumber: string;
+        date: string;
+        responsablePerson: string;
+        recipient: string;
+        notes: string;
+        items: {
+            toolId: string;
+            loanItemId?: string;
+            quantity: number;
+            condicion: string;
+            notes: string;
+            fechaDevolucion: string;
+        }[];
+    }): Observable<any> {
+        return from(this._api.post('herramientas/recepcionHerramientas/procesarRecepcion', {
+            estado_reg: 'activo',
+            movement_number: data.movementNumber,
+            type: 'entry',
+            status: 'completed',
+            date: data.date,
+            entry_reason: 'return',
+            responsible_person: data.responsablePerson,
+            recipient: data.recipient,
+            notes: data.notes,
+            items: data.items
+        })).pipe(
+            switchMap((response: any) => of(response?.datos || {}))
+        );
+    }
+
+    /**
+     * Lista herramientas prestadas pendientes de retorno para un funcionario.
+     */
+    getHerramientasPrestadas(filters?: {
+        funcionarioId?: string;
+        loanNumber?: string;
+        codigoHerramienta?: string;
+    }): Observable<any[]> {
+        return from(this._api.post('herramientas/recepcionHerramientas/getHerramientasPrestadas', {
+            start: 0,
+            limit: 200,
+            returned: false,
+            ...filters
+        })).pipe(
+            switchMap((response: any) => of(response?.datos || []))
+        );
+    }
+
+    /**
+     * Obtiene los datos completos de una devolución para generar la constancia.
+     */
+    getConstanciaDevolucion(idMovement: string): Observable<any> {
+        return from(this._api.post('herramientas/recepcionHerramientas/getConstanciaDevolucion', {
+            id_movement: idMovement
+        })).pipe(
+            switchMap((response: any) => of(response?.datos?.[0] || {}))
+        );
+    }
+
+    /**
+     * Número correlativo siguiente para notas de devolución: DR-XXX/YYYY
+     */
+    getNextDevolucionNumber(): Observable<string> {
+        const year = new Date().getFullYear();
+        return from(this._api.post('herramientas/recepcionHerramientas/getNextDevolucionNumber', {})).pipe(
+            switchMap((response: any) => {
+                const num = response?.datos?.[0]?.next_number || 1;
+                return of(`DR-${String(num).padStart(3, '0')}/${year}`);
+            })
+        );
+    }
+
+    /**
+     * Actualizar estado de calibración de una herramienta después del retorno
+     */
+    actualizarEstadoCalibracion(toolId: string, data: {
+        fechaCalibracion: string;
+        fechaVencimiento: string;
+        nroCertificado: string;
+        resultado: 'APROBADO' | 'RECHAZADO' | 'CONDICIONAL';
+        ubicacionDestino: string;
+    }): Observable<any> {
+        return from(this._api.post('herramientas/herramientas/updateCalibracion', {
+            tool_id: toolId,
+            ...data
+        })).pipe(
+            switchMap((response: any) => of(response?.datos || {}))
+        );
+    }
+
+    /**
+     * Obtener historial de calibraciones de una herramienta
+     */
+    getHistorialCalibracion(toolId: string): Observable<any[]> {
+        return from(this._api.post('herramientas/calibraciones/historial', {
+            tool_id: toolId,
+            start: 0,
+            limit: 50
         })).pipe(
             switchMap((response: any) => of(response?.datos || []))
         );

@@ -21,7 +21,9 @@ export type EntryReason =
     | 'return'             // Devolución
     | 'adjustment'         // Ajuste
     | 'donation'           // Donación
-    | 'calibration_return'; // Retorno de calibración
+    | 'calibration_return' // Retorno de calibración
+    | 'base_return'        // Retorno de base operativa
+    | 'third_party_return'; // Retorno de terceros
 
 /**
  * Razón del movimiento de salida
@@ -34,6 +36,8 @@ export type ExitReason =
     | 'donation'          // Donación
     | 'calibration_send'  // Envío a calibración
     | 'maintenance_send'  // Envío a mantenimiento
+    | 'base_send'         // Envío a base operativa
+    | 'third_party_send'  // Envío a terceros
     | 'decommission'      // Baja
     | 'lost'              // Perdido
     | 'quarantine'        // Cuarentena
@@ -118,6 +122,41 @@ export interface MovementItem {
     tool?: Tool;
     quantity: number;
     notes?: string;
+}
+
+/**
+ * Item para crear un movimiento (sin id ni movementId que se generan en backend)
+ */
+export interface CreateMovementItem {
+    toolId?: string;
+    toolCode?: string;
+    codigo?: string;
+    descripcion?: string;
+    modeloPn?: string;
+    serialNumber?: string;
+    quantity?: number;
+    cantidad?: number;
+    notes?: string;
+    certificado?: string;
+    nroNotaSalida?: string;
+}
+
+/**
+ * Datos para crear un nuevo movimiento
+ */
+export interface CreateMovement {
+    type: MovementType;
+    entryReason?: EntryReason;
+    exitReason?: ExitReason;
+    date?: string;
+    notes?: string;
+    calibrationProvider?: string;
+    supplier?: string;
+    recipient?: string;
+    sourceWarehouseId?: string;
+    destinationWarehouseId?: string;
+    items: CreateMovementItem[];
+    [key: string]: any; // Permitir propiedades adicionales
 }
 
 /**

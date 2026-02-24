@@ -1,0 +1,122 @@
+<div class="flex flex-col w-full h-full bg-[#FFF] dark:bg-[#0a0f29] transition-colors duration-300 font-sans overflow-hidden"
+     cdkDrag cdkDragRootElement=".cdk-overlay-pane" cdkDragBoundary=".cdk-overlay-container">
+    <div class="flex-1 overflow-y-auto p-6 md:p-8 relative">
+
+        <div class="fixed top-20 right-10 w-40 h-40 bg-[#111A43] rounded-full border-3 border-black opacity-5 pointer-events-none"></div>
+        <div class="fixed bottom-10 left-10 w-24 h-24 bg-green-400 rotate-12 border-3 border-black opacity-10 pointer-events-none"></div>
+
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8 relative z-10">
+            <div class="flex items-center gap-6">
+                <button (click)="goBack()"
+                        class="w-14 h-14 bg-white dark:bg-slate-800 border-3 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] active:shadow-none active:translate-x-1 active:translate-y-1 hover:bg-white transition-all flex items-center justify-center rounded-lg cursor-pointer"
+                        (mousedown)="$event.stopPropagation()">
+                    <mat-icon class="!text-4xl !w-10 !h-10 text-black dark:text-white" svgIcon="heroicons_outline:arrow-left"></mat-icon>
+                </button>
+                <div>
+                    <h1 class="text-3xl md:text-5xl font-black text-black dark:text-white uppercase tracking-tighter drop-shadow-[2px_2px_0px_rgba(255,255,255,0.5)] dark:drop-shadow-none leading-none">
+                        CREAR MATERIAL
+                    </h1>
+                    <div class="flex items-center gap-2 mt-2">
+                        <span class="w-3 h-3 bg-amber-500 border border-black rounded-full animate-pulse"></span>
+                        <p class="text-sm font-bold bg-[#111A43] text-white px-2 py-0.5 inline-block transform -rotate-1 border border-black">
+                            NUEVO ITEM MISCELANEOS
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex gap-4 items-end">
+                <div class="flex flex-col items-end mr-2">
+                    <span class="text-[10px] font-black uppercase text-black dark:text-gray-400">NRO. NOTA</span>
+                    <input [formControl]="getControl('nroNota')"
+                           placeholder="000000"
+                           class="w-32 h-10 border-3 border-black rounded-lg text-center font-black text-lg shadow-[2px_2px_0px_0px_#000] focus:translate-y-[1px] focus:shadow-none transition-all outline-none">
+                </div>
+
+                <button (click)="onSubmit()"
+                        [disabled]="!crearForm.valid"
+                        class="px-8 py-3 bg-amber-500 text-black font-black text-lg border-3 border-black rounded-full shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] active:shadow-none transition-all uppercase tracking-wide disabled:opacity-50 disabled:cursor-not-allowed">
+                    ACEPTAR
+                </button>
+                <button (click)="onCancel()"
+                        class="px-8 py-3 bg-[#111A43] text-white font-black text-lg border-3 border-black rounded-full shadow-[4px_4px_0px_0px_#000] hover:shadow-[2px_2px_0px_0px_#000] hover:translate-x-[2px] hover:translate-y-[2px] active:shadow-none transition-all uppercase tracking-wide">
+                    CANCELAR
+                </button>
+            </div>
+        </div>
+
+        <div class="neo-card-base bg-white dark:bg-[#151e4a] p-6 md:p-8 relative z-10">
+            <form [formGroup]="crearForm" class="flex flex-col h-full">
+
+                <h3 class="text-xl font-black uppercase mb-6 border-b-3 border-green-400 inline-block text-black dark:text-white w-fit pr-8">
+                    Detalles del Nuevo Material
+                </h3>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
+
+                    <mat-form-field appearance="fill" class="w-full">
+                        <mat-label>RECIBIDO POR</mat-label>
+                        <input matInput formControlName="recibidoPor">
+                        <mat-icon matSuffix class="text-black font-bold">person</mat-icon>
+                    </mat-form-field>
+
+                    <mat-form-field appearance="fill" class="w-full">
+                        <mat-label>UNIDAD</mat-label>
+                        <input matInput formControlName="unidad">
+                        <mat-icon matSuffix class="text-black font-bold">straighten</mat-icon>
+                    </mat-form-field>
+
+                    <mat-form-field appearance="fill" class="w-full">
+                        <mat-label>PART NUMBER (P/N)</mat-label>
+                        <input matInput formControlName="pn">
+                        <mat-icon matSuffix class="text-black font-bold">settings</mat-icon>
+                    </mat-form-field>
+
+                    <mat-form-field appearance="fill" class="w-full">
+                        <mat-label>CÓDIGO BOA-M</mat-label>
+                        <input matInput formControlName="codigoBoaM">
+                        <mat-icon matSuffix class="text-black font-bold">qr_code</mat-icon>
+                    </mat-form-field>
+
+                    <mat-form-field appearance="fill" class="w-full">
+                        <mat-label>TIPO DE COMPRA</mat-label>
+                        <input matInput formControlName="tipoCompra">
+                        <mat-icon matSuffix class="text-black font-bold">shopping_cart</mat-icon>
+                    </mat-form-field>
+
+                    <mat-form-field appearance="fill" class="w-full">
+                        <mat-label>FECHA INGRESO</mat-label>
+                        <input matInput [matDatepicker]="pickerFecha" formControlName="fecha">
+                        <mat-datepicker-toggle matIconSuffix [for]="pickerFecha"></mat-datepicker-toggle>
+                        <mat-datepicker #pickerFecha></mat-datepicker>
+                    </mat-form-field>
+
+                    <mat-form-field appearance="fill" class="w-full">
+                        <mat-label>PRODUCTO</mat-label>
+                        <input matInput formControlName="producto">
+                        <mat-icon matSuffix class="text-black font-bold">inventory_2</mat-icon>
+                    </mat-form-field>
+
+                    <mat-form-field appearance="fill" class="w-full">
+                        <mat-label>MARCA</mat-label>
+                        <input matInput formControlName="marca">
+                        <mat-icon matSuffix class="text-black font-bold">branding_watermark</mat-icon>
+                    </mat-form-field>
+
+                    <mat-form-field appearance="fill" class="w-full">
+                        <mat-label>HORA</mat-label>
+                        <input matInput type="time" formControlName="hora">
+                        <mat-icon matSuffix class="text-black font-bold">schedule</mat-icon>
+                    </mat-form-field>
+
+                </div>
+
+                <mat-form-field appearance="fill" class="w-full textarea-field">
+                    <mat-label>OBSERVACIÓN</mat-label>
+                    <textarea matInput formControlName="observacion" class="!resize-none"></textarea>
+                </mat-form-field>
+
+            </form>
+        </div>
+    </div>
+</div>

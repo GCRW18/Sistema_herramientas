@@ -28,17 +28,17 @@ export const defaultNavigation: ErpNavigationItem[] = [
         link    : '/salidas'
     },
     {
-        id      : 'kits',
-        title   : 'KITS',
-        subtitle: 'Gestión de kits de herramientas',
+        id      : 'calibraciones',
+        title   : 'CALIBRACIONES',
+        subtitle: 'Control de calibraciones y servicios',
         type    : 'basic',
-        icon    : 'heroicons_outline:cube', // Using a cube icon
-        link    : '/kits'
+        icon    : 'heroicons_outline:wrench-screwdriver',
+        link    : '/calibraciones'
     },
     {
         id      : 'inventario',
         title   : 'INVENTARIO',
-        subtitle: 'Control visual de stock y ubicaciones',
+        subtitle: 'Control de stock, kits y reportes',
         type    : 'basic',
         icon    : 'heroicons_outline:squares-2x2',
         link    : '/inventario'
@@ -50,14 +50,6 @@ export const defaultNavigation: ErpNavigationItem[] = [
         type    : 'basic',
         icon    : 'heroicons_outline:cog-6-tooth',
         link    : '/administration'
-    },
-    {
-        id      : 'reportes',
-        title   : 'REPORTES',
-        subtitle: 'Reportes y analíticas',
-        type    : 'basic',
-        icon    : 'heroicons_outline:chart-bar',
-        link    : '/reportes'
     }
 ];
 

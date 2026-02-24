@@ -1,0 +1,284 @@
+<div class="flex flex-col w-full h-full bg-white dark:bg-[#0F172AFF] transition-colors duration-300 font-sans overflow-hidden">
+
+    <!-- ===== CARDS VIEW (sin scroll, llena la pantalla) ===== -->
+    <div class="flex-1 flex flex-col min-h-0 p-2 md:p-3 overflow-hidden">
+
+        <div class="flex flex-col flex-1 min-h-0 max-w-[1600px] mx-auto w-full">
+
+            <!-- Título -->
+            <div class="flex items-start gap-1 mt-1 mb-1 shrink-0">
+                <h1 class="text-2xl md:text-3xl font-black text-black dark:text-white uppercase tracking-tighter drop-shadow-[3px_3px_0px_rgba(255,255,255,0.5)] dark:drop-shadow-none leading-none">
+                    CALIBRACIONES
+                </h1>
+            </div>
+
+            <!-- ========== MAIN GRID: Sidebar LEFT + Cards ========== -->
+            <div class="grid grid-cols-1 lg:grid-cols-[220px_1fr] xl:grid-cols-[250px_1fr] gap-2 flex-1 min-h-0">
+
+                <!-- ===== LEFT SIDEBAR ===== -->
+                <div class="flex flex-col gap-2">
+
+                    <!-- Dashboard Button -->
+                    <button (click)="openDashboard()"
+                            class="cal-sidebar-btn group hover:bg-[#1A3EDCFF] shrink-0">
+                        <span>DASHBOARD</span>
+                    </button>
+
+                    <!-- Calibraciones Recientes Button -->
+                    <button (click)="openCalibracionesRecientes()"
+                            class="cal-sidebar-btn group hover:bg-slate-600 shrink-0">
+                        <span>REGISTROS RECIENTES</span>
+                    </button>
+
+                    <!-- Card 1: Envio a Calibracion (tall, llena el resto del sidebar) -->
+                    <div class="neo-card-cal group flex-1 min-h-0 hover:bg-[#1A3EDCFF] dark:hover:bg-blue-800/20" (click)="openEnvioCalibracion()">
+                        <div class="flex flex-col h-full p-3 md:p-4">
+                            <span class="cal-number">1</span>
+                            <p class="cal-label cal-label-lg mt-1">ENVIO A<br>CALIBRACION</p>
+                            <div class="flex-1 flex items-center justify-center mt-2">
+                                <mat-icon class="cal-icon-xl group-hover:rotate-[25deg] transition-transform duration-300" svgIcon="heroicons_outline:wrench-screwdriver"></mat-icon>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- ===== RIGHT: Cards Grid (3×2, llena altura) ===== -->
+                <div class="grid grid-cols-2 gap-2" style="grid-template-rows: 1fr 1fr 1fr;">
+
+                    <!-- Card 2: Retorno Calibracion -->
+                    <div class="neo-card-cal group hover:bg-[#1AAA1FFF] dark:hover:bg-blue-800/20" (click)="openRetornoCalibracion()">
+                        <div class="flex flex-col h-full p-3">
+                            <span class="cal-number">2</span>
+                            <div class="flex-1 flex flex-col items-center justify-center gap-1">
+                                <mat-icon class="cal-icon-lg group-hover:rotate-[20deg] transition-transform duration-300" svgIcon="heroicons_outline:arrow-uturn-left"></mat-icon>
+                                <p class="cal-label text-center">RETORNO<br>CALIBRACION</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Card 3: Laboratorios -->
+                    <div class="neo-card-cal group hover:bg-[#7113CFFF] dark:hover:bg-blue-800/20" (click)="openLaboratorios()">
+                        <div class="flex flex-col h-full p-3">
+                            <span class="cal-number">3</span>
+                            <div class="flex-1 flex flex-col items-center justify-center gap-1">
+                                <mat-icon class="cal-icon-lg group-hover:scale-110 transition-transform duration-300" svgIcon="heroicons_outline:building-office"></mat-icon>
+                                <p class="cal-label text-center">LABORATORIOS<br>EXTERNOS</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Card 4: Servicios Gatas -->
+                    <div class="neo-card-cal group hover:bg-[#FF6A00FF] dark:hover:bg-blue-800/20" (click)="openServiciosGatas()">
+                        <div class="flex flex-col h-full p-3">
+                            <span class="cal-number">4</span>
+                            <div class="flex-1 flex flex-col items-center justify-center gap-1">
+                                <mat-icon class="cal-icon-lg group-hover:rotate-[15deg] transition-transform duration-300" svgIcon="heroicons_outline:cog-6-tooth"></mat-icon>
+                                <p class="cal-label text-center">SERVICIOS<br>GATAS (JACKS)</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Card 5: Reportes MGH -->
+                    <div class="neo-card-cal group hover:bg-[#FFC501FF] dark:hover:bg-blue-800/20" (click)="openReportes()">
+                        <div class="flex flex-col h-full p-3">
+                            <span class="cal-number">5</span>
+                            <div class="flex-1 flex flex-col items-center justify-center gap-1">
+                                <mat-icon class="cal-icon-lg group-hover:rotate-[-15deg] transition-transform duration-300" svgIcon="heroicons_outline:document-chart-bar"></mat-icon>
+                                <p class="cal-label text-center">REPORTES<br>MGH</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Card 6: Alertas Vencimiento -->
+                    <div class="neo-card-cal group hover:bg-[#e94125] dark:hover:bg-blue-800/20" (click)="openAlertas()">
+                        <div class="flex items-center h-full p-3 gap-2">
+                            <span class="cal-number cal-number-sm shrink-0">6</span>
+                            <p class="cal-label cal-label-sm flex-1">ALERTAS<br>VENCIMIENTO</p>
+                            <div class="flex flex-col items-center gap-1 shrink-0">
+                                <mat-icon class="cal-icon-md group-hover:scale-110 transition-transform duration-300" svgIcon="heroicons_outline:bell-alert"></mat-icon>
+                                <span *ngIf="alertCount > 0"
+                                      class="bg-[#e94125] text-white text-xs font-black px-2 py-0.5 rounded-full border-2 border-black min-w-[28px] text-center shadow-[2px_2px_0px_0px_#000]">
+                                    {{ alertCount }}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Card 7: Lotes de Calibracion -->
+                    <div class="neo-card-cal group hover:bg-[#0891b2] dark:hover:bg-blue-800/20" (click)="openLotesCalibracion()">
+                        <div class="flex items-center h-full p-3 gap-2">
+                            <span class="cal-number cal-number-sm shrink-0">7</span>
+                            <p class="cal-label cal-label-sm flex-1">LOTES DE<br>CALIBRACION</p>
+                            <mat-icon class="cal-icon-md group-hover:rotate-[15deg] transition-transform duration-300 shrink-0" svgIcon="heroicons_outline:inbox-stack"></mat-icon>
+                        </div>
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <!-- Sub-vista activa (rutas hijas como /calibraciones/alertas) -->
+    <router-outlet></router-outlet>
+
+</div>
+
+<!-- ========== DIALOG: CALIBRACIONES RECIENTES (ng-template) ========== -->
+<ng-template #calibracionesRecientesDialog>
+    <div class="flex flex-col w-full h-full bg-[#f8f9fc] dark:bg-[#0F172AFF] transition-colors duration-300 font-sans overflow-hidden relative"
+         cdkDrag cdkDragRootElement=".cdk-overlay-pane" cdkDragBoundary=".cdk-overlay-container">
+
+        <!-- Decorative background shapes -->
+        <div class="fixed top-16 left-10 w-64 h-64 bg-[#111A43] rounded-full border-4 border-black opacity-5 pointer-events-none"></div>
+        <div class="fixed bottom-10 right-10 w-32 h-32 bg-[#1A3EDCFF] rotate-45 border-4 border-black opacity-5 pointer-events-none"></div>
+
+        <!-- Spinner overlay -->
+        <div *ngIf="isLoading" class="spinner-overlay z-[100]">
+            <div class="neo-card-base-cal p-6 flex flex-col items-center gap-4 bg-white dark:bg-slate-800">
+                <mat-spinner diameter="50"></mat-spinner>
+                <span class="font-black text-black dark:text-white uppercase tracking-wider">Cargando datos...</span>
+            </div>
+        </div>
+
+        <div class="flex-1 flex flex-col p-4 md:p-6 relative h-full overflow-hidden gap-4">
+
+            <!-- ===== HEADER: Back + Title + Actions ===== -->
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 shrink-0 relative z-10">
+                <div class="flex items-center gap-4">
+                    <button mat-dialog-close
+                            class="w-12 h-12 bg-white dark:bg-slate-800 border-2 border-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] active:shadow-none active:translate-x-1 active:translate-y-1 hover:bg-white hover:scale-105 transition-all flex items-center justify-center rounded-lg cursor-pointer"
+                            (mousedown)="$event.stopPropagation()">
+                        <mat-icon class="!text-2xl text-black dark:text-white">arrow_back</mat-icon>
+                    </button>
+                    <div>
+                        <h1 class="text-2xl md:text-3xl font-black text-black dark:text-white uppercase tracking-tight leading-none">
+                            Registros de Calibracion
+                        </h1>
+                        <div class="flex items-center gap-2 mt-1">
+                            <p class="text-xs font-bold bg-[#1A3EDCFF] text-white px-2 py-0.5 rounded-sm border border-black">
+                                HISTORIAL DE CALIBRACIONES
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex flex-wrap gap-3 justify-end">
+                    <button (click)="loadRecentCalibrations()"
+                            class="px-4 py-2 bg-slate-600 text-white font-bold text-sm border-2 border-black rounded-full shadow-[3px_3px_0px_0px_#000] hover:translate-y-[1px] hover:shadow-[2px_2px_0px_0px_#000] active:shadow-none transition-all uppercase flex items-center gap-2">
+                        <mat-icon class="text-white !h-5 !text-lg">refresh</mat-icon>
+                        Actualizar
+                    </button>
+                </div>
+            </div>
+
+            <!-- ===== TABLE CONTAINER ===== -->
+            <div class="neo-card-base-cal bg-white dark:bg-slate-800 overflow-hidden flex flex-col flex-1 relative z-10 border-2 border-black dark:border-black">
+
+                <!-- Table header bar -->
+                <div class="bg-[#0F172AFF] px-4 py-2 border-b-2 border-black flex items-center justify-between shrink-0 h-12">
+                    <div class="flex items-center gap-3">
+                        <mat-icon class="text-white !text-xl">history</mat-icon>
+                        <span class="font-black text-xs md:text-sm uppercase text-white">
+                            Registro de Calibraciones
+                        </span>
+                    </div>
+                    <span class="bg-white text-black px-2 py-0.5 rounded text-xs font-black border border-black shadow-[2px_2px_0px_0px_#000]">
+                        Total: {{ totalRecords }}
+                    </span>
+                </div>
+
+                <!-- Table content -->
+                <div class="overflow-auto flex-1 bg-[#f8f9fc] dark:bg-slate-900/50 custom-scrollbar-cal">
+                    <table mat-table [dataSource]="recentCalibrations" class="w-full">
+
+                        <ng-container matColumnDef="fecha">
+                            <th mat-header-cell *matHeaderCellDef class="header-neo text-sm py-3 px-4">FECHA</th>
+                            <td mat-cell *matCellDef="let element" class="cell-neo font-mono font-bold text-sm px-4 text-black dark:text-white">
+                                {{ element.fecha }}
+                            </td>
+                        </ng-container>
+
+                        <ng-container matColumnDef="tipo">
+                            <th mat-header-cell *matHeaderCellDef class="header-neo text-sm py-3 px-4">TIPO</th>
+                            <td mat-cell *matCellDef="let element" class="cell-neo px-4">
+                                <span class="inline-block px-2 py-1 rounded text-[10px] sm:text-xs font-black border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,0.5)] bg-[#0F172AFF] text-white">
+                                    {{ element.tipo }}
+                                </span>
+                            </td>
+                        </ng-container>
+
+                        <ng-container matColumnDef="nroComprobante">
+                            <th mat-header-cell *matHeaderCellDef class="header-neo text-sm py-3 px-4">NRO. REGISTRO</th>
+                            <td mat-cell *matCellDef="let element" class="cell-neo px-4">
+                                <span class="font-mono text-sm font-black text-black dark:text-white tracking-wide">{{ element.nroComprobante }}</span>
+                            </td>
+                        </ng-container>
+
+                        <ng-container matColumnDef="estado">
+                            <th mat-header-cell *matHeaderCellDef class="header-neo text-sm py-3 px-4">ESTADO</th>
+                            <td mat-cell *matCellDef="let element" class="cell-neo px-4">
+                                <span class="inline-block px-2 py-1 rounded text-[10px] sm:text-xs font-black border border-black uppercase tracking-wider shadow-[2px_2px_0px_0px_rgba(0,0,0,0.5)]"
+                                      [ngClass]="getStatusClass(element.estado)">
+                                    {{ element.estado }}
+                                </span>
+                            </td>
+                        </ng-container>
+
+                        <ng-container matColumnDef="responsable">
+                            <th mat-header-cell *matHeaderCellDef class="header-neo text-sm py-3 px-4">RESPONSABLE</th>
+                            <td mat-cell *matCellDef="let element" class="cell-neo font-black text-xs sm:text-sm px-4 text-black dark:text-white">
+                                {{ element.responsable }}
+                            </td>
+                        </ng-container>
+
+                        <ng-container matColumnDef="acciones">
+                            <th mat-header-cell *matHeaderCellDef class="header-neo text-right text-sm py-3 px-4">ACCIONES</th>
+                            <td mat-cell *matCellDef="let element" class="cell-neo text-right px-4">
+                                <div class="flex gap-2 justify-end">
+                                    <button (click)="verDetalle(element); $event.stopPropagation()"
+                                            matTooltip="Ver detalle"
+                                            class="w-8 h-8 flex items-center justify-center border-2 border-black bg-white dark:bg-slate-700 hover:bg-gray-100 dark:hover:bg-slate-600 hover:scale-110 rounded-lg shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] active:translate-y-[1px] active:shadow-none transition-all">
+                                        <mat-icon class="text-black dark:text-white !text-lg !w-5 !h-5 flex items-center justify-center">visibility</mat-icon>
+                                    </button>
+                                    <button (click)="editarRegistro(element); $event.stopPropagation()"
+                                            matTooltip="Editar registro"
+                                            class="w-8 h-8 flex items-center justify-center border-2 border-black bg-[#F8B400FF] hover:bg-yellow-400 hover:scale-110 rounded-lg shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] active:translate-y-[1px] active:shadow-none transition-all">
+                                        <mat-icon class="text-black !text-lg !w-5 !h-5 flex items-center justify-center">edit</mat-icon>
+                                    </button>
+                                </div>
+                            </td>
+                        </ng-container>
+
+                        <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+                        <tr mat-row *matRowDef="let row; columns: displayedColumns;"
+                            class="hover:bg-white hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,0.1)] hover:-translate-y-0.5
+                                   dark:hover:bg-slate-900 dark:hover:shadow-none
+                                   transition-all border-b-2 border-black dark:border-slate-700/50 h-14 cursor-pointer"
+                            (click)="verDetalle(row)"></tr>
+                    </table>
+
+                    <!-- Empty State -->
+                    <div *ngIf="recentCalibrations.length === 0 && !isLoading" class="flex flex-col items-center justify-center h-full py-16 opacity-50">
+                        <mat-icon class="!text-6xl text-black dark:text-gray-500">science</mat-icon>
+                        <p class="text-sm font-black mt-2 uppercase text-black dark:text-gray-500">No hay registros de calibracion</p>
+                    </div>
+                </div>
+
+                <!-- Paginador -->
+                <mat-paginator
+                    [length]="totalRecords"
+                    [pageSize]="pageSize"
+                    [pageIndex]="pageIndex"
+                    [pageSizeOptions]="pageSizeOptions"
+                    (page)="onPageChange($event)"
+                    showFirstLastButtons
+                    class="border-t-2 border-black dark:border-slate-700 bg-white dark:bg-slate-800">
+                </mat-paginator>
+            </div>
+        </div>
+    </div>
+</ng-template>

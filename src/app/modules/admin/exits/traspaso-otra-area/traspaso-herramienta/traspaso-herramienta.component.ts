@@ -2,9 +2,6 @@ import { Component, inject, signal, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
-import { MatInputModule } from '@angular/material/input';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatSelectModule } from '@angular/material/select';
 import { MatDialogRef, MatDialogModule, MAT_DIALOG_DATA } from '@angular/material/dialog';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup } from '@angular/forms';
 import { DragDropModule } from '@angular/cdk/drag-drop';
@@ -29,9 +26,6 @@ interface HerramientaOption {
         CommonModule,
         MatIconModule,
         MatButtonModule,
-        MatInputModule,
-        MatFormFieldModule,
-        MatSelectModule,
         MatDialogModule,
         FormsModule,
         ReactiveFormsModule,
@@ -42,80 +36,29 @@ interface HerramientaOption {
         :host {
             display: block;
             height: 100%;
-            --neo-border: 3px solid black;
-            --neo-shadow: 5px 5px 0px 0px rgba(0,0,0,1);
+            --neo-border: 2px solid black;
+            --neo-shadow: 4px 4px 0px 0px rgba(0,0,0,1);
+        }
+
+        :host-context(.dark) {
+            color-scheme: dark;
         }
 
         .neo-card-base {
             border: var(--neo-border) !important;
             box-shadow: var(--neo-shadow) !important;
-            border-radius: 12px !important;
-        }
-
-        /* ESTILOS DE INPUTS */
-        :host ::ng-deep .mat-mdc-text-field-wrapper {
-            background-color: white !important;
-            border: 2px solid black !important;
             border-radius: 8px !important;
-            padding: 0 12px !important;
-            min-height: 48px;
-            box-shadow: 3px 3px 0px 0px rgba(0, 0, 0, 0.1);
-            transition: all 0.2s;
-            display: flex;
-            align-items: center;
+            background-color: white;
         }
 
-        :host ::ng-deep .mat-mdc-form-field.mat-focused .mat-mdc-text-field-wrapper {
-            background-color: white !important;
-            border-color: black !important;
-            box-shadow: 3px 3px 0px 0px rgba(0,0,0,1);
-            transform: translate(-1px, -1px);
+        :host-context(.dark) .neo-card-base {
+            background-color: #1e293b !important;
         }
 
-        :host ::ng-deep .mat-mdc-input-element {
-            font-weight: 700 !important;
-            color: black !important;
-        }
-
-        :host ::ng-deep .mat-mdc-floating-label {
-            font-weight: 800 !important;
-            color: #6B7280 !important;
-            text-transform: uppercase;
-            font-size: 11px !important;
-        }
-
-        :host ::ng-deep .mat-mdc-form-field.mat-focused .mat-mdc-floating-label {
-            color: black !important;
-        }
-
-        :host ::ng-deep .mat-mdc-icon-button {
-            color: black !important;
-        }
-
-        :host ::ng-deep .mat-mdc-form-field-focus-overlay,
-        :host ::ng-deep .mat-mdc-notched-outline,
-        :host ::ng-deep .mat-mdc-form-field-subscript-wrapper {
-            display: none !important;
-        }
-
-        :host ::ng-deep .mat-mdc-select-value {
-            font-weight: 700 !important;
-            color: black !important;
-        }
-
-        :host ::ng-deep .mat-mdc-select-arrow {
-            color: black !important;
-        }
-
-        :host ::ng-deep textarea.mat-mdc-input-element {
-            margin-top: 8px !important;
-        }
-
-        :host ::ng-deep .textarea-field .mat-mdc-text-field-wrapper {
-            align-items: flex-start;
-            padding-top: 8px !important;
-            min-height: 80px;
-        }
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #000; border-radius: 3px; }
+        :host-context(.dark) .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; }
     `]
 })
 export class TraspasoHerramientaComponent implements OnInit {
@@ -156,20 +99,24 @@ export class TraspasoHerramientaComponent implements OnInit {
         this.filteredHerramientas = [...this.herramientas];
     }
 
-    onBuscarChange(value: string): void {
-        if (!value) {
-            this.filteredHerramientas = [...this.herramientas];
-            this.coincidencias.set(0);
-            return;
-        }
+    onSelectHerramienta(event: Event): void {
+        const codigo = (event.target as HTMLSelectElement).value;
+        if (!codigo) return;
 
-        const searchTerm = value.toLowerCase();
-        this.filteredHerramientas = this.herramientas.filter(h =>
-            h.codigo.toLowerCase().includes(searchTerm) ||
-            h.pn.toLowerCase().includes(searchTerm) ||
-            h.nombre.toLowerCase().includes(searchTerm)
-        );
-        this.coincidencias.set(this.filteredHerramientas.length);
+        const herramienta = this.herramientas.find(h => h.codigo === codigo);
+        if (herramienta) {
+            this.selectHerramienta(herramienta);
+        }
+    }
+
+    onSelectByCodigo(event: Event): void {
+        const codigo = (event.target as HTMLSelectElement).value;
+        if (!codigo) return;
+
+        const herramienta = this.herramientas.find(h => h.codigo === codigo);
+        if (herramienta) {
+            this.selectHerramienta(herramienta);
+        }
     }
 
     selectHerramienta(herramienta: HerramientaOption): void {
