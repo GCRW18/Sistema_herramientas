@@ -1,100 +1,115 @@
 <div class="flex flex-col w-full h-full bg-white dark:bg-[#0F172AFF] transition-colors duration-300 font-sans overflow-hidden">
 
-    <!-- ===== CARDS VIEW (sin scroll, llena la pantalla) ===== -->
-    <div *ngIf="showCards" class="flex-1 flex flex-col min-h-0 p-3 md:p-4 lg:p-5 overflow-hidden">
+    <!-- ===== HEADER ===== -->
+    <div class="flex items-center gap-4 px-5 py-3 border-b-2 border-black dark:border-slate-700 shrink-0 bg-white dark:bg-[#0F172AFF]">
+        <h1 class="text-3xl md:text-4xl font-black text-black dark:text-white uppercase tracking-tighter leading-none">
+            SALIDAS
+        </h1>
+        <span class="text-[10px] font-bold bg-[#e94125] text-white px-3 py-1 rounded-sm border border-black uppercase tracking-wider">
+            MÓDULO DE EGRESOS
+        </span>
+        <div class="flex-1"></div>
+        <button (click)="openSalidasRecientes()"
+                class="flex items-center gap-2 px-4 py-2 bg-white dark:bg-slate-800 border-2 border-black font-black text-xs uppercase rounded-lg shadow-[3px_3px_0px_0px_#000] hover:shadow-[2px_2px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px] transition-all text-black dark:text-white">
+            <mat-icon class="!text-base">history</mat-icon>
+            Salidas Recientes
+        </button>
+    </div>
 
-        <div class="flex flex-col flex-1 min-h-0 max-w-[1600px] mx-auto w-full">
+    <!-- ===== BARRA HORIZONTAL DE SUBMENÚS 1-5 ===== -->
+    <div class="flex items-stretch gap-0 border-b-2 border-black dark:border-slate-700 shrink-0 bg-white dark:bg-[#111A43] overflow-x-auto">
 
-            <!-- Título -->
-            <div class="flex items-start gap-1 mt-1 mb-2 md:mb-3 shrink-0">
-                <h1 class="text-3xl md:text-5xl font-black text-black dark:text-white uppercase tracking-tighter drop-shadow-[3px_3px_0px_rgba(255,255,255,0.5)] dark:drop-shadow-none leading-none">
-                    SALIDAS
-                </h1>
+        <!-- Item 1: Envío a Otras Bases -->
+        <button (click)="openEnvioOtrasBases()"
+                [class.!bg-[#FF6A00FF]]="activeFormTab() === 1"
+                [class.!text-white]="activeFormTab() === 1"
+                class="group flex items-center gap-3 px-5 py-3 border-r-2 border-black dark:border-slate-600 font-black text-black dark:text-white hover:bg-[#FF6A00FF] hover:text-white transition-colors whitespace-nowrap min-w-[160px]">
+            <span class="text-2xl font-black leading-none">1</span>
+            <div class="flex flex-col items-start">
+                <span class="text-[10px] leading-tight uppercase">ENVÍO A</span>
+                <span class="text-[10px] leading-tight uppercase">OTRAS BASES</span>
             </div>
+            <mat-icon svgIcon="heroicons_outline:building-office" class="!text-base ml-auto opacity-50 group-hover:opacity-100"></mat-icon>
+        </button>
 
-            <!-- ========== MAIN GRID: Sidebar LEFT + Cards ========== -->
-            <div class="grid grid-cols-1 lg:grid-cols-[260px_1fr] xl:grid-cols-[300px_1fr] gap-3 md:gap-4 flex-1 min-h-0">
-
-                <!-- ===== LEFT SIDEBAR ===== -->
-                <div class="flex flex-col gap-3">
-
-                    <!-- Dashboard Button -->
-                    <button [routerLink]="['dashboard']"
-                            class="exit-sidebar-btn group hover:bg-red-600 shrink-0">
-                        <span>DASHBOARD</span>
-                    </button>
-
-                    <!-- Salidas Recientes Button -->
-                    <button (click)="openSalidasRecientes()"
-                            class="exit-sidebar-btn group hover:bg-slate-600 shrink-0">
-                        <span>SALIDAS RECIENTES</span>
-                    </button>
-
-                    <!-- Card 1: Envio a Otras Bases (tall, llena resto del sidebar) -->
-                    <div class="neo-card-exit group flex-1 min-h-0 hover:bg-[#FF6A00FF] dark:hover:bg-blue-800/20" (click)="openEnvioOtrasBases()">
-                        <div class="flex flex-col h-full p-4 md:p-6">
-                            <span class="exit-number">1</span>
-                            <p class="exit-label exit-label-lg mt-2">ENVIO A<br>OTRAS BASES</p>
-                            <div class="flex-1 flex items-center justify-center mt-3">
-                                <mat-icon class="exit-icon-xl group-hover:rotate-[25deg] transition-transform duration-300" svgIcon="heroicons_outline:building-office"></mat-icon>
-                            </div>
-                        </div>
-                    </div>
-
-                </div>
-
-                <!-- ===== RIGHT: Cards Grid (2×2, llena altura) ===== -->
-                <div class="grid grid-cols-2 gap-3 md:gap-4" style="grid-template-rows: 1fr 1fr;">
-
-                    <!-- Card 3: Traspaso a Otra Area -->
-                    <div class="neo-card-exit group hover:bg-[#1AAA1FFF] dark:hover:bg-blue-800/20" (click)="openTraspasoOtraArea()">
-                        <div class="flex flex-col h-full p-4 md:p-6">
-                            <span class="exit-number">3</span>
-                            <div class="flex-1 flex flex-col items-center justify-center gap-2">
-                                <mat-icon class="exit-icon-lg group-hover:scale-110 transition-transform duration-300" svgIcon="heroicons_outline:arrow-path"></mat-icon>
-                                <p class="exit-label text-center">TRASPASO<br>A OTRA AREA</p>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Card 4: Prestamo a Terceros -->
-                    <div class="neo-card-exit group hover:bg-[#7113CFFF] dark:hover:bg-blue-800/20" (click)="openPrestamoTerceros()">
-                        <div class="flex flex-col h-full p-4 md:p-6">
-                            <span class="exit-number">4</span>
-                            <div class="flex-1 flex flex-col items-center justify-center gap-2">
-                                <mat-icon class="exit-icon-lg group-hover:rotate-[15deg] transition-transform duration-300" svgIcon="heroicons_outline:building-storefront"></mat-icon>
-                                <p class="exit-label text-center">PRESTAMO<br>A TECNICOS/OTROS</p>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Card 5: Poner en Cuarentena -->
-                    <div class="neo-card-exit group hover:bg-[#FFC501FF] dark:hover:bg-blue-800/20" (click)="openPonerCuarentena()">
-                        <div class="flex items-center h-full p-4 md:p-5 gap-3">
-                            <span class="exit-number exit-number-sm shrink-0">5</span>
-                            <p class="exit-label exit-label-sm flex-1">CUARENTENA<br>DE ACTIVO</p>
-                            <mat-icon class="exit-icon-md group-hover:rotate-[-15deg] transition-transform duration-300 shrink-0" svgIcon="heroicons_outline:exclamation-triangle"></mat-icon>
-                        </div>
-                    </div>
-
-                    <!-- Card 6: Baja de Activo -->
-                    <div class="neo-card-exit group hover:bg-[#e94125] dark:hover:bg-blue-800/20" (click)="openBaja()">
-                        <div class="flex items-center h-full p-4 md:p-5 gap-3">
-                            <span class="exit-number exit-number-sm shrink-0">6</span>
-                            <p class="exit-label exit-label-sm flex-1">BAJA<br>DE ACTIVO</p>
-                            <mat-icon class="exit-icon-md group-hover:scale-110 transition-transform duration-300 shrink-0" svgIcon="heroicons_outline:trash"></mat-icon>
-                        </div>
-                    </div>
-
-                </div>
-
+        <!-- Item 2: Traspaso a Otra Área -->
+        <button (click)="openTraspasoOtraArea()"
+                [class.!bg-[#1AAA1FFF]]="activeFormTab() === 2"
+                [class.!text-white]="activeFormTab() === 2"
+                class="group flex items-center gap-3 px-5 py-3 border-r-2 border-black dark:border-slate-600 font-black text-black dark:text-white hover:bg-[#1AAA1FFF] hover:text-white transition-colors whitespace-nowrap min-w-[160px]">
+            <span class="text-2xl font-black leading-none">2</span>
+            <div class="flex flex-col items-start">
+                <span class="text-[10px] leading-tight uppercase">TRASPASO</span>
+                <span class="text-[10px] leading-tight uppercase">OTRA ÁREA</span>
             </div>
+            <mat-icon svgIcon="heroicons_outline:arrow-path" class="!text-base ml-auto opacity-50 group-hover:opacity-100"></mat-icon>
+        </button>
 
-        </div>
+        <!-- Item 3: Préstamo a Técnicos -->
+        <button (click)="openPrestamoTerceros()"
+                [class.!bg-[#7113CFFF]]="activeFormTab() === 3"
+                [class.!text-white]="activeFormTab() === 3"
+                class="group flex items-center gap-3 px-5 py-3 border-r-2 border-black dark:border-slate-600 font-black text-black dark:text-white hover:bg-[#7113CFFF] hover:text-white transition-colors whitespace-nowrap min-w-[160px]">
+            <span class="text-2xl font-black leading-none">3</span>
+            <div class="flex flex-col items-start">
+                <span class="text-[10px] leading-tight uppercase">PRÉSTAMO</span>
+                <span class="text-[10px] leading-tight uppercase">TÉC./OTROS</span>
+            </div>
+            <mat-icon svgIcon="heroicons_outline:building-storefront" class="!text-base ml-auto opacity-50 group-hover:opacity-100"></mat-icon>
+        </button>
+
+        <!-- Item 4: Cuarentena de Activo -->
+        <button (click)="openPonerCuarentena()"
+                [class.!bg-[#FFC501FF]]="activeFormTab() === 4"
+                [class.!text-black]="activeFormTab() === 4"
+                class="group flex items-center gap-3 px-5 py-3 border-r-2 border-black dark:border-slate-600 font-black text-black dark:text-white hover:bg-[#FFC501FF] hover:text-black transition-colors whitespace-nowrap min-w-[160px]">
+            <span class="text-2xl font-black leading-none">4</span>
+            <div class="flex flex-col items-start">
+                <span class="text-[10px] leading-tight uppercase">CUARENTENA</span>
+                <span class="text-[10px] leading-tight uppercase">DE ACTIVO</span>
+            </div>
+            <mat-icon svgIcon="heroicons_outline:exclamation-triangle" class="!text-base ml-auto opacity-50 group-hover:opacity-100"></mat-icon>
+        </button>
+
+        <!-- Item 5: Baja de Activo -->
+        <button (click)="openBaja()"
+                [class.!bg-[#e94125]]="activeFormTab() === 5"
+                [class.!text-white]="activeFormTab() === 5"
+                class="group flex items-center gap-3 px-5 py-3 border-r-2 border-black dark:border-slate-600 font-black text-black dark:text-white hover:bg-[#e94125] hover:text-white transition-colors whitespace-nowrap min-w-[160px]">
+            <span class="text-2xl font-black leading-none">5</span>
+            <div class="flex flex-col items-start">
+                <span class="text-[10px] leading-tight uppercase">BAJA</span>
+                <span class="text-[10px] leading-tight uppercase">DE ACTIVO</span>
+            </div>
+            <mat-icon svgIcon="heroicons_outline:trash" class="!text-base ml-auto opacity-50 group-hover:opacity-100"></mat-icon>
+        </button>
 
     </div>
 
-    <router-outlet></router-outlet>
+    <!-- ===== ÁREA PRINCIPAL ===== -->
+    <div class="flex-1 overflow-hidden relative">
+
+        <!-- Formulario activo (inline) -->
+        <ng-container *ngIf="activeFormComponent()">
+            <ng-container [ngComponentOutlet]="activeFormComponent()!" [ngComponentOutletInjector]="formInjector!"></ng-container>
+        </ng-container>
+
+        <!-- Placeholder cuando no hay formulario seleccionado -->
+        <div *ngIf="!activeFormComponent()" class="flex flex-col items-center justify-center h-full bg-[#f8f9fc] dark:bg-[#0F172AFF] relative">
+            <div class="absolute top-10 right-10 w-48 h-48 bg-[#e94125] rounded-full border-4 border-black opacity-5 pointer-events-none"></div>
+            <div class="absolute bottom-10 left-10 w-24 h-24 bg-[#111A43] rotate-12 border-4 border-black opacity-5 pointer-events-none"></div>
+            <div class="flex flex-col items-center text-center opacity-30 dark:opacity-20 select-none">
+                <mat-icon class="!text-[100px] !w-28 !h-28 text-black dark:text-white">output</mat-icon>
+                <p class="text-2xl font-black uppercase text-black dark:text-white mt-4 tracking-tight">
+                    Seleccione un tipo de salida
+                </p>
+                <p class="text-sm font-bold text-gray-500 dark:text-gray-400 mt-2">
+                    Use el menú superior para registrar una salida
+                </p>
+            </div>
+        </div>
+
+    </div>
 
 </div>
 
@@ -103,11 +118,9 @@
     <div class="flex flex-col w-full h-full bg-[#f8f9fc] dark:bg-[#0F172AFF] transition-colors duration-300 font-sans overflow-hidden relative"
          cdkDrag cdkDragRootElement=".cdk-overlay-pane" cdkDragBoundary=".cdk-overlay-container">
 
-        <!-- Decorative background shapes -->
         <div class="fixed top-16 left-10 w-64 h-64 bg-[#111A43] rounded-full border-4 border-black opacity-5 pointer-events-none"></div>
         <div class="fixed bottom-10 right-10 w-32 h-32 bg-[#e94125] rotate-45 border-4 border-black opacity-5 pointer-events-none"></div>
 
-        <!-- Spinner overlay -->
         <div *ngIf="isLoading" class="spinner-overlay z-[100]">
             <div class="neo-card-base-exit p-6 flex flex-col items-center gap-4 bg-white dark:bg-slate-800">
                 <mat-spinner diameter="50"></mat-spinner>
@@ -117,7 +130,6 @@
 
         <div class="flex-1 flex flex-col p-4 md:p-6 relative h-full overflow-hidden gap-4">
 
-            <!-- ===== HEADER: Back + Title + Actions ===== -->
             <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 shrink-0 relative z-10">
                 <div class="flex items-center gap-4">
                     <button mat-dialog-close
@@ -129,48 +141,36 @@
                         <h1 class="text-2xl md:text-3xl font-black text-black dark:text-white uppercase tracking-tight leading-none">
                             Salidas Recientes
                         </h1>
-                        <div class="flex items-center gap-2 mt-1">
-                            <p class="text-xs font-bold bg-[#e94125] text-white px-2 py-0.5 rounded-sm border border-black">
-                                HISTORIAL DE EGRESOS
-                            </p>
-                        </div>
+                        <p class="text-xs font-bold bg-[#e94125] text-white px-2 py-0.5 rounded-sm border border-black mt-1 inline-block">
+                            HISTORIAL DE EGRESOS
+                        </p>
                     </div>
                 </div>
-
-                <div class="flex flex-wrap gap-3 justify-end">
-                    <button (click)="loadRecentExits()"
-                            class="px-4 py-2 bg-slate-600 text-white font-bold text-sm border-2 border-black rounded-full shadow-[3px_3px_0px_0px_#000] hover:translate-y-[1px] hover:shadow-[2px_2px_0px_0px_#000] active:shadow-none transition-all uppercase flex items-center gap-2">
-                        <mat-icon class="text-white !h-5 !text-lg">refresh</mat-icon>
-                        Actualizar
-                    </button>
-                </div>
+                <button (click)="loadRecentExits()"
+                        class="px-4 py-2 bg-slate-600 text-white font-bold text-sm border-2 border-black rounded-full shadow-[3px_3px_0px_0px_#000] hover:translate-y-[1px] hover:shadow-[2px_2px_0px_0px_#000] active:shadow-none transition-all uppercase flex items-center gap-2">
+                    <mat-icon class="text-white !h-5 !text-lg">refresh</mat-icon>
+                    Actualizar
+                </button>
             </div>
 
-            <!-- ===== TABLE CONTAINER ===== -->
             <div class="neo-card-base-exit bg-white dark:bg-slate-800 overflow-hidden flex flex-col flex-1 relative z-10 border-2 border-black dark:border-black">
 
-                <!-- Table header bar -->
                 <div class="bg-[#0F172AFF] px-4 py-2 border-b-2 border-black flex items-center justify-between shrink-0 h-12">
                     <div class="flex items-center gap-3">
                         <mat-icon class="text-white !text-xl">history</mat-icon>
-                        <span class="font-black text-xs md:text-sm uppercase text-white">
-                            Registro de Egresos
-                        </span>
+                        <span class="font-black text-xs md:text-sm uppercase text-white">Registro de Egresos</span>
                     </div>
                     <span class="bg-white text-black px-2 py-0.5 rounded text-xs font-black border border-black shadow-[2px_2px_0px_0px_#000]">
                         Total: {{ totalRecords }}
                     </span>
                 </div>
 
-                <!-- Table content -->
                 <div class="overflow-auto flex-1 bg-[#f8f9fc] dark:bg-slate-900/50 custom-scrollbar-exit">
                     <table mat-table [dataSource]="recentExits" class="w-full">
 
                         <ng-container matColumnDef="fecha">
                             <th mat-header-cell *matHeaderCellDef class="header-neo text-sm py-3 px-4">FECHA</th>
-                            <td mat-cell *matCellDef="let element" class="cell-neo font-mono font-bold text-sm px-4 text-black dark:text-white">
-                                {{ element.fecha }}
-                            </td>
+                            <td mat-cell *matCellDef="let element" class="cell-neo font-mono font-bold text-sm px-4 text-black dark:text-white">{{ element.fecha }}</td>
                         </ng-container>
 
                         <ng-container matColumnDef="tipo">
@@ -201,9 +201,7 @@
 
                         <ng-container matColumnDef="responsable">
                             <th mat-header-cell *matHeaderCellDef class="header-neo text-sm py-3 px-4">RESPONSABLE</th>
-                            <td mat-cell *matCellDef="let element" class="cell-neo font-black text-xs sm:text-sm px-4 text-black dark:text-white">
-                                {{ element.responsable }}
-                            </td>
+                            <td mat-cell *matCellDef="let element" class="cell-neo font-black text-xs sm:text-sm px-4 text-black dark:text-white">{{ element.responsable }}</td>
                         </ng-container>
 
                         <ng-container matColumnDef="acciones">
@@ -226,20 +224,16 @@
 
                         <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
                         <tr mat-row *matRowDef="let row; columns: displayedColumns;"
-                            class="hover:bg-white hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,0.1)] hover:-translate-y-0.5
-                                   dark:hover:bg-slate-900 dark:hover:shadow-none
-                                   transition-all border-b-2 border-black dark:border-slate-700/50 h-14 cursor-pointer"
+                            class="hover:bg-white dark:hover:bg-slate-900 transition-all border-b-2 border-black dark:border-slate-700/50 h-14 cursor-pointer"
                             (click)="verDetalle(row)"></tr>
                     </table>
 
-                    <!-- Empty State -->
                     <div *ngIf="recentExits.length === 0 && !isLoading" class="flex flex-col items-center justify-center h-full py-16 opacity-50">
                         <mat-icon class="!text-6xl text-black dark:text-gray-500">outbox</mat-icon>
                         <p class="text-sm font-black mt-2 uppercase text-black dark:text-gray-500">No hay salidas recientes</p>
                     </div>
                 </div>
 
-                <!-- Paginador -->
                 <mat-paginator
                     [length]="totalRecords"
                     [pageSize]="pageSize"

@@ -13,7 +13,11 @@ import { MatChipsModule } from '@angular/material/chips';
 import { MatBadgeModule } from '@angular/material/badge';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatExpansionModule } from '@angular/material/expansion';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { DragDropModule } from '@angular/cdk/drag-drop';
+import { forkJoin } from 'rxjs';
+import { ToolService } from 'app/core/services/tool.service';
+import { CategoryService } from 'app/core/services/category.service';
 
 interface InventoryItem {
     id: number;
@@ -55,6 +59,7 @@ interface InventoryItem {
         MatBadgeModule,
         MatTooltipModule,
         MatExpansionModule,
+        MatProgressSpinnerModule,
         DragDropModule
     ],
     encapsulation: ViewEncapsulation.None,
@@ -101,6 +106,8 @@ export class ConsultarInventarioComponent implements OnInit {
     private fb = inject(FormBuilder);
     private dialog = inject(MatDialog);
     private router = inject(Router);
+    private toolService = inject(ToolService);
+    private categoryService = inject(CategoryService);
     public dialogRef = inject(MatDialogRef<ConsultarInventarioComponent>, { optional: true });
 
     // Signals
@@ -111,157 +118,20 @@ export class ConsultarInventarioComponent implements OnInit {
     viewMode = signal<'grid' | 'list' | 'table'>('grid');
     selectedItem = signal<InventoryItem | null>(null);
     showFilters = signal(true);
+    isLoading = signal(false);
 
     searchForm!: FormGroup;
 
-    // Data simulada
-    inventoryData: InventoryItem[] = [
-        {
-            id: 1,
-            codigo: 'BOA-H-12345',
-            partNumber: 'TQ-200',
-            descripcion: 'TORQUÍMETRO DIGITAL 20-200 NM',
-            categoria: 'CALIBRACIÓN',
-            ubicacion: '13-SUELO',
-            stockActual: 5,
-            stockMinimo: 2,
-            stockMaximo: 10,
-            estado: 'DISPONIBLE',
-            ultimoMovimiento: new Date('2024-12-28'),
-            valorUnitario: 2500,
-            proveedor: 'SNAP-ON',
-            serialNumber: 'SN-TQ-001',
-            fechaCalibracion: new Date('2024-06-01'),
-            proximaCalibracion: new Date('2025-06-01'),
-            condicion: 'EXCELENTE'
-        },
-        {
-            id: 2,
-            codigo: 'BOA-H-12346',
-            partNumber: 'TLD-45',
-            descripcion: 'TALADRO INDUSTRIAL 1/2" 850W',
-            categoria: 'ELÉCTRICAS',
-            ubicacion: '14-RACK-A2',
-            stockActual: 3,
-            stockMinimo: 2,
-            stockMaximo: 8,
-            estado: 'DISPONIBLE',
-            ultimoMovimiento: new Date('2024-12-27'),
-            valorUnitario: 1200,
-            proveedor: 'DEWALT',
-            condicion: 'BUENO'
-        },
-        {
-            id: 3,
-            codigo: 'BOA-H-12347',
-            partNumber: 'DST-SET-12',
-            descripcion: 'SET DESTORNILLADORES 12 PZAS',
-            categoria: 'MANUALES',
-            ubicacion: '15-ESTANTE-B1',
-            stockActual: 1,
-            stockMinimo: 5,
-            stockMaximo: 15,
-            estado: 'BAJO STOCK',
-            ultimoMovimiento: new Date('2024-12-26'),
-            valorUnitario: 450,
-            proveedor: 'STANLEY',
-            condicion: 'BUENO'
-        },
-        {
-            id: 4,
-            codigo: 'BOA-H-99881',
-            partNumber: 'CTA-3M-50',
-            descripcion: 'CINTA AISLANTE 3M 50MM',
-            categoria: 'CONSUMIBLES',
-            ubicacion: '02-PASILLO',
-            stockActual: 0,
-            stockMinimo: 10,
-            stockMaximo: 50,
-            estado: 'SIN STOCK',
-            ultimoMovimiento: new Date('2024-12-25'),
-            valorUnitario: 25,
-            proveedor: '3M',
-            condicion: 'BUENO'
-        },
-        {
-            id: 5,
-            codigo: 'BOA-H-55421',
-            partNumber: 'FLUKE-87V',
-            descripcion: 'MULTÍMETRO DIGITAL FLUKE 87V',
-            categoria: 'MEDICIÓN',
-            ubicacion: '05-SEGURIDAD',
-            stockActual: 8,
-            stockMinimo: 3,
-            stockMaximo: 12,
-            estado: 'DISPONIBLE',
-            ultimoMovimiento: new Date('2024-12-29'),
-            valorUnitario: 3500,
-            proveedor: 'FLUKE',
-            serialNumber: 'FL-87V-003',
-            fechaCalibracion: new Date('2024-08-01'),
-            proximaCalibracion: new Date('2025-08-01'),
-            condicion: 'EXCELENTE'
-        },
-        {
-            id: 6,
-            codigo: 'BOA-H-78965',
-            partNumber: 'KIT-B737',
-            descripcion: 'KIT HERRAMIENTAS BOEING 737',
-            categoria: 'KITS',
-            ubicacion: '10-RACK-C3',
-            stockActual: 2,
-            stockMinimo: 1,
-            stockMaximo: 4,
-            estado: 'EN PRESTAMO',
-            ultimoMovimiento: new Date('2024-12-20'),
-            valorUnitario: 15000,
-            proveedor: 'BOEING',
-            condicion: 'EXCELENTE'
-        },
-        {
-            id: 7,
-            codigo: 'BOA-H-34567',
-            partNumber: 'MIC-DIG-25',
-            descripcion: 'MICRÓMETRO DIGITAL 0-25MM',
-            categoria: 'CALIBRACIÓN',
-            ubicacion: '13-SUELO',
-            stockActual: 3,
-            stockMinimo: 2,
-            stockMaximo: 6,
-            estado: 'EN CALIBRACION',
-            ultimoMovimiento: new Date('2024-12-15'),
-            valorUnitario: 1800,
-            proveedor: 'MITUTOYO',
-            serialNumber: 'MIT-25-089',
-            fechaCalibracion: new Date('2024-01-01'),
-            proximaCalibracion: new Date('2025-01-01'),
-            condicion: 'BUENO'
-        },
-        {
-            id: 8,
-            codigo: 'BOA-H-98123',
-            partNumber: 'ESM-ANG-7',
-            descripcion: 'ESMERIL ANGULAR 7" 2200W',
-            categoria: 'ELÉCTRICAS',
-            ubicacion: '14-RACK-A2',
-            stockActual: 1,
-            stockMinimo: 2,
-            stockMaximo: 5,
-            estado: 'CUARENTENA',
-            ultimoMovimiento: new Date('2024-12-10'),
-            valorUnitario: 980,
-            proveedor: 'MAKITA',
-            condicion: 'MALO'
-        }
-    ];
+    // Data cargada desde el backend
+    inventoryData = signal<InventoryItem[]>([]);
 
-    categorias = ['CALIBRACIÓN', 'ELÉCTRICAS', 'MANUALES', 'MEDICIÓN', 'KITS', 'CONSUMIBLES'];
-    ubicaciones = ['13-SUELO', '14-RACK-A2', '15-ESTANTE-B1', '02-PASILLO', '05-SEGURIDAD', '10-RACK-C3'];
+    categorias: string[] = [];
+    ubicaciones: string[] = [];
     estados = ['DISPONIBLE', 'BAJO STOCK', 'SIN STOCK', 'EN CALIBRACION', 'EN PRESTAMO', 'CUARENTENA'];
 
     // Computed
     filteredData = computed(() => {
-        let data = this.inventoryData;
+        let data = this.inventoryData();
         const term = this.searchTerm().toLowerCase();
         const categoria = this.selectedCategoria();
         const estado = this.selectedEstado();
@@ -303,6 +173,91 @@ export class ConsultarInventarioComponent implements OnInit {
             ubicacion: [''],
             estado: ['']
         });
+        this.loadInventory();
+    }
+
+    private loadInventory(): void {
+        this.isLoading.set(true);
+
+        forkJoin({
+            tools: this.toolService.getTools(),
+            categories: this.categoryService.getCategories()
+        }).subscribe({
+            next: ({ tools, categories }) => {
+                // Construir mapa category_id → nombre
+                const categoryMap: Record<number, string> = {};
+                for (const cat of categories as any[]) {
+                    categoryMap[cat.id_category] = cat.name;
+                }
+
+                const items = (tools as any[]).map(t => this.mapToolToInventoryItem(t, categoryMap));
+                this.inventoryData.set(items);
+
+                // Poblar listas de filtros dinámicamente desde los datos reales
+                this.categorias = [...new Set(items.map(i => i.categoria))].sort();
+                this.ubicaciones = [...new Set(items.map(i => i.ubicacion))].sort();
+
+                this.isLoading.set(false);
+            },
+            error: () => {
+                this.isLoading.set(false);
+            }
+        });
+    }
+
+    private mapToolToInventoryItem(tool: any, categoryMap: Record<number, string>): InventoryItem {
+        const categoria = categoryMap[tool.category_id]
+            || (tool.category_id ? `Categoría ${tool.category_id}` : 'Sin categoría');
+        const ubicacion = tool.warehouse_id ? `Almacén ${tool.warehouse_id}` : 'Sin ubicación';
+
+        // Estado basado en el status del backend
+        const statusMap: Record<string, InventoryItem['estado']> = {
+            'DISPONIBLE':  'DISPONIBLE',
+            'CALIBRACION': 'EN CALIBRACION',
+            'PRESTADO':    'EN PRESTAMO',
+            'TRANSFERIDO': 'EN PRESTAMO',
+            'CUARENTENA':  'CUARENTENA',
+            'BAJA':        'CUARENTENA'
+        };
+        let estado: InventoryItem['estado'] = statusMap[tool.status] || 'DISPONIBLE';
+        if (estado === 'DISPONIBLE' && (tool.quantity_in_stock ?? 0) <= 0) {
+            estado = 'SIN STOCK';
+        }
+
+        // Condición física
+        const condicionMap: Record<string, InventoryItem['condicion']> = {
+            'excellent': 'EXCELENTE',
+            'good':      'BUENO',
+            'fair':      'REGULAR',
+            'poor':      'MALO'
+        };
+        const condicion: InventoryItem['condicion'] = condicionMap[tool.condition] || 'BUENO';
+
+        return {
+            id: tool.id_tool,
+            codigo: tool.code || '',
+            partNumber: tool.part_number || tool.model || '',
+            descripcion: tool.name || '',
+            categoria,
+            ubicacion,
+            stockActual: tool.quantity_in_stock ?? 0,
+            stockMinimo: 0,
+            stockMaximo: 10,
+            estado,
+            ultimoMovimiento: tool.fecha_mod
+                ? new Date(tool.fecha_mod)
+                : new Date(tool.fecha_reg),
+            valorUnitario: tool.purchase_price ?? 0,
+            proveedor:  tool.supplier || tool.brand || undefined,
+            serialNumber: tool.serial_number || undefined,
+            fechaCalibracion: tool.last_calibration_date
+                ? new Date(tool.last_calibration_date)
+                : undefined,
+            proximaCalibracion: tool.next_calibration_date
+                ? new Date(tool.next_calibration_date)
+                : undefined,
+            condicion
+        };
     }
 
     changeView(mode: 'grid' | 'list' | 'table'): void {
@@ -319,12 +274,12 @@ export class ConsultarInventarioComponent implements OnInit {
 
     getStatusClass(estado: string): string {
         const classes: Record<string, string> = {
-            'DISPONIBLE': 'bg-emerald-100 text-emerald-800 border-emerald-800',
-            'BAJO STOCK': 'bg-yellow-100 text-yellow-800 border-yellow-800',
-            'SIN STOCK': 'bg-red-100 text-red-800 border-red-800',
+            'DISPONIBLE':     'bg-emerald-100 text-emerald-800 border-emerald-800',
+            'BAJO STOCK':     'bg-yellow-100 text-yellow-800 border-yellow-800',
+            'SIN STOCK':      'bg-red-100 text-red-800 border-red-800',
             'EN CALIBRACION': 'bg-purple-100 text-purple-800 border-purple-800',
-            'EN PRESTAMO': 'bg-blue-100 text-blue-800 border-blue-800',
-            'CUARENTENA': 'bg-orange-100 text-orange-800 border-orange-800'
+            'EN PRESTAMO':    'bg-blue-100 text-blue-800 border-blue-800',
+            'CUARENTENA':     'bg-orange-100 text-orange-800 border-orange-800'
         };
         return classes[estado] || 'bg-gray-200 text-black border-black';
     }
@@ -332,9 +287,9 @@ export class ConsultarInventarioComponent implements OnInit {
     getCondicionClass(condicion: string): string {
         const classes: Record<string, string> = {
             'EXCELENTE': 'bg-green-100 text-green-800 border-green-800',
-            'BUENO': 'bg-blue-100 text-blue-800 border-blue-800',
-            'REGULAR': 'bg-yellow-100 text-yellow-800 border-yellow-800',
-            'MALO': 'bg-red-100 text-red-800 border-red-800'
+            'BUENO':     'bg-blue-100 text-blue-800 border-blue-800',
+            'REGULAR':   'bg-yellow-100 text-yellow-800 border-yellow-800',
+            'MALO':      'bg-red-100 text-red-800 border-red-800'
         };
         return classes[condicion] || 'bg-gray-200 text-black border-black';
     }

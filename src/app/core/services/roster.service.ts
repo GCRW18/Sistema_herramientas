@@ -62,7 +62,7 @@ export class RosterService {
 
         return from(this._api.post('herramientas/roster_assignments/listAssignments', params)).pipe(
             switchMap((response: any) => {
-                const assignments = response?.datos || [];
+                const assignments = response?.data || [];
                 this._assignments.next(assignments);
                 return of(assignments);
             })
@@ -79,7 +79,7 @@ export class RosterService {
             id_asignacion: id
         })).pipe(
             switchMap((response: any) => {
-                const assignment = response?.datos?.[0] || null;
+                const assignment = response?.data?.[0] || null;
                 if (assignment) {
                     this._assignment.next(assignment);
                 }
@@ -94,7 +94,7 @@ export class RosterService {
     createAssignment(data: RosterAssignmentForm): Observable<RosterAssignment> {
         return from(this._api.post('herramientas/roster_assignments/insertAssignment', data)).pipe(
             switchMap((response: any) => {
-                const assignment = response?.datos || data;
+                const assignment = response?.data || data;
                 this._assignment.next(assignment as RosterAssignment);
                 return of(assignment);
             })
@@ -110,7 +110,7 @@ export class RosterService {
             id_asignacion: id
         })).pipe(
             switchMap((response: any) => {
-                const updatedAssignment = response?.datos || data;
+                const updatedAssignment = response?.data || data;
                 this._assignment.next(updatedAssignment as RosterAssignment);
                 return of(updatedAssignment);
             })
@@ -136,7 +136,7 @@ export class RosterService {
     returnAssignment(data: RosterReturnForm): Observable<RosterAssignment> {
         return from(this._api.post('herramientas/roster_assignments/returnAssignment', data)).pipe(
             switchMap((response: any) => {
-                const assignment = response?.datos || {};
+                const assignment = response?.data || {};
                 this._assignment.next(assignment);
                 return of(assignment);
             })
@@ -153,7 +153,7 @@ export class RosterService {
             notes: notes
         })).pipe(
             switchMap((response: any) => {
-                const assignment = response?.datos || {};
+                const assignment = response?.data || {};
                 this._assignment.next(assignment);
                 return of(assignment);
             })
@@ -168,7 +168,7 @@ export class RosterService {
             id_funcionario: employeeId
         })).pipe(
             switchMap((response: any) => {
-                return of(response?.datos || []);
+                return of(response?.data || []);
             })
         );
     }
@@ -185,7 +185,7 @@ export class RosterService {
             dir: 'desc'
         })).pipe(
             switchMap((response: any) => {
-                return of(response?.datos || []);
+                return of(response?.data || []);
             })
         );
     }
@@ -198,7 +198,7 @@ export class RosterService {
             id_asignacion: assignmentId
         })).pipe(
             switchMap((response: any) => {
-                return of(response?.datos || []);
+                return of(response?.data || []);
             })
         );
     }
@@ -209,7 +209,7 @@ export class RosterService {
     getStats(): Observable<RosterStats> {
         return from(this._api.post('herramientas/roster_assignments/getAssignmentStats', {})).pipe(
             switchMap((response: any) => {
-                const stats = response?.datos || {};
+                const stats = response?.data || {};
                 this._stats.next(stats);
                 return of(stats);
             })
@@ -222,7 +222,7 @@ export class RosterService {
     getOverdueAssignments(): Observable<RosterAssignment[]> {
         return from(this._api.post('herramientas/roster_assignments/listOverdueAssignments', {})).pipe(
             switchMap((response: any) => {
-                return of(response?.datos || []);
+                return of(response?.data || []);
             })
         );
     }
@@ -236,7 +236,7 @@ export class RosterService {
             id_item: id
         })).pipe(
             switchMap((response: any) => {
-                return of(response?.datos || {});
+                return of(response?.data || {});
             })
         );
     }
@@ -249,7 +249,7 @@ export class RosterService {
             tipo: 'tool'
         })).pipe(
             switchMap((response: any) => {
-                return of(response?.datos || []);
+                return of(response?.data || []);
             })
         );
     }
@@ -262,7 +262,7 @@ export class RosterService {
             tipo: 'kit'
         })).pipe(
             switchMap((response: any) => {
-                return of(response?.datos || []);
+                return of(response?.data || []);
             })
         );
     }
@@ -275,7 +275,7 @@ export class RosterService {
             id_funcionario: employeeId
         })).pipe(
             switchMap((response: any) => {
-                return of(response?.datos || {});
+                return of(response?.data || {});
             })
         );
     }
@@ -286,7 +286,7 @@ export class RosterService {
     getAllEmployeesSummaries(): Observable<EmployeeRosterSummary[]> {
         return from(this._api.post('herramientas/roster_assignments/getAllEmployeesSummaries', {})).pipe(
             switchMap((response: any) => {
-                return of(response?.datos || []);
+                return of(response?.data || []);
             })
         );
     }
@@ -301,7 +301,7 @@ export class RosterService {
             id_aircraft: aircraftId
         })).pipe(
             switchMap((response: any) => {
-                return of(response?.datos || []);
+                return of(response?.data || []);
             })
         );
     }
@@ -316,7 +316,7 @@ export class RosterService {
             nro_orden_trabajo: workOrderNumber
         })).pipe(
             switchMap((response: any) => {
-                return of(response?.datos || []);
+                return of(response?.data || []);
             })
         );
     }
@@ -336,7 +336,7 @@ export class RosterService {
 
         return from(this._api.post('herramientas/roster_assignments/listAssignments', params)).pipe(
             switchMap((response: any) => {
-                return of(response?.datos || []);
+                return of(response?.data || []);
             })
         );
     }

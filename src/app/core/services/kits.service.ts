@@ -80,7 +80,7 @@ export class KitsService {
 
         return from(this._api.post('herramientas/kits/listKits', params)).pipe(
             switchMap((response: any) => {
-                const kits = response?.datos || [];
+                const kits = response?.data || [];
                 this._kits.next(kits);
                 return of(kits);
             })
@@ -97,7 +97,7 @@ export class KitsService {
             id_kit: id
         })).pipe(
             switchMap((response: any) => {
-                const kit = response?.datos?.[0] || null;
+                const kit = response?.data?.[0] || null;
                 if (kit) {
                     this._kit.next(kit);
                 }
@@ -116,7 +116,7 @@ export class KitsService {
             code: code
         })).pipe(
             switchMap((response: any) => {
-                const kit = response?.datos?.[0] || null;
+                const kit = response?.data?.[0] || null;
                 if (kit) {
                     this._kit.next(kit);
                 }
@@ -131,7 +131,7 @@ export class KitsService {
     createKit(kit: Partial<Kit>): Observable<Kit> {
         return from(this._api.post('herramientas/kits/insertKit', kit)).pipe(
             switchMap((response: any) => {
-                const newKit = response?.datos || kit;
+                const newKit = response?.data || kit;
                 // Refresh kits list
                 this.getKits().subscribe();
                 return of(newKit);
@@ -148,7 +148,7 @@ export class KitsService {
             id_kit: id
         })).pipe(
             switchMap((response: any) => {
-                const updatedKit = response?.datos || kit;
+                const updatedKit = response?.data || kit;
                 // Refresh kits list
                 this.getKits().subscribe();
                 return of(updatedKit);
@@ -180,7 +180,7 @@ export class KitsService {
             status: status
         })).pipe(
             switchMap((response: any) => {
-                const updatedKit = response?.datos || {};
+                const updatedKit = response?.data || {};
                 // Refresh kits list
                 this.getKits().subscribe();
                 return of(updatedKit);
@@ -200,7 +200,7 @@ export class KitsService {
             kit_id: kitId
         })).pipe(
             switchMap((response: any) => {
-                return of(response?.datos || []);
+                return of(response?.data || []);
             })
         );
     }
@@ -214,7 +214,7 @@ export class KitsService {
             kit_id: kitId
         })).pipe(
             switchMap((response: any) => {
-                return of(response?.datos || item);
+                return of(response?.data || item);
             })
         );
     }
@@ -228,7 +228,7 @@ export class KitsService {
             id_kit_item: itemId
         })).pipe(
             switchMap((response: any) => {
-                return of(response?.datos || item);
+                return of(response?.data || item);
             })
         );
     }
@@ -255,7 +255,7 @@ export class KitsService {
             items: items
         })).pipe(
             switchMap((response: any) => {
-                return of(response?.datos || items);
+                return of(response?.data || items);
             })
         );
     }
@@ -273,7 +273,7 @@ export class KitsService {
             kit_id: kitId
         })).pipe(
             switchMap((response: any) => {
-                return of(response?.datos || {
+                return of(response?.data || {
                     isComplete: false,
                     availableItems: [],
                     missingItems: [],
@@ -296,7 +296,7 @@ export class KitsService {
             kit_id: kitId
         })).pipe(
             switchMap((response: any) => {
-                return of(response?.datos || {
+                return of(response?.data || {
                     available: false,
                     missingItems: [],
                     itemsInUse: []
@@ -314,7 +314,7 @@ export class KitsService {
             ...loanData
         })).pipe(
             switchMap((response: any) => {
-                return of(response?.datos || {});
+                return of(response?.data || {});
             })
         );
     }
@@ -328,7 +328,7 @@ export class KitsService {
             ...returnData
         })).pipe(
             switchMap((response: any) => {
-                return of(response?.datos || {});
+                return of(response?.data || {});
             })
         );
     }
@@ -343,7 +343,7 @@ export class KitsService {
     getKitsStatistics(): Observable<any> {
         return from(this._api.post('herramientas/kits/getStatistics', {})).pipe(
             switchMap((response: any) => {
-                return of(response?.datos || {
+                return of(response?.data || {
                     totalKits: 0,
                     activeKits: 0,
                     inactiveKits: 0,
@@ -363,7 +363,7 @@ export class KitsService {
             kit_id: kitId
         })).pipe(
             switchMap((response: any) => {
-                return of(response?.datos || []);
+                return of(response?.data || []);
             })
         );
     }
@@ -376,7 +376,7 @@ export class KitsService {
             limit: limit
         })).pipe(
             switchMap((response: any) => {
-                return of(response?.datos || []);
+                return of(response?.data || []);
             })
         );
     }

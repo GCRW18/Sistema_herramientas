@@ -850,10 +850,15 @@ export class RetornoTraspasoComponent implements OnInit, OnDestroy {
 
         const retornoData: CreateMovement = {
             type: 'entry' as MovementType,
+            status: 'COMPLETADO',
             entryReason: entryReason as EntryReason,
             date: formValue.fechaRetorno,
             movementNumber: formValue.nroDocumento,
-            sourceWarehouseId: formValue.ubicacionOrigen.id,
+            // Si el origen es un almacén (TRASPASO) se envía como source_warehouse_id;
+            // si es una base operativa, ese ID no aplica a twarehouses (FK distinta)
+            ...(this.tipoOrigenActivo === 'TRASPASO'
+                ? { sourceWarehouseId: formValue.ubicacionOrigen.id }
+                : {}),
             notes: formValue.observaciones,
             responsiblePerson: formValue.responsableRecibe?.nombre || '',
             items: selectedItems.map(item => ({

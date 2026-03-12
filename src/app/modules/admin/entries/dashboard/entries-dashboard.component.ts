@@ -1,6 +1,7 @@
-import { Component, OnInit, AfterViewInit, ViewChild, ElementRef, signal, computed } from '@angular/core';
+import { Component, OnInit, AfterViewInit, ViewChild, ElementRef, signal, computed, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
+import { MovementService } from 'app/core/services/movement.service';
 import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
@@ -81,7 +82,9 @@ export class EntriesDashboardComponent implements OnInit, AfterViewInit {
     @ViewChild('distributionChart', { static: false }) distributionCanvas!: ElementRef<HTMLCanvasElement>;
     @ViewChild('trendChart', { static: false }) trendCanvas!: ElementRef<HTMLCanvasElement>;
 
-    isLoading = signal(false);
+    private movService = inject(MovementService);
+
+    isLoading = signal(true);
     Math = Math;
 
     private distributionChartInstance?: Chart;
@@ -104,87 +107,63 @@ export class EntriesDashboardComponent implements OnInit, AfterViewInit {
     };
 
     kpiCards = signal<KPICard[]>([
-        {
-            title: 'Entradas Mes',
-            value: 48,
-            subtitle: 'TOTAL',
-            icon: 'heroicons_outline:arrow-down-tray',
-            variant: 'navy',
-            trend: { value: 12, isPositive: true }
-        },
-        {
-            title: 'Compras',
-            value: 18,
-            subtitle: 'NUEVAS',
-            icon: 'heroicons_outline:shopping-cart',
-            variant: 'blue',
-            trend: { value: 8, isPositive: true }
-        },
-        {
-            title: 'Ret. Calibración',
-            value: 12,
-            subtitle: 'TALLER',
-            icon: 'heroicons_outline:cog-6-tooth',
-            variant: 'yellow'
-        },
-        {
-            title: 'Dev. Préstamo',
-            value: 15,
-            subtitle: 'TÉCNICOS',
-            icon: 'heroicons_outline:user-circle',
-            variant: 'purple'
-        },
-        {
-            title: 'Ret. Base',
-            value: 3,
-            subtitle: 'TRANSFER',
-            icon: 'heroicons_outline:building-office',
-            variant: 'cyan'
-        },
-        {
-            title: 'Valor Ingresos',
-            value: 'Bs 125K',
-            subtitle: 'MONTO',
-            icon: 'heroicons_outline:currency-dollar',
-            variant: 'green',
-            trend: { value: 15, isPositive: true }
-        },
-        {
-            title: 'Ajustes Inv.',
-            value: 5,
-            subtitle: 'AUDITORÍA',
-            icon: 'heroicons_outline:adjustments-horizontal',
-            variant: 'pink'
-        },
-        {
-            title: 'Total Items',
-            value: 156,
-            subtitle: 'STOCK',
-            icon: 'heroicons_outline:cube',
-            variant: 'black'
-        }
+        { title: 'Entradas Mes',    value: 0, subtitle: 'TOTAL',    icon: 'heroicons_outline:arrow-down-tray',       variant: 'navy' },
+        { title: 'Compras',         value: 0, subtitle: 'NUEVAS',   icon: 'heroicons_outline:shopping-cart',         variant: 'blue' },
+        { title: 'Ret. Calibración',value: 0, subtitle: 'TALLER',   icon: 'heroicons_outline:cog-6-tooth',           variant: 'yellow' },
+        { title: 'Dev. Préstamo',   value: 0, subtitle: 'TÉCNICOS', icon: 'heroicons_outline:user-circle',           variant: 'purple' },
+        { title: 'Ret. Base',       value: 0, subtitle: 'TRANSFER', icon: 'heroicons_outline:building-office',       variant: 'cyan' },
+        { title: 'Valor Ingresos',  value: '-',subtitle: 'MONTO',   icon: 'heroicons_outline:currency-dollar',       variant: 'green' },
+        { title: 'Ajustes Inv.',    value: 0, subtitle: 'AUDITORÍA',icon: 'heroicons_outline:adjustments-horizontal',variant: 'pink' },
+        { title: 'Total Items',     value: 0, subtitle: 'STOCK',    icon: 'heroicons_outline:cube',                  variant: 'black' }
     ]);
 
-    entryDistribution = signal<ChartData[]>([
-        { label: 'Compras', value: 18, color: this.colors.blue },
-        { label: 'Calibración', value: 12, color: this.colors.yellow },
-        { label: 'Devolución', value: 15, color: this.colors.purple },
-        { label: 'Base', value: 3, color: this.colors.cyan }
-    ]);
+    entryDistribution = signal<ChartData[]>([]);
 
     totalEntries = computed(() => this.entryDistribution().reduce((sum, item) => sum + item.value, 0));
 
-    recentEntries = signal<RecentEntry[]>([
-        { type: 'Retorno Calibración', date: '29/12/2024', user: 'Gabriel Cruz', items: 5 },
-        { type: 'Compra', date: '28/12/2024', user: 'María López', items: 12 },
-        { type: 'Devolución Préstamo', date: '27/12/2024', user: 'Carlos Rojas', items: 8 },
-        { type: 'Retorno Base', date: '26/12/2024', user: 'Ana Méndez', items: 3 },
-        { type: 'Compra', date: '25/12/2024', user: 'Luis Torres', items: 6 }
-    ]);
+    recentEntries = signal<RecentEntry[]>([]);
 
     ngOnInit(): void {
-        this.isLoading.set(true);
-        setTimeout(() => this.isLoading.set(false), 800);
+        this.movService.getMovements({ limit: 500, sort: 'date', dir: 'desc' }).subscribe({
+            next: (movements: any[]) => {
+                const entries = movements.filter(m => m.movement_type === 'entry' || m.type === 'entry' || m.movement_type === 'return' || m.type === 'return');
+                const compras      = entries.filter(m => m.reason === 'purchase'           || m.entry_reason === 'purchase').length;
+                const retCalib     = entries.filter(m => m.reason === 'calibration_return' || m.entry_reason === 'calibration_return').length;
+                const devPrestamo  = entries.filter(m => m.reason === 'return'             || m.entry_reason === 'return').length;
+                const retBase      = entries.filter(m => m.reason === 'base_return'        || m.entry_reason === 'base_return').length;
+                const totalItems   = entries.reduce((s: number, m: any) => s + (parseInt(m.quantity) || 1), 0);
+
+                this.kpiCards.set([
+                    { title: 'Entradas Mes',    value: entries.length, subtitle: 'TOTAL',    icon: 'heroicons_outline:arrow-down-tray',        variant: 'navy' },
+                    { title: 'Compras',         value: compras,        subtitle: 'NUEVAS',   icon: 'heroicons_outline:shopping-cart',          variant: 'blue' },
+                    { title: 'Ret. Calibración',value: retCalib,       subtitle: 'TALLER',   icon: 'heroicons_outline:cog-6-tooth',            variant: 'yellow' },
+                    { title: 'Dev. Préstamo',   value: devPrestamo,    subtitle: 'TÉCNICOS', icon: 'heroicons_outline:user-circle',            variant: 'purple' },
+                    { title: 'Ret. Base',       value: retBase,        subtitle: 'TRANSFER', icon: 'heroicons_outline:building-office',        variant: 'cyan' },
+                    { title: 'Valor Ingresos',  value: '-',            subtitle: 'MONTO',    icon: 'heroicons_outline:currency-dollar',        variant: 'green' },
+                    { title: 'Ajustes Inv.',    value: 0,              subtitle: 'AUDITORÍA',icon: 'heroicons_outline:adjustments-horizontal', variant: 'pink' },
+                    { title: 'Total Items',     value: totalItems,     subtitle: 'STOCK',    icon: 'heroicons_outline:cube',                  variant: 'black' }
+                ]);
+
+                this.entryDistribution.set([
+                    { label: 'Compras',     value: compras,     color: this.colors.blue },
+                    { label: 'Calibración', value: retCalib,    color: this.colors.yellow },
+                    { label: 'Devolución',  value: devPrestamo, color: this.colors.purple },
+                    { label: 'Base',        value: retBase,     color: this.colors.cyan }
+                ]);
+
+                this.recentEntries.set(
+                    entries.slice(0, 10).map((m: any) => ({
+                        type:  m.entry_reason_label || m.reason || m.movement_type || 'Entrada',
+                        date:  m.date ? new Date(m.date).toLocaleDateString('es-BO') : '-',
+                        user:  m.created_by || m.user_name || 'Sistema',
+                        items: parseInt(m.quantity) || 1
+                    }))
+                );
+
+                this.isLoading.set(false);
+            },
+            error: () => this.isLoading.set(false)
+        });
     }
 
     ngAfterViewInit(): void {

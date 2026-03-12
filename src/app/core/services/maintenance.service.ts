@@ -31,7 +31,7 @@ export class MaintenanceService {
 
         return from(this._api.post('herramientas/maintenances/listMaintenances', params)).pipe(
             switchMap((response: any) => {
-                const maintenances = (response?.datos || []).map((item: any) => ({
+                const maintenances = (response?.data || []).map((item: any) => ({
                     id: item.id_maintenance,
                     id_maintenance: item.id_maintenance,
                     toolId: item.tool_id,
@@ -64,7 +64,7 @@ export class MaintenanceService {
             id_maintenance: id
         })).pipe(
             switchMap((response: any) => {
-                return of(response?.datos?.[0] || null);
+                return of(response?.data?.[0] || null);
             })
         );
     }
@@ -81,7 +81,7 @@ export class MaintenanceService {
             dir: 'desc'
         })).pipe(
             switchMap((response: any) => {
-                return of(response?.datos || []);
+                return of(response?.data || []);
             })
         );
     }
@@ -109,10 +109,10 @@ export class MaintenanceService {
 
         return from(this._api.post('herramientas/maintenances/insertMaintenance', backendData)).pipe(
             switchMap((response: any) => {
-                // El backend devuelve el id en response.datos.id_maintenance
+                // El backend devuelve el id en response.data.id_maintenance
                 const newMaintenance = {
                     ...data,
-                    id: response?.datos?.id_maintenance || response?.datos?.id,
+                    id: response?.data?.id_maintenance || response?.data?.id,
                     status: 'scheduled' as const,
                     createdAt: new Date(),
                     updatedAt: new Date()
@@ -173,7 +173,7 @@ export class MaintenanceService {
             ...data
         })).pipe(
             switchMap((response: any) => {
-                const completedMaintenance = response?.datos || {};
+                const completedMaintenance = response?.data || {};
                 const currentMaintenances = this._maintenances.value;
                 const index = currentMaintenances.findIndex((m: any) => m.id_maintenance === id);
                 if (index !== -1) {
@@ -194,7 +194,7 @@ export class MaintenanceService {
             status: status
         })).pipe(
             switchMap((response: any) => {
-                const updatedMaintenance = response?.datos || {};
+                const updatedMaintenance = response?.data || {};
                 const currentMaintenances = this._maintenances.value;
                 const index = currentMaintenances.findIndex((m: any) => m.id_maintenance === id);
                 if (index !== -1) {

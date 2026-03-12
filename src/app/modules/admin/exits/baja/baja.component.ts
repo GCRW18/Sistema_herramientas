@@ -17,10 +17,12 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatCheckboxModule } from '@angular/material/checkbox';
-import { Subject, takeUntil, finalize } from 'rxjs';
+import { Subject, takeUntil, finalize, forkJoin } from 'rxjs';
+import { QuarantineService } from '../../../../core/services/quarantine.service';
 
 // Interfaces
 interface BajaItem {
+    toolId?: number;
     codigo: string;
     pn: string;
     sn: string;
@@ -179,6 +181,7 @@ export class BajaComponent implements OnInit {
     private fb = inject(FormBuilder);
     private router = inject(Router);
     private snackBar = inject(MatSnackBar);
+    private quarantineService = inject(QuarantineService);
 
     private _unsubscribeAll = new Subject<void>();
 
@@ -328,6 +331,7 @@ export class BajaComponent implements OnInit {
     private agregarHerramienta(data: any): void {
         const newItem: BajaItem = {
             id: crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(),
+            toolId:  data.id_tool ?? 0,
             codigo: data.codigo || '',
             pn: data.pn || '',
             sn: data.sn || '',
@@ -456,35 +460,49 @@ export class BajaComponent implements OnInit {
 
         this.isLoading = true;
 
-        // Simular procesamiento
-        setTimeout(() => {
-            const processData = {
-                nroNota: this.nroNota(),
-                ...this.bajaForm.getRawValue(),
-                herramientas: this.dataSource(),
-                totalHerramientas: this.dataSource().length,
-                totalItems: this.getTotalCantidad(),
-                fechaProcesamiento: new Date().toISOString(),
-                usuario: this.usuarios.find(u => u.value === this.bajaForm.get('procesadoPor')?.value)
+        const fv      = this.bajaForm.getRawValue();
+        const items   = this.dataSource();
+        const usuario = this.usuarios.find(u => u.value === fv.procesadoPor);
+
+        const calls = items.map(item => {
+            const payload: any = {
+                record_number:         this.nroNota(),
+                status:                fv.estado   ?? 'PENDIENTE',
+                reason:                item.marca  || 'BAJA',
+                reason_description:    fv.observaciones || '',
+                condition_description: item.marca  || '',
+                request_date:          fv.fecha,
+                requested_by_name:     usuario?.nombre ?? fv.procesadoPor ?? '',
+                authorized_by_name:    fv.autorizadoPor ?? '',
+                notes:                 fv.observaciones ?? ''
             };
+            if (item.toolId && item.toolId > 0) payload['tool_id'] = item.toolId;
+            return this.quarantineService.createDecommission(payload);
+        });
 
-            console.log('✅ Procesando baja:', processData);
+        forkJoin(calls).pipe(
+            finalize(() => { this.isLoading = false; }),
+            takeUntil(this._unsubscribeAll)
+        ).subscribe({
+            next: (results: any[]) => {
+                console.log('✅ Bajas registradas:', results);
+                // Generar reporte
+                this.generarReporteBaja({ nroNota: this.nroNota(), ...fv, herramientas: items });
+                this.showMessage(`Baja ${this.nroNota()} procesada exitosamente`, 'success');
 
-            // Generar reporte
-            this.generarReporteBaja(processData);
-
-            this.isLoading = false;
-            this.showMessage(`Baja ${this.nroNota()} procesada exitosamente`, 'success');
-
-            // Limpiar o cerrar
-            setTimeout(() => {
-                if (this.dialogRef) {
-                    this.dialogRef.close({ success: true, data: processData });
-                } else {
-                    this.router.navigate(['/salidas']);
-                }
-            }, 1500);
-        }, 1500);
+                // Navegar después de éxito
+                setTimeout(() => {
+                    if (this.dialogRef) {
+                        this.dialogRef.close({ success: true });
+                    } else {
+                        this.router.navigate(['/salidas']);
+                    }
+                }, 1500);
+            },
+            error: (err: any) => {
+                this.showMessage(err?.message || 'Error al registrar la baja', 'error');
+            }
+        });
     }
 
     private generarReporteBaja(processData: any): void {

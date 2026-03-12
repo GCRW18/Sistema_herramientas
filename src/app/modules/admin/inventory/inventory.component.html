@@ -1,132 +1,153 @@
 <div class="flex flex-col w-full h-full bg-white dark:bg-[#0F172AFF] transition-colors duration-300 font-sans overflow-hidden">
 
-    <div class="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8 relative">
+    <!-- ===== HEADER ===== -->
+    <div class="flex items-center gap-4 px-5 py-3 border-b-2 border-black dark:border-slate-700 shrink-0 bg-white dark:bg-[#0F172AFF]">
+        <h1 class="text-3xl md:text-4xl font-black text-black dark:text-white uppercase tracking-tighter leading-none">
+            INVENTARIO
+        </h1>
+        <span class="text-[10px] font-bold bg-[#111A43] text-white px-3 py-1 rounded-sm border border-black uppercase tracking-wider">
+            MÓDULO DE INVENTARIO
+        </span>
+        <div class="flex-1"></div>
+        <button (click)="openConsultarInventario()"
+                class="flex items-center gap-2 px-4 py-2 bg-white dark:bg-slate-800 border-2 border-black font-black text-xs uppercase rounded-lg shadow-[3px_3px_0px_0px_#000] hover:shadow-[2px_2px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px] transition-all text-black dark:text-white">
+            <mat-icon class="!text-base">search</mat-icon>
+            Consultar Inventario
+        </button>
+    </div>
 
-        <div class="max-w-[1600px] mx-auto relative z-10" *ngIf="showCards">
-            <div class="flex items-start gap-1 mt-1 md:gap-2 mb-3">
-                <div>
-                    <h1 class="text-3xl md:text-5xl font-black text-black dark:text-white uppercase tracking-tighter drop-shadow-[3px_3px_0px_rgba(255,255,255,0.5)] dark:drop-shadow-none leading-none">
-                        INVENTARIO
-                    </h1>
-                </div>
+    <!-- ===== BARRA HORIZONTAL DE SUBMENÚS 1-8 ===== -->
+    <div class="flex items-stretch gap-0 border-b-2 border-black dark:border-slate-700 shrink-0 bg-white dark:bg-[#111A43] overflow-x-auto">
+
+        <!-- Item 1: Almacén y Ubicaciones -->
+        <button (click)="openGestionUbicaciones()"
+                [class.!bg-\[#FF6A00FF\]]="activeFormTab() === 1"
+                [class.!text-white]="activeFormTab() === 1"
+                class="group flex items-center gap-3 px-5 py-3 border-r-2 border-black dark:border-slate-600 font-black text-black dark:text-white hover:bg-[#FF6A00FF] hover:text-white transition-colors whitespace-nowrap min-w-[160px]">
+            <span class="text-2xl font-black leading-none">1</span>
+            <div class="flex flex-col items-start">
+                <span class="text-[10px] leading-tight uppercase">ALMACÉN Y</span>
+                <span class="text-[10px] leading-tight uppercase">UBICACIONES</span>
             </div>
+            <mat-icon svgIcon="heroicons_outline:building-storefront" class="!text-base ml-auto opacity-50 group-hover:opacity-100"></mat-icon>
+        </button>
 
-            <!-- ========== MAIN GRID: Sidebar LEFT + Cards ========== -->
-            <div class="grid grid-cols-1 lg:grid-cols-[250px_1fr] xl:grid-cols-[280px_1fr] gap-3 md:gap-4 mb-6">
-
-                <!-- ===== LEFT SIDEBAR ===== -->
-                <div class="flex flex-col gap-2 md:gap-3">
-
-                    <!-- Dashboard Button -->
-                    <button [routerLink]="['dashboard']"
-                            class="inv-sidebar-btn group hover:bg-cyan-600">
-                        <span>DASHBOARD</span>
-                    </button>
-
-                    <!-- Movimientos Button -->
-                    <button [routerLink]="['movimientos']"
-                            class="inv-sidebar-btn group hover:bg-slate-600">
-                        <span>MOVIMIENTOS</span>
-                    </button>
-
-                    <!-- Card 1: Almacen y Ubicaciones (tall) -->
-                    <div class="neo-card-inv group flex-1 min-h-[200px] lg:min-h-[260px] hover:bg-[#FF6A00FF] dark:hover:bg-blue-800/20" (click)="openGestionUbicaciones()">
-                        <div class="flex flex-col h-full p-4 md:p-5">
-                            <span class="inv-number">1</span>
-                            <p class="inv-label inv-label-lg mt-2">ALMACEN Y<br>UBICACIONES</p>
-                            <div class="flex-1 flex items-center justify-center mt-3">
-                                <mat-icon class="inv-icon-xl group-hover:rotate-[25deg] transition-transform duration-300" svgIcon="heroicons_outline:building-storefront"></mat-icon>
-                            </div>
-                        </div>
-                    </div>
-
-                </div>
-
-                <!-- ===== RIGHT: Cards Grid (2 columns) ===== -->
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4 auto-rows-min">
-
-                    <!-- Card 2: Consultar Inventario -->
-                    <div class="neo-card-inv group hover:bg-[#1A3EDCFF] dark:hover:bg-blue-800/20" (click)="openConsultarInventario()">
-                        <div class="flex flex-col h-full p-4 md:p-5 min-h-[150px]">
-                            <span class="inv-number">2</span>
-                            <div class="flex-1 flex flex-col items-center justify-center gap-1">
-                                <mat-icon class="inv-icon-lg group-hover:rotate-[20deg] transition-transform duration-300" svgIcon="heroicons_outline:wrench-screwdriver"></mat-icon>
-                                <p class="inv-label text-center">CONSULTAR<br>INVENTARIO</p>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Card 3: Gestion Kits -->
-                    <div class="neo-card-inv group hover:bg-[#1AAA1FFF] dark:hover:bg-blue-800/20" [routerLink]="['lista-kits']">
-                        <div class="flex flex-col h-full p-4 md:p-5 min-h-[150px]">
-                            <span class="inv-number">3</span>
-                            <div class="flex-1 flex flex-col items-center justify-center gap-1">
-                                <mat-icon class="inv-icon-lg group-hover:scale-110 transition-transform duration-300" svgIcon="heroicons_outline:cube"></mat-icon>
-                                <p class="inv-label text-center">GESTION<br>KITS</p>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Card 5: Crear -->
-                    <div class="neo-card-inv group hover:bg-[#FFC501FF] dark:hover:bg-blue-800/20" (click)="openCrearMaterial()">
-                        <div class="flex items-center h-full p-3 md:p-4 min-h-[120px] gap-3">
-                            <span class="inv-number inv-number-sm shrink-0">5</span>
-                            <p class="inv-label inv-label-sm flex-1">CREAR<br>MATERIAL</p>
-                            <mat-icon class="inv-icon-md group-hover:rotate-[-15deg] transition-transform duration-300 shrink-0" svgIcon="heroicons_outline:plus-circle"></mat-icon>
-                        </div>
-                    </div>
-
-                    <!-- Card 6: Entrada -->
-                    <div class="neo-card-inv group hover:bg-[#e94125] dark:hover:bg-blue-800/20" (click)="openEntradaMaterial()">
-                        <div class="flex items-center h-full p-3 md:p-4 min-h-[120px] gap-3">
-                            <span class="inv-number inv-number-sm shrink-0">6</span>
-                            <p class="inv-label inv-label-sm flex-1">ENTRADA<br>MATERIAL</p>
-                            <mat-icon class="inv-icon-md group-hover:scale-110 transition-transform duration-300 shrink-0" svgIcon="heroicons_outline:arrow-down-tray"></mat-icon>
-                        </div>
-                    </div>
-
-                    <!-- Card 4: Reportes (wide - spans 2 cols) -->
-                    <div class="neo-card-inv group col-span-1 sm:col-span-2 hover:bg-[#7113CFFF] dark:hover:bg-blue-800/20" [routerLink]="['reportes']">
-                        <div class="flex items-center h-full p-4 md:p-5 min-h-[100px] gap-4">
-                            <span class="inv-number shrink-0">4</span>
-                            <p class="inv-label inv-label-lg flex-1">REPORTES</p>
-                            <mat-icon class="inv-icon-lg group-hover:rotate-[15deg] transition-transform duration-300 shrink-0" svgIcon="heroicons_outline:chart-bar"></mat-icon>
-                        </div>
-                    </div>
-
-                    <!-- Card 7: Salida (wide) -->
-                    <div class="neo-card-inv group col-span-1 sm:col-span-2 hover:bg-[#203f77] dark:hover:bg-blue-800/20" (click)="openSalidaMaterial()">
-                        <div class="flex items-center h-full p-3 md:p-4 min-h-[100px] gap-4">
-                            <span class="inv-number inv-number-sm shrink-0">7</span>
-                            <p class="inv-label inv-label-sm flex-1">SALIDA<br>MATERIAL</p>
-                            <mat-icon class="inv-icon-md group-hover:rotate-[15deg] transition-transform duration-300 shrink-0" svgIcon="heroicons_outline:arrow-up-tray"></mat-icon>
-                        </div>
-                    </div>
-
-                    <!-- Card 8: Historial de Estados -->
-                    <div class="neo-card-inv group hover:bg-[#0891b2] dark:hover:bg-blue-800/20" (click)="openHistorialEstados()">
-                        <div class="flex items-center h-full p-3 md:p-4 min-h-[120px] gap-3">
-                            <span class="inv-number inv-number-sm shrink-0">8</span>
-                            <p class="inv-label inv-label-sm flex-1">HISTORIAL<br>ESTADOS</p>
-                            <mat-icon class="inv-icon-md group-hover:scale-110 transition-transform duration-300 shrink-0" svgIcon="heroicons_outline:clock"></mat-icon>
-                        </div>
-                    </div>
-
-                    <!-- Card 9: Migracion Excel -->
-                    <div class="neo-card-inv group hover:bg-[#16a34a] dark:hover:bg-blue-800/20" (click)="openMigracionExcel()">
-                        <div class="flex items-center h-full p-3 md:p-4 min-h-[120px] gap-3">
-                            <span class="inv-number inv-number-sm shrink-0">9</span>
-                            <p class="inv-label inv-label-sm flex-1">MIGRACION<br>EXCEL</p>
-                            <mat-icon class="inv-icon-md group-hover:rotate-[-15deg] transition-transform duration-300 shrink-0" svgIcon="heroicons_outline:cloud-arrow-up"></mat-icon>
-                        </div>
-                    </div>
-
-                </div>
-
+        <!-- Item 2: Crear Material -->
+        <button (click)="openCrearMaterial()"
+                [class.!bg-\[#FFC501FF\]]="activeFormTab() === 2"
+                [class.!text-black]="activeFormTab() === 2"
+                class="group flex items-center gap-3 px-5 py-3 border-r-2 border-black dark:border-slate-600 font-black text-black dark:text-white hover:bg-[#FFC501FF] hover:text-black transition-colors whitespace-nowrap min-w-[160px]">
+            <span class="text-2xl font-black leading-none">2</span>
+            <div class="flex flex-col items-start">
+                <span class="text-[10px] leading-tight uppercase">CREAR</span>
+                <span class="text-[10px] leading-tight uppercase">MATERIAL</span>
             </div>
+            <mat-icon svgIcon="heroicons_outline:plus-circle" class="!text-base ml-auto opacity-50 group-hover:opacity-100"></mat-icon>
+        </button>
 
+        <!-- Item 3: Entrada Material -->
+        <button (click)="openEntradaMaterial()"
+                [class.!bg-\[#1AAA1FFF\]]="activeFormTab() === 3"
+                [class.!text-white]="activeFormTab() === 3"
+                class="group flex items-center gap-3 px-5 py-3 border-r-2 border-black dark:border-slate-600 font-black text-black dark:text-white hover:bg-[#1AAA1FFF] hover:text-white transition-colors whitespace-nowrap min-w-[160px]">
+            <span class="text-2xl font-black leading-none">3</span>
+            <div class="flex flex-col items-start">
+                <span class="text-[10px] leading-tight uppercase">ENTRADA</span>
+                <span class="text-[10px] leading-tight uppercase">MATERIAL</span>
+            </div>
+            <mat-icon svgIcon="heroicons_outline:arrow-down-tray" class="!text-base ml-auto opacity-50 group-hover:opacity-100"></mat-icon>
+        </button>
+
+        <!-- Item 4: Salida Material -->
+        <button (click)="openSalidaMaterial()"
+                [class.!bg-\[#e94125\]]="activeFormTab() === 4"
+                [class.!text-white]="activeFormTab() === 4"
+                class="group flex items-center gap-3 px-5 py-3 border-r-2 border-black dark:border-slate-600 font-black text-black dark:text-white hover:bg-[#e94125] hover:text-white transition-colors whitespace-nowrap min-w-[160px]">
+            <span class="text-2xl font-black leading-none">4</span>
+            <div class="flex flex-col items-start">
+                <span class="text-[10px] leading-tight uppercase">SALIDA</span>
+                <span class="text-[10px] leading-tight uppercase">MATERIAL</span>
+            </div>
+            <mat-icon svgIcon="heroicons_outline:arrow-up-tray" class="!text-base ml-auto opacity-50 group-hover:opacity-100"></mat-icon>
+        </button>
+
+        <!-- Item 5: Historial Estados -->
+        <button (click)="openHistorialEstados()"
+                [class.!bg-\[#0891b2\]]="activeFormTab() === 5"
+                [class.!text-white]="activeFormTab() === 5"
+                class="group flex items-center gap-3 px-5 py-3 border-r-2 border-black dark:border-slate-600 font-black text-black dark:text-white hover:bg-[#0891b2] hover:text-white transition-colors whitespace-nowrap min-w-[160px]">
+            <span class="text-2xl font-black leading-none">5</span>
+            <div class="flex flex-col items-start">
+                <span class="text-[10px] leading-tight uppercase">HISTORIAL</span>
+                <span class="text-[10px] leading-tight uppercase">ESTADOS</span>
+            </div>
+            <mat-icon svgIcon="heroicons_outline:clock" class="!text-base ml-auto opacity-50 group-hover:opacity-100"></mat-icon>
+        </button>
+
+        <!-- Item 6: Migración Excel -->
+        <button (click)="openMigracionExcel()"
+                [class.!bg-\[#16a34a\]]="activeFormTab() === 6"
+                [class.!text-white]="activeFormTab() === 6"
+                class="group flex items-center gap-3 px-5 py-3 border-r-2 border-black dark:border-slate-600 font-black text-black dark:text-white hover:bg-[#16a34a] hover:text-white transition-colors whitespace-nowrap min-w-[160px]">
+            <span class="text-2xl font-black leading-none">6</span>
+            <div class="flex flex-col items-start">
+                <span class="text-[10px] leading-tight uppercase">MIGRACIÓN</span>
+                <span class="text-[10px] leading-tight uppercase">EXCEL</span>
+            </div>
+            <mat-icon svgIcon="heroicons_outline:cloud-arrow-up" class="!text-base ml-auto opacity-50 group-hover:opacity-100"></mat-icon>
+        </button>
+
+        <!-- Item 7: Gestión Kits -->
+        <button (click)="openListaKits()"
+                [class.!bg-\[#1A3EDCFF\]]="activeFormTab() === 7"
+                [class.!text-white]="activeFormTab() === 7"
+                class="group flex items-center gap-3 px-5 py-3 border-r-2 border-black dark:border-slate-600 font-black text-black dark:text-white hover:bg-[#1A3EDCFF] hover:text-white transition-colors whitespace-nowrap min-w-[160px]">
+            <span class="text-2xl font-black leading-none">7</span>
+            <div class="flex flex-col items-start">
+                <span class="text-[10px] leading-tight uppercase">GESTIÓN</span>
+                <span class="text-[10px] leading-tight uppercase">KITS</span>
+            </div>
+            <mat-icon svgIcon="heroicons_outline:cube" class="!text-base ml-auto opacity-50 group-hover:opacity-100"></mat-icon>
+        </button>
+
+        <!-- Item 8: Reportes -->
+        <button (click)="openReportes()"
+                [class.!bg-\[#7113CFFF\]]="activeFormTab() === 8"
+                [class.!text-white]="activeFormTab() === 8"
+                class="group flex items-center gap-3 px-5 py-3 border-r-2 border-black dark:border-slate-600 font-black text-black dark:text-white hover:bg-[#7113CFFF] hover:text-white transition-colors whitespace-nowrap min-w-[160px]">
+            <span class="text-2xl font-black leading-none">8</span>
+            <div class="flex flex-col items-start">
+                <span class="text-[10px] leading-tight uppercase">REPORTES</span>
+                <span class="text-[10px] leading-tight uppercase">&nbsp;</span>
+            </div>
+            <mat-icon svgIcon="heroicons_outline:chart-bar" class="!text-base ml-auto opacity-50 group-hover:opacity-100"></mat-icon>
+        </button>
+
+    </div>
+
+    <!-- ===== ÁREA PRINCIPAL ===== -->
+    <div class="flex-1 overflow-hidden relative">
+
+        <!-- Formulario activo (inline) -->
+        <ng-container *ngIf="activeFormComponent()">
+            <ng-container [ngComponentOutlet]="activeFormComponent()!" [ngComponentOutletInjector]="formInjector!"></ng-container>
+        </ng-container>
+
+        <!-- Placeholder cuando no hay formulario seleccionado -->
+        <div *ngIf="!activeFormComponent()" class="flex flex-col items-center justify-center h-full bg-[#f8f9fc] dark:bg-[#0F172AFF] relative">
+            <div class="absolute top-10 right-10 w-48 h-48 bg-[#111A43] rounded-full border-4 border-black opacity-5 pointer-events-none"></div>
+            <div class="absolute bottom-10 left-10 w-24 h-24 bg-[#1A3EDCFF] rotate-12 border-4 border-black opacity-5 pointer-events-none"></div>
+            <div class="flex flex-col items-center text-center opacity-30 dark:opacity-20 select-none">
+                <mat-icon svgIcon="heroicons_outline:wrench-screwdriver" class="!text-[100px] !w-28 !h-28 text-black dark:text-white"></mat-icon>
+                <p class="text-2xl font-black uppercase text-black dark:text-white mt-4 tracking-tight">
+                    Seleccione una operación
+                </p>
+                <p class="text-sm font-bold text-gray-500 dark:text-gray-400 mt-2">
+                    Use el menú superior para gestionar el inventario
+                </p>
+            </div>
         </div>
 
-        <router-outlet></router-outlet>
     </div>
+
 </div>

@@ -45,7 +45,7 @@ export class KitService {
 
         return from(this._api.post('herramientas/kits/listKit', params)).pipe(
             switchMap((response: any) => {
-                const kits = response?.datos || [];
+                const kits = response?.data || [];
                 this._kits.next(kits);
                 return of(kits);
             })
@@ -62,7 +62,7 @@ export class KitService {
             id_kit: id
         })).pipe(
             switchMap((response: any) => {
-                const kit = response?.datos?.[0] || null;
+                const kit = response?.data?.[0] || null;
                 if (kit) {
                     this._kit.next(kit);
                 }
@@ -77,7 +77,7 @@ export class KitService {
     createKit(kit: Partial<Kit>): Observable<Kit> {
         return from(this._api.post('herramientas/kits/insertKit', kit)).pipe(
             switchMap((response: any) => {
-                return of(response?.datos || kit);
+                return of(response?.data || kit);
             })
         );
     }
@@ -91,7 +91,7 @@ export class KitService {
             id_kit: id
         })).pipe(
             switchMap((response: any) => {
-                const updatedKit = response?.datos || kit;
+                const updatedKit = response?.data || kit;
                 this._kit.next(updatedKit as Kit);
                 return of(updatedKit);
             })
@@ -122,7 +122,7 @@ export class KitService {
             requerido: required
         })).pipe(
             switchMap((response: any) => {
-                return of(response?.datos || {});
+                return of(response?.data || {});
             })
         );
     }
@@ -136,7 +136,7 @@ export class KitService {
             id_componente: itemId
         })).pipe(
             switchMap((response: any) => {
-                return of(response?.datos || {});
+                return of(response?.data || {});
             })
         );
     }
@@ -151,7 +151,7 @@ export class KitService {
             ...data
         })).pipe(
             switchMap((response: any) => {
-                return of(response?.datos || {});
+                return of(response?.data || {});
             })
         );
     }
@@ -164,7 +164,7 @@ export class KitService {
             id_kit: kitId
         })).pipe(
             switchMap((response: any) => {
-                return of(response?.datos || {});
+                return of(response?.data || {});
             })
         );
     }
@@ -175,7 +175,7 @@ export class KitService {
     getAllKitsCalibrationStatus(): Observable<KitCalibrationStatus[]> {
         return from(this._api.post('herramientas/kits/getAllKitsCalibrationStatus', {})).pipe(
             switchMap((response: any) => {
-                return of(response?.datos || []);
+                return of(response?.data || []);
             })
         );
     }

@@ -32,16 +32,7 @@ export interface TopToolData {
 })
 export class TopToolsChartComponent implements AfterViewInit {
     @ViewChild('chartCanvas', { static: false }) chartCanvas!: ElementRef<HTMLCanvasElement>;
-    @Input() data = signal<TopToolData[]>([
-        { name: 'Kit Boeing 737', prestamos: 45 },
-        { name: 'Torquímetro TQ-200', prestamos: 38 },
-        { name: 'Multímetro Fluke', prestamos: 32 },
-        { name: 'Kit Inspección NDT', prestamos: 28 },
-        { name: 'Calibrador Digital', prestamos: 24 },
-        { name: 'Osciloscopio', prestamos: 21 },
-        { name: 'Kit Airbus A320', prestamos: 18 },
-        { name: 'Medidor Presión', prestamos: 15 }
-    ]);
+    @Input() data = signal<TopToolData[]>([]);
 
     private chart?: Chart;
 

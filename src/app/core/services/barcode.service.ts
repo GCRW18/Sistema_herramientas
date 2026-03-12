@@ -20,9 +20,9 @@ export class BarcodeService {
                 if (response?.success) {
                     return of({
                         success: true,
-                        fileUrl: response.datos?.fileUrl,
-                        fileName: response.datos?.fileName,
-                        barcodes: response.datos?.barcodes || [],
+                        fileUrl: response.data?.fileUrl,
+                        fileName: response.data?.fileName,
+                        barcodes: response.data?.barcodes || [],
                     } as BarcodeResponse);
                 }
                 return of({
@@ -47,7 +47,7 @@ export class BarcodeService {
             formato: format,
         })).pipe(
             switchMap((response: any) => {
-                return of(response?.datos || {});
+                return of(response?.data || {});
             })
         );
     }
@@ -61,8 +61,8 @@ export class BarcodeService {
                 if (response?.success) {
                     return of({
                         success: true,
-                        fileUrl: response.datos?.fileUrl,
-                        fileName: response.datos?.fileName,
+                        fileUrl: response.data?.fileUrl,
+                        fileName: response.data?.fileName,
                     } as BarcodeResponse);
                 }
                 return of({
@@ -82,7 +82,7 @@ export class BarcodeService {
                 if (response?.success) {
                     return of({
                         success: true,
-                        fileUrl: response.datos?.printUrl,
+                        fileUrl: response.data?.printUrl,
                     } as BarcodeResponse);
                 }
                 return of({

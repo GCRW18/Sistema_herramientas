@@ -139,7 +139,7 @@ export class AdministrationDashboardComponent implements OnInit {
 
     private calculateProveedoresStats(proveedores: Supplier[]) {
         const activos = proveedores.filter(p => p.active).length;
-        return { total: proveedores.length, activos, inactivos: proveedores.length - activos, porTipo: [{tipo: 'MANTENIMIENTO', cantidad: 5}, {tipo: 'CALIBRACION', cantidad: 2}] };
+        return { total: proveedores.length, activos, inactivos: proveedores.length - activos, porTipo: [] };
     }
 
     private calculateClientesStats(clientes: Customer[]) {
@@ -151,13 +151,7 @@ export class AdministrationDashboardComponent implements OnInit {
     }
 
     private generateRecentActivity(): ActivityItem[] {
-        const now = new Date();
-        return [
-            { fecha: new Date(now.getTime() - 5 * 60000), tipo: 'CREAR', entidad: 'Usuario', detalle: 'J. Pérez', usuario: 'Admin' },
-            { fecha: new Date(now.getTime() - 15 * 60000), tipo: 'EDITAR', entidad: 'Proveedor', detalle: 'Herramientas SAC', usuario: 'Admin' },
-            { fecha: new Date(now.getTime() - 60 * 60000), tipo: 'ELIMINAR', entidad: 'Cliente', detalle: 'Baja #44', usuario: 'Admin' },
-            { fecha: new Date(now.getTime() - 120 * 60000), tipo: 'CREAR', entidad: 'Rol', detalle: 'Supervisor', usuario: 'Admin' }
-        ];
+        return [];
     }
 
     navegarA(ruta: string): void {

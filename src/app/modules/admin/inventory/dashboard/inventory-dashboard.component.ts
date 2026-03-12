@@ -1,4 +1,4 @@
-import { Component, OnInit, AfterViewInit, ViewChild, ElementRef, signal, computed } from '@angular/core';
+import { Component, OnInit, AfterViewInit, ViewChild, ElementRef, signal, computed, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
@@ -6,6 +6,9 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { Chart, ChartConfiguration, registerables } from 'chart.js';
+import { forkJoin } from 'rxjs';
+import { ToolService } from 'app/core/services/tool.service';
+import { MovementService } from 'app/core/services/movement.service';
 
 Chart.register(...registerables);
 
@@ -80,7 +83,10 @@ export class InventoryDashboardComponent implements OnInit, AfterViewInit {
     @ViewChild('categoryChart', { static: false }) categoryCanvas!: ElementRef<HTMLCanvasElement>;
     @ViewChild('valueChart', { static: false }) valueCanvas!: ElementRef<HTMLCanvasElement>;
 
-    isLoading = signal(false);
+    private toolService = inject(ToolService);
+    private movService = inject(MovementService);
+
+    isLoading = signal(true);
 
     private categoryChartInstance?: Chart;
     private valueChartInstance?: Chart;
@@ -101,37 +107,73 @@ export class InventoryDashboardComponent implements OnInit, AfterViewInit {
     };
 
     kpiCards = signal<KPICard[]>([
-        { title: 'Stock Total', value: 1245, subtitle: 'HERRAMIENTAS', icon: 'heroicons_outline:cube', variant: 'navy', trend: { value: 5, isPositive: true } },
-        { title: 'Valor Inventario', value: 'Bs 2.5M', subtitle: 'ESTIMADO', icon: 'heroicons_outline:currency-dollar', variant: 'green', trend: { value: 8, isPositive: true } },
-        { title: 'Disponibles', value: 892, subtitle: 'EN ALMACÉN', icon: 'heroicons_outline:check-circle', variant: 'teal' },
-        { title: 'En Préstamo', value: 245, subtitle: 'ASIGNADOS', icon: 'heroicons_outline:user-circle', variant: 'blue' },
-        { title: 'En Calibración', value: 68, subtitle: 'EXTERNO', icon: 'heroicons_outline:cog-6-tooth', variant: 'yellow' },
-        { title: 'Bajo Stock', value: 15, subtitle: 'REPONER', icon: 'heroicons_outline:exclamation-triangle', variant: 'red', trend: { value: 3, isPositive: false } },
-        { title: 'Categorías', value: 24, subtitle: 'FAMILIAS', icon: 'heroicons_outline:folder', variant: 'purple' },
-        { title: 'Eficiencia', value: '85%', subtitle: 'ROTACIÓN', icon: 'heroicons_outline:arrow-path', variant: 'orange', trend: { value: 12, isPositive: true } }
+        { title: 'Stock Total',      value: 0,  subtitle: 'HERRAMIENTAS', icon: 'heroicons_outline:cube',                  variant: 'navy' },
+        { title: 'Valor Inventario', value: '-', subtitle: 'ESTIMADO',    icon: 'heroicons_outline:currency-dollar',       variant: 'green' },
+        { title: 'Disponibles',      value: 0,  subtitle: 'EN ALMACÉN',   icon: 'heroicons_outline:check-circle',          variant: 'teal' },
+        { title: 'En Préstamo',      value: 0,  subtitle: 'ASIGNADOS',    icon: 'heroicons_outline:user-circle',           variant: 'blue' },
+        { title: 'En Calibración',   value: 0,  subtitle: 'EXTERNO',      icon: 'heroicons_outline:cog-6-tooth',           variant: 'yellow' },
+        { title: 'Bajo Stock',       value: 0,  subtitle: 'REPONER',      icon: 'heroicons_outline:exclamation-triangle',  variant: 'red' },
+        { title: 'Categorías',       value: 0,  subtitle: 'FAMILIAS',     icon: 'heroicons_outline:folder',                variant: 'purple' },
+        { title: 'En Cuarentena',    value: 0,  subtitle: 'RETENIDAS',    icon: 'heroicons_outline:shield-exclamation',    variant: 'orange' }
     ]);
 
-    categoryDistribution = signal<ChartData[]>([
-        { label: 'Manuales', value: 385, color: this.colors.navy },
-        { label: 'Eléctricas', value: 295, color: this.colors.yellow },
-        { label: 'Medición', value: 245, color: this.colors.red },
-        { label: 'Calibración', value: 180, color: this.colors.green },
-        { label: 'Otros', value: 140, color: this.colors.purple }
-    ]);
+    categoryDistribution = signal<ChartData[]>([]);
 
     totalItems = computed(() => this.categoryDistribution().reduce((sum, item) => sum + item.value, 0));
 
-    recentActivities = signal<RecentInventoryActivity[]>([
-        { type: 'Ajuste de Stock', date: '29/12/2024', user: 'Gabriel Cruz', items: 8 },
-        { type: 'Entrada Compra', date: '28/12/2024', user: 'María López', items: 25 },
-        { type: 'Salida Préstamo', date: '27/12/2024', user: 'Carlos Rojas', items: 12 },
-        { type: 'Retorno Calibración', date: '26/12/2024', user: 'Ana Méndez', items: 5 },
-        { type: 'Transferencia Base', date: '25/12/2024', user: 'Luis Torres', items: 10 }
-    ]);
+    recentActivities = signal<RecentInventoryActivity[]>([]);
 
     ngOnInit(): void {
         this.isLoading.set(true);
-        setTimeout(() => this.isLoading.set(false), 800);
+        forkJoin({
+            tools:     this.toolService.getTools(),
+            movements: this.movService.getMovements({ limit: 5, sort: 'date', dir: 'desc' })
+        }).subscribe({
+            next: ({ tools, movements }) => {
+                const available    = tools.filter((t: any) => t.status === 'available').length;
+                const inUse        = tools.filter((t: any) => t.status === 'in_use').length;
+                const inCalib      = tools.filter((t: any) => t.status === 'in_calibration').length;
+                const quarantine   = tools.filter((t: any) => t.status === 'quarantine').length;
+                const total        = tools.length;
+
+                // Group by category
+                const catMap: { [k: string]: number } = {};
+                tools.forEach((t: any) => {
+                    const cat = t.categoryName || t.category_name || 'Sin categoría';
+                    catMap[cat] = (catMap[cat] || 0) + 1;
+                });
+                const colorList = [this.colors.navy, this.colors.yellow, this.colors.red, this.colors.green, this.colors.purple, this.colors.cyan];
+                const catData = Object.entries(catMap)
+                    .sort((a, b) => b[1] - a[1])
+                    .slice(0, 6)
+                    .map(([label, value], i) => ({ label, value, color: colorList[i % colorList.length] }));
+
+                this.kpiCards.set([
+                    { title: 'Stock Total',      value: total,       subtitle: 'HERRAMIENTAS', icon: 'heroicons_outline:cube',                 variant: 'navy' },
+                    { title: 'Valor Inventario', value: '-',         subtitle: 'ESTIMADO',    icon: 'heroicons_outline:currency-dollar',       variant: 'green' },
+                    { title: 'Disponibles',      value: available,   subtitle: 'EN ALMACÉN',  icon: 'heroicons_outline:check-circle',          variant: 'teal' },
+                    { title: 'En Préstamo',      value: inUse,       subtitle: 'ASIGNADOS',   icon: 'heroicons_outline:user-circle',           variant: 'blue' },
+                    { title: 'En Calibración',   value: inCalib,     subtitle: 'EXTERNO',     icon: 'heroicons_outline:cog-6-tooth',           variant: 'yellow' },
+                    { title: 'Bajo Stock',       value: 0,           subtitle: 'REPONER',     icon: 'heroicons_outline:exclamation-triangle',  variant: 'red' },
+                    { title: 'Categorías',       value: Object.keys(catMap).length, subtitle: 'FAMILIAS', icon: 'heroicons_outline:folder', variant: 'purple' },
+                    { title: 'En Cuarentena',    value: quarantine,  subtitle: 'RETENIDAS',   icon: 'heroicons_outline:shield-exclamation',    variant: 'orange' }
+                ]);
+
+                this.categoryDistribution.set(catData);
+
+                this.recentActivities.set(
+                    movements.slice(0, 5).map((m: any) => ({
+                        type:  m.entry_reason_label || m.exit_reason_label || m.reason || m.movement_type || 'Movimiento',
+                        date:  m.date ? new Date(m.date).toLocaleDateString('es-BO') : '-',
+                        user:  m.created_by || m.user_name || 'Sistema',
+                        items: parseInt(m.quantity) || 1
+                    }))
+                );
+
+                this.isLoading.set(false);
+            },
+            error: () => this.isLoading.set(false)
+        });
     }
 
     ngAfterViewInit(): void {
@@ -208,7 +250,7 @@ export class InventoryDashboardComponent implements OnInit, AfterViewInit {
                 labels: ['JUL', 'AGO', 'SEP', 'OCT', 'NOV', 'DIC'],
                 datasets: [{
                     label: 'VALOR INVENTARIO',
-                    data: [2100, 2250, 2300, 2400, 2450, 2500],
+                    data: [0, 0, 0, 0, 0, 0],
                     borderColor: '#000000',
                     backgroundColor: (context) => {
                         const ctx = context.chart.ctx;

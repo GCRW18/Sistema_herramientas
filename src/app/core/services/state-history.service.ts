@@ -34,7 +34,7 @@ export class StateHistoryService {
 
         return from(this._api.post('herramientas/StateHistory/listarStateHistory', params)).pipe(
             switchMap((response: any) => {
-                const data = response?.datos || [];
+                const data = response?.data || [];
                 this._records.set(data);
                 this._isLoading.set(false);
                 return of(data);
@@ -60,7 +60,7 @@ export class StateHistoryService {
 
         return from(this._api.post('herramientas/StateHistory/listarHistorialPorHerramienta', params)).pipe(
             switchMap((response: any) => {
-                const data = response?.datos || [];
+                const data = response?.data || [];
                 this._timeline.set(data);
                 this._isLoading.set(false);
                 return of(data);
@@ -79,7 +79,7 @@ export class StateHistoryService {
     createStateHistory(params: CreateStateHistoryParams): Observable<any> {
         return from(this._api.post('herramientas/StateHistory/insertarStateHistory', params)).pipe(
             switchMap((response: any) => {
-                return of(response?.datos || response);
+                return of(response?.data || response);
             })
         );
     }
@@ -89,7 +89,7 @@ export class StateHistoryService {
             id_history: id
         })).pipe(
             switchMap((response: any) => {
-                return of(response?.datos || response);
+                return of(response?.data || response);
             })
         );
     }
@@ -104,7 +104,7 @@ export class StateHistoryService {
             fecha_hasta: fechaHasta
         })).pipe(
             switchMap((response: any) => {
-                return of(response?.datos || []);
+                return of(response?.data || []);
             }),
             catchError(() => of([]))
         );

@@ -71,50 +71,60 @@
                         </span>
                     </div>
 
-                    <!-- Buscar por texto -->
-                    <div class="mb-4">
+                    <!-- Buscador dinámico con autocomplete -->
+                    <div class="mb-4 relative">
                         <label class="text-[11px] font-black uppercase text-black dark:text-white mb-1.5 block">
                             Buscar por Código o Nombre
                         </label>
                         <div class="relative">
                             <input type="text"
-                                   [ngModel]="buscarTermino()"
-                                   (ngModelChange)="onBuscarChange($event)"
-                                   [ngModelOptions]="{standalone: true}"
-                                   placeholder="Ej: BOA-H-80001 o COMPRESOR"
-                                   class="w-full h-11 text-sm font-bold border-2 border-black dark:border-black rounded-lg pl-10 pr-10 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[3px_3px_0px_0px_#000] transition-shadow outline-none placeholder:text-white dark:placeholder:text-gray-500">
+                                   [value]="buscarTermino()"
+                                   (input)="onBuscarChange($any($event.target).value)"
+                                   (blur)="ocultarSugerencias()"
+                                   [disabled]="herramientaNoEnSistema()"
+                                   placeholder="Escribe código o nombre de la herramienta..."
+                                   autocomplete="off"
+                                   class="w-full h-11 text-sm font-bold border-2 border-black dark:border-black rounded-lg pl-10 pr-10 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[3px_3px_0px_0px_#000] transition-shadow outline-none placeholder:text-gray-400 dark:placeholder:text-gray-500 disabled:opacity-50">
                             <mat-icon class="absolute left-3 top-1/2 -translate-y-1/2 text-black dark:text-white !text-lg">search</mat-icon>
                             <button *ngIf="buscarTermino()"
                                     type="button"
                                     (click)="limpiarBusqueda()"
-                                    class="absolute right-2 top-1/2 -translate-y-1/2 text-white hover:text-black dark:hover:text-white p-1 rounded transition-colors">
+                                    class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-black dark:hover:text-white p-1 rounded transition-colors">
                                 <mat-icon class="!text-lg">close</mat-icon>
                             </button>
                         </div>
-                    </div>
 
-                    <!-- Select de herramientas filtradas -->
-                    <div class="mb-4">
-                        <label class="text-[11px] font-black uppercase text-black dark:text-white mb-1.5 block">
-                            Seleccionar Herramienta
-                        </label>
-                        <div class="relative">
-                            <select [ngModel]="bajaForm.get('codigo')?.value"
-                                    (ngModelChange)="onCodigoSelect($event)"
-                                    [ngModelOptions]="{standalone: true}"
-                                    [disabled]="herramientaNoEnSistema()"
-                                    class="w-full h-11 text-sm font-bold border-2 border-black dark:border-black rounded-lg pl-10 pr-10 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[3px_3px_0px_0px_#000] transition-shadow outline-none appearance-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
-                                <option [ngValue]="null" class="text-black dark:text-white">-- Seleccionar Herramienta --</option>
-                                <option *ngFor="let h of herramientasFiltradas()" [ngValue]="h.codigo" class="text-black dark:text-white font-bold">
-                                    {{ h.codigo }} - {{ h.nombre }}
-                                </option>
-                            </select>
-                            <mat-icon class="absolute left-3 top-1/2 -translate-y-1/2 text-black dark:text-white !text-lg">build</mat-icon>
-                            <mat-icon class="absolute right-3 top-1/2 -translate-y-1/2 text-black dark:text-white !text-lg pointer-events-none">expand_more</mat-icon>
+                        <!-- Dropdown de sugerencias -->
+                        <div *ngIf="showSuggestions && herramientasFiltradas().length > 0"
+                             class="absolute z-50 top-full left-0 right-0 mt-1 bg-white dark:bg-slate-800 border-2 border-black rounded-lg shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] overflow-hidden max-h-56 overflow-y-auto">
+                            <div *ngFor="let h of herramientasFiltradas().slice(0, 8)"
+                                 (mousedown)="selectHerramienta(h)"
+                                 class="flex items-center gap-3 px-4 py-2.5 hover:bg-yellow-50 dark:hover:bg-slate-700 cursor-pointer border-b border-gray-200 dark:border-gray-700 last:border-0 transition-colors">
+                                <mat-icon class="!text-base !w-4 !h-4 text-black dark:text-white shrink-0">build</mat-icon>
+                                <div class="flex flex-col min-w-0 flex-1">
+                                    <span class="text-xs font-black text-black dark:text-white truncate">{{ h.codigo }}</span>
+                                    <span class="text-[10px] text-gray-500 dark:text-gray-400 truncate">{{ h.nombre }}</span>
+                                </div>
+                                <span class="text-[9px] font-bold px-1.5 py-0.5 rounded border shrink-0"
+                                      [ngClass]="{
+                                          'bg-green-100 text-green-800 border-green-400': h.estadoFisico === 'BUENO',
+                                          'bg-yellow-100 text-yellow-800 border-yellow-400': h.estadoFisico === 'REGULAR',
+                                          'bg-orange-100 text-orange-800 border-orange-400': h.estadoFisico === 'MALO',
+                                          'bg-red-100 text-red-800 border-red-400': h.estadoFisico === 'INSERVIBLE'
+                                      }">
+                                    {{ h.estadoFisico }}
+                                </span>
+                            </div>
+                            <div *ngIf="herramientasFiltradas().length > 8"
+                                 class="px-4 py-2 text-[10px] text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-slate-900 text-center font-bold border-t border-gray-200 dark:border-gray-700">
+                                +{{ herramientasFiltradas().length - 8 }} más — sigue escribiendo para refinar
+                            </div>
                         </div>
-                        <p *ngIf="herramientasFiltradas().length === 0" class="text-[10px] text-orange-600 dark:text-orange-400 mt-1 flex items-center gap-1">
+
+                        <p *ngIf="buscarTermino().length >= 2 && !showSuggestions && herramientasFiltradas().length === 0"
+                           class="text-[10px] text-orange-600 dark:text-orange-400 mt-1 flex items-center gap-1">
                             <mat-icon class="!text-xs !w-3 !h-3">warning</mat-icon>
-                            No hay herramientas que coincidan con la búsqueda
+                            No hay herramientas que coincidan
                         </p>
                     </div>
 
@@ -232,16 +242,13 @@
                                     Base
                                 </label>
                                 <div class="relative">
-                                    <select formControlName="base"
-                                            [disabled]="!herramientaNoEnSistema()"
-                                            class="w-full h-11 text-sm font-bold border-2 border-black dark:border-black rounded-lg pl-10 pr-10 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[3px_3px_0px_0px_#000] transition-shadow outline-none appearance-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
-                                        <option [ngValue]="null" class="text-black dark:text-white">-- Seleccionar Base --</option>
-                                        <option *ngFor="let b of bases" [ngValue]="b" class="text-black dark:text-white font-bold">
-                                            {{ b }}
-                                        </option>
-                                    </select>
+                                    <input type="text" formControlName="base"
+                                           placeholder="Base / Almacén"
+                                           [readonly]="!herramientaNoEnSistema()"
+                                           class="w-full h-11 text-sm font-bold border-2 border-black dark:border-black rounded-lg pl-10 pr-4 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[3px_3px_0px_0px_#000] transition-shadow outline-none placeholder:text-gray-400 dark:placeholder:text-gray-500"
+                                           [class.bg-gray-100]="!herramientaNoEnSistema()"
+                                           [class.dark:bg-gray-800]="!herramientaNoEnSistema()">
                                     <mat-icon class="absolute left-3 top-1/2 -translate-y-1/2 text-black dark:text-white !text-lg">flight</mat-icon>
-                                    <mat-icon class="absolute right-3 top-1/2 -translate-y-1/2 text-black dark:text-white !text-lg pointer-events-none">expand_more</mat-icon>
                                 </div>
                             </div>
 

@@ -488,12 +488,11 @@ export class DevolucionTercerosComponent implements OnInit, OnDestroy {
 
         const devolucionData = {
             type: 'entry' as MovementType,
-            entryReason: 'return_third_party' as EntryReason,
+            status: 'COMPLETADO',
+            entryReason: 'third_party_return' as EntryReason,
             date: this.devolucionForm.value.fechaDevolucion,
             notes: this.devolucionForm.value.observaciones,
-            customer: tercero.id,
-            customerName: tercero.razonSocial,
-            customerNit: tercero.nit,
+            customer: tercero.razonSocial,
             items: selectedItems.map(item => ({
                 codigo: item.codigo,
                 pn: item.pn,

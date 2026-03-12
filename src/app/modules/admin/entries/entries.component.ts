@@ -1,18 +1,18 @@
-import { Component, OnInit, OnDestroy, inject, ViewChild, TemplateRef } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { Router, RouterModule, NavigationEnd } from '@angular/router';
+import { Component, OnInit, OnDestroy, inject, ViewChild, TemplateRef, signal, Type, Injector } from '@angular/core';
+import { CommonModule, NgComponentOutlet } from '@angular/common';
+import { Router } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { MatTableModule } from '@angular/material/table';
 import { MatPaginatorModule, MatPaginator, PageEvent } from '@angular/material/paginator';
-import { MatDialog, MatDialogModule } from '@angular/material/dialog';
+import { MatDialog, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { DragDropModule } from '@angular/cdk/drag-drop';
-import { filter, takeUntil, finalize } from 'rxjs/operators';
-import { Subject } from 'rxjs';
+import { takeUntil, finalize } from 'rxjs/operators';
+import { Subject, of } from 'rxjs';
 import { MovementService } from '../../../core/services/movement.service';
 
 interface EntryRecord {
@@ -30,7 +30,7 @@ interface EntryRecord {
     standalone: true,
     imports: [
         CommonModule,
-        RouterModule,
+        NgComponentOutlet,
         MatCardModule,
         MatIconModule,
         MatButtonModule,
@@ -259,17 +259,22 @@ interface EntryRecord {
     `]
 })
 export class EntriesComponent implements OnInit, OnDestroy {
-    private router = inject(Router);
-    private dialog = inject(MatDialog);
-    private snackBar = inject(MatSnackBar);
+    private router          = inject(Router);
+    private dialog          = inject(MatDialog);
+    private snackBar        = inject(MatSnackBar);
     private movementService = inject(MovementService);
+    private injector        = inject(Injector);
 
     private _unsubscribeAll = new Subject<void>();
 
     @ViewChild(MatPaginator) paginator!: MatPaginator;
     @ViewChild('entradasRecientesDialog') entradasRecientesDialog!: TemplateRef<any>;
 
-    showCards = true;
+    // Formulario activo inline
+    activeFormComponent = signal<Type<any> | null>(null);
+    activeFormTab       = signal<number | null>(null);
+    formInjector: Injector | null = null;
+
     isLoading = false;
 
     // Paginacion
@@ -282,24 +287,12 @@ export class EntriesComponent implements OnInit, OnDestroy {
     recentEntries: EntryRecord[] = [];
 
     ngOnInit(): void {
-        this.updateCardVisibility(this.router.url);
         this.loadRecentEntries();
-
-        this.router.events.pipe(
-            filter(event => event instanceof NavigationEnd),
-            takeUntil(this._unsubscribeAll)
-        ).subscribe((event: any) => {
-            this.updateCardVisibility(event.url);
-        });
     }
 
     ngOnDestroy(): void {
         this._unsubscribeAll.next();
         this._unsubscribeAll.complete();
-    }
-
-    private updateCardVisibility(url: string): void {
-        this.showCards = url === '/entradas' || url === '/entradas/' || url.endsWith('/entradas');
     }
 
     loadRecentEntries(): void {
@@ -433,49 +426,70 @@ export class EntriesComponent implements OnInit, OnDestroy {
         });
     }
 
-    // Modal Openers
-    async openRetornoTraspaso(): Promise<void> {
-        const { RetornoTraspasoComponent } = await import('./retorno-traspaso/retorno-traspaso.component');
-        this.openDialog(RetornoTraspasoComponent);
+    // ── Inline form helpers ──────────────────────────────────────────────────
+
+    private createFormInjector(): Injector {
+        const self = this;
+        const fakeRef = {
+            close:            (result?: any) => { self.closeActiveForm(); },
+            afterClosed:      () => of(null),
+            beforeClosed:     () => of(null),
+            backdropClick:    () => of(null),
+            keydownEvents:    () => of(null),
+            updatePosition:   () => {},
+            updateSize:       () => {},
+            addPanelClass:    () => {},
+            removePanelClass: () => {},
+            disableClose: false,
+            id: 'inline-form',
+            componentInstance: null,
+        };
+        return Injector.create({
+            providers: [{ provide: MatDialogRef, useValue: fakeRef }],
+            parent: this.injector
+        });
     }
 
-    async openAjusteIngreso(): Promise<void> {
-        const { AjusteIngresoComponent } = await import('./ajuste-ingreso/ajuste-ingreso.component');
-        this.openDialog(AjusteIngresoComponent);
+    closeActiveForm(): void {
+        this.activeFormComponent.set(null);
+        this.activeFormTab.set(null);
+        this.formInjector = null;
+    }
+
+    // ── Form openers (inline) ────────────────────────────────────────────────
+
+    async openRetornoTraspaso(): Promise<void> {
+        const { RetornoTraspasoComponent } = await import('./retorno-traspaso/retorno-traspaso.component');
+        this.formInjector = this.createFormInjector();
+        this.activeFormComponent.set(RetornoTraspasoComponent);
+        this.activeFormTab.set(1);
     }
 
     async openNuevaHerramienta(): Promise<void> {
         const { NuevaHerramientaComponent } = await import('./nueva-herramienta/nueva-herramienta.component');
-        this.openDialog(NuevaHerramientaComponent);
+        this.formInjector = this.createFormInjector();
+        this.activeFormComponent.set(NuevaHerramientaComponent);
+        this.activeFormTab.set(2);
     }
 
     async openDevolucionHerramienta(): Promise<void> {
         const { DevolucionHerramientaComponent } = await import('./devolucion-herramienta/devolucion-herramienta.component');
-        this.openDialog(DevolucionHerramientaComponent);
+        this.formInjector = this.createFormInjector();
+        this.activeFormComponent.set(DevolucionHerramientaComponent);
+        this.activeFormTab.set(3);
+    }
+
+    async openAjusteIngreso(): Promise<void> {
+        const { AjusteIngresoComponent } = await import('./ajuste-ingreso/ajuste-ingreso.component');
+        this.formInjector = this.createFormInjector();
+        this.activeFormComponent.set(AjusteIngresoComponent);
+        this.activeFormTab.set(4);
     }
 
     async openDevolucionTerceros(): Promise<void> {
         const { DevolucionTercerosComponent } = await import('./devolucion-terceros/devolucion-terceros.component');
-        this.openDialog(DevolucionTercerosComponent);
-    }
-
-    private openDialog(component: any): void {
-        const dialogRef = this.dialog.open(component, {
-            width: '1000px',
-            maxWidth: '95vw',
-            height: 'auto',
-            maxHeight: '90vh',
-            panelClass: 'neo-dialog',
-            hasBackdrop: true,
-            disableClose: false,
-            autoFocus: false
-        });
-
-        dialogRef.afterClosed().subscribe(result => {
-            if (result?.success) {
-                this.showMessage('Operacion completada exitosamente', 'success');
-                this.loadRecentEntries();
-            }
-        });
+        this.formInjector = this.createFormInjector();
+        this.activeFormComponent.set(DevolucionTercerosComponent);
+        this.activeFormTab.set(5);
     }
 }

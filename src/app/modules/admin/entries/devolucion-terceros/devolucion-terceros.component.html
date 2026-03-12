@@ -403,6 +403,7 @@
                         <td mat-cell *matCellDef="let element" class="!p-3 !border-b !border-gray-200 dark:!border-black/30">
                             <div *ngIf="element.selected" class="condition-select">
                                 <select [(ngModel)]="element.condicionDevolucion" (change)="updateCondicion(element, element.condicionDevolucion)"
+                                        (click)="$event.stopPropagation()"
                                         class="w-[140px] h-9 text-xs font-bold border-2 border-black dark:border-slate-600 rounded px-2 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[2px_2px_0px_0px_#000] transition-shadow outline-none appearance-none cursor-pointer">
                                     <option value="" disabled>Seleccionar...</option>
                                     <option *ngFor="let cond of condicionesDevolucion" [value]="cond.value">{{ cond.label }}</option>

@@ -12,8 +12,10 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { Subject, takeUntil, debounceTime, distinctUntilChanged } from 'rxjs';
+import { MovementService } from '../../../../../core/services/movement.service';
 
 interface HerramientaOption {
+    id_tool?: number;
     codigo: string;
     nombre: string;
     pn: string;
@@ -136,6 +138,7 @@ export class HerramientaABajaComponent implements OnInit, OnDestroy {
     public data = inject(MAT_DIALOG_DATA, { optional: true });
     private fb = inject(FormBuilder);
     private snackBar = inject(MatSnackBar);
+    private movementService = inject(MovementService);
 
     private _unsubscribeAll = new Subject<void>();
 
@@ -151,8 +154,10 @@ export class HerramientaABajaComponent implements OnInit, OnDestroy {
 
     // Estados
     isLoading = false;
+    showSuggestions = false;
+    private id_tool_actual = 0;
 
-    // Datos estáticos
+    // Datos de herramientas (cargados desde backend)
     herramientas: HerramientaOption[] = [
         {
             codigo: 'BOA-H-80001',
@@ -240,11 +245,51 @@ export class HerramientaABajaComponent implements OnInit, OnDestroy {
         this.initForm();
         this.setupSearchListener();
         this.coincidencias.set(this.herramientas.length);
+        this.cargarHerramientas();
 
         // Si hay datos iniciales, cargarlos
         if (this.data) {
             this.loadInitialData(this.data);
         }
+    }
+
+    private cargarHerramientas(): void {
+        const conditionMap: Record<string, string> = {
+            available: 'BUENO', serviceable: 'BUENO', good: 'BUENO',
+            repairable: 'REGULAR', repair: 'REGULAR', transitional: 'REGULAR',
+            unserviceable: 'MALO', bad: 'MALO',
+            damaged: 'INSERVIBLE', scrapped: 'INSERVIBLE'
+        };
+
+        this.movementService.getHerramientasDisponibles()
+            .pipe(takeUntil(this._unsubscribeAll))
+            .subscribe({
+                next: (tools: any[]) => {
+                    if (tools.length > 0) {
+                        this.herramientas = tools.map((t: any) => {
+                            const rawCond = (t.condition ?? t.status ?? '').toLowerCase();
+                            return {
+                                id_tool:          t.id_tool ?? 0,
+                                codigo:           t.code          ?? t.codigo        ?? '',
+                                nombre:           t.name          ?? t.nombre        ?? '',
+                                pn:               t.part_number   ?? t.pn            ?? '',
+                                sn:               t.serial_number ?? t.sn            ?? '',
+                                ubicacion:        t.location      ?? t.ubicacion     ?? '',
+                                base:             t.warehouse_name ?? t.base_code ?? t.warehouse_id?.toString() ?? t.base ?? '',
+                                existencia:       t.quantity_in_stock ?? t.existencia ?? 0,
+                                fechaVencimiento: t.next_calibration_date ?? t.fechaVencimiento ?? '',
+                                unidad:           t.unit_of_measure ?? t.unidad ?? 'PZA',
+                                estadoFisico:     conditionMap[rawCond] ?? 'REGULAR',
+                                contenido:        t.content_list  ?? t.contenido ?? '',
+                                marca:            t.brand         ?? t.marca ?? '',
+                                descripcion:      t.description   ?? t.descripcion ?? ''
+                            };
+                        });
+                        this.herramientasFiltradas.set(this.herramientas);
+                        this.coincidencias.set(this.herramientas.length);
+                    }
+                }
+            });
     }
 
     ngOnDestroy(): void {
@@ -300,11 +345,25 @@ export class HerramientaABajaComponent implements OnInit, OnDestroy {
     onBuscarChange(value: string): void {
         this.buscarTermino.set(value);
         this.filtrarHerramientas(value);
+        this.showSuggestions = value.length >= 2 && this.herramientasFiltradas().length > 0;
+    }
+
+    selectHerramienta(herramienta: HerramientaOption): void {
+        this.id_tool_actual = herramienta.id_tool ?? 0;
+        this.loadHerramientaData(herramienta);
+        this.herramientaNoEnSistema.set(false);
+        this.buscarTermino.set(`${herramienta.codigo} - ${herramienta.nombre}`);
+        this.showSuggestions = false;
+    }
+
+    ocultarSugerencias(): void {
+        setTimeout(() => { this.showSuggestions = false; }, 200);
     }
 
     limpiarBusqueda(): void {
         this.buscarTermino.set('');
         this.filtrarHerramientas('');
+        this.showSuggestions = false;
     }
 
     private filtrarHerramientas(term: string): void {
@@ -349,46 +408,33 @@ export class HerramientaABajaComponent implements OnInit, OnDestroy {
 
         const herramienta = this.herramientas.find(h => h.codigo === codigo);
         if (herramienta) {
+            this.id_tool_actual = herramienta.id_tool ?? 0;
             this.loadHerramientaData(herramienta);
             this.herramientaNoEnSistema.set(false);
         }
     }
 
     private loadHerramientaData(herramienta: HerramientaOption): void {
-        this.isLoading = true;
+        this.bajaForm.patchValue({
+            codigo: herramienta.codigo,
+            nombre: herramienta.nombre,
+            pn: herramienta.pn,
+            sn: herramienta.sn,
+            ubicacion: herramienta.ubicacion,
+            base: herramienta.base,
+            existencia: herramienta.existencia,
+            fechaVencimiento: herramienta.fechaVencimiento,
+            unidad: herramienta.unidad,
+            estadoFisico: herramienta.estadoFisico,
+            contenido: herramienta.contenido,
+            marca: herramienta.marca,
+            cantidad: 1,
+            observacion: `Baja de herramienta: ${herramienta.codigo} - ${herramienta.nombre}`
+        });
 
-        // Simular carga de datos (en producción sería una llamada HTTP)
-        setTimeout(() => {
-            this.bajaForm.patchValue({
-                codigo: herramienta.codigo,
-                nombre: herramienta.nombre,
-                pn: herramienta.pn,
-                sn: herramienta.sn,
-                ubicacion: herramienta.ubicacion,
-                base: herramienta.base,
-                existencia: herramienta.existencia,
-                fechaVencimiento: herramienta.fechaVencimiento,
-                unidad: herramienta.unidad,
-                estadoFisico: herramienta.estadoFisico,
-                contenido: herramienta.contenido,
-                marca: herramienta.marca,
-                cantidad: 1,
-                observacion: `Baja de herramienta: ${herramienta.codigo} - ${herramienta.nombre}`
-            });
-
-            // Cargar imagen si existe
-            if (herramienta.imagen) {
-                this.selectedImage.set(herramienta.imagen);
-            } else {
-                this.selectedImage.set(null);
-            }
-
-            // Cargar descripción
-            this.descripcionHerramienta.set(herramienta.descripcion || '');
-
-            this.isLoading = false;
-            this.showMessage(`Herramienta ${herramienta.codigo} cargada correctamente`, 'success');
-        }, 400);
+        this.selectedImage.set(herramienta.imagen ?? null);
+        this.descripcionHerramienta.set(herramienta.descripcion || '');
+        this.showMessage(`Herramienta ${herramienta.codigo} cargada correctamente`, 'success');
     }
 
     toggleHerramientaNoEnSistema(): void {
@@ -509,6 +555,7 @@ export class HerramientaABajaComponent implements OnInit, OnDestroy {
         // Preparar datos para enviar
         const toolData = {
             ...formValue,
+            id_tool:      this.id_tool_actual,
             imagen: this.selectedImage(),
             descripcion: this.descripcionHerramienta(),
             modoIngreso: this.herramientaNoEnSistema() ? 'MANUAL' : 'SISTEMA',

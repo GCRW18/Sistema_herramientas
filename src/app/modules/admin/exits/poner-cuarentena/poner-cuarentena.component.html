@@ -122,17 +122,30 @@
 
                         <form [formGroup]="quarantineForm">
                             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                <!-- Código -->
+                                <!-- Código / Búsqueda Herramienta -->
                                 <div class="form-group">
                                     <label class="text-[11px] font-black uppercase text-black dark:text-white mb-1.5 block">
-                                        Código *
+                                        Código / Nombre *
                                     </label>
                                     <div class="relative">
                                         <input type="text" formControlName="codigo"
-                                               placeholder="Ej: BOA-H-0245"
-                                               class="w-full h-11 text-sm font-bold border-2 border-black dark:border-black rounded-lg pl-10 pr-4 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[3px_3px_0px_0px_#000] transition-shadow outline-none placeholder:text-white dark:placeholder:text-gray-500"
+                                               placeholder="Buscar por código o nombre..."
+                                               (input)="filtrarHerramientas($event)"
+                                               (blur)="ocultarSugerencias()"
+                                               autocomplete="off"
+                                               class="w-full h-11 text-sm font-bold border-2 border-black dark:border-black rounded-lg pl-10 pr-4 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[3px_3px_0px_0px_#000] transition-shadow outline-none placeholder:text-gray-400 dark:placeholder:text-gray-500"
                                                [class.border-red-500]="hasError('codigo', 'required')">
-                                        <mat-icon class="absolute left-3 top-1/2 -translate-y-1/2 text-black dark:text-white !text-lg">qr_code_scanner</mat-icon>
+                                        <mat-icon class="absolute left-3 top-1/2 -translate-y-1/2 text-black dark:text-white !text-lg">search</mat-icon>
+                                        <!-- Dropdown sugerencias -->
+                                        <div *ngIf="showToolSuggestions && toolsFiltradas.length > 0"
+                                             class="absolute z-50 top-full left-0 right-0 mt-1 bg-white dark:bg-slate-800 border-2 border-black rounded-lg shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] max-h-48 overflow-y-auto">
+                                            <div *ngFor="let tool of toolsFiltradas"
+                                                 (mousedown)="selectTool(tool)"
+                                                 class="flex flex-col px-3 py-2 cursor-pointer hover:bg-yellow-50 dark:hover:bg-slate-700 border-b border-gray-100 dark:border-slate-700 last:border-b-0 transition-colors">
+                                                <span class="text-xs font-black text-black dark:text-white uppercase">{{ tool.code ?? tool.codigo }}</span>
+                                                <span class="text-[11px] text-gray-600 dark:text-gray-400 truncate">{{ tool.name ?? tool.nombre }}</span>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
 
@@ -195,21 +208,13 @@
                                 <!-- Base -->
                                 <div class="form-group">
                                     <label class="text-[11px] font-black uppercase text-black dark:text-white mb-1.5 block">
-                                        Base *
+                                        Base
                                     </label>
                                     <div class="relative">
-                                        <select formControlName="base"
-                                                class="w-full h-11 text-sm font-bold border-2 border-black dark:border-black rounded-lg pl-10 pr-10 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[3px_3px_0px_0px_#000] transition-shadow outline-none appearance-none cursor-pointer"
-                                                [class.border-red-500]="hasError('base', 'required')">
-                                            <option [ngValue]="null" class="text-black dark:text-white">-- Seleccionar Base --</option>
-                                            <option value="CBB" class="text-black dark:text-white font-bold">CBB - Cochabamba</option>
-                                            <option value="LPB" class="text-black dark:text-white font-bold">LPB - La Paz</option>
-                                            <option value="SCZ" class="text-black dark:text-white font-bold">SCZ - Santa Cruz</option>
-                                            <option value="TJA" class="text-black dark:text-white font-bold">TJA - Tarija</option>
-                                            <option value="SRZ" class="text-black dark:text-white font-bold">SRZ - Sucre</option>
-                                        </select>
+                                        <input type="text" formControlName="base"
+                                               placeholder="Ej: CBB, LPB, SCZ..."
+                                               class="w-full h-11 text-sm font-bold border-2 border-black dark:border-black rounded-lg pl-10 pr-4 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[3px_3px_0px_0px_#000] transition-shadow outline-none placeholder:text-gray-400 dark:placeholder:text-gray-500">
                                         <mat-icon class="absolute left-3 top-1/2 -translate-y-1/2 text-black dark:text-white !text-lg">flight</mat-icon>
-                                        <mat-icon class="absolute right-3 top-1/2 -translate-y-1/2 text-black dark:text-white !text-lg pointer-events-none">expand_more</mat-icon>
                                     </div>
                                 </div>
 
@@ -229,20 +234,13 @@
                                 <!-- Unidad -->
                                 <div class="form-group">
                                     <label class="text-[11px] font-black uppercase text-black dark:text-white mb-1.5 block">
-                                        Unidad *
+                                        Unidad
                                     </label>
                                     <div class="relative">
-                                        <select formControlName="unidad"
-                                                class="w-full h-11 text-sm font-bold border-2 border-black dark:border-black rounded-lg pl-10 pr-10 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[3px_3px_0px_0px_#000] transition-shadow outline-none appearance-none cursor-pointer"
-                                                [class.border-red-500]="hasError('unidad', 'required')">
-                                            <option [ngValue]="null" class="text-black dark:text-white">-- Seleccionar Unidad --</option>
-                                            <option value="PZA" class="text-black dark:text-white font-bold">PZA - Pieza</option>
-                                            <option value="EA" class="text-black dark:text-white font-bold">EA - Cada uno</option>
-                                            <option value="SET" class="text-black dark:text-white font-bold">SET - Set</option>
-                                            <option value="KIT" class="text-black dark:text-white font-bold">KIT - Kit</option>
-                                        </select>
+                                        <input type="text" formControlName="unidad"
+                                               placeholder="Ej: PZA, EA, SET, KIT..."
+                                               class="w-full h-11 text-sm font-bold border-2 border-black dark:border-black rounded-lg pl-10 pr-4 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[3px_3px_0px_0px_#000] transition-shadow outline-none placeholder:text-gray-400 dark:placeholder:text-gray-500">
                                         <mat-icon class="absolute left-3 top-1/2 -translate-y-1/2 text-black dark:text-white !text-lg">straighten</mat-icon>
-                                        <mat-icon class="absolute right-3 top-1/2 -translate-y-1/2 text-black dark:text-white !text-lg pointer-events-none">expand_more</mat-icon>
                                     </div>
                                 </div>
 

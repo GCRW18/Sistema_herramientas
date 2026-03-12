@@ -4,12 +4,6 @@ import { ExitsComponent } from './exits.component';
 export default [
     {
         path: '',
-        component: ExitsComponent,
-        children: [
-            {
-                path: 'dashboard',
-                loadComponent: () => import('./dashboard/exits-dashboard.component').then(m => m.ExitsDashboardComponent)
-            },
-        ]
+        component: ExitsComponent
     }
 ] as Routes;

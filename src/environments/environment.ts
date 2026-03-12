@@ -1,15 +1,15 @@
 export const environment = {
     production: false,
-    host: '10.150.0.91',
-    baseUrl: 'kerp/pxp/lib/rest',
+    host: 'localhost',
+    baseUrl: 'bkhe_api',
     mode: 'cors',
-    port: location.protocol.replace(':', '') == 'https' ? '443' : '80',
-    protocol: location.protocol.replace(':', ''),
+    port: '8080',
+    protocol: 'http',
     backendRestVersion: 1,
     initWebSocket: 'NO',
     portWs: '8010',
     backendVersion: 'v1',
     urlLogin: '',
     storeToken: false,
-    filesUrl : 'http://10.150.0.91/kerp/'
+    filesUrl : 'http://localhost:8080/bkhe_api/'
 };

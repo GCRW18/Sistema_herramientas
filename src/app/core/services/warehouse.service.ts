@@ -36,8 +36,8 @@ export class WarehouseService {
             map((response: any) => {
                 console.log('✅ Respuesta getWarehouses:', response);
 
-                if (response?.datos) {
-                    return response.datos;
+                if (response?.data) {
+                    return response.data;
                 }
                 if (response?.data) {
                     return response.data;
@@ -67,7 +67,7 @@ export class WarehouseService {
             map((response: any) => {
                 console.log('✅ Respuesta getWarehouseById:', response);
 
-                const data = response?.datos || response?.data;
+                const data = response?.data || response?.data;
                 if (data && data.length > 0) {
                     return data[0];
                 }
@@ -165,8 +165,8 @@ export class WarehouseService {
             map((response: any) => {
                 console.log('✅ Respuesta getLocations:', response);
 
-                if (response?.datos) {
-                    return response.datos;
+                if (response?.data) {
+                    return response.data;
                 }
                 if (response?.data) {
                     return response.data;
@@ -196,7 +196,7 @@ export class WarehouseService {
             map((response: any) => {
                 console.log('✅ Respuesta getLocationById:', response);
 
-                const data = response?.datos || response?.data;
+                const data = response?.data || response?.data;
                 if (data && data.length > 0) {
                     return data[0];
                 }

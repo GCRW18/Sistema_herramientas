@@ -1,89 +1,82 @@
 import { Injectable, inject } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
-import { Observable, BehaviorSubject, tap } from 'rxjs';
+import { from, Observable, of, ReplaySubject, switchMap } from 'rxjs';
 import { Role, RoleFormData } from '../models';
+import { ErpApiService } from '../api/api.service';
 
-@Injectable({
-    providedIn: 'root'
-})
+@Injectable({ providedIn: 'root' })
 export class RoleService {
-    private _httpClient = inject(HttpClient);
-    private _roles = new BehaviorSubject<Role[]>([]);
-
-    private readonly _apiUrl = '/api/roles';
-
-    // -----------------------------------------------------------------------------------------------------
-    // @ Accessors
-    // -----------------------------------------------------------------------------------------------------
+    private _api = inject(ErpApiService);
+    private _roles = new ReplaySubject<Role[]>(1);
 
     get roles$(): Observable<Role[]> {
         return this._roles.asObservable();
     }
 
-    // -----------------------------------------------------------------------------------------------------
-    // @ Public methods
-    // -----------------------------------------------------------------------------------------------------
-
-    /**
-     * Get all roles
-     */
     getRoles(): Observable<Role[]> {
-        return this._httpClient.get<Role[]>(this._apiUrl).pipe(
-            tap((roles) => this._roles.next(roles))
+        return from(this._api.post('herramientas/roles/listarRoles', {
+            start: 0,
+            limit: 200,
+            sort: 'name',
+            dir: 'asc'
+        })).pipe(
+            switchMap((response: any) => {
+                const roles = response?.data || [];
+                this._roles.next(roles);
+                return of(roles);
+            })
         );
     }
 
-    /**
-     * Get role by id
-     */
     getRoleById(id: string): Observable<Role> {
-        return this._httpClient.get<Role>(`${this._apiUrl}/${id}`);
+        return from(this._api.post('herramientas/roles/listarRoles', {
+            start: 0,
+            limit: 1,
+            id_role: id
+        })).pipe(
+            switchMap((response: any) => of(response?.data?.[0] || null))
+        );
     }
 
-    /**
-     * Create role
-     */
     createRole(data: RoleFormData): Observable<Role> {
-        return this._httpClient.post<Role>(this._apiUrl, data).pipe(
-            tap(() => {
-                // Refresh roles list
+        return from(this._api.post('herramientas/roles/insertarRoles', data)).pipe(
+            switchMap((response: any) => {
                 this.getRoles().subscribe();
+                return of(response?.data || data);
             })
         );
     }
 
-    /**
-     * Update role
-     */
     updateRole(id: string, data: Partial<RoleFormData>): Observable<Role> {
-        return this._httpClient.put<Role>(`${this._apiUrl}/${id}`, data).pipe(
-            tap(() => {
-                // Refresh roles list
+        return from(this._api.post('herramientas/roles/insertarRoles', {
+            ...data,
+            id_role: id
+        })).pipe(
+            switchMap((response: any) => {
                 this.getRoles().subscribe();
+                return of(response?.data || data);
             })
         );
     }
 
-    /**
-     * Delete role
-     */
     deleteRole(id: string): Observable<void> {
-        return this._httpClient.delete<void>(`${this._apiUrl}/${id}`).pipe(
-            tap(() => {
-                // Refresh roles list
+        return from(this._api.post('herramientas/roles/eliminarRoles', {
+            id_role: id
+        })).pipe(
+            switchMap(() => {
                 this.getRoles().subscribe();
+                return of(undefined);
             })
         );
     }
 
-    /**
-     * Toggle role active status
-     */
     toggleRoleStatus(id: string, active: boolean): Observable<Role> {
-        return this._httpClient.patch<Role>(`${this._apiUrl}/${id}/status`, { active }).pipe(
-            tap(() => {
-                // Refresh roles list
+        return from(this._api.post('herramientas/roles/insertarRoles', {
+            id_role: id,
+            active: active
+        })).pipe(
+            switchMap((response: any) => {
                 this.getRoles().subscribe();
+                return of(response?.data || {});
             })
         );
     }

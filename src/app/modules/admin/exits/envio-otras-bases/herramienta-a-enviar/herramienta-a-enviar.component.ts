@@ -12,9 +12,11 @@ import { MatAutocompleteModule } from '@angular/material/autocomplete';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { Subject, takeUntil, debounceTime, distinctUntilChanged } from 'rxjs';
+import { Subject, takeUntil, debounceTime, distinctUntilChanged, finalize } from 'rxjs';
+import { MovementService } from '../../../../../core/services/movement.service';
 
 interface HerramientaOption {
+    toolId: number;
     codigo: string;
     nombre: string;
     pn: string;
@@ -25,7 +27,6 @@ interface HerramientaOption {
     fechaCalibracion: string;
     unidad: string;
     estado: string;
-    imagen?: string;
     descripcion?: string;
 }
 
@@ -131,6 +132,7 @@ export class HerramientaAEnviarComponent implements OnInit, OnDestroy {
     public data = inject<DialogData>(MAT_DIALOG_DATA, { optional: true });
     private fb = inject(FormBuilder);
     private snackBar = inject(MatSnackBar);
+    private movementService = inject(MovementService);
 
     private _unsubscribeAll = new Subject<void>();
 
@@ -141,6 +143,7 @@ export class HerramientaAEnviarComponent implements OnInit, OnDestroy {
     selectedImage = signal<string | null>(null);
     coincidencias = signal<number>(0);
     isEditMode = computed(() => this.data?.mode === 'edit');
+    isLoading = false;
 
     // Prioridades de envío
     prioridades = [
@@ -182,41 +185,14 @@ export class HerramientaAEnviarComponent implements OnInit, OnDestroy {
         { value: 'GL', label: 'Galón' }
     ];
 
-    // Mock data - Herramientas disponibles
-    herramientas: HerramientaOption[] = [
-        { codigo: 'BOA-H-0001', nombre: 'TORQUÍMETRO DIGITAL 50-250 IN-LB', pn: 'TRQ-2502D', sn: 'TRQ-2024-001', marca: 'SNAP-ON', ubicacion: 'VVI-EST-A1', existencia: 2, fechaCalibracion: '2025-06-15', unidad: 'PZA', estado: 'SERVICEABLE', descripcion: 'Torquímetro digital de alta precisión para aplicaciones aeronáuticas' },
-        { codigo: 'BOA-H-0002', nombre: 'TORQUÍMETRO CLICK 150-750 IN-LB', pn: 'QC3R750A', sn: 'TRQ-2024-002', marca: 'SNAP-ON', ubicacion: 'VVI-EST-A1', existencia: 3, fechaCalibracion: '2025-08-20', unidad: 'PZA', estado: 'SERVICEABLE', descripcion: 'Torquímetro mecánico con sistema de clic audible' },
-        { codigo: 'BOA-H-0003', nombre: 'CALIBRADOR DIGITAL 0-6"', pn: '500-196-30', sn: 'CAL-2024-001', marca: 'MITUTOYO', ubicacion: 'VVI-EST-A2', existencia: 5, fechaCalibracion: '2025-04-10', unidad: 'PZA', estado: 'SERVICEABLE', descripcion: 'Calibrador digital con resolución 0.01mm/0.0005"' },
-        { codigo: 'BOA-H-0004', nombre: 'MICRÓMETRO EXTERIOR 0-1"', pn: '293-340-30', sn: 'MIC-2024-001', marca: 'MITUTOYO', ubicacion: 'VVI-EST-A2', existencia: 3, fechaCalibracion: '2025-05-22', unidad: 'PZA', estado: 'SERVICEABLE', descripcion: 'Micrómetro digital con salida de datos SPC' },
-        { codigo: 'BOA-H-0005', nombre: 'INDICADOR DE CARÁTULA 0.001"', pn: '2416S', sn: 'IND-2024-001', marca: 'STARRETT', ubicacion: 'VVI-EST-A3', existencia: 4, fechaCalibracion: '2025-07-30', unidad: 'PZA', estado: 'SERVICEABLE' },
-        { codigo: 'BOA-H-0006', nombre: 'JUEGO GALGAS ESPESORES 32 HOJAS', pn: 'GFS-32', sn: 'N/A', marca: 'STARRETT', ubicacion: 'VVI-EST-A3', existencia: 6, fechaCalibracion: 'N/A', unidad: 'JGO', estado: 'SERVICEABLE' },
-        { codigo: 'BOA-H-0007', nombre: 'GATO HIDRÁULICO TRIPODE 10T', pn: 'MJ-10T-TP', sn: 'GAT-2024-001', marca: 'MALABAR', ubicacion: 'VVI-HAN-B1', existencia: 2, fechaCalibracion: '2025-12-01', unidad: 'PZA', estado: 'SERVICEABLE' },
-        { codigo: 'BOA-H-0008', nombre: 'GATO AXIAL COLA 15T', pn: 'MJ-15T-AX', sn: 'GAT-2024-002', marca: 'MALABAR', ubicacion: 'VVI-HAN-B1', existencia: 1, fechaCalibracion: '2025-11-15', unidad: 'PZA', estado: 'SERVICEABLE' },
-        { codigo: 'BOA-H-0009', nombre: 'BOROSCOPIO ARTICULADO 6MM', pn: 'VBS-6000A', sn: 'BOR-2024-001', marca: 'OLYMPUS', ubicacion: 'VVI-EST-C1', existencia: 1, fechaCalibracion: '2025-09-10', unidad: 'PZA', estado: 'SERVICEABLE' },
-        { codigo: 'BOA-H-0010', nombre: 'MULTÍMETRO DIGITAL FLUKE 87V', pn: 'FLUKE-87V', sn: 'FLK-2024-001', marca: 'FLUKE', ubicacion: 'VVI-EST-C2', existencia: 4, fechaCalibracion: '2025-10-05', unidad: 'PZA', estado: 'SERVICEABLE' },
-        { codigo: 'BOA-H-0011', nombre: 'PINZA AMPERIMÉTRICA 1000A', pn: 'FLUKE-376FC', sn: 'FLK-2024-002', marca: 'FLUKE', ubicacion: 'VVI-EST-C2', existencia: 3, fechaCalibracion: '2025-08-18', unidad: 'PZA', estado: 'SERVICEABLE' },
-        { codigo: 'BOA-H-0012', nombre: 'DETECTOR DE FUGAS ULTRASONIDO', pn: 'SDT-270', sn: 'SDT-2024-001', marca: 'SDT', ubicacion: 'VVI-EST-C3', existencia: 1, fechaCalibracion: '2025-07-25', unidad: 'PZA', estado: 'EN_CALIBRACION' },
-        { codigo: 'BOA-H-0013', nombre: 'BOMBA HIDRÁULICA MANUAL 10000PSI', pn: 'P-462', sn: 'ENG-2024-001', marca: 'ENERPAC', ubicacion: 'VVI-HAN-B2', existencia: 2, fechaCalibracion: '2025-06-30', unidad: 'PZA', estado: 'SERVICEABLE' },
-        { codigo: 'BOA-H-0014', nombre: 'CILINDRO HIDRÁULICO 25T', pn: 'RC-256', sn: 'ENG-2024-002', marca: 'ENERPAC', ubicacion: 'VVI-HAN-B2', existencia: 2, fechaCalibracion: '2025-12-20', unidad: 'PZA', estado: 'SERVICEABLE' },
-        { codigo: 'BOA-H-0015', nombre: 'MEDIDOR DE ESPESOR ULTRASONIDO', pn: '38DL PLUS', sn: 'OLY-2024-001', marca: 'OLYMPUS', ubicacion: 'VVI-EST-C1', existencia: 2, fechaCalibracion: '2025-11-01', unidad: 'PZA', estado: 'SERVICEABLE' },
-        { codigo: 'BOA-H-0016', nombre: 'LÁMPARA UV PARA NDT', pn: 'UVS-40', sn: 'SPE-2024-001', marca: 'SPECTROLINE', ubicacion: 'VVI-EST-C4', existencia: 3, fechaCalibracion: '2026-02-15', unidad: 'PZA', estado: 'NUEVO' },
-        { codigo: 'BOA-H-0017', nombre: 'JUEGO LLAVES MIXTAS 6-32MM', pn: 'GKMT-26', sn: 'N/A', marca: 'SNAP-ON', ubicacion: 'VVI-EST-D1', existencia: 8, fechaCalibracion: 'N/A', unidad: 'JGO', estado: 'SERVICEABLE' },
-        { codigo: 'BOA-H-0018', nombre: 'JUEGO DADOS 1/2" 10-36MM', pn: 'SWM-36', sn: 'N/A', marca: 'SNAP-ON', ubicacion: 'VVI-EST-D1', existencia: 6, fechaCalibracion: 'N/A', unidad: 'JGO', estado: 'SERVICEABLE' },
-        { codigo: 'BOA-H-0019', nombre: 'PISTOLA NEUMÁTICA 1/2"', pn: 'MG725', sn: 'ING-2024-001', marca: 'INGERSOLL RAND', ubicacion: 'VVI-HAN-B3', existencia: 4, fechaCalibracion: '2025-05-15', unidad: 'PZA', estado: 'SERVICEABLE' },
-        { codigo: 'BOA-H-0020', nombre: 'REMACHADORA NEUMÁTICA', pn: 'CP-0351', sn: 'CP-2024-001', marca: 'CHICAGO PNEUMATIC', ubicacion: 'VVI-HAN-B3', existencia: 3, fechaCalibracion: '2025-04-20', unidad: 'PZA', estado: 'SERVICEABLE' }
-    ];
-
+    herramientas: HerramientaOption[] = [];
     filteredHerramientas: HerramientaOption[] = [];
 
     ngOnInit(): void {
         this.initForm();
         this.setupSearchListener();
+        this.cargarHerramientas();
 
-        // Inicializar lista filtrada
-        this.filteredHerramientas = [...this.herramientas];
-        this.coincidencias.set(this.herramientas.length);
-
-        // Si está en modo edición, cargar los datos
         if (this.isEditMode() && this.data?.item) {
             this.loadEditData(this.data.item);
         }
@@ -252,6 +228,36 @@ export class HerramientaAEnviarComponent implements OnInit, OnDestroy {
             .subscribe(() => {
                 this.validateCantidad();
             });
+    }
+
+    private cargarHerramientas(): void {
+        this.isLoading = true;
+        this.movementService.getHerramientasDisponibles().pipe(
+            takeUntil(this._unsubscribeAll),
+            finalize(() => this.isLoading = false)
+        ).subscribe({
+            next: (tools) => {
+                this.herramientas = tools.map((t: any) => ({
+                    toolId:          t.id_tool ?? t.id,
+                    codigo:          t.code ?? t.codigo ?? '',
+                    nombre:          t.name ?? t.nombre ?? '',
+                    pn:              t.part_number ?? t.pn ?? '',
+                    sn:              t.serial_number ?? t.sn ?? '',
+                    marca:           t.brand ?? t.marca ?? '',
+                    ubicacion:       t.warehouse_id ? `Almacen ${t.warehouse_id}` : '',
+                    existencia:      t.quantity_in_stock ?? 0,
+                    fechaCalibracion: t.next_calibration_date ?? '',
+                    unidad:          t.unit_of_measure ?? 'PZA',
+                    estado:          t.status ?? 'DISPONIBLE',
+                    descripcion:     t.description ?? t.descripcion ?? ''
+                }));
+                this.filteredHerramientas = [...this.herramientas];
+                this.coincidencias.set(this.herramientas.length);
+            },
+            error: () => {
+                this.showMessage('Error al cargar herramientas', 'error');
+            }
+        });
     }
 
     private setupSearchListener(): void {
@@ -302,7 +308,10 @@ export class HerramientaAEnviarComponent implements OnInit, OnDestroy {
         }
     }
 
+    private _selectedToolId: number | null = null;
+
     selectHerramienta(herramienta: HerramientaOption): void {
+        this._selectedToolId = herramienta.toolId;
         this.enviarForm.patchValue({
             codigo: herramienta.codigo,
             nombre: herramienta.nombre,
@@ -425,33 +434,32 @@ export class HerramientaAEnviarComponent implements OnInit, OnDestroy {
         const formValue = this.enviarForm.getRawValue();
 
         const data = {
+            // ID de BD (clave para el SP)
+            toolId:          this._selectedToolId,
+            id_tool:         this._selectedToolId,
+
             // Datos de la herramienta
-            codigo: formValue.codigo,
-            descripcion: formValue.nombre,
-            partNumber: formValue.pn,
-            serialNumber: formValue.sn,
-            marca: formValue.marca,
-            ubicacion: formValue.ubicacion,
-            existencia: formValue.existencia,
+            codigo:          formValue.codigo,
+            nombre:          formValue.nombre,
+            descripcion:     formValue.nombre,
+            pn:              formValue.pn,
+            part_number:     formValue.pn,
+            sn:              formValue.sn,
+            serial_number:   formValue.sn,
+            marca:           formValue.marca,
+            ubicacion:       formValue.ubicacion,
+            existencia:      formValue.existencia,
             fechaCalibracion: formValue.fechaCalibracion,
 
             // Datos del envío
-            cantidad: formValue.cantidad,
-            unidad: formValue.unidad,
-            estado: formValue.estado,
-            prioridad: formValue.prioridad,
-            motivo: formValue.motivo,
-            observaciones: formValue.observacion,
-
-            // Metadatos
-            imagen: this.selectedImage(),
-            fechaSeleccion: new Date().toISOString(),
-            id: crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(),
-            baseDestino: this.data?.baseDestino || 'No especificada',
-            tipoEnvio: this.data?.tipoEnvio || 'standard'
+            cantidad:        formValue.cantidad,
+            unidad:          formValue.unidad,
+            unit_of_measure: formValue.unidad,
+            estadoFisico:    formValue.estado,
+            prioridad:       formValue.prioridad,
+            motivo:          formValue.motivo,
+            observacion:     formValue.observacion
         };
-
-        console.log('✅ Herramienta preparada para envío:', data);
 
         const action = this.isEditMode() ? 'editar' : 'agregar';
 

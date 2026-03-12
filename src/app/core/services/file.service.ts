@@ -17,7 +17,7 @@ export class FileService {
             limit: 100 // Adjust limit as needed
         })).pipe(
             switchMap((response: any) => {
-                return of(response?.datos || []);
+                return of(response?.data || []);
             })
         );
     }
@@ -36,7 +36,7 @@ export class FileService {
         // You might need to adjust ErpApiService or backend to handle file uploads properly.
         return from(this._api.post('herramientas/Archivo/insertArchivo', formData)).pipe(
             switchMap((response: any) => {
-                return of(response?.datos || {});
+                return of(response?.data || {});
             })
         );
     }

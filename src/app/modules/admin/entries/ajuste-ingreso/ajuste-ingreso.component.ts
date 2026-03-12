@@ -16,7 +16,9 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { DragDropModule } from '@angular/cdk/drag-drop';
 import { Subject } from 'rxjs';
-import { takeUntil, debounceTime } from 'rxjs/operators';
+import { takeUntil, debounceTime, finalize } from 'rxjs/operators';
+import { MovementService } from '../../../../core/services/movement.service';
+import { CreateMovement } from '../../../../core/models/movement.types';
 
 interface AjusteItem {
     id: number;
@@ -147,6 +149,7 @@ export class AjusteIngresoComponent implements OnInit, OnDestroy {
     private dialog = inject(MatDialog);
     private fb = inject(FormBuilder);
     private router = inject(Router);
+    private movementService = inject(MovementService);
     private destroy$ = new Subject<void>();
 
     ajusteForm!: FormGroup;
@@ -225,7 +228,6 @@ export class AjusteIngresoComponent implements OnInit, OnDestroy {
 
     ngOnInit(): void {
         this.initForm();
-        this.loadMockData();
         this.setupFilters();
     }
 
@@ -527,22 +529,46 @@ export class AjusteIngresoComponent implements OnInit, OnDestroy {
 
         this.isSaving = true;
 
-        // Simular guardado
-        setTimeout(() => {
-            this.isSaving = false;
-            this.showSystemMessage('Ajuste finalizado y enviado para aprobación', 'success');
-            this.showConfirmModal = false;
+        const ajusteData: CreateMovement = {
+            type: 'entry',
+            status: 'COMPLETADO',
+            entryReason: 'adjustment',
+            date: formData.fecha,
+            movementNumber: formData.documento || '',
+            notes: formData.descripcion || '',
+            responsiblePerson: formData.realizadoPorInput || '',
+            authorizedBy: formData.aprobadoPorInput || '',
+            items: this.dataSource.map(item => ({
+                codigo: item.codigoBoa,
+                descripcion: item.descripcion,
+                modeloPn: item.pn,
+                serialNumber: item.sn,
+                quantity: item.cantidad,
+                notes: item.obs || ''
+            }))
+        };
 
-            // Limpiar datos después de guardar
-            this.dataSource = [];
-            this.ajusteForm.patchValue({
-                realizadoPor: '',
-                realizadoPorInput: '',
-                aprobadoPor: '',
-                aprobadoPorInput: '',
-                descripcion: ''
-            });
-        }, 2000);
+        this.movementService.createEntry(ajusteData).pipe(
+            takeUntil(this.destroy$),
+            finalize(() => this.isSaving = false)
+        ).subscribe({
+            next: () => {
+                this.showSystemMessage('Ajuste registrado exitosamente', 'success');
+                this.showConfirmModal = false;
+                this.dataSource = [];
+                this.ajusteForm.patchValue({
+                    realizadoPor: '',
+                    realizadoPorInput: '',
+                    aprobadoPor: '',
+                    aprobadoPorInput: '',
+                    descripcion: '',
+                    documento: ''
+                });
+            },
+            error: () => {
+                this.showSystemMessage('Error al registrar el ajuste. Intente nuevamente.', 'error');
+            }
+        });
     }
 
     removeItem(item: AjusteItem): void {

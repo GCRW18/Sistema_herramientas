@@ -17,7 +17,9 @@ import { MatDialogRef, MatDialogModule } from '@angular/material/dialog';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { DragDropModule } from '@angular/cdk/drag-drop';
-import { Subject, takeUntil, debounceTime } from 'rxjs';
+import { Subject, takeUntil, finalize } from 'rxjs';
+import { MovementService } from '../../../../core/services/movement.service';
+import { QuarantineService } from '../../../../core/services/quarantine.service';
 
 type ViewMode = 'quarantine' | 'calibration';
 
@@ -142,6 +144,8 @@ export class PonerCuarentenaComponent implements OnInit, OnDestroy {
     private fb = inject(FormBuilder);
     private router = inject(Router);
     private snackBar = inject(MatSnackBar);
+    private movementService = inject(MovementService);
+    private quarantineService = inject(QuarantineService);
 
     private _unsubscribeAll = new Subject<void>();
 
@@ -152,6 +156,14 @@ export class PonerCuarentenaComponent implements OnInit, OnDestroy {
     // Estados
     isLoading = false;
 
+    // Caché de herramientas y personal para búsqueda local
+    private personalCache: any[] = [];
+    herramientasCache: any[] = [];
+    toolsFiltradas: any[] = [];
+    showToolSuggestions = false;
+    private toolIdActual = 0;
+    private employeeIdActual = 0;
+
     // Formularios
     quarantineForm!: FormGroup;
     calibrationForm!: FormGroup;
@@ -160,6 +172,14 @@ export class PonerCuarentenaComponent implements OnInit, OnDestroy {
         this.initQuarantineForm();
         this.initCalibrationForm();
         this.setupFormListeners();
+        this.cargarPersonal();
+        this.cargarHerramientas();
+    }
+
+    private cargarPersonal(): void {
+        this.movementService.getPersonal()
+            .pipe(takeUntil(this._unsubscribeAll))
+            .subscribe({ next: (personal) => { this.personalCache = personal; } });
     }
 
     ngOnDestroy(): void {
@@ -172,14 +192,14 @@ export class PonerCuarentenaComponent implements OnInit, OnDestroy {
 
         this.quarantineForm = this.fb.group({
             // Datos de la herramienta
-            codigo: ['', [Validators.required, Validators.pattern(/^BOA-H-\d{5}$/)]],
+            codigo: ['', Validators.required],
             nombre: ['', Validators.required],
             partNumber: ['', Validators.required],
             serialNumber: ['', Validators.required],
             ubicacion: ['', Validators.required],
             existencia: [1, [Validators.required, Validators.min(1)]],
-            unidad: ['PZA', Validators.required],
-            base: [null, Validators.required],
+            unidad: ['PZA'],
+            base: [''],
             fechaVencimiento: [''],
             estadoFisico: [null, Validators.required],
             listaContenido: [''],
@@ -319,26 +339,83 @@ export class PonerCuarentenaComponent implements OnInit, OnDestroy {
         this.showMessage(`Vista cambiada a: ${view === 'calibration' ? 'Calibración' : 'Cuarentena'}`, 'info');
     }
 
-    buscarPersona(): void {
-        const termino = this.quarantineForm.get('buscar')?.value;
+    private cargarHerramientas(): void {
+        this.movementService.getHerramientasDisponibles()
+            .pipe(takeUntil(this._unsubscribeAll))
+            .subscribe({ next: (tools) => { this.herramientasCache = tools; } });
+    }
 
-        if (!termino || termino.trim() === '') {
+    filtrarHerramientas(event: Event): void {
+        const query = (event.target as HTMLInputElement).value.trim().toLowerCase();
+        if (query.length < 2) {
+            this.toolsFiltradas = [];
+            this.showToolSuggestions = false;
+            return;
+        }
+        this.toolsFiltradas = this.herramientasCache.filter(t =>
+            (t.code ?? t.codigo ?? '').toLowerCase().includes(query) ||
+            (t.name ?? t.nombre ?? '').toLowerCase().includes(query)
+        ).slice(0, 8);
+        this.showToolSuggestions = this.toolsFiltradas.length > 0;
+    }
+
+    selectTool(tool: any): void {
+        const conditionMap: Record<string, string> = {
+            available: 'S', serviceable: 'S',
+            repairable: 'R', repair: 'R',
+            unserviceable: 'M', bad: 'M',
+            transitional: 'T', transit: 'T'
+        };
+        const rawCond = (tool.condition ?? tool.status ?? '').toLowerCase();
+        const estadoFisico = conditionMap[rawCond] ?? tool.condition ?? tool.status ?? null;
+
+        this.toolIdActual = tool.id_tool ?? tool.id ?? 0;
+        this.quarantineForm.patchValue({
+            codigo:           tool.code          ?? tool.codigo       ?? '',
+            nombre:           tool.name          ?? tool.nombre       ?? '',
+            partNumber:       tool.part_number   ?? '',
+            serialNumber:     tool.serial_number ?? '',
+            ubicacion:        tool.location      ?? tool.location_name ?? '',
+            existencia:       tool.quantity_in_stock ?? 1,
+            unidad:           tool.unit_of_measure ?? 'PZA',
+            base:             tool.warehouse_name ?? tool.base_code ?? tool.warehouse_id?.toString() ?? '',
+            fechaVencimiento: tool.next_calibration_date ?? '',
+            listaContenido:   tool.content_list  ?? '',
+            estadoFisico
+        });
+        this.showToolSuggestions = false;
+        this.showMessage(`Herramienta ${tool.code ?? tool.codigo} cargada`, 'success');
+    }
+
+    ocultarSugerencias(): void {
+        setTimeout(() => { this.showToolSuggestions = false; }, 200);
+    }
+
+    buscarPersona(): void {
+        const termino = (this.quarantineForm.get('buscar')?.value ?? '').trim().toLowerCase();
+
+        if (!termino) {
             this.showMessage('Ingrese un término de búsqueda', 'warning');
             return;
         }
 
-        this.isLoading = true;
+        const found = this.personalCache.find(p =>
+            (p.licencia     ?? '').toLowerCase().includes(termino) ||
+            (p.nro_licencia ?? '').toLowerCase().includes(termino) ||
+            (p.nombreCompleto ?? '').toLowerCase().includes(termino)
+        );
 
-        // Simular búsqueda
-        setTimeout(() => {
+        if (found) {
+            this.employeeIdActual = found.id_employee ?? found.id ?? 0;
             this.quarantineForm.patchValue({
-                nroLicencia: 'LIC-7788',
-                nombreReportado: 'MARIO GOMEZ',
-                nombreApellido: 'MARIO GOMEZ PEREZ'
+                nroLicencia:    found.licencia ?? found.nro_licencia ?? '',
+                nombreReportado: found.cargo  ?? '',
+                nombreApellido:  found.nombreCompleto ?? ''
             });
-            this.isLoading = false;
             this.showMessage('Persona encontrada y cargada exitosamente', 'success');
-        }, 500);
+        } else {
+            this.showMessage('No se encontró la persona', 'error');
+        }
     }
 
     onImageSelected(event: Event): void {
@@ -453,35 +530,41 @@ export class PonerCuarentenaComponent implements OnInit, OnDestroy {
 
         this.isLoading = true;
 
-        // Simular procesamiento
-        setTimeout(() => {
-            const finalData = {
-                quarantine: this.quarantineForm.value,
-                calibration: this.calibrationForm.value,
-                evidencia: this.selectedImage(),
-                evidenciaTimestamp: new Date().toISOString(),
-                fechaRegistro: new Date().toISOString(),
-                id: crypto.randomUUID ? crypto.randomUUID() : Date.now().toString()
-            };
+        const fv = this.quarantineForm.getRawValue();
 
-            console.log('✅ Reporte de cuarentena generado:', finalData);
+        const payload: any = {
+            record_number:      fv.nroReporteDiscrepancia,
+            report_number:      fv.nroReporteDiscrepancia,
+            status:             'ACTIVE',
+            reason:             fv.estadoFisico   ?? 'UNKNOWN',
+            reason_description: fv.descripcion    ?? '',
+            start_date:         fv.fecha,
+            reported_by_name:   fv.nombreApellido || fv.realizadoPor || 'Admin Sistema',
+            notes:              fv.listaContenido || ''
+        };
 
-            this.isLoading = false;
-            this.showMessage(`Herramienta ${this.quarantineForm.get('codigo')?.value} enviada a cuarentena`, 'success');
+        if (this.toolIdActual > 0)     payload['tool_id']          = this.toolIdActual;
+        if (this.employeeIdActual > 0) payload['reported_by_id']   = this.employeeIdActual;
 
-            // Cerrar diálogo con éxito
-            if (this.dialogRef) {
-                this.dialogRef.close({
-                    success: true,
-                    data: finalData
-                });
-            } else {
-                // Redirigir después de 1.5 segundos
-                setTimeout(() => {
-                    this.router.navigate(['/entradas']);
-                }, 1500);
+        this.quarantineService.createQuarantine(payload).pipe(
+            finalize(() => { this.isLoading = false; }),
+            takeUntil(this._unsubscribeAll)
+        ).subscribe({
+            next: (result: any) => {
+                const idQua = result?.id_quarantine ?? '';
+                console.log('✅ Cuarentena registrada:', result);
+                this.showMessage(`Herramienta ${fv.codigo} enviada a cuarentena`, 'success');
+
+                if (this.dialogRef) {
+                    this.dialogRef.close({ success: true, id_quarantine: idQua });
+                } else {
+                    setTimeout(() => { this.router.navigate(['/salidas']); }, 1500);
+                }
+            },
+            error: (err: any) => {
+                this.showMessage(err?.message || 'Error al registrar la cuarentena', 'error');
             }
-        }, 1500);
+        });
     }
 
     cerrar(): void {

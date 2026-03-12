@@ -73,7 +73,7 @@ export class ToolService {
 
         return from(this._api.post('herramientas/tools/listTools', params)).pipe(
             switchMap((response: any) => {
-                const tools = response?.datos || [];
+                const tools = response?.data || [];
                 this._tools.next(tools);
                 return of(tools);
             })
@@ -90,7 +90,7 @@ export class ToolService {
             id_tool: id
         })).pipe(
             switchMap((response: any) => {
-                const tool = response?.datos?.[0] || null;
+                const tool = response?.data?.[0] || null;
                 if (tool) {
                     this._tool.next(tool);
                 }
@@ -107,7 +107,7 @@ export class ToolService {
             code: code
         })).pipe(
             switchMap((response: any) => {
-                return of(response?.datos?.[0] || null);
+                return of(response?.data?.[0] || null);
             })
         );
     }
@@ -118,7 +118,7 @@ export class ToolService {
     createTool(tool: Partial<Tool>): Observable<Tool> {
         return from(this._api.post('herramientas/tools/insertTool', tool)).pipe(
             switchMap((response: any) => {
-                return of(response?.datos || tool);
+                return of(response?.data || tool);
             })
         );
     }
@@ -132,7 +132,7 @@ export class ToolService {
             id_tool: id
         })).pipe(
             switchMap((response: any) => {
-                const updatedTool = response?.datos || tool;
+                const updatedTool = response?.data || tool;
                 this._tool.next(updatedTool as Tool);
                 return of(updatedTool);
             })
@@ -149,7 +149,7 @@ export class ToolService {
             warehouse_id: warehouseId
         })).pipe(
             switchMap((response: any) => {
-                return of(response?.datos || {});
+                return of(response?.data || {});
             })
         );
     }
@@ -176,7 +176,7 @@ export class ToolService {
             search_text: query  // ← CAMBIO: 'query' → 'search_text'
         })).pipe(
             switchMap((response: any) => {
-                return of(response?.datos || []);
+                return of(response?.data || []);
             })
         );
     }
@@ -189,7 +189,7 @@ export class ToolService {
         return from(this._api.post('herramientas/tools/getInventorySummary', {})).pipe(
             switchMap((response: any) => {
                 // La respuesta viene en datos[0] porque es un único registro
-                return of(response?.datos?.[0] || response?.datos || {});
+                return of(response?.data?.[0] || response?.data || {});
             })
         );
     }
@@ -200,7 +200,7 @@ export class ToolService {
     getToolsRequiringCalibration(): Observable<Tool[]> {
         return from(this._api.post('herramientas/tools/getToolsRequireCalibration', {})).pipe(
             switchMap((response: any) => {
-                return of(response?.datos || []);
+                return of(response?.data || []);
             })
         );
     }
@@ -211,7 +211,7 @@ export class ToolService {
     getToolsWithExpiredCalibration(): Observable<Tool[]> {
         return from(this._api.post('herramientas/tools/getToolsExpiredCalibration', {})).pipe(
             switchMap((response: any) => {
-                return of(response?.datos || []);
+                return of(response?.data || []);
             })
         );
     }
@@ -226,7 +226,7 @@ export class ToolService {
             status: status
         })).pipe(
             switchMap((response: any) => {
-                return of(response?.datos || {});
+                return of(response?.data || {});
             })
         );
     }
@@ -241,7 +241,7 @@ export class ToolService {
             ...data
         })).pipe(
             switchMap((response: any) => {
-                return of(response?.datos || {});
+                return of(response?.data || {});
             })
         );
     }
@@ -256,7 +256,7 @@ export class ToolService {
             ...data
         })).pipe(
             switchMap((response: any) => {
-                return of(response?.datos || {});
+                return of(response?.data || {});
             })
         );
     }
@@ -271,7 +271,7 @@ export class ToolService {
             ...data
         })).pipe(
             switchMap((response: any) => {
-                return of(response?.datos || {});
+                return of(response?.data || {});
             })
         );
     }
@@ -286,7 +286,7 @@ export class ToolService {
             ...data
         })).pipe(
             switchMap((response: any) => {
-                return of(response?.datos || {});
+                return of(response?.data || {});
             })
         );
     }

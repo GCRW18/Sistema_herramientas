@@ -226,7 +226,7 @@ export class ExitsService {
             nro_licencia: nroLicencia
         })).pipe(
             switchMap((response: any) => {
-                return of(response?.datos?.[0] || null);
+                return of(response?.data?.[0] || null);
             })
         );
     }
@@ -240,7 +240,7 @@ export class ExitsService {
             tipo_movimiento: 'prestamo_herramienta'
         })).pipe(
             switchMap((response: any) => {
-                return of(response?.datos || {});
+                return of(response?.data || {});
             })
         );
     }
@@ -253,7 +253,7 @@ export class ExitsService {
             id_funcionario: idFuncionario
         })).pipe(
             switchMap((response: any) => {
-                return of(response?.datos || []);
+                return of(response?.data || []);
             })
         );
     }
@@ -268,7 +268,7 @@ export class ExitsService {
     getBasesList(): Observable<any[]> {
         return from(this._api.post('herramientas/bases/listBases', {})).pipe(
             switchMap((response: any) => {
-                return of(response?.datos || []);
+                return of(response?.data || []);
             })
         );
     }
@@ -282,7 +282,7 @@ export class ExitsService {
             tipo_movimiento: 'envio_bases'
         })).pipe(
             switchMap((response: any) => {
-                return of(response?.datos || {});
+                return of(response?.data || {});
             })
         );
     }
@@ -295,7 +295,7 @@ export class ExitsService {
             base_destino: baseDestino
         })).pipe(
             switchMap((response: any) => {
-                return of(response?.datos || []);
+                return of(response?.data || []);
             })
         );
     }
@@ -312,7 +312,7 @@ export class ExitsService {
             tipo_servicio: 'calibracion'
         })).pipe(
             switchMap((response: any) => {
-                return of(response?.datos || []);
+                return of(response?.data || []);
             })
         );
     }
@@ -326,7 +326,7 @@ export class ExitsService {
             tipo_movimiento: 'envio_calibracion'
         })).pipe(
             switchMap((response: any) => {
-                return of(response?.datos || {});
+                return of(response?.data || {});
             })
         );
     }
@@ -358,7 +358,7 @@ export class ExitsService {
             tipo_movimiento: 'cuarentena'
         })).pipe(
             switchMap((response: any) => {
-                return of(response?.datos || {});
+                return of(response?.data || {});
             })
         );
     }
@@ -369,7 +369,7 @@ export class ExitsService {
     getHerramientasEnCuarentena(): Observable<any[]> {
         return from(this._api.post('herramientas/salidas/listHerramientasCuarentena', {})).pipe(
             switchMap((response: any) => {
-                return of(response?.datos || []);
+                return of(response?.data || []);
             })
         );
     }
@@ -383,7 +383,7 @@ export class ExitsService {
             observaciones: observaciones
         })).pipe(
             switchMap((response: any) => {
-                return of(response?.datos || {});
+                return of(response?.data || {});
             })
         );
     }
@@ -398,7 +398,7 @@ export class ExitsService {
     getEmpresasTerceros(): Observable<any[]> {
         return from(this._api.post('herramientas/empresas/listEmpresas', {})).pipe(
             switchMap((response: any) => {
-                return of(response?.datos || []);
+                return of(response?.data || []);
             })
         );
     }
@@ -412,7 +412,7 @@ export class ExitsService {
             tipo_movimiento: 'prestamo_terceros'
         })).pipe(
             switchMap((response: any) => {
-                return of(response?.datos || {});
+                return of(response?.data || {});
             })
         );
     }
@@ -423,7 +423,7 @@ export class ExitsService {
     getPrestamosActivosTerceros(): Observable<any[]> {
         return from(this._api.post('herramientas/salidas/listPrestamosActivosTerceros', {})).pipe(
             switchMap((response: any) => {
-                return of(response?.datos || []);
+                return of(response?.data || []);
             })
         );
     }
@@ -438,7 +438,7 @@ export class ExitsService {
     getDepartamentos(): Observable<any[]> {
         return from(this._api.post('herramientas/departamentos/listDepartamentos', {})).pipe(
             switchMap((response: any) => {
-                return of(response?.datos || []);
+                return of(response?.data || []);
             })
         );
     }
@@ -452,7 +452,7 @@ export class ExitsService {
             tipo_movimiento: 'traspaso_departamento'
         })).pipe(
             switchMap((response: any) => {
-                return of(response?.datos || {});
+                return of(response?.data || {});
             })
         );
     }
@@ -463,7 +463,7 @@ export class ExitsService {
     getTraspasosPendientesAprobacion(): Observable<any[]> {
         return from(this._api.post('herramientas/salidas/listTraspasosPendientes', {})).pipe(
             switchMap((response: any) => {
-                return of(response?.datos || []);
+                return of(response?.data || []);
             })
         );
     }
@@ -481,7 +481,7 @@ export class ExitsService {
             tipo_movimiento: 'baja'
         })).pipe(
             switchMap((response: any) => {
-                return of(response?.datos || {});
+                return of(response?.data || {});
             })
         );
     }
@@ -492,7 +492,7 @@ export class ExitsService {
     getHerramientasCandidatasBaja(): Observable<any[]> {
         return from(this._api.post('herramientas/salidas/listHerramientasCandidatasBaja', {})).pipe(
             switchMap((response: any) => {
-                return of(response?.datos || []);
+                return of(response?.data || []);
             })
         );
     }
@@ -503,7 +503,7 @@ export class ExitsService {
     getBajasPendientesAprobacion(): Observable<any[]> {
         return from(this._api.post('herramientas/salidas/listBajasPendientes', {})).pipe(
             switchMap((response: any) => {
-                return of(response?.datos || []);
+                return of(response?.data || []);
             })
         );
     }
@@ -527,7 +527,7 @@ export class ExitsService {
             codigo: codigo
         })).pipe(
             switchMap((response: any) => {
-                return of(response?.datos?.[0] || { disponible: false });
+                return of(response?.data?.[0] || { disponible: false });
             })
         );
     }
@@ -540,7 +540,7 @@ export class ExitsService {
             id_movimiento: idMovimiento
         })).pipe(
             switchMap((response: any) => {
-                return of(response?.datos || {});
+                return of(response?.data || {});
             })
         );
     }

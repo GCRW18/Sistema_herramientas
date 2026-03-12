@@ -13,6 +13,7 @@ import { DragDropModule } from '@angular/cdk/drag-drop';
 export interface FormUsuarioData {
     usuario?: any;
     mode?: 'create' | 'edit';
+    rolesList?: any[];
 }
 
 @Component({
@@ -127,14 +128,7 @@ export class FormUsuarioComponent implements OnInit {
     hidePassword = true;
     hideConfirmPassword = true;
 
-    // Lista simulada de roles (esto vendría de un servicio)
-    rolesList = [
-        { id: 1, nombre: 'ADMINISTRADOR DEL SISTEMA' },
-        { id: 2, nombre: 'SUPERVISOR DE ALMACÉN' },
-        { id: 3, nombre: 'TÉCNICO DE MANTENIMIENTO' },
-        { id: 4, nombre: 'ENCARGADO DE COMPRAS' },
-        { id: 5, nombre: 'AUDITOR' }
-    ];
+    rolesList: { id: number; nombre: string }[] = [];
 
     constructor(
         private fb: FormBuilder,
@@ -143,6 +137,13 @@ export class FormUsuarioComponent implements OnInit {
     ) {}
 
     ngOnInit(): void {
+        // Cargar roles desde data (vienen del backend via RoleService)
+        if (this.data?.rolesList?.length) {
+            this.rolesList = this.data.rolesList.map((r: any) => ({
+                id: r.id_role,
+                nombre: r.name
+            }));
+        }
         this.initForm();
         if (this.data?.usuario && this.data?.mode === 'edit') {
             this.isEditMode = true;

@@ -44,14 +44,7 @@ export interface MovementData {
 })
 export class MovementsChartComponent implements AfterViewInit {
     @ViewChild('chartCanvas', { static: false }) chartCanvas!: ElementRef<HTMLCanvasElement>;
-    @Input() data = signal<MovementData[]>([
-        { name: 'Jul', entradas: 45, salidas: 38 },
-        { name: 'Ago', entradas: 52, salidas: 45 },
-        { name: 'Sep', entradas: 48, salidas: 42 },
-        { name: 'Oct', entradas: 61, salidas: 55 },
-        { name: 'Nov', entradas: 55, salidas: 48 },
-        { name: 'Dic', entradas: 67, salidas: 58 }
-    ]);
+    @Input() data = signal<MovementData[]>([]);
 
     private chart?: Chart;
 

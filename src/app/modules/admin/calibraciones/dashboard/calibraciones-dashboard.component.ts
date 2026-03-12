@@ -272,20 +272,20 @@ export class CalibracionesDashboardComponent implements OnInit, OnDestroy {
 
     private loadMockData(): void {
         this.calibrationMetrics = [
-            { label: 'Vigentes', value: 142, icon: 'check_circle', color: 'text-green-600', bgColor: 'bg-green-100', darkBgColor: '' },
-            { label: 'Vencen 30d', value: 18, icon: 'schedule', color: 'text-yellow-600', bgColor: 'bg-yellow-100', darkBgColor: '' },
-            { label: 'Vencen 7d', value: 5, icon: 'warning', color: 'text-orange-600', bgColor: 'bg-orange-100', darkBgColor: '' },
-            { label: 'Vencidas', value: 3, icon: 'error', color: 'text-red-600', bgColor: 'bg-red-100', darkBgColor: '' },
-            { label: 'En laboratorio', value: 12, icon: 'science', color: 'text-blue-600', bgColor: 'bg-blue-100', darkBgColor: '' },
-            { label: 'Lotes abiertos', value: 2, icon: 'inventory_2', color: 'text-purple-600', bgColor: 'bg-purple-100', darkBgColor: '' }
+            { label: 'Vigentes',       value: 0, icon: 'check_circle',  color: 'text-green-600',  bgColor: 'bg-green-100',  darkBgColor: '' },
+            { label: 'Vencen 30d',     value: 0, icon: 'schedule',      color: 'text-yellow-600', bgColor: 'bg-yellow-100', darkBgColor: '' },
+            { label: 'Vencen 7d',      value: 0, icon: 'warning',       color: 'text-orange-600', bgColor: 'bg-orange-100', darkBgColor: '' },
+            { label: 'Vencidas',       value: 0, icon: 'error',         color: 'text-red-600',    bgColor: 'bg-red-100',    darkBgColor: '' },
+            { label: 'En laboratorio', value: 0, icon: 'science',       color: 'text-blue-600',   bgColor: 'bg-blue-100',   darkBgColor: '' },
+            { label: 'Lotes abiertos', value: 0, icon: 'inventory_2',   color: 'text-purple-600', bgColor: 'bg-purple-100', darkBgColor: '' }
         ];
 
         this.jackMetrics = [
-            { label: 'Semi. Vencidos', value: 1, icon: 'error', color: 'text-red-600', bgColor: 'bg-red-100', darkBgColor: '' },
-            { label: 'Semi. Prox. 30d', value: 4, icon: 'schedule', color: 'text-orange-600', bgColor: 'bg-orange-100', darkBgColor: '' },
-            { label: 'Anual Vencidos', value: 0, icon: 'error_outline', color: 'text-red-600', bgColor: 'bg-red-100', darkBgColor: '' },
-            { label: 'Anual Prox. 30d', value: 2, icon: 'access_time', color: 'text-yellow-600', bgColor: 'bg-yellow-100', darkBgColor: '' },
-            { label: 'Total Gatas', value: 24, icon: 'build', color: 'text-slate-600', bgColor: 'bg-slate-100', darkBgColor: '' }
+            { label: 'Semi. Vencidos',  value: 0, icon: 'error',        color: 'text-red-600',    bgColor: 'bg-red-100',    darkBgColor: '' },
+            { label: 'Semi. Prox. 30d', value: 0, icon: 'schedule',     color: 'text-orange-600', bgColor: 'bg-orange-100', darkBgColor: '' },
+            { label: 'Anual Vencidos',  value: 0, icon: 'error_outline', color: 'text-red-600',   bgColor: 'bg-red-100',    darkBgColor: '' },
+            { label: 'Anual Prox. 30d', value: 0, icon: 'access_time',  color: 'text-yellow-600', bgColor: 'bg-yellow-100', darkBgColor: '' },
+            { label: 'Total Gatas',     value: 0, icon: 'build',        color: 'text-slate-600',  bgColor: 'bg-slate-100',  darkBgColor: '' }
         ];
     }
 }

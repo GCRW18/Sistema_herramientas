@@ -54,7 +54,7 @@ export class MigrationService {
 
         return from(this._api.post('herramientas/ProductosExcel/listarProductosExcel', params)).pipe(
             switchMap((response: any) => {
-                const data = response?.datos || [];
+                const data = response?.data || [];
                 this._productos.set(data);
                 this._isLoading.set(false);
                 return of(data);
@@ -68,7 +68,7 @@ export class MigrationService {
 
     insertProductoExcel(producto: Partial<ProductoExcel>): Observable<any> {
         return from(this._api.post('herramientas/ProductosExcel/insertarProductosExcel', producto)).pipe(
-            switchMap((response: any) => of(response?.datos || response))
+            switchMap((response: any) => of(response?.data || response))
         );
     }
 
@@ -77,7 +77,7 @@ export class MigrationService {
             ...producto,
             id_data: id
         })).pipe(
-            switchMap((response: any) => of(response?.datos || response))
+            switchMap((response: any) => of(response?.data || response))
         );
     }
 
@@ -85,7 +85,7 @@ export class MigrationService {
         return from(this._api.post('herramientas/ProductosExcel/eliminarProductosExcel', {
             id_data: id
         })).pipe(
-            switchMap((response: any) => of(response?.datos || response))
+            switchMap((response: any) => of(response?.data || response))
         );
     }
 
@@ -99,9 +99,9 @@ export class MigrationService {
             switchMap((response: any) => {
                 this._isLoading.set(false);
                 const result: ValidationResult = {
-                    total_validados: parseInt(response?.datos?.total_validados || '0'),
-                    total_errores: parseInt(response?.datos?.total_errores || '0'),
-                    mensaje: response?.datos?.mensaje || ''
+                    total_validados: parseInt(response?.data?.total_validados || '0'),
+                    total_errores: parseInt(response?.data?.total_errores || '0'),
+                    mensaje: response?.data?.mensaje || ''
                 };
                 return of(result);
             }),
@@ -124,9 +124,9 @@ export class MigrationService {
             switchMap((response: any) => {
                 this._isMigrating.set(false);
                 const result: MigrationResult = {
-                    total_migrados: parseInt(response?.datos?.total_migrados || '0'),
-                    total_errores: parseInt(response?.datos?.total_errores || '0'),
-                    mensaje: response?.datos?.mensaje || ''
+                    total_migrados: parseInt(response?.data?.total_migrados || '0'),
+                    total_errores: parseInt(response?.data?.total_errores || '0'),
+                    mensaje: response?.data?.mensaje || ''
                 };
                 // Refrescar resumen
                 this.getResumenMigracion().subscribe();
@@ -143,7 +143,7 @@ export class MigrationService {
         return from(this._api.post('herramientas/ProductosExcel/migrarRegistroIndividual', {
             id_data: idData
         })).pipe(
-            switchMap((response: any) => of(response?.datos || response))
+            switchMap((response: any) => of(response?.data || response))
         );
     }
 
@@ -155,7 +155,7 @@ export class MigrationService {
         return from(this._api.post('herramientas/ProductosExcel/resetearRegistrosError', {})).pipe(
             switchMap((response: any) => {
                 this.getResumenMigracion().subscribe();
-                return of(response?.datos || response);
+                return of(response?.data || response);
             })
         );
     }
@@ -169,7 +169,7 @@ export class MigrationService {
 
         return from(this._api.post('herramientas/ProductosExcel/listarHerramientaObservado', params)).pipe(
             switchMap((response: any) => {
-                const data = response?.datos || [];
+                const data = response?.data || [];
                 this._observados.set(data);
                 return of(data);
             }),
@@ -179,7 +179,7 @@ export class MigrationService {
 
     insertHerramientaObservado(item: HerramientaObservado): Observable<any> {
         return from(this._api.post('herramientas/ProductosExcel/insertarHerramientaObservado', item)).pipe(
-            switchMap((response: any) => of(response?.datos || response))
+            switchMap((response: any) => of(response?.data || response))
         );
     }
 
@@ -187,7 +187,7 @@ export class MigrationService {
         return from(this._api.post('herramientas/ProductosExcel/eliminarHerramientaObservado', {
             codigo_he: codigoHe
         })).pipe(
-            switchMap((response: any) => of(response?.datos || response))
+            switchMap((response: any) => of(response?.data || response))
         );
     }
 
@@ -198,7 +198,7 @@ export class MigrationService {
     getResumenMigracion(): Observable<MigrationSummary> {
         return from(this._api.post('herramientas/ProductosExcel/getResumenMigracion', {})).pipe(
             switchMap((response: any) => {
-                const data = response?.datos?.[0] || this._getDefaultSummary();
+                const data = response?.data?.[0] || this._getDefaultSummary();
                 this._summary.set(data);
                 return of(data);
             }),

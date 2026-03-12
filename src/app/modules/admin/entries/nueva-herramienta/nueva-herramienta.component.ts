@@ -374,18 +374,8 @@ export class NuevaHerramientaComponent implements OnInit, OnDestroy {
                 this.funcionariosFiltrados = [...this.funcionarios];
             },
             error: () => {
-                // Personal técnico de mantenimiento BoA (datos mock realistas)
-                this.funcionarios = [
-                    { id: '1', licencia: 'TMA-1245', nombreCompleto: 'Gabriel Cruz Mamani', nombre: 'Gabriel', apellidoPaterno: 'Cruz', apellidoMaterno: 'Mamani', cargo: 'Técnico TMA A&P', departamento: 'Mantenimiento Línea' },
-                    { id: '2', licencia: 'TMA-0987', nombreCompleto: 'Marco Antonio Quispe Condori', nombre: 'Marco Antonio', apellidoPaterno: 'Quispe', apellidoMaterno: 'Condori', cargo: 'Inspector de Calidad', departamento: 'Control de Calidad' },
-                    { id: '3', licencia: 'TMA-1456', nombreCompleto: 'Carlos Alberto Flores Rojas', nombre: 'Carlos Alberto', apellidoPaterno: 'Flores', apellidoMaterno: 'Rojas', cargo: 'Supervisor Hangar', departamento: 'Hangar Mayor' },
-                    { id: '4', licencia: 'TMA-0856', nombreCompleto: 'Luis Fernando Choque Vargas', nombre: 'Luis Fernando', apellidoPaterno: 'Choque', apellidoMaterno: 'Vargas', cargo: 'Técnico Aviónica', departamento: 'Aviónica' },
-                    { id: '5', licencia: 'TMA-1123', nombreCompleto: 'Roberto Limachi Apaza', nombre: 'Roberto', apellidoPaterno: 'Limachi', apellidoMaterno: 'Apaza', cargo: 'Jefe de Almacén', departamento: 'Almacén Herramientas' },
-                    { id: '6', licencia: 'TMA-0745', nombreCompleto: 'María Elena Torrez Huanca', nombre: 'María Elena', apellidoPaterno: 'Torrez', apellidoMaterno: 'Huanca', cargo: 'Analista Técnico', departamento: 'Ingeniería' },
-                    { id: '7', licencia: 'TMA-1378', nombreCompleto: 'Jorge Luis Mamani Calle', nombre: 'Jorge Luis', apellidoPaterno: 'Mamani', apellidoMaterno: 'Calle', cargo: 'Técnico Estructuras', departamento: 'Estructuras' },
-                    { id: '8', licencia: 'TMA-0923', nombreCompleto: 'Edwin Paco Mendoza', nombre: 'Edwin', apellidoPaterno: 'Paco', apellidoMaterno: 'Mendoza', cargo: 'Técnico Motores', departamento: 'Planta Motriz' }
-                ];
-                this.funcionariosFiltrados = [...this.funcionarios];
+                this.funcionarios = [];
+                this.funcionariosFiltrados = [];
             }
         });
 
@@ -685,9 +675,12 @@ export class NuevaHerramientaComponent implements OnInit, OnDestroy {
 
         const compraData: CreateMovement = {
             type: 'entry',
+            status: 'COMPLETADO',
             entryReason: 'purchase',
             date: recepcion.fechaIngreso,
             movementNumber: recepcion.nroCmr,
+            invoiceNumber: recepcion.nroFactura || '',
+            purchaseOrder: recepcion.ordenCompra || '',
             supplier: typeof proveedor === 'object' ? proveedor?.nombre : proveedor || '',
             notes: recepcion.observaciones || '',
             responsiblePerson: funcionario?.nombreCompleto || '',

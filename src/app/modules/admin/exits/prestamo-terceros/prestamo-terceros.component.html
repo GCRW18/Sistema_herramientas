@@ -128,7 +128,18 @@
                                 </div>
 
                                 <!-- Datos del técnico seleccionado -->
-                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                    <!-- Nombre Completo: 2/3 -->
+                                    <div class="form-group sm:col-span-2">
+                                        <label class="text-[11px] font-black uppercase text-gray-700 dark:text-gray-300 mb-1.5 block">
+                                            Nombre Completo *
+                                        </label>
+                                        <input type="text" formControlName="nombreCompleto" readonly
+                                               class="w-full h-11 text-sm font-bold border-2 border-black dark:border-slate-600 rounded-lg px-4 bg-white dark:bg-[#0F172AFF] text-black dark:text-white outline-none cursor-not-allowed"
+                                               [class.border-red-500]="hasErrorInternal('nombreCompleto', 'required')">
+                                    </div>
+
+                                    <!-- Nro. Licencia: 1/3 -->
                                     <div class="form-group">
                                         <label class="text-[11px] font-black uppercase text-gray-700 dark:text-gray-300 mb-1.5 block">
                                             Nro. Licencia *
@@ -136,42 +147,15 @@
                                         <input type="text" formControlName="nroLicencia" readonly
                                                class="w-full h-11 text-sm font-bold border-2 border-violet-400 dark:border-violet-600 rounded-lg px-4 bg-violet-50 dark:bg-violet-900/30 text-violet-800 dark:text-violet-300 outline-none cursor-not-allowed font-mono">
                                     </div>
-
-                                    <div class="form-group">
-                                        <label class="text-[11px] font-black uppercase text-gray-700 dark:text-gray-300 mb-1.5 block">
-                                            Cargo
-                                        </label>
-                                        <input type="text" formControlName="cargo" readonly
-                                               class="w-full h-11 text-sm font-bold border-2 border-gray-300 dark:border-slate-600 rounded-lg px-4 bg-gray-50 dark:bg-slate-800 text-black dark:text-white outline-none cursor-not-allowed">
-                                    </div>
-
-                                    <div class="form-group">
-                                        <label class="text-[11px] font-black uppercase text-gray-700 dark:text-gray-300 mb-1.5 block">
-                                            Ap. Paterno *
-                                        </label>
-                                        <input type="text" formControlName="apPaterno" readonly
-                                               class="w-full h-11 text-sm font-bold border-2 border-black dark:border-slate-600 rounded-lg px-4 bg-white dark:bg-[#0F172AFF] text-black dark:text-white outline-none cursor-not-allowed uppercase"
-                                               [class.border-red-500]="hasErrorInternal('apPaterno', 'required')">
-                                    </div>
-
-                                    <div class="form-group">
-                                        <label class="text-[11px] font-black uppercase text-gray-700 dark:text-gray-300 mb-1.5 block">
-                                            Ap. Materno *
-                                        </label>
-                                        <input type="text" formControlName="apMaterno" readonly
-                                               class="w-full h-11 text-sm font-bold border-2 border-black dark:border-slate-600 rounded-lg px-4 bg-white dark:bg-[#0F172AFF] text-black dark:text-white outline-none cursor-not-allowed uppercase"
-                                               [class.border-red-500]="hasErrorInternal('apMaterno', 'required')">
-                                    </div>
                                 </div>
 
-                                <!-- Nombres completos -->
+                                <!-- Cargo -->
                                 <div class="form-group">
                                     <label class="text-[11px] font-black uppercase text-gray-700 dark:text-gray-300 mb-1.5 block">
-                                        Nombres Completos *
+                                        Cargo
                                     </label>
-                                    <input type="text" formControlName="nombres" readonly
-                                           class="w-full h-11 text-sm font-bold border-2 border-black dark:border-slate-600 rounded-lg px-4 bg-white dark:bg-[#0F172AFF] text-black dark:text-white outline-none cursor-not-allowed"
-                                           [class.border-red-500]="hasErrorInternal('nombres', 'required')">
+                                    <input type="text" formControlName="cargo" readonly
+                                           class="w-full h-11 text-sm font-bold border-2 border-gray-300 dark:border-slate-600 rounded-lg px-4 bg-gray-50 dark:bg-slate-800 text-black dark:text-white outline-none cursor-not-allowed">
                                 </div>
 
                                 <!-- Fecha y Hora -->

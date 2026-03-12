@@ -1,4 +1,4 @@
-import { Component, OnInit, signal, inject } from '@angular/core';
+import { Component, OnInit, OnDestroy, signal, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule, Router } from '@angular/router';
 import { FormBuilder, FormGroup, ReactiveFormsModule, FormsModule, Validators } from '@angular/forms';
@@ -8,10 +8,14 @@ import { MatTableModule } from '@angular/material/table';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatDialogRef, MatDialogModule, MatDialog } from '@angular/material/dialog';
+import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { DragDropModule } from '@angular/cdk/drag-drop';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { Subject, takeUntil, finalize, timeout } from 'rxjs';
+import { MovementService } from '../../../../core/services/movement.service';
 
 interface TransferItem {
+    toolId: number;
     codigo: string;
     partNumber: string;
     serialNumber: string;
@@ -21,6 +25,7 @@ interface TransferItem {
     contenido: string;
     marca: string;
     fecha: string;
+    estadoFisico: string;
     selected?: boolean;
 }
 
@@ -38,6 +43,7 @@ interface TransferItem {
         MatCheckboxModule,
         MatTooltipModule,
         MatDialogModule,
+        MatSnackBarModule,
         DragDropModule,
         MatProgressSpinnerModule
     ],
@@ -50,9 +56,7 @@ interface TransferItem {
             --neo-shadow: 4px 4px 0px 0px rgba(0,0,0,1);
         }
 
-        :host-context(.dark) {
-            color-scheme: dark;
-        }
+        :host-context(.dark) { color-scheme: dark; }
 
         .neo-card-base {
             border: var(--neo-border) !important;
@@ -61,9 +65,7 @@ interface TransferItem {
             background-color: white;
         }
 
-        :host-context(.dark) .neo-card-base {
-            background-color: #1e293b !important;
-        }
+        :host-context(.dark) .neo-card-base { background-color: #1e293b !important; }
 
         .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
@@ -95,98 +97,137 @@ interface TransferItem {
             z-index: 100;
         }
 
-        :host-context(.dark) .spinner-overlay {
-            background: rgba(0,0,0,0.7);
-        }
+        :host-context(.dark) .spinner-overlay { background: rgba(0,0,0,0.7); }
 
-        ::ng-deep .white-checkbox .mdc-checkbox__background {
-            border-color: white !important;
-        }
-
+        ::ng-deep .white-checkbox .mdc-checkbox__background { border-color: white !important; }
         ::ng-deep .white-checkbox.mat-mdc-checkbox-checked .mdc-checkbox__background {
             background-color: white !important;
             border-color: white !important;
         }
-
-        ::ng-deep .white-checkbox .mdc-checkbox__checkmark {
-            color: #0f172a !important;
-        }
+        ::ng-deep .white-checkbox .mdc-checkbox__checkmark { color: #0f172a !important; }
     `]
 })
-export class TraspasoOtraAreaComponent implements OnInit {
+export class TraspasoOtraAreaComponent implements OnInit, OnDestroy {
     public dialogRef = inject(MatDialogRef<TraspasoOtraAreaComponent>, { optional: true });
-    private dialog = inject(MatDialog);
-    private fb = inject(FormBuilder);
-    private router = inject(Router);
+    private dialog    = inject(MatDialog);
+    private fb        = inject(FormBuilder);
+    private router    = inject(Router);
+    private snackBar  = inject(MatSnackBar);
+    private movementService = inject(MovementService);
+    private destroy$  = new Subject<void>();
 
     transferForm!: FormGroup;
-    isSaving = false;
+    isSaving      = false;
     showConfirmModal = false;
+
+    // Personal cargado desde la API (para búsqueda dinámica)
+    private personalCache: any[] = [];
+    filteredPersonal: any[] = [];
+    showSuggestions = false;
 
     displayedColumns: string[] = [
         'select', 'fila', 'codigo', 'descripcion', 'partNumber', 'serialNumber',
         'unidadItem', 'cantidad', 'contenido', 'acciones'
     ];
 
-    // System messages
     systemMsg = '';
     systemMsgType: 'success' | 'error' | 'info' | 'warning' = 'info';
     showSystemMsg = false;
 
-    // Mock Data inicial
-    dataSource = signal<TransferItem[]>([
-        {
-            codigo: 'BOA-H-001',
-            partNumber: 'TRQ-2502D',
-            serialNumber: 'TRQ-2024-001',
-            unidad: 'PZA',
-            cantidad: 2,
-            descripcion: 'TORQUÍMETRO DIGITAL 50-250 IN-LB',
-            contenido: 'INCLUYE MALETÍN Y BATERÍAS',
-            marca: 'SNAP-ON',
-            fecha: new Date().toISOString().split('T')[0],
-            selected: false
-        }
-    ]);
+    dataSource = signal<TransferItem[]>([]);
 
     ngOnInit(): void {
         this.initForm();
+        this.cargarPersonal();
+    }
+
+    ngOnDestroy(): void {
+        this.destroy$.next();
+        this.destroy$.complete();
     }
 
     private initForm(): void {
         const today = new Date().toISOString().split('T')[0];
-        const now = new Date();
-        const hours = now.getHours().toString().padStart(2, '0');
-        const minutes = now.getMinutes().toString().padStart(2, '0');
+        const now   = new Date();
+        const hh    = now.getHours().toString().padStart(2, '0');
+        const mm    = now.getMinutes().toString().padStart(2, '0');
 
         this.transferForm = this.fb.group({
-            buscar: [''],
-            nombres: ['', Validators.required],
-            apPaterno: ['', Validators.required],
-            apMaterno: ['', Validators.required],
-            nroLicencia: ['', Validators.required],
-            cargo: ['', Validators.required],
-            fecha: [today, Validators.required],
-            hora: [`${hours}:${minutes}`, Validators.required],
-            gerencia: ['', Validators.required],
-            unidad: ['', Validators.required],
-            base: ['VVI', Validators.required],
-            departamento: [''],
-            tipoTraspaso: ['TEMPORAL', Validators.required],
-            observaciones: ['']
+            buscar:          [''],
+            nombreCompleto:  ['', Validators.required],
+            nroLicencia:     ['', Validators.required],
+            cargo:           ['', Validators.required],
+            fecha:           [today, Validators.required],
+            hora:            [`${hh}:${mm}`, Validators.required],
+            gerencia:        ['', Validators.required],
+            unidad:          ['', Validators.required],
+            base:            ['VVI', Validators.required],
+            departamento:    [''],
+            tipoTraspaso:    ['TEMPORAL', Validators.required],
+            observaciones:   ['']
         });
     }
 
-    // Selection methods
+    private cargarPersonal(): void {
+        this.movementService.getPersonal().pipe(takeUntil(this.destroy$)).subscribe({
+            next: (personal) => { this.personalCache = personal; }
+        });
+    }
+
+    // ── Búsqueda dinámica de personal ────────────────────────────────────────
+
+    onBuscarInput(event: Event): void {
+        const query = (event.target as HTMLInputElement).value.trim().toLowerCase();
+        if (query.length < 3) {
+            this.filteredPersonal = [];
+            this.showSuggestions  = false;
+            return;
+        }
+        this.filteredPersonal = this.personalCache.filter(p =>
+            (p.nombreCompleto ?? '').toLowerCase().includes(query) ||
+            (p.licencia ?? '').toLowerCase().includes(query)
+        ).slice(0, 8);
+        this.showSuggestions = this.filteredPersonal.length > 0;
+    }
+
+    seleccionarPersona(p: any): void {
+        this.transferForm.patchValue({
+            buscar:         p.nombreCompleto,
+            nombreCompleto: p.nombreCompleto,
+            nroLicencia:    p.licencia ?? p.nro_licencia ?? '',
+            cargo:          p.cargo ?? ''
+        });
+        this.filteredPersonal = [];
+        this.showSuggestions  = false;
+    }
+
+    hideSuggestions(): void {
+        // Delay para permitir que el click en el item se registre primero
+        setTimeout(() => { this.showSuggestions = false; }, 200);
+    }
+
+    /** Mantener botón BUSCAR para búsqueda exacta por si necesitan */
+    buscarPersona(): void {
+        const query = (this.transferForm.get('buscar')?.value ?? '').trim().toLowerCase();
+        if (!query) return;
+        const found = this.personalCache.find(p =>
+            (p.nombreCompleto ?? '').toLowerCase().includes(query) ||
+            (p.licencia ?? '').toLowerCase().includes(query)
+        );
+        if (found) { this.seleccionarPersona(found); }
+        else { this.showMessage('No se encontró la persona', 'error'); }
+    }
+
+    // ── Selección de items ────────────────────────────────────────────────────
+
     toggleSelection(item: TransferItem): void {
         item.selected = !item.selected;
         this.dataSource.set([...this.dataSource()]);
     }
 
     toggleAllSelection(event: any): void {
-        const checked = event.checked;
         const items = this.dataSource();
-        items.forEach(item => item.selected = checked);
+        items.forEach(item => item.selected = event.checked);
         this.dataSource.set([...items]);
     }
 
@@ -205,36 +246,7 @@ export class TraspasoOtraAreaComponent implements OnInit {
     }
 
     getTotalSelectedCantidad(): number {
-        return this.dataSource().filter(item => item.selected).reduce((total, item) => total + (item.cantidad || 0), 0);
-    }
-
-    buscarPersona(): void {
-        const buscar = this.transferForm.get('buscar')?.value;
-        if (!buscar) {
-            this.showMessage('Ingrese un nombre o ID para buscar', 'info');
-            return;
-        }
-
-        this.showMessage(`Buscando: ${buscar}...`, 'info');
-
-        const mockPersonas = [
-            { nombres: 'JUAN CARLOS', apPaterno: 'PEREZ', apMaterno: 'GONZALES', nroLicencia: 'BOA-001', cargo: 'TÉCNICO DE MANTENIMIENTO' },
-            { nombres: 'MARIA ELENA', apPaterno: 'RODRIGUEZ', apMaterno: 'LOPEZ', nroLicencia: 'BOA-002', cargo: 'SUPERVISORA DE ALMACÉN' },
-            { nombres: 'PEDRO ANTONIO', apPaterno: 'GARCIA', apMaterno: 'MARTINEZ', nroLicencia: 'BOA-003', cargo: 'JEFE DE HERRAMIENTAS' }
-        ];
-
-        const personaEncontrada = mockPersonas.find(p =>
-            p.nombres.toLowerCase().includes(buscar.toLowerCase()) ||
-            p.apPaterno.toLowerCase().includes(buscar.toLowerCase()) ||
-            p.nroLicencia.toLowerCase().includes(buscar.toLowerCase())
-        );
-
-        if (personaEncontrada) {
-            this.transferForm.patchValue(personaEncontrada);
-            this.showMessage('Persona encontrada', 'success');
-        } else {
-            this.showMessage('No se encontró la persona', 'error');
-        }
+        return this.dataSource().filter(item => item.selected).reduce((t, i) => t + (i.cantidad || 0), 0);
     }
 
     imprimir(): void {
@@ -242,13 +254,11 @@ export class TraspasoOtraAreaComponent implements OnInit {
             this.showMessage('Agregue herramientas antes de imprimir', 'warning');
             return;
         }
-
         if (!this.transferForm.valid) {
             this.transferForm.markAllAsTouched();
             this.showMessage('Complete los datos requeridos', 'error');
             return;
         }
-
         window.print();
     }
 
@@ -257,14 +267,12 @@ export class TraspasoOtraAreaComponent implements OnInit {
             this.showMessage('Agregue al menos una herramienta', 'warning');
             return;
         }
-
         if (!this.transferForm.valid) {
             this.transferForm.markAllAsTouched();
             const errors = this.getFormErrors();
-            this.showMessage(`Complete los campos requeridos: ${errors.length} error(es)`, 'error');
+            this.showMessage(`Complete los campos requeridos: ${errors.join(', ')}`, 'error');
             return;
         }
-
         this.showConfirmModal = true;
     }
 
@@ -272,32 +280,73 @@ export class TraspasoOtraAreaComponent implements OnInit {
         this.showConfirmModal = false;
     }
 
+    // ── Envío al backend ──────────────────────────────────────────────────────
+
     finalizar(): void {
+        this.showConfirmModal = false;
         this.isSaving = true;
 
-        setTimeout(() => {
-            const formData = this.transferForm.value;
-            const items = this.dataSource();
+        const fv    = this.transferForm.getRawValue();
+        const items = this.dataSource();
 
-            console.log('Finalizando Traspaso:', { formData, items });
+        const itemsJson = JSON.stringify(items.map(i => ({
+            tool_id:               i.toolId,
+            quantity:              i.cantidad,
+            condition_on_movement: i.estadoFisico || 'SERVICEABLE',
+            serial_number:         i.serialNumber || '',
+            part_number:           i.partNumber   || '',
+            notes:                 i.contenido    || ''
+        })));
 
-            this.isSaving = false;
-            this.showConfirmModal = false;
-            this.showMessage('Traspaso registrado exitosamente', 'success');
+        const responsibleName = fv.nombreCompleto ?? '';
+        const department      = `${fv.gerencia} | ${fv.unidad}`.trim();
 
-            if (this.dialogRef) {
-                this.dialogRef.close({ form: formData, items: items });
-            } else {
-                this.router.navigate(['/salidas']);
+        const payload: any = {
+            date:                 fv.fecha,
+            time:                 fv.hora,
+            responsible_person:   responsibleName,
+            department:           department,
+            exit_reason:          fv.tipoTraspaso,
+            authorized_by:        fv.nroLicencia,
+            notes:                fv.observaciones ?? '',
+            general_observations: `Base: ${fv.base} | Cargo: ${fv.cargo} | Licencia: ${fv.nroLicencia}`,
+            items_json:           itemsJson
+        };
+
+        console.log('[TRASPASO] Payload:', payload);
+
+        this.movementService.registrarTraspasoOtraArea(payload).pipe(
+            timeout(30000),
+            finalize(() => { this.isSaving = false; }),
+            takeUntil(this.destroy$)
+        ).subscribe({
+            next: (result: any) => {
+                const nro = result?.movement_number ?? '';
+                this.showMessage(`Traspaso ${nro} registrado exitosamente`, 'success');
+                this.dataSource.set([]);
+                this.transferForm.reset();
+                this.initForm();
+
+                if (this.dialogRef) {
+                    this.dialogRef.close({ success: true, movement_number: nro });
+                } else {
+                    setTimeout(() => this.router.navigate(['/salidas']), 2000);
+                }
+            },
+            error: (err: any) => {
+                console.error('[TRASPASO] Error:', err);
+                const msg = err?.name === 'TimeoutError'
+                    ? 'El servidor tardó demasiado. Intente de nuevo.'
+                    : err?.message || 'Error al registrar el traspaso';
+                this.showMessage(msg, 'error');
             }
-        }, 1500);
+        });
     }
 
     goBack(): void {
         if (this.dataSource().length > 0) {
             if (!confirm('¿Está seguro de salir? Hay items agregados no guardados.')) return;
         }
-
         if (this.dialogRef) {
             this.dialogRef.close();
         } else {
@@ -328,51 +377,44 @@ export class TraspasoOtraAreaComponent implements OnInit {
 
     agregarHerramienta(data: any): void {
         const newItem: TransferItem = {
-            codigo: data.codigo || `TRS-${this.dataSource().length + 1}`.padStart(3, '0'),
-            partNumber: data.pn || 'N/A',
-            serialNumber: data.sn || 'N/A',
-            unidad: data.unidad || 'PZA',
-            cantidad: data.cantidad || 1,
-            descripcion: data.nombre || data.descripcion || 'Herramienta sin nombre',
-            contenido: data.contenido || '',
-            marca: data.marca || 'N/A',
-            fecha: new Date().toISOString().split('T')[0],
-            selected: false
+            toolId:       data.id_tool ?? 0,
+            codigo:       data.codigo || '',
+            partNumber:   data.pn     || '',
+            serialNumber: data.sn     || '',
+            unidad:       data.unidad || 'PZA',
+            cantidad:     data.cantidad || 1,
+            descripcion:  data.nombre  || data.descripcion || '',
+            contenido:    data.observacion || '',
+            marca:        data.marca   || '',
+            fecha:        new Date().toISOString().split('T')[0],
+            estadoFisico: data.estadoFisico || 'SERVICEABLE',
+            selected:     false
         };
 
-        const currentItems = this.dataSource();
-        this.dataSource.set([...currentItems, newItem]);
+        this.dataSource.set([...this.dataSource(), newItem]);
         this.showMessage('Herramienta agregada al traspaso', 'success');
     }
 
     removerItem(index: number): void {
-        const currentItems = this.dataSource();
-        const removedItem = currentItems[index];
-        currentItems.splice(index, 1);
-        this.dataSource.set([...currentItems]);
-        this.showMessage(`Se removió: ${removedItem.descripcion}`, 'info');
+        const items = [...this.dataSource()];
+        const removed = items.splice(index, 1)[0];
+        this.dataSource.set(items);
+        this.showMessage(`Se removió: ${removed.descripcion}`, 'info');
     }
 
     getTotalCantidad(): number {
-        return this.dataSource().reduce((total, item) => total + (item.cantidad || 0), 0);
+        return this.dataSource().reduce((t, i) => t + (i.cantidad || 0), 0);
     }
 
     getFormErrors(): string[] {
         const errors: string[] = [];
-        const form = this.transferForm;
-
-        if (!form.get('nombres')?.value) errors.push('Nombres');
-        if (!form.get('apPaterno')?.value) errors.push('Apellido Paterno');
-        if (!form.get('apMaterno')?.value) errors.push('Apellido Materno');
-        if (!form.get('nroLicencia')?.value) errors.push('Número de Licencia');
-        if (!form.get('cargo')?.value) errors.push('Cargo');
-        if (!form.get('fecha')?.value) errors.push('Fecha');
-        if (!form.get('hora')?.value) errors.push('Hora');
-        if (!form.get('gerencia')?.value) errors.push('Gerencia');
-        if (!form.get('unidad')?.value) errors.push('Unidad');
-        if (!form.get('base')?.value) errors.push('Base');
-        if (!form.get('tipoTraspaso')?.value) errors.push('Tipo de Traspaso');
-
+        const f = this.transferForm;
+        if (!f.get('nombreCompleto')?.value) errors.push('Nombre Completo');
+        if (!f.get('nroLicencia')?.value)    errors.push('Nro. Licencia');
+        if (!f.get('cargo')?.value)       errors.push('Cargo');
+        if (!f.get('gerencia')?.value)    errors.push('Gerencia');
+        if (!f.get('unidad')?.value)      errors.push('Unidad');
+        if (!f.get('tipoTraspaso')?.value) errors.push('Tipo Traspaso');
         return errors;
     }
 
@@ -382,7 +424,7 @@ export class TraspasoOtraAreaComponent implements OnInit {
     }
 
     private showMessage(message: string, type: 'success' | 'error' | 'info' | 'warning'): void {
-        this.systemMsg = message;
+        this.systemMsg     = message;
         this.systemMsgType = type;
         this.showSystemMsg = true;
         setTimeout(() => this.showSystemMsg = false, 4000);

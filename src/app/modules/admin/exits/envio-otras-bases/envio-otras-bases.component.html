@@ -194,16 +194,19 @@
 
                 <!-- Row 1: Origen, Destino, Tipo, Prioridad -->
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
-                    <!-- Base Origen (solo lectura) -->
+                    <!-- Base Origen -->
                     <div class="form-group">
                         <label class="text-[11px] font-black uppercase text-gray-700 dark:text-gray-300 mb-1.5 block">
                             Base Origen
                         </label>
                         <div class="relative">
-                            <input type="text"
-                                   [value]="getBaseNombre(exitForm.get('baseOrigen')?.value)"
-                                   readonly
-                                   class="w-full h-11 text-sm font-bold border-2 border-black dark:border-slate-600 rounded-lg pl-10 pr-4 bg-gray-100 dark:bg-slate-700 text-black dark:text-white outline-none cursor-not-allowed">
+                            <select formControlName="baseOrigen"
+                                    class="w-full h-11 text-sm font-bold border-2 border-black dark:border-slate-600 rounded-lg pl-10 pr-4 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[3px_3px_0px_0px_#000] transition-shadow outline-none appearance-none cursor-pointer">
+                                <option value="" class="text-black dark:text-white">-- Seleccionar --</option>
+                                <option *ngFor="let base of bases" [value]="base.codigo" class="text-black dark:text-white">
+                                    {{ base.codigo }} - {{ base.ciudad }}
+                                </option>
+                            </select>
                             <mat-icon class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 !text-lg">flight</mat-icon>
                         </div>
                     </div>
@@ -267,17 +270,10 @@
                         <label class="text-[11px] font-black uppercase text-gray-700 dark:text-gray-300 mb-1.5 block">
                             Nro. Guía de Envío
                         </label>
-                        <div class="flex gap-2">
-                            <div class="relative flex-1">
-                                <input type="text" formControlName="nroGuia" readonly
-                                       class="w-full h-11 text-sm font-bold border-2 border-black dark:border-slate-600 rounded-lg pl-10 pr-4 bg-gray-100 dark:bg-slate-700 text-black dark:text-white outline-none cursor-not-allowed">
-                                <mat-icon class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 !text-lg">confirmation_number</mat-icon>
-                            </div>
-                            <button type="button" (click)="generarNumeroGuia()"
-                                    class="h-11 px-3 bg-blue-500 text-white font-bold border-2 border-black rounded-lg shadow-[2px_2px_0px_0px_#000] hover:shadow-none hover:translate-x-[1px] hover:translate-y-[1px] transition-all"
-                                    matTooltip="Regenerar número">
-                                <mat-icon class="!text-lg !w-5 !h-5">refresh</mat-icon>
-                            </button>
+                        <div class="relative flex-1">
+                            <input type="text" formControlName="nroGuia" readonly
+                                   class="w-full h-11 text-sm font-bold border-2 border-black dark:border-slate-600 rounded-lg pl-10 pr-4 bg-gray-100 dark:bg-slate-700 text-black dark:text-white outline-none cursor-not-allowed">
+                            <mat-icon class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 !text-lg">confirmation_number</mat-icon>
                         </div>
                     </div>
 
@@ -287,14 +283,10 @@
                             Nro. Vuelo *
                         </label>
                         <div class="relative">
-                            <select formControlName="nroVuelo"
-                                    class="w-full h-11 text-sm font-bold border-2 border-black dark:border-slate-600 rounded-lg pl-10 pr-4 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[3px_3px_0px_0px_#000] transition-shadow outline-none appearance-none cursor-pointer"
-                                    [class.border-red-500]="hasError('nroVuelo', 'required')">
-                                <option value="" class="text-black dark:text-white">-- Seleccionar --</option>
-                                <option *ngFor="let vuelo of vuelosDisponibles" [value]="vuelo" class="text-black dark:text-white">
-                                    {{ vuelo }}
-                                </option>
-                            </select>
+                            <input type="text" formControlName="nroVuelo"
+                                   placeholder="Ej: BOA-123"
+                                   class="w-full h-11 text-sm font-bold border-2 border-black dark:border-slate-600 rounded-lg pl-10 pr-4 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[3px_3px_0px_0px_#000] transition-shadow outline-none"
+                                   [class.border-red-500]="hasError('nroVuelo', 'required')">
                             <mat-icon class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 !text-lg">flight</mat-icon>
                         </div>
                         <span *ngIf="hasError('nroVuelo', 'required')" class="text-xs text-red-600 font-bold mt-1 block">Seleccione vuelo</span>
@@ -398,9 +390,9 @@
                                    formControlName="recibidoPorInput"
                                    [matAutocomplete]="autoRecibo"
                                    placeholder="Seleccione base destino primero..."
-                                   class="w-full h-11 text-sm font-bold border-2 border-black dark:border-slate-600 rounded-lg pl-10 pr-4 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[3px_3px_0px_0px_#000] transition-shadow outline-none placeholder:text-gray-400"
+                                   class="w-full h-11 text-sm font-bold border-2 border-black dark:border-slate-600 rounded-lg pl-10 pr-4 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[3px_3px_0px_0px_#000] transition-shadow outline-none placeholder:text-gray-400 disabled:bg-gray-100 disabled:cursor-not-allowed"
                                    [class.border-red-500]="hasError('recibidoPor', 'required')"
-                                   [disabled]="!exitForm.get('baseDestino')?.value">
+                                   [class.dark:bg-slate-700]="exitForm.get('recibidoPorInput')?.disabled">
                             <mat-icon class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 !text-lg">person_pin</mat-icon>
                             <mat-autocomplete #autoRecibo="matAutocomplete" [displayWith]="displayFuncionario" (optionSelected)="selectFuncionarioRecibo($event.option.value)">
                                 <mat-option *ngFor="let func of filteredFuncionariosRecibo" [value]="func">

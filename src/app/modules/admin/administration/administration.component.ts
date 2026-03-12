@@ -1,13 +1,13 @@
-import { Component, OnInit, inject, ViewChild, TemplateRef } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { Router, RouterModule, NavigationEnd } from '@angular/router';
-import { MatCardModule } from '@angular/material/card';
+import { Component, OnDestroy, inject, ViewChild, TemplateRef, signal, Type, Injector } from '@angular/core';
+import { CommonModule, NgComponentOutlet } from '@angular/common';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
+import { MatDialog, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
+import { MatSnackBarModule } from '@angular/material/snack-bar';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatTableModule } from '@angular/material/table';
-import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { DragDropModule } from '@angular/cdk/drag-drop';
-import { filter } from 'rxjs/operators';
+import { Subject, of } from 'rxjs';
 
 interface AdminRecord {
     fecha: string;
@@ -21,12 +21,13 @@ interface AdminRecord {
     standalone: true,
     imports: [
         CommonModule,
-        RouterModule,
-        MatCardModule,
+        NgComponentOutlet,
         MatIconModule,
         MatButtonModule,
-        MatTableModule,
         MatDialogModule,
+        MatSnackBarModule,
+        MatProgressSpinnerModule,
+        MatTableModule,
         DragDropModule
     ],
     templateUrl: './administration.component.html',
@@ -34,133 +35,8 @@ interface AdminRecord {
         :host {
             display: block;
             height: 100%;
-            --neo-border: 3px solid #1a1a1a;
-            --neo-shadow: 4px 4px 0px 0px rgba(0, 0, 0, 1);
         }
 
-        /* ===== ADMIN CARDS ===== */
-        .neo-card-admin {
-            border: var(--neo-border);
-            box-shadow: var(--neo-shadow);
-            border-radius: 20px;
-            background-color: #ffffff;
-            cursor: pointer;
-            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-            position: relative;
-            overflow: hidden;
-        }
-
-        .neo-card-admin:hover {
-            transform: translate(-3px, -3px);
-            box-shadow: 8px 8px 0px 0px rgba(0, 0, 0, 1);
-        }
-
-        .neo-card-admin:active {
-            transform: translate(0px, 0px);
-            box-shadow: 2px 2px 0px 0px rgba(0, 0, 0, 1);
-        }
-
-        :host-context(.dark) .neo-card-admin {
-            background-color: #203f77;
-            border-color: #000000;
-            box-shadow: 4px 4px 0px 0px rgb(0, 0, 0);
-        }
-
-        :host-context(.dark) .neo-card-admin:hover {
-            box-shadow: 8px 8px 0px 0px rgb(0, 0, 0);
-        }
-
-        :host-context(.dark) .neo-card-admin:active {
-            box-shadow: 2px 2px 0px 0px rgba(30, 41, 59, 1);
-        }
-
-        /* ===== CARD NUMBERS ===== */
-        .admin-number {
-            font-size: 4rem;
-            font-weight: 900;
-            line-height: 1;
-            color: #1a1a1a;
-            letter-spacing: -0.03em;
-        }
-
-        :host-context(.dark) .admin-number {
-            color: #fff6f6;
-        }
-
-        /* ===== CARD LABELS ===== */
-        .admin-label {
-            font-size: 0.95rem;
-            font-weight: 900;
-            text-transform: uppercase;
-            letter-spacing: 0.01em;
-            line-height: 1.25;
-            color: #1a1a1a;
-        }
-
-        .admin-label-lg {
-            font-size: 1.35rem;
-        }
-
-        :host-context(.dark) .admin-label {
-            color: #c2cee6;
-        }
-
-        /* ===== CARD ICONS ===== */
-        .admin-icon-lg {
-            width: 70px !important;
-            height: 70px !important;
-            font-size: 70px !important;
-            color: #1a1a1a;
-        }
-
-        .admin-icon-xl {
-            width: 130px !important;
-            height: 130px !important;
-            font-size: 130px !important;
-            color: #1a1a1a;
-        }
-
-        :host-context(.dark) .admin-icon-lg,
-        :host-context(.dark) .admin-icon-xl {
-            color: #ffffff;
-        }
-
-        /* ===== SIDEBAR BUTTONS ===== */
-        .admin-sidebar-btn {
-            width: 100%;
-            padding: 14px 20px;
-            font-weight: 900;
-            font-size: 0.85rem;
-            text-transform: uppercase;
-            letter-spacing: 0.06em;
-            background-color: #ffffff;
-            color: #1a1a1a;
-            border: 3px solid #1a1a1a;
-            border-radius: 14px;
-            box-shadow: 3px 3px 0px 0px rgba(0, 0, 0, 1);
-            cursor: pointer;
-            transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-
-        .admin-sidebar-btn:hover {
-            transform: translate(-2px, -2px);
-            box-shadow: 5px 5px 0px 0px rgba(0, 0, 0, 1);
-            color: #ffffff;
-        }
-
-        .admin-sidebar-btn:active {
-            transform: translate(0, 0);
-            box-shadow: 1px 1px 0px 0px rgba(0, 0, 0, 1);
-        }
-
-        :host-context(.dark) .admin-sidebar-btn {
-            background-color: #203f77;
-            color: #ffffff;
-            border-color: #000000;
-            box-shadow: 3px 3px 0px 0px rgb(30, 41, 59);
-        }
-
-        /* ===== TABLE STYLES ===== */
         .header-neo {
             background-color: white !important;
             color: #111A43 !important;
@@ -189,7 +65,6 @@ interface AdminRecord {
             border-bottom-color: #333;
         }
 
-        /* ===== DIALOG: Neo Card Base ===== */
         .neo-card-base-admin {
             border: 2px solid black !important;
             box-shadow: 4px 4px 0px 0px rgba(0,0,0,1) !important;
@@ -201,40 +76,100 @@ interface AdminRecord {
             background-color: #1e293b !important;
         }
 
-        /* ===== DIALOG: Custom Scrollbar ===== */
         .custom-scrollbar-admin::-webkit-scrollbar { width: 6px; height: 6px; }
         .custom-scrollbar-admin::-webkit-scrollbar-track { background: transparent; }
         .custom-scrollbar-admin::-webkit-scrollbar-thumb { background: #000; border-radius: 3px; }
         :host-context(.dark) .custom-scrollbar-admin::-webkit-scrollbar-thumb { background: #cbd5e1; }
     `]
 })
-export class AdministrationComponent implements OnInit {
-    private router = inject(Router);
-    private dialog = inject(MatDialog);
+export class AdministrationComponent implements OnDestroy {
+    private dialog   = inject(MatDialog);
+    private injector = inject(Injector);
+
+    private _unsubscribeAll = new Subject<void>();
 
     @ViewChild('actividadRecienteDialog') actividadRecienteDialog!: TemplateRef<any>;
 
-    showCards = true;
+    // Formulario activo inline
+    activeFormComponent = signal<Type<any> | null>(null);
+    activeFormTab       = signal<number | null>(null);
+    formInjector: Injector | null = null;
 
     displayedColumns: string[] = ['fecha', 'tipo', 'entidad', 'usuario', 'acciones'];
     recentRecords: AdminRecord[] = [
-        { fecha: '04/01/2026', tipo: 'CREAR USUARIO', entidad: 'Carlos Mendoza', usuario: 'ADMIN' },
-        { fecha: '03/01/2026', tipo: 'EDITAR PROVEEDOR', entidad: 'Ferreteria BOA', usuario: 'SUPERVISOR' },
-        { fecha: '02/01/2026', tipo: 'ASIGNAR ROL', entidad: 'Tecnico Senior', usuario: 'ADMIN' }
+        { fecha: '04/01/2026', tipo: 'CREAR USUARIO',    entidad: 'Carlos Mendoza',  usuario: 'ADMIN' },
+        { fecha: '03/01/2026', tipo: 'EDITAR PROVEEDOR', entidad: 'Ferreteria BOA',  usuario: 'SUPERVISOR' },
+        { fecha: '02/01/2026', tipo: 'ASIGNAR ROL',      entidad: 'Tecnico Senior',  usuario: 'ADMIN' }
     ];
 
-    ngOnInit(): void {
-        this.updateCardVisibility(this.router.url);
-        this.router.events.pipe(
-            filter(event => event instanceof NavigationEnd)
-        ).subscribe((event: any) => {
-            this.updateCardVisibility(event.url);
+    // ── Inline form helpers ──────────────────────────────────────────────────
+
+    private createFormInjector(): Injector {
+        const self = this;
+        const fakeRef = {
+            close:            (result?: any) => { self.closeActiveForm(); },
+            afterClosed:      () => of(null),
+            beforeClosed:     () => of(null),
+            backdropClick:    () => of(null),
+            keydownEvents:    () => of(null),
+            updatePosition:   () => {},
+            updateSize:       () => {},
+            addPanelClass:    () => {},
+            removePanelClass: () => {},
+            disableClose: false,
+            id: 'inline-form',
+            componentInstance: null,
+        };
+        return Injector.create({
+            providers: [{ provide: MatDialogRef, useValue: fakeRef }],
+            parent: this.injector
         });
     }
 
-    private updateCardVisibility(url: string): void {
-        this.showCards = url === '/administration' || url === '/administration/' || url.endsWith('/administration');
+    closeActiveForm(): void {
+        this.activeFormComponent.set(null);
+        this.activeFormTab.set(null);
+        this.formInjector = null;
     }
+
+    // ── Form openers (inline) ────────────────────────────────────────────────
+
+    async openUsuarios(): Promise<void> {
+        const { UsuariosComponent } = await import('./usuarios/usuarios.component');
+        this.formInjector = this.createFormInjector();
+        this.activeFormComponent.set(UsuariosComponent);
+        this.activeFormTab.set(1);
+    }
+
+    async openProveedores(): Promise<void> {
+        const { ProveedoresComponent } = await import('./proveedores/proveedores.component');
+        this.formInjector = this.createFormInjector();
+        this.activeFormComponent.set(ProveedoresComponent);
+        this.activeFormTab.set(2);
+    }
+
+    async openClientes(): Promise<void> {
+        const { ClientesComponent } = await import('./clientes/clientes.component');
+        this.formInjector = this.createFormInjector();
+        this.activeFormComponent.set(ClientesComponent);
+        this.activeFormTab.set(3);
+    }
+
+    async openRoles(): Promise<void> {
+        const { RolesComponent } = await import('./roles/roles.component');
+        this.formInjector = this.createFormInjector();
+        this.activeFormComponent.set(RolesComponent);
+        this.activeFormTab.set(4);
+    }
+
+    async openFuncionarios(): Promise<void> {
+        const { FuncionariosComponent } = await import('./funcionarios/funcionarios.component');
+        this.formInjector = this.createFormInjector();
+        this.activeFormComponent.set(FuncionariosComponent);
+        this.activeFormTab.set(5);
+    }
+
+    // ── Actividad Reciente (dialog desde header) ─────────────────────────────
 
     openActividadReciente(): void {
         this.dialog.open(this.actividadRecienteDialog, {
@@ -247,5 +182,10 @@ export class AdministrationComponent implements OnInit {
             disableClose: false,
             autoFocus: false
         });
+    }
+
+    ngOnDestroy(): void {
+        this._unsubscribeAll.next();
+        this._unsubscribeAll.complete();
     }
 }

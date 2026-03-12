@@ -84,7 +84,7 @@ export class CalibrationService {
 
         return from(this._api.post('herramientas/calibrations/listCalibrations', params)).pipe(
             switchMap((response: any) => {
-                const calibrations = response?.datos || [];
+                const calibrations = response?.data || [];
                 this._calibrations.next(calibrations);
                 return of(calibrations);
             })
@@ -101,7 +101,7 @@ export class CalibrationService {
             id_calibration: id
         })).pipe(
             switchMap((response: any) => {
-                return of(response?.datos?.[0] || null);
+                return of(response?.data?.[0] || null);
             })
         );
     }
@@ -112,7 +112,7 @@ export class CalibrationService {
     sendToCalibration(record: Partial<CalibrationRecord>): Observable<CalibrationRecord> {
         return from(this._api.post('herramientas/calibrations/insertCalibration', record)).pipe(
             switchMap((response: any) => {
-                return of(response?.datos || record);
+                return of(response?.data || record);
             })
         );
     }
@@ -127,7 +127,7 @@ export class CalibrationService {
         })).pipe(
             switchMap((response: any) => {
                 console.log('receiveFromCalibration response:', response);
-                return of(response?.datos || data);
+                return of(response?.data || data);
             })
         );
     }
@@ -141,7 +141,7 @@ export class CalibrationService {
             id_calibration: id
         })).pipe(
             switchMap((response: any) => {
-                return of(response?.datos || record);
+                return of(response?.data || record);
             })
         );
     }
@@ -156,7 +156,7 @@ export class CalibrationService {
             notes: reason
         })).pipe(
             switchMap((response: any) => {
-                return of(response?.datos || {});
+                return of(response?.data || {});
             })
         );
     }
@@ -173,7 +173,7 @@ export class CalibrationService {
             dir: 'desc'
         })).pipe(
             switchMap((response: any) => {
-                return of(response?.datos || []);
+                return of(response?.data || []);
             })
         );
     }
@@ -207,7 +207,7 @@ export class CalibrationService {
     }): Observable<any> {
         return from(this._api.post('herramientas/calibrations/sendToCalibration', params)).pipe(
             switchMap((response: any) => {
-                return of(response?.datos || response);
+                return of(response?.data || response);
             })
         );
     }
@@ -233,7 +233,7 @@ export class CalibrationService {
     }): Observable<any> {
         return from(this._api.post('herramientas/calibrations/processCalibrationReturn', params)).pipe(
             switchMap((response: any) => {
-                return of(response?.datos || response);
+                return of(response?.data || response);
             })
         );
     }
@@ -247,7 +247,7 @@ export class CalibrationService {
             barcode_scan: barcode
         })).pipe(
             switchMap((response: any) => {
-                const data = response?.datos?.[0] || response?.datos || null;
+                const data = response?.data?.[0] || response?.data || null;
                 return of(data);
             })
         );
@@ -273,7 +273,7 @@ export class CalibrationService {
     }): Observable<CalibrationBatch> {
         return from(this._api.post('herramientas/calibrations/createCalibrationBatch', params)).pipe(
             switchMap((response: any) => {
-                return of(response?.datos || response);
+                return of(response?.data || response);
             })
         );
     }
@@ -290,7 +290,7 @@ export class CalibrationService {
     }): Observable<CalibrationBatchItem> {
         return from(this._api.post('herramientas/calibrations/addToolToBatch', params)).pipe(
             switchMap((response: any) => {
-                return of(response?.datos || response);
+                return of(response?.data || response);
             })
         );
     }
@@ -306,7 +306,7 @@ export class CalibrationService {
     }): Observable<any> {
         return from(this._api.post('herramientas/calibrations/confirmCalibrationBatch', params)).pipe(
             switchMap((response: any) => {
-                return of(response?.datos || response);
+                return of(response?.data || response);
             })
         );
     }
@@ -319,7 +319,7 @@ export class CalibrationService {
             id_batch_item: batchItemId
         })).pipe(
             switchMap((response: any) => {
-                return of(response?.datos || response);
+                return of(response?.data || response);
             })
         );
     }
@@ -337,7 +337,7 @@ export class CalibrationService {
         };
         return from(this._api.post('herramientas/calibrations/listarCalibrationBatches', params)).pipe(
             switchMap((response: any) => {
-                return of(response?.datos || []);
+                return of(response?.data || []);
             })
         );
     }
@@ -354,7 +354,7 @@ export class CalibrationService {
             dir: 'asc'
         })).pipe(
             switchMap((response: any) => {
-                return of(response?.datos || []);
+                return of(response?.data || []);
             })
         );
     }
@@ -378,7 +378,7 @@ export class CalibrationService {
     }): Observable<any> {
         return from(this._api.post('herramientas/calibrationBatches/processReturnBatch', params)).pipe(
             switchMap((response: any) => {
-                return of(response?.datos || response);
+                return of(response?.data || response);
             })
         );
     }
@@ -394,7 +394,7 @@ export class CalibrationService {
     getCalibrationDashboardPxp(): Observable<PxpCalibrationDashboard> {
         return from(this._api.post('herramientas/calibrations/getCalibrationDashboard', {})).pipe(
             switchMap((response: any) => {
-                const data = response?.datos?.[0] || response?.datos || this._getDefaultPxpDashboard();
+                const data = response?.data?.[0] || response?.data || this._getDefaultPxpDashboard();
                 return of(data);
             }),
             catchError(() => {
@@ -416,7 +416,7 @@ export class CalibrationService {
         };
         return from(this._api.post('herramientas/calibrations/getCalibrationAlerts', params)).pipe(
             switchMap((response: any) => {
-                const alerts = response?.datos || [];
+                const alerts = response?.data || [];
                 return of(alerts);
             }),
             catchError(() => of([]))
@@ -440,7 +440,7 @@ export class CalibrationService {
         };
         return from(this._api.post('herramientas/calibrations/listarJackServiceStatus', params)).pipe(
             switchMap((response: any) => {
-                return of(response?.datos || []);
+                return of(response?.data || []);
             })
         );
     }
@@ -457,7 +457,7 @@ export class CalibrationService {
     }): Observable<any> {
         return from(this._api.post('herramientas/calibrations/registerJackService', params)).pipe(
             switchMap((response: any) => {
-                return of(response?.datos || response);
+                return of(response?.data || response);
             })
         );
     }
@@ -503,7 +503,7 @@ export class CalibrationService {
 
         return from(this._api.post('herramientas/maintenances/listMaintenances', params)).pipe(
             switchMap((response: any) => {
-                const maintenances = response?.datos || [];
+                const maintenances = response?.data || [];
                 this._maintenances.next(maintenances);
                 return of(maintenances);
             })
@@ -520,7 +520,7 @@ export class CalibrationService {
             id_maintenance: id
         })).pipe(
             switchMap((response: any) => {
-                return of(response?.datos?.[0] || null);
+                return of(response?.data?.[0] || null);
             })
         );
     }
@@ -531,7 +531,7 @@ export class CalibrationService {
     sendToMaintenance(record: Partial<MaintenanceRecord>): Observable<MaintenanceRecord> {
         return from(this._api.post('herramientas/maintenances/insertMaintenance', record)).pipe(
             switchMap((response: any) => {
-                return of(response?.datos || record);
+                return of(response?.data || record);
             })
         );
     }
@@ -545,7 +545,7 @@ export class CalibrationService {
             id_maintenance: id
         })).pipe(
             switchMap((response: any) => {
-                return of(response?.datos || data);
+                return of(response?.data || data);
             })
         );
     }
@@ -559,7 +559,7 @@ export class CalibrationService {
             id_maintenance: id
         })).pipe(
             switchMap((response: any) => {
-                return of(response?.datos || record);
+                return of(response?.data || record);
             })
         );
     }
@@ -576,7 +576,7 @@ export class CalibrationService {
             dir: 'desc'
         })).pipe(
             switchMap((response: any) => {
-                return of(response?.datos || []);
+                return of(response?.data || []);
             })
         );
     }
@@ -591,7 +591,7 @@ export class CalibrationService {
     getCalibrationAlerts(): Observable<CalibrationAlert[]> {
         return from(this._api.post('herramientas/calibrations/getResumenAlertas', {})).pipe(
             switchMap((response: any) => {
-                const alerts = response?.datos || [];
+                const alerts = response?.data || [];
                 this._alerts.next(alerts);
                 return of(alerts);
             }),
@@ -615,7 +615,7 @@ export class CalibrationService {
     getCriticalAlerts(): Observable<CalibrationAlert[]> {
         return from(this._api.post('herramientas/calibrations/getUpcomingCalibrationAlerts', {})).pipe(
             switchMap((response: any) => {
-                return of(response?.datos || []);
+                return of(response?.data || []);
             })
         );
     }
@@ -626,7 +626,7 @@ export class CalibrationService {
     getExpiredAlerts(): Observable<CalibrationAlert[]> {
         return from(this._api.post('herramientas/calibrations/getExpiredCalibrationAlerts', {})).pipe(
             switchMap((response: any) => {
-                return of(response?.datos || []);
+                return of(response?.data || []);
             })
         );
     }
@@ -641,7 +641,7 @@ export class CalibrationService {
     getDashboard(): Observable<CalibrationDashboard> {
         return from(this._api.post('herramientas/calibrations/getDashboard', {})).pipe(
             switchMap((response: any) => {
-                const dashboard = response?.datos || this._getDefaultDashboard();
+                const dashboard = response?.data || this._getDefaultDashboard();
                 this._dashboard.next(dashboard);
                 return of(dashboard);
             }),
@@ -694,7 +694,7 @@ export class CalibrationService {
             active: true
         })).pipe(
             switchMap((response: any) => {
-                const labs = response?.datos || [];
+                const labs = response?.data || [];
                 this._laboratories.next(labs);
                 return of(labs);
             })
@@ -711,7 +711,7 @@ export class CalibrationService {
             id_laboratory: id
         })).pipe(
             switchMap((response: any) => {
-                return of(response?.datos?.[0] || null);
+                return of(response?.data?.[0] || null);
             })
         );
     }
@@ -722,7 +722,7 @@ export class CalibrationService {
     saveLaboratory(laboratory: Partial<CalibrationLaboratory>): Observable<CalibrationLaboratory> {
         return from(this._api.post('herramientas/laboratories/saveLaboratory', laboratory)).pipe(
             switchMap((response: any) => {
-                return of(response?.datos || laboratory);
+                return of(response?.data || laboratory);
             }),
             tap(() => {
                 // Refresh laboratories list
@@ -758,7 +758,7 @@ export class CalibrationService {
     getReportMGH102(filters?: any): Observable<CalibrationReportMGH102> {
         return from(this._api.post('herramientas/calibrations/generateReportMGH102', filters || {})).pipe(
             switchMap((response: any) => {
-                return of(response?.datos || { tools: [], generatedAt: new Date().toISOString() });
+                return of(response?.data || { tools: [], generatedAt: new Date().toISOString() });
             })
         );
     }
@@ -772,7 +772,7 @@ export class CalibrationService {
             month
         })).pipe(
             switchMap((response: any) => {
-                return of(response?.datos || { calibrations: [], month, year });
+                return of(response?.data || { calibrations: [], month, year });
             })
         );
     }
@@ -785,7 +785,7 @@ export class CalibrationService {
             days_ahead: daysAhead
         })).pipe(
             switchMap((response: any) => {
-                return of(response?.datos || { tools: [], daysAhead });
+                return of(response?.data || { tools: [], daysAhead });
             })
         );
     }
@@ -837,7 +837,7 @@ export class CalibrationService {
             date_to: dateTo
         })).pipe(
             switchMap((response: any) => {
-                return of(response?.datos || {});
+                return of(response?.data || {});
             })
         );
     }
@@ -850,7 +850,7 @@ export class CalibrationService {
             months
         })).pipe(
             switchMap((response: any) => {
-                return of(response?.datos || []);
+                return of(response?.data || []);
             })
         );
     }
@@ -863,7 +863,7 @@ export class CalibrationService {
             limit
         })).pipe(
             switchMap((response: any) => {
-                return of(response?.datos || []);
+                return of(response?.data || []);
             })
         );
     }

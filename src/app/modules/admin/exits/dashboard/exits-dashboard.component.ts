@@ -1,6 +1,7 @@
-import { Component, OnInit, AfterViewInit, ViewChild, ElementRef, signal, computed } from '@angular/core';
+import { Component, OnInit, AfterViewInit, ViewChild, ElementRef, signal, computed, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
+import { MovementService } from 'app/core/services/movement.service';
 import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
@@ -83,7 +84,9 @@ export class ExitsDashboardComponent implements OnInit, AfterViewInit {
     @ViewChild('distributionChart', { static: false }) distributionCanvas!: ElementRef<HTMLCanvasElement>;
     @ViewChild('trendChart', { static: false }) trendCanvas!: ElementRef<HTMLCanvasElement>;
 
-    isLoading = signal(false);
+    private movService = inject(MovementService);
+
+    isLoading = signal(true);
 
     private distributionChartInstance?: Chart;
     private trendChartInstance?: Chart;
@@ -104,91 +107,67 @@ export class ExitsDashboardComponent implements OnInit, AfterViewInit {
         white: '#ffffff'
     };
 
-    // Datos simulados con Variantes de Color
     kpiCards = signal<KPICard[]>([
-        {
-            title: 'Salidas Mes',
-            value: 52,
-            subtitle: 'TOTAL',
-            icon: 'heroicons_outline:arrow-up-tray',
-            variant: 'navy',
-            trend: { value: 15, isPositive: true }
-        },
-        {
-            title: 'A Técnicos',
-            value: 28,
-            subtitle: 'PRÉSTAMOS',
-            icon: 'heroicons_outline:user-group',
-            variant: 'blue',
-            trend: { value: 10, isPositive: true }
-        },
-        {
-            title: 'A Calibración',
-            value: 10,
-            subtitle: 'EXTERNOS',
-            icon: 'heroicons_outline:wrench-screwdriver',
-            variant: 'yellow'
-        },
-        {
-            title: 'Pendientes',
-            value: 42,
-            subtitle: 'POR RETORNAR',
-            icon: 'heroicons_outline:clock',
-            variant: 'red', // Rojo crítico
-            trend: { value: 5, isPositive: false }
-        },
-        {
-            title: 'A Otras Bases',
-            value: 8,
-            subtitle: 'ENVÍOS',
-            icon: 'heroicons_outline:paper-airplane',
-            variant: 'purple'
-        },
-        {
-            title: 'Traspasos',
-            value: 2,
-            subtitle: 'INTERNOS',
-            icon: 'heroicons_outline:arrows-right-left',
-            variant: 'orange'
-        },
-        {
-            title: 'A Terceros',
-            value: 4,
-            subtitle: 'PRÉSTAMOS',
-            icon: 'heroicons_outline:briefcase',
-            variant: 'teal'
-        },
-        {
-            title: 'Items Totales',
-            value: 186,
-            subtitle: 'UNIDADES',
-            icon: 'heroicons_outline:cube',
-            variant: 'black'
-        }
+        { title: 'Salidas Mes',   value: 0, subtitle: 'TOTAL',        icon: 'heroicons_outline:arrow-up-tray',      variant: 'navy' },
+        { title: 'A Técnicos',   value: 0, subtitle: 'PRÉSTAMOS',    icon: 'heroicons_outline:user-group',         variant: 'blue' },
+        { title: 'A Calibración',value: 0, subtitle: 'EXTERNOS',     icon: 'heroicons_outline:wrench-screwdriver', variant: 'yellow' },
+        { title: 'Pendientes',   value: 0, subtitle: 'POR RETORNAR', icon: 'heroicons_outline:clock',              variant: 'red' },
+        { title: 'A Otras Bases',value: 0, subtitle: 'ENVÍOS',       icon: 'heroicons_outline:paper-airplane',    variant: 'purple' },
+        { title: 'Traspasos',    value: 0, subtitle: 'INTERNOS',     icon: 'heroicons_outline:arrows-right-left',  variant: 'orange' },
+        { title: 'A Terceros',   value: 0, subtitle: 'PRÉSTAMOS',    icon: 'heroicons_outline:briefcase',          variant: 'teal' },
+        { title: 'Items Totales',value: 0, subtitle: 'UNIDADES',     icon: 'heroicons_outline:cube',               variant: 'black' }
     ]);
 
-    // Distribución con colores variados
-    exitDistribution = signal<ChartData[]>([
-        { label: 'Técnicos', value: 28, color: this.colors.blue },
-        { label: 'Calibración', value: 10, color: this.colors.yellow },
-        { label: 'Bases', value: 8, color: this.colors.purple },
-        { label: 'Terceros', value: 4, color: this.colors.teal },
-        { label: 'Traspasos', value: 2, color: this.colors.orange }
-    ]);
+    exitDistribution = signal<ChartData[]>([]);
 
     totalExits = computed(() => this.exitDistribution().reduce((sum, item) => sum + item.value, 0));
 
-    recentExits = signal<RecentExit[]>([
-        { type: 'Préstamo a Técnico', date: new Date('2026-01-18'), destination: 'Hangar', recipient: 'Juan Pérez', totalItems: 5 },
-        { type: 'Envío a Calibración', date: new Date('2026-01-17'), destination: 'Lab Externo', recipient: 'María García', totalItems: 3 },
-        { type: 'Envío a Base', date: new Date('2026-01-17'), destination: 'Base VVI', recipient: 'Carlos López', totalItems: 8 },
-        { type: 'Préstamo a Terceros', date: new Date('2026-01-16'), destination: 'SABSA', recipient: 'Ana Martínez', totalItems: 2 },
-        { type: 'Traspaso', date: new Date('2026-01-16'), destination: 'Almacén B', recipient: 'Pedro Sánchez', totalItems: 4 }
-    ]);
+    recentExits = signal<RecentExit[]>([]);
 
     ngOnInit(): void {
-        this.isLoading.set(true);
-        setTimeout(() => this.isLoading.set(false), 800);
+        this.movService.getMovements({ limit: 500, sort: 'date', dir: 'desc' }).subscribe({
+            next: (movements: any[]) => {
+                const exits      = movements.filter(m => m.movement_type === 'exit' || m.type === 'exit' || m.movement_type === 'loan' || m.type === 'loan');
+                const aTecnicos  = exits.filter(m => m.reason === 'loan'             || m.exit_reason === 'loan').length;
+                const aCalib     = exits.filter(m => m.reason === 'calibration_send' || m.exit_reason === 'calibration_send').length;
+                const aBase      = exits.filter(m => m.reason === 'base_send'        || m.exit_reason === 'base_send').length;
+                const aTerceros  = exits.filter(m => m.reason === 'third_party_send' || m.exit_reason === 'third_party_send').length;
+                const traspasos  = exits.filter(m => m.reason === 'transfer'         || m.exit_reason === 'transfer').length;
+                const totalItems = exits.reduce((s: number, m: any) => s + (parseInt(m.quantity) || 1), 0);
+
+                this.kpiCards.set([
+                    { title: 'Salidas Mes',   value: exits.length, subtitle: 'TOTAL',        icon: 'heroicons_outline:arrow-up-tray',      variant: 'navy' },
+                    { title: 'A Técnicos',   value: aTecnicos,    subtitle: 'PRÉSTAMOS',    icon: 'heroicons_outline:user-group',         variant: 'blue' },
+                    { title: 'A Calibración',value: aCalib,       subtitle: 'EXTERNOS',     icon: 'heroicons_outline:wrench-screwdriver', variant: 'yellow' },
+                    { title: 'Pendientes',   value: 0,            subtitle: 'POR RETORNAR', icon: 'heroicons_outline:clock',              variant: 'red' },
+                    { title: 'A Otras Bases',value: aBase,        subtitle: 'ENVÍOS',       icon: 'heroicons_outline:paper-airplane',    variant: 'purple' },
+                    { title: 'Traspasos',    value: traspasos,    subtitle: 'INTERNOS',     icon: 'heroicons_outline:arrows-right-left',  variant: 'orange' },
+                    { title: 'A Terceros',   value: aTerceros,    subtitle: 'PRÉSTAMOS',    icon: 'heroicons_outline:briefcase',          variant: 'teal' },
+                    { title: 'Items Totales',value: totalItems,   subtitle: 'UNIDADES',     icon: 'heroicons_outline:cube',               variant: 'black' }
+                ]);
+
+                this.exitDistribution.set([
+                    { label: 'Técnicos',    value: aTecnicos, color: this.colors.blue },
+                    { label: 'Calibración', value: aCalib,    color: this.colors.yellow },
+                    { label: 'Bases',       value: aBase,     color: this.colors.purple },
+                    { label: 'Terceros',    value: aTerceros, color: this.colors.teal },
+                    { label: 'Traspasos',   value: traspasos, color: this.colors.orange }
+                ]);
+
+                this.recentExits.set(
+                    exits.slice(0, 10).map((m: any) => ({
+                        type:       m.exit_reason_label || m.reason || m.movement_type || 'Salida',
+                        date:       m.date ? new Date(m.date) : new Date(),
+                        destination:m.destination || m.location_name || '-',
+                        recipient:  m.recipient_name || m.employee_name || m.created_by || '-',
+                        totalItems: parseInt(m.quantity) || 1
+                    }))
+                );
+
+                this.isLoading.set(false);
+            },
+            error: () => this.isLoading.set(false)
+        });
     }
 
     ngAfterViewInit(): void {

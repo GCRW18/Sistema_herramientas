@@ -63,7 +63,7 @@
                     <h3 class="font-black text-base uppercase text-black dark:text-white">Datos del Traspaso</h3>
                 </div>
 
-                <!-- Fila 1: Buscar Personal + Tipo Traspaso + Base + Buscar btn -->
+                <!-- Fila 1: Buscar Personal + Tipo Traspaso + Base -->
                 <div class="flex flex-col lg:flex-row gap-4 mb-4 items-start">
                     <div class="flex-1 w-full lg:w-auto form-group">
                         <label class="text-[11px] font-black uppercase text-gray-700 dark:text-gray-300 mb-1.5 block">
@@ -71,10 +71,28 @@
                         </label>
                         <div class="relative">
                             <input type="text" formControlName="buscar"
-                                   placeholder="Nombre o ID..."
+                                   placeholder="Escribe 3 letras del nombre o licencia..."
+                                   autocomplete="off"
+                                   (input)="onBuscarInput($event)"
+                                   (blur)="hideSuggestions()"
                                    (keydown.enter)="buscarPersona()"
                                    class="w-full h-11 text-sm font-bold border-2 border-black dark:border-slate-600 rounded-lg pl-10 pr-4 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[3px_3px_0px_0px_#000] transition-shadow outline-none placeholder:text-gray-400">
                             <mat-icon class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 !text-lg">person_search</mat-icon>
+
+                            <!-- Dropdown de sugerencias -->
+                            <div *ngIf="showSuggestions && filteredPersonal.length > 0"
+                                 class="absolute top-full left-0 right-0 z-50 mt-1 bg-white dark:bg-slate-800 border-2 border-black rounded-lg shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] overflow-hidden max-h-56 overflow-y-auto">
+                                <button type="button"
+                                        *ngFor="let persona of filteredPersonal"
+                                        (mousedown)="seleccionarPersona(persona)"
+                                        class="w-full text-left px-4 py-2.5 hover:bg-amber-50 dark:hover:bg-slate-700 border-b border-gray-100 dark:border-slate-700 last:border-0 transition-colors flex items-center gap-3">
+                                    <mat-icon class="!text-base text-gray-400 shrink-0">person</mat-icon>
+                                    <div class="min-w-0">
+                                        <p class="text-sm font-black text-black dark:text-white truncate uppercase">{{ persona.nombreCompleto }}</p>
+                                        <p class="text-xs text-gray-500 dark:text-gray-400 truncate">{{ persona.cargo }} · {{ persona.licencia || 'Sin licencia' }}</p>
+                                    </div>
+                                </button>
+                            </div>
                         </div>
                     </div>
 
@@ -111,46 +129,18 @@
                         </select>
                     </div>
 
-                    <div class="form-group">
-                        <label class="text-[11px] font-black uppercase text-gray-700 dark:text-gray-300 mb-1.5 block opacity-0">Acción</label>
-                        <button type="button" (click)="buscarPersona()"
-                                class="h-11 px-6 bg-red-600 border-2 border-black font-black text-white rounded-full shadow-[3px_3px_0px_0px_#000] hover:shadow-[2px_2px_0px_0px_#000] hover:translate-x-[2px] hover:translate-y-[2px] active:shadow-none transition-all uppercase flex items-center gap-2 whitespace-nowrap">
-                            <mat-icon class="!text-lg">search</mat-icon>
-                            Buscar
-                        </button>
-                    </div>
                 </div>
 
-                <!-- Fila 2: Nombres + Ap. Paterno + Ap. Materno + Nro. Licencia -->
-                <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
-                    <div class="form-group">
+                <!-- Fila 2: Nombre Completo + Nro. Licencia -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                    <div class="form-group md:col-span-2">
                         <label class="text-[11px] font-black uppercase text-gray-700 dark:text-gray-300 mb-1.5 block">
-                            Nombres *
+                            Nombre Completo *
                         </label>
-                        <input type="text" formControlName="nombres"
-                               placeholder="Ej: JUAN CARLOS"
+                        <input type="text" formControlName="nombreCompleto"
+                               placeholder="Ej: JUAN CARLOS PEREZ GONZALES"
                                class="w-full h-11 text-sm font-bold border-2 border-black dark:border-slate-600 rounded-lg px-4 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[3px_3px_0px_0px_#000] transition-shadow outline-none placeholder:text-gray-400 uppercase"
-                               [class.border-red-500]="hasError('nombres', 'required')">
-                    </div>
-
-                    <div class="form-group">
-                        <label class="text-[11px] font-black uppercase text-gray-700 dark:text-gray-300 mb-1.5 block">
-                            Ap. Paterno *
-                        </label>
-                        <input type="text" formControlName="apPaterno"
-                               placeholder="Ej: PEREZ"
-                               class="w-full h-11 text-sm font-bold border-2 border-black dark:border-slate-600 rounded-lg px-4 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[3px_3px_0px_0px_#000] transition-shadow outline-none placeholder:text-gray-400 uppercase"
-                               [class.border-red-500]="hasError('apPaterno', 'required')">
-                    </div>
-
-                    <div class="form-group">
-                        <label class="text-[11px] font-black uppercase text-gray-700 dark:text-gray-300 mb-1.5 block">
-                            Ap. Materno *
-                        </label>
-                        <input type="text" formControlName="apMaterno"
-                               placeholder="Ej: GONZALES"
-                               class="w-full h-11 text-sm font-bold border-2 border-black dark:border-slate-600 rounded-lg px-4 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[3px_3px_0px_0px_#000] transition-shadow outline-none placeholder:text-gray-400 uppercase"
-                               [class.border-red-500]="hasError('apMaterno', 'required')">
+                               [class.border-red-500]="hasError('nombreCompleto', 'required')">
                     </div>
 
                     <div class="form-group">

@@ -66,42 +66,23 @@
                     <div class="neo-card-base p-5 relative z-10 bg-white dark:bg-slate-800">
                         <div class="flex items-center gap-2 mb-4 pb-2 border-b-2 border-black dark:border-gray-600">
                             <mat-icon class="text-black dark:text-white !text-xl">search</mat-icon>
-                            <h3 class="font-black text-base uppercase text-black dark:text-white">Buscar Herramienta</h3>
+                            <h3 class="font-black text-base uppercase text-black dark:text-white">Seleccionar Herramienta</h3>
+                            <span class="ml-auto text-xs font-black bg-black text-white px-2 py-0.5 rounded border border-black">
+                                {{ coincidencias() }} disponibles
+                            </span>
                         </div>
 
-                        <!-- Buscar por texto -->
-                        <div class="mb-4">
-                            <label class="text-[11px] font-black uppercase text-gray-700 dark:text-gray-300 mb-1.5 block">
-                                Buscar por Código, Nombre o P/N
-                            </label>
-                            <div class="relative">
-                                <input type="text" formControlName="buscar"
-                                       (input)="onBuscarChange($event.target.value)"
-                                       placeholder="Ej: BOA-H-0245 o TALADRO"
-                                       class="w-full h-11 text-sm font-bold border-2 border-black dark:border-slate-600 rounded-lg pl-10 pr-10 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[3px_3px_0px_0px_#000] transition-shadow outline-none placeholder:text-gray-400">
-                                <mat-icon class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400 !text-lg">search</mat-icon>
-                                <span class="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-black bg-black text-white px-2 py-0.5 rounded border border-black">
-                                    {{ coincidencias() }}
-                                </span>
-                            </div>
-                        </div>
-
-                        <!-- Select de herramientas filtradas -->
-                        <div class="mb-4">
-                            <label class="text-[11px] font-black uppercase text-gray-700 dark:text-gray-300 mb-1.5 block">
-                                Seleccionar Herramienta
-                            </label>
-                            <div class="relative">
-                                <select formControlName="codigo" (change)="onCodigoSelect($event.target.value)"
-                                        class="w-full h-11 text-sm font-bold border-2 border-black dark:border-slate-600 rounded-lg pl-10 pr-4 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[3px_3px_0px_0px_#000] transition-shadow outline-none appearance-none cursor-pointer">
-                                    <option [ngValue]="null">-- Seleccionar Herramienta --</option>
-                                    <option *ngFor="let h of herramientas" [value]="h.codigo" class="text-black dark:text-white font-bold">
-                                        {{ h.codigo }} - {{ h.nombre }}
-                                    </option>
-                                </select>
-                                <mat-icon class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400 !text-lg">build</mat-icon>
-                                <mat-icon class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400 !text-lg pointer-events-none">expand_more</mat-icon>
-                            </div>
+                        <!-- Un solo selector unificado -->
+                        <div class="relative">
+                            <select formControlName="codigo" (change)="onCodigoSelect($event.target.value)"
+                                    class="w-full h-11 text-sm font-bold border-2 border-black dark:border-slate-600 rounded-lg pl-10 pr-4 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[3px_3px_0px_0px_#000] transition-shadow outline-none appearance-none cursor-pointer">
+                                <option value="">-- Seleccionar Herramienta --</option>
+                                <option *ngFor="let h of herramientas" [value]="h.codigo" class="text-black dark:text-white font-bold">
+                                    {{ h.codigo }} · {{ h.nombre }}
+                                </option>
+                            </select>
+                            <mat-icon class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400 !text-lg">build</mat-icon>
+                            <mat-icon class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400 !text-lg pointer-events-none">expand_more</mat-icon>
                         </div>
                     </div>
 

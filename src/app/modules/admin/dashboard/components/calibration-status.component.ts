@@ -69,12 +69,7 @@ interface StatusItem {
 })
 export class CalibrationStatusComponent implements AfterViewInit {
     @ViewChild('chartCanvas', { static: false }) chartCanvas!: ElementRef<HTMLCanvasElement>;
-    @Input() data = signal<CalibrationDataItem[]>([
-        { name: 'Vigente', value: 156, color: 'rgb(34, 197, 94)' },
-        { name: 'Por vencer (30 días)', value: 23, color: 'rgb(251, 191, 36)' },
-        { name: 'Vencida', value: 8, color: 'rgb(239, 68, 68)' },
-        { name: 'En calibración', value: 12, color: 'rgb(168, 85, 247)' }
-    ]);
+    @Input() data = signal<CalibrationDataItem[]>([]);
 
     total = computed(() => this.data().reduce((sum, item) => sum + item.value, 0));
 

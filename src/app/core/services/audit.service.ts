@@ -37,7 +37,7 @@ export class AuditService {
 
         return from(this._api.post('sistema/Auditoria/listAuditoria', params)).pipe(
             switchMap((response: any) => {
-                const logs = response?.datos || [];
+                const logs = response?.data || [];
                 this._logs.next(logs);
                 return of(logs);
             })
@@ -52,7 +52,7 @@ export class AuditService {
             id_auditoria: id,
         })).pipe(
             switchMap((response: any) => {
-                return of(response?.datos || null);
+                return of(response?.data || null);
             })
         );
     }
@@ -76,7 +76,7 @@ export class AuditService {
             valor_nuevo: log.newValue,
         })).pipe(
             switchMap((response: any) => {
-                return of(response?.datos || log);
+                return of(response?.data || log);
             })
         );
     }
@@ -111,7 +111,7 @@ export class AuditService {
             id_entidad: entityId,
         })).pipe(
             switchMap((response: any) => {
-                return of(response?.datos || []);
+                return of(response?.data || []);
             })
         );
     }
@@ -138,7 +138,7 @@ export class AuditService {
             filtros: filters,
         })).pipe(
             switchMap((response: any) => {
-                return of(response?.datos || {});
+                return of(response?.data || {});
             })
         );
     }

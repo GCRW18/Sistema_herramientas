@@ -233,22 +233,8 @@ export class DevolucionHerramientaComponent implements OnInit, OnDestroy {
                 this.funcionariosFiltrados = [...this.funcionarios];
             },
             error: () => {
-                // Personal técnico de BoA (datos mock realistas)
-                this.funcionarios = [
-                    { id: '1', licencia: 'TMA-1245', nombreCompleto: 'Gabriel Cruz Mamani', cargo: 'Técnico TMA A&P', departamento: 'Mantenimiento Línea', area: 'VVI' },
-                    { id: '2', licencia: 'TMA-0987', nombreCompleto: 'Marco Antonio Quispe Condori', cargo: 'Inspector de Calidad', departamento: 'Control de Calidad', area: 'VVI' },
-                    { id: '3', licencia: 'TMA-1456', nombreCompleto: 'Carlos Alberto Flores Rojas', cargo: 'Supervisor Hangar', departamento: 'Hangar Mayor', area: 'VVI' },
-                    { id: '4', licencia: 'TMA-0856', nombreCompleto: 'Luis Fernando Choque Vargas', cargo: 'Técnico Aviónica', departamento: 'Aviónica', area: 'VVI' },
-                    { id: '5', licencia: 'TMA-1123', nombreCompleto: 'Roberto Limachi Apaza', cargo: 'Jefe de Almacén', departamento: 'Almacén Herramientas', area: 'VVI' },
-                    { id: '6', licencia: 'TMA-0745', nombreCompleto: 'María Elena Torrez Huanca', cargo: 'Analista Técnico', departamento: 'Ingeniería', area: 'LPB' },
-                    { id: '7', licencia: 'TMA-1378', nombreCompleto: 'Jorge Luis Mamani Calle', cargo: 'Técnico Estructuras', departamento: 'Estructuras', area: 'VVI' },
-                    { id: '8', licencia: 'TMA-0923', nombreCompleto: 'Edwin Paco Mendoza', cargo: 'Técnico Motores', departamento: 'Planta Motriz', area: 'VVI' },
-                    { id: '9', licencia: 'TMA-1567', nombreCompleto: 'Fernando Rojas Condori', cargo: 'Técnico Línea', departamento: 'Línea de Vuelo', area: 'CBB' },
-                    { id: '10', licencia: 'TMA-0654', nombreCompleto: 'Patricia Villca Quispe', cargo: 'Asistente Almacén', departamento: 'Almacén', area: 'VVI' },
-                    { id: '11', licencia: 'TMA-1890', nombreCompleto: 'Ricardo Huanca Mamani', cargo: 'Técnico NDT', departamento: 'Ensayos No Destructivos', area: 'VVI' },
-                    { id: '12', licencia: 'TMA-0412', nombreCompleto: 'Diego Álvarez Fernández', cargo: 'Técnico Hidráulica', departamento: 'Sistemas', area: 'VVI' }
-                ];
-                this.funcionariosFiltrados = [...this.funcionarios];
+                this.funcionarios = [];
+                this.funcionariosFiltrados = [];
             }
         });
     }
@@ -331,9 +317,12 @@ export class DevolucionHerramientaComponent implements OnInit, OnDestroy {
                     });
                     // Renumerar filas
                     this.dataSource.forEach((item, idx) => item.fila = idx + 1);
-                    this.showMessage(`Se encontraron ${this.dataSource.length} herramienta(s)`, 'success');
-                } else {
+                }
+
+                if (this.dataSource.length === 0) {
                     this.loadMockData(funcionario);
+                } else {
+                    this.showMessage(`Se encontraron ${this.dataSource.length} herramienta(s)`, 'success');
                 }
             },
             error: () => {
@@ -642,6 +631,7 @@ export class DevolucionHerramientaComponent implements OnInit, OnDestroy {
 
         const devolucionData: CreateMovement = {
             type: 'entry',
+            status: 'COMPLETADO',
             entryReason: 'return',
             date: this.devolucionForm.value.fechaDevolucion,
             notes: this.devolucionForm.value.observaciones,

@@ -45,7 +45,7 @@ export class FleetService {
 
         return from(this._api.post('herramientas/aircraft/listAircraft', params)).pipe(
             switchMap((response: any) => {
-                const aircraft = response?.datos || [];
+                const aircraft = response?.data || [];
                 this._aircraft.next(aircraft);
                 return of(aircraft);
             })
@@ -62,7 +62,7 @@ export class FleetService {
             id_aircraft: id
         })).pipe(
             switchMap((response: any) => {
-                const aircraft = response?.datos?.[0] || null;
+                const aircraft = response?.data?.[0] || null;
                 if (aircraft) {
                     this._singleAircraft.next(aircraft);
                 }
@@ -81,7 +81,7 @@ export class FleetService {
             matricula: registration
         })).pipe(
             switchMap((response: any) => {
-                const aircraft = response?.datos?.[0] || null;
+                const aircraft = response?.data?.[0] || null;
                 if (aircraft) {
                     this._singleAircraft.next(aircraft);
                 }
@@ -96,7 +96,7 @@ export class FleetService {
     createAircraft(aircraft: Partial<Aircraft>): Observable<Aircraft> {
         return from(this._api.post('herramientas/aircraft/insertAircraft', aircraft)).pipe(
             switchMap((response: any) => {
-                return of(response?.datos || aircraft);
+                return of(response?.data || aircraft);
             })
         );
     }
@@ -110,7 +110,7 @@ export class FleetService {
             id_aircraft: id
         })).pipe(
             switchMap((response: any) => {
-                const updatedAircraft = response?.datos || aircraft;
+                const updatedAircraft = response?.data || aircraft;
                 this._singleAircraft.next(updatedAircraft as Aircraft);
                 return of(updatedAircraft);
             })
@@ -136,7 +136,7 @@ export class FleetService {
     getAircraftStatistics(): Observable<any> {
         return from(this._api.post('herramientas/aircraft/getAircraftStats', {})).pipe(
             switchMap((response: any) => {
-                return of(response?.datos || {});
+                return of(response?.data || {});
             })
         );
     }
@@ -149,7 +149,7 @@ export class FleetService {
             id_aircraft: id
         })).pipe(
             switchMap((response: any) => {
-                return of(response?.datos || []);
+                return of(response?.data || []);
             })
         );
     }
@@ -162,7 +162,7 @@ export class FleetService {
             id_aircraft: id
         })).pipe(
             switchMap((response: any) => {
-                return of(response?.datos || []);
+                return of(response?.data || []);
             })
         );
     }

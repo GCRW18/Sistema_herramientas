@@ -1,18 +1,17 @@
-import { Component, OnInit, OnDestroy, inject, ViewChild, TemplateRef } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { Router, RouterModule, NavigationEnd } from '@angular/router';
-import { MatCardModule } from '@angular/material/card';
-import { MatIconModule } from '@angular/material/icon';
+import { Component, OnInit, OnDestroy, inject, ViewChild, TemplateRef, signal, Type, Injector } from '@angular/core';
+import { CommonModule, NgComponentOutlet } from '@angular/common';
+import { MatIconModule, MatIconRegistry } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { MatTableModule } from '@angular/material/table';
 import { MatPaginatorModule, MatPaginator, PageEvent } from '@angular/material/paginator';
-import { MatDialog, MatDialogModule } from '@angular/material/dialog';
+import { MatDialog, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { DomSanitizer } from '@angular/platform-browser';
 import { DragDropModule } from '@angular/cdk/drag-drop';
-import { filter, takeUntil, finalize } from 'rxjs/operators';
-import { Subject } from 'rxjs';
+import { takeUntil, finalize } from 'rxjs/operators';
+import { Subject, of } from 'rxjs';
 import { MovementService } from '../../../core/services/movement.service';
 
 interface ExitRecord {
@@ -30,8 +29,7 @@ interface ExitRecord {
     standalone: true,
     imports: [
         CommonModule,
-        RouterModule,
-        MatCardModule,
+        NgComponentOutlet,
         MatIconModule,
         MatButtonModule,
         MatTableModule,
@@ -48,146 +46,6 @@ interface ExitRecord {
         :host {
             display: block;
             height: 100%;
-            --neo-border: 3px solid #1a1a1a;
-            --neo-shadow: 4px 4px 0px 0px rgba(0, 0, 0, 1);
-        }
-
-        /* ===== EXIT CARDS ===== */
-        .neo-card-exit {
-            border: var(--neo-border);
-            box-shadow: var(--neo-shadow);
-            border-radius: 20px;
-            background-color: #ffffff;
-            cursor: pointer;
-            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-            position: relative;
-            overflow: hidden;
-        }
-
-        .neo-card-exit:hover {
-            transform: translate(-3px, -3px);
-            box-shadow: 8px 8px 0px 0px rgba(0, 0, 0, 1);
-        }
-
-        .neo-card-exit:active {
-            transform: translate(0px, 0px);
-            box-shadow: 2px 2px 0px 0px rgba(0, 0, 0, 1);
-        }
-
-        :host-context(.dark) .neo-card-exit {
-            background-color: #203f77;
-            border-color: #000000;
-            box-shadow: 4px 4px 0px 0px rgb(0, 0, 0);
-        }
-
-        :host-context(.dark) .neo-card-exit:hover {
-            box-shadow: 8px 8px 0px 0px rgb(0, 0, 0);
-        }
-
-        :host-context(.dark) .neo-card-exit:active {
-            box-shadow: 2px 2px 0px 0px rgba(30, 41, 59, 1);
-        }
-
-        /* ===== CARD NUMBERS ===== */
-        .exit-number {
-            font-size: 4rem;
-            font-weight: 900;
-            line-height: 1;
-            color: #1a1a1a;
-            letter-spacing: -0.03em;
-        }
-
-        .exit-number-sm {
-            font-size: 2.5rem;
-        }
-
-        :host-context(.dark) .exit-number {
-            color: #fff6f6;
-        }
-
-        /* ===== CARD LABELS ===== */
-        .exit-label {
-            font-size: 0.95rem;
-            font-weight: 900;
-            text-transform: uppercase;
-            letter-spacing: 0.01em;
-            line-height: 1.25;
-            color: #1a1a1a;
-        }
-
-        .exit-label-lg {
-            font-size: 1.35rem;
-        }
-
-        .exit-label-sm {
-            font-size: 0.85rem;
-        }
-
-        :host-context(.dark) .exit-label {
-            color: #c2cee6;
-        }
-
-        /* ===== CARD ICONS ===== */
-        .exit-icon-lg {
-            width: 70px !important;
-            height: 70px !important;
-            font-size: 70px !important;
-            color: #1a1a1a;
-        }
-
-        .exit-icon-md {
-            width: 48px !important;
-            height: 48px !important;
-            font-size: 48px !important;
-            color: #1a1a1a;
-        }
-
-        .exit-icon-xl {
-            width: 130px !important;
-            height: 130px !important;
-            font-size: 130px !important;
-            color: #1a1a1a;
-        }
-
-        :host-context(.dark) .exit-icon-lg,
-        :host-context(.dark) .exit-icon-md,
-        :host-context(.dark) .exit-icon-xl {
-            color: #ffffff;
-        }
-
-        /* ===== SIDEBAR BUTTONS ===== */
-        .exit-sidebar-btn {
-            width: 100%;
-            padding: 14px 20px;
-            font-weight: 900;
-            font-size: 0.85rem;
-            text-transform: uppercase;
-            letter-spacing: 0.06em;
-            background-color: #ffffff;
-            color: #1a1a1a;
-            border: 3px solid #1a1a1a;
-            border-radius: 14px;
-            box-shadow: 3px 3px 0px 0px rgba(0, 0, 0, 1);
-            cursor: pointer;
-            transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-
-        .exit-sidebar-btn:hover {
-            transform: translate(-2px, -2px);
-            box-shadow: 5px 5px 0px 0px rgba(0, 0, 0, 1);
-            color: #ffffff;
-        }
-
-        .exit-sidebar-btn:active {
-            transform: translate(0, 0);
-            box-shadow: 1px 1px 0px 0px rgba(0, 0, 0, 1);
-        }
-
-        :host-context(.dark) .exit-sidebar-btn {
-            background-color: #203f77;
-            color: #ffffff;
-            border-color: #000000;
-            box-shadow: 3px 3px 0px 0px rgb(30, 41, 59);
         }
 
         /* ===== TABLE STYLES ===== */
@@ -219,7 +77,6 @@ interface ExitRecord {
             border-bottom-color: #333;
         }
 
-        /* ===== DIALOG: Neo Card Base ===== */
         .neo-card-base-exit {
             border: 2px solid black !important;
             box-shadow: 4px 4px 0px 0px rgba(0,0,0,1) !important;
@@ -231,13 +88,9 @@ interface ExitRecord {
             background-color: #1e293b !important;
         }
 
-        /* ===== DIALOG: Spinner Overlay ===== */
         .spinner-overlay {
             position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
+            top: 0; left: 0; right: 0; bottom: 0;
             background: rgba(255,255,255,0.8);
             backdrop-filter: blur(4px);
             display: flex;
@@ -250,47 +103,47 @@ interface ExitRecord {
             background: rgba(0,0,0,0.7);
         }
 
-        /* ===== DIALOG: Custom Scrollbar ===== */
         .custom-scrollbar-exit::-webkit-scrollbar { width: 6px; height: 6px; }
         .custom-scrollbar-exit::-webkit-scrollbar-track { background: transparent; }
         .custom-scrollbar-exit::-webkit-scrollbar-thumb { background: #000; border-radius: 3px; }
         :host-context(.dark) .custom-scrollbar-exit::-webkit-scrollbar-thumb { background: #cbd5e1; }
-
     `]
 })
 export class ExitsComponent implements OnInit, OnDestroy {
-    private router = inject(Router);
-    private dialog = inject(MatDialog);
-    private snackBar = inject(MatSnackBar);
+    private dialog     = inject(MatDialog);
+    private snackBar   = inject(MatSnackBar);
     private movementService = inject(MovementService);
+    private injector   = inject(Injector);
+    private iconRegistry = inject(MatIconRegistry);
+    private sanitizer    = inject(DomSanitizer);
 
     private _unsubscribeAll = new Subject<void>();
 
     @ViewChild(MatPaginator) paginator!: MatPaginator;
     @ViewChild('salidasRecientesDialog') salidasRecientesDialog!: TemplateRef<any>;
 
-    showCards = true;
+    // Formulario activo inline
+    activeFormComponent = signal<Type<any> | null>(null);
+    activeFormTab       = signal<number | null>(null);
+    formInjector: Injector | null = null;
+
     isLoading = false;
 
     // Paginación
-    totalRecords = 0;
-    pageSize = 10;
-    pageIndex = 0;
+    totalRecords  = 0;
+    pageSize      = 10;
+    pageIndex     = 0;
     pageSizeOptions = [5, 10, 25, 50];
 
     displayedColumns: string[] = ['fecha', 'tipo', 'nroComprobante', 'estado', 'responsable', 'acciones'];
     recentExits: ExitRecord[] = [];
 
-    ngOnInit(): void {
-        this.updateCardVisibility(this.router.url);
-        this.loadRecentExits();
+    constructor() {
+        this.registerIcons();
+    }
 
-        this.router.events.pipe(
-            filter(event => event instanceof NavigationEnd),
-            takeUntil(this._unsubscribeAll)
-        ).subscribe((event: any) => {
-            this.updateCardVisibility(event.url);
-        });
+    ngOnInit(): void {
+        this.loadRecentExits();
     }
 
     ngOnDestroy(): void {
@@ -298,13 +151,94 @@ export class ExitsComponent implements OnInit, OnDestroy {
         this._unsubscribeAll.complete();
     }
 
-    private updateCardVisibility(url: string): void {
-        this.showCards = url === '/salidas' || url === '/salidas/' || url.endsWith('/salidas');
+    // ── Inline form helpers ──────────────────────────────────────────────────
+
+    /** Crea un Injector con un MatDialogRef falso cuyo close() cierra el formulario inline */
+    private createFormInjector(): Injector {
+        const self = this;
+        const fakeRef = {
+            close:            (result?: any) => { self.closeActiveForm(); },
+            afterClosed:      () => of(null),
+            beforeClosed:     () => of(null),
+            backdropClick:    () => of(null),
+            keydownEvents:    () => of(null),
+            updatePosition:   () => {},
+            updateSize:       () => {},
+            addPanelClass:    () => {},
+            removePanelClass: () => {},
+            disableClose: false,
+            id: 'inline-form',
+            componentInstance: null,
+        };
+        return Injector.create({
+            providers: [{ provide: MatDialogRef, useValue: fakeRef }],
+            parent: this.injector
+        });
     }
+
+    closeActiveForm(): void {
+        this.activeFormComponent.set(null);
+        this.activeFormTab.set(null);
+        this.formInjector = null;
+    }
+
+    // ── Form openers (inline) ────────────────────────────────────────────────
+
+    async openEnvioOtrasBases(): Promise<void> {
+        const { EnvioOtrasBasesComponent } = await import('./envio-otras-bases/envio-otras-bases.component');
+        this.formInjector = this.createFormInjector();
+        this.activeFormComponent.set(EnvioOtrasBasesComponent);
+        this.activeFormTab.set(1);
+    }
+
+    async openTraspasoOtraArea(): Promise<void> {
+        const { TraspasoOtraAreaComponent } = await import('./traspaso-otra-area/traspaso-otra-area.component');
+        this.formInjector = this.createFormInjector();
+        this.activeFormComponent.set(TraspasoOtraAreaComponent);
+        this.activeFormTab.set(2);
+    }
+
+    async openPrestamoTerceros(): Promise<void> {
+        const { PrestamoTercerosComponent } = await import('./prestamo-terceros/prestamo-terceros.component');
+        this.formInjector = this.createFormInjector();
+        this.activeFormComponent.set(PrestamoTercerosComponent);
+        this.activeFormTab.set(3);
+    }
+
+    async openPonerCuarentena(): Promise<void> {
+        const { PonerCuarentenaComponent } = await import('./poner-cuarentena/poner-cuarentena.component');
+        this.formInjector = this.createFormInjector();
+        this.activeFormComponent.set(PonerCuarentenaComponent);
+        this.activeFormTab.set(4);
+    }
+
+    async openBaja(): Promise<void> {
+        const { BajaComponent } = await import('./baja/baja.component');
+        this.formInjector = this.createFormInjector();
+        this.activeFormComponent.set(BajaComponent);
+        this.activeFormTab.set(5);
+    }
+
+    // ── Salidas recientes (sigue como dialog) ────────────────────────────────
+
+    openSalidasRecientes(): void {
+        this.loadRecentExits();
+        this.dialog.open(this.salidasRecientesDialog, {
+            width: '1100px',
+            maxWidth: '95vw',
+            height: '85vh',
+            maxHeight: '90vh',
+            panelClass: 'neo-dialog-salidas',
+            hasBackdrop: true,
+            disableClose: false,
+            autoFocus: false
+        });
+    }
+
+    // ── Datos recientes ──────────────────────────────────────────────────────
 
     loadRecentExits(): void {
         this.isLoading = true;
-
         this.movementService.getHistorialMovimientos({
             movement_type: 'exit',
             page: this.pageIndex + 1,
@@ -329,85 +263,64 @@ export class ExitsComponent implements OnInit, OnDestroy {
                     this.loadMockData();
                 }
             },
-            error: () => {
-                this.loadMockData();
-            }
+            error: () => this.loadMockData()
         });
     }
 
     private loadMockData(): void {
         this.recentExits = [
-            { id: '1', fecha: '28/01/2026', tipo: 'ENVÍO A BASE', estado: 'COMPLETADO', responsable: 'GABRIEL CRUZ', nroComprobante: 'SAL-2026-001', items: 3 },
-            { id: '2', fecha: '27/01/2026', tipo: 'ENVÍO A CALIBRACIÓN', estado: 'COMPLETADO', responsable: 'MARIA LOPEZ', nroComprobante: 'SAL-2026-002', items: 5 },
-            { id: '3', fecha: '26/01/2026', tipo: 'PRÉSTAMO A TERCEROS', estado: 'PENDIENTE', responsable: 'CARLOS RODRIGUEZ', nroComprobante: 'SAL-2026-003', items: 2 },
-            { id: '4', fecha: '25/01/2026', tipo: 'TRASPASO A OTRA ÁREA', estado: 'REVISIÓN', responsable: 'ANA MARTINEZ', nroComprobante: 'SAL-2026-004', items: 1 },
-            { id: '5', fecha: '24/01/2026', tipo: 'BAJA DE ACTIVO', estado: 'COMPLETADO', responsable: 'PEDRO SANCHEZ', nroComprobante: 'SAL-2026-005', items: 4 }
+            { id: '1', fecha: '28/01/2026', tipo: 'ENVÍO A BASE',          estado: 'COMPLETADO', responsable: 'GABRIEL CRUZ',     nroComprobante: 'SAL-2026-001', items: 3 },
+            { id: '2', fecha: '27/01/2026', tipo: 'ENVÍO A CALIBRACIÓN',   estado: 'COMPLETADO', responsable: 'MARIA LOPEZ',       nroComprobante: 'SAL-2026-002', items: 5 },
+            { id: '3', fecha: '26/01/2026', tipo: 'PRÉSTAMO A TERCEROS',   estado: 'PENDIENTE',  responsable: 'CARLOS RODRIGUEZ',  nroComprobante: 'SAL-2026-003', items: 2 },
+            { id: '4', fecha: '25/01/2026', tipo: 'TRASPASO A OTRA ÁREA',  estado: 'REVISIÓN',   responsable: 'ANA MARTINEZ',      nroComprobante: 'SAL-2026-004', items: 1 },
+            { id: '5', fecha: '24/01/2026', tipo: 'BAJA DE ACTIVO',        estado: 'COMPLETADO', responsable: 'PEDRO SANCHEZ',     nroComprobante: 'SAL-2026-005', items: 4 }
         ];
         this.totalRecords = 25;
     }
 
-    private formatDate(date: string): string {
-        if (!date) return '-';
-        try {
-            const d = new Date(date);
-            return d.toLocaleDateString('es-BO', { day: '2-digit', month: '2-digit', year: 'numeric' });
-        } catch {
-            return date;
-        }
-    }
-
-    private mapExitType(type: string): string {
-        const typeMap: Record<string, string> = {
-            'send_to_base': 'ENVÍO A BASE',
-            'send_to_calibration': 'ENVÍO A CALIBRACIÓN',
-            'transfer': 'TRASPASO A OTRA ÁREA',
-            'loan': 'PRÉSTAMO A TERCEROS',
-            'quarantine': 'CUARENTENA',
-            'decommission': 'BAJA DE ACTIVO'
-        };
-        return typeMap[type] || type?.toUpperCase() || 'N/A';
-    }
-
-    private mapStatus(status: string): string {
-        const statusMap: Record<string, string> = {
-            'pending': 'PENDIENTE',
-            'approved': 'APROBADO',
-            'completed': 'COMPLETADO',
-            'cancelled': 'CANCELADO',
-            'review': 'REVISIÓN'
-        };
-        return statusMap[status] || status?.toUpperCase() || 'N/A';
-    }
-
     onPageChange(event: PageEvent): void {
         this.pageIndex = event.pageIndex;
-        this.pageSize = event.pageSize;
+        this.pageSize  = event.pageSize;
         this.loadRecentExits();
     }
 
-    verDetalle(exit: ExitRecord): void {
-        this.showMessage(`Ver detalle de salida ${exit.nroComprobante}`, 'info');
-        // TODO: Abrir diálogo de detalle
-    }
-
-    editarSalida(exit: ExitRecord): void {
-        this.showMessage(`Editar salida ${exit.nroComprobante}`, 'info');
-        // TODO: Abrir diálogo de edición
-    }
+    verDetalle(exit: ExitRecord): void  { this.showMessage(`Ver detalle: ${exit.nroComprobante}`, 'info'); }
+    editarSalida(exit: ExitRecord): void { this.showMessage(`Editar: ${exit.nroComprobante}`, 'info'); }
 
     getStatusClass(estado: string): string {
         switch (estado) {
-            case 'COMPLETADO':
-                return 'bg-[#177f0f] text-black';
-            case 'PENDIENTE':
-                return 'bg-[#F8B400FF] text-black';
-            case 'REVISIÓN':
-                return 'bg-[#203F77FF] text-black';
-            case 'CANCELADO':
-                return 'bg-red-800 text-black';
-            default:
-                return 'bg-gray-100 text-gray-800 border-gray-300';
+            case 'COMPLETADO': return 'bg-[#177f0f] text-black';
+            case 'PENDIENTE':  return 'bg-[#F8B400FF] text-black';
+            case 'REVISIÓN':   return 'bg-[#203F77FF] text-white';
+            case 'CANCELADO':  return 'bg-red-800 text-white';
+            default:           return 'bg-gray-100 text-gray-800';
         }
+    }
+
+    // ── Helpers ──────────────────────────────────────────────────────────────
+
+    private formatDate(date: string): string {
+        if (!date) return '-';
+        try {
+            return new Date(date).toLocaleDateString('es-BO', { day: '2-digit', month: '2-digit', year: 'numeric' });
+        } catch { return date; }
+    }
+
+    private mapExitType(type: string): string {
+        const map: Record<string, string> = {
+            send_to_base: 'ENVÍO A BASE', send_to_calibration: 'ENVÍO A CALIBRACIÓN',
+            transfer: 'TRASPASO A OTRA ÁREA', loan: 'PRÉSTAMO A TERCEROS',
+            quarantine: 'CUARENTENA', decommission: 'BAJA DE ACTIVO'
+        };
+        return map[type] || type?.toUpperCase() || 'N/A';
+    }
+
+    private mapStatus(status: string): string {
+        const map: Record<string, string> = {
+            pending: 'PENDIENTE', approved: 'APROBADO', completed: 'COMPLETADO',
+            cancelled: 'CANCELADO', review: 'REVISIÓN'
+        };
+        return map[status] || status?.toUpperCase() || 'N/A';
     }
 
     private showMessage(message: string, type: 'success' | 'error' | 'warning' | 'info'): void {
@@ -419,79 +332,16 @@ export class ExitsComponent implements OnInit, OnDestroy {
         });
     }
 
-    openSalidasRecientes(): void {
-        this.loadRecentExits();
-        this.dialog.open(this.salidasRecientesDialog, {
-            width: '1100px',
-            maxWidth: '95vw',
-            height: '85vh',
-            maxHeight: '90vh',
-            panelClass: 'neo-dialog-salidas',
-            hasBackdrop: true,
-            disableClose: false,
-            autoFocus: false
-        });
-    }
-
-    // Dialog Openers
-    async openEnvioOtrasBases(): Promise<void> {
-        const { EnvioOtrasBasesComponent } = await import('./envio-otras-bases/envio-otras-bases.component');
-        this.openDialog(EnvioOtrasBasesComponent);
-    }
-
-    async openTraspasoOtraArea(): Promise<void> {
-        const { TraspasoOtraAreaComponent } = await import('./traspaso-otra-area/traspaso-otra-area.component');
-        this.openDialog(TraspasoOtraAreaComponent);
-    }
-
-    async openPrestamoTerceros(): Promise<void> {
-        const { PrestamoTercerosComponent } = await import('./prestamo-terceros/prestamo-terceros.component');
-        this.openDialog(PrestamoTercerosComponent);
-    }
-
-    async openPonerCuarentena(): Promise<void> {
-        const { PonerCuarentenaComponent } = await import('./poner-cuarentena/poner-cuarentena.component');
-        this.openDialog(PonerCuarentenaComponent);
-    }
-
-    async openBaja(): Promise<void> {
-        const { BajaComponent } = await import('./baja/baja.component');
-        const dialogRef = this.dialog.open(BajaComponent, {
-            width: '1200px',
-            maxWidth: '95vw',
-            height: '90vh',
-            maxHeight: '95vh',
-            panelClass: 'neo-dialog',
-            hasBackdrop: true,
-            disableClose: false,
-            autoFocus: false
-        });
-
-        dialogRef.afterClosed().subscribe(result => {
-            if (result?.success) {
-                this.showMessage('Operación completada exitosamente', 'success');
-                this.loadRecentExits();
-            }
-        });
-    }
-
-    private openDialog(component: any): void {
-        const dialogRef = this.dialog.open(component, {
-            width: '1000px',
-            maxWidth: '95vw',
-            height: 'auto',
-            maxHeight: '90vh',
-            panelClass: 'neo-dialog',
-            hasBackdrop: true,
-            disableClose: false,
-            autoFocus: false
-        });
-
-        dialogRef.afterClosed().subscribe(result => {
-            if (result?.success) {
-                this.showMessage('Operación completada exitosamente', 'success');
-                this.loadRecentExits();
-            }
+    private registerIcons(): void {
+        const icons: Record<string, string> = {
+            'heroicons_outline:building-office':    `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 21h16.5M4.5 3h15M5.25 3v18m13.5-18v18M9 6.75h1.5m-1.5 3h1.5m-1.5 3h1.5m3-6H15m-1.5 3H15m-1.5 3H15M9 21v-3.375c0-.621.504-1.125 1.125-1.125h3.75c.621 0 1.125.504 1.125 1.125V21" /></svg>`,
+            'heroicons_outline:arrow-path':         `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99" /></svg>`,
+            'heroicons_outline:building-storefront':`<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 21v-7.5a.75.75 0 0 1 .75-.75h3a.75.75 0 0 1 .75.75V21m-4.5 0H2.36m11.14 0H18m0 0h3.64m-1.39 0V9.349M3.75 21V9.349m0 0a3.001 3.001 0 0 0 3.75-.615A2.993 2.993 0 0 0 9.75 9.75c.896 0 1.7-.393 2.25-1.016a2.993 2.993 0 0 0 2.25 1.016 2.993 2.993 0 0 0 2.25-1.016 3.001 3.001 0 0 0 3.75.614m-16.5 0a3.004 3.004 0 0 1-.621-4.72l1.189-1.19A1.5 1.5 0 0 1 5.378 3h13.243a1.5 1.5 0 0 1 1.06.44l1.19 1.189a3 3 0 0 1-.621 4.72M6.75 18h3.75a.75.75 0 0 0 .75-.75V13.5a.75.75 0 0 0-.75-.75H6.75a.75.75 0 0 0-.75.75v3.75c0 .414.336.75.75.75Z" /></svg>`,
+            'heroicons_outline:exclamation-triangle':`<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" /></svg>`,
+            'heroicons_outline:trash':              `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" /></svg>`,
+        };
+        Object.entries(icons).forEach(([name, svg]) => {
+            this.iconRegistry.addSvgIconLiteral(name, this.sanitizer.bypassSecurityTrustHtml(svg));
         });
     }
 }

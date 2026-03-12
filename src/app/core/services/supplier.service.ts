@@ -26,10 +26,9 @@ export class SupplierService {
             ...filters
         };
 
-        // Using PXP's organization module - Proveedor entity
-        return from(this._api.post('organigrama/Proveedor/listProveedor', params)).pipe(
+        return from(this._api.post('herramientas/suppliers/listarSuppliers', params)).pipe(
             switchMap((response: any) => {
-                const suppliers = response?.datos || [];
+                const suppliers = response?.data || [];
                 this._suppliers.next(suppliers);
                 return of(suppliers);
             })
@@ -37,13 +36,13 @@ export class SupplierService {
     }
 
     getSupplierById(id: string): Observable<Supplier> {
-        return from(this._api.post('organigrama/Proveedor/listProveedor', {
+        return from(this._api.post('herramientas/suppliers/listarSuppliers', {
             start: 0,
             limit: 1,
-            id_proveedor: id
+            id_supplier: id
         })).pipe(
             switchMap((response: any) => {
-                const supplier = response?.datos?.[0] || null;
+                const supplier = response?.data?.[0] || null;
                 if (supplier) {
                     this._supplier.next(supplier);
                 }
@@ -53,9 +52,9 @@ export class SupplierService {
     }
 
     createSupplier(supplier: Partial<Supplier>): Observable<Supplier> {
-        return from(this._api.post('organigrama/Proveedor/insertProveedor', supplier)).pipe(
+        return from(this._api.post('herramientas/suppliers/insertarSuppliers', supplier)).pipe(
             switchMap((response: any) => {
-                const newSupplier = response?.datos || supplier;
+                const newSupplier = response?.data || supplier;
                 this._supplier.next(newSupplier as Supplier);
                 return of(newSupplier);
             })
@@ -63,12 +62,12 @@ export class SupplierService {
     }
 
     updateSupplier(id: string, supplier: Partial<Supplier>): Observable<Supplier> {
-        return from(this._api.post('organigrama/Proveedor/updateProveedor', {
+        return from(this._api.post('herramientas/suppliers/insertarSuppliers', {
             ...supplier,
             id_proveedor: id
         })).pipe(
             switchMap((response: any) => {
-                const updatedSupplier = response?.datos || supplier;
+                const updatedSupplier = response?.data || supplier;
                 this._supplier.next(updatedSupplier as Supplier);
                 return of(updatedSupplier);
             })
@@ -76,8 +75,8 @@ export class SupplierService {
     }
 
     deleteSupplier(id: string): Observable<void> {
-        return from(this._api.post('organigrama/Proveedor/deleteProveedor', {
-            id_proveedor: id
+        return from(this._api.post('herramientas/suppliers/eliminarSuppliers', {
+            id_supplier: id
         })).pipe(
             switchMap(() => {
                 return of(undefined);

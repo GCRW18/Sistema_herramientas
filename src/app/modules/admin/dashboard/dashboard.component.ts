@@ -6,10 +6,12 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { Chart, ChartConfiguration, registerables } from 'chart.js';
+import { forkJoin } from 'rxjs';
+import { ToolService } from 'app/core/services/tool.service';
+import { MovementService } from 'app/core/services/movement.service';
 
 Chart.register(...registerables);
 
-// Interfaces (Igual que antes)
 interface KPI {
     title: string;
     value: string | number;
@@ -75,8 +77,8 @@ interface QuickAction {
         }
 
         .neo-card-base:hover {
-            transform: translate(-2px, -2px); /* Se mueve arriba/izquierda */
-            box-shadow: 8px 8px 0px 0px rgba(0, 0, 0, 1); /* Sombra crece */
+            transform: translate(-2px, -2px);
+            box-shadow: 8px 8px 0px 0px rgba(0, 0, 0, 1);
         }
 
         :host-context(.dark) .neo-card-base:hover {
@@ -88,71 +90,24 @@ interface QuickAction {
             box-shadow: 2px 2px 0px 0px rgba(0, 0, 0, 1);
         }
 
-        /* Efecto Active en modo oscuro */
         :host-context(.dark) .neo-card-base:active {
             box-shadow: 2px 2px 0px 0px rgb(0, 0, 0);
         }
 
-        /* Variantes de colores para subtítulos/etiquetas */
-        .variant-info {
-            background-color: #203f77;
-            color: #fffefe;
-        }
+        .variant-info    { background-color: #203f77; color: #fffefe; }
+        .variant-success { background-color: #05f65d; color: black; }
+        .variant-warning { background-color: #ffcc00; color: black; }
+        .variant-danger  { background-color: #ff0000; color: #fbf7f7; }
+        .variant-default { background-color: #0069ff; color: #f4efef; }
 
-        .variant-success {
-            background-color: #05f65d;
-            color: black;
-        }
+        mat-icon { vertical-align: middle; }
 
-        .variant-warning {
-            background-color: #ffcc00;
-            color: black;
-        }
-
-        .variant-danger {
-            background-color: #ff0000;
-            color: #fbf7f7;
-        }
-
-        .variant-default {
-            background-color: #0069ff;
-            color: #f4efef;
-        }
-
-        /* Ajuste de Iconos */
-        mat-icon {
-            vertical-align: middle;
-        }
-
-        /* Scroll personalizado para listas */
-        .overflow-y-auto::-webkit-scrollbar {
-            width: 8px;
-        }
-
-        .overflow-y-auto::-webkit-scrollbar-track {
-            background: #000000;
-        }
-
-        :host-context(.dark) .overflow-y-auto::-webkit-scrollbar-track {
-            background: #000000;
-        }
-
-        .overflow-y-auto::-webkit-scrollbar-thumb {
-            background: #000;
-            border-radius: 4px;
-        }
-
-        :host-context(.dark) .overflow-y-auto::-webkit-scrollbar-thumb {
-            background: #000000;
-        }
-
-        .overflow-y-auto::-webkit-scrollbar-thumb:hover {
-            background: #000000;
-        }
-
-        :host-context(.dark) .overflow-y-auto::-webkit-scrollbar-thumb:hover {
-            background: #000000;
-        }
+        .overflow-y-auto::-webkit-scrollbar       { width: 8px; }
+        .overflow-y-auto::-webkit-scrollbar-track  { background: #000000; }
+        :host-context(.dark) .overflow-y-auto::-webkit-scrollbar-track { background: #000000; }
+        .overflow-y-auto::-webkit-scrollbar-thumb  { background: #000; border-radius: 4px; }
+        :host-context(.dark) .overflow-y-auto::-webkit-scrollbar-thumb { background: #000000; }
+        .overflow-y-auto::-webkit-scrollbar-thumb:hover { background: #000000; }
     `]
 })
 export class DashboardComponent implements OnInit, AfterViewInit {
@@ -160,142 +115,190 @@ export class DashboardComponent implements OnInit, AfterViewInit {
     @ViewChild('topToolsChart') topToolsCanvas!: ElementRef<HTMLCanvasElement>;
     @ViewChild('calibrationChart') calibrationCanvas!: ElementRef<HTMLCanvasElement>;
 
-    private router = inject(Router);
-    isLoading = signal(false);
+    private router       = inject(Router);
+    private toolService  = inject(ToolService);
+    private movService   = inject(MovementService);
 
-    // Instances
+    isLoading = signal(true);
+
     private movementsChartInstance?: Chart;
     private topToolsChartInstance?: Chart;
     private calibrationChartInstance?: Chart;
 
-    // Signals
-    kpiCardsData = signal<KPI[]>([]);
-    alertsData = signal<Alert[]>([]);
-    activitiesData = signal<Activity[]>([]);
+    // Datos calculados desde el backend
+    private allTools: any[]     = [];
+    private recentMovements: any[] = [];
+
+    kpiCardsData    = signal<KPI[]>([]);
+    alertsData      = signal<Alert[]>([]);
+    activitiesData  = signal<Activity[]>([]);
     quickActionsData = signal<QuickAction[]>([]);
 
     ngOnInit(): void {
-        this.isLoading.set(true);
-        // Simular carga rápida para ver el spinner
-        setTimeout(() => {
-            this.loadData();
-            this.isLoading.set(false);
-        }, 500);
-    }
-
-    ngAfterViewInit(): void {
-        // Inicializar gráficos después de renderizar
-        setTimeout(() => {
-            if (!this.isLoading()) {
-                this.initCharts();
-            }
-        }, 600);
-    }
-
-    private loadData() {
-        // 1. KPI Cards
-        this.kpiCardsData.set([
-            { title: 'Total Herramientas', value: '1,247', subtitle: 'INVENTARIO', icon: 'heroicons_outline:wrench-screwdriver', variant: 'info' },
-            { title: 'Disponibles', value: '892', subtitle: '71.5% TOTAL', icon: 'heroicons_outline:check-circle', variant: 'success', trend: { value: 5.2, isPositive: true } },
-            { title: 'Alertas Críticas', value: '15', subtitle: 'ATENCIÓN', icon: 'heroicons_outline:exclamation-triangle', variant: 'danger' },
-            { title: 'En Calibración', value: '12', subtitle: 'EXTERNO', icon: 'heroicons_outline:wrench', variant: 'warning' },
-            { title: 'Calib. Vencida', value: '8', subtitle: 'BLOQUEADAS', icon: 'heroicons_outline:clock', variant: 'danger' },
-            { title: 'En Cuarentena', value: '5', subtitle: 'REVISIÓN', icon: 'heroicons_outline:shield-exclamation', variant: 'warning' },
-            { title: 'En Uso', value: '243', subtitle: 'PRÉSTAMOS', icon: 'heroicons_outline:arrow-path', variant: 'info' },
-            { title: 'Dados de Baja', value: '87', subtitle: 'HISTÓRICO', icon: 'heroicons_outline:trash', variant: 'default' }
-        ]);
-
-        // 2. Alerts
-        this.alertsData.set([
-            { id: '1', type: 'critical', title: 'Torquímetro Vencido', description: 'Calibración expiró hace 5 días', time: 'Hace 2h', icon: 'heroicons_outline:exclamation-circle' },
-            { id: '2', type: 'warning', title: 'Stock Bajo: Llaves', description: 'Solo quedan 2 unidades', time: 'Hace 4h', icon: 'heroicons_outline:arrow-trending-down' },
-            { id: '3', type: 'error', title: 'Préstamo Vencido', description: 'Técnico J. Rodríguez (3 días)', time: 'Hace 1d', icon: 'heroicons_outline:clock' }
-        ]);
-
-        // 3. Quick Actions
         this.quickActionsData.set([
-            { icon: 'heroicons_outline:arrow-down-tray', label: 'Entrada', description: 'Nueva', variant: 'success', route: '/entradas' },
-            { icon: 'heroicons_outline:arrow-up-tray', label: 'Salida', description: 'Préstamo', variant: 'info', route: '/salidas' },
-            { icon: 'heroicons_outline:wrench', label: 'Calibrar', description: 'Enviar', variant: 'warning', route: '/salidas' },
-            { icon: 'heroicons_outline:document-text', label: 'Reportes', description: 'Ver', variant: 'default', route: '/reportes' }
+            { icon: 'heroicons_outline:arrow-down-tray', label: 'Entrada',   description: 'Nueva',    variant: 'success', route: '/entradas' },
+            { icon: 'heroicons_outline:arrow-up-tray',   label: 'Salida',    description: 'Préstamo', variant: 'info',    route: '/salidas' },
+            { icon: 'heroicons_outline:wrench',           label: 'Calibrar',  description: 'Enviar',   variant: 'warning', route: '/salidas' },
+            { icon: 'heroicons_outline:document-text',   label: 'Reportes',  description: 'Ver',      variant: 'default', route: '/reportes' }
         ]);
 
-        // 4. Activities
-        this.activitiesData.set([
-            { id: '1', type: 'salida', title: 'Préstamo a Técnico', description: 'Kit B737 - J. Pérez', user: 'Admin', time: '15 min' },
-            { id: '2', type: 'entrada', title: 'Retorno Calibración', description: 'Torquímetro LAB-01', user: 'Sistema', time: '45 min' },
-            { id: '3', type: 'cuarentena', title: 'Ingreso Cuarentena', description: 'Taladro con falla', user: 'M. López', time: '2 hrs' },
-            { id: '4', type: 'salida', title: 'Envío a Base', description: 'Base VVI - Carga', user: 'Admin', time: '4 hrs' }
+        forkJoin({
+            tools:     this.toolService.getTools(),
+            movements: this.movService.getMovements({ limit: 500 })
+        }).subscribe({
+            next: ({ tools, movements }) => {
+                this.allTools        = tools;
+                this.recentMovements = movements;
+                this.buildKPIs();
+                this.buildActivities();
+                this.isLoading.set(false);
+                setTimeout(() => this.initCharts(), 100);
+            },
+            error: () => {
+                this.buildKPIs();
+                this.isLoading.set(false);
+            }
+        });
+    }
+
+    ngAfterViewInit(): void {}
+
+    // ── KPIs ────────────────────────────────────────────────────────────────────
+    private buildKPIs(): void {
+        const tools      = this.allTools;
+        const total      = tools.length;
+        const available  = tools.filter(t => t.status === 'available').length;
+        const inUse      = tools.filter(t => t.status === 'in_use').length;
+        const inCalib    = tools.filter(t => t.status === 'in_calibration').length;
+        const quarantine = tools.filter(t => t.status === 'quarantine').length;
+        const decomm     = tools.filter(t => t.status === 'decommissioned').length;
+        const pct        = total ? Math.round(available / total * 100) : 0;
+
+        this.kpiCardsData.set([
+            { title: 'Total Herramientas', value: total.toLocaleString(),     subtitle: 'INVENTARIO', icon: 'heroicons_outline:wrench-screwdriver', variant: 'info' },
+            { title: 'Disponibles',         value: available.toLocaleString(), subtitle: `${pct}% TOTAL`, icon: 'heroicons_outline:check-circle',       variant: 'success', trend: { value: pct, isPositive: true } },
+            { title: 'Alertas Críticas',    value: inCalib + quarantine,       subtitle: 'ATENCIÓN',   icon: 'heroicons_outline:exclamation-triangle', variant: 'danger' },
+            { title: 'En Calibración',      value: inCalib,                    subtitle: 'EXTERNO',    icon: 'heroicons_outline:wrench',               variant: 'warning' },
+            { title: 'Calib. Vencida',      value: 0,                          subtitle: 'BLOQUEADAS', icon: 'heroicons_outline:clock',                variant: 'danger' },
+            { title: 'En Cuarentena',       value: quarantine,                 subtitle: 'REVISIÓN',   icon: 'heroicons_outline:shield-exclamation',   variant: 'warning' },
+            { title: 'En Uso',              value: inUse.toLocaleString(),     subtitle: 'PRÉSTAMOS',  icon: 'heroicons_outline:arrow-path',           variant: 'info' },
+            { title: 'Dados de Baja',       value: decomm.toLocaleString(),    subtitle: 'HISTÓRICO',  icon: 'heroicons_outline:trash',                variant: 'default' }
         ]);
     }
 
-    private initCharts() {
+    // ── Actividades recientes ────────────────────────────────────────────────────
+    private buildActivities(): void {
+        const items = this.recentMovements.slice(0, 5).map((m: any, i: number) => ({
+            id:          String(m.id_movement || i),
+            type:        m.movement_type || m.type || 'movimiento',
+            title:       m.movement_type_label || m.type || 'Movimiento',
+            description: m.notes || m.description || m.tool_name || '',
+            user:        m.created_by || m.user_name || 'Sistema',
+            time:        m.date ? new Date(m.date).toLocaleDateString('es-BO') : ''
+        }));
+        this.activitiesData.set(items);
+        this.alertsData.set([]);
+    }
+
+    // ── Gráficas ─────────────────────────────────────────────────────────────────
+    private initCharts(): void {
         this.createMovementsChart();
         this.createTopToolsChart();
         this.createCalibrationChart();
     }
 
-    // ... (Métodos de gráficos se mantienen igual que en tu código anterior)
-    private createMovementsChart() {
+    private createMovementsChart(): void {
         const ctx = this.movementsCanvas?.nativeElement?.getContext('2d');
         if (!ctx) return;
+
+        // Agrupar movimientos por mes (últimos 6)
+        const now      = new Date();
+        const labels   = [] as string[];
+        const entradas = [] as number[];
+        const salidas  = [] as number[];
+
+        const months = ['ENE','FEB','MAR','ABR','MAY','JUN','JUL','AGO','SEP','OCT','NOV','DIC'];
+        for (let i = 5; i >= 0; i--) {
+            const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+            labels.push(months[d.getMonth()]);
+            const mes = d.getMonth();
+            const anio = d.getFullYear();
+            const movMes = this.recentMovements.filter((m: any) => {
+                const md = new Date(m.date || m.created_at || '');
+                return md.getMonth() === mes && md.getFullYear() === anio;
+            });
+            entradas.push(movMes.filter((m: any) => m.movement_type === 'entry' || m.type === 'entry').length);
+            salidas.push(movMes.filter((m: any) => m.movement_type === 'exit' || m.type === 'exit' || m.movement_type === 'loan' || m.type === 'loan').length);
+        }
+
         new Chart(ctx, {
             type: 'line',
             data: {
-                labels: ['JUL', 'AGO', 'SEP', 'OCT', 'NOV', 'DIC'],
+                labels,
                 datasets: [
-                    { label: 'Entradas', data: [45, 52, 48, 61, 55, 67], borderColor: '#04f608', backgroundColor: 'rgba(34, 197, 94, 0.1)', borderWidth: 3, tension: 0, fill: true },
-                    { label: 'Salidas', data: [38, 45, 42, 55, 48, 58], borderColor: '#f40404', backgroundColor: 'rgba(239, 68, 68, 0.1)', borderWidth: 3, tension: 0, fill: true }
+                    { label: 'Entradas', data: entradas, borderColor: '#04f608', backgroundColor: 'rgba(34,197,94,0.1)', borderWidth: 3, tension: 0, fill: true },
+                    { label: 'Salidas',  data: salidas,  borderColor: '#f40404', backgroundColor: 'rgba(239,68,68,0.1)',  borderWidth: 3, tension: 0, fill: true }
                 ]
             },
             options: { responsive: true, maintainAspectRatio: false }
         });
     }
 
-    private createTopToolsChart() {
+    private createTopToolsChart(): void {
         const ctx = this.topToolsCanvas?.nativeElement?.getContext('2d');
         if (!ctx) return;
+
+        // Contar préstamos por herramienta desde movimientos reales
+        const counts: Record<string, number> = {};
+        this.recentMovements
+            .filter((m: any) => m.movement_type === 'loan' || m.type === 'loan')
+            .forEach((m: any) => {
+                const name = m.tool_name || m.tool_code || String(m.tool_id || 'Sin nombre');
+                counts[name] = (counts[name] || 0) + 1;
+            });
+
+        const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, 8);
+        const labels = sorted.map(([n]) => n);
+        const data   = sorted.map(([, v]) => v);
+        const colors = ['#111A43','#fbae05','#fd0f02','#27C93F','#3B82F6','#8b5cf6','#ec4899','#06b6d4'];
+
         new Chart(ctx, {
             type: 'bar',
             data: {
-                labels: ['Kit B737', 'Torq. TQ-200', 'Fluke 87V', 'Kit Insp.', 'Calibrador'],
-                datasets: [{ label: 'Préstamos', data: [45, 38, 32, 28, 24], backgroundColor: ['#111A43', '#fbae05', '#fd0f02', '#27C93F', '#3B82F6'], borderWidth: 2, borderColor: '#000' }]
+                labels: labels.length ? labels : ['Sin datos'],
+                datasets: [{ label: 'Préstamos', data: data.length ? data : [0], backgroundColor: colors, borderWidth: 2, borderColor: '#000' }]
             },
             options: { responsive: true, maintainAspectRatio: false }
         });
     }
 
-    private createCalibrationChart() {
+    private createCalibrationChart(): void {
         const ctx = this.calibrationCanvas?.nativeElement?.getContext('2d');
         if (!ctx) return;
+
+        const tools     = this.allTools;
+        const vigente   = tools.filter(t => t.status === 'available').length;
+        const enCalib   = tools.filter(t => t.status === 'in_calibration').length;
+        const vencida   = 0; // requiere campo calibration_expiry_date
+        const porVencer = 0;
+
         new Chart(ctx, {
             type: 'doughnut',
             data: {
-                labels: ['Vigente', 'Por Vencer', 'Vencida', 'En Proceso'],
-                datasets: [{ data: [156, 23, 8, 12], backgroundColor: ['#01f825', '#f8ab04', '#f61206', '#111A43'], borderColor: '#000', borderWidth: 2 }]
+                labels: ['Disponible', 'En Calibración', 'Vencida', 'Por Vencer'],
+                datasets: [{ data: [vigente, enCalib, vencida, porVencer], backgroundColor: ['#01f825','#111A43','#f61206','#f8ab04'], borderColor: '#000', borderWidth: 2 }]
             },
             options: { responsive: true, maintainAspectRatio: false }
         });
     }
 
     getVariantColor(variant: string): string {
-        const colors: any = {
-            'info': 'variant-info',
-            'success': 'variant-success',
-            'warning': 'variant-warning',
-            'danger': 'variant-danger',
-            'default': 'variant-default'
-        };
+        const colors: any = { 'info': 'variant-info', 'success': 'variant-success', 'warning': 'variant-warning', 'danger': 'variant-danger', 'default': 'variant-default' };
         return colors[variant] || 'variant-default';
     }
 
     getAlertIconColor(type: string): string {
-        const colors: any = {
-            'critical': 'text-red-600',
-            'warning': 'text-yellow-500',
-            'error': 'text-orange-500',
-            'info': 'text-blue-500'
-        };
+        const colors: any = { 'critical': 'text-red-600', 'warning': 'text-yellow-500', 'error': 'text-orange-500', 'info': 'text-blue-500' };
         return colors[type] || 'text-gray-500';
     }
 

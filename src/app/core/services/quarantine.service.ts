@@ -45,7 +45,7 @@ export class QuarantineService {
 
         return from(this._api.post('herramientas/quarantines/listQuarantines', params)).pipe(
             switchMap((response: any) => {
-                const quarantines = response?.datos || [];
+                const quarantines = response?.data || [];
                 this._quarantines.next(quarantines);
                 return of(quarantines);
             })
@@ -62,7 +62,7 @@ export class QuarantineService {
             id_quarantine: id
         })).pipe(
             switchMap((response: any) => {
-                return of(response?.datos?.[0] || null);
+                return of(response?.data?.[0] || null);
             })
         );
     }
@@ -70,10 +70,11 @@ export class QuarantineService {
     /**
      * Create quarantine record
      */
-    createQuarantine(record: Partial<QuarantineRecord>): Observable<QuarantineRecord> {
+    createQuarantine(record: Partial<QuarantineRecord>): Observable<any> {
         return from(this._api.post('herramientas/quarantines/insertQuarantine', record)).pipe(
             switchMap((response: any) => {
-                return of(response?.datos || record);
+                if (response?.error) throw new Error(response.mensaje || 'Error al registrar cuarentena');
+                return of(response?.data?.[0] || response?.data || response || record);
             })
         );
     }
@@ -87,7 +88,7 @@ export class QuarantineService {
             id_quarantine: id
         })).pipe(
             switchMap((response: any) => {
-                return of(response?.datos || record);
+                return of(response?.data || record);
             })
         );
     }
@@ -102,7 +103,7 @@ export class QuarantineService {
             accion_tomada: actionTaken
         })).pipe(
             switchMap((response: any) => {
-                return of(response?.datos || {});
+                return of(response?.data || {});
             })
         );
     }
@@ -115,7 +116,7 @@ export class QuarantineService {
             id_quarantine: id
         })).pipe(
             switchMap((response: any) => {
-                return of(response?.datos || {});
+                return of(response?.data || {});
             })
         );
     }
@@ -126,7 +127,7 @@ export class QuarantineService {
     getActiveQuarantines(): Observable<QuarantineRecord[]> {
         return from(this._api.post('herramientas/quarantines/listActiveQuarantines', {})).pipe(
             switchMap((response: any) => {
-                return of(response?.datos || []);
+                return of(response?.data || []);
             })
         );
     }
@@ -149,7 +150,7 @@ export class QuarantineService {
 
         return from(this._api.post('herramientas/decommissions/listDecommissions', params)).pipe(
             switchMap((response: any) => {
-                const decommissions = response?.datos || [];
+                const decommissions = response?.data || [];
                 this._decommissions.next(decommissions);
                 return of(decommissions);
             })
@@ -166,7 +167,7 @@ export class QuarantineService {
             id_baja: id
         })).pipe(
             switchMap((response: any) => {
-                return of(response?.datos?.[0] || null);
+                return of(response?.data?.[0] || null);
             })
         );
     }
@@ -174,10 +175,11 @@ export class QuarantineService {
     /**
      * Create decommission record
      */
-    createDecommission(record: Partial<DecommissionRecord>): Observable<DecommissionRecord> {
+    createDecommission(record: Partial<DecommissionRecord>): Observable<any> {
         return from(this._api.post('herramientas/decommissions/insertDecommission', record)).pipe(
             switchMap((response: any) => {
-                return of(response?.datos || record);
+                if (response?.error) throw new Error(response.mensaje || 'Error al registrar baja');
+                return of(response?.data?.[0] || response?.data || response || record);
             })
         );
     }
@@ -191,7 +193,7 @@ export class QuarantineService {
             id_baja: id
         })).pipe(
             switchMap((response: any) => {
-                return of(response?.datos || record);
+                return of(response?.data || record);
             })
         );
     }
@@ -204,7 +206,7 @@ export class QuarantineService {
             id_baja: id
         })).pipe(
             switchMap((response: any) => {
-                return of(response?.datos || {});
+                return of(response?.data || {});
             })
         );
     }

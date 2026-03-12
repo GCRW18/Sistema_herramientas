@@ -56,9 +56,9 @@ export class CustomerService {
         };
 
         // Using PXP's organization module - Cliente entity
-        return from(this._api.post('organigrama/Cliente/listCliente', params)).pipe(
+        return from(this._api.post('herramientas/customers/listarCustomers', params)).pipe(
             switchMap((response: any) => {
-                const customers = response?.datos || [];
+                const customers = response?.data || [];
                 this._customers.next(customers);
                 return of(customers);
             })
@@ -69,13 +69,13 @@ export class CustomerService {
      * Get customer by id
      */
     getCustomerById(id: string): Observable<Customer> {
-        return from(this._api.post('organigrama/Cliente/listCliente', {
+        return from(this._api.post('herramientas/customers/listarCustomers', {
             start: 0,
             limit: 1,
-            id_cliente: id
+            id_customer: id
         })).pipe(
             switchMap((response: any) => {
-                const customer = response?.datos?.[0] || null;
+                const customer = response?.data?.[0] || null;
                 if (customer) {
                     this._customer.next(customer);
                 }
@@ -88,9 +88,9 @@ export class CustomerService {
      * Create customer
      */
     createCustomer(customer: Partial<Customer>): Observable<Customer> {
-        return from(this._api.post('organigrama/Cliente/insertCliente', customer)).pipe(
+        return from(this._api.post('herramientas/customers/insertarCustomers', customer)).pipe(
             switchMap((response: any) => {
-                return of(response?.datos || customer);
+                return of(response?.data || customer);
             })
         );
     }
@@ -99,12 +99,12 @@ export class CustomerService {
      * Update customer
      */
     updateCustomer(id: string, customer: Partial<Customer>): Observable<Customer> {
-        return from(this._api.post('organigrama/Cliente/updateCliente', {
+        return from(this._api.post('herramientas/customers/insertarCustomers', {
             ...customer,
-            id_cliente: id
+            id_customer: id
         })).pipe(
             switchMap((response: any) => {
-                return of(response?.datos || customer);
+                return of(response?.data || customer);
             })
         );
     }
@@ -113,8 +113,8 @@ export class CustomerService {
      * Delete customer
      */
     deleteCustomer(id: string): Observable<void> {
-        return from(this._api.post('organigrama/Cliente/deleteCliente', {
-            id_cliente: id
+        return from(this._api.post('herramientas/customers/eliminarCustomers', {
+            id_customer: id
         })).pipe(
             switchMap(() => {
                 return of(undefined);

@@ -1,23 +1,12 @@
-import { Component, inject, signal, OnInit } from '@angular/core';
+import { Component, inject, signal, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDialogRef, MatDialogModule, MAT_DIALOG_DATA } from '@angular/material/dialog';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup } from '@angular/forms';
 import { DragDropModule } from '@angular/cdk/drag-drop';
-
-interface HerramientaOption {
-    codigo: string;
-    nombre: string;
-    pn: string;
-    sn: string;
-    ubicacion: string;
-    existencia: number;
-    fechaVencimiento: string;
-    unidad: string;
-    estadoFisico: string;
-    marca: string;
-}
+import { Subject, takeUntil } from 'rxjs';
+import { MovementService } from '../../../../../core/services/movement.service';
 
 @Component({
     selector: 'app-traspaso-herramienta',
@@ -61,27 +50,25 @@ interface HerramientaOption {
         :host-context(.dark) .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; }
     `]
 })
-export class TraspasoHerramientaComponent implements OnInit {
+export class TraspasoHerramientaComponent implements OnInit, OnDestroy {
     public dialogRef = inject(MatDialogRef<TraspasoHerramientaComponent>, { optional: true });
     public data = inject(MAT_DIALOG_DATA, { optional: true });
     private fb = inject(FormBuilder);
+    private movementService = inject(MovementService);
+    private destroy$ = new Subject<void>();
 
     traspasoForm!: FormGroup;
     selectedImage = signal<string | null>(null);
     coincidencias = signal<number>(0);
+    isLoading = false;
 
-    // Mock data for autocomplete
-    herramientas: HerramientaOption[] = [
-        { codigo: 'BOA-H-70001', nombre: 'JUEGO DE LLAVES MIXTAS', pn: 'JL-8-24', sn: 'SN-JL001', ubicacion: '20-A', existencia: 10, fechaVencimiento: 'N/A', unidad: 'SET', estadoFisico: 'BUENO', marca: 'STANLEY' },
-        { codigo: 'BOA-H-70002', nombre: 'TALADRO PERCUTOR', pn: 'TP-750W', sn: 'SN-TP002', ubicacion: '21-B', existencia: 4, fechaVencimiento: '2026-01-15', unidad: 'PZA', estadoFisico: 'BUENO', marca: 'BOSCH' },
-        { codigo: 'BOA-H-70003', nombre: 'MULTIMETRO DIGITAL', pn: 'MD-FLUKE', sn: 'SN-MD003', ubicacion: '22-C', existencia: 6, fechaVencimiento: '2025-06-30', unidad: 'EA', estadoFisico: 'REGULAR', marca: 'FLUKE' },
-    ];
-
-    filteredHerramientas: HerramientaOption[] = [];
+    herramientas: any[] = [];
+    filteredHerramientas: any[] = [];
 
     ngOnInit(): void {
         this.traspasoForm = this.fb.group({
             buscar: [''],
+            id_tool: [null],
             codigo: [''],
             nombre: [''],
             pn: [''],
@@ -96,41 +83,66 @@ export class TraspasoHerramientaComponent implements OnInit {
             observacion: ['']
         });
 
-        this.filteredHerramientas = [...this.herramientas];
+        this.cargarHerramientas();
+    }
+
+    ngOnDestroy(): void {
+        this.destroy$.next();
+        this.destroy$.complete();
+    }
+
+    private cargarHerramientas(): void {
+        this.isLoading = true;
+        this.movementService.getHerramientasDisponibles({ status: 'DISPONIBLE' }).pipe(
+            takeUntil(this.destroy$)
+        ).subscribe({
+            next: (tools) => {
+                this.herramientas = tools.map((t: any) => ({
+                    id_tool:          t.id_tool,
+                    codigo:           t.code        ?? t.codigo,
+                    nombre:           t.name        ?? t.nombre,
+                    pn:               t.part_number ?? t.pn ?? '',
+                    sn:               t.serial_number ?? t.sn ?? '',
+                    ubicacion:        t.location    ?? t.ubicacion ?? '',
+                    existencia:       t.quantity_in_stock ?? t.existencia ?? 0,
+                    unidad:           t.unit_of_measure ?? t.unidad ?? 'PZA',
+                    estadoFisico:     t.status      ?? 'DISPONIBLE',
+                    marca:            t.brand       ?? t.marca ?? ''
+                }));
+                this.filteredHerramientas = [...this.herramientas];
+                this.coincidencias.set(this.herramientas.length);
+                this.isLoading = false;
+            },
+            error: () => { this.isLoading = false; }
+        });
     }
 
     onSelectHerramienta(event: Event): void {
         const codigo = (event.target as HTMLSelectElement).value;
         if (!codigo) return;
-
-        const herramienta = this.herramientas.find(h => h.codigo === codigo);
-        if (herramienta) {
-            this.selectHerramienta(herramienta);
-        }
+        const h = this.herramientas.find(t => t.codigo === codigo);
+        if (h) this.selectHerramienta(h);
     }
 
     onSelectByCodigo(event: Event): void {
         const codigo = (event.target as HTMLSelectElement).value;
         if (!codigo) return;
-
-        const herramienta = this.herramientas.find(h => h.codigo === codigo);
-        if (herramienta) {
-            this.selectHerramienta(herramienta);
-        }
+        const h = this.herramientas.find(t => t.codigo === codigo);
+        if (h) this.selectHerramienta(h);
     }
 
-    selectHerramienta(herramienta: HerramientaOption): void {
+    selectHerramienta(h: any): void {
         this.traspasoForm.patchValue({
-            codigo: herramienta.codigo,
-            nombre: herramienta.nombre,
-            pn: herramienta.pn,
-            sn: herramienta.sn,
-            ubicacion: herramienta.ubicacion,
-            existencia: herramienta.existencia,
-            fechaVencimiento: herramienta.fechaVencimiento,
-            unidad: herramienta.unidad,
-            estadoFisico: herramienta.estadoFisico,
-            marca: herramienta.marca
+            id_tool:      h.id_tool,
+            codigo:       h.codigo,
+            nombre:       h.nombre,
+            pn:           h.pn,
+            sn:           h.sn,
+            ubicacion:    h.ubicacion,
+            existencia:   h.existencia,
+            unidad:       h.unidad,
+            estadoFisico: h.estadoFisico,
+            marca:        h.marca
         });
         this.coincidencias.set(1);
     }
@@ -139,9 +151,7 @@ export class TraspasoHerramientaComponent implements OnInit {
         const file = (event.target as HTMLInputElement).files?.[0];
         if (file) {
             const reader = new FileReader();
-            reader.onload = () => {
-                this.selectedImage.set(reader.result as string);
-            };
+            reader.onload = () => { this.selectedImage.set(reader.result as string); };
             reader.readAsDataURL(file);
         }
     }

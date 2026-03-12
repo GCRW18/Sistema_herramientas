@@ -42,7 +42,7 @@ export class DecommissionService {
 
         return from(this._api.post('herramientas/decommissions/listDecommissions', params)).pipe(
             switchMap((response: any) => {
-                const decommissions = response?.datos || [];
+                const decommissions = response?.data || [];
                 this._decommissions.next(decommissions);
                 return of(decommissions);
             })
@@ -56,7 +56,7 @@ export class DecommissionService {
             id_decommission: id
         })).pipe(
             switchMap((response: any) => {
-                const decommission = response?.datos?.[0] || null;
+                const decommission = response?.data?.[0] || null;
                 if (decommission) {
                     this._decommission.next(decommission);
                 }
@@ -68,7 +68,7 @@ export class DecommissionService {
     createDecommission(decommission: Partial<Decommission>): Observable<Decommission> {
         return from(this._api.post('herramientas/decommissions/insertDecommission', decommission)).pipe(
             switchMap((response: any) => {
-                const newDecommission = response?.datos || decommission;
+                const newDecommission = response?.data || decommission;
                 this._decommission.next(newDecommission as Decommission);
                 return of(newDecommission);
             })
@@ -81,7 +81,7 @@ export class DecommissionService {
             id_decommission: id
         })).pipe(
             switchMap((response: any) => {
-                const updatedDecommission = response?.datos || decommission;
+                const updatedDecommission = response?.data || decommission;
                 this._decommission.next(updatedDecommission as Decommission);
                 return of(updatedDecommission);
             })
@@ -104,7 +104,7 @@ export class DecommissionService {
             notes: notes
         })).pipe(
             switchMap((response: any) => {
-                const decommission = response?.datos || {};
+                const decommission = response?.data || {};
                 this._decommission.next(decommission);
                 return of(decommission);
             })
@@ -117,7 +117,7 @@ export class DecommissionService {
             rejection_reason: reason
         })).pipe(
             switchMap((response: any) => {
-                const decommission = response?.datos || {};
+                const decommission = response?.data || {};
                 this._decommission.next(decommission);
                 return of(decommission);
             })

@@ -20,9 +20,9 @@ export class LabelService {
                 if (response?.success) {
                     return of({
                         success: true,
-                        fileUrl: response.datos?.fileUrl,
-                        fileName: response.datos?.fileName,
-                        labels: response.datos?.labels || [],
+                        fileUrl: response.data?.fileUrl,
+                        fileName: response.data?.fileName,
+                        labels: response.data?.labels || [],
                     } as LabelResponse);
                 }
                 return of({
@@ -45,7 +45,7 @@ export class LabelService {
             opciones: options,
         })).pipe(
             switchMap((response: any) => {
-                return of(response?.datos || {});
+                return of(response?.data || {});
             })
         );
     }
@@ -59,8 +59,8 @@ export class LabelService {
                 if (response?.success) {
                     return of({
                         success: true,
-                        fileUrl: response.datos?.fileUrl,
-                        fileName: response.datos?.fileName,
+                        fileUrl: response.data?.fileUrl,
+                        fileName: response.data?.fileName,
                     } as LabelResponse);
                 }
                 return of({
@@ -80,7 +80,7 @@ export class LabelService {
                 if (response?.success) {
                     return of({
                         success: true,
-                        fileUrl: response.datos?.printUrl,
+                        fileUrl: response.data?.printUrl,
                     } as LabelResponse);
                 }
                 return of({
@@ -142,7 +142,7 @@ export class LabelService {
             opciones: options,
         })).pipe(
             switchMap((response: any) => {
-                return of(response?.datos?.previewUrl || '');
+                return of(response?.data?.previewUrl || '');
             })
         );
     }

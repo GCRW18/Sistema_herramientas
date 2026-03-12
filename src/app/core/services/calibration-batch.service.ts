@@ -57,7 +57,7 @@ export class CalibrationBatchService {
 
         return from(this._api.post('herramientas/CalibrationBatches/listarCalibrationBatches', params)).pipe(
             switchMap((response: any) => {
-                const data = response?.datos || [];
+                const data = response?.data || [];
                 this._batches.set(data);
                 this._batchesSubject.next(data);
                 this._isLoading.set(false);
@@ -73,7 +73,7 @@ export class CalibrationBatchService {
     createBatch(params: CreateBatchParams): Observable<any> {
         return from(this._api.post('herramientas/CalibrationBatches/insertarCalibrationBatches', params)).pipe(
             switchMap((response: any) => {
-                return of(response?.datos || response);
+                return of(response?.data || response);
             })
         );
     }
@@ -84,7 +84,7 @@ export class CalibrationBatchService {
             id_batch: id
         })).pipe(
             switchMap((response: any) => {
-                return of(response?.datos || response);
+                return of(response?.data || response);
             })
         );
     }
@@ -94,7 +94,7 @@ export class CalibrationBatchService {
             id_batch: id
         })).pipe(
             switchMap((response: any) => {
-                return of(response?.datos || response);
+                return of(response?.data || response);
             })
         );
     }
@@ -108,7 +108,7 @@ export class CalibrationBatchService {
 
         return from(this._api.post('herramientas/CalibrationBatches/listarBatchItems', params)).pipe(
             switchMap((response: any) => {
-                const data = response?.datos || [];
+                const data = response?.data || [];
                 this._batchItems.set(data);
                 return of(data);
             }),
@@ -125,7 +125,7 @@ export class CalibrationBatchService {
                 if (params.batch_id) {
                     this.getBatchItems(params.batch_id).subscribe();
                 }
-                return of(response?.datos || response);
+                return of(response?.data || response);
             })
         );
     }
@@ -137,7 +137,7 @@ export class CalibrationBatchService {
             switchMap((response: any) => {
                 // Refrescar items despues de eliminar
                 this.getBatchItems(batchId).subscribe();
-                return of(response?.datos || response);
+                return of(response?.data || response);
             })
         );
     }
@@ -149,7 +149,7 @@ export class CalibrationBatchService {
     confirmBatch(params: ConfirmBatchParams): Observable<any> {
         return from(this._api.post('herramientas/CalibrationBatches/confirmCalibrationBatch', params)).pipe(
             switchMap((response: any) => {
-                return of(response?.datos || response);
+                return of(response?.data || response);
             })
         );
     }
@@ -161,7 +161,7 @@ export class CalibrationBatchService {
     processReturnBatch(params: ReturnBatchParams): Observable<any> {
         return from(this._api.post('herramientas/CalibrationBatches/processReturnBatch', params)).pipe(
             switchMap((response: any) => {
-                return of(response?.datos || response);
+                return of(response?.data || response);
             })
         );
     }
@@ -175,7 +175,7 @@ export class CalibrationBatchService {
             batch_id: batchId
         })).pipe(
             switchMap((response: any) => {
-                return of(response?.datos?.[0] || null);
+                return of(response?.data?.[0] || null);
             }),
             catchError(() => of(null as any))
         );
@@ -189,14 +189,14 @@ export class CalibrationBatchService {
         return from(this._api.post('herramientas/CalibrationBatches/listarJackAlerts', {
             start: 0, limit: 500
         })).pipe(
-            switchMap((response: any) => of(response?.datos || [])),
+            switchMap((response: any) => of(response?.data || [])),
             catchError(() => of([]))
         );
     }
 
     getJackSummary(): Observable<any> {
         return from(this._api.post('herramientas/CalibrationBatches/getJackSummary', {})).pipe(
-            switchMap((response: any) => of(response?.datos?.[0] || null)),
+            switchMap((response: any) => of(response?.data?.[0] || null)),
             catchError(() => of(null))
         );
     }
