@@ -2,7 +2,7 @@ import { Component, OnInit, signal, inject, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule, Router } from '@angular/router';
 import { FormBuilder, FormGroup, ReactiveFormsModule, FormsModule, Validators } from '@angular/forms';
-import { Subject, takeUntil, debounceTime, distinctUntilChanged, forkJoin, finalize } from 'rxjs';
+import { Subject, takeUntil, debounceTime, distinctUntilChanged, finalize } from 'rxjs';
 
 // Material Modules
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -21,6 +21,7 @@ import { DragDropModule } from '@angular/cdk/drag-drop';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 
 import { MovementService } from '../../../../core/services/movement.service';
+import { FleetService } from '../../../../core/services/fleet.service';
 
 interface InternalLoanItem {
     toolId: number;       // id_tool real de la BD
@@ -176,6 +177,7 @@ export class PrestamoTercerosComponent implements OnInit, OnDestroy {
     private fb              = inject(FormBuilder);
     private router          = inject(Router);
     private movementService = inject(MovementService);
+    private fleetService    = inject(FleetService);
     private destroy$        = new Subject<void>();
 
     currentView = signal<ViewMode>('internal');
@@ -186,8 +188,8 @@ export class PrestamoTercerosComponent implements OnInit, OnDestroy {
 
     message = signal<{ type: 'success' | 'error' | 'info' | 'warning'; text: string } | null>(null);
 
-    nroNotaInterno = signal<string>('PT-?/2026');
-    nroNotaExterno = signal<string>('PTT-?/2026');
+    nroNotaInterno = signal<string>('---');
+    nroNotaExterno = signal<string>('---');
 
     internalDataSource  = signal<InternalLoanItem[]>([]);
     externalDataSource  = signal<ExternalLoanItem[]>([]);
@@ -201,13 +203,8 @@ export class PrestamoTercerosComponent implements OnInit, OnDestroy {
     private personalCache: Tecnico[] = [];
     filteredTecnicos: Tecnico[] = [];
 
-    // Aeronaves (estáticas por ahora)
     aeronaves: Aeronave[] = [
-        { matricula: 'CP-2880', tipo: 'Boeing 737-800',   modelo: 'B738', msn: '41561' },
-        { matricula: 'CP-2881', tipo: 'Boeing 737-800',   modelo: 'B738', msn: '41562' },
-        { matricula: 'CP-2882', tipo: 'Boeing 737-800',   modelo: 'B738', msn: '41563' },
-        { matricula: 'CP-3100', tipo: 'Boeing 737 MAX 8', modelo: 'B38M', msn: '44512' },
-        { matricula: 'N/A',    tipo: 'No Aplica',         modelo: 'N/A',  msn: 'N/A'   }
+        { matricula: 'N/A', tipo: 'No Aplica', modelo: 'N/A', msn: 'N/A' }
     ];
 
     destinos = ['Servicios', 'Línea', 'Taller', 'Hangar', 'Rampa'];
@@ -218,6 +215,7 @@ export class PrestamoTercerosComponent implements OnInit, OnDestroy {
         this.initExternalForm();
         this.initExternalToolForm();
         this.cargarPersonal();
+        this.cargarAeronaves();
         this.setupFormListeners();
     }
 
@@ -300,6 +298,24 @@ export class PrestamoTercerosComponent implements OnInit, OnDestroy {
     }
 
     // ── Personal desde API ───────────────────────────────────────────────────
+
+    private cargarAeronaves(): void {
+        this.fleetService.getAircraft({ limit: 100 } as any).pipe(takeUntil(this.destroy$)).subscribe({
+            next: (data: any[]) => {
+                const lista: Aeronave[] = data.map(a => ({
+                    matricula: a.registration || a.matricula || '',
+                    tipo:      a.manufacturer || a.tipo       || '',
+                    modelo:    a.model        || a.modelo     || '',
+                    msn:       a.serial_number || a.msn       || ''
+                }));
+                // Opción "No Aplica" siempre al final
+                this.aeronaves = [...lista, { matricula: 'N/A', tipo: 'No Aplica', modelo: 'N/A', msn: 'N/A' }];
+            },
+            error: () => {
+                // Si el API falla, conservar la opción N/A
+            }
+        });
+    }
 
     private cargarPersonal(): void {
         this.movementService.getPersonal().pipe(takeUntil(this.destroy$)).subscribe({
@@ -447,32 +463,38 @@ export class PrestamoTercerosComponent implements OnInit, OnDestroy {
         const fv    = this.internalForm.getRawValue();
         const items = this.internalDataSource();
 
-        const calls = items.map(item =>
-            this.movementService.registrarPrestamo({
-                id_tool:           item.toolId,
-                type:              'PRESTAMO_INTERNO',
-                quantity:          item.cantidad,
-                date:              fv.fecha,
-                time:              fv.hora,
-                requested_by_name: fv.nombreCompleto,
-                technician:        fv.nombreCompleto,
-                authorized_by:     fv.nroLicencia,
-                department:        fv.destino || '',
-                aircraft:          fv.matriculaAeronave || '',
-                work_order_number: fv.ordenTrabajo || '',
-                notes:             item.contenido || fv.observaciones || ''
-            })
-        );
+        const itemsJson = JSON.stringify(items.map(item => ({
+            tool_id:  item.toolId,
+            quantity: item.cantidad,
+            notes:    item.contenido || '',
+            condition: 'BUENO'
+        })));
 
-        forkJoin(calls).pipe(
+        this.movementService.registrarPrestamoMultiple({
+            type:              'PRESTAMO_INTERNO',
+            date:              fv.fecha,
+            time:              fv.hora,
+            requested_by_name: fv.nombreCompleto,
+            technician:        fv.nombreCompleto,
+            authorized_by:     fv.nroLicencia,
+            department:        fv.destino || '',
+            aircraft:          fv.matriculaAeronave || '',
+            work_order_number: fv.ordenTrabajo || '',
+            special_work:      fv.trabajoEspecial || false,
+            notes:             fv.observaciones || '',
+            items_json:        itemsJson
+        }).pipe(
             finalize(() => { this.isSaving = false; }),
             takeUntil(this.destroy$)
         ).subscribe({
-            next: (results: any[]) => {
-                const numeros = results.map((r: any) => r?.movement_number).filter(Boolean).join(', ');
-                this.showMessage('success', `Préstamo registrado: ${numeros}`);
+            next: (result: any) => {
+                const nro = result?.movement_number || '---';
+                this.nroNotaInterno.set(nro);
+                this.abrirImpresionPrestamoInterno(nro, fv, items);
+                this.showMessage('success', `Préstamo registrado: ${nro}`);
                 this.internalDataSource.set([]);
                 this.initInternalForm();
+                this.nroNotaInterno.set('---');
             },
             error: (err: any) => {
                 this.showMessage('error', err?.message || 'Error al registrar el préstamo');
@@ -480,7 +502,7 @@ export class PrestamoTercerosComponent implements OnInit, OnDestroy {
         });
     }
 
-    // ── Procesamiento EXTERNO (stub) ──────────────────────────────────────────
+    // ── Procesamiento EXTERNO ─────────────────────────────────────────────────
 
     async procesarExterno(): Promise<void> {
         if (this.externalDataSource().length === 0) {
@@ -492,11 +514,51 @@ export class PrestamoTercerosComponent implements OnInit, OnDestroy {
             this.showMessage('error', 'Complete los campos requeridos');
             return;
         }
+
         this.isSaving = true;
-        setTimeout(() => {
-            this.isSaving = false;
-            this.showMessage('success', `Préstamo externo ${this.nroNotaExterno()} procesado`);
-        }, 1000);
+        const fv    = this.externalForm.getRawValue();
+        const items = this.externalDataSource();
+
+        const itemsJson = JSON.stringify(items.map(item => ({
+            tool_id:  item.id,
+            quantity: item.cantidad,
+            notes:    item.contenido || '',
+            condition: 'BUENO',
+            unit_cost: item.costoHora || 0,
+            total_cost: item.precioTotal || 0
+        })));
+
+        const empresa = fv.empresaSeleccionada;
+
+        this.movementService.registrarPrestamoMultiple({
+            type:              'PRESTAMO_EXTERNO',
+            date:              fv.fecha,
+            time:              fv.hora,
+            requested_by_name: fv.nombreEmpresa,
+            customer:          fv.nombreEmpresa,
+            authorized_by:     fv.autorizado || '',
+            recipient:         fv.contacto   || '',
+            notes:             fv.motivoPrestamo || '',
+            specific_observations: fv.observaciones || '',
+            items_json:        itemsJson
+        }).pipe(
+            finalize(() => { this.isSaving = false; }),
+            takeUntil(this.destroy$)
+        ).subscribe({
+            next: (result: any) => {
+                const nro = result?.movement_number || '---';
+                this.nroNotaExterno.set(nro);
+                this.abrirImpresionPrestamoExterno(nro, fv, items);
+                this.showMessage('success', `Préstamo externo registrado: ${nro}`);
+                this.externalDataSource.set([]);
+                this.calcularImporteTotal();
+                this.initExternalForm();
+                this.nroNotaExterno.set('---');
+            },
+            error: (err: any) => {
+                this.showMessage('error', err?.message || 'Error al registrar el préstamo externo');
+            }
+        });
     }
 
     // ── Dialog herramientas ──────────────────────────────────────────────────
@@ -565,5 +627,231 @@ export class PrestamoTercerosComponent implements OnInit, OnDestroy {
     private showMessage(type: 'success' | 'error' | 'info' | 'warning', text: string): void {
         this.message.set({ type, text });
         setTimeout(() => this.message.set(null), 4000);
+    }
+
+    // ── PDF / Impresión MGH-100 ───────────────────────────────────────────────
+
+    private abrirImpresionPrestamoInterno(nro: string, fv: any, items: InternalLoanItem[]): void {
+        const w = window.open('', '_blank');
+        if (!w) return;
+        w.document.write(this.buildMGH100InternoHtml(nro, fv, items));
+        w.document.close();
+        w.focus();
+        setTimeout(() => w.print(), 600);
+    }
+
+    private abrirImpresionPrestamoExterno(nro: string, fv: any, items: ExternalLoanItem[]): void {
+        const w = window.open('', '_blank');
+        if (!w) return;
+        w.document.write(this.buildMGH100ExternoHtml(nro, fv, items));
+        w.document.close();
+        w.focus();
+        setTimeout(() => w.print(), 600);
+    }
+
+    private buildMGH100InternoHtml(nro: string, fv: any, items: InternalLoanItem[]): string {
+        const now  = new Date().toLocaleString('es-BO');
+        const rows = items.map(item => `
+            <tr>
+                <td>${item.codigo || '-'}</td>
+                <td>${item.pn || '-'}</td>
+                <td>${item.sn || '-'}</td>
+                <td style="text-align:center;font-weight:700">${item.cantidad}</td>
+                <td style="text-align:center">${item.unidad || 'PZA'}</td>
+                <td>${item.descripcion || '-'}</td>
+                <td>${item.contenido || '-'}</td>
+                <td>${item.fechaCalibracion || '-'}</td>
+                <td>${item.estado || 'SERVICEABLE'}</td>
+                <td>&nbsp;</td>
+            </tr>`).join('');
+
+        return `<!DOCTYPE html>
+<html><head><meta charset="UTF-8">
+<title>MGH-100 Nota de Préstamo ${nro}</title>
+${this.sharedPdfStyles()}
+</head><body>
+  ${this.pdfTopBar('OAM145# N-114', 'MGH-100', '2016-10-13')}
+  <h1>NOTA DE PRÉSTAMO - DEVOLUCIÓN<br>
+    <span style="font-size:10px;font-weight:400">HERRAMIENTAS, BANCOS DE PRUEBA Y EQUIPOS DE APOYO</span>
+  </h1>
+  <table class="info-tbl">
+    <tr>
+      <td class="lbl">NOMBRE SOLICITANTE:</td><td>${fv.nombreCompleto || ''}</td>
+      <td class="lbl">UNIDAD DESTINO:</td><td>${fv.destino || ''}</td>
+      <td class="nro-cell" rowspan="4"><div style="font-size:8px;font-weight:400">N° NOTA</div>${nro || '___________'}</td>
+    </tr>
+    <tr>
+      <td class="lbl">LICENCIA:</td><td>${fv.nroLicencia || ''}</td>
+      <td class="lbl">ORDEN DE TRABAJO:</td><td>${fv.ordenTrabajo || ''}</td>
+    </tr>
+    <tr>
+      <td class="lbl">MATRÍCULA AERONAVE:</td><td>${fv.matriculaAeronave || ''}</td>
+      <td class="lbl">TRABAJO ESPECIAL:</td><td>${fv.trabajoEspecial ? 'SÍ' : 'NO'}</td>
+    </tr>
+    <tr>
+      <td class="lbl">FECHA Y HORA:</td><td>${fv.fecha || ''} ${fv.hora || ''}</td>
+      <td class="lbl">OBSERVACIONES:</td><td>${fv.observaciones || ''}</td>
+    </tr>
+  </table>
+  <div class="sec">DATOS PRÉSTAMO</div>
+  <table class="det">
+    <thead><tr>
+      <th>CÓDIGO</th><th>P/N ó MODELO</th><th>S/N</th><th>CANT.</th><th>UND</th>
+      <th>DESCRIPCIÓN</th><th>LISTA CONTENIDO</th><th>FECHA CALIBRACIÓN</th><th>ESTADO</th><th>OBS</th>
+    </tr></thead>
+    <tbody>${rows}</tbody>
+  </table>
+  <div class="sec" style="margin-top:6px">DATOS DEVOLUCIÓN</div>
+  <table class="det">
+    <thead><tr>
+      <th>FECHA / HORA</th>
+      <th colspan="2">ENTREGUE CONFORME (NOMBRE / FIRMA)</th>
+      <th colspan="2">RECIBI CONFORME (NOMBRE / FIRMA)</th>
+      <th>CONDICIÓN DEVOLUCIÓN</th>
+      <th>NRO. REPORTE AVERÍA</th><th>OBS</th>
+    </tr></thead>
+    <tbody>
+      ${items.map(() => `<tr>
+        <td style="height:28px">&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td>
+        <td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td>
+      </tr>`).join('')}
+    </tbody>
+  </table>
+  ${this.notaImportantePrestamo()}
+  ${this.firmasPrestamo(fv.nombreCompleto || '')}
+  <div class="footer">Sistema de Gestión de Herramientas - BOA &nbsp;|&nbsp; ${now}</div>
+</body></html>`;
+    }
+
+    private buildMGH100ExternoHtml(nro: string, fv: any, items: ExternalLoanItem[]): string {
+        const now   = new Date().toLocaleString('es-BO');
+        const total = items.reduce((s, i) => s + (i.precioTotal || 0), 0);
+        const rows  = items.map(item => `
+            <tr>
+                <td>${item.codigo || '-'}</td>
+                <td>${item.pn || '-'}</td>
+                <td>${item.sn || '-'}</td>
+                <td style="text-align:center;font-weight:700">${item.cantidad}</td>
+                <td>${item.descripcion || '-'}</td>
+                <td>${item.contenido || '-'}</td>
+                <td style="text-align:right">${item.costoHora ? '$' + item.costoHora.toFixed(2) : '-'}</td>
+                <td style="text-align:right">${item.precioTotal ? '$' + item.precioTotal.toFixed(2) : '-'}</td>
+                <td>&nbsp;</td>
+            </tr>`).join('');
+
+        return `<!DOCTYPE html>
+<html><head><meta charset="UTF-8">
+<title>MGH-100 Nota de Préstamo Terceros ${nro}</title>
+${this.sharedPdfStyles()}
+</head><body>
+  ${this.pdfTopBar('OAM145# N-114', 'MGH-100', '2016-10-13')}
+  <h1>NOTA DE PRÉSTAMO - DEVOLUCIÓN A TERCEROS</h1>
+  <table class="info-tbl">
+    <tr>
+      <td class="lbl">NOMBRE SOLICITANTE:</td><td>${fv.nombreEmpresa || ''}</td>
+      <td class="lbl">EMPRESA:</td><td>${fv.empresaSeleccionada || ''}</td>
+      <td class="nro-cell" rowspan="3"><div style="font-size:8px;font-weight:400">N° NOTA</div>${nro || '___________'}</td>
+    </tr>
+    <tr>
+      <td class="lbl">CONTACTO:</td><td>${fv.contacto || ''}</td>
+      <td class="lbl">PRECIO $US:</td><td style="font-weight:700">$${total.toFixed(2)}</td>
+    </tr>
+    <tr>
+      <td class="lbl">FECHA Y HORA:</td><td>${fv.fecha || ''} ${fv.hora || ''}</td>
+      <td class="lbl">OBSERVACIONES:</td><td>${fv.observaciones || ''}</td>
+    </tr>
+  </table>
+  <div class="sec">DATOS PRÉSTAMO</div>
+  <table class="det">
+    <thead><tr>
+      <th>CÓDIGO</th><th>P/N ó MODELO</th><th>S/N</th><th>CANT.</th>
+      <th>DESCRIPCIÓN</th><th>LISTA CONTENIDO</th><th>HR. $</th><th>VALOR $</th><th>OBS</th>
+    </tr></thead>
+    <tbody>${rows}</tbody>
+  </table>
+  <div class="sec" style="margin-top:6px">DATOS DEVOLUCIÓN</div>
+  <table class="det">
+    <thead><tr>
+      <th>FECHA / HORA</th>
+      <th colspan="2">ENTREGUE CONFORME (NOMBRE / FIRMA)</th>
+      <th colspan="2">RECIBI CONFORME (NOMBRE / FIRMA)</th>
+      <th>CONDICIÓN DEVOLUCIÓN</th>
+      <th>NRO. REPORTE AVERÍA</th><th>OBS</th>
+    </tr></thead>
+    <tbody>
+      ${items.map(() => `<tr>
+        <td style="height:28px">&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td>
+        <td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td>
+      </tr>`).join('')}
+    </tbody>
+  </table>
+  ${this.notaImportantePrestamo()}
+  <div class="sigs">
+    <div class="sig"><div class="sig-ttl">ENTREGADO POR<br>FIRMA ALMACÉN</div><div class="sig-line">&nbsp;</div></div>
+    <div class="sig"><div class="sig-ttl">RECIBIDO POR</div><div class="sig-line">&nbsp;</div></div>
+    <div class="sig"><div class="sig-ttl">AUTORIZADO POR<br>FIRMA AUTORIZADA BOA</div><div class="sig-line">&nbsp;</div></div>
+  </div>
+  <div class="footer">Sistema de Gestión de Herramientas - BOA &nbsp;|&nbsp; ${now}</div>
+</body></html>`;
+    }
+
+    private sharedPdfStyles(): string {
+        return `<style>
+  @page { size: A4 landscape; margin: 12mm 10mm; }
+  * { box-sizing: border-box; }
+  body { font-family: Arial, sans-serif; font-size: 10px; color: #000; margin: 0; }
+  .top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 5px; }
+  .code-box { border: 2px solid #000; padding: 3px 10px; font-weight: 900; font-size: 13px; display: inline-block; }
+  h1 { text-align: center; font-size: 12px; font-weight: 900; text-transform: uppercase; letter-spacing: 1px;
+       background: #111A43; color: white; padding: 7px 10px; margin: 0 0 7px; border: 1px solid #000; }
+  .info-tbl { width: 100%; border-collapse: collapse; border: 1px solid #000; margin-bottom: 7px; }
+  .info-tbl td { border: 1px solid #ddd; padding: 3px 6px; }
+  .lbl { background: #f0f0f0; font-weight: 700; font-size: 9px; width: 130px; }
+  .nro-cell { background: #f0f0f0; text-align: center; font-weight: 900; font-size: 15px; vertical-align: middle; width: 120px; }
+  .sec { background: #111A43; color: white; padding: 3px 8px; font-weight: 900; font-size: 10px;
+         text-transform: uppercase; border: 1px solid #000; margin-bottom: 0; }
+  table.det { width: 100%; border-collapse: collapse; border: 1px solid #000; }
+  table.det th { background: #111A43; color: white; padding: 5px 4px; font-size: 8.5px; font-weight: 900;
+                 text-transform: uppercase; border: 1px solid #000; text-align: center; }
+  table.det td { padding: 4px; border: 1px solid #ddd; font-size: 9px; }
+  table.det tr:nth-child(even) td { background: #f9f9f9; }
+  .nota { border: 1px solid #ccc; padding: 5px 8px; margin-top: 8px; font-size: 8.5px; background: #fffde7; line-height: 1.5; }
+  .sigs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 16px; }
+  .sig { border: 1px solid #000; padding: 6px 8px; text-align: center; }
+  .sig-ttl { font-weight: 900; font-size: 9px; text-transform: uppercase; margin-bottom: 26px; line-height: 1.4; }
+  .sig-line { border-top: 1px solid #000; padding-top: 3px; font-size: 8.5px; }
+  .footer { text-align: center; margin-top: 10px; font-size: 7.5px; color: #888; border-top: 1px dotted #ccc; padding-top: 4px; }
+  @media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
+</style>`;
+    }
+
+    private pdfTopBar(org: string, code: string, date: string): string {
+        return `<div class="top">
+    <div style="font-weight:900;font-size:11px">BoAMM &nbsp; ${org}</div>
+    <div style="text-align:right">
+      <div class="code-box">${code}</div><br><span style="font-size:9px">REV. 0 &nbsp; ${date}</span>
+    </div>
+  </div>`;
+    }
+
+    private notaImportantePrestamo(): string {
+        return `<div class="nota">
+    <strong>NOTA IMPORTANTE:</strong><br>
+    - Para cada herramienta prestada, se encuentra detallada la condición en la que se esta prestando en la casilla correspondiente.<br>
+    - Las herramientas deben devolverse en las mismas condiciones en las que fueron prestadas.<br>
+    - En caso de avería, registrar en el formulario REPORTE DE DISCREPANCIA. La firma implica conformidad con la información.
+  </div>`;
+    }
+
+    private firmasPrestamo(nombre: string): string {
+        return `<div class="sigs">
+    <div class="sig">
+      <div class="sig-ttl">ENTREGADO POR<br>FIRMA ALMACÉN HERRAMIENTAS</div>
+      <div style="font-size:9px;margin-bottom:20px">${nombre}</div>
+      <div class="sig-line">&nbsp;</div>
+    </div>
+    <div class="sig"><div class="sig-ttl">RECIBIDO POR<br>FIRMA TÉC. O INSP.</div><div class="sig-line">&nbsp;</div></div>
+    <div class="sig"><div class="sig-ttl">AUTORIZADO</div><div class="sig-line">&nbsp;</div></div>
+  </div>`;
     }
 }

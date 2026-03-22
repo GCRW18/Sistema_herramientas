@@ -259,7 +259,8 @@ export class TraspasoOtraAreaComponent implements OnInit, OnDestroy {
             this.showMessage('Complete los datos requeridos', 'error');
             return;
         }
-        window.print();
+        const fv = this.transferForm.getRawValue();
+        this.abrirVentanaImpresionTraspaso('', fv, this.dataSource());
     }
 
     openConfirmModal(): void {
@@ -322,6 +323,7 @@ export class TraspasoOtraAreaComponent implements OnInit, OnDestroy {
         ).subscribe({
             next: (result: any) => {
                 const nro = result?.movement_number ?? '';
+                this.abrirVentanaImpresionTraspaso(nro, fv, items);
                 this.showMessage(`Traspaso ${nro} registrado exitosamente`, 'success');
                 this.dataSource.set([]);
                 this.transferForm.reset();
@@ -428,5 +430,119 @@ export class TraspasoOtraAreaComponent implements OnInit, OnDestroy {
         this.systemMsgType = type;
         this.showSystemMsg = true;
         setTimeout(() => this.showSystemMsg = false, 4000);
+    }
+
+    // ── PDF / Impresión MGH-109 ───────────────────────────────────────────────
+
+    private abrirVentanaImpresionTraspaso(nro: string, fv: any, items: TransferItem[]): void {
+        const w = window.open('', '_blank');
+        if (!w) { this.showMessage('Permita ventanas emergentes para imprimir', 'warning'); return; }
+        w.document.write(this.buildMGH109Html(nro, fv, items));
+        w.document.close();
+        w.focus();
+        setTimeout(() => w.print(), 600);
+    }
+
+    private buildMGH109Html(nro: string, fv: any, items: TransferItem[]): string {
+        const now  = new Date().toLocaleString('es-BO');
+        const rows = items.map(item => `
+            <tr>
+                <td>${item.codigo      || '-'}</td>
+                <td>${item.partNumber  || '-'}</td>
+                <td>${item.serialNumber|| '-'}</td>
+                <td style="text-align:center">${item.unidad || 'PZA'}</td>
+                <td style="text-align:center;font-weight:700">${item.cantidad}</td>
+                <td>${item.descripcion || '-'}</td>
+                <td>${item.contenido   || '-'}</td>
+                <td>${item.marca       || '-'}</td>
+                <td>${item.fecha       || '-'}</td>
+                <td>&nbsp;</td>
+            </tr>`).join('');
+
+        return `<!DOCTYPE html>
+<html><head><meta charset="UTF-8">
+<title>MGH-109 Nota de Traspaso ${nro}</title>
+<style>
+  @page { size: A4 landscape; margin: 12mm 10mm; }
+  * { box-sizing: border-box; }
+  body { font-family: Arial, sans-serif; font-size: 10px; color: #000; margin: 0; }
+  .top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 5px; }
+  .code-box { border: 2px solid #000; padding: 3px 10px; font-weight: 900; font-size: 13px; display: inline-block; }
+  h1 { text-align: center; font-size: 12px; font-weight: 900; text-transform: uppercase; letter-spacing: 1px;
+       background: #111A43; color: white; padding: 7px 10px; margin: 0 0 7px; border: 1px solid #000; }
+  .info-tbl { width: 100%; border-collapse: collapse; border: 1px solid #000; margin-bottom: 7px; }
+  .info-tbl td { border: 1px solid #ddd; padding: 3px 6px; }
+  .lbl { background: #f0f0f0; font-weight: 700; font-size: 9px; width: 130px; }
+  .nro-cell { background: #f0f0f0; text-align: center; font-weight: 900; font-size: 15px; vertical-align: middle; width: 120px; }
+  .sec { background: #111A43; color: white; padding: 3px 8px; font-weight: 900; font-size: 10px;
+         text-transform: uppercase; border: 1px solid #000; margin: 0 0 0; }
+  table.det { width: 100%; border-collapse: collapse; border: 1px solid #000; }
+  table.det th { background: #111A43; color: white; padding: 5px 4px; font-size: 8.5px; font-weight: 900;
+                 text-transform: uppercase; border: 1px solid #000; text-align: center; }
+  table.det td { padding: 4px; border: 1px solid #ddd; font-size: 9px; }
+  table.det tr:nth-child(even) td { background: #f9f9f9; }
+  .nota { border: 1px solid #ccc; padding: 5px 8px; margin-top: 8px; font-size: 8.5px; background: #fffde7; line-height: 1.5; }
+  .sigs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-top: 18px; }
+  .sig { border: 1px solid #000; padding: 6px 8px; text-align: center; }
+  .sig-ttl { font-weight: 900; font-size: 9px; text-transform: uppercase; margin-bottom: 28px; }
+  .sig-line { border-top: 1px solid #000; padding-top: 3px; font-size: 8.5px; }
+  .footer { text-align: center; margin-top: 10px; font-size: 7.5px; color: #888; border-top: 1px dotted #ccc; padding-top: 4px; }
+  @media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
+</style></head><body>
+  <div class="top">
+    <div style="font-weight:900;font-size:11px">BoAMM &nbsp; OAM145# N-014</div>
+    <div style="font-size:13px;font-weight:900;text-align:center">
+      NOTA DE TRASPASO<br><span style="font-size:10px;font-weight:400">HERRAMIENTAS, BANCOS DE PRUEBA Y EQUIPOS DE APOYO</span>
+    </div>
+    <div style="text-align:right">
+      <div class="code-box">MGH-109</div><br><span style="font-size:9px">REV. 0 &nbsp; 2017-10-03</span>
+    </div>
+  </div>
+  <table class="info-tbl">
+    <tr>
+      <td class="lbl">NOMBRE SOLICITANTE:</td><td>${fv.nombreCompleto || ''}</td>
+      <td class="lbl">GERENCIA DESTINO:</td><td>${fv.gerencia || ''}</td>
+      <td class="nro-cell" rowspan="4"><div style="font-size:8px;font-weight:400">N° NOTA</div>${nro || '___________'}</td>
+    </tr>
+    <tr>
+      <td class="lbl">LICENCIA:</td><td>${fv.nroLicencia || ''}</td>
+      <td class="lbl">DEPARTAMENTO:</td><td>${fv.departamento || ''}</td>
+    </tr>
+    <tr>
+      <td class="lbl">CARGO:</td><td>${fv.cargo || ''}</td>
+      <td class="lbl">UNIDAD:</td><td>${fv.unidad || ''}</td>
+    </tr>
+    <tr>
+      <td class="lbl">FECHA Y HORA:</td><td>${fv.fecha || ''} ${fv.hora || ''}</td>
+      <td class="lbl">TIPO TRASPASO:</td><td>${fv.tipoTraspaso || ''}</td>
+    </tr>
+    <tr>
+      <td class="lbl">OBSERVACIONES:</td><td colspan="4">${fv.observaciones || ''}</td>
+    </tr>
+  </table>
+  <div class="sec">DETALLE</div>
+  <table class="det">
+    <thead><tr>
+      <th>CÓDIGO</th><th>P/N ó MODELO</th><th>S/N</th><th>UNIDAD</th><th>CANT.</th>
+      <th>NOMBRE</th><th>LISTA DE CONTENIDO</th><th>MARCA</th><th>FECHA CALIBRACIÓN</th><th>OBS</th>
+    </tr></thead>
+    <tbody>${rows}</tbody>
+  </table>
+  <div class="nota">
+    <strong>NOTA IMPORTANTE:</strong><br>
+    - Las herramientas descritas en la presente nota se encuentran en condición SERVICIABLE, a menos que se indique lo contrario en la casilla de OBSERVACIONES.<br>
+    - La firma de la presente nota implica que se esta en conformidad con toda la informacion detallada.
+  </div>
+  <div class="sigs">
+    <div class="sig"><div class="sig-ttl">ENTREGADO POR</div><div class="sig-line">Firma Almacén Herramientas</div></div>
+    <div class="sig"><div class="sig-ttl">RECIBIDO POR</div><div class="sig-line">Firma Recepción</div></div>
+    <div class="sig">
+      <div class="sig-ttl">AUTORIZADO POR</div>
+      <div style="margin-top:6px;font-size:9px;text-align:left">Nombre: ___________________<br>Cargo: ____________________</div>
+      <div class="sig-line">Firma Autorizada BOA</div>
+    </div>
+  </div>
+  <div class="footer">Sistema de Gestión de Herramientas - BOA &nbsp;|&nbsp; ${now}</div>
+</body></html>`;
     }
 }

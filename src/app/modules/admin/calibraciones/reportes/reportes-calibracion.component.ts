@@ -383,25 +383,209 @@ export class ReportesCalibracionComponent implements OnInit, OnDestroy {
     }
 
     exportToPDF(): void {
-        this.snackBar.open('Exportando a PDF...', 'Cerrar', { duration: 2000, horizontalPosition: 'end', verticalPosition: 'top' });
+        if (!this.selectedReport || !this.reportGenerated || this.reportData.length === 0) {
+            this.snackBar.open('Genere el reporte primero', 'Cerrar', { duration: 3000 });
+            return;
+        }
 
-        this.calibrationService.exportReportToPDF(this.selectedReport!.id, this.reportConfig).pipe(
-            takeUntil(this._unsubscribeAll)
-        ).subscribe({
-            next: (blob: any) => {
-                if (blob instanceof Blob) {
-                    const url = window.URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = `${this.selectedReport!.title}_${new Date().toISOString().split('T')[0]}.pdf`;
-                    a.click();
-                    window.URL.revokeObjectURL(url);
-                }
-                this.snackBar.open('Reporte PDF generado', 'Cerrar', { duration: 3000, panelClass: ['snackbar-success'] });
-            },
-            error: () => {
-                this.snackBar.open('Exportacion no disponible en modo offline', 'Cerrar', { duration: 3000 });
-            }
-        });
+        const w = window.open('', '_blank');
+        if (!w) {
+            this.snackBar.open('Permita ventanas emergentes para imprimir', 'Cerrar', { duration: 3000 });
+            return;
+        }
+
+        let html = '';
+        switch (this.selectedReport.id) {
+            case 'mgh102': html = this.buildMGH102Html(); break;
+            case 'mgh103': html = this.buildMGH103Html(); break;
+            case 'mgh104': html = this.buildMGH104Html(); break;
+            default:       html = this.buildGenericReportHtml(); break;
+        }
+
+        w.document.write(html);
+        w.document.close();
+        w.focus();
+        setTimeout(() => w.print(), 600);
+        this.snackBar.open('Reporte PDF abierto para impresión', 'Cerrar', { duration: 2000, panelClass: ['snackbar-success'] });
+    }
+
+    private pdfBaseStyles(): string {
+        return `<style>
+  @page { size: A4 landscape; margin: 12mm 10mm; }
+  * { box-sizing: border-box; }
+  body { font-family: Arial, sans-serif; font-size: 10px; color: #000; margin: 0; }
+  .top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 5px; }
+  .code-box { border: 2px solid #000; padding: 3px 10px; font-weight: 900; font-size: 13px; display: inline-block; }
+  h1 { text-align: center; font-size: 12px; font-weight: 900; text-transform: uppercase;
+       background: #111A43; color: white; padding: 7px 10px; margin: 0 0 6px; border: 1px solid #000; }
+  .meta { display: flex; gap: 20px; margin-bottom: 6px; font-size: 9px; border: 1px solid #000; padding: 4px 8px; background: #f8fafc; }
+  .meta span { font-weight: 700; }
+  table { width: 100%; border-collapse: collapse; border: 1px solid #000; }
+  th { background: #111A43; color: white; padding: 5px 4px; font-size: 8.5px; font-weight: 900;
+       text-transform: uppercase; border: 1px solid #000; text-align: center; }
+  td { padding: 4px; border: 1px solid #ddd; font-size: 9px; vertical-align: middle; }
+  tr:nth-child(even) td { background: #f9f9f9; }
+  .badge-vencida { background: #ef4444; color: white; padding: 2px 6px; border: 1px solid #000; font-weight: 700; font-size: 8px; }
+  .badge-critica { background: #f97316; color: white; padding: 2px 6px; border: 1px solid #000; font-weight: 700; font-size: 8px; }
+  .badge-urgente { background: #eab308; color: black; padding: 2px 6px; border: 1px solid #000; font-weight: 700; font-size: 8px; }
+  .badge-proxima { background: #3b82f6; color: white; padding: 2px 6px; border: 1px solid #000; font-weight: 700; font-size: 8px; }
+  .badge-vigente { background: #22c55e; color: white; padding: 2px 6px; border: 1px solid #000; font-weight: 700; font-size: 8px; }
+  .footer { text-align: center; margin-top: 10px; font-size: 7.5px; color: #888; border-top: 1px dotted #ccc; padding-top: 4px; }
+  @media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
+</style>`;
+    }
+
+    private buildMGH102Html(): string {
+        const now  = new Date().toLocaleString('es-BO');
+        const rows = this.reportData.map((item, i) => {
+            const badgeClass = item.status?.includes('VENCIDA') ? 'badge-vencida'
+                : item.status?.includes('CRITICA') ? 'badge-critica'
+                : item.status?.includes('URGENTE') ? 'badge-urgente'
+                : item.status?.includes('PROXIMA') ? 'badge-proxima'
+                : 'badge-vigente';
+            return `<tr>
+                <td style="text-align:center">${i + 1}</td>
+                <td style="font-weight:700">${item.code || '-'}</td>
+                <td>${item.name || '-'}</td>
+                <td></td>
+                <td>${item.serial || '-'}</td>
+                <td>${item.category || '-'}</td>
+                <td></td>
+                <td style="text-align:center">1</td>
+                <td style="text-align:center">${item.next_cal || '-'}</td>
+                <td style="text-align:center">&nbsp;</td>
+                <td><span class="${badgeClass}">${item.status || '-'}</span></td>
+            </tr>`;
+        }).join('');
+
+        return `<!DOCTYPE html>
+<html><head><meta charset="UTF-8"><title>MGH-102 Listado Calibración</title>${this.pdfBaseStyles()}</head><body>
+  <div class="top">
+    <div style="font-weight:900;font-size:11px">BoAMM &nbsp; OMA145 &nbsp; N-014</div>
+    <div style="text-align:center;font-size:13px;font-weight:900">
+      LISTADO DE HERRAMIENTAS SUJETAS A CALIBRACIÓN
+    </div>
+    <div style="text-align:right">
+      <div class="code-box">MGH-102</div><br><span style="font-size:9px">REV. 0 &nbsp; 2016-10-25</span>
+    </div>
+  </div>
+  <div class="meta">
+    <div>Generado por: <span>SISTEMA DE HERRAMIENTAS BOA</span></div>
+    <div>BASE: <span>${this.reportConfig.warehouse !== 'all' ? this.reportConfig.warehouse : 'TODAS'}</span></div>
+    <div>Fecha de impresión: <span>${now}</span></div>
+    <div>Total: <span>${this.reportData.length} herramientas</span></div>
+  </div>
+  <table>
+    <thead><tr>
+      <th>NRO</th><th>CÓDIGO</th><th>NOMBRE</th><th>MODELO O P/N</th><th>S/N</th>
+      <th>UBICACIÓN</th><th>LISTA CONTENIDO</th><th>CANT.</th>
+      <th>FECHA VENCIMIENTO CALIBRACIÓN</th><th>DÍAS REMANENTES</th><th>OBSERVACIONES</th>
+    </tr></thead>
+    <tbody>${rows}</tbody>
+  </table>
+  <div class="footer">Sistema de Gestión de Herramientas - BOA &nbsp;|&nbsp; ${now}</div>
+</body></html>`;
+    }
+
+    private buildMGH103Html(): string {
+        const now  = new Date().toLocaleString('es-BO');
+        const rows = this.reportData.map(item => `
+            <tr>
+                <td style="font-weight:700">${item.month || '-'}</td>
+                <td style="text-align:center">${item.sent ?? '-'}</td>
+                <td style="text-align:center">${item.returned ?? '-'}</td>
+                <td style="text-align:center">${item.approved ?? '-'}</td>
+                <td style="text-align:center">${item.rejected ?? '-'}</td>
+                <td style="text-align:right">${item.cost || '-'} Bs</td>
+                <td style="text-align:center">${item.avg_days ?? '-'} días</td>
+            </tr>`).join('');
+
+        return `<!DOCTYPE html>
+<html><head><meta charset="UTF-8"><title>MGH-103 Reporte Mensual Calibración</title>${this.pdfBaseStyles()}</head><body>
+  <div class="top">
+    <div style="font-weight:900;font-size:11px">BoAMM &nbsp; OMA145 &nbsp; N-014</div>
+    <div style="text-align:center;font-size:13px;font-weight:900">
+      REPORTE MENSUAL DE HERRAMIENTAS SUJETAS A CALIBRACIÓN
+    </div>
+    <div style="text-align:right">
+      <div class="code-box">MGH-103</div><br><span style="font-size:9px">REV. 0</span>
+    </div>
+  </div>
+  <div class="meta">
+    <div>Período: <span>${this.reportConfig.startDate ? new Date(this.reportConfig.startDate).toLocaleDateString('es-BO') : ''} — ${this.reportConfig.endDate ? new Date(this.reportConfig.endDate).toLocaleDateString('es-BO') : ''}</span></div>
+    <div>Fecha de impresión: <span>${now}</span></div>
+  </div>
+  <table>
+    <thead><tr>
+      <th>MES</th><th>ENVIADAS</th><th>RETORNADAS</th><th>APROBADAS</th>
+      <th>RECHAZADAS</th><th>COSTO TOTAL (Bs)</th><th>DÍAS PROMEDIO</th>
+    </tr></thead>
+    <tbody>${rows}</tbody>
+  </table>
+  <div class="footer">Sistema de Gestión de Herramientas - BOA &nbsp;|&nbsp; ${now}</div>
+</body></html>`;
+    }
+
+    private buildMGH104Html(): string {
+        const now  = new Date().toLocaleString('es-BO');
+        const rows = this.reportData.map((item, i) => {
+            const badgeClass = !item.days || item.days <= 0 ? 'badge-vencida'
+                : item.days <= 7  ? 'badge-critica'
+                : item.days <= 15 ? 'badge-urgente'
+                : 'badge-proxima';
+            return `<tr>
+                <td style="text-align:center">${i + 1}</td>
+                <td style="font-weight:700">${item.code || '-'}</td>
+                <td>${item.name || '-'}</td>
+                <td style="text-align:center">${item.expiry || '-'}</td>
+                <td style="text-align:center;font-weight:700;color:${item.days <= 0 ? '#dc2626' : item.days <= 7 ? '#ea580c' : '#ca8a04'}">
+                    ${item.days <= 0 ? 'VENCIDA' : (item.days + ' días')}
+                </td>
+                <td style="text-align:center"><span class="${badgeClass}">${item.urgency || '-'}</span></td>
+                <td style="text-align:center">${item.warehouse || '-'}</td>
+            </tr>`;
+        }).join('');
+
+        return `<!DOCTYPE html>
+<html><head><meta charset="UTF-8"><title>MGH-104 Herramientas Próximas a Vencer</title>${this.pdfBaseStyles()}</head><body>
+  <div class="top">
+    <div style="font-weight:900;font-size:11px">BoAMM &nbsp; OMA145 &nbsp; N-014</div>
+    <div style="text-align:center;font-size:13px;font-weight:900">
+      REPORTE DE HERRAMIENTAS Y EQUIPOS PRÓXIMOS A VENCER
+    </div>
+    <div style="text-align:right">
+      <div class="code-box">MGH-104</div><br><span style="font-size:9px">REV. 0</span>
+    </div>
+  </div>
+  <div class="meta">
+    <div>Días horizonte: <span>${this.reportConfig.days || 30} días</span></div>
+    <div>Base: <span>${this.reportConfig.warehouse !== 'all' ? this.reportConfig.warehouse : 'TODAS'}</span></div>
+    <div>Fecha de impresión: <span>${now}</span></div>
+    <div>Total: <span>${this.reportData.length} herramientas</span></div>
+  </div>
+  <table>
+    <thead><tr>
+      <th>NRO</th><th>CÓDIGO</th><th>HERRAMIENTA</th>
+      <th>FECHA VENCIMIENTO</th><th>DÍAS RESTANTES</th><th>URGENCIA</th><th>ALMACÉN</th>
+    </tr></thead>
+    <tbody>${rows}</tbody>
+  </table>
+  <div class="footer">Sistema de Gestión de Herramientas - BOA &nbsp;|&nbsp; ${now}</div>
+</body></html>`;
+    }
+
+    private buildGenericReportHtml(): string {
+        const now  = new Date().toLocaleString('es-BO');
+        const headers = this.reportColumns.map(c => `<th>${c.label.toUpperCase()}</th>`).join('');
+        const rows    = this.reportData.map(item =>
+            `<tr>${this.reportColumns.map(c => `<td>${item[c.key] ?? '-'}</td>`).join('')}</tr>`
+        ).join('');
+
+        return `<!DOCTYPE html>
+<html><head><meta charset="UTF-8"><title>${this.selectedReport?.title}</title>${this.pdfBaseStyles()}</head><body>
+  <h1>${this.selectedReport?.title} — ${this.selectedReport?.description}</h1>
+  <table><thead><tr>${headers}</tr></thead><tbody>${rows}</tbody></table>
+  <div class="footer">Sistema de Gestión de Herramientas - BOA &nbsp;|&nbsp; ${now}</div>
+</body></html>`;
     }
 }

@@ -1,0 +1,11 @@
+{
+  "/bkhe_api": {
+    "target": "http://10.150.0.91",
+    "secure": false,
+    "changeOrigin": true,
+    "pathRewrite": {
+      "^/bkhe_api": "/kerp/pxp/lib/rest"
+    },
+    "logLevel": "debug"
+  }
+}

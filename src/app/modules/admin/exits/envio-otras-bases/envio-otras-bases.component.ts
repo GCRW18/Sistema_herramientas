@@ -513,6 +513,9 @@ export class EnvioOtrasBasesComponent implements OnInit, OnDestroy {
             next: (result: any) => {
                 console.log('[CONFIRMAR] Respuesta del backend:', result);
                 const nroGuia = result?.movement_number ?? result?.datos?.[0]?.movement_number ?? '';
+                const entregadoPorObj = this.personal.find(p => p.id === fv.entregadoPor);
+                const recibidoPorObj  = this.personal.find(p => p.id === fv.recibidoPor);
+                this.abrirImpresionEnvio(nroGuia, fv, items, entregadoPorObj, recibidoPorObj);
                 this.showMessage(`Envío ${nroGuia} registrado exitosamente`, 'success');
                 this.dataSource.set([]);
                 this.itemIdCounter = 1;
@@ -600,5 +603,105 @@ export class EnvioOtrasBasesComponent implements OnInit, OnDestroy {
                 this.showMessage(`Herramienta ${newItem.codigo} agregada al envío`, 'success');
             }
         });
+    }
+
+    // ── PDF / Impresión ENV HH BASES ─────────────────────────────────────────
+
+    private abrirImpresionEnvio(nro: string, fv: any, items: ExitItem[], entrega: any, recibe: any): void {
+        const w = window.open('', '_blank');
+        if (!w) return;
+        const now  = new Date().toLocaleString('es-BO');
+        const rows = items.map((item, i) => `
+            <tr>
+                <td style="text-align:center">${i + 1}</td>
+                <td>${item.descripcion || '-'}</td>
+                <td>${item.partNumber  || '-'}</td>
+                <td>${item.serialNumber|| '-'}</td>
+                <td style="text-align:center">${item.cantidad}</td>
+                <td>${item.estado      || '-'}</td>
+                <td>${fv.fecha || ''}</td>
+                <td style="height:28px">&nbsp;</td>
+                <td>&nbsp;</td>
+                <td>&nbsp;</td>
+            </tr>`).join('');
+
+        const html = `<!DOCTYPE html>
+<html><head><meta charset="UTF-8"><title>Envío Otras Bases ${nro}</title>
+<style>
+  @page { size: A4 landscape; margin: 12mm 10mm; }
+  * { box-sizing: border-box; }
+  body { font-family: Arial, sans-serif; font-size: 10px; color: #000; margin: 0; }
+  .top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 5px; }
+  .code-box { border: 2px solid #000; padding: 3px 10px; font-weight: 900; font-size: 13px; display: inline-block; }
+  h1 { text-align: center; font-size: 12px; font-weight: 900; text-transform: uppercase; letter-spacing: 1px;
+       background: #111A43; color: white; padding: 7px 10px; margin: 0 0 7px; border: 1px solid #000; }
+  .info-tbl { width: 100%; border-collapse: collapse; border: 1px solid #000; margin-bottom: 7px; }
+  .info-tbl td { border: 1px solid #ddd; padding: 3px 6px; }
+  .lbl { background: #f0f0f0; font-weight: 700; font-size: 9px; width: 120px; }
+  .nro-cell { background: #000; color: white; text-align: center; font-weight: 900; font-size: 14px; vertical-align: middle; width: 130px; }
+  table.det { width: 100%; border-collapse: collapse; border: 1px solid #000; }
+  table.det th { background: #111A43; color: white; padding: 5px 4px; font-size: 8.5px; font-weight: 900;
+                 text-transform: uppercase; border: 1px solid #000; text-align: center; }
+  table.det td { padding: 4px; border: 1px solid #ddd; font-size: 9px; }
+  table.det tr:nth-child(even) td { background: #f9f9f9; }
+  .sigs { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 20px; }
+  .sig { border: 1px solid #000; padding: 6px 10px; text-align: center; }
+  .sig-ttl { font-weight: 900; font-size: 10px; text-transform: uppercase; margin-bottom: 26px; }
+  .sig-line { border-top: 1px solid #000; padding-top: 3px; font-size: 9px; }
+  .footer { text-align: center; margin-top: 10px; font-size: 7.5px; color: #888; border-top: 1px dotted #ccc; padding-top: 4px; }
+  @media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
+</style></head><body>
+  <div class="top">
+    <div style="font-weight:900;font-size:11px">BoAMM &nbsp; OAM145#114 &nbsp; N-114</div>
+    <div style="text-align:right">
+      <div class="code-box">ENV-${nro || '___'}</div><br><span style="font-size:9px">REV. 0 &nbsp; 2016-10-25</span>
+    </div>
+  </div>
+  <h1>REGISTRO DE HERRAMIENTAS ENVIADAS A OTRAS BASES</h1>
+  <table class="info-tbl">
+    <tr>
+      <td class="lbl">BASE ORIGEN:</td><td>${fv.baseOrigen || ''}</td>
+      <td class="lbl">BASE DESTINO:</td><td>${fv.baseDestino || ''}</td>
+      <td class="nro-cell" rowspan="3">N° GUÍA<br>${nro || '___________'}</td>
+    </tr>
+    <tr>
+      <td class="lbl">TIPO ENVÍO:</td><td>${fv.tipoEnvio || ''}</td>
+      <td class="lbl">NRO. VUELO:</td><td>${fv.nroVuelo || ''}</td>
+    </tr>
+    <tr>
+      <td class="lbl">FECHA Y HORA:</td><td>${fv.fecha || ''} ${fv.hora || ''}</td>
+      <td class="lbl">AERONAVE:</td><td>${fv.aeronave || ''}</td>
+    </tr>
+    <tr>
+      <td class="lbl">OBSERVACIONES:</td><td colspan="4">${fv.observaciones || ''}</td>
+    </tr>
+  </table>
+  <table class="det">
+    <thead><tr>
+      <th>#</th><th>DESCRIPCIÓN</th><th>PART NUMBER</th><th>SERIAL NUMBER</th>
+      <th>CANT.</th><th>ESTADO</th><th>FECHA ENVÍO</th><th>FIRMA ALMACÉN</th>
+      <th>FECHA RETORNO</th><th>FIRMA ALMACÉN RETORNO</th>
+    </tr></thead>
+    <tbody>${rows}</tbody>
+  </table>
+  <div class="sigs">
+    <div class="sig">
+      <div class="sig-ttl">ENTREGADO POR</div>
+      <div style="font-size:9px;margin-bottom:14px">${entrega?.nombreCompleto || '____________________'}<br>${entrega?.cargo || ''}</div>
+      <div class="sig-line">Firma Almacén Herramientas Origen</div>
+    </div>
+    <div class="sig">
+      <div class="sig-ttl">RECIBIDO POR</div>
+      <div style="font-size:9px;margin-bottom:14px">${recibe?.nombreCompleto || '____________________'}<br>${recibe?.cargo || ''}</div>
+      <div class="sig-line">Firma Almacén Herramientas Destino</div>
+    </div>
+  </div>
+  <div class="footer">Sistema de Gestión de Herramientas - BOA &nbsp;|&nbsp; ${now}</div>
+</body></html>`;
+
+        w.document.write(html);
+        w.document.close();
+        w.focus();
+        setTimeout(() => w.print(), 600);
     }
 }

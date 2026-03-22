@@ -86,7 +86,8 @@
                             "buildTarget": "erp:build:production"
                         },
                         "development": {
-                            "buildTarget": "erp:build:development"
+                            "buildTarget": "erp:build:development",
+                            "proxyConfig": "proxy.conf.json"
                         }
                     },
                     "defaultConfiguration": "development"

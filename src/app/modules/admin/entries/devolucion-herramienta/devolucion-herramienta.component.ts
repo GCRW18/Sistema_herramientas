@@ -18,7 +18,6 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
 import { DragDropModule } from '@angular/cdk/drag-drop';
 import { Subject, takeUntil, finalize, debounceTime, distinctUntilChanged } from 'rxjs';
 import { MovementService } from '../../../../core/services/movement.service';
-import { CreateMovement } from '../../../../core/models/movement.types';
 
 interface Funcionario {
     id: string;
@@ -279,50 +278,51 @@ export class DevolucionHerramientaComponent implements OnInit, OnDestroy {
 
         this.isSearching = true;
 
-        // Buscar herramientas prestadas al funcionario
+        // Buscar préstamos activos y filtrar por funcionario
         this.movementService.getMovements({
-            movement_type: 'exit',
-            exitReason: 'loan',
-            recipient: funcionario.id,
-            status: 'completed'
+            type: 'PRESTAMO_INTERNO',
+            status: 'ACTIVO'
         }).pipe(
             takeUntil(this._unsubscribeAll),
             finalize(() => this.isSearching = false)
         ).subscribe({
             next: (data) => {
-                if (data && data.length > 0) {
-                    this.dataSource = data.flatMap((mov: any, movIndex: number) => {
+                const nombreBuscado = funcionario.nombreCompleto?.toLowerCase() || '';
+                const filtered = (data || []).filter((mov: any) =>
+                    mov.requested_by_name?.toLowerCase() === nombreBuscado ||
+                    mov.technician?.toLowerCase() === nombreBuscado ||
+                    String(mov.requested_by_id) === String(funcionario.id)
+                );
+
+                if (filtered.length > 0) {
+                    this.dataSource = filtered.flatMap((mov: any) => {
                         const items = mov.items || [];
                         const fechaPrestamo = mov.date || '';
-                        return items.map((item: any, itemIndex: number) => ({
-                            fila: movIndex * 100 + itemIndex + 1,
-                            toolId: item.toolId || item.tool?.id || '',
+                        return items.map((item: any) => ({
+                            fila: 0,
+                            toolId: item.toolId || item.tool?.id || item.tool_id || '',
                             codigo: item.tool?.code || item.codigo || '',
                             descripcion: item.tool?.description || item.descripcion || '',
                             pn: item.tool?.partNumber || item.pn || '',
                             sn: item.tool?.serialNumber || item.sn || '',
                             marca: item.tool?.brand || item.marca || '',
-                            fechaPrestamo: fechaPrestamo,
+                            fechaPrestamo,
                             cantidadPrestada: item.quantity || 1,
                             cantidadDevolver: item.quantity || 1,
-                            nroNotaSalida: mov.movementNumber || '',
-                            aeronave: mov.aircraft || mov.aeronave || '',
-                            ordenTrabajo: mov.workOrder || mov.ordenTrabajo || '',
-                            tipoPrestamo: mov.loanType || mov.tipoPrestamo || 'EVENTUAL',
+                            nroNotaSalida: mov.movementNumber || mov.movement_number || '',
+                            aeronave: mov.aircraft || '',
+                            ordenTrabajo: mov.workOrder || mov.work_order_number || '',
+                            tipoPrestamo: (mov.loanType || mov.loan_type || 'EVENTUAL') as any,
                             diasFuera: fechaPrestamo ? this.calcularDiasFuera(fechaPrestamo) : 0,
                             condicionDevolucion: 'BUENO' as CondicionDevolucion,
                             observacionItem: '',
                             selected: false
                         }));
                     });
-                    // Renumerar filas
                     this.dataSource.forEach((item, idx) => item.fila = idx + 1);
-                }
-
-                if (this.dataSource.length === 0) {
-                    this.loadMockData(funcionario);
-                } else {
                     this.showMessage(`Se encontraron ${this.dataSource.length} herramienta(s)`, 'success');
+                } else {
+                    this.loadMockData(funcionario);
                 }
             },
             error: () => {
@@ -624,72 +624,63 @@ export class DevolucionHerramientaComponent implements OnInit, OnDestroy {
             return;
         }
 
+        const selectedItems = this.getSelectedItems();
+
+        // Validar que los items tienen ID real (no mock)
+        const sinId = selectedItems.filter(i => !i.toolId || isNaN(Number(i.toolId)));
+        if (sinId.length > 0) {
+            this.showMessage(`${sinId.length} herramienta(s) sin ID de sistema — consulte datos reales desde el API`, 'error');
+            return;
+        }
+
         this.showConfirmation = false;
         this.isSaving = true;
 
-        const selectedItems = this.getSelectedItems();
+        const itemsJson = JSON.stringify(selectedItems.map(item => ({
+            tool_id: Number(item.toolId),
+            quantity: item.cantidadDevolver,
+            condicion: item.condicionDevolucion,
+            notes: item.observacionItem || ''
+        })));
 
-        const devolucionData: CreateMovement = {
-            type: 'entry',
-            status: 'COMPLETADO',
-            entryReason: 'return',
+        this.movementService.registrarDevolucionPrestamo({
+            type: 'DEVOLUCION_PRESTAMO_INTERNO',
             date: this.devolucionForm.value.fechaDevolucion,
-            notes: this.devolucionForm.value.observaciones,
-            responsiblePerson: this.devolucionForm.value.responsableRecibe,
+            time: new Date().toTimeString().slice(0, 8),
+            requested_by_name: funcionario.nombreCompleto,
+            responsible_person: this.devolucionForm.value.responsableRecibe,
             recipient: funcionario.nombreCompleto,
-            items: selectedItems.map(item => ({
-                toolId: item.toolId,
-                codigo: item.codigo,
-                descripcion: item.descripcion,
-                pn: item.pn,
-                sn: item.sn,
-                marca: item.marca,
-                quantity: item.cantidadDevolver,
-                cantidad: item.cantidadDevolver,
-                cantidadPrestada: item.cantidadPrestada,
-                nroNotaSalida: item.nroNotaSalida,
-                aeronave: item.aeronave,
-                ordenTrabajo: item.ordenTrabajo,
-                tipoPrestamo: item.tipoPrestamo,
-                diasFuera: item.diasFuera,
-                condicion: item.condicionDevolucion,
-                notes: item.observacionItem
-            }))
-        };
-
-        this.movementService.createEntry(devolucionData).pipe(
-            takeUntil(this._unsubscribeAll),
-            finalize(() => this.isSaving = false)
+            notes: this.devolucionForm.value.observaciones || '',
+            items_json: itemsJson
+        }).pipe(
+            finalize(() => this.isSaving = false),
+            takeUntil(this._unsubscribeAll)
         ).subscribe({
-            next: (response) => {
-                this.showMessage('Devolución registrada exitosamente', 'success');
+            next: (result: any) => {
+                const nro = result?.movement_number || '---';
+                this.abrirImpresionDevolucion(nro, selectedItems,
+                    funcionario, this.devolucionForm.value);
+                this.showMessage(`Devolución registrada: ${nro}`, 'success');
 
-                // Manejar devoluciones parciales: solo remover si se devolvió todo
+                // Remover items devueltos completamente; mantener devoluciones parciales
                 this.dataSource = this.dataSource.filter(item => {
                     if (!item.selected) return true;
-                    // Si devolvió cantidad completa, remover
                     return item.cantidadDevolver < item.cantidadPrestada;
                 });
-
-                // Actualizar cantidades pendientes para devoluciones parciales
                 this.dataSource.forEach(item => {
                     if (item.selected && item.cantidadDevolver < item.cantidadPrestada) {
-                        item.cantidadPrestada = item.cantidadPrestada - item.cantidadDevolver;
+                        item.cantidadPrestada -= item.cantidadDevolver;
                         item.cantidadDevolver = item.cantidadPrestada;
                         item.selected = false;
                     }
                 });
-
-                // Renumerar filas
                 this.dataSource.forEach((item, index) => item.fila = index + 1);
 
-                if (this.dialogRef) {
-                    this.dialogRef.close({ success: true, data: response });
-                }
+                if (this.dialogRef) this.dialogRef.close({ success: true, data: result });
             },
             error: (err) => {
                 console.error('Error al guardar:', err);
-                this.showMessage('Error al registrar la devolución. Intente nuevamente.', 'error');
+                this.showMessage('Error al registrar la devolución: ' + (err?.message || ''), 'error');
             }
         });
     }
@@ -721,5 +712,107 @@ export class DevolucionHerramientaComponent implements OnInit, OnDestroy {
     hasError(field: string, error: string): boolean {
         const control = this.devolucionForm.get(field);
         return control ? control.hasError(error) && control.touched : false;
+    }
+
+    // ── PDF / Impresión MGH-100 Devolución ────────────────────────────────────
+
+    private abrirImpresionDevolucion(nro: string, items: DevolucionItem[], funcionario: any, fv: any): void {
+        const w = window.open('', '_blank');
+        if (!w) return;
+        const now  = new Date().toLocaleString('es-BO');
+        const rows = items.map(item => `
+            <tr>
+                <td>${item.codigo || '-'}</td>
+                <td>${item.pn || '-'}</td>
+                <td>${item.sn || '-'}</td>
+                <td style="text-align:center;font-weight:700">${item.cantidadDevolver}</td>
+                <td>${item.descripcion || '-'}</td>
+                <td>${item.nroNotaSalida || '-'}</td>
+                <td>${item.fechaPrestamo || '-'}</td>
+                <td><span style="padding:2px 6px;background:${this.condiciones.find(c=>c.value===item.condicionDevolucion)?.color||'#eee'};border:1px solid #000;font-size:8.5px;font-weight:700">${item.condicionDevolucion}</span></td>
+                <td>${item.observacionItem || ''}</td>
+            </tr>`).join('');
+
+        const html = `<!DOCTYPE html>
+<html><head><meta charset="UTF-8"><title>Devolución de Herramienta ${nro}</title>
+<style>
+  @page { size: A4 landscape; margin: 12mm 10mm; }
+  * { box-sizing: border-box; }
+  body { font-family: Arial, sans-serif; font-size: 10px; color: #000; margin: 0; }
+  .top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 5px; }
+  .code-box { border: 2px solid #000; padding: 3px 10px; font-weight: 900; font-size: 13px; display: inline-block; }
+  h1 { text-align: center; font-size: 12px; font-weight: 900; text-transform: uppercase;
+       background: #111A43; color: white; padding: 7px 10px; margin: 0 0 7px; border: 1px solid #000; }
+  .info-tbl { width: 100%; border-collapse: collapse; border: 1px solid #000; margin-bottom: 7px; }
+  .info-tbl td { border: 1px solid #ddd; padding: 3px 6px; }
+  .lbl { background: #f0f0f0; font-weight: 700; font-size: 9px; width: 130px; }
+  .nro-cell { background: #f0f0f0; text-align: center; font-weight: 900; font-size: 15px; vertical-align: middle; width: 120px; }
+  .sec { background: #111A43; color: white; padding: 3px 8px; font-weight: 900; font-size: 10px;
+         text-transform: uppercase; border: 1px solid #000; margin-bottom: 0; }
+  table.det { width: 100%; border-collapse: collapse; border: 1px solid #000; }
+  table.det th { background: #111A43; color: white; padding: 5px 4px; font-size: 8.5px; font-weight: 900;
+                 text-transform: uppercase; border: 1px solid #000; text-align: center; }
+  table.det td { padding: 4px; border: 1px solid #ddd; font-size: 9px; }
+  table.det tr:nth-child(even) td { background: #f9f9f9; }
+  .sigs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 16px; }
+  .sig { border: 1px solid #000; padding: 6px 8px; text-align: center; }
+  .sig-ttl { font-weight: 900; font-size: 9px; text-transform: uppercase; margin-bottom: 26px; }
+  .sig-line { border-top: 1px solid #000; padding-top: 3px; font-size: 8.5px; }
+  .footer { text-align: center; margin-top: 10px; font-size: 7.5px; color: #888; border-top: 1px dotted #ccc; padding-top: 4px; }
+  @media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
+</style></head><body>
+  <div class="top">
+    <div style="font-weight:900;font-size:11px">BoAMM &nbsp; OAM145# N-114</div>
+    <div style="text-align:right">
+      <div class="code-box">MGH-100</div><br><span style="font-size:9px">REV. 0 &nbsp; 2016-10-13</span>
+    </div>
+  </div>
+  <h1>NOTA DE PRÉSTAMO - DEVOLUCIÓN<br>
+    <span style="font-size:10px;font-weight:400">HERRAMIENTAS, BANCOS DE PRUEBA Y EQUIPOS DE APOYO</span>
+  </h1>
+  <table class="info-tbl">
+    <tr>
+      <td class="lbl">NOMBRE SOLICITANTE:</td>
+      <td>${funcionario?.nombreCompleto || ''}</td>
+      <td class="lbl">LICENCIA:</td>
+      <td>${funcionario?.licencia || ''}</td>
+      <td class="nro-cell" rowspan="3"><div style="font-size:8px;font-weight:400">N° NOTA</div>${nro || '___________'}</td>
+    </tr>
+    <tr>
+      <td class="lbl">FECHA DEVOLUCIÓN:</td><td>${fv.fechaDevolucion || ''}</td>
+      <td class="lbl">RESPONSABLE RECIBE:</td><td>${fv.responsableRecibe || ''}</td>
+    </tr>
+    <tr>
+      <td class="lbl">OBSERVACIONES:</td><td colspan="3">${fv.observaciones || ''}</td>
+    </tr>
+  </table>
+  <div class="sec">DATOS DEVOLUCIÓN</div>
+  <table class="det">
+    <thead><tr>
+      <th>CÓDIGO</th><th>P/N</th><th>S/N</th><th>CANT.</th><th>DESCRIPCIÓN</th>
+      <th>NRO NOTA PRÉSTAMO</th><th>FECHA PRÉSTAMO</th><th>CONDICIÓN</th><th>OBS</th>
+    </tr></thead>
+    <tbody>${rows}</tbody>
+  </table>
+  <div class="sigs">
+    <div class="sig">
+      <div class="sig-ttl">DEVUELTO POR</div>
+      <div style="font-size:9px;margin-bottom:16px">${funcionario?.nombreCompleto || '____________________'}</div>
+      <div class="sig-line">Firma Técnico o Inspector</div>
+    </div>
+    <div class="sig">
+      <div class="sig-ttl">RECIBIDO POR</div>
+      <div style="font-size:9px;margin-bottom:16px">${fv.responsableRecibe || '____________________'}</div>
+      <div class="sig-line">Firma Almacén Herramientas</div>
+    </div>
+    <div class="sig"><div class="sig-ttl">VERIFICADO POR</div><div class="sig-line">&nbsp;</div></div>
+  </div>
+  <div class="footer">Sistema de Gestión de Herramientas - BOA &nbsp;|&nbsp; ${now}</div>
+</body></html>`;
+
+        w.document.write(html);
+        w.document.close();
+        w.focus();
+        setTimeout(() => w.print(), 600);
     }
 }

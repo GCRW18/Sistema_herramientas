@@ -822,6 +822,94 @@ export class MovementService {
     }
 
     /**
+     * Registrar prestamo de multiples herramientas en una sola transaccion.
+     * Genera un unico correlativo PT-N/YYYY (interno) o PTT-N/YYYY (externo).
+     * items_json: JSON.stringify([{tool_id, quantity, notes, condition}])
+     */
+    registrarPrestamoMultiple(data: {
+        type: 'PRESTAMO_INTERNO' | 'PRESTAMO_EXTERNO';
+        date: string;
+        time: string;
+        requested_by_name: string;
+        technician?: string;
+        authorized_by?: string;
+        department?: string;
+        aircraft?: string;
+        aircraft_id?: number;
+        work_order_number?: string;
+        special_work?: boolean;
+        notes?: string;
+        expected_return_date?: string;
+        source_warehouse_id?: number;
+        recipient?: string;
+        customer?: string;
+        customer_id?: number;
+        items_json: string;
+        [key: string]: any;
+    }): Observable<{ id_movement: number; movement_number: string; id_loan: number }> {
+        return from(this._api.post('herramientas/movements/registrarPrestamoMultiple', data)).pipe(
+            switchMap((response: any) => {
+                if (response?.error) throw new Error(response.mensaje || 'Error al registrar el préstamo');
+                return of(response?.data?.[0] || response?.data || {});
+            })
+        );
+    }
+
+    /**
+     * Registrar devolucion de herramientas prestadas a tecnico BOA (interno) o tercero externo.
+     * Genera correlativo DP-N/YYYY (interno) o DPE-N/YYYY (externo).
+     * Incrementa stock, actualiza estado segun condicion y marca prestamo como DEVUELTO.
+     * items_json: JSON.stringify([{tool_id, quantity, condicion, notes}])
+     */
+    registrarDevolucionPrestamo(data: {
+        type: 'DEVOLUCION_PRESTAMO_INTERNO' | 'DEVOLUCION_PRESTAMO_EXTERNO';
+        date: string;
+        time: string;
+        requested_by_name: string;
+        responsible_person: string;
+        recipient?: string;
+        customer?: string;
+        notes?: string;
+        specific_observations?: string;
+        items_json: string;
+        [key: string]: any;
+    }): Observable<{ id_movement: number; movement_number: string }> {
+        return from(this._api.post('herramientas/movements/registrarDevolucionPrestamo', data)).pipe(
+            switchMap((response: any) => {
+                if (response?.error) throw new Error(response.mensaje || 'Error al registrar la devolución');
+                return of(response?.data?.[0] || response?.data || {});
+            })
+        );
+    }
+
+    /**
+     * Registrar retorno de multiples herramientas desde una base operativa o almacen remoto.
+     * Genera correlativo RB-N/YYYY (base) o RTR-N/YYYY (traspaso).
+     * Por cada item: incrementa stock y actualiza status segun condicion.
+     * items_json: JSON.stringify([{tool_id, quantity, condicion, notes, serial_number, part_number}])
+     */
+    registrarRetornoBase(data: {
+        type: 'RETORNO_BASE' | 'RETORNO_TRASPASO';
+        date: string;
+        time: string;
+        requested_by_name: string;
+        responsible_person: string;
+        document_number: string;
+        source_warehouse_id?: number;
+        notes?: string;
+        specific_observations?: string;
+        items_json: string;
+        [key: string]: any;
+    }): Observable<{ id_movement: number; movement_number: string }> {
+        return from(this._api.post('herramientas/movements/registrarRetornoBase', data)).pipe(
+            switchMap((response: any) => {
+                if (response?.error) throw new Error(response.mensaje || 'Error al registrar el retorno');
+                return of(response?.data?.[0] || response?.data || {});
+            })
+        );
+    }
+
+    /**
      * Registrar traspaso de herramientas a otra area/departamento.
      * Genera correlativo TRP automaticamente, inserta cabecera + items y decrementa stock.
      */

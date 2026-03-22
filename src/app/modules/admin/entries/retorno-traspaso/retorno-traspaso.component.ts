@@ -17,7 +17,6 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { DragDropModule } from '@angular/cdk/drag-drop';
 import { Subject, takeUntil, finalize, debounceTime } from 'rxjs';
 import { MovementService } from '../../../../core/services/movement.service';
-import { MovementType, EntryReason, CreateMovement } from '../../../../core/models/movement.types';
 
 // ============================================================================
 // TYPES & INTERFACES
@@ -454,8 +453,8 @@ export class RetornoTraspasoComponent implements OnInit, OnDestroy {
 
         this.movementService.getMovements({
             movement_type: 'exit',
-            exitReason: exitReason,
-            destinationWarehouseId: ubicacionOrigen.id,
+            exit_reason: exitReason,
+            destination_warehouse_id: ubicacionOrigen.id,
             status: 'completed'
         }).pipe(
             takeUntil(this._unsubscribeAll),
@@ -467,9 +466,17 @@ export class RetornoTraspasoComponent implements OnInit, OnDestroy {
                         ? data.filter((m: any) => m.tipoEnvio === 'EVENTUAL' || !m.tipoEnvio)
                         : data;
 
-                    this.allData = filtered.map((item: any, index: number) =>
-                        this.mapMovementToTraspasoItem(item, index)
-                    );
+                    // Expandir: una fila por item dentro de cada movimiento
+                    const expanded: TraspasoItem[] = [];
+                    filtered.forEach((movement: any) => {
+                        const items = (movement.items && movement.items.length > 0)
+                            ? movement.items
+                            : [null];
+                        items.forEach((item: any) => {
+                            expanded.push(this.mapMovementToTraspasoItem(movement, item, expanded.length));
+                        });
+                    });
+                    this.allData = expanded;
                 } else {
                     this.loadMockData(ubicacionOrigen);
                 }
@@ -484,8 +491,7 @@ export class RetornoTraspasoComponent implements OnInit, OnDestroy {
         });
     }
 
-    private mapMovementToTraspasoItem(movement: any, index: number): TraspasoItem {
-        const item = movement.items?.[0];
+    private mapMovementToTraspasoItem(movement: any, item: any, index: number): TraspasoItem {
         const fechaEnvio = movement.date || '';
         return {
             id: movement.id || `temp-${index}`,
@@ -842,58 +848,58 @@ export class RetornoTraspasoComponent implements OnInit, OnDestroy {
     finalizar(): void {
         if (!this.canProceed()) return;
         this.closeConfirmModal();
-        this.isSaving = true;
 
         const selectedItems = this.getSelectedItems();
         const formValue = this.retornoForm.value;
-        const entryReason = this.tipoOrigenActivo === 'BASE' ? 'base_return' : 'return';
 
-        const retornoData: CreateMovement = {
-            type: 'entry' as MovementType,
-            status: 'COMPLETADO',
-            entryReason: entryReason as EntryReason,
+        // Validar que todos los items tienen tool_id (no aplica a datos mock)
+        const sinId = selectedItems.filter(i => !i.toolId);
+        if (sinId.length > 0) {
+            this.showMessage(`${sinId.length} herramienta(s) sin ID de sistema - no se puede registrar`, 'error');
+            return;
+        }
+
+        this.isSaving = true;
+
+        const itemsJson = JSON.stringify(selectedItems.map(item => ({
+            tool_id: Number(item.toolId),
+            quantity: item.cantidadRetorna,
+            condicion: item.condicion || 'BUENO',
+            notes: item.observacionItem || '',
+            serial_number: item.sn || '',
+            part_number: item.pn || ''
+        })));
+
+        this.movementService.registrarRetornoBase({
+            type: this.tipoOrigenActivo === 'BASE' ? 'RETORNO_BASE' : 'RETORNO_TRASPASO',
             date: formValue.fechaRetorno,
-            movementNumber: formValue.nroDocumento,
-            // Si el origen es un almacén (TRASPASO) se envía como source_warehouse_id;
-            // si es una base operativa, ese ID no aplica a twarehouses (FK distinta)
-            ...(this.tipoOrigenActivo === 'TRASPASO'
-                ? { sourceWarehouseId: formValue.ubicacionOrigen.id }
-                : {}),
-            notes: formValue.observaciones,
-            responsiblePerson: formValue.responsableRecibe?.nombre || '',
-            items: selectedItems.map(item => ({
-                toolId: item.toolId,
-                codigo: item.codigo,
-                descripcion: item.descripcion,
-                pn: item.pn,
-                sn: item.sn,
-                marca: item.marca,
-                quantity: item.cantidadRetorna,
-                cantidadEnviada: item.cantidadEnviada,
-                condicion: item.condicion,
-                nroNotaSalida: item.nroNotaSalida,
-                tipoEnvio: item.tipoEnvio,
-                ordenTrabajo: item.ordenTrabajo,
-                matriculaAeronave: item.matriculaAeronave,
-                diasFuera: item.diasFuera,
-                notes: item.observacionItem
-            }))
-        };
-
-        this.movementService.createEntry(retornoData).pipe(
-            takeUntil(this._unsubscribeAll),
-            finalize(() => this.isSaving = false)
+            time: new Date().toTimeString().slice(0, 8),
+            requested_by_name: formValue.responsableRecibe?.nombre || '',
+            responsible_person: formValue.responsableRecibe?.nombre || '',
+            document_number: formValue.nroDocumento,
+            source_warehouse_id: this.tipoOrigenActivo === 'TRASPASO'
+                ? formValue.ubicacionOrigen?.id
+                : undefined,
+            notes: formValue.observaciones || '',
+            specific_observations: formValue.transportista
+                ? `Transportista: ${formValue.transportista}`
+                : '',
+            items_json: itemsJson
+        }).pipe(
+            finalize(() => this.isSaving = false),
+            takeUntil(this._unsubscribeAll)
         ).subscribe({
-            next: (response) => {
-                this.showMessage('Retorno guardado exitosamente', 'success');
+            next: (result: any) => {
+                const nro = result?.movement_number || '---';
+                this.showMessage(`Retorno registrado: ${nro}`, 'success');
                 const selectedIds = selectedItems.map(i => i.id);
                 this.allData = this.allData.filter(item => !selectedIds.includes(item.id));
                 this.dataSource = this.dataSource.filter(item => !selectedIds.includes(item.id));
-                if (this.dialogRef) this.dialogRef.close({ success: true, data: response });
+                if (this.dialogRef) this.dialogRef.close({ success: true, data: result });
             },
             error: (err) => {
                 console.error(err);
-                this.showMessage('Error al guardar el retorno', 'error');
+                this.showMessage('Error al registrar el retorno: ' + (err?.message || ''), 'error');
             }
         });
     }

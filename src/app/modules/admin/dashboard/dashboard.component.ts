@@ -5,10 +5,16 @@ import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { Chart, ChartConfiguration, registerables } from 'chart.js';
 import { forkJoin } from 'rxjs';
 import { ToolService } from 'app/core/services/tool.service';
 import { MovementService } from 'app/core/services/movement.service';
+import { CalibrationService } from 'app/core/services/calibration.service';
+import {
+    CalibrationAlertDialogComponent,
+    CalibrationAlertDialogData
+} from './calibration-alert-dialog.component';
 
 Chart.register(...registerables);
 
@@ -57,7 +63,8 @@ interface QuickAction {
         MatCardModule,
         MatIconModule,
         MatButtonModule,
-        MatProgressSpinnerModule
+        MatProgressSpinnerModule,
+        MatDialogModule
     ],
     templateUrl: './dashboard.component.html',
     styles: [`
@@ -115,9 +122,11 @@ export class DashboardComponent implements OnInit, AfterViewInit {
     @ViewChild('topToolsChart') topToolsCanvas!: ElementRef<HTMLCanvasElement>;
     @ViewChild('calibrationChart') calibrationCanvas!: ElementRef<HTMLCanvasElement>;
 
-    private router       = inject(Router);
-    private toolService  = inject(ToolService);
-    private movService   = inject(MovementService);
+    private router            = inject(Router);
+    private toolService       = inject(ToolService);
+    private movService        = inject(MovementService);
+    private calibrationService = inject(CalibrationService);
+    private _dialog           = inject(MatDialog);
 
     isLoading = signal(true);
 
@@ -141,6 +150,9 @@ export class DashboardComponent implements OnInit, AfterViewInit {
             { icon: 'heroicons_outline:wrench',           label: 'Calibrar',  description: 'Enviar',   variant: 'warning', route: '/salidas' },
             { icon: 'heroicons_outline:document-text',   label: 'Reportes',  description: 'Ver',      variant: 'default', route: '/reportes' }
         ]);
+
+        // Revisar alertas de calibración al cargar (una sola vez por sesión)
+        setTimeout(() => this.checkCalibrationAlerts(), 1200);
 
         forkJoin({
             tools:     this.toolService.getTools(),
@@ -290,6 +302,53 @@ export class DashboardComponent implements OnInit, AfterViewInit {
             },
             options: { responsive: true, maintainAspectRatio: false }
         });
+    }
+
+    // ── Alertas de calibración al login ──────────────────────────────────────────
+    private checkCalibrationAlerts(): void {
+        // Mostrar solo una vez por sesión de navegador
+        if (sessionStorage.getItem('calib_alert_shown')) return;
+
+        this.calibrationService.getCalibrationAlertsPxp({ limit: 100 }).subscribe({
+            next: (alerts: any) => {
+                const all: any[] = Array.isArray(alerts) ? alerts : (alerts?.data || []);
+                const critical = all.filter(a =>
+                    ['EXPIRED', 'CRITICAL_7D', 'URGENT_15D'].includes(a.urgency)
+                );
+                if (critical.length === 0) return;
+
+                sessionStorage.setItem('calib_alert_shown', '1');
+
+                const data: CalibrationAlertDialogData = {
+                    alerts: critical.slice(0, 10).map(a => ({
+                        tool_code:          a.tool_code   || a.codigo  || '',
+                        tool_name:          a.tool_name   || a.nombre  || '',
+                        calibration_expiry: this.formatAlertDate(a.next_calibration_date || a.calibration_expiry),
+                        days_remaining:     a.days_remaining ?? 0,
+                        urgency:            a.urgency || '',
+                        warehouse:          a.warehouse   || a.almacen || 'CBB'
+                    })),
+                    expiredCount:    all.filter(a => a.urgency === 'EXPIRED').length,
+                    critical7dCount: all.filter(a => a.urgency === 'CRITICAL_7D').length,
+                    urgent15dCount:  all.filter(a => a.urgency === 'URGENT_15D').length
+                };
+
+                this._dialog.open(CalibrationAlertDialogComponent, {
+                    data,
+                    panelClass: 'neo-dialog',
+                    maxWidth:   '660px',
+                    width:      '95vw'
+                });
+            },
+            error: () => { /* silent — no molesta si la API falla */ }
+        });
+    }
+
+    private formatAlertDate(date: string): string {
+        if (!date) return '-';
+        try {
+            return new Date(date).toLocaleDateString('es-BO', { day: '2-digit', month: '2-digit', year: 'numeric' });
+        } catch { return date; }
     }
 
     getVariantColor(variant: string): string {

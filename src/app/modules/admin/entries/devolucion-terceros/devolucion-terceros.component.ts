@@ -18,7 +18,6 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { DragDropModule } from '@angular/cdk/drag-drop';
 import { Subject, takeUntil, finalize, debounceTime, distinctUntilChanged } from 'rxjs';
 import { MovementService } from '../../../../core/services/movement.service';
-import { MovementType, EntryReason } from '../../../../core/models/movement.types';
 
 interface Tercero {
     id: string;
@@ -33,6 +32,7 @@ interface Tercero {
 interface DevolucionTerceroItem {
     id: number;
     fila: number;
+    toolId?: string;
     codigo: string;
     pn: string;
     descripcion: string;
@@ -203,6 +203,30 @@ export class DevolucionTercerosComponent implements OnInit, OnDestroy {
     ngOnInit(): void {
         this.initForm();
         this.tercerosFiltrados = [...this.terceros];
+        this.loadTerceros();
+    }
+
+    private loadTerceros(): void {
+        this.movementService.getTerceros().pipe(
+            takeUntil(this._unsubscribeAll)
+        ).subscribe({
+            next: (data) => {
+                if (data && data.length > 0) {
+                    this.terceros = data.map((t: any) => ({
+                        id:             t.id            || t.id_customer  || '',
+                        nit:            t.nit           || t.tax_id       || '',
+                        razonSocial:    t.razonSocial   || t.nombre       || t.name || '',
+                        nombreContacto: t.nombreContacto || t.contact_name || '',
+                        telefono:       t.telefono      || t.phone        || '',
+                        email:          t.email         || '',
+                        tipoEmpresa:    t.tipoEmpresa   || t.type         || 'PROVEEDOR'
+                    }));
+                    this.tercerosFiltrados = [...this.terceros];
+                }
+                // Si falla o viene vacío, conserva la lista hardcodeada como fallback
+            },
+            error: () => {} // fallback silencioso a la lista hardcodeada
+        });
     }
 
     ngOnDestroy(): void {
@@ -310,10 +334,53 @@ export class DevolucionTercerosComponent implements OnInit, OnDestroy {
 
         this.isSearching = true;
 
-        setTimeout(() => {
-            this.loadMockData(tercero);
-            this.isSearching = false;
-        }, 800);
+        // Buscar préstamos externos activos para este tercero
+        this.movementService.getMovements({
+            type: 'PRESTAMO_EXTERNO',
+            status: 'ACTIVO'
+        }).pipe(
+            takeUntil(this._unsubscribeAll),
+            finalize(() => this.isSearching = false)
+        ).subscribe({
+            next: (data) => {
+                const filtered = (data || []).filter((mov: any) =>
+                    mov.customer === tercero.razonSocial ||
+                    mov.recipient === tercero.razonSocial
+                );
+
+                if (filtered.length > 0) {
+                    this.dataSource = filtered.flatMap((mov: any) => {
+                        const items = mov.items || [];
+                        return items.map((item: any) => ({
+                            id: this.itemIdCounter++,
+                            fila: 0,
+                            toolId: item.toolId || item.tool?.id || item.tool_id || '',
+                            codigo: item.tool?.code || item.codigo || '',
+                            pn: item.tool?.partNumber || item.pn || '',
+                            descripcion: item.tool?.description || item.descripcion || '',
+                            marca: item.tool?.brand || item.marca || '',
+                            fechaSalida: mov.date || '',
+                            diasFuera: mov.date ? this.calcularDiasFuera(mov.date) : 0,
+                            cantidad: item.quantity || 1,
+                            nroNotaSalida: mov.movementNumber || mov.movement_number || '',
+                            tipoContrato: tercero.tipoEmpresa,
+                            proyecto: mov.work_order_number || '',
+                            estado: 'EN_TERCERO',
+                            condicionDevolucion: '',
+                            observaciones: '',
+                            selected: false
+                        }));
+                    });
+                    this.dataSource.forEach((item, idx) => item.fila = idx + 1);
+                    this.showMessage(`Se encontraron ${this.dataSource.length} herramienta(s) en ${tercero.razonSocial}`, 'success');
+                } else {
+                    this.loadMockData(tercero);
+                }
+            },
+            error: () => {
+                this.loadMockData(tercero);
+            }
+        });
     }
 
     private loadMockData(tercero: Tercero): void {
@@ -483,44 +550,49 @@ export class DevolucionTercerosComponent implements OnInit, OnDestroy {
             return;
         }
 
+        // Validar que los items tienen ID real (no mock)
+        const sinId = selectedItems.filter(i => !i.toolId || isNaN(Number(i.toolId)));
+        if (sinId.length > 0) {
+            this.showMessage(`${sinId.length} herramienta(s) sin ID de sistema — consulte datos reales desde el API`, 'error');
+            this.closeConfirmModal();
+            return;
+        }
+
         this.closeConfirmModal();
         this.isSaving = true;
 
-        const devolucionData = {
-            type: 'entry' as MovementType,
-            status: 'COMPLETADO',
-            entryReason: 'third_party_return' as EntryReason,
-            date: this.devolucionForm.value.fechaDevolucion,
-            notes: this.devolucionForm.value.observaciones,
-            customer: tercero.razonSocial,
-            items: selectedItems.map(item => ({
-                codigo: item.codigo,
-                pn: item.pn,
-                descripcion: item.descripcion,
-                marca: item.marca,
-                cantidad: item.cantidad,
-                nroNotaSalida: item.nroNotaSalida,
-                condicionDevolucion: item.condicionDevolucion,
-                proyecto: item.proyecto
-            }))
-        };
+        const itemsJson = JSON.stringify(selectedItems.map(item => ({
+            tool_id: Number(item.toolId),
+            quantity: item.cantidad,
+            condicion: item.condicionDevolucion,
+            notes: item.observaciones || ''
+        })));
 
-        this.movementService.createEntry(devolucionData).pipe(
-            takeUntil(this._unsubscribeAll),
-            finalize(() => this.isSaving = false)
+        this.movementService.registrarDevolucionPrestamo({
+            type: 'DEVOLUCION_PRESTAMO_EXTERNO',
+            date: this.devolucionForm.value.fechaDevolucion,
+            time: new Date().toTimeString().slice(0, 8),
+            requested_by_name: tercero.razonSocial,
+            responsible_person: '',
+            recipient: tercero.razonSocial,
+            customer: tercero.razonSocial,
+            notes: this.devolucionForm.value.observaciones || '',
+            items_json: itemsJson
+        }).pipe(
+            finalize(() => this.isSaving = false),
+            takeUntil(this._unsubscribeAll)
         ).subscribe({
-            next: () => {
-                this.showMessage(`Devolución de ${selectedItems.length} herramienta(s) registrada exitosamente`, 'success');
+            next: (result: any) => {
+                const nro = result?.movement_number || '---';
+                this.abrirImpresionDevolucionTercero(nro, selectedItems, tercero, this.devolucionForm.value);
+                this.showMessage(`Devolución de ${selectedItems.length} herramienta(s) registrada: ${nro}`, 'success');
                 this.dataSource = this.dataSource.filter(item => !item.selected);
                 this.dataSource.forEach((item, index) => item.fila = index + 1);
-
-                if (this.dialogRef) {
-                    this.dialogRef.close({ success: true });
-                }
+                if (this.dialogRef) this.dialogRef.close({ success: true });
             },
             error: (err) => {
                 console.error('Error:', err);
-                this.showMessage(`Error al registrar la devolución: ${err.message}`, 'error');
+                this.showMessage(`Error al registrar la devolución: ${err?.message || ''}`, 'error');
             }
         });
     }
@@ -538,5 +610,109 @@ export class DevolucionTercerosComponent implements OnInit, OnDestroy {
     hasError(field: string, error: string): boolean {
         const control = this.devolucionForm.get(field);
         return control ? control.hasError(error) && control.touched : false;
+    }
+
+    // ── PDF / Impresión MGH-100 Devolución Terceros ───────────────────────────
+
+    private abrirImpresionDevolucionTercero(nro: string, items: DevolucionTerceroItem[], tercero: any, fv: any): void {
+        const w = window.open('', '_blank');
+        if (!w) return;
+        const now  = new Date().toLocaleString('es-BO');
+        const rows = items.map(item => `
+            <tr>
+                <td>${item.codigo || '-'}</td>
+                <td>${item.pn || '-'}</td>
+                <td>${item.marca || '-'}</td>
+                <td style="text-align:center;font-weight:700">${item.cantidad}</td>
+                <td>${item.descripcion || '-'}</td>
+                <td>${item.nroNotaSalida || '-'}</td>
+                <td>${item.fechaSalida || '-'}</td>
+                <td style="text-align:center">${item.diasFuera}</td>
+                <td><span style="padding:2px 6px;border:1px solid #000;font-size:8.5px;font-weight:700">${item.condicionDevolucion}</span></td>
+                <td>${item.observaciones || ''}</td>
+            </tr>`).join('');
+
+        const html = `<!DOCTYPE html>
+<html><head><meta charset="UTF-8"><title>Devolución Terceros ${nro}</title>
+<style>
+  @page { size: A4 landscape; margin: 12mm 10mm; }
+  * { box-sizing: border-box; }
+  body { font-family: Arial, sans-serif; font-size: 10px; color: #000; margin: 0; }
+  .top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 5px; }
+  .code-box { border: 2px solid #000; padding: 3px 10px; font-weight: 900; font-size: 13px; display: inline-block; }
+  h1 { text-align: center; font-size: 12px; font-weight: 900; text-transform: uppercase;
+       background: #111A43; color: white; padding: 7px 10px; margin: 0 0 7px; border: 1px solid #000; }
+  .info-tbl { width: 100%; border-collapse: collapse; border: 1px solid #000; margin-bottom: 7px; }
+  .info-tbl td { border: 1px solid #ddd; padding: 3px 6px; }
+  .lbl { background: #f0f0f0; font-weight: 700; font-size: 9px; width: 120px; }
+  .nro-cell { background: #f0f0f0; text-align: center; font-weight: 900; font-size: 15px; vertical-align: middle; width: 120px; }
+  .sec { background: #111A43; color: white; padding: 3px 8px; font-weight: 900; font-size: 10px;
+         text-transform: uppercase; border: 1px solid #000; }
+  table.det { width: 100%; border-collapse: collapse; border: 1px solid #000; }
+  table.det th { background: #111A43; color: white; padding: 5px 4px; font-size: 8.5px; font-weight: 900;
+                 text-transform: uppercase; border: 1px solid #000; text-align: center; }
+  table.det td { padding: 4px; border: 1px solid #ddd; font-size: 9px; }
+  table.det tr:nth-child(even) td { background: #f9f9f9; }
+  .sigs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 16px; }
+  .sig { border: 1px solid #000; padding: 6px 8px; text-align: center; }
+  .sig-ttl { font-weight: 900; font-size: 9px; text-transform: uppercase; margin-bottom: 26px; }
+  .sig-line { border-top: 1px solid #000; padding-top: 3px; font-size: 8.5px; }
+  .footer { text-align: center; margin-top: 10px; font-size: 7.5px; color: #888; border-top: 1px dotted #ccc; padding-top: 4px; }
+  @media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
+</style></head><body>
+  <div class="top">
+    <div style="font-weight:900;font-size:11px">BoAMM &nbsp; OAM145# N-114</div>
+    <div style="text-align:right">
+      <div class="code-box">MGH-100</div><br><span style="font-size:9px">REV. 0 &nbsp; 2016-10-13</span>
+    </div>
+  </div>
+  <h1>NOTA DE PRÉSTAMO - DEVOLUCIÓN A TERCEROS</h1>
+  <table class="info-tbl">
+    <tr>
+      <td class="lbl">NOMBRE SOLICITANTE:</td>
+      <td>${tercero?.razonSocial || ''}</td>
+      <td class="lbl">EMPRESA / ENTIDAD:</td>
+      <td>${tercero?.razonSocial || ''}</td>
+      <td class="nro-cell" rowspan="3"><div style="font-size:8px;font-weight:400">N° NOTA</div>${nro || '___________'}</td>
+    </tr>
+    <tr>
+      <td class="lbl">CONTACTO:</td><td>${tercero?.nombreContacto || ''}</td>
+      <td class="lbl">NIT:</td><td>${tercero?.nit || ''}</td>
+    </tr>
+    <tr>
+      <td class="lbl">FECHA DEVOLUCIÓN:</td><td>${fv.fechaDevolucion || ''}</td>
+      <td class="lbl">OBSERVACIONES:</td><td>${fv.observaciones || ''}</td>
+    </tr>
+  </table>
+  <div class="sec">DATOS DEVOLUCIÓN</div>
+  <table class="det">
+    <thead><tr>
+      <th>CÓDIGO</th><th>P/N</th><th>MARCA</th><th>CANT.</th><th>DESCRIPCIÓN</th>
+      <th>NRO NOTA SALIDA</th><th>FECHA SALIDA</th><th>DÍAS FUERA</th><th>CONDICIÓN</th><th>OBS</th>
+    </tr></thead>
+    <tbody>${rows}</tbody>
+  </table>
+  <div class="sigs">
+    <div class="sig">
+      <div class="sig-ttl">DEVUELTO POR</div>
+      <div style="font-size:9px;margin-bottom:16px">${tercero?.razonSocial || '____________________'}</div>
+      <div class="sig-line">Firma Representante Tercero</div>
+    </div>
+    <div class="sig">
+      <div class="sig-ttl">RECIBIDO POR</div>
+      <div class="sig-line">Firma Almacén Herramientas BOA</div>
+    </div>
+    <div class="sig">
+      <div class="sig-ttl">AUTORIZADO POR</div>
+      <div class="sig-line">Firma Autorizada BOA</div>
+    </div>
+  </div>
+  <div class="footer">Sistema de Gestión de Herramientas - BOA &nbsp;|&nbsp; ${now}</div>
+</body></html>`;
+
+        w.document.write(html);
+        w.document.close();
+        w.focus();
+        setTimeout(() => w.print(), 600);
     }
 }

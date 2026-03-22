@@ -3,7 +3,7 @@ export const environment = {
     host: 'localhost',
     baseUrl: 'bkhe_api',
     mode: 'cors',
-    port: '8080',
+    port: '4200',
     protocol: 'http',
     backendRestVersion: 1,
     initWebSocket: 'NO',
@@ -11,5 +11,5 @@ export const environment = {
     backendVersion: 'v1',
     urlLogin: '',
     storeToken: false,
-    filesUrl : 'http://localhost:8080/bkhe_api/'
+    filesUrl : 'http://10.150.0.91/kerp/'
 };
