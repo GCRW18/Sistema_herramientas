@@ -4,9 +4,6 @@ import { Router } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDialogModule, MatDialog } from '@angular/material/dialog';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatInputModule } from '@angular/material/input';
-import { MatSelectModule } from '@angular/material/select';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { debounceTime, startWith } from 'rxjs/operators';
@@ -21,14 +18,16 @@ import { EmployeeService } from '../../../../core/services/employee.service';
         MatIconModule,
         MatButtonModule,
         MatDialogModule,
-        MatFormFieldModule,
-        MatInputModule,
-        MatSelectModule,
         MatSnackBarModule,
         ReactiveFormsModule
     ],
     templateUrl: './funcionarios.component.html',
-    styles: [`:host { display: block; height: 100%; }`]
+    styles: [`
+        :host { display: block; height: 100%; }
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #94a3b8; border-radius: 3px; }
+    `]
 })
 export class FuncionariosComponent implements OnInit {
     private router      = inject(Router);

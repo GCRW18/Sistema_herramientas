@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, inject, ViewChild, TemplateRef, signal, Type, Injector } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject, ViewChild, TemplateRef, Type, Injector, TrackByFunction } from '@angular/core';
 import { CommonModule, NgComponentOutlet } from '@angular/common';
 import { Router } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
@@ -23,6 +23,28 @@ interface EntryRecord {
     responsable: string;
     nroComprobante?: string;
     items?: number;
+}
+
+interface OpenTab {
+    id: number;
+    type: number;
+    label: string;
+    sublabel: string;
+    color: string;
+    textColor: string;
+    svgIcon: string;
+    component: Type<any>;
+    injector: Injector;
+}
+
+interface ModuleDef {
+    type: number;
+    label: string;
+    sublabel: string;
+    color: string;
+    textColor: string;
+    svgIcon: string;
+    loader: () => Promise<Type<any>>;
 }
 
 @Component({
@@ -270,10 +292,44 @@ export class EntriesComponent implements OnInit, OnDestroy {
     @ViewChild(MatPaginator) paginator!: MatPaginator;
     @ViewChild('entradasRecientesDialog') entradasRecientesDialog!: TemplateRef<any>;
 
-    // Formulario activo inline
-    activeFormComponent = signal<Type<any> | null>(null);
-    activeFormTab       = signal<number | null>(null);
-    formInjector: Injector | null = null;
+    // ── Tab system ───────────────────────────────────────────────────────────
+    openTabs: OpenTab[] = [];
+    activeTabId: number | null = null;
+    showBandeja = false;
+    private tabCounter = 0;
+
+    private readonly MODULE_DEFS: ModuleDef[] = [
+        {
+            type: 1, label: 'RETORNO', sublabel: 'BASE/TRASPASO',
+            color: '#FFC501', textColor: '#000',
+            svgIcon: 'heroicons_outline:building-office-2',
+            loader: async () => (await import('./retorno-traspaso/retorno-traspaso.component')).RetornoTraspasoComponent
+        },
+        {
+            type: 2, label: 'NUEVA', sublabel: 'HERRAMIENTA',
+            color: '#FF6A00', textColor: '#fff',
+            svgIcon: 'heroicons_outline:wrench-screwdriver',
+            loader: async () => (await import('./nueva-herramienta/nueva-herramienta.component')).NuevaHerramientaComponent
+        },
+        {
+            type: 3, label: 'DEVOLUCIÓN', sublabel: 'PRÉSTAMO TÉC.',
+            color: '#1A3EDC', textColor: '#fff',
+            svgIcon: 'heroicons_outline:arrow-uturn-left',
+            loader: async () => (await import('./devolucion-herramienta/devolucion-herramienta.component')).DevolucionHerramientaComponent
+        },
+        {
+            type: 4, label: 'AJUSTE', sublabel: 'POR INGRESO',
+            color: '#7113CF', textColor: '#fff',
+            svgIcon: 'heroicons_outline:adjustments-horizontal',
+            loader: async () => (await import('./ajuste-ingreso/ajuste-ingreso.component')).AjusteIngresoComponent
+        },
+        {
+            type: 5, label: 'DEVOLUCIÓN', sublabel: 'TERCEROS',
+            color: '#1AAA1F', textColor: '#fff',
+            svgIcon: 'heroicons_outline:user-circle',
+            loader: async () => (await import('./devolucion-terceros/devolucion-terceros.component')).DevolucionTercerosComponent
+        },
+    ];
 
     isLoading = false;
 
@@ -426,12 +482,37 @@ export class EntriesComponent implements OnInit, OnDestroy {
         });
     }
 
-    // ── Inline form helpers ──────────────────────────────────────────────────
+    // ── Tab system ───────────────────────────────────────────────────────────
 
-    private createFormInjector(): Injector {
+    toggleBandeja(): void {
+        this.showBandeja = !this.showBandeja;
+    }
+
+    closeBandeja(): void {
+        this.showBandeja = false;
+    }
+
+    isTabOpen(type: number): boolean {
+        return this.openTabs.some(t => t.type === type);
+    }
+
+    async openModule(type: number): Promise<void> {
+        this.showBandeja = false;
+
+        // Si ya está abierto, solo enfocar
+        const existing = this.openTabs.find(t => t.type === type);
+        if (existing) {
+            this.activeTabId = existing.id;
+            return;
+        }
+
+        const def = this.MODULE_DEFS.find(d => d.type === type)!;
+        const component = await def.loader();
+        const id = ++this.tabCounter;
+
         const self = this;
         const fakeRef = {
-            close:            (result?: any) => { self.closeActiveForm(); },
+            close:            () => self.closeTab(id),
             afterClosed:      () => of(null),
             beforeClosed:     () => of(null),
             backdropClick:    () => of(null),
@@ -441,55 +522,32 @@ export class EntriesComponent implements OnInit, OnDestroy {
             addPanelClass:    () => {},
             removePanelClass: () => {},
             disableClose: false,
-            id: 'inline-form',
+            id: `tab-${id}`,
             componentInstance: null,
         };
-        return Injector.create({
+        const tabInjector = Injector.create({
             providers: [{ provide: MatDialogRef, useValue: fakeRef }],
             parent: this.injector
         });
+
+        this.openTabs.push({ id, type, label: def.label, sublabel: def.sublabel, color: def.color, textColor: def.textColor, svgIcon: def.svgIcon, component, injector: tabInjector });
+        this.activeTabId = id;
     }
 
-    closeActiveForm(): void {
-        this.activeFormComponent.set(null);
-        this.activeFormTab.set(null);
-        this.formInjector = null;
+    setActiveTab(id: number): void {
+        this.activeTabId = id;
     }
 
-    // ── Form openers (inline) ────────────────────────────────────────────────
-
-    async openRetornoTraspaso(): Promise<void> {
-        const { RetornoTraspasoComponent } = await import('./retorno-traspaso/retorno-traspaso.component');
-        this.formInjector = this.createFormInjector();
-        this.activeFormComponent.set(RetornoTraspasoComponent);
-        this.activeFormTab.set(1);
+    closeTab(id: number): void {
+        const idx = this.openTabs.findIndex(t => t.id === id);
+        if (idx === -1) return;
+        this.openTabs.splice(idx, 1);
+        if (this.activeTabId === id) {
+            this.activeTabId = this.openTabs.length > 0
+                ? this.openTabs[Math.max(0, idx - 1)].id
+                : null;
+        }
     }
 
-    async openNuevaHerramienta(): Promise<void> {
-        const { NuevaHerramientaComponent } = await import('./nueva-herramienta/nueva-herramienta.component');
-        this.formInjector = this.createFormInjector();
-        this.activeFormComponent.set(NuevaHerramientaComponent);
-        this.activeFormTab.set(2);
-    }
-
-    async openDevolucionHerramienta(): Promise<void> {
-        const { DevolucionHerramientaComponent } = await import('./devolucion-herramienta/devolucion-herramienta.component');
-        this.formInjector = this.createFormInjector();
-        this.activeFormComponent.set(DevolucionHerramientaComponent);
-        this.activeFormTab.set(3);
-    }
-
-    async openAjusteIngreso(): Promise<void> {
-        const { AjusteIngresoComponent } = await import('./ajuste-ingreso/ajuste-ingreso.component');
-        this.formInjector = this.createFormInjector();
-        this.activeFormComponent.set(AjusteIngresoComponent);
-        this.activeFormTab.set(4);
-    }
-
-    async openDevolucionTerceros(): Promise<void> {
-        const { DevolucionTercerosComponent } = await import('./devolucion-terceros/devolucion-terceros.component');
-        this.formInjector = this.createFormInjector();
-        this.activeFormComponent.set(DevolucionTercerosComponent);
-        this.activeFormTab.set(5);
-    }
+    trackByTabId: TrackByFunction<OpenTab> = (_index, tab) => tab.id;
 }

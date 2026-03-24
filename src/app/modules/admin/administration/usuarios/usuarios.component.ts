@@ -40,17 +40,17 @@ interface UsuarioTabla {
     ],
     templateUrl: './usuarios.component.html',
     styles: [`
-        :host {
-            display: block;
-            height: 100%;
-        }
+        :host { display: block; height: 100%; }
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #94a3b8; border-radius: 3px; }
     `]
 })
 export class UsuariosComponent implements OnInit {
-    private router = inject(Router);
-    private dialog = inject(MatDialog);
+    private router          = inject(Router);
+    private dialog          = inject(MatDialog);
     private usuariosService = inject(UsuariosService);
-    private roleService = inject(RoleService);
+    private roleService     = inject(RoleService);
 
     searchControl = new FormControl('');
     displayedColumns: string[] = ['nombre', 'email', 'rol', 'departamento', 'estado', 'ultimoAcceso', 'acciones'];

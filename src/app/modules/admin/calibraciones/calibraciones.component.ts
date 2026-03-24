@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, inject, ViewChild, TemplateRef, signal, Type, Injector } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject, ViewChild, TemplateRef, Type, Injector, TrackByFunction } from '@angular/core';
 import { CommonModule, NgComponentOutlet } from '@angular/common';
 import { MatIconModule, MatIconRegistry } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
@@ -14,6 +14,28 @@ import { takeUntil, finalize } from 'rxjs/operators';
 import { Subject, of } from 'rxjs';
 import { CalibrationService } from '../../../core/services/calibration.service';
 import { MovementService } from '../../../core/services/movement.service';
+
+interface OpenTab {
+    id: number;
+    type: number;
+    label: string;
+    sublabel: string;
+    color: string;
+    textColor: string;
+    svgIcon: string;
+    component: Type<any>;
+    injector: Injector;
+}
+
+interface ModuleDef {
+    type: number;
+    label: string;
+    sublabel: string;
+    color: string;
+    textColor: string;
+    svgIcon: string;
+    loader: () => Promise<Type<any>>;
+}
 
 interface CalibrationRecord {
     id: string;
@@ -120,10 +142,44 @@ export class CalibracionesComponent implements OnInit, OnDestroy {
     @ViewChild(MatPaginator) paginator!: MatPaginator;
     @ViewChild('calibracionesRecientesDialog') calibracionesRecientesDialog!: TemplateRef<any>;
 
-    // Formulario activo inline
-    activeFormComponent = signal<Type<any> | null>(null);
-    activeFormTab       = signal<number | null>(null);
-    formInjector: Injector | null = null;
+    // ── Tab system ───────────────────────────────────────────────────────────
+    openTabs: OpenTab[] = [];
+    activeTabId: number | null = null;
+    showBandeja = false;
+    private tabCounter = 0;
+
+    private readonly MODULE_DEFS: ModuleDef[] = [
+        {
+            type: 1, label: 'PROCESO', sublabel: 'CALIBRACIÓN',
+            color: '#1A3EDC', textColor: '#fff',
+            svgIcon: 'heroicons_outline:arrows-right-left',
+            loader: async () => (await import('./proceso-calibracion/proceso-calibracion.component')).ProcesoCalibracionComponent
+        },
+        {
+            type: 3, label: 'LABORATORIOS', sublabel: 'EXTERNOS',
+            color: '#7113CF', textColor: '#fff',
+            svgIcon: 'heroicons_outline:building-office',
+            loader: async () => (await import('./laboratorios/laboratorios.component')).LaboratoriosComponent
+        },
+        {
+            type: 4, label: 'SERVICIOS', sublabel: 'GATAS (JACKS)',
+            color: '#FF6A00', textColor: '#fff',
+            svgIcon: 'heroicons_outline:cog-6-tooth',
+            loader: async () => (await import('./servicios-gatas/servicios-gatas.component')).ServiciosGatasComponent
+        },
+        {
+            type: 5, label: 'REPORTES', sublabel: 'Y ALERTAS',
+            color: '#e94125', textColor: '#fff',
+            svgIcon: 'heroicons_outline:chart-bell',
+            loader: async () => (await import('./reportes-alertas/reportes-alertas.component')).ReportesAlertasComponent
+        },
+        {
+            type: 7, label: 'LOTES DE', sublabel: 'CALIBRACIÓN',
+            color: '#0891b2', textColor: '#fff',
+            svgIcon: 'heroicons_outline:inbox-stack',
+            loader: async () => (await import('./lotes-calibracion/lotes-calibracion.component')).LotesCalibracionComponent
+        },
+    ];
 
     alertCount = 0;
     isLoading  = false;
@@ -150,12 +206,36 @@ export class CalibracionesComponent implements OnInit, OnDestroy {
         this._unsubscribeAll.complete();
     }
 
-    // ── Inline form helpers ──────────────────────────────────────────────────
+    // ── Tab system methods ───────────────────────────────────────────────────
 
-    private createFormInjector(): Injector {
+    toggleBandeja(): void {
+        this.showBandeja = !this.showBandeja;
+    }
+
+    closeBandeja(): void {
+        this.showBandeja = false;
+    }
+
+    isTabOpen(type: number): boolean {
+        return this.openTabs.some(t => t.type === type);
+    }
+
+    async openModule(type: number): Promise<void> {
+        this.showBandeja = false;
+
+        const existing = this.openTabs.find(t => t.type === type);
+        if (existing) {
+            this.activeTabId = existing.id;
+            return;
+        }
+
+        const def = this.MODULE_DEFS.find(d => d.type === type)!;
+        const component = await def.loader();
+        const id = ++this.tabCounter;
+
         const self = this;
         const fakeRef = {
-            close:            (result?: any) => { self.closeActiveForm(); },
+            close:            () => self.closeTab(id),
             afterClosed:      () => of(null),
             beforeClosed:     () => of(null),
             backdropClick:    () => of(null),
@@ -165,72 +245,34 @@ export class CalibracionesComponent implements OnInit, OnDestroy {
             addPanelClass:    () => {},
             removePanelClass: () => {},
             disableClose: false,
-            id: 'inline-form',
+            id: `tab-${id}`,
             componentInstance: null,
         };
-        return Injector.create({
+        const tabInjector = Injector.create({
             providers: [{ provide: MatDialogRef, useValue: fakeRef }],
             parent: this.injector
         });
+
+        this.openTabs.push({ id, type, label: def.label, sublabel: def.sublabel, color: def.color, textColor: def.textColor, svgIcon: def.svgIcon, component, injector: tabInjector });
+        this.activeTabId = id;
     }
 
-    closeActiveForm(): void {
-        this.activeFormComponent.set(null);
-        this.activeFormTab.set(null);
-        this.formInjector = null;
-        this.loadRecentCalibrations();
+    setActiveTab(id: number): void {
+        this.activeTabId = id;
     }
 
-    // ── Form openers (inline) ────────────────────────────────────────────────
-
-    async openEnvioCalibracion(): Promise<void> {
-        const { EnvioCalibracionComponent } = await import('./envio-calibracion/envio-calibracion.component');
-        this.formInjector = this.createFormInjector();
-        this.activeFormComponent.set(EnvioCalibracionComponent);
-        this.activeFormTab.set(1);
+    closeTab(id: number): void {
+        const idx = this.openTabs.findIndex(t => t.id === id);
+        if (idx === -1) return;
+        this.openTabs.splice(idx, 1);
+        if (this.activeTabId === id) {
+            this.activeTabId = this.openTabs.length > 0
+                ? this.openTabs[Math.max(0, idx - 1)].id
+                : null;
+        }
     }
 
-    async openRetornoCalibracion(): Promise<void> {
-        const { RetornoCalibracionComponent } = await import('./retorno-calibracion/retorno-calibracion.component');
-        this.formInjector = this.createFormInjector();
-        this.activeFormComponent.set(RetornoCalibracionComponent);
-        this.activeFormTab.set(2);
-    }
-
-    async openLaboratorios(): Promise<void> {
-        const { LaboratoriosComponent } = await import('./laboratorios/laboratorios.component');
-        this.formInjector = this.createFormInjector();
-        this.activeFormComponent.set(LaboratoriosComponent);
-        this.activeFormTab.set(3);
-    }
-
-    async openServiciosGatas(): Promise<void> {
-        const { ServiciosGatasComponent } = await import('./servicios-gatas/servicios-gatas.component');
-        this.formInjector = this.createFormInjector();
-        this.activeFormComponent.set(ServiciosGatasComponent);
-        this.activeFormTab.set(4);
-    }
-
-    async openReportes(): Promise<void> {
-        const { ReportesCalibracionComponent } = await import('./reportes/reportes-calibracion.component');
-        this.formInjector = this.createFormInjector();
-        this.activeFormComponent.set(ReportesCalibracionComponent);
-        this.activeFormTab.set(5);
-    }
-
-    async openAlertas(): Promise<void> {
-        const { CalibracionesAlertasComponent } = await import('./alertas/calibraciones-alertas.component');
-        this.formInjector = this.createFormInjector();
-        this.activeFormComponent.set(CalibracionesAlertasComponent);
-        this.activeFormTab.set(6);
-    }
-
-    async openLotesCalibracion(): Promise<void> {
-        const { LotesCalibracionComponent } = await import('./lotes-calibracion/lotes-calibracion.component');
-        this.formInjector = this.createFormInjector();
-        this.activeFormComponent.set(LotesCalibracionComponent);
-        this.activeFormTab.set(7);
-    }
+    trackByTabId: TrackByFunction<OpenTab> = (_index, tab) => tab.id;
 
     // ── Calibraciones recientes (sigue como dialog) ──────────────────────────
 
@@ -352,12 +394,14 @@ export class CalibracionesComponent implements OnInit, OnDestroy {
 
     private registerIcons(): void {
         const icons: Record<string, string> = {
+            'heroicons_outline:arrows-right-left':  `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M7.5 21 3 16.5m0 0L7.5 12M3 16.5h13.5m0-13.5L21 7.5m0 0L16.5 12M21 7.5H7.5" /></svg>`,
             'heroicons_outline:send':              `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6 12 3.269 3.125A59.769 59.769 0 0 1 21.485 12 59.768 59.768 0 0 1 3.27 20.875L5.999 12Zm0 0h7.5" /></svg>`,
             'heroicons_outline:arrow-uturn-left':  `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9 15 3 9m0 0 6-6M3 9h12a6 6 0 0 1 0 12h-3" /></svg>`,
             'heroicons_outline:building-office':   `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 21h16.5M4.5 3h15M5.25 3v18m13.5-18v18M9 6.75h1.5m-1.5 3h1.5m-1.5 3h1.5m3-6H15m-1.5 3H15m-1.5 3H15M9 21v-3.375c0-.621.504-1.125 1.125-1.125h3.75c.621 0 1.125.504 1.125 1.125V21" /></svg>`,
             'heroicons_outline:cog-6-tooth':       `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.325.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 0 1 1.37.49l1.296 2.247a1.125 1.125 0 0 1-.26 1.431l-1.003.827c-.293.241-.438.613-.43.992a7.723 7.723 0 0 1 0 .255c-.008.378.137.75.43.991l1.004.827c.424.35.534.955.26 1.43l-1.298 2.247a1.125 1.125 0 0 1-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.47 6.47 0 0 1-.22.128c-.331.183-.581.495-.644.869l-.213 1.281c-.09.543-.56.94-1.11.94h-2.594c-.55 0-1.019-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 0 1-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 0 1-1.369-.49l-1.297-2.247a1.125 1.125 0 0 1 .26-1.431l1.004-.827c.292-.24.437-.613.43-.991a6.932 6.932 0 0 1 0-.255c.007-.38-.138-.751-.43-.992l-1.004-.827a1.125 1.125 0 0 1-.26-1.43l1.297-2.247a1.125 1.125 0 0 1 1.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.086.22-.128.332-.183.582-.495.644-.869l.214-1.28Z" /><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" /></svg>`,
             'heroicons_outline:document-chart-bar':`<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 0 1 3 19.875v-6.75ZM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V8.625ZM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V4.125Z" /></svg>`,
             'heroicons_outline:bell-alert':        `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0M3.124 7.5A8.969 8.969 0 0 1 5.292 3m13.416 0a8.969 8.969 0 0 1 2.168 4.5" /></svg>`,
+            'heroicons_outline:chart-bell':        `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 0 1 3 19.875v-6.75ZM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v4.5" /><path stroke-linecap="round" stroke-linejoin="round" d="M17.25 6.375A4.125 4.125 0 0 1 21 10.125v.375a6.75 6.75 0 0 1-1.734 4.516c1.3.48 2.67.815 4.234.983m-5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0" /></svg>`,
             'heroicons_outline:inbox-stack':       `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m7.875 14.25 1.214 1.942a2.25 2.25 0 0 0 1.908 1.058h2.006c.776 0 1.497-.4 1.908-1.058l1.214-1.942M2.41 9h4.636a2.25 2.25 0 0 1 1.872 1.002l.164.246a2.25 2.25 0 0 0 1.872 1.002h2.092a2.25 2.25 0 0 0 1.872-1.002l.164-.246A2.25 2.25 0 0 1 16.954 9h4.636M2.41 9a2.25 2.25 0 0 0-.16.832V12a2.25 2.25 0 0 0 2.25 2.25h15A2.25 2.25 0 0 0 21.75 12V9.832c0-.287-.055-.57-.16-.832M2.41 9a2.25 2.25 0 0 1 .382-.632l3.285-3.832a2.25 2.25 0 0 1 1.708-.786h8.43c.657 0 1.281.287 1.709.786l3.284 3.832c.163.19.291.404.382.632M4.5 20.25h15A2.25 2.25 0 0 0 21.75 18v-2.625c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125V18a2.25 2.25 0 0 0 2.25 2.25Z" /></svg>`,
         };
         Object.entries(icons).forEach(([name, svg]) => {

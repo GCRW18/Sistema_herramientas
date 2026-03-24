@@ -1,4 +1,4 @@
-<div class="flex flex-col w-full h-full bg-[#f8f9fc] dark:bg-[#0F172AFF] transition-colors duration-300 font-sans overflow-hidden relative"
+<div class="flex flex-col w-full h-full bg-[#f8f9fc] dark:bg-[#0F172AFF] font-sans overflow-hidden relative"
      cdkDrag cdkDragRootElement=".cdk-overlay-pane" cdkDragBoundary=".cdk-overlay-container">
 
     <!-- Spinner Overlay -->
@@ -9,841 +9,702 @@
         </div>
     </div>
 
-    <!-- Elementos decorativos -->
-    <div class="fixed top-20 right-10 w-64 h-64 bg-[#111A43] rounded-full border-4 border-black opacity-5 pointer-events-none"></div>
-    <div class="fixed bottom-10 left-10 w-32 h-32 border-4 border-black opacity-10 pointer-events-none rotate-12 transition-colors duration-500"
-         [class.bg-red-500]="currentView() === 'quarantine'"
-         [class.bg-green-500]="currentView() === 'calibration'">
-    </div>
+    <!-- ==================== VISTA CUARENTENA ==================== -->
+    @if (currentView() === 'quarantine') {
+        <div class="flex flex-col h-full overflow-hidden p-1.5 gap-1.5 animate-fadeIn">
 
-    <div class="flex-1 flex flex-col p-4 md:p-6 relative h-full overflow-hidden gap-4">
-
-        <!-- HEADER - VISTA CUARENTENA -->
-        @if (currentView() === 'quarantine') {
-            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 shrink-0 relative z-10 animate-fadeIn">
-                <div class="flex items-center gap-4">
-                    <button (click)="goBack()"
-                            class="w-12 h-12 bg-white dark:bg-slate-800 border-2 border-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] active:shadow-none active:translate-x-1 active:translate-y-1 hover:bg-white hover:scale-105 transition-all flex items-center justify-center rounded-lg cursor-pointer"
-                            (mousedown)="$event.stopPropagation()">
-                        <mat-icon class="!text-2xl text-black dark:text-white">arrow_back</mat-icon>
-                    </button>
-                    <div>
-                        <h1 class="text-2xl md:text-3xl font-black text-black dark:text-white uppercase tracking-tight leading-none">
-                            Poner en Cuarentena
-                        </h1>
-                        <div class="flex items-center gap-2 mt-1">
-                            <span class="text-xs font-bold bg-red-600 text-white px-2 py-0.5 rounded-sm border border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,0.5)]">
-                                REPORTE DE DISCREPANCIA
-                            </span>
-                            <span class="text-xs font-bold bg-orange-500 text-black px-2 py-0.5 rounded-sm border border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,0.5)] flex items-center gap-1">
-                                <mat-icon class="!text-xs !w-3 !h-3 text-black">warning</mat-icon>
-                                ALTA PRIORIDAD
-                            </span>
-                        </div>
-                    </div>
+            <!-- Header -->
+            <div class="flex flex-row items-center justify-between gap-3 shrink-0 relative z-10">
+                <div class="flex items-center gap-2">
+                    <div class="font-black text-xs uppercase flex items-center gap-2">
+                        <mat-icon class="text-black dark:text-white !text-base">flight</mat-icon>
+                    </div>                    <h1 class="text-lg font-black text-black dark:text-white uppercase tracking-tight leading-none">
+                        Poner en Cuarentena
+                    </h1>
+                    <p class="text-[10px] font-bold bg-[#111A43] text-white px-2 py-0.5 rounded-sm border border-black">
+                        REPORTE DE DISCREPANCIA
+                    </p>
+                    <p class="text-[10px] font-bold bg-red-600 text-white px-2 py-0.5 rounded-sm border border-black flex items-center gap-1">
+                        <mat-icon class="!text-xs !w-3 !h-3">warning</mat-icon>
+                        ALTA PRIORIDAD
+                    </p>
                 </div>
-
-                <div class="flex flex-wrap gap-3 justify-end">
+                <div class="flex items-center gap-2">
                     <button (click)="switchView('calibration')" [disabled]="!quarantineForm.valid"
-                            class="px-4 py-2 bg-blue-600 text-white font-bold text-sm border-2 border-black rounded-full shadow-[3px_3px_0px_0px_#000] hover:translate-y-[1px] hover:shadow-[2px_2px_0px_0px_#000] active:shadow-none transition-all uppercase flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
-                        <mat-icon class="!w-5 !h-5 !text-lg text-white">speed</mat-icon>
-                        Datos Calibración
+                            class="h-9 px-4 bg-blue-600 text-white font-black text-xs border-2 border-black rounded-lg shadow-[3px_3px_0px_0px_#000] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all uppercase disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5">
+                        <mat-icon class="!text-sm">speed</mat-icon>
+                        Calibración
                     </button>
-
                     <button (click)="agregar()" [disabled]="!quarantineForm.valid || isLoading"
-                            class="px-5 py-2 bg-yellow-500 text-black font-black text-sm border-2 border-black rounded-full shadow-[3px_3px_0px_0px_#000] hover:translate-y-[1px] hover:shadow-[2px_2px_0px_0px_#000] active:shadow-none transition-all uppercase disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2">
-                        <mat-icon class="!w-5 !h-5 !text-lg text-black">add_circle</mat-icon>
+                            class="h-9 px-4 bg-yellow-500 text-black font-black text-xs border-2 border-black rounded-lg shadow-[3px_3px_0px_0px_#000] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all uppercase disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5">
+                        <mat-icon class="!text-sm">add_circle</mat-icon>
                         Agregar a Cuarentena
                     </button>
-
                     <button (click)="cerrar()"
-                            class="px-5 py-2 bg-gray-600 text-white font-black text-sm border-2 border-black rounded-full shadow-[3px_3px_0px_0px_#000] hover:translate-y-[1px] hover:shadow-[2px_2px_0px_0px_#000] active:shadow-none transition-all uppercase flex items-center gap-2">
-                        <mat-icon class="!w-5 !h-5 !text-lg text-white">close</mat-icon>
+                            class="h-9 px-4 bg-gray-600 text-white font-black text-xs border-2 border-black rounded-lg shadow-[3px_3px_0px_0px_#000] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all uppercase flex items-center gap-1.5">
+                        <mat-icon class="!text-sm">close</mat-icon>
                         Cerrar
                     </button>
                 </div>
             </div>
-        }
 
-        <!-- HEADER - VISTA CALIBRACIÓN -->
-        @if (currentView() === 'calibration') {
-            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 shrink-0 relative z-10 animate-fadeIn">
-                <div class="flex items-center gap-4">
-                    <button (click)="switchView('quarantine')"
-                            class="w-12 h-12 bg-white dark:bg-slate-800 border-2 border-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] active:shadow-none active:translate-x-1 active:translate-y-1 hover:bg-white hover:scale-105 transition-all flex items-center justify-center rounded-lg cursor-pointer"
-                            (mousedown)="$event.stopPropagation()">
-                        <mat-icon class="!text-2xl text-black dark:text-white">arrow_back</mat-icon>
-                    </button>
-                    <div>
-                        <h1 class="text-2xl md:text-3xl font-black text-black dark:text-white uppercase tracking-tight leading-none">
-                            Datos de Taller
-                        </h1>
-                        <div class="flex items-center gap-2 mt-1">
-                            <span class="text-xs font-bold bg-green-600 text-white px-2 py-0.5 rounded-sm border border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,0.5)]">
-                                CALIBRACIÓN & REPARACIÓN
-                            </span>
-                            <span *ngIf="calibrationForm.get('sePudoReparar')?.value === 'NO'"
-                                  class="text-xs font-bold bg-red-600 text-white px-2 py-0.5 rounded-sm border border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,0.5)] flex items-center gap-1">
-                                <mat-icon class="!text-xs !w-3 !h-3 text-white">delete</mat-icon>
-                                PARA BAJA
-                            </span>
+            <!-- Body: 3 columnas -->
+            <div class="flex-1 flex flex-row gap-1.5 overflow-hidden min-h-0">
+
+                <!-- Col 1: Datos de la Herramienta -->
+                <div class="flex-1 flex flex-col overflow-hidden">
+                    <div class="neo-card-base flex flex-col h-full overflow-hidden">
+                        <div class="h-7 bg-red-700 border-b-2 border-black flex items-center px-2 shrink-0 gap-1">
+                            <mat-icon class="!text-xs text-white">inventory</mat-icon>
+                            <span class="text-[9px] font-black uppercase text-white">Datos de la Herramienta</span>
+                            <span *ngIf="quarantineForm.valid" class="ml-auto text-[8px] font-black bg-green-600 text-white px-1 rounded">OK</span>
                         </div>
-                    </div>
-                </div>
-
-                <div class="flex flex-wrap gap-3 justify-end">
-                    <div class="flex items-center gap-2 bg-white dark:bg-slate-800 border-2 border-black rounded-lg px-4 py-2 shadow-[3px_3px_0px_0px_#000]">
-                        <mat-icon class="text-black dark:text-white !text-lg">receipt</mat-icon>
-                        <span class="text-xs font-black uppercase text-gray-600 dark:text-gray-300">Reporte:</span>
-                        <span class="text-lg font-black text-black dark:text-white">{{ quarantineForm.get('nroReporteDiscrepancia')?.value || 'N/A' }}</span>
-                    </div>
-                </div>
-            </div>
-        }
-
-        <!-- CONTENIDO PRINCIPAL -->
-        <div class="flex flex-col lg:flex-row gap-4 h-full overflow-hidden">
-
-            <!-- VISTA CUARENTENA -->
-            @if (currentView() === 'quarantine') {
-                <div class="flex-1 flex flex-col gap-4 overflow-hidden h-full">
-
-                    <!-- DATOS DE LA HERRAMIENTA -->
-                    <div class="neo-card-base p-5 relative z-10 bg-white dark:bg-slate-800 border-2 border-black dark:border-black">
-                        <div class="flex items-center gap-2 mb-4 pb-2 border-b-2 border-black dark:border-gray-600">
-                            <mat-icon class="text-black dark:text-white !text-xl">report_problem</mat-icon>
-                            <h3 class="font-black text-base uppercase text-black dark:text-white">Datos de la Herramienta</h3>
-                            <span *ngIf="quarantineForm.valid"
-                                  class="ml-auto text-[10px] font-bold bg-green-600 text-white px-2 py-0.5 rounded border border-black shadow-[2px_2px_0px_0px_#000] flex items-center gap-1">
-                                <mat-icon class="!text-xs !w-3 !h-3 text-white">check_circle</mat-icon>
-                                COMPLETO
-                            </span>
-                        </div>
-
-                        <form [formGroup]="quarantineForm">
-                            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                <!-- Código / Búsqueda Herramienta -->
-                                <div class="form-group">
-                                    <label class="text-[11px] font-black uppercase text-black dark:text-white mb-1.5 block">
-                                        Código / Nombre *
-                                    </label>
+                        <div class="p-1.5 flex flex-col gap-1 flex-1 overflow-y-auto custom-scrollbar">
+                            <form [formGroup]="quarantineForm" class="flex flex-col gap-1">
+                                <!-- Código -->
+                                <div>
+                                    <label class="text-[8px] font-black uppercase text-gray-500 dark:text-gray-400">Código / Nombre *</label>
                                     <div class="relative">
                                         <input type="text" formControlName="codigo"
-                                               placeholder="Buscar por código o nombre..."
+                                               placeholder="Buscar código o nombre..."
                                                (input)="filtrarHerramientas($event)"
                                                (blur)="ocultarSugerencias()"
                                                autocomplete="off"
-                                               class="w-full h-11 text-sm font-bold border-2 border-black dark:border-black rounded-lg pl-10 pr-4 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[3px_3px_0px_0px_#000] transition-shadow outline-none placeholder:text-gray-400 dark:placeholder:text-gray-500"
+                                               class="w-full h-7 text-[10px] font-bold border-2 border-black dark:border-black rounded pl-6 pr-1 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[2px_2px_0px_0px_#000] outline-none placeholder:text-gray-400"
                                                [class.border-red-500]="hasError('codigo', 'required')">
-                                        <mat-icon class="absolute left-3 top-1/2 -translate-y-1/2 text-black dark:text-white !text-lg">search</mat-icon>
-                                        <!-- Dropdown sugerencias -->
+                                        <mat-icon class="absolute left-1 top-1/2 -translate-y-1/2 text-black dark:text-white !text-xs">search</mat-icon>
                                         <div *ngIf="showToolSuggestions && toolsFiltradas.length > 0"
-                                             class="absolute z-50 top-full left-0 right-0 mt-1 bg-white dark:bg-slate-800 border-2 border-black rounded-lg shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] max-h-48 overflow-y-auto">
+                                             class="absolute z-50 top-full left-0 right-0 mt-0.5 bg-white dark:bg-slate-800 border-2 border-black rounded shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] max-h-36 overflow-y-auto">
                                             <div *ngFor="let tool of toolsFiltradas"
                                                  (mousedown)="selectTool(tool)"
-                                                 class="flex flex-col px-3 py-2 cursor-pointer hover:bg-yellow-50 dark:hover:bg-slate-700 border-b border-gray-100 dark:border-slate-700 last:border-b-0 transition-colors">
-                                                <span class="text-xs font-black text-black dark:text-white uppercase">{{ tool.code ?? tool.codigo }}</span>
-                                                <span class="text-[11px] text-gray-600 dark:text-gray-400 truncate">{{ tool.name ?? tool.nombre }}</span>
+                                                 class="flex flex-col px-2 py-1 cursor-pointer hover:bg-yellow-50 dark:hover:bg-slate-700 border-b border-gray-100 dark:border-slate-700 last:border-b-0">
+                                                <span class="text-[9px] font-black text-black dark:text-white uppercase">{{ tool.code ?? tool.codigo }}</span>
+                                                <span class="text-[8px] text-gray-600 dark:text-gray-400 truncate">{{ tool.name ?? tool.nombre }}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <!-- Nombre -->
+                                <div>
+                                    <label class="text-[8px] font-black uppercase text-gray-500 dark:text-gray-400">Nombre *</label>
+                                    <div class="relative">
+                                        <input type="text" formControlName="nombre"
+                                               placeholder="Nombre de la herramienta"
+                                               class="w-full h-7 text-[10px] font-bold border-2 border-black dark:border-black rounded pl-6 pr-1 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[2px_2px_0px_0px_#000] outline-none placeholder:text-gray-400"
+                                               [class.border-red-500]="hasError('nombre', 'required')">
+                                        <mat-icon class="absolute left-1 top-1/2 -translate-y-1/2 text-black dark:text-white !text-xs">inventory</mat-icon>
+                                    </div>
+                                </div>
+                                <!-- P/N + S/N -->
+                                <div class="grid grid-cols-2 gap-1">
+                                    <div>
+                                        <label class="text-[8px] font-black uppercase text-gray-500 dark:text-gray-400">P/N *</label>
+                                        <div class="relative">
+                                            <input type="text" formControlName="partNumber" placeholder="N° parte"
+                                                   class="w-full h-7 text-[10px] font-bold border-2 border-black rounded pl-5 pr-0.5 bg-white dark:bg-[#0F172AFF] text-black dark:text-white outline-none placeholder:text-gray-400"
+                                                   [class.border-red-500]="hasError('partNumber', 'required')">
+                                            <mat-icon class="absolute left-0.5 top-1/2 -translate-y-1/2 text-black dark:text-white !text-xs">qr_code</mat-icon>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label class="text-[8px] font-black uppercase text-gray-500 dark:text-gray-400">S/N *</label>
+                                        <div class="relative">
+                                            <input type="text" formControlName="serialNumber" placeholder="N° serie"
+                                                   class="w-full h-7 text-[10px] font-bold border-2 border-black rounded pl-5 pr-0.5 bg-white dark:bg-[#0F172AFF] text-black dark:text-white outline-none placeholder:text-gray-400"
+                                                   [class.border-red-500]="hasError('serialNumber', 'required')">
+                                            <mat-icon class="absolute left-0.5 top-1/2 -translate-y-1/2 text-black dark:text-white !text-xs">pin</mat-icon>
+                                        </div>
+                                    </div>
+                                </div>
+                                <!-- Ubicación + Base -->
+                                <div class="grid grid-cols-2 gap-1">
+                                    <div>
+                                        <label class="text-[8px] font-black uppercase text-gray-500 dark:text-gray-400">Ubicación *</label>
+                                        <div class="relative">
+                                            <input type="text" formControlName="ubicacion" placeholder="15-A"
+                                                   class="w-full h-7 text-[10px] font-bold border-2 border-black rounded pl-5 pr-0.5 bg-white dark:bg-[#0F172AFF] text-black dark:text-white outline-none placeholder:text-gray-400"
+                                                   [class.border-red-500]="hasError('ubicacion', 'required')">
+                                            <mat-icon class="absolute left-0.5 top-1/2 -translate-y-1/2 text-black dark:text-white !text-xs">location_on</mat-icon>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label class="text-[8px] font-black uppercase text-gray-500 dark:text-gray-400">Base</label>
+                                        <div class="relative">
+                                            <input type="text" formControlName="base" placeholder="CBB..."
+                                                   class="w-full h-7 text-[10px] font-bold border-2 border-black rounded pl-5 pr-0.5 bg-white dark:bg-[#0F172AFF] text-black dark:text-white outline-none placeholder:text-gray-400">
+                                            <mat-icon class="absolute left-0.5 top-1/2 -translate-y-1/2 text-black dark:text-white !text-xs">flight</mat-icon>
+                                        </div>
+                                    </div>
+                                </div>
+                                <!-- Existencia + Unidad -->
+                                <div class="grid grid-cols-2 gap-1">
+                                    <div>
+                                        <label class="text-[8px] font-black uppercase text-gray-500 dark:text-gray-400">Existencia *</label>
+                                        <div class="relative">
+                                            <input type="number" formControlName="existencia" min="1"
+                                                   class="w-full h-7 text-[10px] font-bold border-2 border-black rounded pl-5 pr-0.5 bg-white dark:bg-[#0F172AFF] text-black dark:text-white outline-none"
+                                                   [class.border-red-500]="hasError('existencia', 'required')">
+                                            <mat-icon class="absolute left-0.5 top-1/2 -translate-y-1/2 text-black dark:text-white !text-xs">inventory_2</mat-icon>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label class="text-[8px] font-black uppercase text-gray-500 dark:text-gray-400">Unidad</label>
+                                        <div class="relative">
+                                            <input type="text" formControlName="unidad" placeholder="PZA..."
+                                                   class="w-full h-7 text-[10px] font-bold border-2 border-black rounded pl-5 pr-0.5 bg-white dark:bg-[#0F172AFF] text-black dark:text-white outline-none placeholder:text-gray-400">
+                                            <mat-icon class="absolute left-0.5 top-1/2 -translate-y-1/2 text-black dark:text-white !text-xs">straighten</mat-icon>
+                                        </div>
+                                    </div>
+                                </div>
+                                <!-- F. Vencimiento + Estado Físico -->
+                                <div class="grid grid-cols-2 gap-1">
+                                    <div>
+                                        <label class="text-[8px] font-black uppercase text-gray-500 dark:text-gray-400">F. Vencimiento</label>
+                                        <div class="relative">
+                                            <input type="date" formControlName="fechaVencimiento"
+                                                   class="w-full h-7 text-[10px] font-bold border-2 border-black rounded pl-5 pr-0.5 bg-white dark:bg-[#0F172AFF] text-black dark:text-white outline-none">
+                                            <mat-icon class="absolute left-0.5 top-1/2 -translate-y-1/2 text-black dark:text-white !text-xs">calendar_today</mat-icon>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label class="text-[8px] font-black uppercase text-gray-500 dark:text-gray-400">Estado Físico *</label>
+                                        <div class="relative">
+                                            <select formControlName="estadoFisico"
+                                                    class="w-full h-7 text-[10px] font-bold border-2 border-black rounded pl-5 pr-0.5 bg-white dark:bg-[#0F172AFF] text-black dark:text-white outline-none appearance-none cursor-pointer"
+                                                    [class.border-red-500]="hasError('estadoFisico', 'required')">
+                                                <option [ngValue]="null">-- --</option>
+                                                <option value="S">S - Serviciable</option>
+                                                <option value="R">R - Reparable</option>
+                                                <option value="M">M - Malo</option>
+                                                <option value="T">T - Transitorio</option>
+                                            </select>
+                                            <mat-icon class="absolute left-0.5 top-1/2 -translate-y-1/2 text-black dark:text-white !text-xs">health_and_safety</mat-icon>
+                                        </div>
+                                    </div>
+                                </div>
+                                <!-- Lista Contenido -->
+                                <div>
+                                    <label class="text-[8px] font-black uppercase text-gray-500 dark:text-gray-400">Lista de Contenido</label>
+                                    <div class="relative">
+                                        <textarea formControlName="listaContenido" rows="2"
+                                                  placeholder="Componentes incluidos..."
+                                                  class="w-full text-[10px] font-medium border-2 border-black rounded pl-5 pr-1 py-1 bg-white dark:bg-[#0F172AFF] text-black dark:text-white outline-none placeholder:text-gray-400 resize-none"></textarea>
+                                        <mat-icon class="absolute left-0.5 top-1.5 text-black dark:text-white !text-xs">inbox</mat-icon>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Col 2: Detalles del Reporte + Personal -->
+                <div class="flex-1 flex flex-col overflow-hidden">
+                    <div class="neo-card-base flex flex-col h-full overflow-hidden">
+                        <div class="h-7 bg-orange-700 border-b-2 border-black flex items-center px-2 shrink-0 gap-1">
+                            <mat-icon class="!text-xs text-white">description</mat-icon>
+                            <span class="text-[9px] font-black uppercase text-white">Detalles del Reporte</span>
+                            <span class="ml-auto text-[8px] font-black bg-black/30 text-white px-1 rounded">
+                                N° {{ quarantineForm.get('nroReporteDiscrepancia')?.value || 'NUEVO' }}
+                            </span>
+                        </div>
+                        <div class="p-1.5 flex flex-col gap-1 flex-1 overflow-y-auto custom-scrollbar">
+                            <form [formGroup]="quarantineForm" class="flex flex-col gap-1">
+                                <!-- Nro Reporte + Cantidad -->
+                                <div class="grid grid-cols-2 gap-1">
+                                    <div>
+                                        <label class="text-[8px] font-black uppercase text-gray-500 dark:text-gray-400">Nro. Reporte *</label>
+                                        <div class="relative">
+                                            <input type="text" formControlName="nroReporteDiscrepancia"
+                                                   placeholder="RD-001/2024"
+                                                   class="w-full h-7 text-[10px] font-bold border-2 border-black dark:border-black rounded pl-5 pr-1 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[2px_2px_0px_0px_#000] outline-none placeholder:text-gray-400"
+                                                   [class.border-red-500]="hasError('nroReporteDiscrepancia', 'required')">
+                                            <mat-icon class="absolute left-0.5 top-1/2 -translate-y-1/2 text-black dark:text-white !text-xs">tag</mat-icon>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label class="text-[8px] font-black uppercase text-gray-500 dark:text-gray-400">Cantidad *</label>
+                                        <div class="relative">
+                                            <input type="number" formControlName="cantidad" min="1"
+                                                   class="w-full h-7 text-[10px] font-bold border-2 border-black dark:border-black rounded pl-5 pr-1 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[2px_2px_0px_0px_#000] outline-none"
+                                                   [class.border-red-500]="hasError('cantidad', 'required')">
+                                            <mat-icon class="absolute left-0.5 top-1/2 -translate-y-1/2 text-black dark:text-white !text-xs">counter_1</mat-icon>
+                                        </div>
+                                        <p *ngIf="quarantineForm.get('cantidad')?.value > quarantineForm.get('existencia')?.value"
+                                           class="text-[7px] text-red-600 mt-0.5">Excede existencia</p>
+                                    </div>
+                                </div>
+                                <!-- Fecha + Registrado Por -->
+                                <div class="grid grid-cols-2 gap-1">
+                                    <div>
+                                        <label class="text-[8px] font-black uppercase text-gray-500 dark:text-gray-400">Fecha Reporte *</label>
+                                        <div class="relative">
+                                            <input type="date" formControlName="fecha"
+                                                   class="w-full h-7 text-[10px] font-bold border-2 border-black dark:border-black rounded pl-5 pr-1 bg-white dark:bg-[#0F172AFF] text-black dark:text-white outline-none"
+                                                   [class.border-red-500]="hasError('fecha', 'required')">
+                                            <mat-icon class="absolute left-0.5 top-1/2 -translate-y-1/2 text-black dark:text-white !text-xs">calendar_today</mat-icon>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label class="text-[8px] font-black uppercase text-gray-500 dark:text-gray-400">Registrado Por</label>
+                                        <div class="relative">
+                                            <input type="text" formControlName="realizadoPor" readonly
+                                                   class="w-full h-7 text-[10px] font-bold border-2 border-gray-300 rounded pl-5 pr-1 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 outline-none cursor-not-allowed">
+                                            <mat-icon class="absolute left-0.5 top-1/2 -translate-y-1/2 text-gray-500 !text-xs">lock</mat-icon>
+                                        </div>
+                                    </div>
+                                </div>
+                                <!-- Descripción -->
+                                <div>
+                                    <label class="text-[8px] font-black uppercase text-gray-500 dark:text-gray-400">Descripción del Problema *</label>
+                                    <div class="relative">
+                                        <textarea formControlName="descripcion" rows="3"
+                                                  placeholder="Describa el problema encontrado, fallas, daños o no conformidades..."
+                                                  class="w-full text-[10px] font-medium border-2 border-black dark:border-black rounded pl-5 pr-1 py-1 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[2px_2px_0px_0px_#000] outline-none placeholder:text-gray-400 resize-none"
+                                                  [class.border-red-500]="hasError('descripcion', 'required')"></textarea>
+                                        <mat-icon class="absolute left-0.5 top-1.5 text-black dark:text-white !text-xs">edit_note</mat-icon>
+                                    </div>
+                                </div>
+
+                                <!-- Personal Reportante -->
+                                <div class="bg-orange-50 dark:bg-orange-900/20 border border-orange-400 rounded p-1.5 flex flex-col gap-1">
+                                    <div class="flex items-center gap-1">
+                                        <mat-icon class="text-orange-600 !text-xs">person_search</mat-icon>
+                                        <span class="text-[8px] font-black uppercase text-orange-800 dark:text-orange-300">Personal Reportante</span>
+                                    </div>
+                                    <!-- Buscar -->
+                                    <div>
+                                        <label class="text-[8px] font-black uppercase text-gray-500 dark:text-gray-400">Buscar</label>
+                                        <div class="relative">
+                                            <input type="text" formControlName="buscar"
+                                                   placeholder="Nombre o licencia"
+                                                   (keydown.enter)="buscarPersona()"
+                                                   class="w-full h-7 text-[10px] font-bold border-2 border-black dark:border-black rounded pl-5 pr-7 bg-white dark:bg-[#0F172AFF] text-black dark:text-white outline-none placeholder:text-gray-400">
+                                            <mat-icon class="absolute left-0.5 top-1/2 -translate-y-1/2 text-black dark:text-white !text-xs">search</mat-icon>
+                                            <button type="button" (click)="buscarPersona()"
+                                                    class="absolute right-0.5 top-1/2 -translate-y-1/2 w-5 h-5 bg-black text-white rounded flex items-center justify-center">
+                                                <mat-icon class="!text-[10px] !w-3 !h-3">search</mat-icon>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <!-- Licencia + Reportado -->
+                                    <div class="grid grid-cols-2 gap-1">
+                                        <div>
+                                            <label class="text-[8px] font-black uppercase text-gray-500 dark:text-gray-400">Nro. Licencia</label>
+                                            <div class="relative">
+                                                <input type="text" formControlName="nroLicencia" placeholder="LIC-7788"
+                                                       class="w-full h-7 text-[10px] font-bold border-2 border-black rounded pl-5 pr-0.5 bg-white dark:bg-[#0F172AFF] text-black dark:text-white outline-none placeholder:text-gray-400">
+                                                <mat-icon class="absolute left-0.5 top-1/2 -translate-y-1/2 text-black dark:text-white !text-xs">badge</mat-icon>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <label class="text-[8px] font-black uppercase text-gray-500 dark:text-gray-400">Nombre Reportado</label>
+                                            <div class="relative">
+                                                <input type="text" formControlName="nombreReportado" placeholder="Reportante"
+                                                       class="w-full h-7 text-[10px] font-bold border-2 border-black rounded pl-5 pr-0.5 bg-white dark:bg-[#0F172AFF] text-black dark:text-white outline-none placeholder:text-gray-400">
+                                                <mat-icon class="absolute left-0.5 top-1/2 -translate-y-1/2 text-black dark:text-white !text-xs">person</mat-icon>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <!-- Nombre Completo -->
+                                    <div>
+                                        <label class="text-[8px] font-black uppercase text-gray-500 dark:text-gray-400">Nombre y Apellidos</label>
+                                        <div class="relative">
+                                            <input type="text" formControlName="nombreApellido" placeholder="Nombre completo"
+                                                   class="w-full h-7 text-[10px] font-bold border-2 border-black rounded pl-5 pr-0.5 bg-white dark:bg-[#0F172AFF] text-black dark:text-white outline-none placeholder:text-gray-400">
+                                            <mat-icon class="absolute left-0.5 top-1/2 -translate-y-1/2 text-black dark:text-white !text-xs">badge</mat-icon>
+                                        </div>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Col 3: Evidencia + Resumen -->
+                <div class="flex-1 flex flex-col gap-1.5 overflow-hidden">
+
+                    <!-- Foto -->
+                    <div class="neo-card-base flex flex-col overflow-hidden shrink-0">
+                        <div class="h-7 bg-red-700 border-b-2 border-black flex items-center px-2 shrink-0 gap-1">
+                            <mat-icon class="!text-xs text-white">add_a_photo</mat-icon>
+                            <span class="text-[9px] font-black uppercase text-white">Evidencia</span>
+                            <span class="ml-auto text-[8px] font-black bg-red-500 text-white px-1 rounded border border-black">REQ.</span>
+                        </div>
+                        <div class="p-1.5 flex flex-col gap-1">
+                            <!-- Imagen o placeholder -->
+                            <div *ngIf="selectedImage(); else noImageTemplate"
+                                 class="border-2 border-black rounded overflow-hidden bg-white dark:bg-black shadow-[2px_2px_0px_0px_#000] h-[110px] flex items-center justify-center">
+                                <img [src]="selectedImage()" alt="Evidencia" class="w-full h-full object-contain p-1">
+                            </div>
+                            <ng-template #noImageTemplate>
+                                <div class="border-2 border-dashed border-gray-400 dark:border-gray-600 rounded h-[110px] flex flex-col items-center justify-center bg-white dark:bg-slate-800">
+                                    <mat-icon class="!text-2xl text-gray-400 dark:text-gray-600">photo_camera</mat-icon>
+                                    <p class="text-[9px] font-black uppercase text-black dark:text-white mt-1">Sin Evidencia</p>
+                                    <p class="text-[8px] text-gray-500 text-center">Adjunte foto del problema</p>
+                                </div>
+                            </ng-template>
+
+                            <!-- Botones -->
+                            <div class="flex gap-1">
+                                <input type="file" #fileInput (change)="onImageSelected($event)" accept="image/*" class="hidden">
+                                <button type="button" (click)="fileInput.click()"
+                                        class="flex-1 h-7 bg-red-600 text-white text-[9px] font-black border-2 border-black rounded shadow-[2px_2px_0px_0px_#000] hover:translate-y-px hover:shadow-[1px_1px_0px_0px_#000] transition-all uppercase flex items-center justify-center gap-0.5">
+                                    <mat-icon class="!text-xs !w-3 !h-3">{{ selectedImage() ? 'sync' : 'cloud_upload' }}</mat-icon>
+                                    {{ selectedImage() ? 'Cambiar' : 'Subir' }}
+                                </button>
+                                <button *ngIf="selectedImage()" type="button" (click)="removeImage()"
+                                        class="h-7 px-1.5 bg-gray-600 text-white border-2 border-black rounded shadow-[2px_2px_0px_0px_#000] hover:translate-y-px transition-all flex items-center">
+                                    <mat-icon class="!text-xs !w-3 !h-3">delete</mat-icon>
+                                </button>
+                            </div>
+
+                            <div class="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-400 rounded p-1 flex items-start gap-0.5">
+                                <mat-icon class="!text-[9px] text-yellow-600 shrink-0 mt-0.5">warning</mat-icon>
+                                <p class="text-[8px] text-yellow-800 dark:text-yellow-300 font-bold">Obligatoria. PNG, JPG (Máx. 5MB)</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Resumen -->
+                    <div *ngIf="quarantineForm.get('codigo')?.value"
+                         class="neo-card-base flex flex-col flex-1 overflow-hidden">
+                        <div class="h-7 bg-[#1e293b] border-b-2 border-black flex items-center px-2 shrink-0 gap-1">
+                            <mat-icon class="!text-xs text-white">summarize</mat-icon>
+                            <span class="text-[9px] font-black uppercase text-white">Resumen</span>
+                        </div>
+                        <div class="p-1.5 flex flex-col gap-1 flex-1 overflow-y-auto custom-scrollbar">
+                            <div class="space-y-0.5 bg-white dark:bg-slate-900/30 p-1.5 rounded border-2 border-black dark:border-gray-700">
+                                <div class="flex justify-between items-center">
+                                    <span class="text-[9px] font-bold text-gray-600 dark:text-gray-300">Código:</span>
+                                    <span class="text-[9px] font-black text-black dark:text-white font-mono">{{ quarantineForm.value.codigo || '-' }}</span>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <span class="text-[9px] font-bold text-gray-600 dark:text-gray-300">Herramienta:</span>
+                                    <span class="text-[9px] font-black text-black dark:text-white truncate ml-1 max-w-[100px]">{{ quarantineForm.value.nombre || '-' }}</span>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <span class="text-[9px] font-bold text-gray-600 dark:text-gray-300">Estado:</span>
+                                    <span class="font-black px-1 py-0.5 rounded text-[8px] border"
+                                          [ngClass]="{
+                                              'bg-green-100 text-green-800 border-green-500': quarantineForm.value.estadoFisico === 'S',
+                                              'bg-yellow-100 text-yellow-800 border-yellow-500': quarantineForm.value.estadoFisico === 'R',
+                                              'bg-orange-100 text-orange-800 border-orange-500': quarantineForm.value.estadoFisico === 'M',
+                                              'bg-blue-100 text-blue-800 border-blue-500': quarantineForm.value.estadoFisico === 'T'
+                                          }">
+                                        {{ getEstadoFisicoLabel(quarantineForm.value.estadoFisico) }}
+                                    </span>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <span class="text-[9px] font-bold text-gray-600 dark:text-gray-300">Reporte:</span>
+                                    <span class="text-[9px] font-black text-red-600 dark:text-red-400">{{ quarantineForm.value.nroReporteDiscrepancia || 'Pendiente' }}</span>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <span class="text-[9px] font-bold text-gray-600 dark:text-gray-300">Cantidad:</span>
+                                    <span class="font-black bg-blue-600 text-white px-1 py-0.5 rounded border border-black text-[9px]">{{ quarantineForm.value.cantidad || 0 }}</span>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <span class="text-[9px] font-bold text-gray-600 dark:text-gray-300">Fecha:</span>
+                                    <span class="text-[9px] font-black text-black dark:text-white">{{ quarantineForm.value.fecha | date:'dd/MM/yy' }}</span>
+                                </div>
+                                <div *ngIf="selectedImage()" class="flex justify-between items-center pt-0.5 border-t border-gray-200 dark:border-gray-700">
+                                    <span class="text-[9px] font-bold text-gray-600 dark:text-gray-300">Evidencia:</span>
+                                    <span class="text-[9px] font-bold text-green-600 flex items-center gap-0.5">
+                                        <mat-icon class="!text-[9px] !w-2.5 !h-2.5">check_circle</mat-icon>
+                                        OK
+                                    </span>
+                                </div>
+                            </div>
+
+                            <!-- Indicador validez -->
+                            <div class="flex items-center gap-1 p-1 rounded border-2"
+                                 [ngClass]="{
+                                    'bg-green-50 dark:bg-green-900/20 border-green-500': quarantineForm.valid && selectedImage(),
+                                    'bg-red-50 dark:bg-red-900/20 border-red-500': !quarantineForm.valid || !selectedImage()
+                                 }">
+                                <mat-icon class="!text-sm shrink-0"
+                                          [ngClass]="{
+                                             'text-green-600': quarantineForm.valid && selectedImage(),
+                                             'text-red-600': !quarantineForm.valid || !selectedImage()
+                                         }">
+                                    {{ quarantineForm.valid && selectedImage() ? 'check_circle' : 'error' }}
+                                </mat-icon>
+                                <span class="text-[8px] font-black uppercase"
+                                      [ngClass]="{
+                                         'text-green-700': quarantineForm.valid && selectedImage(),
+                                         'text-red-700': !quarantineForm.valid || !selectedImage()
+                                     }">
+                                    {{ quarantineForm.valid && selectedImage() ? 'LISTO' : getValidacionMensaje() }}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Placeholder sin herramienta -->
+                    <div *ngIf="!quarantineForm.get('codigo')?.value"
+                         class="flex-1 neo-card-base flex flex-col items-center justify-center gap-1.5 p-3">
+                        <div class="w-10 h-10 bg-red-50 dark:bg-red-900/20 border-4 border-black rounded-full flex items-center justify-center shadow-[2px_2px_0px_0px_#000]">
+                            <mat-icon class="!text-xl text-red-600 dark:text-red-400">report_problem</mat-icon>
+                        </div>
+                        <p class="text-[9px] font-black uppercase text-black dark:text-white text-center">Busque una herramienta</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+
+    <!-- ==================== VISTA CALIBRACIÓN ==================== -->
+    @if (currentView() === 'calibration') {
+        <div class="flex flex-col h-full overflow-hidden p-1.5 gap-1.5 animate-fadeIn">
+
+            <!-- Header -->
+            <div class="flex flex-row items-center justify-between gap-3 shrink-0 relative z-10">
+                <div class="flex items-center gap-2">
+                    <mat-icon class="text-green-600 dark:text-green-400 !text-xl">engineering</mat-icon>
+                    <h1 class="text-lg font-black text-black dark:text-white uppercase tracking-tight leading-none">
+                        Datos de Taller
+                    </h1>
+                    <p class="text-[10px] font-bold bg-[#111A43] text-white px-2 py-0.5 rounded-sm border border-black">
+                        CALIBRACIÓN & REPARACIÓN
+                    </p>
+                    <span *ngIf="calibrationForm.get('sePudoReparar')?.value === 'NO'"
+                          class="text-[10px] font-bold bg-red-600 text-white px-2 py-0.5 rounded-sm border border-black flex items-center gap-1">
+                        <mat-icon class="!text-xs !w-3 !h-3">delete</mat-icon>
+                        PARA BAJA
+                    </span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <div class="flex items-center gap-1.5 neo-card-base px-3 py-1.5 bg-white dark:bg-slate-800 border-2 border-black shadow-[2px_2px_0px_0px_#000]">
+                        <mat-icon class="text-black dark:text-white !text-sm">receipt</mat-icon>
+                        <span class="text-[10px] font-black uppercase text-gray-600 dark:text-gray-300">Reporte:</span>
+                        <span class="text-sm font-black text-black dark:text-white">{{ quarantineForm.get('nroReporteDiscrepancia')?.value || 'N/A' }}</span>
+                    </div>
+                    <button (click)="switchView('quarantine')" (mousedown)="$event.stopPropagation()"
+                            class="h-9 px-4 bg-gray-700 text-white font-black text-xs border-2 border-black rounded-lg shadow-[3px_3px_0px_0px_#000] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all uppercase flex items-center gap-1.5">
+                        <mat-icon class="!text-sm">arrow_back</mat-icon>
+                        Cuarentena
+                    </button>
+                </div>
+            </div>
+
+            <!-- Body: 2 columnas -->
+            <div class="flex-1 flex flex-row gap-1.5 overflow-hidden min-h-0">
+
+                <!-- Card principal calibración -->
+                <div class="flex-1 flex flex-col overflow-hidden">
+                    <div class="neo-card-base flex flex-col h-full overflow-hidden">
+                        <div class="h-7 bg-green-700 border-b-2 border-black flex items-center px-2 shrink-0 gap-1">
+                            <mat-icon class="!text-xs text-white">engineering</mat-icon>
+                            <span class="text-[9px] font-black uppercase text-white">Datos de Calibración & Reparación</span>
+                            <span class="ml-auto text-[9px] font-black bg-white/20 text-white px-1.5 rounded">
+                                {{ quarantineForm.get('codigo')?.value || 'N/A' }}
+                            </span>
+                        </div>
+                        <div class="p-2 flex flex-col gap-2 flex-1 overflow-y-auto custom-scrollbar">
+                            <form [formGroup]="calibrationForm">
+                                <div class="grid grid-cols-2 gap-3">
+
+                                    <!-- Columna Izquierda -->
+                                    <div class="flex flex-col gap-1.5">
+                                        <!-- Tipo Trabajo -->
+                                        <div>
+                                            <label class="text-[9px] font-black uppercase text-black dark:text-white mb-0.5 block">Tipo de Trabajo *</label>
+                                            <div class="grid grid-cols-2 gap-1.5">
+                                                <button type="button"
+                                                        (click)="calibrationForm.patchValue({ tipoTrabajo: 'CALIBRACION' })"
+                                                        class="py-2 rounded border-2 transition-all flex flex-col items-center gap-0.5"
+                                                        [ngClass]="calibrationForm.get('tipoTrabajo')?.value === 'CALIBRACION'
+                                                            ? 'bg-green-600 border-black text-white shadow-[2px_2px_0px_0px_#166534]'
+                                                            : 'bg-white border-black text-black dark:bg-slate-800 dark:text-white hover:bg-green-50'">
+                                                    <mat-icon class="!text-lg" [ngClass]="{'text-white': calibrationForm.get('tipoTrabajo')?.value === 'CALIBRACION', 'text-black dark:text-white': calibrationForm.get('tipoTrabajo')?.value !== 'CALIBRACION'}">speed</mat-icon>
+                                                    <span class="text-[9px] font-black uppercase">CALIBRACIÓN</span>
+                                                </button>
+                                                <button type="button"
+                                                        (click)="calibrationForm.patchValue({ tipoTrabajo: 'REPARACION' })"
+                                                        class="py-2 rounded border-2 transition-all flex flex-col items-center gap-0.5"
+                                                        [ngClass]="calibrationForm.get('tipoTrabajo')?.value === 'REPARACION'
+                                                            ? 'bg-blue-600 border-black text-white shadow-[2px_2px_0px_0px_#1e3a8a]'
+                                                            : 'bg-white border-black text-black dark:bg-slate-800 dark:text-white hover:bg-blue-50'">
+                                                    <mat-icon class="!text-lg" [ngClass]="{'text-white': calibrationForm.get('tipoTrabajo')?.value === 'REPARACION', 'text-black dark:text-white': calibrationForm.get('tipoTrabajo')?.value !== 'REPARACION'}">build</mat-icon>
+                                                    <span class="text-[9px] font-black uppercase">REPARACIÓN</span>
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <!-- Nro Certificado -->
+                                        <div>
+                                            <label class="text-[9px] font-black uppercase text-black dark:text-white mb-0.5 block">Nro. Certificado *</label>
+                                            <div class="relative">
+                                                <input type="text" formControlName="nroCertificado"
+                                                       placeholder="ccmt-tr-2024-BOA-001"
+                                                       class="w-full h-8 text-xs font-bold border-2 border-black dark:border-black rounded pl-7 pr-2 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[2px_2px_0px_0px_#000] outline-none placeholder:text-gray-400"
+                                                       [class.border-red-500]="hasCalibrationError('nroCertificado', 'required')">
+                                                <mat-icon class="absolute left-1.5 top-1/2 -translate-y-1/2 text-black dark:text-white !text-sm">badge</mat-icon>
+                                            </div>
+                                        </div>
+                                        <!-- Fecha Calibración -->
+                                        <div>
+                                            <label class="text-[9px] font-black uppercase text-black dark:text-white mb-0.5 block">Fecha Calibración *</label>
+                                            <div class="relative">
+                                                <input type="date" formControlName="fechaCalibracion"
+                                                       class="w-full h-8 text-xs font-bold border-2 border-black dark:border-black rounded pl-7 pr-2 bg-white dark:bg-[#0F172AFF] text-black dark:text-white outline-none"
+                                                       [class.border-red-500]="hasCalibrationError('fechaCalibracion', 'required')">
+                                                <mat-icon class="absolute left-1.5 top-1/2 -translate-y-1/2 text-black dark:text-white !text-sm">calendar_today</mat-icon>
+                                            </div>
+                                        </div>
+                                        <!-- Fecha Vencimiento -->
+                                        <div>
+                                            <label class="text-[9px] font-black uppercase text-black dark:text-white mb-0.5 block">Fecha Vencimiento *</label>
+                                            <div class="relative">
+                                                <input type="date" formControlName="fechaVencimiento"
+                                                       class="w-full h-8 text-xs font-bold border-2 border-black dark:border-black rounded pl-7 pr-2 bg-white dark:bg-[#0F172AFF] text-black dark:text-white outline-none"
+                                                       [class.border-red-500]="hasCalibrationError('fechaVencimiento', 'required')">
+                                                <mat-icon class="absolute left-1.5 top-1/2 -translate-y-1/2 text-black dark:text-white !text-sm">event</mat-icon>
+                                            </div>
+                                            <p *ngIf="calibrationForm.get('fechaVencimiento')?.errors?.['invalidDate']"
+                                               class="text-[8px] text-red-600 dark:text-red-400 mt-0.5">
+                                                Debe ser posterior a la calibración
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    <!-- Columna Derecha -->
+                                    <div class="flex flex-col gap-1.5">
+                                        <!-- Recibido Por -->
+                                        <div>
+                                            <label class="text-[9px] font-black uppercase text-black dark:text-white mb-0.5 block">Recibido Por *</label>
+                                            <div class="relative">
+                                                <input type="text" formControlName="recibidoPor"
+                                                       placeholder="Nombre del técnico"
+                                                       class="w-full h-8 text-xs font-bold border-2 border-black dark:border-black rounded pl-7 pr-2 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[2px_2px_0px_0px_#000] outline-none placeholder:text-gray-400"
+                                                       [class.border-red-500]="hasCalibrationError('recibidoPor', 'required')">
+                                                <mat-icon class="absolute left-1.5 top-1/2 -translate-y-1/2 text-black dark:text-white !text-sm">person</mat-icon>
+                                            </div>
+                                        </div>
+                                        <!-- Fecha Recepción -->
+                                        <div>
+                                            <label class="text-[9px] font-black uppercase text-black dark:text-white mb-0.5 block">Fecha Recepción *</label>
+                                            <div class="relative">
+                                                <input type="date" formControlName="fechaRecepcion"
+                                                       class="w-full h-8 text-xs font-bold border-2 border-black dark:border-black rounded pl-7 pr-2 bg-white dark:bg-[#0F172AFF] text-black dark:text-white outline-none"
+                                                       [class.border-red-500]="hasCalibrationError('fechaRecepcion', 'required')">
+                                                <mat-icon class="absolute left-1.5 top-1/2 -translate-y-1/2 text-black dark:text-white !text-sm">assignment_return</mat-icon>
+                                            </div>
+                                        </div>
+                                        <!-- Caso Reparación -->
+                                        <div>
+                                            <label class="text-[9px] font-black uppercase text-black dark:text-white mb-0.5 block">Caso Reparación</label>
+                                            <div class="relative">
+                                                <input type="text" formControlName="casoReparacion"
+                                                       placeholder="Describa el caso"
+                                                       class="w-full h-8 text-xs font-bold border-2 border-black dark:border-black rounded pl-7 pr-2 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[2px_2px_0px_0px_#000] outline-none placeholder:text-gray-400">
+                                                <mat-icon class="absolute left-1.5 top-1/2 -translate-y-1/2 text-black dark:text-white !text-sm">engineering</mat-icon>
+                                            </div>
+                                        </div>
+                                        <!-- ¿Se pudo reparar? -->
+                                        <div>
+                                            <label class="text-[9px] font-black uppercase text-black dark:text-white mb-0.5 block">¿Se pudo reparar?</label>
+                                            <div class="grid grid-cols-2 gap-1.5">
+                                                <button type="button"
+                                                        (click)="calibrationForm.patchValue({ sePudoReparar: 'SI' })"
+                                                        class="py-2 rounded border-2 transition-all flex flex-col items-center gap-0.5"
+                                                        [ngClass]="calibrationForm.get('sePudoReparar')?.value === 'SI'
+                                                            ? 'bg-green-600 border-black text-white shadow-[2px_2px_0px_0px_#166534]'
+                                                            : 'bg-white border-black text-black dark:bg-slate-800 dark:text-white hover:bg-green-50'">
+                                                    <mat-icon class="!text-base" [ngClass]="{'text-white': calibrationForm.get('sePudoReparar')?.value === 'SI', 'text-black dark:text-white': calibrationForm.get('sePudoReparar')?.value !== 'SI'}">check_circle</mat-icon>
+                                                    <span class="text-[9px] font-black uppercase">SÍ</span>
+                                                </button>
+                                                <button type="button"
+                                                        (click)="calibrationForm.patchValue({ sePudoReparar: 'NO' })"
+                                                        class="py-2 rounded border-2 transition-all flex flex-col items-center gap-0.5"
+                                                        [ngClass]="calibrationForm.get('sePudoReparar')?.value === 'NO'
+                                                            ? 'bg-red-600 border-black text-white shadow-[2px_2px_0px_0px_#991b1b]'
+                                                            : 'bg-white border-black text-black dark:bg-slate-800 dark:text-white hover:bg-red-50'">
+                                                    <mat-icon class="!text-base" [ngClass]="{'text-white': calibrationForm.get('sePudoReparar')?.value === 'NO', 'text-black dark:text-white': calibrationForm.get('sePudoReparar')?.value !== 'NO'}">cancel</mat-icon>
+                                                    <span class="text-[9px] font-black uppercase">NO</span>
+                                                </button>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
 
-                                <!-- Nombre -->
-                                <div class="form-group">
-                                    <label class="text-[11px] font-black uppercase text-black dark:text-white mb-1.5 block">
-                                        Nombre *
-                                    </label>
+                                <!-- Observación -->
+                                <div class="mt-2">
+                                    <label class="text-[9px] font-black uppercase text-black dark:text-white mb-0.5 block">Observación / Notas</label>
                                     <div class="relative">
-                                        <input type="text" formControlName="nombre"
-                                               placeholder="Nombre de la herramienta"
-                                               class="w-full h-11 text-sm font-bold border-2 border-black dark:border-black rounded-lg pl-10 pr-4 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[3px_3px_0px_0px_#000] transition-shadow outline-none placeholder:text-white dark:placeholder:text-gray-500"
-                                               [class.border-red-500]="hasError('nombre', 'required')">
-                                        <mat-icon class="absolute left-3 top-1/2 -translate-y-1/2 text-black dark:text-white !text-lg">inventory</mat-icon>
+                                        <textarea formControlName="observacion" rows="2"
+                                                  placeholder="Observaciones del trabajo realizado..."
+                                                  class="w-full text-xs font-medium border-2 border-black dark:border-black rounded pl-7 pr-2 py-1 bg-white dark:bg-[#0F172AFF] text-black dark:text-white outline-none placeholder:text-gray-400 resize-none"></textarea>
+                                        <mat-icon class="absolute left-1.5 top-1.5 text-black dark:text-white !text-sm">edit</mat-icon>
                                     </div>
                                 </div>
 
-                                <!-- P/N -->
-                                <div class="form-group">
-                                    <label class="text-[11px] font-black uppercase text-black dark:text-white mb-1.5 block">
-                                        P/N *
-                                    </label>
-                                    <div class="relative">
-                                        <input type="text" formControlName="partNumber"
-                                               placeholder="Número de parte"
-                                               class="w-full h-11 text-sm font-bold border-2 border-black dark:border-black rounded-lg pl-10 pr-4 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[3px_3px_0px_0px_#000] transition-shadow outline-none placeholder:text-white dark:placeholder:text-gray-500"
-                                               [class.border-red-500]="hasError('partNumber', 'required')">
-                                        <mat-icon class="absolute left-3 top-1/2 -translate-y-1/2 text-black dark:text-white !text-lg">qr_code</mat-icon>
-                                    </div>
-                                </div>
-
-                                <!-- S/N -->
-                                <div class="form-group">
-                                    <label class="text-[11px] font-black uppercase text-black dark:text-white mb-1.5 block">
-                                        S/N *
-                                    </label>
-                                    <div class="relative">
-                                        <input type="text" formControlName="serialNumber"
-                                               placeholder="Número de serie"
-                                               class="w-full h-11 text-sm font-bold border-2 border-black dark:border-black rounded-lg pl-10 pr-4 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[3px_3px_0px_0px_#000] transition-shadow outline-none placeholder:text-white dark:placeholder:text-gray-500"
-                                               [class.border-red-500]="hasError('serialNumber', 'required')">
-                                        <mat-icon class="absolute left-3 top-1/2 -translate-y-1/2 text-black dark:text-white !text-lg">pin</mat-icon>
-                                    </div>
-                                </div>
-
-                                <!-- Ubicación -->
-                                <div class="form-group">
-                                    <label class="text-[11px] font-black uppercase text-black dark:text-white mb-1.5 block">
-                                        Ubicación *
-                                    </label>
-                                    <div class="relative">
-                                        <input type="text" formControlName="ubicacion"
-                                               placeholder="Ej: 15-A"
-                                               class="w-full h-11 text-sm font-bold border-2 border-black dark:border-black rounded-lg pl-10 pr-4 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[3px_3px_0px_0px_#000] transition-shadow outline-none placeholder:text-white dark:placeholder:text-gray-500"
-                                               [class.border-red-500]="hasError('ubicacion', 'required')">
-                                        <mat-icon class="absolute left-3 top-1/2 -translate-y-1/2 text-black dark:text-white !text-lg">location_on</mat-icon>
-                                    </div>
-                                </div>
-
-                                <!-- Base -->
-                                <div class="form-group">
-                                    <label class="text-[11px] font-black uppercase text-black dark:text-white mb-1.5 block">
-                                        Base
-                                    </label>
-                                    <div class="relative">
-                                        <input type="text" formControlName="base"
-                                               placeholder="Ej: CBB, LPB, SCZ..."
-                                               class="w-full h-11 text-sm font-bold border-2 border-black dark:border-black rounded-lg pl-10 pr-4 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[3px_3px_0px_0px_#000] transition-shadow outline-none placeholder:text-gray-400 dark:placeholder:text-gray-500">
-                                        <mat-icon class="absolute left-3 top-1/2 -translate-y-1/2 text-black dark:text-white !text-lg">flight</mat-icon>
-                                    </div>
-                                </div>
-
-                                <!-- Existencia -->
-                                <div class="form-group">
-                                    <label class="text-[11px] font-black uppercase text-black dark:text-white mb-1.5 block">
-                                        Existencia *
-                                    </label>
-                                    <div class="relative">
-                                        <input type="number" formControlName="existencia" min="1"
-                                               class="w-full h-11 text-sm font-bold border-2 border-black dark:border-black rounded-lg pl-10 pr-4 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[3px_3px_0px_0px_#000] transition-shadow outline-none"
-                                               [class.border-red-500]="hasError('existencia', 'required')">
-                                        <mat-icon class="absolute left-3 top-1/2 -translate-y-1/2 text-black dark:text-white !text-lg">inventory_2</mat-icon>
-                                    </div>
-                                </div>
-
-                                <!-- Unidad -->
-                                <div class="form-group">
-                                    <label class="text-[11px] font-black uppercase text-black dark:text-white mb-1.5 block">
-                                        Unidad
-                                    </label>
-                                    <div class="relative">
-                                        <input type="text" formControlName="unidad"
-                                               placeholder="Ej: PZA, EA, SET, KIT..."
-                                               class="w-full h-11 text-sm font-bold border-2 border-black dark:border-black rounded-lg pl-10 pr-4 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[3px_3px_0px_0px_#000] transition-shadow outline-none placeholder:text-gray-400 dark:placeholder:text-gray-500">
-                                        <mat-icon class="absolute left-3 top-1/2 -translate-y-1/2 text-black dark:text-white !text-lg">straighten</mat-icon>
-                                    </div>
-                                </div>
-
-                                <!-- Fecha Vencimiento -->
-                                <div class="form-group">
-                                    <label class="text-[11px] font-black uppercase text-black dark:text-white mb-1.5 block">
-                                        Fecha Vencimiento
-                                    </label>
-                                    <div class="relative">
-                                        <input type="date" formControlName="fechaVencimiento"
-                                               class="w-full h-11 text-sm font-bold border-2 border-black dark:border-black rounded-lg pl-10 pr-4 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[3px_3px_0px_0px_#000] transition-shadow outline-none">
-                                        <mat-icon class="absolute left-3 top-1/2 -translate-y-1/2 text-black dark:text-white !text-lg">calendar_today</mat-icon>
-                                    </div>
-                                </div>
-
-                                <!-- Estado Físico -->
-                                <div class="form-group">
-                                    <label class="text-[11px] font-black uppercase text-black dark:text-white mb-1.5 block">
-                                        Estado Físico *
-                                    </label>
-                                    <div class="relative">
-                                        <select formControlName="estadoFisico"
-                                                class="w-full h-11 text-sm font-bold border-2 border-black dark:border-black rounded-lg pl-10 pr-10 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[3px_3px_0px_0px_#000] transition-shadow outline-none appearance-none cursor-pointer"
-                                                [class.border-red-500]="hasError('estadoFisico', 'required')">
-                                            <option [ngValue]="null" class="text-black dark:text-white">-- Seleccionar --</option>
-                                            <option value="S" class="text-green-700 dark:text-green-400 font-bold">S - Serviciable</option>
-                                            <option value="R" class="text-yellow-600 dark:text-yellow-400 font-bold">R - Reparable</option>
-                                            <option value="M" class="text-orange-600 dark:text-orange-400 font-bold">M - Malo/Inservible</option>
-                                            <option value="T" class="text-blue-600 dark:text-blue-400 font-bold">T - Transitorio</option>
-                                        </select>
-                                        <mat-icon class="absolute left-3 top-1/2 -translate-y-1/2 text-black dark:text-white !text-lg">health_and_safety</mat-icon>
-                                        <mat-icon class="absolute right-3 top-1/2 -translate-y-1/2 text-black dark:text-white !text-lg pointer-events-none">expand_more</mat-icon>
-                                    </div>
-                                </div>
-
-                                <!-- Lista de Contenido (2 columnas) -->
-                                <div class="form-group md:col-span-2 lg:col-span-3">
-                                    <label class="text-[11px] font-black uppercase text-black dark:text-white mb-1.5 block">
-                                        Lista de Contenido / Componentes
-                                    </label>
-                                    <div class="relative">
-                                        <textarea formControlName="listaContenido" rows="2"
-                                                  placeholder="Describa los componentes o accesorios incluidos..."
-                                                  class="w-full text-sm font-medium border-2 border-black dark:border-black rounded-lg pl-10 pr-4 py-2.5 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[2px_2px_0px_0px_#ccc] transition-shadow outline-none placeholder:text-white dark:placeholder:text-gray-500 resize-none"></textarea>
-                                        <mat-icon class="absolute left-3 top-3 text-black dark:text-white !text-lg">inbox</mat-icon>
-                                    </div>
-                                </div>
-                            </div>
-                        </form>
-                    </div>
-
-                    <!-- DETALLES DEL REPORTE -->
-                    <div class="neo-card-base p-5 relative z-10 bg-white dark:bg-slate-800 border-2 border-black dark:border-black">
-                        <div class="flex items-center gap-2 mb-4 pb-2 border-b-2 border-black dark:border-gray-600">
-                            <mat-icon class="text-black dark:text-white !text-xl">description</mat-icon>
-                            <h3 class="font-black text-base uppercase text-black dark:text-white">Detalles del Reporte</h3>
-                            <span class="ml-auto text-[10px] font-bold bg-black text-white px-2 py-0.5 rounded border border-black shadow-[2px_2px_0px_0px_#000]">
-                                N° {{ quarantineForm.get('nroReporteDiscrepancia')?.value || 'NUEVO' }}
-                            </span>
-                        </div>
-
-                        <form [formGroup]="quarantineForm">
-                            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-                                <!-- Nro. Reporte -->
-                                <div class="form-group">
-                                    <label class="text-[11px] font-black uppercase text-black dark:text-white mb-1.5 block">
-                                        Nro. Reporte *
-                                    </label>
-                                    <div class="relative">
-                                        <input type="text" formControlName="nroReporteDiscrepancia"
-                                               placeholder="Ej: RD-001/2024"
-                                               class="w-full h-11 text-sm font-bold border-2 border-black dark:border-black rounded-lg pl-10 pr-4 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[3px_3px_0px_0px_#000] transition-shadow outline-none placeholder:text-white dark:placeholder:text-gray-500"
-                                               [class.border-red-500]="hasError('nroReporteDiscrepancia', 'required')">
-                                        <mat-icon class="absolute left-3 top-1/2 -translate-y-1/2 text-black dark:text-white !text-lg">tag</mat-icon>
-                                    </div>
-                                </div>
-
-                                <!-- Cantidad -->
-                                <div class="form-group">
-                                    <label class="text-[11px] font-black uppercase text-black dark:text-white mb-1.5 block">
-                                        Cantidad *
-                                    </label>
-                                    <div class="relative">
-                                        <input type="number" formControlName="cantidad" min="1"
-                                               class="w-full h-11 text-sm font-bold border-2 border-black dark:border-black rounded-lg pl-10 pr-4 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[3px_3px_0px_0px_#000] transition-shadow outline-none"
-                                               [class.border-red-500]="hasError('cantidad', 'required')">
-                                        <mat-icon class="absolute left-3 top-1/2 -translate-y-1/2 text-black dark:text-white !text-lg">counter_1</mat-icon>
-                                    </div>
-                                    <p *ngIf="quarantineForm.get('cantidad')?.value > quarantineForm.get('existencia')?.value"
-                                       class="text-[10px] text-red-600 dark:text-red-400 mt-1 flex items-center gap-1">
-                                        <mat-icon class="!text-xs !w-3 !h-3">error</mat-icon>
-                                        La cantidad excede la existencia disponible ({{ quarantineForm.get('existencia')?.value }})
-                                    </p>
-                                </div>
-
-                                <!-- Fecha Reporte -->
-                                <div class="form-group">
-                                    <label class="text-[11px] font-black uppercase text-black dark:text-white mb-1.5 block">
-                                        Fecha Reporte *
-                                    </label>
-                                    <div class="relative">
-                                        <input type="date" formControlName="fecha"
-                                               class="w-full h-11 text-sm font-bold border-2 border-black dark:border-black rounded-lg pl-10 pr-4 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[3px_3px_0px_0px_#000] transition-shadow outline-none"
-                                               [class.border-red-500]="hasError('fecha', 'required')">
-                                        <mat-icon class="absolute left-3 top-1/2 -translate-y-1/2 text-black dark:text-white !text-lg">calendar_today</mat-icon>
-                                    </div>
-                                </div>
-
-                                <!-- Realizado Por (readonly) -->
-                                <div class="form-group">
-                                    <label class="text-[11px] font-black uppercase text-black dark:text-white mb-1.5 block">
-                                        Registrado Por
-                                    </label>
-                                    <div class="relative">
-                                        <input type="text" formControlName="realizadoPor" readonly
-                                               class="w-full h-11 text-sm font-bold border-2 border-black dark:border-gray-600 rounded-lg pl-10 pr-4 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 cursor-not-allowed">
-                                        <mat-icon class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-600 dark:text-gray-400 !text-lg">lock</mat-icon>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Descripción del Problema -->
-                            <div class="form-group mb-6">
-                                <label class="text-[11px] font-black uppercase text-black dark:text-white mb-1.5 block">
-                                    Descripción del Problema *
-                                </label>
-                                <div class="relative">
-                                    <textarea formControlName="descripcion" rows="4"
-                                              placeholder="Describa en detalle el problema encontrado, fallas, daños o no conformidades..."
-                                              class="w-full text-sm font-medium border-2 border-black dark:border-black rounded-lg pl-10 pr-4 py-3 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[3px_3px_0px_0px_#000] transition-shadow outline-none placeholder:text-white dark:placeholder:text-gray-500 resize-none"
-                                              [class.border-red-500]="hasError('descripcion', 'required')"></textarea>
-                                    <mat-icon class="absolute left-3 top-3 text-black dark:text-white !text-lg">edit_note</mat-icon>
-                                </div>
-                            </div>
-
-                            <!-- Personal Reportante -->
-                            <div class="bg-orange-50 dark:bg-orange-900/20 border-2 border-orange-400 dark:border-orange-600 rounded-lg p-4 mb-4">
-                                <div class="flex items-center gap-2 mb-3">
-                                    <mat-icon class="text-orange-600 dark:text-orange-400">person_search</mat-icon>
-                                    <span class="text-sm font-black uppercase text-orange-800 dark:text-orange-300">Personal Reportante</span>
-                                </div>
-
-                                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                                    <!-- Buscar Personal -->
-                                    <div class="form-group md:col-span-2">
-                                        <label class="text-[11px] font-black uppercase text-black dark:text-white mb-1.5 block">
-                                            Buscar Personal
-                                        </label>
-                                        <div class="relative">
-                                            <input type="text" formControlName="buscar"
-                                                   placeholder="Ingrese nombre o licencia"
-                                                   (keydown.enter)="buscarPersona()"
-                                                   class="w-full h-11 text-sm font-bold border-2 border-black dark:border-black rounded-lg pl-10 pr-12 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[3px_3px_0px_0px_#000] transition-shadow outline-none placeholder:text-white dark:placeholder:text-gray-500">
-                                            <mat-icon class="absolute left-3 top-1/2 -translate-y-1/2 text-black dark:text-white !text-lg">search</mat-icon>
-                                            <button type="button" (click)="buscarPersona()"
-                                                    class="absolute right-2 top-1/2 -translate-y-1/2 bg-black text-white p-1.5 rounded border border-black hover:bg-gray-800 transition-colors">
-                                                <mat-icon class="!text-lg text-white">search</mat-icon>
-                                            </button>
+                                <!-- Sección BAJA condicional -->
+                                <div *ngIf="calibrationForm.get('sePudoReparar')?.value === 'NO'"
+                                     class="mt-2 p-2 border-2 border-red-400 dark:border-red-700 rounded bg-red-50 dark:bg-red-900/20 animate-fadeIn">
+                                    <div class="flex items-center gap-1.5 mb-1.5">
+                                        <div class="w-5 h-5 bg-red-600 rounded-full border-2 border-black flex items-center justify-center shadow-[2px_2px_0px_0px_#000]">
+                                            <mat-icon class="text-white !text-xs !w-3 !h-3">delete_forever</mat-icon>
                                         </div>
+                                        <span class="text-xs font-black uppercase text-red-800 dark:text-red-300">Datos para Solicitar la Baja</span>
                                     </div>
-
-                                    <!-- Nro. Licencia -->
-                                    <div class="form-group">
-                                        <label class="text-[11px] font-black uppercase text-black dark:text-white mb-1.5 block">
-                                            Nro. Licencia
-                                        </label>
-                                        <div class="relative">
-                                            <input type="text" formControlName="nroLicencia"
-                                                   placeholder="Ej: LIC-7788"
-                                                   class="w-full h-11 text-sm font-bold border-2 border-black dark:border-black rounded-lg pl-10 pr-4 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[3px_3px_0px_0px_#000] transition-shadow outline-none placeholder:text-white dark:placeholder:text-gray-500">
-                                            <mat-icon class="absolute left-3 top-1/2 -translate-y-1/2 text-black dark:text-white !text-lg">badge</mat-icon>
+                                    <div class="grid grid-cols-2 gap-2">
+                                        <div>
+                                            <label class="text-[9px] font-black uppercase text-black dark:text-white mb-0.5 block">Nro. Informe Técnico *</label>
+                                            <div class="relative">
+                                                <input type="text" formControlName="nroInformeTecnico"
+                                                       placeholder="IT-001/2024"
+                                                       class="w-full h-8 text-xs font-bold border-2 border-black dark:border-black rounded pl-7 pr-2 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[2px_2px_0px_0px_#000] outline-none placeholder:text-gray-400"
+                                                       [class.border-red-500]="hasCalibrationError('nroInformeTecnico', 'required')">
+                                                <mat-icon class="absolute left-1.5 top-1/2 -translate-y-1/2 text-black dark:text-white !text-sm">description</mat-icon>
+                                            </div>
                                         </div>
-                                    </div>
-
-                                    <!-- Nombre Reportado -->
-                                    <div class="form-group">
-                                        <label class="text-[11px] font-black uppercase text-black dark:text-white mb-1.5 block">
-                                            Nombre Reportado
-                                        </label>
-                                        <div class="relative">
-                                            <input type="text" formControlName="nombreReportado"
-                                                   placeholder="Nombre del reportante"
-                                                   class="w-full h-11 text-sm font-bold border-2 border-black dark:border-black rounded-lg pl-10 pr-4 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[3px_3px_0px_0px_#000] transition-shadow outline-none placeholder:text-white dark:placeholder:text-gray-500">
-                                            <mat-icon class="absolute left-3 top-1/2 -translate-y-1/2 text-black dark:text-white !text-lg">person</mat-icon>
-                                        </div>
-                                    </div>
-
-                                    <!-- Nombre Completo (2 columnas) -->
-                                    <div class="form-group md:col-span-2">
-                                        <label class="text-[11px] font-black uppercase text-black dark:text-white mb-1.5 block">
-                                            Nombre Completo
-                                        </label>
-                                        <div class="relative">
-                                            <input type="text" formControlName="nombreApellido"
-                                                   placeholder="Nombre y apellidos completos"
-                                                   class="w-full h-11 text-sm font-bold border-2 border-black dark:border-black rounded-lg pl-10 pr-4 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[3px_3px_0px_0px_#000] transition-shadow outline-none placeholder:text-white dark:placeholder:text-gray-500">
-                                            <mat-icon class="absolute left-3 top-1/2 -translate-y-1/2 text-black dark:text-white !text-lg">badge</mat-icon>
+                                        <div>
+                                            <label class="text-[9px] font-black uppercase text-black dark:text-white mb-0.5 block">Descripción de Baja *</label>
+                                            <div class="relative">
+                                                <textarea formControlName="descripcionBaja" rows="2"
+                                                          placeholder="Motivo técnico para la baja..."
+                                                          class="w-full text-xs font-medium border-2 border-black dark:border-black rounded pl-7 pr-2 py-1 bg-white dark:bg-[#0F172AFF] text-black dark:text-white outline-none placeholder:text-gray-400 resize-none"
+                                                          [class.border-red-500]="hasCalibrationError('descripcionBaja', 'required')"></textarea>
+                                                <mat-icon class="absolute left-1.5 top-1.5 text-black dark:text-white !text-sm">report</mat-icon>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
-                            </div>
-                        </form>
-                    </div>
-                </div>
 
-                <!-- PANEL DERECHO - EVIDENCIA -->
-                <div class="w-full lg:w-[400px] xl:w-[420px] flex flex-col gap-4 overflow-y-auto pr-1 pb-20 shrink-0 custom-scrollbar">
-
-                    <!-- EVIDENCIA FOTOGRÁFICA -->
-                    <div class="neo-card-base p-5 relative z-10 bg-white dark:bg-slate-800 border-2 border-black dark:border-black">
-                        <div class="flex items-center gap-2 mb-4 pb-2 border-b-2 border-black dark:border-gray-600">
-                            <mat-icon class="text-black dark:text-white !text-xl">add_a_photo</mat-icon>
-                            <h3 class="font-black text-base uppercase text-black dark:text-white">Evidencia Fotográfica</h3>
-                            <span class="ml-auto bg-red-600 text-white px-2 py-0.5 rounded text-xs font-black border border-black shadow-[2px_2px_0px_0px_#000]">
-                                Requerido
-                            </span>
-                        </div>
-
-                        <div class="flex flex-col items-center justify-center min-h-[300px] bg-[#f8f9fc] dark:bg-slate-900/50 rounded-lg p-4">
-                            <!-- Imagen o placeholder -->
-                            <div *ngIf="selectedImage(); else noImageTemplate"
-                                 class="w-full h-[250px] border-2 border-black rounded-lg overflow-hidden bg-white dark:bg-black shadow-[4px_4px_0px_0px_#000] mb-4">
-                                <img [src]="selectedImage()" alt="Evidencia"
-                                     class="w-full h-full object-contain p-2">
-                            </div>
-
-                            <ng-template #noImageTemplate>
-                                <div class="w-full h-[250px] border-2 border-dashed border-gray-400 dark:border-gray-600 rounded-lg flex flex-col items-center justify-center bg-white dark:bg-slate-800 p-6 mb-4">
-                                    <div class="w-16 h-16 bg-white dark:bg-slate-800 border-2 border-black rounded-full flex items-center justify-center mb-3 shadow-[3px_3px_0px_0px_#000]">
-                                        <mat-icon class="!text-3xl !w-8 !h-8 text-black dark:text-white">photo_camera</mat-icon>
-                                    </div>
-                                    <p class="text-sm font-black uppercase text-black dark:text-white mb-2 text-center">
-                                        Sin Evidencia Adjunta
-                                    </p>
-                                    <p class="text-xs text-gray-600 dark:text-gray-400 text-center mb-4 max-w-xs">
-                                        Tome una foto del problema o suba una imagen como evidencia
-                                    </p>
+                                <!-- Botones acción -->
+                                <div class="flex justify-end gap-2 mt-2 pt-2 border-t-2 border-black dark:border-gray-700">
+                                    <button (click)="switchView('quarantine')"
+                                            class="h-8 px-4 bg-gray-600 text-white text-xs font-bold border-2 border-black rounded shadow-[2px_2px_0px_0px_#000] hover:translate-y-px hover:shadow-[1px_1px_0px_0px_#000] transition-all uppercase flex items-center gap-1">
+                                        <mat-icon class="!text-sm">arrow_back</mat-icon>
+                                        Volver
+                                    </button>
+                                    <button (click)="saveCalibrationData()" [disabled]="!isCalibrationValid()"
+                                            class="h-8 px-4 bg-green-600 text-white text-xs font-black border-2 border-black rounded shadow-[2px_2px_0px_0px_#000] hover:translate-y-px hover:shadow-[1px_1px_0px_0px_#000] transition-all uppercase disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1">
+                                        <mat-icon class="!text-sm">save</mat-icon>
+                                        Guardar Datos
+                                    </button>
                                 </div>
-                            </ng-template>
-
-                            <!-- Botón para subir imagen -->
-                            <div class="relative group w-full">
-                                <input type="file" #fileInput (change)="onImageSelected($event)" accept="image/*" class="hidden">
-                                <button type="button" (click)="fileInput.click()"
-                                        class="w-full px-6 py-3 bg-red-600 text-white font-black text-sm border-2 border-black rounded-lg shadow-[4px_4px_0px_0px_#000] hover:shadow-[2px_2px_0px_0px_#000] hover:translate-x-[2px] hover:translate-y-[2px] active:shadow-none transition-all uppercase flex items-center justify-center gap-2">
-                                    <mat-icon class="!w-5 !h-5 !text-lg text-white">{{ selectedImage() ? 'sync' : 'cloud_upload' }}</mat-icon>
-                                    {{ selectedImage() ? 'CAMBIAR IMAGEN' : 'SUBIR EVIDENCIA' }}
-                                </button>
-                                <div class="absolute -bottom-8 left-1/2 -translate-x-1/2 text-[9px] font-bold text-gray-600 dark:text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap bg-white dark:bg-slate-800 px-2 py-1 border border-black rounded shadow-[2px_2px_0px_0px_#000]">
-                                    PNG, JPG, WEBP (Max. 5MB)
-                                </div>
-                            </div>
-
-                            <!-- Botón para remover imagen (si existe) -->
-                            <button *ngIf="selectedImage()"
-                                    type="button" (click)="removeImage()"
-                                    class="mt-3 px-4 py-2 bg-gray-600 text-white font-bold text-sm border-2 border-black rounded-lg shadow-[3px_3px_0px_0px_#000] hover:translate-y-[1px] hover:shadow-[2px_2px_0px_0px_#000] active:shadow-none transition-all uppercase flex items-center gap-2">
-                                <mat-icon class="!w-4 !h-4 text-white">delete</mat-icon>
-                                Remover Imagen
-                            </button>
-
-                            <!-- Información importante -->
-                            <div class="mt-6 p-3 bg-yellow-50 dark:bg-yellow-900/20 border-2 border-yellow-400 dark:border-yellow-600 rounded-lg w-full">
-                                <div class="flex items-start gap-2">
-                                    <mat-icon class="!text-sm text-yellow-600 dark:text-yellow-400 flex-shrink-0 mt-0.5">warning</mat-icon>
-                                    <p class="text-xs text-yellow-800 dark:text-yellow-300 font-bold">
-                                        La evidencia fotográfica es obligatoria para reportes de cuarentena. Adjunte al menos una imagen que muestre claramente el problema.
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- RESUMEN DEL REPORTE -->
-                    <div *ngIf="quarantineForm.get('codigo')?.value"
-                         class="neo-card-base p-5 relative z-10 bg-white dark:bg-slate-800 border-l-8 border-l-red-600 border-2 border-black dark:border-black">
-                        <div class="flex items-center gap-2 mb-4 pb-2 border-b-2 border-black dark:border-gray-600">
-                            <mat-icon class="text-black dark:text-white !text-xl">summarize</mat-icon>
-                            <h3 class="font-black text-base uppercase text-black dark:text-white">Resumen del Reporte</h3>
-                        </div>
-
-                        <div class="space-y-3 bg-white dark:bg-slate-900/30 p-3 rounded-lg border-2 border-black dark:border-gray-700">
-                            <div class="flex justify-between items-center text-sm">
-                                <span class="font-bold text-gray-600 dark:text-gray-300">Código:</span>
-                                <span class="font-black text-black dark:text-white">{{ quarantineForm.value.codigo || 'No definido' }}</span>
-                            </div>
-                            <div class="flex justify-between items-center text-sm">
-                                <span class="font-bold text-gray-600 dark:text-gray-300">Herramienta:</span>
-                                <span class="font-black text-black dark:text-white truncate ml-2 max-w-[200px]">{{ quarantineForm.value.nombre || 'No definido' }}</span>
-                            </div>
-                            <div class="flex justify-between items-center text-sm">
-                                <span class="font-bold text-gray-600 dark:text-gray-300">Estado Físico:</span>
-                                <span class="font-black px-2 py-0.5 rounded text-xs"
-                                      [ngClass]="{
-                                          'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400 border border-green-500': quarantineForm.value.estadoFisico === 'S',
-                                          'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400 border border-yellow-500': quarantineForm.value.estadoFisico === 'R',
-                                          'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400 border border-orange-500': quarantineForm.value.estadoFisico === 'M',
-                                          'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400 border border-blue-500': quarantineForm.value.estadoFisico === 'T'
-                                      }">
-                                    {{ getEstadoFisicoLabel(quarantineForm.value.estadoFisico) }}
-                                </span>
-                            </div>
-                            <div class="flex justify-between items-center text-sm">
-                                <span class="font-bold text-gray-600 dark:text-gray-300">Reporte N°:</span>
-                                <span class="font-black text-red-600 dark:text-red-400">{{ quarantineForm.value.nroReporteDiscrepancia || 'Pendiente' }}</span>
-                            </div>
-                            <div class="flex justify-between items-center text-sm">
-                                <span class="font-bold text-gray-600 dark:text-gray-300">Cantidad:</span>
-                                <span class="font-black bg-blue-600 text-white px-2 py-0.5 rounded border border-black shadow-[2px_2px_0px_0px_#000]">
-                                    {{ quarantineForm.value.cantidad || 0 }}
-                                </span>
-                            </div>
-                            <div class="flex justify-between items-center text-sm">
-                                <span class="font-bold text-gray-600 dark:text-gray-300">Fecha:</span>
-                                <span class="font-black text-black dark:text-white">{{ quarantineForm.value.fecha | date:'dd/MM/yyyy' || 'No definida' }}</span>
-                            </div>
-                            <div *ngIf="selectedImage()" class="flex justify-between items-center text-sm pt-2 border-t border-gray-200 dark:border-gray-700">
-                                <span class="font-bold text-gray-600 dark:text-gray-300">Evidencia:</span>
-                                <span class="text-xs font-bold text-green-600 dark:text-green-400 flex items-center gap-1">
-                                    <mat-icon class="!text-sm !w-4 !h-4">check_circle</mat-icon>
-                                    Adjuntada
-                                </span>
-                            </div>
-                        </div>
-
-                        <!-- Indicador de validez -->
-                        <div class="mt-4 pt-2">
-                            <div class="flex items-center gap-2 p-2 rounded-lg"
-                                 [ngClass]="{
-                                    'bg-green-50 dark:bg-green-900/20 border-2 border-green-500': quarantineForm.valid && selectedImage(),
-                                    'bg-red-50 dark:bg-red-900/20 border-2 border-red-500': !quarantineForm.valid || !selectedImage()
-                                 }">
-                                <mat-icon class="!text-lg"
-                                          [ngClass]="{
-                                             'text-green-600 dark:text-green-400': quarantineForm.valid && selectedImage(),
-                                             'text-red-600 dark:text-red-400': !quarantineForm.valid || !selectedImage()
-                                         }">
-                                    {{ quarantineForm.valid && selectedImage() ? 'check_circle' : 'error' }}
-                                </mat-icon>
-                                <span class="text-xs font-black uppercase"
-                                      [ngClass]="{
-                                         'text-green-700 dark:text-green-400': quarantineForm.valid && selectedImage(),
-                                         'text-red-700 dark:text-red-400': !quarantineForm.valid || !selectedImage()
-                                     }">
-                                    {{ quarantineForm.valid && selectedImage() ? 'REPORTE COMPLETO - LISTO' : getValidacionMensaje() }}
-                                </span>
-                            </div>
+                            </form>
                         </div>
                     </div>
                 </div>
-            }
 
-            <!-- VISTA CALIBRACIÓN -->
-            @if (currentView() === 'calibration') {
-                <div class="flex-1 flex flex-col gap-4 overflow-hidden h-full animate-fadeIn">
-
-                    <!-- FORMULARIO CALIBRACIÓN -->
-                    <div class="neo-card-base p-5 relative z-10 bg-white dark:bg-slate-800 border-2 border-black dark:border-black border-l-[8px] border-l-green-600">
-                        <div class="flex items-center gap-2 mb-4 pb-2 border-b-2 border-black dark:border-gray-600">
-                            <mat-icon class="text-black dark:text-white !text-xl">engineering</mat-icon>
-                            <h3 class="font-black text-base uppercase text-black dark:text-white">Datos de Calibración & Reparación</h3>
-                            <span class="ml-auto bg-green-600 text-white px-2 py-0.5 rounded text-xs font-black border border-black shadow-[2px_2px_0px_0px_#000]">
-                                {{ quarantineForm.get('codigo')?.value || 'N/A' }}
-                            </span>
-                        </div>
-
-                        <form [formGroup]="calibrationForm">
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <!-- Columna Izquierda -->
-                                <div class="space-y-4">
-                                    <!-- Tipo de Trabajo -->
-                                    <div class="form-group">
-                                        <label class="text-[11px] font-black uppercase text-black dark:text-white mb-1.5 block">
-                                            Tipo de Trabajo *
-                                        </label>
-                                        <div class="grid grid-cols-2 gap-3">
-                                            <button type="button"
-                                                    (click)="calibrationForm.patchValue({ tipoTrabajo: 'CALIBRACION' })"
-                                                    class="p-4 rounded-lg border-2 transition-all flex flex-col items-center gap-2"
-                                                    [ngClass]="calibrationForm.get('tipoTrabajo')?.value === 'CALIBRACION'
-                                                        ? 'bg-green-600 border-black text-white shadow-[4px_4px_0px_0px_#166534]'
-                                                        : 'bg-white border-black text-black dark:bg-slate-800 dark:text-white hover:bg-green-50 dark:hover:bg-green-900/30 hover:border-green-600'">
-                                                <mat-icon class="!text-2xl" [ngClass]="{'text-white': calibrationForm.get('tipoTrabajo')?.value === 'CALIBRACION', 'text-black dark:text-white': calibrationForm.get('tipoTrabajo')?.value !== 'CALIBRACION'}">speed</mat-icon>
-                                                <span class="text-sm font-black uppercase">CALIBRACIÓN</span>
-                                            </button>
-                                            <button type="button"
-                                                    (click)="calibrationForm.patchValue({ tipoTrabajo: 'REPARACION' })"
-                                                    class="p-4 rounded-lg border-2 transition-all flex flex-col items-center gap-2"
-                                                    [ngClass]="calibrationForm.get('tipoTrabajo')?.value === 'REPARACION'
-                                                        ? 'bg-blue-600 border-black text-white shadow-[4px_4px_0px_0px_#1e3a8a]'
-                                                        : 'bg-white border-black text-black dark:bg-slate-800 dark:text-white hover:bg-blue-50 dark:hover:bg-blue-900/30 hover:border-blue-600'">
-                                                <mat-icon class="!text-2xl" [ngClass]="{'text-white': calibrationForm.get('tipoTrabajo')?.value === 'REPARACION', 'text-black dark:text-white': calibrationForm.get('tipoTrabajo')?.value !== 'REPARACION'}">build</mat-icon>
-                                                <span class="text-sm font-black uppercase">REPARACIÓN</span>
-                                            </button>
-                                        </div>
-                                    </div>
-
-                                    <!-- Nro. Certificado -->
-                                    <div class="form-group">
-                                        <label class="text-[11px] font-black uppercase text-black dark:text-white mb-1.5 block">
-                                            Nro. Certificado *
-                                        </label>
-                                        <div class="relative">
-                                            <input type="text" formControlName="nroCertificado"
-                                                   placeholder="Ej: ccmt-tr-2024-BOA-001"
-                                                   class="w-full h-11 text-sm font-bold border-2 border-black dark:border-black rounded-lg pl-10 pr-4 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[3px_3px_0px_0px_#000] transition-shadow outline-none placeholder:text-white dark:placeholder:text-gray-500"
-                                                   [class.border-red-500]="hasCalibrationError('nroCertificado', 'required')">
-                                            <mat-icon class="absolute left-3 top-1/2 -translate-y-1/2 text-black dark:text-white !text-lg">badge</mat-icon>
-                                        </div>
-                                    </div>
-
-                                    <!-- Fecha Calibración -->
-                                    <div class="form-group">
-                                        <label class="text-[11px] font-black uppercase text-black dark:text-white mb-1.5 block">
-                                            Fecha Calibración *
-                                        </label>
-                                        <div class="relative">
-                                            <input type="date" formControlName="fechaCalibracion"
-                                                   class="w-full h-11 text-sm font-bold border-2 border-black dark:border-black rounded-lg pl-10 pr-4 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[3px_3px_0px_0px_#000] transition-shadow outline-none"
-                                                   [class.border-red-500]="hasCalibrationError('fechaCalibracion', 'required')">
-                                            <mat-icon class="absolute left-3 top-1/2 -translate-y-1/2 text-black dark:text-white !text-lg">calendar_today</mat-icon>
-                                        </div>
-                                    </div>
-
-                                    <!-- Fecha Vencimiento -->
-                                    <div class="form-group">
-                                        <label class="text-[11px] font-black uppercase text-black dark:text-white mb-1.5 block">
-                                            Fecha Vencimiento *
-                                        </label>
-                                        <div class="relative">
-                                            <input type="date" formControlName="fechaVencimiento"
-                                                   class="w-full h-11 text-sm font-bold border-2 border-black dark:border-black rounded-lg pl-10 pr-4 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[3px_3px_0px_0px_#000] transition-shadow outline-none"
-                                                   [class.border-red-500]="hasCalibrationError('fechaVencimiento', 'required')">
-                                            <mat-icon class="absolute left-3 top-1/2 -translate-y-1/2 text-black dark:text-white !text-lg">event</mat-icon>
-                                        </div>
-                                        <p *ngIf="calibrationForm.get('fechaVencimiento')?.errors?.['invalidDate']"
-                                           class="text-[10px] text-red-600 dark:text-red-400 mt-1 flex items-center gap-1">
-                                            <mat-icon class="!text-xs !w-3 !h-3">error</mat-icon>
-                                            La fecha de vencimiento debe ser posterior a la calibración
-                                        </p>
-                                    </div>
-                                </div>
-
-                                <!-- Columna Derecha -->
-                                <div class="space-y-4 border-l-0 md:border-l-2 border-gray-200 dark:border-gray-700 pl-0 md:pl-6">
-                                    <!-- Recibido Por -->
-                                    <div class="form-group">
-                                        <label class="text-[11px] font-black uppercase text-black dark:text-white mb-1.5 block">
-                                            Recibido Por *
-                                        </label>
-                                        <div class="relative">
-                                            <input type="text" formControlName="recibidoPor"
-                                                   placeholder="Nombre del técnico"
-                                                   class="w-full h-11 text-sm font-bold border-2 border-black dark:border-black rounded-lg pl-10 pr-4 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[3px_3px_0px_0px_#000] transition-shadow outline-none placeholder:text-white dark:placeholder:text-gray-500"
-                                                   [class.border-red-500]="hasCalibrationError('recibidoPor', 'required')">
-                                            <mat-icon class="absolute left-3 top-1/2 -translate-y-1/2 text-black dark:text-white !text-lg">person</mat-icon>
-                                        </div>
-                                    </div>
-
-                                    <!-- Fecha Recepción -->
-                                    <div class="form-group">
-                                        <label class="text-[11px] font-black uppercase text-black dark:text-white mb-1.5 block">
-                                            Fecha Recepción *
-                                        </label>
-                                        <div class="relative">
-                                            <input type="date" formControlName="fechaRecepcion"
-                                                   class="w-full h-11 text-sm font-bold border-2 border-black dark:border-black rounded-lg pl-10 pr-4 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[3px_3px_0px_0px_#000] transition-shadow outline-none"
-                                                   [class.border-red-500]="hasCalibrationError('fechaRecepcion', 'required')">
-                                            <mat-icon class="absolute left-3 top-1/2 -translate-y-1/2 text-black dark:text-white !text-lg">assignment_return</mat-icon>
-                                        </div>
-                                    </div>
-
-                                    <!-- Caso Reparación -->
-                                    <div class="form-group">
-                                        <label class="text-[11px] font-black uppercase text-black dark:text-white mb-1.5 block">
-                                            Caso Reparación
-                                        </label>
-                                        <div class="relative">
-                                            <input type="text" formControlName="casoReparacion"
-                                                   placeholder="Describa el caso de reparación"
-                                                   class="w-full h-11 text-sm font-bold border-2 border-black dark:border-black rounded-lg pl-10 pr-4 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[3px_3px_0px_0px_#000] transition-shadow outline-none placeholder:text-white dark:placeholder:text-gray-500">
-                                            <mat-icon class="absolute left-3 top-1/2 -translate-y-1/2 text-black dark:text-white !text-lg">engineering</mat-icon>
-                                        </div>
-                                    </div>
-
-                                    <!-- ¿Se pudo reparar? -->
-                                    <div class="form-group">
-                                        <label class="text-[11px] font-black uppercase text-black dark:text-white mb-1.5 block">
-                                            ¿Se pudo reparar?
-                                        </label>
-                                        <div class="grid grid-cols-2 gap-3">
-                                            <button type="button"
-                                                    (click)="calibrationForm.patchValue({ sePudoReparar: 'SI' })"
-                                                    class="p-3 rounded-lg border-2 transition-all flex flex-col items-center gap-1"
-                                                    [ngClass]="calibrationForm.get('sePudoReparar')?.value === 'SI'
-                                                        ? 'bg-green-600 border-black text-white shadow-[3px_3px_0px_0px_#166534]'
-                                                        : 'bg-white border-black text-black dark:bg-slate-800 dark:text-white hover:bg-green-50 dark:hover:bg-green-900/30 hover:border-green-600'">
-                                                <mat-icon class="!text-xl" [ngClass]="{'text-white': calibrationForm.get('sePudoReparar')?.value === 'SI', 'text-black dark:text-white': calibrationForm.get('sePudoReparar')?.value !== 'SI'}">check_circle</mat-icon>
-                                                <span class="text-xs font-black uppercase">SÍ</span>
-                                            </button>
-                                            <button type="button"
-                                                    (click)="calibrationForm.patchValue({ sePudoReparar: 'NO' })"
-                                                    class="p-3 rounded-lg border-2 transition-all flex flex-col items-center gap-1"
-                                                    [ngClass]="calibrationForm.get('sePudoReparar')?.value === 'NO'
-                                                        ? 'bg-red-600 border-black text-white shadow-[3px_3px_0px_0px_#991b1b]'
-                                                        : 'bg-white border-black text-black dark:bg-slate-800 dark:text-white hover:bg-red-50 dark:hover:bg-red-900/30 hover:border-red-600'">
-                                                <mat-icon class="!text-xl" [ngClass]="{'text-white': calibrationForm.get('sePudoReparar')?.value === 'NO', 'text-black dark:text-white': calibrationForm.get('sePudoReparar')?.value !== 'NO'}">cancel</mat-icon>
-                                                <span class="text-xs font-black uppercase">NO</span>
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
+                <!-- Info herramienta en proceso -->
+                <div class="w-[175px] xl:w-[190px] shrink-0 flex flex-col gap-1.5 overflow-hidden">
+                    <div class="neo-card-base p-2 bg-white dark:bg-slate-800 border-2 border-black">
+                        <div class="flex flex-col gap-1">
+                            <div class="w-7 h-7 bg-blue-600 rounded-full border-2 border-black flex items-center justify-center shadow-[2px_2px_0px_0px_#000]">
+                                <mat-icon class="text-white !text-sm">info</mat-icon>
                             </div>
-
-                            <!-- Observación -->
-                            <div class="mt-6">
-                                <label class="text-[11px] font-black uppercase text-black dark:text-white mb-1.5 block">
-                                    Observación / Notas
-                                </label>
-                                <div class="relative">
-                                    <textarea formControlName="observacion" rows="3"
-                                              placeholder="Observaciones adicionales del trabajo realizado..."
-                                              class="w-full text-sm font-medium border-2 border-black dark:border-black rounded-lg pl-10 pr-4 py-2.5 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[2px_2px_0px_0px_#ccc] transition-shadow outline-none placeholder:text-white dark:placeholder:text-gray-500 resize-none"></textarea>
-                                    <mat-icon class="absolute left-3 top-3 text-black dark:text-white !text-lg">edit</mat-icon>
-                                </div>
-                            </div>
-
-                            <!-- SECCIÓN DE BAJA (solo si no se pudo reparar) -->
-                            <div *ngIf="calibrationForm.get('sePudoReparar')?.value === 'NO'"
-                                 class="mt-6 p-4 border-2 border-red-400 dark:border-red-700 rounded-lg bg-red-50 dark:bg-red-900/20 animate-fadeIn">
-                                <div class="flex items-center gap-2 mb-3">
-                                    <div class="w-8 h-8 bg-red-600 rounded-full border-2 border-black flex items-center justify-center shadow-[2px_2px_0px_0px_#000]">
-                                        <mat-icon class="text-white !text-lg">delete_forever</mat-icon>
-                                    </div>
-                                    <span class="text-sm font-black uppercase text-red-800 dark:text-red-300">Datos para Solicitar la Baja</span>
-                                </div>
-
-                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <!-- Nro. Informe Técnico -->
-                                    <div class="form-group">
-                                        <label class="text-[11px] font-black uppercase text-black dark:text-white mb-1.5 block">
-                                            Nro. Informe Técnico *
-                                        </label>
-                                        <div class="relative">
-                                            <input type="text" formControlName="nroInformeTecnico"
-                                                   placeholder="Ej: IT-001/2024"
-                                                   class="w-full h-11 text-sm font-bold border-2 border-black dark:border-black rounded-lg pl-10 pr-4 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[3px_3px_0px_0px_#000] transition-shadow outline-none placeholder:text-white dark:placeholder:text-gray-500"
-                                                   [class.border-red-500]="hasCalibrationError('nroInformeTecnico', 'required')">
-                                            <mat-icon class="absolute left-3 top-1/2 -translate-y-1/2 text-black dark:text-white !text-lg">description</mat-icon>
-                                        </div>
-                                    </div>
-
-                                    <!-- Descripción de Baja -->
-                                    <div class="form-group md:col-span-2">
-                                        <label class="text-[11px] font-black uppercase text-black dark:text-white mb-1.5 block">
-                                            Descripción de Baja *
-                                        </label>
-                                        <div class="relative">
-                                            <textarea formControlName="descripcionBaja" rows="3"
-                                                      placeholder="Describa el motivo técnico para la baja..."
-                                                      class="w-full text-sm font-medium border-2 border-black dark:border-black rounded-lg pl-10 pr-4 py-2.5 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[3px_3px_0px_0px_#000] transition-shadow outline-none placeholder:text-white dark:placeholder:text-gray-500 resize-none"
-                                                      [class.border-red-500]="hasCalibrationError('descripcionBaja', 'required')"></textarea>
-                                            <mat-icon class="absolute left-3 top-3 text-black dark:text-white !text-lg">report</mat-icon>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- BOTONES DE ACCIÓN -->
-                            <div class="flex justify-end gap-4 mt-8 pt-6 border-t-2 border-black dark:border-gray-700">
-                                <button (click)="switchView('quarantine')"
-                                        class="px-6 py-3 bg-gray-600 text-white font-bold text-sm border-2 border-black rounded-lg shadow-[3px_3px_0px_0px_#000] hover:translate-y-[1px] hover:shadow-[2px_2px_0px_0px_#000] active:shadow-none transition-all uppercase flex items-center gap-2">
-                                    <mat-icon class="!w-5 !h-5 !text-lg text-white">arrow_back</mat-icon>
-                                    Volver a Cuarentena
-                                </button>
-                                <button (click)="saveCalibrationData()" [disabled]="!isCalibrationValid()"
-                                        class="px-6 py-3 bg-green-600 text-white font-black text-sm border-2 border-black rounded-lg shadow-[3px_3px_0px_0px_#000] hover:translate-y-[1px] hover:shadow-[2px_2px_0px_0px_#000] active:shadow-none transition-all uppercase flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
-                                    <mat-icon class="!w-5 !h-5 !text-lg text-white">save</mat-icon>
-                                    Guardar Datos
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-
-                    <!-- INFO ADICIONAL DE LA HERRAMIENTA -->
-                    <div class="neo-card-base p-4 relative z-10 bg-white dark:bg-slate-800 border-2 border-black dark:border-black">
-                        <div class="flex items-center gap-2">
-                            <div class="w-8 h-8 bg-blue-600 rounded-full border-2 border-black flex items-center justify-center shadow-[2px_2px_0px_0px_#000]">
-                                <mat-icon class="text-white !text-lg">info</mat-icon>
-                            </div>
-                            <div class="flex-1">
-                                <p class="text-xs font-black uppercase text-blue-800 dark:text-blue-400">Herramienta en proceso</p>
-                                <p class="text-sm font-bold text-black dark:text-white">
-                                    {{ quarantineForm.get('codigo')?.value }} - {{ quarantineForm.get('nombre')?.value }}
-                                </p>
-                            </div>
-                            <span class="text-[10px] font-bold bg-orange-500 text-black px-2 py-1 rounded border border-black shadow-[2px_2px_0px_0px_#000]">
-                                Reporte: {{ quarantineForm.get('nroReporteDiscrepancia')?.value || 'N/A' }}
+                            <p class="text-[9px] font-black uppercase text-blue-800 dark:text-blue-400">Herramienta en proceso</p>
+                            <p class="text-[10px] font-bold text-black dark:text-white">{{ quarantineForm.get('codigo')?.value }}</p>
+                            <p class="text-[9px] text-gray-600 dark:text-gray-300">{{ quarantineForm.get('nombre')?.value }}</p>
+                            <span class="text-[9px] font-bold bg-orange-500 text-black px-1.5 py-0.5 rounded border border-black shadow-[2px_2px_0px_0px_#000] self-start">
+                                RD: {{ quarantineForm.get('nroReporteDiscrepancia')?.value || 'N/A' }}
                             </span>
                         </div>
                     </div>
                 </div>
-            }
+            </div>
         </div>
-    </div>
+    }
 </div>

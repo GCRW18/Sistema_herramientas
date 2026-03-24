@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, inject, ViewChild, TemplateRef, signal, Type, Injector } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject, ViewChild, TemplateRef, Type, Injector, TrackByFunction } from '@angular/core';
 import { CommonModule, NgComponentOutlet } from '@angular/common';
 import { MatIconModule, MatIconRegistry } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
@@ -13,6 +13,28 @@ import { DragDropModule } from '@angular/cdk/drag-drop';
 import { takeUntil, finalize } from 'rxjs/operators';
 import { Subject, of } from 'rxjs';
 import { MovementService } from '../../../core/services/movement.service';
+
+interface OpenTab {
+    id: number;
+    type: number;
+    label: string;
+    sublabel: string;
+    color: string;
+    textColor: string;
+    svgIcon: string;
+    component: Type<any>;
+    injector: Injector;
+}
+
+interface ModuleDef {
+    type: number;
+    label: string;
+    sublabel: string;
+    color: string;
+    textColor: string;
+    svgIcon: string;
+    loader: () => Promise<Type<any>>;
+}
 
 interface ExitRecord {
     id: string;
@@ -122,10 +144,44 @@ export class ExitsComponent implements OnInit, OnDestroy {
     @ViewChild(MatPaginator) paginator!: MatPaginator;
     @ViewChild('salidasRecientesDialog') salidasRecientesDialog!: TemplateRef<any>;
 
-    // Formulario activo inline
-    activeFormComponent = signal<Type<any> | null>(null);
-    activeFormTab       = signal<number | null>(null);
-    formInjector: Injector | null = null;
+    // ── Tab system ───────────────────────────────────────────────────────────
+    openTabs: OpenTab[] = [];
+    activeTabId: number | null = null;
+    showBandeja = false;
+    private tabCounter = 0;
+
+    private readonly MODULE_DEFS: ModuleDef[] = [
+        {
+            type: 1, label: 'ENVÍO A', sublabel: 'OTRAS BASES',
+            color: '#FF6A00', textColor: '#fff',
+            svgIcon: 'heroicons_outline:building-office',
+            loader: async () => (await import('./envio-otras-bases/envio-otras-bases.component')).EnvioOtrasBasesComponent
+        },
+        {
+            type: 2, label: 'TRASPASO', sublabel: 'OTRA ÁREA',
+            color: '#1AAA1F', textColor: '#fff',
+            svgIcon: 'heroicons_outline:arrow-path',
+            loader: async () => (await import('./traspaso-otra-area/traspaso-otra-area.component')).TraspasoOtraAreaComponent
+        },
+        {
+            type: 3, label: 'PRÉSTAMO', sublabel: 'TÉC./OTROS',
+            color: '#7113CF', textColor: '#fff',
+            svgIcon: 'heroicons_outline:building-storefront',
+            loader: async () => (await import('./prestamo-terceros/prestamo-terceros.component')).PrestamoTercerosComponent
+        },
+        {
+            type: 4, label: 'CUARENTENA', sublabel: 'DE ACTIVO',
+            color: '#FFC501', textColor: '#000',
+            svgIcon: 'heroicons_outline:exclamation-triangle',
+            loader: async () => (await import('./poner-cuarentena/poner-cuarentena.component')).PonerCuarentenaComponent
+        },
+        {
+            type: 5, label: 'BAJA', sublabel: 'DE ACTIVO',
+            color: '#e94125', textColor: '#fff',
+            svgIcon: 'heroicons_outline:trash',
+            loader: async () => (await import('./baja/baja.component')).BajaComponent
+        },
+    ];
 
     isLoading = false;
 
@@ -151,13 +207,36 @@ export class ExitsComponent implements OnInit, OnDestroy {
         this._unsubscribeAll.complete();
     }
 
-    // ── Inline form helpers ──────────────────────────────────────────────────
+    // ── Tab system methods ───────────────────────────────────────────────────
 
-    /** Crea un Injector con un MatDialogRef falso cuyo close() cierra el formulario inline */
-    private createFormInjector(): Injector {
+    toggleBandeja(): void {
+        this.showBandeja = !this.showBandeja;
+    }
+
+    closeBandeja(): void {
+        this.showBandeja = false;
+    }
+
+    isTabOpen(type: number): boolean {
+        return this.openTabs.some(t => t.type === type);
+    }
+
+    async openModule(type: number): Promise<void> {
+        this.showBandeja = false;
+
+        const existing = this.openTabs.find(t => t.type === type);
+        if (existing) {
+            this.activeTabId = existing.id;
+            return;
+        }
+
+        const def = this.MODULE_DEFS.find(d => d.type === type)!;
+        const component = await def.loader();
+        const id = ++this.tabCounter;
+
         const self = this;
         const fakeRef = {
-            close:            (result?: any) => { self.closeActiveForm(); },
+            close:            () => self.closeTab(id),
             afterClosed:      () => of(null),
             beforeClosed:     () => of(null),
             backdropClick:    () => of(null),
@@ -167,57 +246,34 @@ export class ExitsComponent implements OnInit, OnDestroy {
             addPanelClass:    () => {},
             removePanelClass: () => {},
             disableClose: false,
-            id: 'inline-form',
+            id: `tab-${id}`,
             componentInstance: null,
         };
-        return Injector.create({
+        const tabInjector = Injector.create({
             providers: [{ provide: MatDialogRef, useValue: fakeRef }],
             parent: this.injector
         });
+
+        this.openTabs.push({ id, type, label: def.label, sublabel: def.sublabel, color: def.color, textColor: def.textColor, svgIcon: def.svgIcon, component, injector: tabInjector });
+        this.activeTabId = id;
     }
 
-    closeActiveForm(): void {
-        this.activeFormComponent.set(null);
-        this.activeFormTab.set(null);
-        this.formInjector = null;
+    setActiveTab(id: number): void {
+        this.activeTabId = id;
     }
 
-    // ── Form openers (inline) ────────────────────────────────────────────────
-
-    async openEnvioOtrasBases(): Promise<void> {
-        const { EnvioOtrasBasesComponent } = await import('./envio-otras-bases/envio-otras-bases.component');
-        this.formInjector = this.createFormInjector();
-        this.activeFormComponent.set(EnvioOtrasBasesComponent);
-        this.activeFormTab.set(1);
+    closeTab(id: number): void {
+        const idx = this.openTabs.findIndex(t => t.id === id);
+        if (idx === -1) return;
+        this.openTabs.splice(idx, 1);
+        if (this.activeTabId === id) {
+            this.activeTabId = this.openTabs.length > 0
+                ? this.openTabs[Math.max(0, idx - 1)].id
+                : null;
+        }
     }
 
-    async openTraspasoOtraArea(): Promise<void> {
-        const { TraspasoOtraAreaComponent } = await import('./traspaso-otra-area/traspaso-otra-area.component');
-        this.formInjector = this.createFormInjector();
-        this.activeFormComponent.set(TraspasoOtraAreaComponent);
-        this.activeFormTab.set(2);
-    }
-
-    async openPrestamoTerceros(): Promise<void> {
-        const { PrestamoTercerosComponent } = await import('./prestamo-terceros/prestamo-terceros.component');
-        this.formInjector = this.createFormInjector();
-        this.activeFormComponent.set(PrestamoTercerosComponent);
-        this.activeFormTab.set(3);
-    }
-
-    async openPonerCuarentena(): Promise<void> {
-        const { PonerCuarentenaComponent } = await import('./poner-cuarentena/poner-cuarentena.component');
-        this.formInjector = this.createFormInjector();
-        this.activeFormComponent.set(PonerCuarentenaComponent);
-        this.activeFormTab.set(4);
-    }
-
-    async openBaja(): Promise<void> {
-        const { BajaComponent } = await import('./baja/baja.component');
-        this.formInjector = this.createFormInjector();
-        this.activeFormComponent.set(BajaComponent);
-        this.activeFormTab.set(5);
-    }
+    trackByTabId: TrackByFunction<OpenTab> = (_index, tab) => tab.id;
 
     // ── Salidas recientes (sigue como dialog) ────────────────────────────────
 

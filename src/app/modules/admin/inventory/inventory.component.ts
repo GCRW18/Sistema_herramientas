@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, inject, ViewChild, TemplateRef, signal, Type, Injector } from '@angular/core';
+import { Component, OnDestroy, inject, ViewChild, TemplateRef, Type, Injector, TrackByFunction } from '@angular/core';
 import { CommonModule, NgComponentOutlet } from '@angular/common';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
@@ -9,6 +9,28 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatTableModule } from '@angular/material/table';
 import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 import { Subject, of } from 'rxjs';
+
+interface OpenTab {
+    id: number;
+    type: number;
+    label: string;
+    sublabel: string;
+    color: string;
+    textColor: string;
+    svgIcon: string;
+    component: Type<any>;
+    injector: Injector;
+}
+
+interface ModuleDef {
+    type: number;
+    label: string;
+    sublabel: string;
+    color: string;
+    textColor: string;
+    svgIcon: string;
+    loader: () => Promise<Type<any>>;
+}
 
 @Component({
     selector: 'app-inventory',
@@ -99,17 +121,93 @@ export class InventoryComponent implements OnDestroy {
 
     @ViewChild('consultarInventarioDialog') consultarInventarioDialog!: TemplateRef<any>;
 
-    // Formulario activo inline
-    activeFormComponent = signal<Type<any> | null>(null);
-    activeFormTab       = signal<number | null>(null);
-    formInjector: Injector | null = null;
+    // ── Tab system ───────────────────────────────────────────────────────────
+    openTabs: OpenTab[] = [];
+    activeTabId: number | null = null;
+    showBandeja = false;
+    private tabCounter = 0;
 
-    // ── Inline form helpers ──────────────────────────────────────────────────
+    private readonly MODULE_DEFS: ModuleDef[] = [
+        {
+            type: 1, label: 'ALMACÉN Y', sublabel: 'UBICACIONES',
+            color: '#FF6A00', textColor: '#fff',
+            svgIcon: 'heroicons_outline:building-storefront',
+            loader: async () => (await import('./gestion-ubicaciones/gestion-ubicaciones.component')).GestionUbicacionesComponent
+        },
+        {
+            type: 2, label: 'CREAR', sublabel: 'MATERIAL',
+            color: '#FFC501', textColor: '#000',
+            svgIcon: 'heroicons_outline:plus-circle',
+            loader: async () => (await import('./crear-material/crear-material.component')).CrearMaterialComponent
+        },
+        {
+            type: 3, label: 'ENTRADA', sublabel: 'MATERIAL',
+            color: '#1AAA1F', textColor: '#fff',
+            svgIcon: 'heroicons_outline:arrow-down-tray',
+            loader: async () => (await import('./entrada-material/entrada-material.component')).EntradaMaterialComponent
+        },
+        {
+            type: 4, label: 'SALIDA', sublabel: 'MATERIAL',
+            color: '#e94125', textColor: '#fff',
+            svgIcon: 'heroicons_outline:arrow-up-tray',
+            loader: async () => (await import('./salida-material/salida-material.component')).SalidaMaterialComponent
+        },
+        {
+            type: 5, label: 'HISTORIAL', sublabel: 'ESTADOS',
+            color: '#0891b2', textColor: '#fff',
+            svgIcon: 'heroicons_outline:clock',
+            loader: async () => (await import('./historial-estados/historial-estados.component')).HistorialEstadosComponent
+        },
+        {
+            type: 6, label: 'MIGRACIÓN', sublabel: 'EXCEL',
+            color: '#16a34a', textColor: '#fff',
+            svgIcon: 'heroicons_outline:cloud-arrow-up',
+            loader: async () => (await import('./migracion-excel/migracion-excel.component')).MigracionExcelComponent
+        },
+        {
+            type: 7, label: 'GESTIÓN', sublabel: 'KITS',
+            color: '#1A3EDC', textColor: '#fff',
+            svgIcon: 'heroicons_outline:cube',
+            loader: async () => (await import('./lista-kits/lista-kits.component')).ListaKitsComponent
+        },
+        {
+            type: 8, label: 'REPORTES', sublabel: '',
+            color: '#7113CF', textColor: '#fff',
+            svgIcon: 'heroicons_outline:chart-bar',
+            loader: async () => (await import('./reportes/reportes-inventario.component')).ReportesInventarioComponent
+        },
+    ];
 
-    private createFormInjector(): Injector {
+    // ── Tab system methods ───────────────────────────────────────────────────
+
+    toggleBandeja(): void {
+        this.showBandeja = !this.showBandeja;
+    }
+
+    closeBandeja(): void {
+        this.showBandeja = false;
+    }
+
+    isTabOpen(type: number): boolean {
+        return this.openTabs.some(t => t.type === type);
+    }
+
+    async openModule(type: number): Promise<void> {
+        this.showBandeja = false;
+
+        const existing = this.openTabs.find(t => t.type === type);
+        if (existing) {
+            this.activeTabId = existing.id;
+            return;
+        }
+
+        const def = this.MODULE_DEFS.find(d => d.type === type)!;
+        const component = await def.loader();
+        const id = ++this.tabCounter;
+
         const self = this;
         const fakeRef = {
-            close:            (result?: any) => { self.closeActiveForm(); },
+            close:            () => self.closeTab(id),
             afterClosed:      () => of(null),
             beforeClosed:     () => of(null),
             backdropClick:    () => of(null),
@@ -119,78 +217,34 @@ export class InventoryComponent implements OnDestroy {
             addPanelClass:    () => {},
             removePanelClass: () => {},
             disableClose: false,
-            id: 'inline-form',
+            id: `tab-${id}`,
             componentInstance: null,
         };
-        return Injector.create({
+        const tabInjector = Injector.create({
             providers: [{ provide: MatDialogRef, useValue: fakeRef }],
             parent: this.injector
         });
+
+        this.openTabs.push({ id, type, label: def.label, sublabel: def.sublabel, color: def.color, textColor: def.textColor, svgIcon: def.svgIcon, component, injector: tabInjector });
+        this.activeTabId = id;
     }
 
-    closeActiveForm(): void {
-        this.activeFormComponent.set(null);
-        this.activeFormTab.set(null);
-        this.formInjector = null;
+    setActiveTab(id: number): void {
+        this.activeTabId = id;
     }
 
-    // ── Form openers (inline) ────────────────────────────────────────────────
-
-    async openGestionUbicaciones(): Promise<void> {
-        const { GestionUbicacionesComponent } = await import('./gestion-ubicaciones/gestion-ubicaciones.component');
-        this.formInjector = this.createFormInjector();
-        this.activeFormComponent.set(GestionUbicacionesComponent);
-        this.activeFormTab.set(1);
+    closeTab(id: number): void {
+        const idx = this.openTabs.findIndex(t => t.id === id);
+        if (idx === -1) return;
+        this.openTabs.splice(idx, 1);
+        if (this.activeTabId === id) {
+            this.activeTabId = this.openTabs.length > 0
+                ? this.openTabs[Math.max(0, idx - 1)].id
+                : null;
+        }
     }
 
-    async openCrearMaterial(): Promise<void> {
-        const { CrearMaterialComponent } = await import('./crear-material/crear-material.component');
-        this.formInjector = this.createFormInjector();
-        this.activeFormComponent.set(CrearMaterialComponent);
-        this.activeFormTab.set(2);
-    }
-
-    async openEntradaMaterial(): Promise<void> {
-        const { EntradaMaterialComponent } = await import('./entrada-material/entrada-material.component');
-        this.formInjector = this.createFormInjector();
-        this.activeFormComponent.set(EntradaMaterialComponent);
-        this.activeFormTab.set(3);
-    }
-
-    async openSalidaMaterial(): Promise<void> {
-        const { SalidaMaterialComponent } = await import('./salida-material/salida-material.component');
-        this.formInjector = this.createFormInjector();
-        this.activeFormComponent.set(SalidaMaterialComponent);
-        this.activeFormTab.set(4);
-    }
-
-    async openHistorialEstados(): Promise<void> {
-        const { HistorialEstadosComponent } = await import('./historial-estados/historial-estados.component');
-        this.formInjector = this.createFormInjector();
-        this.activeFormComponent.set(HistorialEstadosComponent);
-        this.activeFormTab.set(5);
-    }
-
-    async openMigracionExcel(): Promise<void> {
-        const { MigracionExcelComponent } = await import('./migracion-excel/migracion-excel.component');
-        this.formInjector = this.createFormInjector();
-        this.activeFormComponent.set(MigracionExcelComponent);
-        this.activeFormTab.set(6);
-    }
-
-    async openListaKits(): Promise<void> {
-        const { ListaKitsComponent } = await import('./lista-kits/lista-kits.component');
-        this.formInjector = this.createFormInjector();
-        this.activeFormComponent.set(ListaKitsComponent);
-        this.activeFormTab.set(7);
-    }
-
-    async openReportes(): Promise<void> {
-        const { ReportesInventarioComponent } = await import('./reportes/reportes-inventario.component');
-        this.formInjector = this.createFormInjector();
-        this.activeFormComponent.set(ReportesInventarioComponent);
-        this.activeFormTab.set(8);
-    }
+    trackByTabId: TrackByFunction<OpenTab> = (_index, tab) => tab.id;
 
     // ── Consultar Inventario (dialog desde header) ────────────────────────────
 

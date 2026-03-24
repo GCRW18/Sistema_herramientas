@@ -1,144 +1,184 @@
-<div class="flex flex-col w-full h-full bg-white dark:bg-[#0F172AFF] transition-colors duration-300 font-sans overflow-hidden">
+<div class="relative flex flex-col w-full h-full bg-white dark:bg-[#0F172AFF] transition-colors duration-300 font-sans overflow-hidden">
 
     <!-- ===== HEADER ===== -->
-    <div class="flex items-center gap-4 px-5 py-3 border-b-2 border-black dark:border-slate-700 shrink-0 bg-white dark:bg-[#0F172AFF]">
+    <div class="flex items-center gap-3 px-5 py-3 border-b-2 border-black dark:border-slate-700 shrink-0 bg-white dark:bg-[#0F172AFF] relative z-30">
         <h1 class="text-3xl md:text-4xl font-black text-black dark:text-white uppercase tracking-tighter leading-none">
             CALIBRACIONES
         </h1>
-        <span class="text-[10px] font-bold bg-[#1A3EDCFF] text-white px-3 py-1 rounded-sm border border-black uppercase tracking-wider">
+        <span class="text-[10px] font-bold bg-[#1A3EDCFF] text-white px-3 py-1 rounded-sm border border-black uppercase tracking-wider hidden sm:inline">
             MÓDULO DE CALIBRACIÓN
         </span>
         <div class="flex-1"></div>
+
+        <!-- Botón MÓDULOS / bandeja -->
+        <button (click)="toggleBandeja()"
+                [class.!bg-[#1A3EDC]]="showBandeja"
+                [class.!text-white]="showBandeja"
+                class="flex items-center gap-2 px-5 py-2 bg-white dark:bg-slate-800 border-2 border-black font-black text-xs uppercase rounded-full shadow-[3px_3px_0px_0px_#000] hover:shadow-[1px_1px_0px_0px_#000] hover:translate-x-[2px] hover:translate-y-[2px] transition-all text-black dark:text-white">
+            <mat-icon class="!text-base">apps</mat-icon>
+            <span class="hidden sm:inline">MÓDULOS</span>
+            <mat-icon class="!text-sm transition-transform duration-200" [class.rotate-180]="showBandeja">expand_more</mat-icon>
+        </button>
+
+        <!-- Badge de alertas en header -->
+        <div *ngIf="alertCount > 0" class="relative">
+            <button (click)="openModule(5)"
+                    class="flex items-center gap-2 px-5 py-2 bg-[#e94125] text-white border-2 border-black font-black text-xs uppercase rounded-full shadow-[3px_3px_0px_0px_#000] hover:shadow-[1px_1px_0px_0px_#000] hover:translate-x-[2px] hover:translate-y-[2px] transition-all">
+                <mat-icon svgIcon="heroicons_outline:bell-alert" class="!text-base"></mat-icon>
+                <span class="hidden sm:inline">ALERTAS</span>
+                <span class="bg-white text-[#e94125] text-[9px] font-black px-1.5 py-0.5 rounded-full border border-black min-w-[18px] text-center">{{ alertCount }}</span>
+            </button>
+        </div>
+
         <button (click)="openCalibracionesRecientes()"
-                class="flex items-center gap-2 px-4 py-2 bg-white dark:bg-slate-800 border-2 border-black font-black text-xs uppercase rounded-lg shadow-[3px_3px_0px_0px_#000] hover:shadow-[2px_2px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px] transition-all text-black dark:text-white">
+                class="flex items-center gap-2 px-5 py-2 bg-white dark:bg-slate-800 border-2 border-black font-black text-xs uppercase rounded-full shadow-[3px_3px_0px_0px_#000] hover:shadow-[1px_1px_0px_0px_#000] hover:translate-x-[2px] hover:translate-y-[2px] transition-all text-black dark:text-white">
             <mat-icon class="!text-base">history</mat-icon>
-            Registros Recientes
+            <span class="hidden sm:inline">Registros Recientes</span>
         </button>
     </div>
 
-    <!-- ===== BARRA HORIZONTAL DE SUBMENÚS 1-7 ===== -->
-    <div class="flex items-stretch gap-0 border-b-2 border-black dark:border-slate-700 shrink-0 bg-white dark:bg-[#111A43] overflow-x-auto">
+    <!-- ===== BANDEJA: backdrop ===== -->
+    <div *ngIf="showBandeja"
+         (click)="closeBandeja()"
+         class="fixed inset-0 z-20 bg-black/20">
+    </div>
 
-        <!-- Item 1: Envío a Calibración -->
-        <button (click)="openEnvioCalibracion()"
-                [class.!bg-[#1A3EDCFF]]="activeFormTab() === 1"
-                [class.!text-white]="activeFormTab() === 1"
-                class="group flex items-center gap-3 px-5 py-3 border-r-2 border-black dark:border-slate-600 font-black text-black dark:text-white hover:bg-[#1A3EDCFF] hover:text-white transition-colors whitespace-nowrap min-w-[160px]">
-            <span class="text-2xl font-black leading-none">1</span>
-            <div class="flex flex-col items-start">
-                <span class="text-[10px] leading-tight uppercase">ENVÍO A</span>
-                <span class="text-[10px] leading-tight uppercase">CALIBRACIÓN</span>
-            </div>
-            <mat-icon svgIcon="heroicons_outline:send" class="!text-base ml-auto opacity-50 group-hover:opacity-100"></mat-icon>
-        </button>
+    <!-- ===== BANDEJA: panel desplegable ===== -->
+    <div *ngIf="showBandeja"
+         class="absolute top-[56px] left-2 right-2 md:left-auto md:right-4 md:w-auto z-30 bg-white dark:bg-[#111A43] border-2 border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] rounded-2xl p-3 animate-in slide-in-from-top-2 duration-150">
 
-        <!-- Item 2: Retorno de Calibración -->
-        <button (click)="openRetornoCalibracion()"
-                [class.!bg-[#1AAA1FFF]]="activeFormTab() === 2"
-                [class.!text-white]="activeFormTab() === 2"
-                class="group flex items-center gap-3 px-5 py-3 border-r-2 border-black dark:border-slate-600 font-black text-black dark:text-white hover:bg-[#1AAA1FFF] hover:text-white transition-colors whitespace-nowrap min-w-[160px]">
-            <span class="text-2xl font-black leading-none">2</span>
-            <div class="flex flex-col items-start">
-                <span class="text-[10px] leading-tight uppercase">RETORNO</span>
-                <span class="text-[10px] leading-tight uppercase">CALIBRACIÓN</span>
-            </div>
-            <mat-icon svgIcon="heroicons_outline:arrow-uturn-left" class="!text-base ml-auto opacity-50 group-hover:opacity-100"></mat-icon>
-        </button>
+        <p class="text-[9px] font-black uppercase tracking-widest text-gray-400 dark:text-slate-400 mb-2 px-1">
+            Seleccionar módulo de calibración
+        </p>
 
-        <!-- Item 3: Laboratorios -->
-        <button (click)="openLaboratorios()"
-                [class.!bg-[#7113CFFF]]="activeFormTab() === 3"
-                [class.!text-white]="activeFormTab() === 3"
-                class="group flex items-center gap-3 px-5 py-3 border-r-2 border-black dark:border-slate-600 font-black text-black dark:text-white hover:bg-[#7113CFFF] hover:text-white transition-colors whitespace-nowrap min-w-[160px]">
-            <span class="text-2xl font-black leading-none">3</span>
-            <div class="flex flex-col items-start">
-                <span class="text-[10px] leading-tight uppercase">LABORATORIOS</span>
-                <span class="text-[10px] leading-tight uppercase">EXTERNOS</span>
-            </div>
-            <mat-icon svgIcon="heroicons_outline:building-office" class="!text-base ml-auto opacity-50 group-hover:opacity-100"></mat-icon>
-        </button>
+        <div class="flex gap-2">
 
-        <!-- Item 4: Servicios Gatas -->
-        <button (click)="openServiciosGatas()"
-                [class.!bg-[#FF6A00FF]]="activeFormTab() === 4"
-                [class.!text-white]="activeFormTab() === 4"
-                class="group flex items-center gap-3 px-5 py-3 border-r-2 border-black dark:border-slate-600 font-black text-black dark:text-white hover:bg-[#FF6A00FF] hover:text-white transition-colors whitespace-nowrap min-w-[160px]">
-            <span class="text-2xl font-black leading-none">4</span>
-            <div class="flex flex-col items-start">
-                <span class="text-[10px] leading-tight uppercase">SERVICIOS</span>
-                <span class="text-[10px] leading-tight uppercase">GATAS (JACKS)</span>
-            </div>
-            <mat-icon svgIcon="heroicons_outline:cog-6-tooth" class="!text-base ml-auto opacity-50 group-hover:opacity-100"></mat-icon>
-        </button>
+            <!-- Módulo 1: Proceso de Calibración (Envío + Retorno unificado) -->
+            <button (click)="openModule(1)"
+                    class="group relative flex flex-col items-center gap-1 p-2 rounded-xl border-2 border-black transition-all hover:scale-[1.04] active:scale-[0.97] flex-1 min-w-0"
+                    [style.background-color]="isTabOpen(1) ? '#1A3EDC' : 'transparent'"
+                    [style.box-shadow]="'3px 3px 0px 0px rgba(0,0,0,1)'">
+                <div *ngIf="isTabOpen(1)" class="absolute top-1 right-1 w-2 h-2 rounded-full bg-black"></div>
+                <mat-icon svgIcon="heroicons_outline:arrows-right-left"
+                          class="!w-6 !h-6 !text-2xl text-black dark:text-white shrink-0"></mat-icon>
+                <p class="text-[9px] font-black uppercase leading-tight text-black dark:text-white text-center w-full truncate">PROCESO</p>
+                <p class="text-[9px] font-black uppercase leading-tight text-black dark:text-white text-center w-full truncate">CALIBRACIÓN</p>
+            </button>
 
-        <!-- Item 5: Reportes MGH -->
-        <button (click)="openReportes()"
-                [class.!bg-[#FFC501FF]]="activeFormTab() === 5"
-                [class.!text-black]="activeFormTab() === 5"
-                class="group flex items-center gap-3 px-5 py-3 border-r-2 border-black dark:border-slate-600 font-black text-black dark:text-white hover:bg-[#FFC501FF] hover:text-black transition-colors whitespace-nowrap min-w-[160px]">
-            <span class="text-2xl font-black leading-none">5</span>
-            <div class="flex flex-col items-start">
-                <span class="text-[10px] leading-tight uppercase">REPORTES</span>
-                <span class="text-[10px] leading-tight uppercase">MGH</span>
-            </div>
-            <mat-icon svgIcon="heroicons_outline:document-chart-bar" class="!text-base ml-auto opacity-50 group-hover:opacity-100"></mat-icon>
-        </button>
+            <!-- Módulo 3: Laboratorios -->
+            <button (click)="openModule(3)"
+                    class="group relative flex flex-col items-center gap-1 p-2 rounded-xl border-2 border-black transition-all hover:scale-[1.04] active:scale-[0.97] flex-1 min-w-0"
+                    [style.background-color]="isTabOpen(3) ? '#7113CF' : 'transparent'"
+                    [style.box-shadow]="'3px 3px 0px 0px rgba(0,0,0,1)'">
+                <div *ngIf="isTabOpen(3)" class="absolute top-1 right-1 w-2 h-2 rounded-full bg-black"></div>
+                <mat-icon svgIcon="heroicons_outline:building-office"
+                          class="!w-6 !h-6 !text-2xl text-black dark:text-white shrink-0"></mat-icon>
+                <p class="text-[9px] font-black uppercase leading-tight text-black dark:text-white text-center w-full truncate">LABORATORIOS</p>
+                <p class="text-[9px] font-black uppercase leading-tight text-black dark:text-white text-center w-full truncate">EXTERNOS</p>
+            </button>
 
-        <!-- Item 6: Alertas Vencimiento -->
-        <button (click)="openAlertas()"
-                [class.!bg-[#e94125]]="activeFormTab() === 6"
-                [class.!text-white]="activeFormTab() === 6"
-                class="group flex items-center gap-3 px-5 py-3 border-r-2 border-black dark:border-slate-600 font-black text-black dark:text-white hover:bg-[#e94125] hover:text-white transition-colors whitespace-nowrap min-w-[160px]">
-            <span class="text-2xl font-black leading-none">6</span>
-            <div class="flex flex-col items-start">
-                <span class="text-[10px] leading-tight uppercase">ALERTAS</span>
-                <span class="text-[10px] leading-tight uppercase">VENCIMIENTO</span>
-            </div>
-            <div class="ml-auto flex items-center gap-1">
-                <span *ngIf="alertCount > 0"
-                      class="bg-[#e94125] text-white text-[9px] font-black px-1.5 py-0.5 rounded-full border border-black min-w-[20px] text-center"
-                      [class.!bg-white]="activeFormTab() === 6"
-                      [class.!text-[#e94125]]="activeFormTab() === 6">
-                    {{ alertCount }}
+            <!-- Módulo 4: Servicios Gatas -->
+            <button (click)="openModule(4)"
+                    class="group relative flex flex-col items-center gap-1 p-2 rounded-xl border-2 border-black transition-all hover:scale-[1.04] active:scale-[0.97] flex-1 min-w-0"
+                    [style.background-color]="isTabOpen(4) ? '#FF6A00' : 'transparent'"
+                    [style.box-shadow]="'3px 3px 0px 0px rgba(0,0,0,1)'">
+                <div *ngIf="isTabOpen(4)" class="absolute top-1 right-1 w-2 h-2 rounded-full bg-black"></div>
+                <mat-icon svgIcon="heroicons_outline:cog-6-tooth"
+                          class="!w-6 !h-6 !text-2xl text-black dark:text-white shrink-0"></mat-icon>
+                <p class="text-[9px] font-black uppercase leading-tight text-black dark:text-white text-center w-full truncate">SERVICIOS</p>
+                <p class="text-[9px] font-black uppercase leading-tight text-black dark:text-white text-center w-full truncate">GATAS (JACKS)</p>
+            </button>
+
+            <!-- Módulo 5: Reportes + Alertas (unificado) -->
+            <button (click)="openModule(5)"
+                    class="group relative flex flex-col items-center gap-1 p-2 rounded-xl border-2 border-black transition-all hover:scale-[1.04] active:scale-[0.97] flex-1 min-w-0"
+                    [style.background-color]="isTabOpen(5) ? '#e94125' : 'transparent'"
+                    [style.box-shadow]="'3px 3px 0px 0px rgba(0,0,0,1)'">
+                <div *ngIf="isTabOpen(5)" class="absolute top-1 right-1 w-2 h-2 rounded-full bg-black"></div>
+                <div class="relative">
+                    <mat-icon svgIcon="heroicons_outline:chart-bell"
+                              class="!w-6 !h-6 !text-2xl text-black dark:text-white shrink-0"></mat-icon>
+                    <span *ngIf="alertCount > 0"
+                          class="absolute -top-1 -right-1 bg-[#e94125] text-white text-[8px] font-black px-1 rounded-full border border-black min-w-[14px] text-center leading-tight">
+                        {{ alertCount }}
+                    </span>
+                </div>
+                <p class="text-[9px] font-black uppercase leading-tight text-black dark:text-white text-center w-full truncate">REPORTES</p>
+                <p class="text-[9px] font-black uppercase leading-tight text-black dark:text-white text-center w-full truncate">Y ALERTAS</p>
+            </button>
+
+            <!-- Módulo 7: Lotes de Calibración -->
+            <button (click)="openModule(7)"
+                    class="group relative flex flex-col items-center gap-1 p-2 rounded-xl border-2 border-black transition-all hover:scale-[1.04] active:scale-[0.97] flex-1 min-w-0"
+                    [style.background-color]="isTabOpen(7) ? '#0891b2' : 'transparent'"
+                    [style.box-shadow]="'3px 3px 0px 0px rgba(0,0,0,1)'">
+                <div *ngIf="isTabOpen(7)" class="absolute top-1 right-1 w-2 h-2 rounded-full bg-black"></div>
+                <mat-icon svgIcon="heroicons_outline:inbox-stack"
+                          class="!w-6 !h-6 !text-2xl text-black dark:text-white shrink-0"></mat-icon>
+                <p class="text-[9px] font-black uppercase leading-tight text-black dark:text-white text-center w-full truncate">LOTES DE</p>
+                <p class="text-[9px] font-black uppercase leading-tight text-black dark:text-white text-center w-full truncate">CALIBRACIÓN</p>
+            </button>
+
+        </div>
+    </div>
+
+    <!-- ===== BARRA DE PESTAÑAS ===== -->
+    <div *ngIf="openTabs.length > 0"
+         class="flex items-center gap-2 px-4 py-2 border-b-2 border-black dark:border-slate-700 shrink-0 bg-white dark:bg-[#0F172AFF] overflow-x-auto relative z-10">
+
+        <div *ngFor="let tab of openTabs; trackBy: trackByTabId"
+             (click)="setActiveTab(tab.id)"
+             class="flex items-center gap-2 px-3 py-1.5 rounded-full border-2 border-black cursor-pointer transition-all whitespace-nowrap select-none shrink-0"
+             [style.background-color]="tab.id === activeTabId ? tab.color : 'transparent'"
+             [style.box-shadow]="tab.id === activeTabId ? '2px 2px 0px 0px rgba(0,0,0,1)' : 'none'">
+
+            <mat-icon [svgIcon]="tab.svgIcon"
+                      class="!text-sm !w-4 !h-4 shrink-0"
+                      [style.color]="tab.id === activeTabId ? tab.textColor : 'inherit'">
+            </mat-icon>
+
+            <div class="flex gap-1 leading-none">
+                <span class="text-[10px] font-black uppercase"
+                      [style.color]="tab.id === activeTabId ? tab.textColor : 'inherit'">
+                    {{ tab.label }}
                 </span>
-                <mat-icon svgIcon="heroicons_outline:bell-alert" class="!text-base opacity-50 group-hover:opacity-100"></mat-icon>
+                <span class="text-[10px] font-black uppercase opacity-70"
+                      [style.color]="tab.id === activeTabId ? tab.textColor : 'inherit'">
+                    {{ tab.sublabel }}
+                </span>
             </div>
-        </button>
 
-        <!-- Item 7: Lotes de Calibración -->
-        <button (click)="openLotesCalibracion()"
-                [class.!bg-[#0891b2]]="activeFormTab() === 7"
-                [class.!text-white]="activeFormTab() === 7"
-                class="group flex items-center gap-3 px-5 py-3 border-r-2 border-black dark:border-slate-600 font-black text-black dark:text-white hover:bg-[#0891b2] hover:text-white transition-colors whitespace-nowrap min-w-[160px]">
-            <span class="text-2xl font-black leading-none">7</span>
-            <div class="flex flex-col items-start">
-                <span class="text-[10px] leading-tight uppercase">LOTES DE</span>
-                <span class="text-[10px] leading-tight uppercase">CALIBRACIÓN</span>
-            </div>
-            <mat-icon svgIcon="heroicons_outline:inbox-stack" class="!text-base ml-auto opacity-50 group-hover:opacity-100"></mat-icon>
-        </button>
+            <button (click)="closeTab(tab.id); $event.stopPropagation()"
+                    class="w-4 h-4 flex items-center justify-center rounded-full opacity-50 hover:opacity-100 hover:bg-black/20 transition-all shrink-0"
+                    [style.color]="tab.id === activeTabId ? tab.textColor : 'inherit'">
+                <mat-icon class="!text-xs !w-3 !h-3">close</mat-icon>
+            </button>
+        </div>
 
     </div>
 
     <!-- ===== ÁREA PRINCIPAL ===== -->
     <div class="flex-1 overflow-hidden relative">
 
-        <!-- Formulario activo (inline) -->
-        <ng-container *ngIf="activeFormComponent()">
-            <ng-container [ngComponentOutlet]="activeFormComponent()!" [ngComponentOutletInjector]="formInjector!"></ng-container>
-        </ng-container>
+        <!-- Pestañas activas (todas en DOM, solo la activa visible) -->
+        <div *ngFor="let tab of openTabs; trackBy: trackByTabId"
+             [style.display]="tab.id === activeTabId ? 'flex' : 'none'"
+             class="w-full h-full flex-col overflow-hidden">
+            <ng-container [ngComponentOutlet]="tab.component" [ngComponentOutletInjector]="tab.injector"></ng-container>
+        </div>
 
-        <!-- Placeholder cuando no hay formulario seleccionado -->
-        <div *ngIf="!activeFormComponent()" class="flex flex-col items-center justify-center h-full bg-[#f8f9fc] dark:bg-[#0F172AFF] relative">
+        <!-- Placeholder cuando no hay pestañas abiertas -->
+        <div *ngIf="openTabs.length === 0"
+             class="flex flex-col items-center justify-center h-full bg-[#f8f9fc] dark:bg-[#0F172AFF] relative">
             <div class="absolute top-10 right-10 w-48 h-48 bg-[#1A3EDCFF] rounded-full border-4 border-black opacity-5 pointer-events-none"></div>
             <div class="absolute bottom-10 left-10 w-24 h-24 bg-[#111A43] rotate-12 border-4 border-black opacity-5 pointer-events-none"></div>
             <div class="flex flex-col items-center text-center opacity-30 dark:opacity-20 select-none">
                 <mat-icon class="!text-[100px] !w-28 !h-28 text-black dark:text-white">science</mat-icon>
                 <p class="text-2xl font-black uppercase text-black dark:text-white mt-4 tracking-tight">
-                    Seleccione una operación
+                    Seleccione un módulo de calibración
                 </p>
                 <p class="text-sm font-bold text-gray-500 dark:text-gray-400 mt-2">
-                    Use el menú superior para gestionar calibraciones
+                    Pulse <strong>MÓDULOS</strong> en la barra superior para comenzar
                 </p>
             </div>
         </div>

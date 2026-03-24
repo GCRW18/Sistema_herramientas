@@ -39,18 +39,15 @@ interface ProveedorDisplay {
         MatButtonModule,
         MatTableModule,
         MatDialogModule,
-        MatFormFieldModule,
-        MatInputModule,
-        MatSelectModule,
         MatSnackBarModule,
         ReactiveFormsModule
     ],
     templateUrl: './proveedores.component.html',
     styles: [`
-        :host {
-            display: block;
-            height: 100%;
-        }
+        :host { display: block; height: 100%; }
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #94a3b8; border-radius: 3px; }
     `]
 })
 export class ProveedoresComponent implements OnInit {

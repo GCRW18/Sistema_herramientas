@@ -5,8 +5,6 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { MatTableModule } from '@angular/material/table';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatInputModule } from '@angular/material/input';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { debounceTime, startWith } from 'rxjs/operators';
@@ -32,17 +30,15 @@ interface RoleDisplay {
         MatButtonModule,
         MatTableModule,
         MatDialogModule,
-        MatFormFieldModule,
-        MatInputModule,
         MatSnackBarModule,
         ReactiveFormsModule
     ],
     templateUrl: './roles.component.html',
     styles: [`
-        :host {
-            display: block;
-            height: 100%;
-        }
+        :host { display: block; height: 100%; }
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #94a3b8; border-radius: 3px; }
     `]
 })
 export class RolesComponent implements OnInit {

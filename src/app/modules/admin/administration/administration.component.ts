@@ -1,4 +1,4 @@
-import { Component, OnDestroy, inject, ViewChild, TemplateRef, signal, Type, Injector } from '@angular/core';
+import { Component, OnDestroy, inject, ViewChild, TemplateRef, Type, Injector, TrackByFunction } from '@angular/core';
 import { CommonModule, NgComponentOutlet } from '@angular/common';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
@@ -8,6 +8,28 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatTableModule } from '@angular/material/table';
 import { DragDropModule } from '@angular/cdk/drag-drop';
 import { Subject, of } from 'rxjs';
+
+interface OpenTab {
+    id: number;
+    type: number;
+    label: string;
+    sublabel: string;
+    color: string;
+    textColor: string;
+    svgIcon: string;
+    component: Type<any>;
+    injector: Injector;
+}
+
+interface ModuleDef {
+    type: number;
+    label: string;
+    sublabel: string;
+    color: string;
+    textColor: string;
+    svgIcon: string;
+    loader: () => Promise<Type<any>>;
+}
 
 interface AdminRecord {
     fecha: string;
@@ -90,10 +112,44 @@ export class AdministrationComponent implements OnDestroy {
 
     @ViewChild('actividadRecienteDialog') actividadRecienteDialog!: TemplateRef<any>;
 
-    // Formulario activo inline
-    activeFormComponent = signal<Type<any> | null>(null);
-    activeFormTab       = signal<number | null>(null);
-    formInjector: Injector | null = null;
+    // ── Tab system ───────────────────────────────────────────────────────────
+    openTabs: OpenTab[] = [];
+    activeTabId: number | null = null;
+    showBandeja = false;
+    private tabCounter = 0;
+
+    private readonly MODULE_DEFS: ModuleDef[] = [
+        {
+            type: 1, label: 'USUARIOS', sublabel: '',
+            color: '#1A3EDC', textColor: '#fff',
+            svgIcon: 'heroicons_outline:user-group',
+            loader: async () => (await import('./usuarios/usuarios.component')).UsuariosComponent
+        },
+        {
+            type: 2, label: 'PROVEEDORES', sublabel: '',
+            color: '#FF6A00', textColor: '#fff',
+            svgIcon: 'heroicons_outline:building-office-2',
+            loader: async () => (await import('./proveedores/proveedores.component')).ProveedoresComponent
+        },
+        {
+            type: 3, label: 'CLIENTES', sublabel: '',
+            color: '#1AAA1F', textColor: '#fff',
+            svgIcon: 'heroicons_outline:users',
+            loader: async () => (await import('./clientes/clientes.component')).ClientesComponent
+        },
+        {
+            type: 4, label: 'ROLES Y', sublabel: 'PERMISOS',
+            color: '#7113CF', textColor: '#fff',
+            svgIcon: 'heroicons_outline:shield-check',
+            loader: async () => (await import('./roles/roles.component')).RolesComponent
+        },
+        {
+            type: 5, label: 'FUNCIONARIOS', sublabel: 'Y TÉCNICOS',
+            color: '#111A43', textColor: '#fff',
+            svgIcon: 'heroicons_outline:identification',
+            loader: async () => (await import('./funcionarios/funcionarios.component')).FuncionariosComponent
+        },
+    ];
 
     displayedColumns: string[] = ['fecha', 'tipo', 'entidad', 'usuario', 'acciones'];
     recentRecords: AdminRecord[] = [
@@ -102,12 +158,36 @@ export class AdministrationComponent implements OnDestroy {
         { fecha: '02/01/2026', tipo: 'ASIGNAR ROL',      entidad: 'Tecnico Senior',  usuario: 'ADMIN' }
     ];
 
-    // ── Inline form helpers ──────────────────────────────────────────────────
+    // ── Tab system methods ───────────────────────────────────────────────────
 
-    private createFormInjector(): Injector {
+    toggleBandeja(): void {
+        this.showBandeja = !this.showBandeja;
+    }
+
+    closeBandeja(): void {
+        this.showBandeja = false;
+    }
+
+    isTabOpen(type: number): boolean {
+        return this.openTabs.some(t => t.type === type);
+    }
+
+    async openModule(type: number): Promise<void> {
+        this.showBandeja = false;
+
+        const existing = this.openTabs.find(t => t.type === type);
+        if (existing) {
+            this.activeTabId = existing.id;
+            return;
+        }
+
+        const def = this.MODULE_DEFS.find(d => d.type === type)!;
+        const component = await def.loader();
+        const id = ++this.tabCounter;
+
         const self = this;
         const fakeRef = {
-            close:            (result?: any) => { self.closeActiveForm(); },
+            close:            () => self.closeTab(id),
             afterClosed:      () => of(null),
             beforeClosed:     () => of(null),
             backdropClick:    () => of(null),
@@ -117,57 +197,34 @@ export class AdministrationComponent implements OnDestroy {
             addPanelClass:    () => {},
             removePanelClass: () => {},
             disableClose: false,
-            id: 'inline-form',
+            id: `tab-${id}`,
             componentInstance: null,
         };
-        return Injector.create({
+        const tabInjector = Injector.create({
             providers: [{ provide: MatDialogRef, useValue: fakeRef }],
             parent: this.injector
         });
+
+        this.openTabs.push({ id, type, label: def.label, sublabel: def.sublabel, color: def.color, textColor: def.textColor, svgIcon: def.svgIcon, component, injector: tabInjector });
+        this.activeTabId = id;
     }
 
-    closeActiveForm(): void {
-        this.activeFormComponent.set(null);
-        this.activeFormTab.set(null);
-        this.formInjector = null;
+    setActiveTab(id: number): void {
+        this.activeTabId = id;
     }
 
-    // ── Form openers (inline) ────────────────────────────────────────────────
-
-    async openUsuarios(): Promise<void> {
-        const { UsuariosComponent } = await import('./usuarios/usuarios.component');
-        this.formInjector = this.createFormInjector();
-        this.activeFormComponent.set(UsuariosComponent);
-        this.activeFormTab.set(1);
+    closeTab(id: number): void {
+        const idx = this.openTabs.findIndex(t => t.id === id);
+        if (idx === -1) return;
+        this.openTabs.splice(idx, 1);
+        if (this.activeTabId === id) {
+            this.activeTabId = this.openTabs.length > 0
+                ? this.openTabs[Math.max(0, idx - 1)].id
+                : null;
+        }
     }
 
-    async openProveedores(): Promise<void> {
-        const { ProveedoresComponent } = await import('./proveedores/proveedores.component');
-        this.formInjector = this.createFormInjector();
-        this.activeFormComponent.set(ProveedoresComponent);
-        this.activeFormTab.set(2);
-    }
-
-    async openClientes(): Promise<void> {
-        const { ClientesComponent } = await import('./clientes/clientes.component');
-        this.formInjector = this.createFormInjector();
-        this.activeFormComponent.set(ClientesComponent);
-        this.activeFormTab.set(3);
-    }
-
-    async openRoles(): Promise<void> {
-        const { RolesComponent } = await import('./roles/roles.component');
-        this.formInjector = this.createFormInjector();
-        this.activeFormComponent.set(RolesComponent);
-        this.activeFormTab.set(4);
-    }
-
-    async openFuncionarios(): Promise<void> {
-        const { FuncionariosComponent } = await import('./funcionarios/funcionarios.component');
-        this.formInjector = this.createFormInjector();
-        this.activeFormComponent.set(FuncionariosComponent);
-        this.activeFormTab.set(5);
-    }
+    trackByTabId: TrackByFunction<OpenTab> = (_index, tab) => tab.id;
 
     // ── Actividad Reciente (dialog desde header) ─────────────────────────────
 
