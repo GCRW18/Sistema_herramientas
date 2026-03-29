@@ -15,7 +15,7 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { DragDropModule } from '@angular/cdk/drag-drop';
-import { Subject, takeUntil, finalize, debounceTime } from 'rxjs';
+import { Subject, takeUntil, finalize, debounceTime, forkJoin, map } from 'rxjs';
 import { MovementService } from '../../../../core/services/movement.service';
 
 // ============================================================================
@@ -330,8 +330,8 @@ export class RetornoTraspasoComponent implements OnInit, OnDestroy {
                     tipo: 'base' as const
                 }));
             },
-            error: () => {
-                this.bases = this.getMockBases();
+            error: (err) => {
+                this.showMessage('Error al cargar bases: ' + (err?.message || 'Error de conexión'), 'error');
             }
         });
 
@@ -350,71 +350,30 @@ export class RetornoTraspasoComponent implements OnInit, OnDestroy {
                         tipo: 'almacen' as const
                     }));
             },
-            error: () => {
-                this.almacenes = this.getMockAlmacenes();
+            error: (err) => {
+                this.showMessage('Error al cargar almacenes: ' + (err?.message || 'Error de conexión'), 'error');
             }
         });
     }
 
     private loadFuncionarios(): void {
-        const funcionariosObservable = this.movementService.getFuncionarios?.();
-
-        if (funcionariosObservable) {
-            funcionariosObservable.pipe(
-                takeUntil(this._unsubscribeAll)
-            ).subscribe({
-                next: (data) => {
-                    if (data && data.length > 0) {
-                        this.funcionarios = data.map((f: any) => ({
-                            id: f.id,
-                            nombre: f.nombre || f.name || `${f.firstName} ${f.lastName}`,
-                            cargo: f.cargo || f.position || '',
-                            area: f.area || f.department || ''
-                        }));
-                    } else {
-                        this.loadDefaultFuncionarios();
-                    }
-                },
-                error: () => {
-                    this.loadDefaultFuncionarios();
-                }
-            });
-        } else {
-            this.loadDefaultFuncionarios();
-        }
+        this.movementService.getFuncionarios().pipe(
+            takeUntil(this._unsubscribeAll)
+        ).subscribe({
+            next: (data) => {
+                this.funcionarios = (data || []).map((f: any) => ({
+                    id: f.id,
+                    nombre: f.nombre || f.name || `${f.firstName} ${f.lastName}`,
+                    cargo: f.cargo || f.position || '',
+                    area: f.area || f.department || ''
+                }));
+            },
+            error: (err) => {
+                this.showMessage('Error al cargar funcionarios: ' + (err?.message || 'Error de conexión'), 'error');
+            }
+        });
     }
 
-    private loadDefaultFuncionarios(): void {
-        this.funcionarios = [
-            { id: '1', nombre: 'MENDEZ CRUZ JOSE RODRIGO', cargo: 'Técnico Almacén', area: 'Almacén Central' },
-            { id: '2', nombre: 'VARGAS NESTOR', cargo: 'Supervisor', area: 'Almacén' },
-            { id: '3', nombre: 'LEDEZMA GUSTAVO', cargo: 'Jefe de Área', area: 'Control de Calidad' },
-            { id: '4', nombre: 'ESCOBAR JOSE LUIS', cargo: 'Técnico', area: 'Herramientas' },
-            { id: '5', nombre: 'GARCIA MARTINEZ PEDRO', cargo: 'Inspector', area: 'Recepción' },
-            { id: '6', nombre: 'LOPEZ MAMANI CARLOS', cargo: 'Técnico Senior', area: 'Mantenimiento' }
-        ];
-    }
-
-    private getMockBases(): Ubicacion[] {
-        return [
-            { id: '1', nombre: 'Aeropuerto Internacional El Alto', codigo: 'LPB', ciudad: 'La Paz', tipo: 'base' },
-            { id: '2', nombre: 'Aeropuerto Internacional Viru Viru', codigo: 'VVI', ciudad: 'Santa Cruz', tipo: 'base' },
-            { id: '3', nombre: 'Aeropuerto Jorge Wilstermann', codigo: 'CBB', ciudad: 'Cochabamba', tipo: 'base' },
-            { id: '4', nombre: 'Aeropuerto Alcantarí', codigo: 'SRE', ciudad: 'Sucre', tipo: 'base' },
-            { id: '5', nombre: 'Aeropuerto Cap. Oriel Lea Plaza', codigo: 'TJA', ciudad: 'Tarija', tipo: 'base' },
-            { id: '6', nombre: 'Aeropuerto Ten. Av. Jorge Henrich', codigo: 'TDD', ciudad: 'Trinidad', tipo: 'base' }
-        ];
-    }
-
-    private getMockAlmacenes(): Ubicacion[] {
-        return [
-            { id: '10', nombre: 'Almacén Central Herramientas', codigo: 'ALM-HER-CENT', tipo: 'almacen' },
-            { id: '11', nombre: 'Almacén Hangar 1 - VVI', codigo: 'ALM-H1-VVI', tipo: 'almacen' },
-            { id: '12', nombre: 'Almacén Hangar 2 - VVI', codigo: 'ALM-H2-VVI', tipo: 'almacen' },
-            { id: '13', nombre: 'Almacén Línea de Vuelo LPB', codigo: 'ALM-LIN-LPB', tipo: 'almacen' },
-            { id: '14', nombre: 'Almacén Taller Aviónica', codigo: 'ALM-AVI', tipo: 'almacen' }
-        ];
-    }
 
     // ========================================================================
     // GETTER METHODS
@@ -452,7 +411,7 @@ export class RetornoTraspasoComponent implements OnInit, OnDestroy {
         const exitReason = this.tipoOrigenActivo === 'BASE' ? 'base_send' : 'transfer';
 
         this.movementService.getMovements({
-            movement_type: 'exit',
+            type: this.tipoOrigenActivo === 'BASE' ? 'exit' : 'transfer',
             exit_reason: exitReason,
             destination_warehouse_id: ubicacionOrigen.id,
             status: 'completed'
@@ -461,32 +420,50 @@ export class RetornoTraspasoComponent implements OnInit, OnDestroy {
             finalize(() => this.isSearching = false)
         ).subscribe({
             next: (data) => {
-                if (data && data.length > 0) {
-                    const filtered = this.tipoOrigenActivo === 'BASE'
-                        ? data.filter((m: any) => m.tipoEnvio === 'EVENTUAL' || !m.tipoEnvio)
-                        : data;
+                const filtered = (data || []).filter((m: any) =>
+                    m.type === 'transfer' || m.type === 'exit'
+                );
 
-                    // Expandir: una fila por item dentro de cada movimiento
-                    const expanded: TraspasoItem[] = [];
-                    filtered.forEach((movement: any) => {
-                        const items = (movement.items && movement.items.length > 0)
-                            ? movement.items
-                            : [null];
-                        items.forEach((item: any) => {
-                            expanded.push(this.mapMovementToTraspasoItem(movement, item, expanded.length));
-                        });
-                    });
-                    this.allData = expanded;
-                } else {
-                    this.loadMockData(ubicacionOrigen);
+                if (filtered.length === 0) {
+                    this.allData = [];
+                    this.dataSource = [];
+                    this.showMessage(`No hay movimientos activos para ${ubicacionOrigen.nombre}`, 'warning');
+                    return;
                 }
-                this.dataSource = [...this.allData];
-                this.showMessage(`Carga completa: ${this.dataSource.length} herramientas en ${ubicacionOrigen.nombre}`, 'success');
+
+                forkJoin(
+                    filtered.map((mov: any) =>
+                        this.movementService.getMovementItems(Number(mov.id_movement)).pipe(
+                            map((items: any[]) => ({ mov, items }))
+                        )
+                    )
+                ).pipe(takeUntil(this._unsubscribeAll)).subscribe({
+                    next: (results: any[]) => {
+                        const expanded: TraspasoItem[] = [];
+                        results.forEach(({ mov, items }) => {
+                            if (items && items.length > 0) {
+                                items.forEach((item: any) => {
+                                    expanded.push(this.mapMovementToTraspasoItem(mov, item, expanded.length));
+                                });
+                            }
+                        });
+                        this.allData = expanded;
+                        this.dataSource = [...this.allData];
+                        if (this.allData.length === 0) {
+                            this.showMessage(`No hay herramientas en ${ubicacionOrigen.nombre}`, 'warning');
+                        } else {
+                            this.showMessage(`Carga completa: ${this.dataSource.length} herramienta(s) en ${ubicacionOrigen.nombre}`, 'success');
+                        }
+                    },
+                    error: (err) => {
+                        this.dataSource = [];
+                        this.showMessage('Error al cargar items: ' + (err?.message || 'Error de conexión'), 'error');
+                    }
+                });
             },
-            error: () => {
-                this.loadMockData(ubicacionOrigen);
-                this.dataSource = [...this.allData];
-                this.showMessage('Datos de prueba cargados', 'info');
+            error: (err) => {
+                this.dataSource = [];
+                this.showMessage('Error al buscar movimientos: ' + (err?.message || 'Error de conexión'), 'error');
             }
         });
     }
@@ -494,18 +471,18 @@ export class RetornoTraspasoComponent implements OnInit, OnDestroy {
     private mapMovementToTraspasoItem(movement: any, item: any, index: number): TraspasoItem {
         const fechaEnvio = movement.date || '';
         return {
-            id: movement.id || `temp-${index}`,
+            id: movement.id_movement || movement.id || `temp-${index}`,
             filaObs: index + 1,
-            toolId: item?.toolId || item?.tool?.id,
-            codigo: item?.tool?.code || item?.codigo || '',
-            descripcion: item?.tool?.description || item?.descripcion || '',
-            pn: item?.tool?.partNumber || item?.pn || '',
-            sn: item?.tool?.serialNumber || item?.sn || '',
-            marca: item?.tool?.brand || item?.marca || '',
-            cantidadEnviada: item?.quantity || 1,
-            cantidadRetorna: item?.quantity || 1,
+            toolId: String(item?.tool_id || item?.toolId || item?.tool?.id || ''),
+            codigo: item?.tool?.code || item?.code || item?.codigo || '',
+            descripcion: item?.tool?.description || item?.description || item?.descripcion || '',
+            pn: item?.tool?.part_number || item?.part_number || item?.pn || '',
+            sn: item?.tool?.serial_number || item?.serial_number || item?.sn || '',
+            marca: item?.tool?.brand || item?.brand || item?.marca || '',
+            cantidadEnviada: Number(item?.quantity) || 1,
+            cantidadRetorna: Number(item?.quantity) || 1,
             fechaEnvio: fechaEnvio,
-            nroNotaSalida: movement.movementNumber || '',
+            nroNotaSalida: movement.movement_number || movement.movementNumber || '',
             ubicacionOrigen: movement.destinationWarehouse?.name || '',
             tipoEnvio: movement.tipoEnvio || movement.sendType || (this.tipoOrigenActivo === 'BASE' ? 'EVENTUAL' : 'TRASPASO'),
             ordenTrabajo: movement.workOrder || movement.ordenTrabajo || '',
@@ -520,123 +497,6 @@ export class RetornoTraspasoComponent implements OnInit, OnDestroy {
         };
     }
 
-    private loadMockData(ubicacion: Ubicacion): void {
-        const prefix = this.tipoOrigenActivo === 'BASE' ? 'COMAT' : 'TRP';
-
-        if (this.tipoOrigenActivo === 'BASE') {
-            this.allData = this.getMockDataBase(ubicacion, prefix);
-        } else {
-            this.allData = this.getMockDataTraspaso(ubicacion, prefix);
-        }
-    }
-
-    private getMockDataBase(ubicacion: Ubicacion, prefix: string): TraspasoItem[] {
-        return [
-            {
-                id: '1', filaObs: 1, codigo: 'BOA-H-0456',
-                descripcion: 'Torquímetro Digital 50-250 lb-ft SNAP-ON',
-                pn: 'TECH3FR250', sn: 'TQ-2024-0456', marca: 'SNAP-ON',
-                cantidadEnviada: 1, cantidadRetorna: 1,
-                fechaEnvio: '2026-01-10',
-                nroNotaSalida: `${prefix}-${ubicacion.codigo}-001/2026`,
-                ubicacionOrigen: ubicacion.nombre, tipoEnvio: 'EVENTUAL',
-                ordenTrabajo: 'OT-2026-0045', matriculaAeronave: 'CP-3108',
-                motivoEnvio: 'Check C - Inspección tren de aterrizaje',
-                estadoSalida: 'DISPONIBLE',
-                diasFuera: this.calcularDiasFuera('2026-01-10'),
-                selected: false, expanded: false, condicion: '', observacionItem: ''
-            },
-            {
-                id: '2', filaObs: 2, codigo: 'BOA-H-0234',
-                descripcion: 'Multímetro Digital FLUKE 87V',
-                pn: 'FLUKE-87V', sn: 'FL-2023-0234', marca: 'FLUKE',
-                cantidadEnviada: 1, cantidadRetorna: 1,
-                fechaEnvio: '2026-01-15',
-                nroNotaSalida: `${prefix}-${ubicacion.codigo}-002/2026`,
-                ubicacionOrigen: ubicacion.nombre, tipoEnvio: 'AOG',
-                ordenTrabajo: 'OT-2026-0067', matriculaAeronave: 'CP-3105',
-                motivoEnvio: 'AOG - Falla sistema eléctrico',
-                estadoSalida: 'DISPONIBLE',
-                diasFuera: this.calcularDiasFuera('2026-01-15'),
-                selected: false, expanded: false, condicion: '', observacionItem: ''
-            },
-            {
-                id: '3', filaObs: 3, codigo: 'BOA-H-0789',
-                descripcion: 'Juego de Llaves Allen Métrico (1.5-10mm)',
-                pn: 'FACOM-89SH.JP9A', sn: 'JLA-2024-0789', marca: 'FACOM',
-                cantidadEnviada: 1, cantidadRetorna: 1,
-                fechaEnvio: '2026-01-08',
-                nroNotaSalida: `${prefix}-${ubicacion.codigo}-003/2026`,
-                ubicacionOrigen: ubicacion.nombre, tipoEnvio: 'EVENTUAL',
-                ordenTrabajo: 'OT-2026-0032', matriculaAeronave: 'CP-3102',
-                motivoEnvio: 'Mantenimiento programado',
-                estadoSalida: 'DISPONIBLE',
-                diasFuera: this.calcularDiasFuera('2026-01-08'),
-                selected: false, expanded: false, condicion: '', observacionItem: ''
-            },
-            {
-                id: '4', filaObs: 4, codigo: 'BOA-H-0567',
-                descripcion: 'Boroscopio Flexible 3m OLYMPUS',
-                pn: 'IPLEX-NX', sn: 'BR-2023-0567', marca: 'OLYMPUS',
-                cantidadEnviada: 1, cantidadRetorna: 1,
-                fechaEnvio: '2026-01-12',
-                nroNotaSalida: `${prefix}-${ubicacion.codigo}-004/2026`,
-                ubicacionOrigen: ubicacion.nombre, tipoEnvio: 'EVENTUAL',
-                ordenTrabajo: 'OT-2026-0055', matriculaAeronave: 'CP-3108',
-                motivoEnvio: 'Inspección interna motor',
-                estadoSalida: 'DISPONIBLE',
-                diasFuera: this.calcularDiasFuera('2026-01-12'),
-                selected: false, expanded: false, condicion: '', observacionItem: ''
-            }
-        ];
-    }
-
-    private getMockDataTraspaso(ubicacion: Ubicacion, prefix: string): TraspasoItem[] {
-        return [
-            {
-                id: '1', filaObs: 1, codigo: 'BOA-H-0901',
-                descripcion: 'Kit de Conectores Deutsch',
-                pn: 'DT-KIT-500', sn: 'KC-2024-0901', marca: 'DEUTSCH',
-                cantidadEnviada: 3, cantidadRetorna: 3,
-                fechaEnvio: '2026-01-03',
-                nroNotaSalida: `${prefix}-${ubicacion.codigo}-001/2026`,
-                ubicacionOrigen: ubicacion.nombre, tipoEnvio: 'TRASPASO',
-                ordenTrabajo: '', matriculaAeronave: '',
-                motivoEnvio: 'Redistribución de inventario',
-                estadoSalida: 'DISPONIBLE',
-                diasFuera: this.calcularDiasFuera('2026-01-03'),
-                selected: false, expanded: false, condicion: '', observacionItem: ''
-            },
-            {
-                id: '2', filaObs: 2, codigo: 'BOA-H-0902',
-                descripcion: 'Pelacables Automático KNIPEX',
-                pn: '12-62-180', sn: 'PK-2024-0902', marca: 'KNIPEX',
-                cantidadEnviada: 5, cantidadRetorna: 5,
-                fechaEnvio: '2026-01-07',
-                nroNotaSalida: `${prefix}-${ubicacion.codigo}-002/2026`,
-                ubicacionOrigen: ubicacion.nombre, tipoEnvio: 'TRASPASO',
-                ordenTrabajo: '', matriculaAeronave: '',
-                motivoEnvio: 'Transferencia a taller aviónica',
-                estadoSalida: 'DISPONIBLE',
-                diasFuera: this.calcularDiasFuera('2026-01-07'),
-                selected: false, expanded: false, condicion: '', observacionItem: ''
-            },
-            {
-                id: '3', filaObs: 3, codigo: 'BOA-H-0903',
-                descripcion: 'Juego de Destornilladores Aislados WIHA',
-                pn: 'WIHA-35389', sn: 'JD-2024-0903', marca: 'WIHA',
-                cantidadEnviada: 2, cantidadRetorna: 2,
-                fechaEnvio: '2026-01-10',
-                nroNotaSalida: `${prefix}-${ubicacion.codigo}-003/2026`,
-                ubicacionOrigen: ubicacion.nombre, tipoEnvio: 'TRASPASO',
-                ordenTrabajo: '', matriculaAeronave: '',
-                motivoEnvio: 'Consolidación de herramientas',
-                estadoSalida: 'DISPONIBLE',
-                diasFuera: this.calcularDiasFuera('2026-01-10'),
-                selected: false, expanded: false, condicion: '', observacionItem: ''
-            }
-        ];
-    }
 
     private clearData(): void {
         this.allData = [];
@@ -898,7 +758,6 @@ export class RetornoTraspasoComponent implements OnInit, OnDestroy {
                 if (this.dialogRef) this.dialogRef.close({ success: true, data: result });
             },
             error: (err) => {
-                console.error(err);
                 this.showMessage('Error al registrar el retorno: ' + (err?.message || ''), 'error');
             }
         });

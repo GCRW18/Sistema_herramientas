@@ -16,7 +16,7 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatAutocompleteModule } from '@angular/material/autocomplete';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { DragDropModule } from '@angular/cdk/drag-drop';
-import { Subject, takeUntil, finalize, debounceTime, distinctUntilChanged } from 'rxjs';
+import { Subject, takeUntil, finalize, debounceTime, distinctUntilChanged, forkJoin, map } from 'rxjs';
 import { MovementService } from '../../../../core/services/movement.service';
 
 interface Tercero {
@@ -169,16 +169,7 @@ export class DevolucionTercerosComponent implements OnInit, OnDestroy {
         'fechaSalida', 'diasFuera', 'cantidad', 'proyecto', 'condicion', 'observaciones'
     ];
 
-    terceros: Tercero[] = [
-        { id: '1', nit: '1023456017', razonSocial: 'SAMCO S.R.L.', nombreContacto: 'Ing. Roberto Flores', telefono: '33445566', email: 'rflores@samco.com.bo', tipoEmpresa: 'CALIBRACION' },
-        { id: '2', nit: '1034567028', razonSocial: 'AEROTEC BOLIVIA S.A.', nombreContacto: 'Lic. Carmen Vargas', telefono: '22334455', email: 'cvargas@aerotec.bo', tipoEmpresa: 'REPARACION' },
-        { id: '3', nit: '1045678039', razonSocial: 'SERVITEC INDUSTRIAL', nombreContacto: 'Tec. Mario Condori', telefono: '77889900', email: 'mcondori@servitec.bo', tipoEmpresa: 'MANTENIMIENTO' },
-        { id: '4', nit: '1056789040', razonSocial: 'METROLOGIA ANDINA S.R.L.', nombreContacto: 'Ing. Patricia Mamani', telefono: '66778899', email: 'pmamani@metroandina.com', tipoEmpresa: 'CALIBRACION' },
-        { id: '5', nit: '1067890051', razonSocial: 'TALLER AERONAVAL LTDA.', nombreContacto: 'Cap. Juan Perez', telefono: '44556677', email: 'jperez@aeronaval.bo', tipoEmpresa: 'REPARACION' },
-        { id: '6', nit: '1078901062', razonSocial: 'PRECISION TOOLS BOLIVIA', nombreContacto: 'Ing. Carlos Mendez', telefono: '55667788', email: 'cmendez@precisiontools.bo', tipoEmpresa: 'CALIBRACION' },
-        { id: '7', nit: '1089012073', razonSocial: 'HYDRAULICS & PNEUMATICS S.A.', nombreContacto: 'Tec. Luis Gutierrez', telefono: '33557799', email: 'lgutierrez@hydpneu.bo', tipoEmpresa: 'REPARACION' },
-        { id: '8', nit: '1090123084', razonSocial: 'AVIONICS SERVICE CENTER', nombreContacto: 'Ing. Ana Quispe', telefono: '77335599', email: 'aquispe@avionics.bo', tipoEmpresa: 'MANTENIMIENTO' }
-    ];
+    terceros: Tercero[] = [];
 
     tercerosFiltrados: Tercero[] = [];
 
@@ -202,30 +193,30 @@ export class DevolucionTercerosComponent implements OnInit, OnDestroy {
 
     ngOnInit(): void {
         this.initForm();
-        this.tercerosFiltrados = [...this.terceros];
         this.loadTerceros();
     }
 
     private loadTerceros(): void {
+        this.isLoading = true;
         this.movementService.getTerceros().pipe(
-            takeUntil(this._unsubscribeAll)
+            takeUntil(this._unsubscribeAll),
+            finalize(() => this.isLoading = false)
         ).subscribe({
             next: (data) => {
-                if (data && data.length > 0) {
-                    this.terceros = data.map((t: any) => ({
-                        id:             t.id            || t.id_customer  || '',
-                        nit:            t.nit           || t.tax_id       || '',
-                        razonSocial:    t.razonSocial   || t.nombre       || t.name || '',
-                        nombreContacto: t.nombreContacto || t.contact_name || '',
-                        telefono:       t.telefono      || t.phone        || '',
-                        email:          t.email         || '',
-                        tipoEmpresa:    t.tipoEmpresa   || t.type         || 'PROVEEDOR'
-                    }));
-                    this.tercerosFiltrados = [...this.terceros];
-                }
-                // Si falla o viene vacío, conserva la lista hardcodeada como fallback
+                this.terceros = (data || []).map((t: any) => ({
+                    id:             t.id            || t.id_customer  || '',
+                    nit:            t.nit           || t.tax_id       || '',
+                    razonSocial:    t.razonSocial   || t.nombre       || t.name || '',
+                    nombreContacto: t.nombreContacto || t.contact_name || '',
+                    telefono:       t.telefono      || t.phone        || '',
+                    email:          t.email         || '',
+                    tipoEmpresa:    t.tipoEmpresa   || t.type         || 'PROVEEDOR'
+                }));
+                this.tercerosFiltrados = [...this.terceros];
             },
-            error: () => {} // fallback silencioso a la lista hardcodeada
+            error: (err) => {
+                this.showMessage('Error al cargar la lista de terceros: ' + (err?.message || 'Error de conexión'), 'error');
+            }
         });
     }
 
@@ -336,127 +327,68 @@ export class DevolucionTercerosComponent implements OnInit, OnDestroy {
 
         // Buscar préstamos externos activos para este tercero
         this.movementService.getMovements({
-            type: 'PRESTAMO_EXTERNO',
-            status: 'ACTIVO'
+            type: 'loan',
+            status: 'approved'
         }).pipe(
             takeUntil(this._unsubscribeAll),
             finalize(() => this.isSearching = false)
         ).subscribe({
             next: (data) => {
                 const filtered = (data || []).filter((mov: any) =>
-                    mov.customer === tercero.razonSocial ||
-                    mov.recipient === tercero.razonSocial
+                    mov.type === 'loan' &&
+                    (mov.customer === tercero.razonSocial || mov.recipient === tercero.razonSocial)
                 );
 
-                if (filtered.length > 0) {
-                    this.dataSource = filtered.flatMap((mov: any) => {
-                        const items = mov.items || [];
-                        return items.map((item: any) => ({
-                            id: this.itemIdCounter++,
-                            fila: 0,
-                            toolId: item.toolId || item.tool?.id || item.tool_id || '',
-                            codigo: item.tool?.code || item.codigo || '',
-                            pn: item.tool?.partNumber || item.pn || '',
-                            descripcion: item.tool?.description || item.descripcion || '',
-                            marca: item.tool?.brand || item.marca || '',
-                            fechaSalida: mov.date || '',
-                            diasFuera: mov.date ? this.calcularDiasFuera(mov.date) : 0,
-                            cantidad: item.quantity || 1,
-                            nroNotaSalida: mov.movementNumber || mov.movement_number || '',
-                            tipoContrato: tercero.tipoEmpresa,
-                            proyecto: mov.work_order_number || '',
-                            estado: 'EN_TERCERO',
-                            condicionDevolucion: '',
-                            observaciones: '',
-                            selected: false
-                        }));
-                    });
-                    this.dataSource.forEach((item, idx) => item.fila = idx + 1);
-                    this.showMessage(`Se encontraron ${this.dataSource.length} herramienta(s) en ${tercero.razonSocial}`, 'success');
-                } else {
-                    this.loadMockData(tercero);
+                if (filtered.length === 0) {
+                    this.dataSource = [];
+                    this.showMessage(`No hay préstamos activos para ${tercero.razonSocial}`, 'warning');
+                    return;
                 }
+
+                // Segunda llamada: obtener items de cada movimiento
+                forkJoin(
+                    filtered.map((mov: any) =>
+                        this.movementService.getMovementItems(Number(mov.id_movement)).pipe(
+                            map((items: any[]) => ({ mov, items }))
+                        )
+                    )
+                ).pipe(takeUntil(this._unsubscribeAll)).subscribe({
+                    next: (results: any[]) => {
+                        this.dataSource = results.flatMap(({ mov, items }) =>
+                            items.map((item: any) => ({
+                                id: this.itemIdCounter++,
+                                fila: 0,
+                                toolId: String(item.tool_id || ''),
+                                codigo: item.tool?.code || item.code || '',
+                                pn: item.part_number || item.tool?.partNumber || '',
+                                descripcion: item.tool?.description || item.description || '',
+                                marca: item.tool?.brand || item.brand || '',
+                                fechaSalida: mov.date || '',
+                                diasFuera: mov.date ? this.calcularDiasFuera(mov.date) : 0,
+                                cantidad: Number(item.quantity) || 1,
+                                nroNotaSalida: mov.movement_number || '',
+                                tipoContrato: tercero.tipoEmpresa,
+                                proyecto: mov.work_order_number || '',
+                                estado: 'EN_TERCERO',
+                                condicionDevolucion: '',
+                                observaciones: item.notes || '',
+                                selected: false
+                            }))
+                        );
+                        this.dataSource.forEach((item, idx) => item.fila = idx + 1);
+                        this.showMessage(`Se encontraron ${this.dataSource.length} herramienta(s) en ${tercero.razonSocial}`, 'success');
+                    },
+                    error: (err) => {
+                        this.dataSource = [];
+                        this.showMessage('Error al cargar items: ' + (err?.message || 'Error de conexión'), 'error');
+                    }
+                });
             },
-            error: () => {
-                this.loadMockData(tercero);
+            error: (err) => {
+                this.dataSource = [];
+                this.showMessage('Error al buscar préstamos: ' + (err?.message || 'Error de conexión'), 'error');
             }
         });
-    }
-
-    private loadMockData(tercero: Tercero): void {
-        const mockDataByType: { [key: string]: DevolucionTerceroItem[] } = {
-            'CALIBRACION': [
-                {
-                    id: this.itemIdCounter++, fila: 1, codigo: 'BOA-H-0289', pn: 'TRQ-250-1000',
-                    descripcion: 'TORQUIMETRO DIGITAL 250-1000 LB/FT', marca: 'TOHNICHI',
-                    fechaSalida: '2025-01-05', diasFuera: this.calcularDiasFuera('2025-01-05'),
-                    cantidad: 1, nroNotaSalida: 'SAL-2025-045', tipoContrato: 'CALIBRACION',
-                    proyecto: 'CAL-2025-001', estado: 'EN_TERCERO', condicionDevolucion: '',
-                    observaciones: 'Calibración anual programada', selected: false
-                },
-                {
-                    id: this.itemIdCounter++, fila: 2, codigo: 'BOA-H-0523', pn: 'DG-CALIPER-6',
-                    descripcion: 'CALIBRADOR DIGITAL 6 PULGADAS', marca: 'MITUTOYO',
-                    fechaSalida: '2025-01-08', diasFuera: this.calcularDiasFuera('2025-01-08'),
-                    cantidad: 2, nroNotaSalida: 'SAL-2025-052', tipoContrato: 'CALIBRACION',
-                    proyecto: 'CAL-2025-001', estado: 'EN_TERCERO', condicionDevolucion: '',
-                    observaciones: 'Incluye certificado IBMETRO', selected: false
-                },
-                {
-                    id: this.itemIdCounter++, fila: 3, codigo: 'BOA-H-0856', pn: 'TRQ-50-250',
-                    descripcion: 'TORQUIMETRO CLICK 50-250 LB/IN', marca: 'SNAP-ON',
-                    fechaSalida: '2025-01-10', diasFuera: this.calcularDiasFuera('2025-01-10'),
-                    cantidad: 1, nroNotaSalida: 'SAL-2025-058', tipoContrato: 'CALIBRACION',
-                    proyecto: 'CAL-2025-002', estado: 'EN_TERCERO', condicionDevolucion: '',
-                    observaciones: '', selected: false
-                }
-            ],
-            'REPARACION': [
-                {
-                    id: this.itemIdCounter++, fila: 1, codigo: 'BOA-H-1189', pn: 'DRILL-90DEG',
-                    descripcion: 'TALADRO ANGULAR 90 GRADOS', marca: 'INGERSOLL RAND',
-                    fechaSalida: '2024-12-15', diasFuera: this.calcularDiasFuera('2024-12-15'),
-                    cantidad: 1, nroNotaSalida: 'SAL-2024-298', tipoContrato: 'REPARACION',
-                    proyecto: 'REP-2024-045', estado: 'EN_TERCERO', condicionDevolucion: '',
-                    observaciones: 'Cambio de rodamientos y sellos', selected: false
-                },
-                {
-                    id: this.itemIdCounter++, fila: 2, codigo: 'BOA-H-0745', pn: 'E32-101-550',
-                    descripcion: 'EXTRACTOR BEARING NLG A330', marca: 'AIRBUS GSE',
-                    fechaSalida: '2024-12-20', diasFuera: this.calcularDiasFuera('2024-12-20'),
-                    cantidad: 1, nroNotaSalida: 'SAL-2024-305', tipoContrato: 'REPARACION',
-                    proyecto: 'REP-2024-048', estado: 'EN_TERCERO', condicionDevolucion: '',
-                    observaciones: 'Daño estructural - Requiere reemplazo', selected: false
-                }
-            ],
-            'MANTENIMIENTO': [
-                {
-                    id: this.itemIdCounter++, fila: 1, codigo: 'BOA-H-1078', pn: 'RIVET-GUN-3X',
-                    descripcion: 'PISTOLA REMACHADORA NEUMATICA 3X', marca: 'ATLAS COPCO',
-                    fechaSalida: '2025-01-02', diasFuera: this.calcularDiasFuera('2025-01-02'),
-                    cantidad: 1, nroNotaSalida: 'SAL-2025-012', tipoContrato: 'MANTENIMIENTO',
-                    proyecto: 'MNT-2025-003', estado: 'EN_TERCERO', condicionDevolucion: '',
-                    observaciones: 'Mantenimiento preventivo anual', selected: false
-                },
-                {
-                    id: this.itemIdCounter++, fila: 2, codigo: 'BOA-H-0634', pn: 'HYD-PRESS-3000',
-                    descripcion: 'GATO HIDRAULICO 3 TON', marca: 'MALABAR',
-                    fechaSalida: '2025-01-03', diasFuera: this.calcularDiasFuera('2025-01-03'),
-                    cantidad: 1, nroNotaSalida: 'SAL-2025-015', tipoContrato: 'MANTENIMIENTO',
-                    proyecto: 'MNT-2025-003', estado: 'EN_TERCERO', condicionDevolucion: '',
-                    observaciones: 'Cambio de aceite, sello pendiente', selected: false
-                }
-            ]
-        };
-
-        const tipoKey = tercero.tipoEmpresa;
-        this.dataSource = mockDataByType[tipoKey] || mockDataByType['CALIBRACION'];
-
-        this.dataSource.forEach((item, index) => {
-            item.fila = index + 1;
-        });
-
-        this.showMessage(`Se encontraron ${this.dataSource.length} herramienta(s) en ${tercero.razonSocial}`, 'success');
     }
 
     toggleSelection(item: DevolucionTerceroItem): void {
@@ -550,10 +482,9 @@ export class DevolucionTercerosComponent implements OnInit, OnDestroy {
             return;
         }
 
-        // Validar que los items tienen ID real (no mock)
         const sinId = selectedItems.filter(i => !i.toolId || isNaN(Number(i.toolId)));
         if (sinId.length > 0) {
-            this.showMessage(`${sinId.length} herramienta(s) sin ID de sistema — consulte datos reales desde el API`, 'error');
+            this.showMessage(`${sinId.length} herramienta(s) no tienen ID de herramienta válido`, 'error');
             this.closeConfirmModal();
             return;
         }
@@ -591,7 +522,6 @@ export class DevolucionTercerosComponent implements OnInit, OnDestroy {
                 if (this.dialogRef) this.dialogRef.close({ success: true });
             },
             error: (err) => {
-                console.error('Error:', err);
                 this.showMessage(`Error al registrar la devolución: ${err?.message || ''}`, 'error');
             }
         });

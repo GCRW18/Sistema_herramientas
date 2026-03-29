@@ -45,7 +45,7 @@ export class MovementService {
 
         return from(this._api.post('herramientas/movements/listarMovements', params)).pipe(
             switchMap((response: any) => {
-                const movements = response?.data || [];
+                const movements = response?.datos || response?.data || [];
                 this._movements.next(movements);
                 return of(movements);
             })
@@ -62,7 +62,7 @@ export class MovementService {
             id_movement: id
         })).pipe(
             switchMap((response: any) => {
-                const movement = response?.data?.[0] || null;
+                const movement = response?.datos || response?.data?.[0] || null;
                 if (movement) {
                     this._movement.next(movement);
                 }
@@ -79,7 +79,7 @@ export class MovementService {
             tool_id: toolId
         })).pipe(
             switchMap((response: any) => {
-                return of(response?.data || []);
+                return of(response?.datos || response?.data || []);
             })
         );
     }
@@ -96,7 +96,7 @@ export class MovementService {
             movement_type: 'entry'
         })).pipe(
             switchMap((response: any) => {
-                return of(response?.data || []);
+                return of(response?.datos || response?.data || []);
             })
         );
     }
@@ -113,7 +113,7 @@ export class MovementService {
             movement_type: 'exit'
         })).pipe(
             switchMap((response: any) => {
-                return of(response?.data || []);
+                return of(response?.datos || response?.data || []);
             })
         );
     }
@@ -144,12 +144,16 @@ export class MovementService {
             }
         });
 
+        console.log('=== PAYLOAD SNAKE_CASE ENVIADO A insertarMovements ===', JSON.stringify(payload, null, 2));
+
         return from(this._api.post('herramientas/movements/insertarMovements', payload)).pipe(
             switchMap((response: any) => {
+                console.log('=== RESPUESTA insertarMovements ===', response);
                 if (response?.error) {
+                    console.error('=== ERROR EN RESPUESTA ===', response);
                     throw new Error(response.mensaje || 'Error al guardar el movimiento');
                 }
-                return of(response?.data || movement);
+                return of(response?.datos || response?.data || movement);
             })
         );
     }
@@ -193,7 +197,7 @@ export class MovementService {
             id_movement: id
         })).pipe(
             switchMap((response: any) => {
-                return of(response?.data || movement);
+                return of(response?.datos || response?.data || movement);
             })
         );
     }
@@ -206,7 +210,7 @@ export class MovementService {
             id_movement: id
         })).pipe(
             switchMap((response: any) => {
-                return of(response?.data || {});
+                return of(response?.datos || response?.data || {});
             })
         );
     }
@@ -219,7 +223,7 @@ export class MovementService {
             id_movement: id
         })).pipe(
             switchMap((response: any) => {
-                return of(response?.data || {});
+                return of(response?.datos || response?.data || {});
             })
         );
     }
@@ -233,7 +237,7 @@ export class MovementService {
             cancellation_reason: reason
         })).pipe(
             switchMap((response: any) => {
-                return of(response?.data || {});
+                return of(response?.datos || response?.data || {});
             })
         );
     }
@@ -246,7 +250,7 @@ export class MovementService {
             id_movement: id
         })).pipe(
             switchMap((response: any) => {
-                return of(response?.data?.[0] || {});
+                return of(response?.datos || response?.data?.[0] || {});
             })
         );
     }
@@ -266,7 +270,7 @@ export class MovementService {
             movement_type: 'entry'
         })).pipe(
             switchMap((response: any) => {
-                return of(response?.data || []);
+                return of(response?.datos || response?.data || []);
             })
         );
     }
@@ -280,7 +284,7 @@ export class MovementService {
             movement_type: 'entry'
         })).pipe(
             switchMap((response: any) => {
-                return of(response?.data || []);
+                return of(response?.datos || response?.data || []);
             })
         );
     }
@@ -295,7 +299,7 @@ export class MovementService {
         }
         return from(this._api.post('herramientas/movements/listarMovementssByStatus', params)).pipe(
             switchMap((response: any) => {
-                return of(response?.data || []);
+                return of(response?.datos || response?.data || []);
             })
         );
     }
@@ -310,7 +314,7 @@ export class MovementService {
         }
         return from(this._api.post('herramientas/movements/listPendingMovements', params)).pipe(
             switchMap((response: any) => {
-                return of(response?.data || []);
+                return of(response?.datos || response?.data || []);
             })
         );
     }
@@ -339,7 +343,7 @@ export class MovementService {
         return from(this._api.post('herramientas/movements/listarMovements', params)).pipe(
             switchMap((response: any) => {
                 return of({
-                    data: response?.data || [],
+                    data: response?.datos || response?.data || [],
                     total: response?.total || 0
                 });
             })
@@ -358,7 +362,7 @@ export class MovementService {
             start: 0,
             limit: 100
         })).pipe(
-            switchMap((response: any) => of((response?.data || []).map((s: any) => ({
+            switchMap((response: any) => of((response?.datos || response?.data || []).map((s: any) => ({
                 ...s,
                 id:     s.id     ?? s.id_supplier,
                 nombre: s.nombre ?? s.name,
@@ -377,7 +381,7 @@ export class MovementService {
             estado_reg: 'activo',
             ...filters
         })).pipe(
-            switchMap((response: any) => of(response?.data || []))
+            switchMap((response: any) => of(response?.datos || response?.data || []))
         );
     }
 
@@ -389,7 +393,7 @@ export class MovementService {
             start: 0,
             limit: 100
         })).pipe(
-            switchMap((response: any) => of((response?.data || []).map((w: any) => ({
+            switchMap((response: any) => of((response?.datos || response?.data || []).map((w: any) => ({
                 ...w,
                 id: w.id ?? w.id_warehouse,
                 nombre: w.nombre ?? w.name,
@@ -406,7 +410,7 @@ export class MovementService {
             start: 0,
             limit: 100
         })).pipe(
-            switchMap((response: any) => of(response?.data || []))
+            switchMap((response: any) => of(response?.datos || response?.data || []))
         );
     }
 
@@ -418,7 +422,7 @@ export class MovementService {
             start: 0,
             limit: 100
         })).pipe(
-            switchMap((response: any) => of(response?.data || []))
+            switchMap((response: any) => of(response?.datos || response?.data || []))
         );
     }
 
@@ -450,7 +454,7 @@ export class MovementService {
             dir: 'desc',
             movement_type: 'entry'
         })).pipe(
-            switchMap((response: any) => of(response?.data || []))
+            switchMap((response: any) => of(response?.datos || response?.data || []))
         );
     }
 
@@ -465,7 +469,7 @@ export class MovementService {
             dir: 'desc',
             movement_type: 'exit'
         })).pipe(
-            switchMap((response: any) => of(response?.data || []))
+            switchMap((response: any) => of(response?.datos || response?.data || []))
         );
     }
 
@@ -480,7 +484,7 @@ export class MovementService {
             dir: 'asc'
         })).pipe(
             switchMap((response: any) => {
-                const data = response?.data || [];
+                const data = response?.datos || response?.data || [];
                 // Map employee fields to the expected Funcionario shape
                 return of(data.map((emp: any) => ({
                     id:               emp.id_employee || emp.id,
@@ -508,7 +512,7 @@ export class MovementService {
             start: 0,
             limit: 100
         })).pipe(
-            switchMap((response: any) => of(response?.data || []))
+            switchMap((response: any) => of(response?.datos || response?.data || []))
         );
     }
 
@@ -521,7 +525,7 @@ export class MovementService {
             limit: 100
         })).pipe(
             switchMap((response: any) => {
-                const mapped = (response?.data || []).map((b: any) => ({
+                const mapped = (response?.datos || response?.data || response?.datos || []).map((b: any) => ({
                     ...b,
                     id: b.id ?? b.id_base,
                     nombre: b.nombre ?? b.name,
@@ -539,14 +543,27 @@ export class MovementService {
     }
 
     /**
-     * Get terceros/empresas externas list
+     * Get items of a specific movement
      */
-    getTerceros(): Observable<any[]> {
-        return from(this._api.post('herramientas/terceros/listar', {
+    getMovementItems(movementId: number): Observable<any[]> {
+        return from(this._api.post('herramientas/movements/listarMovementItems', {
+            movement_id: movementId,
             start: 0,
             limit: 100
         })).pipe(
-            switchMap((response: any) => of(response?.data || []))
+            switchMap((response: any) => of(response?.datos || response?.data || []))
+        );
+    }
+
+    /**
+     * Get terceros/empresas externas list
+     */
+    getTerceros(): Observable<any[]> {
+        return from(this._api.post('herramientas/customers/listarCustomers', {
+            start: 0,
+            limit: 100
+        })).pipe(
+            switchMap((response: any) => of(response?.datos || response?.data || []))
         );
     }
 
@@ -558,7 +575,7 @@ export class MovementService {
             start: 0,
             limit: 100
         })).pipe(
-            switchMap((response: any) => of((response?.data || []).map((w: any) => ({
+            switchMap((response: any) => of((response?.datos || response?.data || []).map((w: any) => ({
                 ...w,
                 id: w.id ?? w.id_warehouse,
                 nombre: w.nombre ?? w.name,
@@ -575,7 +592,7 @@ export class MovementService {
             start: 0,
             limit: 500
         })).pipe(
-            switchMap((response: any) => of((response?.data || []).map((f: any) => ({
+            switchMap((response: any) => of((response?.datos || response?.data || []).map((f: any) => ({
                 ...f,
                 id: f.id ?? f.id_employee,
                 nombre: f.nombre ?? f.full_name,
@@ -608,7 +625,7 @@ export class MovementService {
         }
 
         return from(this._api.post('herramientas/movements/listarMovements', params)).pipe(
-            switchMap((response: any) => of(response?.data || []))
+            switchMap((response: any) => of(response?.datos || response?.data || []))
         );
     }
 
@@ -621,7 +638,7 @@ export class MovementService {
             envio_id: envioId,
             retorno_id: retornoId
         })).pipe(
-            switchMap((response: any) => of(response?.data || {}))
+            switchMap((response: any) => of(response?.datos || response?.data || {}))
         );
     }
 
@@ -673,7 +690,7 @@ export class MovementService {
             limit: 100,
             dias_anticipacion: diasAnticipacion
         })).pipe(
-            switchMap((response: any) => of(response?.data || []))
+            switchMap((response: any) => of(response?.datos || response?.data || []))
         );
     }
 
@@ -714,7 +731,7 @@ export class MovementService {
             notes: data.notes,
             items: data.items
         })).pipe(
-            switchMap((response: any) => of(response?.data || {}))
+            switchMap((response: any) => of(response?.datos || response?.data || {}))
         );
     }
 
@@ -732,7 +749,7 @@ export class MovementService {
             returned: false,
             ...filters
         })).pipe(
-            switchMap((response: any) => of(response?.data || []))
+            switchMap((response: any) => of(response?.datos || response?.data || []))
         );
     }
 
@@ -743,7 +760,7 @@ export class MovementService {
         return from(this._api.post('herramientas/recepcionHerramientas/getConstanciaDevolucion', {
             id_movement: idMovement
         })).pipe(
-            switchMap((response: any) => of(response?.data?.[0] || {}))
+            switchMap((response: any) => of(response?.datos || response?.data?.[0] || {}))
         );
     }
 
@@ -754,7 +771,7 @@ export class MovementService {
         const year = new Date().getFullYear();
         return from(this._api.post('herramientas/recepcionHerramientas/getNextDevolucionNumber', {})).pipe(
             switchMap((response: any) => {
-                const num = response?.data?.[0]?.next_number || 1;
+                const num = response?.datos || response?.data?.[0]?.next_number || 1;
                 return of(`DR-${String(num).padStart(3, '0')}/${year}`);
             })
         );
@@ -774,7 +791,7 @@ export class MovementService {
             tool_id: toolId,
             ...data
         })).pipe(
-            switchMap((response: any) => of(response?.data || {}))
+            switchMap((response: any) => of(response?.datos || response?.data || {}))
         );
     }
 
@@ -787,7 +804,7 @@ export class MovementService {
             start: 0,
             limit: 50
         })).pipe(
-            switchMap((response: any) => of(response?.data || []))
+            switchMap((response: any) => of(response?.datos || response?.data || []))
         );
     }
 
@@ -816,7 +833,7 @@ export class MovementService {
         return from(this._api.post('herramientas/movements/registrarPrestamo', data)).pipe(
             switchMap((response: any) => {
                 if (response?.error) throw new Error(response.mensaje || 'Error al registrar el préstamo');
-                return of(response?.data?.[0] || response?.data || {});
+                return of((response?.datos || response?.data)?.[0] || response?.datos || response?.data || {});
             })
         );
     }
@@ -850,7 +867,7 @@ export class MovementService {
         return from(this._api.post('herramientas/movements/registrarPrestamoMultiple', data)).pipe(
             switchMap((response: any) => {
                 if (response?.error) throw new Error(response.mensaje || 'Error al registrar el préstamo');
-                return of(response?.data?.[0] || response?.data || {});
+                return of((response?.datos || response?.data)?.[0] || response?.datos || response?.data || {});
             })
         );
     }
@@ -877,7 +894,7 @@ export class MovementService {
         return from(this._api.post('herramientas/movements/registrarDevolucionPrestamo', data)).pipe(
             switchMap((response: any) => {
                 if (response?.error) throw new Error(response.mensaje || 'Error al registrar la devolución');
-                return of(response?.data?.[0] || response?.data || {});
+                return of((response?.datos || response?.data)?.[0] || response?.datos || response?.data || {});
             })
         );
     }
@@ -904,7 +921,7 @@ export class MovementService {
         return from(this._api.post('herramientas/movements/registrarRetornoBase', data)).pipe(
             switchMap((response: any) => {
                 if (response?.error) throw new Error(response.mensaje || 'Error al registrar el retorno');
-                return of(response?.data?.[0] || response?.data || {});
+                return of((response?.datos || response?.data)?.[0] || response?.datos || response?.data || {});
             })
         );
     }
@@ -931,7 +948,7 @@ export class MovementService {
                 if (response?.error) {
                     throw new Error(response.mensaje || 'Error al registrar el traspaso');
                 }
-                return of(response?.data?.[0] || response?.data || {});
+                return of((response?.datos || response?.data)?.[0] || response?.datos || response?.data || {});
             })
         );
     }
@@ -963,7 +980,7 @@ export class MovementService {
                 if (response?.error) {
                     throw new Error(response.mensaje || 'Error al registrar el envío');
                 }
-                return of(response?.data?.[0] || response?.data || {});
+                return of((response?.datos || response?.data)?.[0] || response?.datos || response?.data || {});
             })
         );
     }

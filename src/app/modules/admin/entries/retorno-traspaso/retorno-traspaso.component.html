@@ -403,7 +403,7 @@
                                             </div>
                                             <div class="text-center">
                                                 <label class="text-[10px] font-black uppercase text-gray-600 dark:text-gray-400 block mb-1">Retorna *</label>
-                                                <input type="number" [(ngModel)]="item.cantidadRetorna"
+                                                <input type="number" [(ngModel)]="item.cantidadRetorna" [ngModelOptions]="{standalone: true}"
                                                        (blur)="validateCantidadRetorna(item)"
                                                        min="1" [max]="item.cantidadEnviada"
                                                        class="w-20 h-10 text-center text-lg font-black border-2 border-black rounded bg-white text-black focus:shadow-[3px_3px_0px_0px_#000] outline-none">
@@ -427,7 +427,7 @@
                                                 {{ item.condicion === 'FALTANTE' ? 'Motivo del Faltante' : 'Descripción del Daño' }} *
                                             </span>
                                         </div>
-                                        <textarea [(ngModel)]="item.observacionItem"
+                                        <textarea [(ngModel)]="item.observacionItem" [ngModelOptions]="{standalone: true}"
                                                   [placeholder]="item.condicion === 'FALTANTE' ? 'Detalle el motivo del faltante...' : 'Describa el daño encontrado...'"
                                                   rows="2"
                                                   class="w-full text-xs font-bold border-2 border-black dark:border-slate-600 rounded px-2 py-2 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[3px_3px_0px_0px_#000] transition-shadow outline-none placeholder:text-gray-400 resize-none"
@@ -437,7 +437,7 @@
                                     <!-- GENERAL OBSERVATIONS -->
                                     <div *ngIf="item.condicion && item.condicion !== 'DAÑADO' && item.condicion !== 'FALTANTE'" class="mb-3">
                                         <label class="text-[10px] font-black uppercase text-black dark:text-gray-400 mb-1 block">Observaciones (opcional)</label>
-                                        <input type="text" [(ngModel)]="item.observacionItem"
+                                        <input type="text" [(ngModel)]="item.observacionItem" [ngModelOptions]="{standalone: true}"
                                                placeholder="Observaciones adicionales..."
                                                class="w-full h-9 text-xs border-2 border-gray-300 dark:border-slate-600 rounded px-2 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[2px_2px_0px_0px_#ccc] transition-shadow outline-none placeholder:text-gray-400">
                                     </div>
