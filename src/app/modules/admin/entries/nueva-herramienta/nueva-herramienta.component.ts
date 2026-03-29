@@ -675,7 +675,7 @@ export class NuevaHerramientaComponent implements OnInit, OnDestroy {
 
         const compraData: CreateMovement = {
             type: 'entry',
-            status: 'COMPLETADO',
+            status: 'completed',
             entryReason: 'purchase',
             date: recepcion.fechaIngreso,
             movementNumber: recepcion.nroCmr,
@@ -715,11 +715,15 @@ export class NuevaHerramientaComponent implements OnInit, OnDestroy {
             }))
         };
 
+        console.log('=== PAYLOAD ENVIADO AL BACKEND ===');
+        console.log('compraData (camelCase):', JSON.stringify(compraData, null, 2));
+
         this.movementService.createEntry(compraData).pipe(
             takeUntil(this._unsubscribeAll),
             finalize(() => this.isSaving = false)
         ).subscribe({
             next: (response) => {
+                console.log('=== RESPUESTA EXITOSA ===', response);
                 this.showMessage('Entrada de compra registrada exitosamente', 'success');
                 if (this.dialogRef) {
                     this.dialogRef.close({ success: true, data: response });
@@ -728,7 +732,10 @@ export class NuevaHerramientaComponent implements OnInit, OnDestroy {
                 }
             },
             error: (err) => {
-                console.error('Error al guardar:', err);
+                console.error('=== ERROR COMPLETO ===', err);
+                console.error('err.error:', err?.error);
+                console.error('mensaje:', err?.error?.mensaje || err?.error?.detalle?.mensaje);
+                console.error('consulta SQL:', err?.error?.detalle?.consulta || err?.error?.consulta);
                 this.showMessage('Error al registrar la entrada. Intente nuevamente.', 'error');
             }
         });

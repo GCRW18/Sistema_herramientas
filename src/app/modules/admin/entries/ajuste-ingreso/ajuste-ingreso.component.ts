@@ -531,7 +531,7 @@ export class AjusteIngresoComponent implements OnInit, OnDestroy {
 
         const ajusteData: CreateMovement = {
             type: 'entry',
-            status: 'COMPLETADO',
+            status: 'completed',
             entryReason: 'adjustment',
             date: formData.fecha,
             movementNumber: formData.documento || '',
