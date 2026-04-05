@@ -234,20 +234,6 @@ export class EnvioOtrasBasesComponent implements OnInit, OnDestroy {
         this.isLoading = true;
         this.dataSource.set([]);
 
-        this.movementService.getWarehouses().pipe(
-            takeUntil(this.destroy$)
-        ).subscribe({
-            next: (warehouses) => {
-                this.bases = warehouses.map((w: any) => ({
-                    id: w.id_warehouse ?? w.id,
-                    codigo: w.code ?? w.codigo,
-                    nombre: w.name ?? w.nombre,
-                    ciudad: w.name ?? w.nombre
-                }));
-            },
-            error: () => this.showMessage('Error al cargar almacenes', 'error')
-        });
-
         this.movementService.getPersonal().pipe(
             takeUntil(this.destroy$),
             finalize(() => this.isLoading = false)
@@ -330,9 +316,7 @@ export class EnvioOtrasBasesComponent implements OnInit, OnDestroy {
     }
 
     getBaseNombre(codigo: string): string {
-        if (!codigo) return '';
-        const base = this.bases.find(b => b.codigo === codigo);
-        return base ? `${base.codigo} - ${base.ciudad}` : codigo;
+        return codigo || '';
     }
 
     getTipoEnvioLabel(tipo: string): string {
@@ -476,10 +460,17 @@ export class EnvioOtrasBasesComponent implements OnInit, OnDestroy {
         const baseOrigenObj   = this.bases.find(b => b.codigo === fv.baseOrigen);
         const baseDestinoObj  = this.bases.find(b => b.codigo === fv.baseDestino);
 
+        const conditionMap: Record<string, string> = {
+            'SERVICEABLE':    'good',
+            'NUEVO':          'new',
+            'EN_CALIBRACION': 'fair',
+            'UNSERVICEABLE':  'poor',
+            'EN_REPARACION':  'poor'
+        };
         const itemsJson = JSON.stringify(items.map(i => ({
             tool_id:               i.toolId ?? 0,
             quantity:              i.cantidad,
-            condition_on_movement: i.estado,
+            condition_on_movement: conditionMap[i.estado] || 'good',
             serial_number:         i.serialNumber || '',
             part_number:           i.partNumber   || '',
             notes:                 i.observaciones || ''
@@ -650,7 +641,9 @@ export class EnvioOtrasBasesComponent implements OnInit, OnDestroy {
   .sig-line { border-top: 1px solid #000; padding-top: 3px; font-size: 9px; }
   .footer { text-align: center; margin-top: 10px; font-size: 7.5px; color: #888; border-top: 1px dotted #ccc; padding-top: 4px; }
   @media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
-</style></head><body>
+</style>
+<script>window.onload = function() { setTimeout(function(){ window.print(); }, 500); };</script>
+</head><body>
   <div class="top">
     <div style="font-weight:900;font-size:11px">BoAMM &nbsp; OAM145#114 &nbsp; N-114</div>
     <div style="text-align:right">
@@ -701,7 +694,5 @@ export class EnvioOtrasBasesComponent implements OnInit, OnDestroy {
 
         w.document.write(html);
         w.document.close();
-        w.focus();
-        setTimeout(() => w.print(), 600);
     }
 }

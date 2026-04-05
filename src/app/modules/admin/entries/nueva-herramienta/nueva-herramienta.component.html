@@ -339,15 +339,13 @@
                             </div>
                             <div class="col-span-3">
                                 <label class="text-[10px] font-black uppercase text-gray-600 dark:text-gray-400 mb-1 block">Marca *</label>
-                                <div class="relative">
-                                    <select formControlName="marca"
-                                            class="w-full h-8 text-xs font-bold border-2 rounded-lg pl-2 pr-6 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[2px_2px_0px_0px_#000] transition-shadow outline-none appearance-none cursor-pointer"
-                                            [class]="hasHerramientaError('marca','required') ? 'border-red-500' : 'border-black dark:border-slate-600'">
-                                        <option value="" disabled>-- Marca --</option>
-                                        <option *ngFor="let m of marcas" [value]="m.value">{{ m.label }}</option>
-                                    </select>
-                                    <mat-icon class="absolute right-1 top-1/2 -translate-y-1/2 text-gray-500 !text-sm pointer-events-none">expand_more</mat-icon>
-                                </div>
+                                <input type="text" formControlName="marca" placeholder="Ej: ASHCROFT"
+                                       [matAutocomplete]="marcaAuto"
+                                       class="w-full h-8 text-xs font-bold border-2 rounded-lg px-2 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[2px_2px_0px_0px_#000] transition-shadow outline-none placeholder:text-gray-400 uppercase"
+                                       [class]="hasHerramientaError('marca','required') ? 'border-red-500' : 'border-black dark:border-slate-600'">
+                                <mat-autocomplete #marcaAuto="matAutocomplete">
+                                    <mat-option *ngFor="let m of marcasFiltradas" [value]="m">{{ m }}</mat-option>
+                                </mat-autocomplete>
                             </div>
                             <div class="col-span-1">
                                 <label class="text-[10px] font-black uppercase text-gray-600 dark:text-gray-400 mb-1 block">Cant. *</label>

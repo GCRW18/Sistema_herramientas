@@ -19,6 +19,7 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { Subject, takeUntil, finalize, forkJoin } from 'rxjs';
 import { QuarantineService } from '../../../../core/services/quarantine.service';
+import { MovementService } from '../../../../core/services/movement.service';
 
 // Interfaces
 interface BajaItem {
@@ -184,34 +185,30 @@ export class BajaComponent implements OnInit {
     private quarantineService = inject(QuarantineService);
 
     private _unsubscribeAll = new Subject<void>();
+    private movementService = inject(MovementService);
 
     // Formulario
     bajaForm!: FormGroup;
 
     // Signals
     dataSource = signal<BajaItem[]>([]);
-    nroNota = signal('BJA-001/2026');
+    nroNota = signal('---');
 
     // Estados
     isLoading = false;
     isSaving = false;
 
-    // Datos estáticos
-    usuarios: Usuario[] = [
-        { value: 'SISTEMASBOA', nombre: 'DEPARTAMENTO SISTEMAS BOLIVIA', cargo: 'DPTO. SISTEMAS' },
-        { value: 'ALMACEN', nombre: 'ALMACEN CENTRAL BOA', cargo: 'ALMACEN' },
-        { value: 'MANTENIMIENTO', nombre: 'MANTENIMIENTO AERONAVES', cargo: 'MTO. LINEA' },
-        { value: 'CONTROL_CALIDAD', nombre: 'CONTROL DE CALIDAD', cargo: 'INSPECTOR' },
-        { value: 'LOGISTICA', nombre: 'LOGÍSTICA', cargo: 'COORDINADOR' }
-    ];
+    // Personal desde API
+    usuarios: Usuario[] = [];
 
     unidades: string[] = ['CBB', 'LPB', 'SRE', 'TJA', 'SRZ', 'CIJ', 'TDD', 'GYA', 'RIB', 'BYC'];
 
     estados: Estado[] = [
-        { value: 'PENDIENTE', label: 'PENDIENTE', color: 'yellow', icon: 'pending' },
-        { value: 'EN_PROCESO', label: 'EN PROCESO', color: 'blue', icon: 'engineering' },
-        { value: 'APROBADO', label: 'APROBADO', color: 'green', icon: 'check_circle' },
-        { value: 'RECHAZADO', label: 'RECHAZADO', color: 'red', icon: 'cancel' }
+        { value: 'requested', label: 'SOLICITADO',  color: 'yellow', icon: 'pending' },
+        { value: 'approved',  label: 'APROBADO',    color: 'green',  icon: 'check_circle' },
+        { value: 'rejected',  label: 'RECHAZADO',   color: 'red',    icon: 'cancel' },
+        { value: 'executed',  label: 'EJECUTADO',   color: 'blue',   icon: 'engineering' },
+        { value: 'cancelled', label: 'CANCELADO',   color: 'gray',   icon: 'block' }
     ];
 
     constructor() {
@@ -220,7 +217,7 @@ export class BajaComponent implements OnInit {
 
     ngOnInit(): void {
         this.initForm();
-        this.generateNroNota();
+        this.cargarPersonal();
     }
 
     ngOnDestroy(): void {
@@ -245,7 +242,9 @@ export class BajaComponent implements OnInit {
             fecha: [today, Validators.required],
             hora: [currentTime, Validators.required],
             verificadoPor: [''],
-            estado: ['PENDIENTE', Validators.required],
+            estado: ['requested', Validators.required],
+            motivo: ['other', Validators.required],
+            disposalMethod: ['other'],
             inspector: [''],
             unidad: [null],
             autorizadoPor: [''],
@@ -293,11 +292,16 @@ export class BajaComponent implements OnInit {
         return `${hours}:${minutes}`;
     }
 
-    private generateNroNota(): void {
-        const year = new Date().getFullYear();
-        // Simular correlativo - En producción viene del backend
-        const correlativo = Math.floor(Math.random() * 100) + 1;
-        this.nroNota.set(`BJA-${correlativo.toString().padStart(3, '0')}/${year}`);
+    private cargarPersonal(): void {
+        this.movementService.getPersonal().pipe(takeUntil(this._unsubscribeAll)).subscribe({
+            next: (personal) => {
+                this.usuarios = personal.map((p: any) => ({
+                    value:  String(p.id_employee ?? p.id ?? ''),
+                    nombre: [p.nombre ?? '', p.apellido_paterno ?? '', p.apellido_materno ?? ''].filter(Boolean).join(' '),
+                    cargo:  p.cargo ?? ''
+                }));
+            }
+        });
     }
 
     async openHerramientaABaja(): Promise<void> {
@@ -466,15 +470,14 @@ export class BajaComponent implements OnInit {
 
         const calls = items.map(item => {
             const payload: any = {
-                record_number:         this.nroNota(),
-                status:                fv.estado   ?? 'PENDIENTE',
-                reason:                item.marca  || 'BAJA',
-                reason_description:    fv.observaciones || '',
-                condition_description: item.marca  || '',
-                request_date:          fv.fecha,
-                requested_by_name:     usuario?.nombre ?? fv.procesadoPor ?? '',
-                authorized_by_name:    fv.autorizadoPor ?? '',
-                notes:                 fv.observaciones ?? ''
+                status:             fv.estado          ?? 'requested',
+                reason:             fv.motivo          ?? 'other',
+                reason_description: fv.observaciones   || '',
+                disposal_method:    fv.disposalMethod  ?? 'other',
+                request_date:       fv.fecha,
+                requested_by_name:  usuario?.nombre    ?? fv.procesadoPor ?? '',
+                authorized_by_name: fv.autorizadoPor   ?? '',
+                notes:              fv.observaciones   ?? ''
             };
             if (item.toolId && item.toolId > 0) payload['tool_id'] = item.toolId;
             return this.quarantineService.createDecommission(payload);
@@ -485,9 +488,9 @@ export class BajaComponent implements OnInit {
             takeUntil(this._unsubscribeAll)
         ).subscribe({
             next: (results: any[]) => {
-                console.log('✅ Bajas registradas:', results);
-                // Generar reporte
-                this.generarReporteBaja({ nroNota: this.nroNota(), ...fv, herramientas: items });
+                const nro = results[0]?.decommission_number || results[0]?.record_number || 'BJA';
+                this.nroNota.set(nro);
+                this.generarReporteBaja({ nroNota: nro, ...fv, herramientas: items });
                 this.showMessage(`Baja ${this.nroNota()} procesada exitosamente`, 'success');
 
                 // Navegar después de éxito
@@ -726,18 +729,10 @@ export class BajaComponent implements OnInit {
 </body>
 </html>`;
 
-        printWindow.document.write(htmlContent);
+        const printHtml = htmlContent.replace('</body>', '<script>window.onload=function(){setTimeout(function(){window.print();},500);};<\/script></body>');
+        printWindow.document.write(printHtml);
         printWindow.document.close();
         printWindow.focus();
-
-        setTimeout(() => {
-            try {
-                printWindow.print();
-            } catch (e) {
-                console.error('Error al imprimir:', e);
-                this.showMessage('Error al generar el reporte', 'error');
-            }
-        }, 500);
     }
 
     // Helpers para validación

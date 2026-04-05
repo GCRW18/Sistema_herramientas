@@ -549,6 +549,7 @@ ${this.observations ? `<div class="box" style="margin-bottom:15px"><strong>Obser
     <div class="sig"><div class="sig-line">Aprobado por (Jefatura)<br><span style="font-weight:400;font-size:10px">&nbsp;</span></div></div>
 </div>
 <div class="footer">Documento generado por el Sistema de Gestión de Herramientas - BOA | ${today}</div>
+<script>window.onload=function(){setTimeout(function(){window.print();},500);};<\/script>
 </body></html>`;
 
         const win = window.open('', '_blank');
@@ -556,7 +557,6 @@ ${this.observations ? `<div class="box" style="margin-bottom:15px"><strong>Obser
         win.document.write(html);
         win.document.close();
         win.focus();
-        setTimeout(() => win.print(), 500);
     }
 
     getStatusLabel(status: string): string {

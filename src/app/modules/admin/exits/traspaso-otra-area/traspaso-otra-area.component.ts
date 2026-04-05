@@ -290,10 +290,18 @@ export class TraspasoOtraAreaComponent implements OnInit, OnDestroy {
         const fv    = this.transferForm.getRawValue();
         const items = this.dataSource();
 
+        const conditionMap: Record<string, string> = {
+            'SERVICEABLE':    'good',
+            'NUEVO':          'new',
+            'EN_CALIBRACION': 'fair',
+            'UNSERVICEABLE':  'poor',
+            'EN_REPARACION':  'poor'
+        };
+
         const itemsJson = JSON.stringify(items.map(i => ({
             tool_id:               i.toolId,
             quantity:              i.cantidad,
-            condition_on_movement: i.estadoFisico || 'SERVICEABLE',
+            condition_on_movement: conditionMap[i.estadoFisico] || 'good',
             serial_number:         i.serialNumber || '',
             part_number:           i.partNumber   || '',
             notes:                 i.contenido    || ''
@@ -307,10 +315,10 @@ export class TraspasoOtraAreaComponent implements OnInit, OnDestroy {
             time:                 fv.hora,
             responsible_person:   responsibleName,
             department:           department,
-            exit_reason:          fv.tipoTraspaso,
+            exit_reason:          'area_transfer',
             authorized_by:        fv.nroLicencia,
             notes:                fv.observaciones ?? '',
-            general_observations: `Base: ${fv.base} | Cargo: ${fv.cargo} | Licencia: ${fv.nroLicencia}`,
+            general_observations: `Tipo: ${fv.tipoTraspaso} | Base: ${fv.base} | Cargo: ${fv.cargo} | Licencia: ${fv.nroLicencia}`,
             items_json:           itemsJson
         };
 
@@ -439,8 +447,6 @@ export class TraspasoOtraAreaComponent implements OnInit, OnDestroy {
         if (!w) { this.showMessage('Permita ventanas emergentes para imprimir', 'warning'); return; }
         w.document.write(this.buildMGH109Html(nro, fv, items));
         w.document.close();
-        w.focus();
-        setTimeout(() => w.print(), 600);
     }
 
     private buildMGH109Html(nro: string, fv: any, items: TransferItem[]): string {
@@ -488,7 +494,9 @@ export class TraspasoOtraAreaComponent implements OnInit, OnDestroy {
   .sig-line { border-top: 1px solid #000; padding-top: 3px; font-size: 8.5px; }
   .footer { text-align: center; margin-top: 10px; font-size: 7.5px; color: #888; border-top: 1px dotted #ccc; padding-top: 4px; }
   @media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
-</style></head><body>
+</style>
+<script>window.onload = function() { setTimeout(function(){ window.print(); }, 500); };</script>
+</head><body>
   <div class="top">
     <div style="font-weight:900;font-size:11px">BoAMM &nbsp; OAM145# N-014</div>
     <div style="font-size:13px;font-weight:900;text-align:center">

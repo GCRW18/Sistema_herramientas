@@ -517,6 +517,7 @@
                                         <label class="text-[8px] font-black uppercase text-gray-600 dark:text-gray-400 mb-0.5 block">Buscar Herramienta</label>
                                         <div class="relative">
                                             <input type="text" formControlName="buscar"
+                                                   [matAutocomplete]="autoHerramienta"
                                                    (input)="onBuscarHerramientaExternal($any($event.target).value)"
                                                    placeholder="Código, Nombre, P/N o Marca..."
                                                    class="w-full h-6 text-[11px] font-bold border-2 border-black dark:border-slate-600 rounded pl-5 pr-2 bg-white dark:bg-[#0F172AFF] text-black dark:text-white outline-none placeholder:text-gray-400">

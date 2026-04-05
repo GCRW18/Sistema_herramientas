@@ -74,7 +74,7 @@ export class QuarantineService {
         return from(this._api.post('herramientas/quarantines/insertQuarantine', record)).pipe(
             switchMap((response: any) => {
                 if (response?.error) throw new Error(response.mensaje || 'Error al registrar cuarentena');
-                return of(response?.data?.[0] || response?.data || response || record);
+                return of(response?.datos?.[0] || response?.datos || response || record);
             })
         );
     }
@@ -179,7 +179,7 @@ export class QuarantineService {
         return from(this._api.post('herramientas/decommissions/insertDecommission', record)).pipe(
             switchMap((response: any) => {
                 if (response?.error) throw new Error(response.mensaje || 'Error al registrar baja');
-                return of(response?.data?.[0] || response?.data || response || record);
+                return of(response?.datos?.[0] || response?.datos || response || record);
             })
         );
     }

@@ -73,7 +73,7 @@ export class ToolService {
 
         return from(this._api.post('herramientas/tools/listTools', params)).pipe(
             switchMap((response: any) => {
-                const tools = response?.data || [];
+                const tools = response?.datos || response?.data || [];
                 this._tools.next(tools);
                 return of(tools);
             })

@@ -253,6 +253,26 @@
                                         </div>
                                     </div>
                                 </div>
+                                <!-- Motivo -->
+                                <div>
+                                    <label class="text-[8px] font-black uppercase text-gray-500 dark:text-gray-400">Motivo de Cuarentena *</label>
+                                    <div class="relative">
+                                        <select formControlName="motivo"
+                                                class="w-full h-7 text-[10px] font-bold border-2 border-black rounded pl-5 pr-0.5 bg-white dark:bg-[#0F172AFF] text-black dark:text-white outline-none appearance-none cursor-pointer"
+                                                [class.border-red-500]="hasError('motivo', 'required')">
+                                            <option value="quality_issue">Problema de Calidad</option>
+                                            <option value="calibration_failed">Falla de Calibración</option>
+                                            <option value="damage_suspected">Daño Sospechado</option>
+                                            <option value="investigation">Investigación</option>
+                                            <option value="contamination">Contaminación</option>
+                                            <option value="expired_calibration">Calibración Vencida</option>
+                                            <option value="operational_failure">Falla Operacional</option>
+                                            <option value="physical_damage">Daño Físico</option>
+                                            <option value="other">Otro</option>
+                                        </select>
+                                        <mat-icon class="absolute left-0.5 top-1/2 -translate-y-1/2 text-black dark:text-white !text-xs">warning</mat-icon>
+                                    </div>
+                                </div>
                                 <!-- Descripción -->
                                 <div>
                                     <label class="text-[8px] font-black uppercase text-gray-500 dark:text-gray-400">Descripción del Problema *</label>

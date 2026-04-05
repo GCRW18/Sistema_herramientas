@@ -207,7 +207,7 @@ export class DevolucionTercerosComponent implements OnInit, OnDestroy {
                     id:             t.id            || t.id_customer  || '',
                     nit:            t.nit           || t.tax_id       || '',
                     razonSocial:    t.razonSocial   || t.nombre       || t.name || '',
-                    nombreContacto: t.nombreContacto || t.contact_name || '',
+                    nombreContacto: t.nombreContacto || t.contact_name || t.contact_person || '',
                     telefono:       t.telefono      || t.phone        || '',
                     email:          t.email         || '',
                     tipoEmpresa:    t.tipoEmpresa   || t.type         || 'PROVEEDOR'
@@ -588,8 +588,10 @@ export class DevolucionTercerosComponent implements OnInit, OnDestroy {
   .sig-ttl { font-weight: 900; font-size: 9px; text-transform: uppercase; margin-bottom: 26px; }
   .sig-line { border-top: 1px solid #000; padding-top: 3px; font-size: 8.5px; }
   .footer { text-align: center; margin-top: 10px; font-size: 7.5px; color: #888; border-top: 1px dotted #ccc; padding-top: 4px; }
-  @media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
-</style></head><body>
+  @media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } .no-print { display: none; } }
+</style>
+<script>window.onload = function() { setTimeout(function(){ window.print(); }, 500); };</script>
+</head><body>
   <div class="top">
     <div style="font-weight:900;font-size:11px">BoAMM &nbsp; OAM145# N-114</div>
     <div style="text-align:right">
@@ -642,7 +644,5 @@ export class DevolucionTercerosComponent implements OnInit, OnDestroy {
 
         w.document.write(html);
         w.document.close();
-        w.focus();
-        setTimeout(() => w.print(), 600);
     }
 }

@@ -53,10 +53,6 @@
                         <p class="font-black text-xs text-yellow-700 dark:text-yellow-400">{{ getTipoAjusteLabel(ajusteForm.value.tipoAjuste) }}</p>
                     </div>
                     <div>
-                        <span class="text-[9px] font-black uppercase text-gray-500 dark:text-gray-400 block">Almacén</span>
-                        <p class="font-bold text-black dark:text-white text-xs">{{ getAlmacenLabel(ajusteForm.value.almacen) }}</p>
-                    </div>
-                    <div>
                         <span class="text-[9px] font-black uppercase text-gray-500 dark:text-gray-400 block">Realizado por</span>
                         <p class="font-bold text-black dark:text-white text-xs truncate">{{ getRealizadoPorNombre() }}</p>
                     </div>
@@ -195,18 +191,6 @@
                                 </div>
                             </div>
 
-                            <!-- Almacén -->
-                            <div>
-                                <label class="text-[9px] font-black uppercase text-gray-600 dark:text-gray-400 mb-0.5 block">Almacén *</label>
-                                <div class="relative">
-                                    <select formControlName="almacen"
-                                            class="w-full h-8 text-xs font-bold border-2 border-black dark:border-slate-600 rounded pl-2 pr-6 bg-white dark:bg-[#0F172AFF] text-black dark:text-white outline-none appearance-none cursor-pointer"
-                                            [class.border-red-500]="hasError('almacen','required')">
-                                        <option *ngFor="let alm of almacenes" [value]="alm.value">{{ alm.label }}</option>
-                                    </select>
-                                    <mat-icon class="absolute right-1 top-1/2 -translate-y-1/2 text-gray-500 !text-sm pointer-events-none">expand_more</mat-icon>
-                                </div>
-                            </div>
 
                             <!-- Documento -->
                             <div>

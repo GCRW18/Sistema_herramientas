@@ -179,11 +179,8 @@
                             <div>
                                 <label class="text-[8px] font-black uppercase text-gray-600 dark:text-gray-400 mb-0.5 block">Base Origen</label>
                                 <div class="relative">
-                                    <select formControlName="baseOrigen"
-                                            class="w-full h-6 text-[11px] font-bold border-2 border-black dark:border-slate-600 rounded pl-5 pr-2 bg-white dark:bg-[#0F172AFF] text-black dark:text-white outline-none appearance-none cursor-pointer">
-                                        <option value="">-- Seleccionar --</option>
-                                        <option *ngFor="let base of bases" [value]="base.codigo">{{ base.codigo }} - {{ base.ciudad }}</option>
-                                    </select>
+                                    <input formControlName="baseOrigen" type="text" placeholder="Ej: BOG, LPB, CBB"
+                                           class="w-full h-6 text-[11px] font-bold border-2 border-black dark:border-slate-600 rounded pl-5 pr-2 bg-white dark:bg-[#0F172AFF] text-black dark:text-white outline-none" />
                                     <mat-icon class="absolute left-1 top-1/2 -translate-y-1/2 text-gray-500 !text-xs">flight</mat-icon>
                                 </div>
                             </div>
@@ -192,15 +189,12 @@
                             <div>
                                 <label class="text-[8px] font-black uppercase text-gray-600 dark:text-gray-400 mb-0.5 block">Base Destino *</label>
                                 <div class="relative">
-                                    <select formControlName="baseDestino"
-                                            class="w-full h-6 text-[11px] font-bold border-2 border-black dark:border-slate-600 rounded pl-5 pr-2 bg-white dark:bg-[#0F172AFF] text-black dark:text-white outline-none appearance-none cursor-pointer"
-                                            [class.border-red-500]="hasError('baseDestino', 'required')">
-                                        <option value="">-- Seleccionar --</option>
-                                        <option *ngFor="let base of bases" [value]="base.codigo">{{ base.codigo }} - {{ base.ciudad }}</option>
-                                    </select>
+                                    <input formControlName="baseDestino" type="text" placeholder="Ej: BOG, LPB, CBB"
+                                           class="w-full h-6 text-[11px] font-bold border-2 border-black dark:border-slate-600 rounded pl-5 pr-2 bg-white dark:bg-[#0F172AFF] text-black dark:text-white outline-none"
+                                           [class.border-red-500]="hasError('baseDestino', 'required')" />
                                     <mat-icon class="absolute left-1 top-1/2 -translate-y-1/2 text-gray-500 !text-xs">flight_land</mat-icon>
                                 </div>
-                                <span *ngIf="hasError('baseDestino', 'required')" class="text-[8px] text-red-600 font-bold mt-0.5 block">Seleccione base destino</span>
+                                <span *ngIf="hasError('baseDestino', 'required')" class="text-[8px] text-red-600 font-bold mt-0.5 block">Ingrese la base destino</span>
                             </div>
 
                             <!-- Tipo Envío + Prioridad -->

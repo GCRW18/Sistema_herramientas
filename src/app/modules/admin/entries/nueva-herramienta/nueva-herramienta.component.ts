@@ -220,22 +220,9 @@ export class NuevaHerramientaComponent implements OnInit, OnDestroy {
         { value: 'EQUIPO_SOPORTE', label: 'EQUIPO DE SOPORTE EN TIERRA' }
     ];
 
-    // Marcas comunes de herramientas aeronáuticas
-    marcas = [
-        { value: 'SNAP-ON', label: 'SNAP-ON' },
-        { value: 'STANLEY', label: 'STANLEY' },
-        { value: 'FLUKE', label: 'FLUKE' },
-        { value: 'MITUTOYO', label: 'MITUTOYO' },
-        { value: 'STARRETT', label: 'STARRETT' },
-        { value: 'WIHA', label: 'WIHA' },
-        { value: 'BOEING', label: 'BOEING' },
-        { value: 'AIRBUS', label: 'AIRBUS' },
-        { value: 'CDI', label: 'CDI TORQUE' },
-        { value: 'GEDORE', label: 'GEDORE' },
-        { value: 'FACOM', label: 'FACOM' },
-        { value: 'KNIPEX', label: 'KNIPEX' },
-        { value: 'OTRO', label: 'OTRO' }
-    ];
+    // Marcas cargadas desde la BD (ttools.brand)
+    marcas: string[] = [];
+    marcasFiltradas: string[] = [];
 
     // Niveles de criticidad (del Excel)
     nivelesCriticidad = [
@@ -249,23 +236,8 @@ export class NuevaHerramientaComponent implements OnInit, OnDestroy {
         { value: 'LOCAL', label: 'LOCAL' }
     ];
 
-    // Ubicaciones predefinidas (basado en estructura de almacén BoA)
-    ubicaciones = [
-        { value: 'ESTANTE-A1', label: 'Estante A - Nivel 1' },
-        { value: 'ESTANTE-A2', label: 'Estante A - Nivel 2' },
-        { value: 'ESTANTE-A3', label: 'Estante A - Nivel 3' },
-        { value: 'ESTANTE-B1', label: 'Estante B - Nivel 1' },
-        { value: 'ESTANTE-B2', label: 'Estante B - Nivel 2' },
-        { value: 'ESTANTE-B3', label: 'Estante B - Nivel 3' },
-        { value: 'ESTANTE-C1', label: 'Estante C - Nivel 1' },
-        { value: 'ESTANTE-C2', label: 'Estante C - Nivel 2' },
-        { value: 'VITRINA-1', label: 'Vitrina 1 - Precisión' },
-        { value: 'VITRINA-2', label: 'Vitrina 2 - Calibración' },
-        { value: 'PISO', label: 'Piso - Equipos Grandes' }
-    ];
-
-    // Correlativo para código BOA (simulado)
-    private ultimoCorrelativo = 1200;
+    // Correlativo BOA cargado desde la BD
+    private ultimoCorrelativo = 0;
 
     constructor() {}
 
@@ -333,6 +305,15 @@ export class NuevaHerramientaComponent implements OnInit, OnDestroy {
             this.filtrarProveedores(value);
         });
 
+        // Filtrar marcas con autocomplete
+        this.herramientaForm.get('marca')?.valueChanges.pipe(
+            takeUntil(this._unsubscribeAll),
+            debounceTime(200),
+            distinctUntilChanged()
+        ).subscribe(value => {
+            this.filtrarMarcas(value);
+        });
+
         // Validación condicional de calibración
         this.herramientaForm.get('requiereCalibracion')?.valueChanges.pipe(
             takeUntil(this._unsubscribeAll)
@@ -394,21 +375,31 @@ export class NuevaHerramientaComponent implements OnInit, OnDestroy {
                 this.proveedoresFiltrados = [...this.proveedores];
             },
             error: () => {
-                // Proveedores de herramientas aeronáuticas (datos mock realistas)
-                this.proveedores = [
-                    { id: '1', nombre: 'Snap-On Industrial Bolivia', nit: '1023456017', direccion: 'Av. Blanco Galindo Km 5, Cochabamba', telefono: '+591-4-4358900' },
-                    { id: '2', nombre: 'Boeing Distribution Services', nit: '1025896321', direccion: 'Miami, FL - USA', telefono: '+1-305-5551234' },
-                    { id: '3', nombre: 'Airbus Americas', nit: '1027896541', direccion: 'Houston, TX - USA', telefono: '+1-713-5559876' },
-                    { id: '4', nombre: 'IMSA Bolivia S.A.', nit: '1015987654', direccion: 'Zona Industrial El Alto', telefono: '+591-2-2824500' },
-                    { id: '5', nombre: 'Ferretería Industrial FERBO', nit: '1018754321', direccion: 'Av. Montes 1250, La Paz', telefono: '+591-2-2371500' },
-                    { id: '6', nombre: 'AVIALL Services (Boeing Company)', nit: '1029654123', direccion: 'Dallas, TX - USA', telefono: '+1-972-5558541' },
-                    { id: '7', nombre: 'Pratt & Whitney Parts', nit: '1031257896', direccion: 'East Hartford, CT - USA', telefono: '+1-860-5553200' },
-                    { id: '8', nombre: 'HEICO Aerospace', nit: '1033698521', direccion: 'Hollywood, FL - USA', telefono: '+1-954-5556200' },
-                    { id: '9', nombre: 'Fluke Bolivia (Representante)', nit: '1012589746', direccion: 'Calle Comercio 456, Santa Cruz', telefono: '+591-3-3365200' },
-                    { id: '10', nombre: 'Mitutoyo Sudamérica', nit: '1035478962', direccion: 'São Paulo, Brasil', telefono: '+55-11-55123000' }
-                ];
-                this.proveedoresFiltrados = [...this.proveedores];
+                this.proveedores = [];
+                this.proveedoresFiltrados = [];
             }
+        });
+
+        // Cargar marcas desde la BD
+        this.movementService.getDistinctBrands().pipe(
+            takeUntil(this._unsubscribeAll)
+        ).subscribe({
+            next: (brands) => {
+                this.marcas = brands;
+                this.marcasFiltradas = [...brands];
+            },
+            error: () => {
+                this.marcas = [];
+                this.marcasFiltradas = [];
+            }
+        });
+
+        // Cargar último correlativo BOA desde la BD
+        this.movementService.getLastBoaCode().pipe(
+            takeUntil(this._unsubscribeAll)
+        ).subscribe({
+            next: (num) => { this.ultimoCorrelativo = num; },
+            error: () => {}
         });
     }
 
@@ -434,6 +425,15 @@ export class NuevaHerramientaComponent implements OnInit, OnDestroy {
             p.nombre.toLowerCase().includes(filtro) ||
             (p.nit && p.nit.includes(filtro))
         );
+    }
+
+    filtrarMarcas(valor: string): void {
+        if (!valor || typeof valor !== 'string') {
+            this.marcasFiltradas = [...this.marcas];
+            return;
+        }
+        const filtro = valor.toLowerCase();
+        this.marcasFiltradas = this.marcas.filter(m => m.toLowerCase().includes(filtro));
     }
 
     displayFuncionario(funcionario: Funcionario): string {
@@ -672,59 +672,45 @@ export class NuevaHerramientaComponent implements OnInit, OnDestroy {
         const recepcion = this.recepcionForm.value;
         const funcionario = recepcion.funcionarioRecibe;
         const proveedor = recepcion.proveedor;
+        const proveedorNombre = typeof proveedor === 'object' ? proveedor?.nombre : proveedor || '';
 
-        const compraData: CreateMovement = {
-            type: 'entry',
-            status: 'completed',
-            entryReason: 'purchase',
-            date: recepcion.fechaIngreso,
-            movementNumber: recepcion.nroCmr,
-            invoiceNumber: recepcion.nroFactura || '',
-            purchaseOrder: recepcion.ordenCompra || '',
-            supplier: typeof proveedor === 'object' ? proveedor?.nombre : proveedor || '',
-            notes: recepcion.observaciones || '',
-            responsiblePerson: funcionario?.nombreCompleto || '',
-            items: this.dataSource.map(h => ({
-                toolCode: h.codigoBoa,
-                codigo: h.codigoBoa,
-                pn: h.pn,
-                sn: h.sn,
-                descripcion: h.descripcion,
-                quantity: h.cantidad,
-                cantidad: h.cantidad,
-                unidadMedida: h.unidadMedida,
-                estado: h.estado,
-                unitCost: h.costoUnitario,
-                costoUnitario: h.costoUnitario,
-                salePrice: h.precioVenta,
-                precioVenta: h.precioVenta,
-                ubicacion: h.ubicacion,
-                requiresCalibration: h.requiereCalibracion,
-                requiereCalibracion: h.requiereCalibracion,
-                calibrationInterval: h.intervaloCalibracion,
-                intervaloCalibracion: h.intervaloCalibracion,
-                calibrationDate: h.fechaCalibracion,
-                fechaCalibracion: h.fechaCalibracion,
-                certificateNumber: h.nroCertificado,
-                nroCertificado: h.nroCertificado,
-                // Campos adicionales del Excel
-                tipo: h.tipo,
-                marca: h.marca,
-                nivelCriticidad: h.nivelCriticidad,
-                fabricacion: h.fabricacion
-            }))
-        };
+        const itemsJson = JSON.stringify(this.dataSource.map(h => ({
+            code:                 h.codigoBoa,
+            name:                 h.descripcion,
+            description:          h.descripcion,
+            brand:                h.marca || '',
+            part_number:          h.pn || '',
+            serial_number:        h.sn || '',
+            quantity:             h.cantidad,
+            purchase_price:       h.costoUnitario || 0,
+            unit_of_measure:      h.unidadMedida || 'UNIDAD',
+            condition:            h.estado === 'NUEVO' ? 'new' : h.estado === 'REACONDICIONADO' ? 'fair' : 'good',
+            criticality_level:    h.nivelCriticidad || 'B',
+            manufacture_origin:   h.fabricacion || 'INTERNACIONAL',
+            requires_calibration: h.requiereCalibracion || false,
+            calibration_interval: h.intervaloCalibracion || null,
+            calibration_date:     h.fechaCalibracion || null,
+            certificate_number:   h.nroCertificado || '',
+            notes:                ''
+        })));
 
-        console.log('=== PAYLOAD ENVIADO AL BACKEND ===');
-        console.log('compraData (camelCase):', JSON.stringify(compraData, null, 2));
-
-        this.movementService.createEntry(compraData).pipe(
+        this.movementService.registrarNuevaCompra({
+            movement_number:    recepcion.nroCmr,
+            date:               recepcion.fechaIngreso,
+            responsible_person: funcionario?.nombreCompleto || '',
+            supplier:           proveedorNombre,
+            invoice_number:     recepcion.nroFactura || '',
+            purchase_order:     recepcion.ordenCompra || '',
+            notes:              recepcion.observaciones || '',
+            warehouse_id:       1,
+            items_json:         itemsJson
+        }).pipe(
             takeUntil(this._unsubscribeAll),
             finalize(() => this.isSaving = false)
         ).subscribe({
             next: (response) => {
-                console.log('=== RESPUESTA EXITOSA ===', response);
-                this.showMessage('Entrada de compra registrada exitosamente', 'success');
+                const nro = response?.movement_number || '---';
+                this.showMessage(`Ingreso registrado: ${nro}`, 'success');
                 if (this.dialogRef) {
                     this.dialogRef.close({ success: true, data: response });
                 } else {
@@ -732,11 +718,7 @@ export class NuevaHerramientaComponent implements OnInit, OnDestroy {
                 }
             },
             error: (err) => {
-                console.error('=== ERROR COMPLETO ===', err);
-                console.error('err.error:', err?.error);
-                console.error('mensaje:', err?.error?.mensaje || err?.error?.detalle?.mensaje);
-                console.error('consulta SQL:', err?.error?.detalle?.consulta || err?.error?.consulta);
-                this.showMessage('Error al registrar la entrada. Intente nuevamente.', 'error');
+                this.showMessage(err?.message || 'Error al registrar el ingreso', 'error');
             }
         });
     }

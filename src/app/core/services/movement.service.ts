@@ -375,10 +375,9 @@ export class MovementService {
      * Get herramientas disponibles
      */
     getHerramientasDisponibles(filters?: any): Observable<any[]> {
-        return from(this._api.post('herramientas/tools/listarTools', {
+        return from(this._api.post('herramientas/tools/listTools', {
             start: 0,
             limit: 500,
-            estado_reg: 'activo',
             ...filters
         })).pipe(
             switchMap((response: any) => of(response?.datos || response?.data || []))
@@ -602,6 +601,81 @@ export class MovementService {
         );
     }
 
+    /**
+     * Registrar ingreso de nuevas herramientas por compra.
+     * Crea el movimiento, los registros en ttools y los movement_items en una sola transacción.
+     * items_json: [{code, name, brand, part_number, serial_number, quantity, purchase_price,
+     *              unit_of_measure, condition, criticality_level, manufacture_origin,
+     *              requires_calibration, calibration_interval, calibration_date, certificate_number}]
+     */
+    registrarNuevaCompra(data: {
+        movement_number:     string;
+        date:                string;
+        responsible_person:  string;
+        supplier?:           string;
+        invoice_number?:     string;
+        purchase_order?:     string;
+        notes?:              string;
+        warehouse_id?:       number;
+        items_json:          string;
+    }): Observable<{ id_movement: number; movement_number: string }> {
+        return from(this._api.post('herramientas/movements/registrarNuevaCompra', data)).pipe(
+            switchMap((response: any) => {
+                if (response?.error) throw new Error(response.mensaje || 'Error al registrar compra');
+                const datos = response?.datos || response?.data || {};
+                if (datos?.error === 'true' || datos?.error === true) {
+                    throw new Error(datos.mensaje || 'Error en el servidor');
+                }
+                return of(datos);
+            })
+        );
+    }
+
+    /**
+     * Obtener marcas distintas registradas en ttools
+     */
+    getDistinctBrands(): Observable<string[]> {
+        return from(this._api.post('herramientas/tools/listarTools', {
+            start: 0,
+            limit: 500,
+            sort: 'brand',
+            dir: 'asc'
+        })).pipe(
+            switchMap((response: any) => {
+                const tools = response?.datos || response?.data || [];
+                const brands = [...new Set(
+                    tools.map((t: any) => t.brand || t.marca).filter((b: any) => b && b.trim())
+                )] as string[];
+                return of(brands.sort());
+            })
+        );
+    }
+
+    /**
+     * Obtener el número del último código BOA-H registrado en ttools
+     */
+    getLastBoaCode(): Observable<number> {
+        return from(this._api.post('herramientas/tools/listarTools', {
+            start: 0,
+            limit: 2000,
+            sort: 'id_tool',
+            dir: 'desc'
+        })).pipe(
+            switchMap((response: any) => {
+                const tools = response?.datos || response?.data || [];
+                let maxNum = 0;
+                tools.forEach((t: any) => {
+                    const match = String(t.code || '').match(/BOA-H-(\d+)/);
+                    if (match) {
+                        const num = parseInt(match[1], 10);
+                        if (num > maxNum) maxNum = num;
+                    }
+                });
+                return of(maxNum);
+            })
+        );
+    }
+
     // -----------------------------------------------------------------------------------------------------
     // @ Métodos específicos para flujo de CALIBRACIÓN
     // -----------------------------------------------------------------------------------------------------
@@ -809,6 +883,26 @@ export class MovementService {
     }
 
     /**
+     * Obtener préstamos activos (herramientas no devueltas) desde tloans + tloan_items + ttools.
+     * Retorna array de loans, cada uno con propiedad items[] conteniendo los datos de la herramienta.
+     */
+    getActiveLoans(): Observable<any[]> {
+        return from(this._api.post('herramientas/movements/listarLoans', {
+            start: 0, limit: 200, sort: 'id_loan', dir: 'desc'
+        })).pipe(
+            switchMap((response: any) => of(response?.datos || response?.data || []))
+        );
+    }
+
+    getActiveLoanItems(): Observable<any[]> {
+        return from(this._api.post('herramientas/movements/listarLoanItems', {
+            start: 0, limit: 1000, sort: 'id_loan_item', dir: 'asc'
+        })).pipe(
+            switchMap((response: any) => of(response?.datos || response?.data || []))
+        );
+    }
+
+    /**
      * Registrar préstamo de una herramienta a técnico interno o tercero.
      * Genera correlativo PT-N/YYYY (interno) o PTT-N/YYYY (externo).
      */
@@ -894,6 +988,28 @@ export class MovementService {
         return from(this._api.post('herramientas/movements/registrarDevolucionPrestamo', data)).pipe(
             switchMap((response: any) => {
                 if (response?.error) throw new Error(response.mensaje || 'Error al registrar la devolución');
+                return of((response?.datos || response?.data)?.[0] || response?.datos || response?.data || {});
+            })
+        );
+    }
+
+    /**
+     * Registrar ajuste de ingreso de herramientas existentes.
+     * Genera correlativo AI-N/YYYY, incrementa stock en ttools.
+     * items_json: JSON.stringify([{tool_id, quantity, condicion, notes}])
+     */
+    registrarAjusteIngreso(data: {
+        date: string;
+        time: string;
+        responsible_person: string;
+        authorized_by: string;
+        document_number?: string;
+        notes?: string;
+        items_json: string;
+    }): Observable<{ id_movement: number; movement_number: string }> {
+        return from(this._api.post('herramientas/movements/registrarAjusteIngreso', data)).pipe(
+            switchMap((response: any) => {
+                if (response?.error) throw new Error(response.mensaje || 'Error al registrar el ajuste');
                 return of((response?.datos || response?.data)?.[0] || response?.datos || response?.data || {});
             })
         );

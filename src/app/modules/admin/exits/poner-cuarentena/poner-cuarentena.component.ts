@@ -205,6 +205,7 @@ export class PonerCuarentenaComponent implements OnInit, OnDestroy {
             listaContenido: [''],
 
             // Detalles del reporte
+            motivo: ['other', Validators.required],
             nroReporteDiscrepancia: ['', Validators.required],
             cantidad: [1, [Validators.required, Validators.min(1)]],
             fecha: [today, Validators.required],
@@ -535,12 +536,11 @@ export class PonerCuarentenaComponent implements OnInit, OnDestroy {
         const payload: any = {
             record_number:      fv.nroReporteDiscrepancia,
             report_number:      fv.nroReporteDiscrepancia,
-            status:             'ACTIVE',
-            reason:             fv.estadoFisico   ?? 'UNKNOWN',
+            status:             'active',
+            reason:             fv.motivo         ?? 'other',
             reason_description: fv.descripcion    ?? '',
             start_date:         fv.fecha,
-            reported_by_name:   fv.nombreApellido || fv.realizadoPor || 'Admin Sistema',
-            notes:              fv.listaContenido || ''
+            reported_by_name:   fv.nombreApellido || fv.realizadoPor || 'Admin Sistema'
         };
 
         if (this.toolIdActual > 0)     payload['tool_id']          = this.toolIdActual;

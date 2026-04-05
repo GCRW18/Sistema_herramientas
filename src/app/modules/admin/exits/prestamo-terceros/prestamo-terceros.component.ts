@@ -39,6 +39,7 @@ interface InternalLoanItem {
 }
 
 interface ExternalLoanItem {
+    toolId: number;
     id: number;
     codigo: string;
     pn: string;
@@ -208,7 +209,24 @@ export class PrestamoTercerosComponent implements OnInit, OnDestroy {
     ];
 
     destinos = ['Servicios', 'Línea', 'Taller', 'Hangar', 'Rampa'];
+    private empresasCache: any[] = [];
     filteredEmpresas: any[] = [];
+    private herramientasCache: any[] = [];
+    filteredHerramientasExternal: any[] = [];
+
+    private readonly conditionMap: Record<string, string> = {
+        'SERVICEABLE':    'good',
+        'NUEVO':          'new',
+        'NEW':            'new',
+        'EN_CALIBRACION': 'fair',
+        'UNSERVICEABLE':  'damaged',
+        'EN_REPARACION':  'poor',
+        'BUENO':          'good',
+        'REGULAR':        'fair',
+        'MALO':           'poor',
+        'EXCELENTE':      'excellent',
+        'DAMAGED':        'damaged'
+    };
 
     ngOnInit(): void {
         this.initInternalForm();
@@ -216,6 +234,8 @@ export class PrestamoTercerosComponent implements OnInit, OnDestroy {
         this.initExternalToolForm();
         this.cargarPersonal();
         this.cargarAeronaves();
+        this.cargarTerceros();
+        this.cargarHerramientasExternas();
         this.setupFormListeners();
     }
 
@@ -270,6 +290,7 @@ export class PrestamoTercerosComponent implements OnInit, OnDestroy {
 
     private initExternalToolForm(): void {
         this.externalToolForm = this.fb.group({
+            id_tool:         [null],
             buscar:          [''],
             codigo:          [''],
             nombre:          [''],
@@ -292,6 +313,10 @@ export class PrestamoTercerosComponent implements OnInit, OnDestroy {
         this.internalForm.get('buscarTecnico')?.valueChanges
             .pipe(takeUntil(this.destroy$), debounceTime(200), distinctUntilChanged())
             .subscribe(value => this.filterTecnicos(value));
+
+        this.externalForm.get('buscarEmpresa')?.valueChanges
+            .pipe(takeUntil(this.destroy$), debounceTime(200), distinctUntilChanged())
+            .subscribe(value => { if (typeof value === 'string') this.filterEmpresas(value); });
 
         this.externalToolForm.get('horas')?.valueChanges.subscribe(() => this.calcularPrecioTotalExternal());
         this.externalToolForm.get('costoHora')?.valueChanges.subscribe(() => this.calcularPrecioTotalExternal());
@@ -362,7 +387,77 @@ export class PrestamoTercerosComponent implements OnInit, OnDestroy {
         });
     }
 
-    // ── Empresa / externa (stub) ──────────────────────────────────────────────
+    private cargarTerceros(): void {
+        this.movementService.getTerceros().pipe(takeUntil(this.destroy$)).subscribe({
+            next: (terceros) => {
+                this.empresasCache = terceros.map((t: any) => ({
+                    id:       t.id_customer ?? t.id,
+                    nombre:   t.name ?? t.nombre ?? '',
+                    nit:      t.tax_id ?? t.nit ?? '',
+                    contacto: t.contact_name ?? t.contacto ?? '',
+                    telefono: t.phone ?? t.telefono ?? '',
+                    tipo:     t.type ?? t.tipo ?? ''
+                }));
+                this.filteredEmpresas = [...this.empresasCache];
+            }
+        });
+    }
+
+    private filterEmpresas(value: string): void {
+        if (!value) { this.filteredEmpresas = [...this.empresasCache]; return; }
+        const term = value.toLowerCase();
+        this.filteredEmpresas = this.empresasCache.filter(e =>
+            e.nombre.toLowerCase().includes(term) ||
+            (e.nit ?? '').toLowerCase().includes(term)
+        );
+    }
+
+    private cargarHerramientasExternas(): void {
+        this.movementService.getHerramientasDisponibles().pipe(takeUntil(this.destroy$)).subscribe({
+            next: (items) => {
+                this.herramientasCache = items;
+                this.filteredHerramientasExternal = [...items];
+                this.coincidenciasExternal.set(items.length);
+            }
+        });
+    }
+
+    onBuscarHerramientaExternal(value: string): void {
+        if (!value) {
+            this.filteredHerramientasExternal = [...this.herramientasCache];
+        } else {
+            const term = value.toLowerCase();
+            this.filteredHerramientasExternal = this.herramientasCache.filter(h =>
+                (h.code ?? h.codigo ?? '').toLowerCase().includes(term) ||
+                (h.name ?? h.nombre ?? '').toLowerCase().includes(term) ||
+                (h.part_number ?? h.pn ?? '').toLowerCase().includes(term) ||
+                (h.brand ?? h.marca ?? '').toLowerCase().includes(term)
+            );
+        }
+        this.coincidenciasExternal.set(this.filteredHerramientasExternal.length);
+    }
+
+    displayHerramienta(h: any): string {
+        return h ? `${h.code ?? h.codigo ?? ''} - ${h.name ?? h.nombre ?? ''}` : '';
+    }
+
+    selectHerramientaExternal(h: any): void {
+        this.externalToolForm.patchValue({
+            id_tool:          h.id_tool ?? h.id,
+            codigo:           h.code ?? h.codigo ?? '',
+            nombre:           h.name ?? h.nombre ?? '',
+            pn:               h.part_number ?? h.pn ?? '',
+            sn:               h.serial_number ?? h.sn ?? '',
+            marca:            h.brand ?? h.marca ?? '',
+            ubicacion:        h.location ?? h.ubicacion ?? '',
+            existencia:       h.stock ?? h.quantity ?? 0,
+            fechaVencimiento: h.calibration_due_date ?? h.fecha_calibracion ?? '',
+            unidad:           h.unit ?? h.unidad ?? 'PZA',
+            estado:           h.condition ?? h.estado ?? 'SERVICEABLE'
+        });
+    }
+
+    // ── Empresa / externa ─────────────────────────────────────────────────────
 
     displayEmpresa(empresa: any): string {
         return empresa ? `${empresa.nombre}` : '';
@@ -398,6 +493,7 @@ export class PrestamoTercerosComponent implements OnInit, OnDestroy {
         if (!fv.codigo) { this.showMessage('error', 'Seleccione una herramienta'); return; }
 
         const newItem: ExternalLoanItem = {
+            toolId: fv.id_tool ?? 0,
             id: Date.now(),
             codigo: fv.codigo, pn: fv.pn, descripcion: fv.nombre, sn: fv.sn,
             marca: fv.marca, fechaCalibracion: fv.fechaVencimiento,
@@ -464,10 +560,10 @@ export class PrestamoTercerosComponent implements OnInit, OnDestroy {
         const items = this.internalDataSource();
 
         const itemsJson = JSON.stringify(items.map(item => ({
-            tool_id:  item.toolId,
-            quantity: item.cantidad,
-            notes:    item.contenido || '',
-            condition: 'BUENO'
+            tool_id:   item.toolId,
+            quantity:  item.cantidad,
+            notes:     item.contenido || '',
+            condition: this.conditionMap[item.estado?.toUpperCase()] || 'good'
         })));
 
         this.movementService.registrarPrestamoMultiple({
@@ -520,11 +616,11 @@ export class PrestamoTercerosComponent implements OnInit, OnDestroy {
         const items = this.externalDataSource();
 
         const itemsJson = JSON.stringify(items.map(item => ({
-            tool_id:  item.id,
-            quantity: item.cantidad,
-            notes:    item.contenido || '',
-            condition: 'BUENO',
-            unit_cost: item.costoHora || 0,
+            tool_id:    item.toolId,
+            quantity:   item.cantidad,
+            notes:      item.contenido || '',
+            condition:  this.conditionMap[item.estado?.toUpperCase()] || 'good',
+            unit_cost:  item.costoHora || 0,
             total_cost: item.precioTotal || 0
         })));
 
@@ -637,7 +733,6 @@ export class PrestamoTercerosComponent implements OnInit, OnDestroy {
         w.document.write(this.buildMGH100InternoHtml(nro, fv, items));
         w.document.close();
         w.focus();
-        setTimeout(() => w.print(), 600);
     }
 
     private abrirImpresionPrestamoExterno(nro: string, fv: any, items: ExternalLoanItem[]): void {
@@ -646,7 +741,6 @@ export class PrestamoTercerosComponent implements OnInit, OnDestroy {
         w.document.write(this.buildMGH100ExternoHtml(nro, fv, items));
         w.document.close();
         w.focus();
-        setTimeout(() => w.print(), 600);
     }
 
     private buildMGH100InternoHtml(nro: string, fv: any, items: InternalLoanItem[]): string {
@@ -720,6 +814,7 @@ ${this.sharedPdfStyles()}
   ${this.notaImportantePrestamo()}
   ${this.firmasPrestamo(fv.nombreCompleto || '')}
   <div class="footer">Sistema de Gestión de Herramientas - BOA &nbsp;|&nbsp; ${now}</div>
+  <script>window.onload=function(){setTimeout(function(){window.print();},500);};</script>
 </body></html>`;
     }
 
@@ -792,6 +887,7 @@ ${this.sharedPdfStyles()}
     <div class="sig"><div class="sig-ttl">AUTORIZADO POR<br>FIRMA AUTORIZADA BOA</div><div class="sig-line">&nbsp;</div></div>
   </div>
   <div class="footer">Sistema de Gestión de Herramientas - BOA &nbsp;|&nbsp; ${now}</div>
+  <script>window.onload=function(){setTimeout(function(){window.print();},500);};</script>
 </body></html>`;
     }
 

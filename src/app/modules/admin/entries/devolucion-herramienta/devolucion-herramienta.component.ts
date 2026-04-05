@@ -16,7 +16,7 @@ import { MatAutocompleteModule } from '@angular/material/autocomplete';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { DragDropModule } from '@angular/cdk/drag-drop';
-import { Subject, takeUntil, finalize, debounceTime, distinctUntilChanged } from 'rxjs';
+import { Subject, takeUntil, finalize, debounceTime, distinctUntilChanged, forkJoin } from 'rxjs';
 import { MovementService } from '../../../../core/services/movement.service';
 
 interface Funcionario {
@@ -277,42 +277,46 @@ export class DevolucionHerramientaComponent implements OnInit, OnDestroy {
         }
 
         this.isSearching = true;
+        this.dataSource = [];
 
-        // Buscar préstamos activos y filtrar por funcionario
-        this.movementService.getMovements({
-            type: 'PRESTAMO_INTERNO',
-            status: 'ACTIVO'
+        forkJoin({
+            loans: this.movementService.getActiveLoans(),
+            items: this.movementService.getActiveLoanItems()
         }).pipe(
             takeUntil(this._unsubscribeAll),
             finalize(() => this.isSearching = false)
         ).subscribe({
-            next: (data) => {
+            next: ({ loans, items }) => {
                 const nombreBuscado = funcionario.nombreCompleto?.toLowerCase() || '';
-                const filtered = (data || []).filter((mov: any) =>
-                    mov.requested_by_name?.toLowerCase() === nombreBuscado ||
-                    mov.technician?.toLowerCase() === nombreBuscado ||
-                    String(mov.requested_by_id) === String(funcionario.id)
+                const licencia = funcionario.licencia?.toLowerCase() || '';
+
+                const filtered = (loans || []).filter((loan: any) =>
+                    loan.borrower_name?.toLowerCase() === nombreBuscado ||
+                    loan.borrower_name?.toLowerCase().includes(nombreBuscado) ||
+                    loan.borrower_license?.toLowerCase() === licencia
                 );
 
                 if (filtered.length > 0) {
-                    this.dataSource = filtered.flatMap((mov: any) => {
-                        const items = mov.items || [];
-                        const fechaPrestamo = mov.date || '';
-                        return items.map((item: any) => ({
+                    this.dataSource = filtered.flatMap((loan: any) => {
+                        const loanItems = (items || []).filter((i: any) =>
+                            String(i.loan_id) === String(loan.id_loan)
+                        );
+                        const fechaPrestamo = loan.loan_date || '';
+                        return loanItems.map((item: any) => ({
                             fila: 0,
-                            toolId: item.toolId || item.tool?.id || item.tool_id || '',
-                            codigo: item.tool?.code || item.codigo || '',
-                            descripcion: item.tool?.description || item.descripcion || '',
-                            pn: item.tool?.partNumber || item.pn || '',
-                            sn: item.tool?.serialNumber || item.sn || '',
-                            marca: item.tool?.brand || item.marca || '',
+                            toolId: String(item.tool_id || ''),
+                            codigo: item.code || '',
+                            descripcion: item.description || item.name || '',
+                            pn: item.part_number || '',
+                            sn: item.serial_number || '',
+                            marca: item.brand || '',
                             fechaPrestamo,
-                            cantidadPrestada: item.quantity || 1,
-                            cantidadDevolver: item.quantity || 1,
-                            nroNotaSalida: mov.movementNumber || mov.movement_number || '',
-                            aeronave: mov.aircraft || '',
-                            ordenTrabajo: mov.workOrder || mov.work_order_number || '',
-                            tipoPrestamo: (mov.loanType || mov.loan_type || 'EVENTUAL') as any,
+                            cantidadPrestada: Number(item.quantity) || 1,
+                            cantidadDevolver: Number(item.quantity) || 1,
+                            nroNotaSalida: loan.loan_number || '',
+                            aeronave: loan.aircraft || '',
+                            ordenTrabajo: loan.work_order_number || '',
+                            tipoPrestamo: 'EVENTUAL' as any,
                             diasFuera: fechaPrestamo ? this.calcularDiasFuera(fechaPrestamo) : 0,
                             condicionDevolucion: 'BUENO' as CondicionDevolucion,
                             observacionItem: '',
@@ -320,162 +324,17 @@ export class DevolucionHerramientaComponent implements OnInit, OnDestroy {
                         }));
                     });
                     this.dataSource.forEach((item, idx) => item.fila = idx + 1);
-                    this.showMessage(`Se encontraron ${this.dataSource.length} herramienta(s)`, 'success');
+                    this.showMessage(`Se encontraron ${this.dataSource.length} herramienta(s) prestadas`, 'success');
                 } else {
-                    this.loadMockData(funcionario);
+                    this.dataSource = [];
+                    this.showMessage(`No se encontraron préstamos activos para ${funcionario.nombreCompleto}`, 'info');
                 }
             },
-            error: () => {
-                this.loadMockData(funcionario);
+            error: (err) => {
+                this.dataSource = [];
+                this.showMessage('Error al consultar préstamos: ' + (err?.message || ''), 'error');
             }
         });
-    }
-
-    private loadMockData(funcionario: Funcionario): void {
-        // Datos de ejemplo con estructura completa basada en préstamos reales de BoA
-        this.dataSource = [
-            {
-                fila: 1,
-                toolId: 'tool-001',
-                codigo: 'BOA-H-0456',
-                descripcion: 'Torquímetro Digital 50-250 lb-ft SNAP-ON',
-                pn: 'TECH3FR250',
-                sn: 'TQ-2024-0456',
-                marca: 'SNAP-ON',
-                fechaPrestamo: '2026-01-20',
-                cantidadPrestada: 1,
-                cantidadDevolver: 1,
-                nroNotaSalida: 'PR-2026-0045',
-                aeronave: 'CP-3108',
-                ordenTrabajo: 'OT-2026-0089',
-                tipoPrestamo: 'OT',
-                diasFuera: this.calcularDiasFuera('2026-01-20'),
-                condicionDevolucion: 'BUENO',
-                observacionItem: '',
-                selected: false
-            },
-            {
-                fila: 2,
-                toolId: 'tool-002',
-                codigo: 'BOA-H-0234',
-                descripcion: 'Multímetro Digital FLUKE 87V',
-                pn: 'FLUKE-87V',
-                sn: 'FL-2023-0234',
-                marca: 'FLUKE',
-                fechaPrestamo: '2026-01-15',
-                cantidadPrestada: 1,
-                cantidadDevolver: 1,
-                nroNotaSalida: 'PR-2026-0038',
-                aeronave: 'CP-3105',
-                ordenTrabajo: 'OT-2026-0067',
-                tipoPrestamo: 'OT',
-                diasFuera: this.calcularDiasFuera('2026-01-15'),
-                condicionDevolucion: 'BUENO',
-                observacionItem: '',
-                selected: false
-            },
-            {
-                fila: 3,
-                toolId: 'tool-003',
-                codigo: 'BOA-H-0789',
-                descripcion: 'Juego de Llaves Allen Métrico (1.5-10mm) FACOM',
-                pn: 'FACOM-89SH.JP9A',
-                sn: 'JLA-2024-0789',
-                marca: 'FACOM',
-                fechaPrestamo: '2026-01-22',
-                cantidadPrestada: 1,
-                cantidadDevolver: 1,
-                nroNotaSalida: 'PR-2026-0052',
-                aeronave: '',
-                ordenTrabajo: '',
-                tipoPrestamo: 'PERSONAL',
-                diasFuera: this.calcularDiasFuera('2026-01-22'),
-                condicionDevolucion: 'BUENO',
-                observacionItem: '',
-                selected: false
-            },
-            {
-                fila: 4,
-                toolId: 'tool-004',
-                codigo: 'BOA-H-0567',
-                descripcion: 'Boroscopio Flexible 3m OLYMPUS IPLEX',
-                pn: 'IPLEX-NX',
-                sn: 'BR-2023-0567',
-                marca: 'OLYMPUS',
-                fechaPrestamo: '2026-01-10',
-                cantidadPrestada: 1,
-                cantidadDevolver: 1,
-                nroNotaSalida: 'PR-2026-0028',
-                aeronave: 'CP-3102',
-                ordenTrabajo: 'OT-2026-0055',
-                tipoPrestamo: 'OT',
-                diasFuera: this.calcularDiasFuera('2026-01-10'),
-                condicionDevolucion: 'BUENO',
-                observacionItem: '',
-                selected: false
-            },
-            {
-                fila: 5,
-                toolId: 'tool-005',
-                codigo: 'BOA-H-0123',
-                descripcion: 'Pinza Amperimétrica FLUKE 376 FC',
-                pn: 'FLUKE-376FC',
-                sn: 'PA-2023-0123',
-                marca: 'FLUKE',
-                fechaPrestamo: '2026-01-25',
-                cantidadPrestada: 1,
-                cantidadDevolver: 1,
-                nroNotaSalida: 'PR-2026-0061',
-                aeronave: 'CP-3110',
-                ordenTrabajo: 'OT-2026-0095',
-                tipoPrestamo: 'AOG',
-                diasFuera: this.calcularDiasFuera('2026-01-25'),
-                condicionDevolucion: 'BUENO',
-                observacionItem: '',
-                selected: false
-            },
-            {
-                fila: 6,
-                toolId: 'tool-006',
-                codigo: 'BOA-H-0345',
-                descripcion: 'Calibrador Vernier Digital 0-150mm MITUTOYO',
-                pn: '500-196-30',
-                sn: 'CV-2024-0345',
-                marca: 'MITUTOYO',
-                fechaPrestamo: '2026-01-05',
-                cantidadPrestada: 2,
-                cantidadDevolver: 2,
-                nroNotaSalida: 'PR-2026-0015',
-                aeronave: '',
-                ordenTrabajo: '',
-                tipoPrestamo: 'EVENTUAL',
-                diasFuera: this.calcularDiasFuera('2026-01-05'),
-                condicionDevolucion: 'BUENO',
-                observacionItem: '',
-                selected: false
-            },
-            {
-                fila: 7,
-                toolId: 'tool-007',
-                codigo: 'BOA-H-0678',
-                descripcion: 'Medidor de Espesor Ultrasónico OLYMPUS',
-                pn: '38DL-PLUS',
-                sn: 'ME-2024-0678',
-                marca: 'OLYMPUS',
-                fechaPrestamo: '2025-12-20',
-                cantidadPrestada: 1,
-                cantidadDevolver: 1,
-                nroNotaSalida: 'PR-2025-0289',
-                aeronave: 'CP-3108',
-                ordenTrabajo: 'OT-2025-0445',
-                tipoPrestamo: 'OT',
-                diasFuera: this.calcularDiasFuera('2025-12-20'),
-                condicionDevolucion: 'BUENO',
-                observacionItem: '',
-                selected: false
-            }
-        ];
-        this.showMessage(`Se encontraron ${this.dataSource.length} herramienta(s) prestadas a ${funcionario.nombreCompleto}`, 'info');
     }
 
     private calcularDiasFuera(fechaPrestamo: string): number {
