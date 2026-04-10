@@ -172,12 +172,12 @@ export class ReportesInventarioComponent {
     private router   = inject(Router);
 
     stats = [
-        { title: 'Total Items',      value: 1247, icon: 'inventory_2',  color: 'text-blue-600',   bgColor: 'bg-blue-50 dark:bg-blue-900/30' },
-        { title: 'Disponible',       value: 987,  icon: 'check_circle', color: 'text-emerald-600', bgColor: 'bg-emerald-50 dark:bg-emerald-900/30' },
-        { title: 'Bajo Stock',       value: 45,   icon: 'warning',      color: 'text-amber-600',  bgColor: 'bg-amber-50 dark:bg-amber-900/30' },
-        { title: 'Sin Stock',        value: 12,   icon: 'error',        color: 'text-rose-600',   bgColor: 'bg-rose-50 dark:bg-rose-900/30' },
-        { title: 'Ubicaciones',      value: 25,   icon: 'place',        color: 'text-violet-600', bgColor: 'bg-violet-50 dark:bg-violet-900/30' },
-        { title: 'Movim. Hoy',       value: 38,   icon: 'sync_alt',     color: 'text-orange-600', bgColor: 'bg-orange-50 dark:bg-orange-900/30' },
+        { title: 'Total Items',  value: 0, icon: 'inventory_2',  color: 'text-blue-600',    bgColor: 'bg-blue-50 dark:bg-blue-900/30' },
+        { title: 'Disponible',   value: 0, icon: 'check_circle', color: 'text-emerald-600', bgColor: 'bg-emerald-50 dark:bg-emerald-900/30' },
+        { title: 'Bajo Stock',   value: 0, icon: 'warning',      color: 'text-amber-600',   bgColor: 'bg-amber-50 dark:bg-amber-900/30' },
+        { title: 'Sin Stock',    value: 0, icon: 'error',        color: 'text-rose-600',    bgColor: 'bg-rose-50 dark:bg-rose-900/30' },
+        { title: 'Ubicaciones',  value: 0, icon: 'place',        color: 'text-violet-600',  bgColor: 'bg-violet-50 dark:bg-violet-900/30' },
+        { title: 'Movim. Hoy',   value: 0, icon: 'sync_alt',     color: 'text-orange-600',  bgColor: 'bg-orange-50 dark:bg-orange-900/30' },
     ];
 
     exportarReporte(tipo: string): void {

@@ -113,9 +113,9 @@ export class ReportsComponent implements OnInit {
     // Estadísticas
     stats = signal({
         totalReportes: 0,
-        reportesHoy: 12,
-        reportesMes: 156,
-        masUsado: 'Listado Herramientas'
+        reportesHoy: 0,
+        reportesMes: 0,
+        masUsado: ''
     });
 
     // DATA

@@ -151,16 +151,8 @@ export class AjustarStockComponent implements OnInit {
             observaciones: ['']
         });
 
-        // Simulación: Al escribir código específico
-        this.ajusteForm.get('codigo')?.valueChanges.subscribe(codigo => {
-            // Aquí conectarías con tu Backend real
-            if (codigo === 'BOA-H-123') {
-                this.ajusteForm.patchValue({
-                    descripcion: 'LLAVE TORQUE 12MM',
-                    cantidadActual: 15
-                });
-                this.calcularCantidadFinal();
-            }
+        this.ajusteForm.get('codigo')?.valueChanges.subscribe(() => {
+            this.calcularCantidadFinal();
         });
 
         this.ajusteForm.get('cantidadAjuste')?.valueChanges.subscribe(() => this.calcularCantidadFinal());

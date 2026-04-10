@@ -349,13 +349,9 @@ export class GestionUbicacionesComponent implements OnInit {
 
     tiposUbicacion = ['PISO', 'RACK', 'ESTANTE', 'GABINETE', 'CAJÓN', 'CONTENEDOR'];
 
-    ubicaciones: Ubicacion[] = [
-        { id: 1, codigo: '13-SUELO',    nombre: 'Almacén Principal - Suelo', tipo: 'PISO',    capacidad: 100, ocupacion: 45, estado: 'ACTIVO' },
-        { id: 2, codigo: '14-RACK-A2',  nombre: 'Rack A - Nivel 2',          tipo: 'RACK',    capacidad: 50,  ocupacion: 32, estado: 'ACTIVO' },
-        { id: 3, codigo: '15-ESTANTE-B1',nombre:'Estante B - Nivel 1',       tipo: 'ESTANTE', capacidad: 30,  ocupacion: 28, estado: 'CASI LLENO' }
-    ];
+    ubicaciones: Ubicacion[] = [];
 
-    private nextId = 4;
+    private nextId = 1;
 
     ngOnInit(): void {}
 

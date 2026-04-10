@@ -74,16 +74,7 @@ interface UnifiedMovementRecord {
 })
 export class UnifiedMovementsComponent implements OnInit {
 
-    allRecords: UnifiedMovementRecord[] = [
-        { fecha: '03/01/2026', tipo: 'AJUSTE STOCK', item: 'LLAVE TORQUE 12MM', origen: 'INVENTARIO', estado: 'COMPLETADO', responsable: 'GABRIEL CR', cantidad: 5 },
-        { fecha: '02/01/2026', tipo: 'ENTRADA MATERIAL', item: 'KIT INSPECCION A320', origen: 'KITS', estado: 'COMPLETADO', responsable: 'GABRIEL CR', cantidad: 1 },
-        { fecha: '02/01/2026', tipo: 'REUBICACION', item: 'TALADRO INDUSTRIAL', origen: 'INVENTARIO', estado: 'COMPLETADO', responsable: 'JUAN PEREZ', cantidad: 1 },
-        { fecha: '30/12/2025', tipo: 'SALIDA MATERIAL', item: 'COMPONENTES NDT', origen: 'KITS', estado: 'EN PROCESO', responsable: 'ANA LOPEZ', cantidad: 3 },
-        { fecha: '29/12/2025', tipo: 'CONTEO FISICO', item: 'DESTORNILLADOR SET', origen: 'INVENTARIO', estado: 'COMPLETADO', responsable: 'ANA LOPEZ', cantidad: 3 },
-        { fecha: '29/12/2025', tipo: 'RETORNO CALIBRACION', item: 'KIT TORQUIMETROS', origen: 'KITS', estado: 'REVISION', responsable: 'JUAN PEREZ', cantidad: 1 },
-        { fecha: '28/12/2025', tipo: 'AJUSTE STOCK', item: 'MULTIMETRO FLUKE', origen: 'INVENTARIO', estado: 'COMPLETADO', responsable: 'CARLOS ROJAS', cantidad: 2 },
-        { fecha: '27/12/2025', tipo: 'CREAR MATERIAL', item: 'HERRAMIENTA NUEVA XZ-100', origen: 'KITS', estado: 'COMPLETADO', responsable: 'MARIA GONZALEZ', cantidad: 1 }
-    ];
+    allRecords: UnifiedMovementRecord[] = [];
 
     filterOrigin = signal<'TODOS' | 'INVENTARIO' | 'KITS'>('TODOS');
     searchTerm = signal('');

@@ -92,58 +92,38 @@ export class UnifiedDashboardComponent implements OnInit, AfterViewInit {
     private valueChartInstance?: Chart;
 
     inventoryKpiCards = signal<KPICard[]>([
-        { title: 'Stock Total', value: 1245, subtitle: 'HERRAMIENTAS', icon: 'heroicons_outline:cube', variant: 'navy', trend: { value: 5, isPositive: true } },
-        { title: 'Valor Inventario', value: 'Bs 2.5M', subtitle: 'ESTIMADO', icon: 'heroicons_outline:currency-dollar', variant: 'green', trend: { value: 8, isPositive: true } },
-        { title: 'Disponibles', value: 892, subtitle: 'EN ALMACÉN', icon: 'heroicons_outline:check-circle', variant: 'teal' },
-        { title: 'En Préstamo', value: 245, subtitle: 'ASIGNADOS', icon: 'heroicons_outline:user-circle', variant: 'blue' },
-        { title: 'En Calibración', value: 68, subtitle: 'EXTERNO', icon: 'heroicons_outline:cog-6-tooth', variant: 'yellow' },
-        { title: 'Bajo Stock', value: 15, subtitle: 'REPONER', icon: 'heroicons_outline:exclamation-triangle', variant: 'red', trend: { value: 3, isPositive: false } },
-        { title: 'Categorías', value: 24, subtitle: 'FAMILIAS', icon: 'heroicons_outline:folder', variant: 'purple' },
-        { title: 'Eficiencia', value: '85%', subtitle: 'ROTACIÓN', icon: 'heroicons_outline:arrow-path', variant: 'orange', trend: { value: 12, isPositive: true } }
+        { title: 'Stock Total',     value: 0, subtitle: 'HERRAMIENTAS', icon: 'heroicons_outline:cube',                  variant: 'navy' },
+        { title: 'Valor Inventario',value: 0, subtitle: 'ESTIMADO',     icon: 'heroicons_outline:currency-dollar',       variant: 'green' },
+        { title: 'Disponibles',     value: 0, subtitle: 'EN ALMACÉN',   icon: 'heroicons_outline:check-circle',          variant: 'teal' },
+        { title: 'En Préstamo',     value: 0, subtitle: 'ASIGNADOS',    icon: 'heroicons_outline:user-circle',           variant: 'blue' },
+        { title: 'En Calibración',  value: 0, subtitle: 'EXTERNO',      icon: 'heroicons_outline:cog-6-tooth',           variant: 'yellow' },
+        { title: 'Bajo Stock',      value: 0, subtitle: 'REPONER',      icon: 'heroicons_outline:exclamation-triangle',  variant: 'red' },
+        { title: 'Categorías',      value: 0, subtitle: 'FAMILIAS',     icon: 'heroicons_outline:folder',                variant: 'purple' },
+        { title: 'Eficiencia',      value: 0, subtitle: 'ROTACIÓN',     icon: 'heroicons_outline:arrow-path',            variant: 'orange' }
     ]);
 
     kitsKpiCards = signal<KPICard[]>([
-        { title: 'Total de Kits', value: 45, subtitle: 'Registrados', icon: 'heroicons_outline:cube', variant: 'cyan' },
-        { title: 'Kits Completos', value: 32, subtitle: '100% Items', icon: 'heroicons_outline:check-circle', variant: 'green' },
-        { title: 'Kits Incompletos', value: 8, subtitle: 'Atención Req.', icon: 'heroicons_outline:exclamation-triangle', variant: 'yellow' },
-        { title: 'Kits en Uso', value: 5, subtitle: 'Prestados', icon: 'heroicons_outline:arrow-right-circle', variant: 'purple' },
-        { title: 'Componentes', value: 380, subtitle: 'Total Items', icon: 'heroicons_outline:squares-plus', variant: 'navy' },
-        { title: 'Faltantes', value: 12, subtitle: 'Reponer', icon: 'heroicons_outline:x-circle', variant: 'red' },
-        { title: 'Calibración', value: 6, subtitle: 'Vencidos/Prox', icon: 'heroicons_outline:wrench-screwdriver', variant: 'orange' },
-        { title: 'Fuera Servicio', value: 0, subtitle: 'Bajas', icon: 'heroicons_outline:no-symbol', variant: 'black' }
+        { title: 'Total de Kits',   value: 0, subtitle: 'Registrados',   icon: 'heroicons_outline:cube',                  variant: 'cyan' },
+        { title: 'Kits Completos',  value: 0, subtitle: '100% Items',    icon: 'heroicons_outline:check-circle',          variant: 'green' },
+        { title: 'Kits Incompletos',value: 0, subtitle: 'Atención Req.', icon: 'heroicons_outline:exclamation-triangle',  variant: 'yellow' },
+        { title: 'Kits en Uso',     value: 0, subtitle: 'Prestados',     icon: 'heroicons_outline:arrow-right-circle',    variant: 'purple' },
+        { title: 'Componentes',     value: 0, subtitle: 'Total Items',   icon: 'heroicons_outline:squares-plus',          variant: 'navy' },
+        { title: 'Faltantes',       value: 0, subtitle: 'Reponer',       icon: 'heroicons_outline:x-circle',              variant: 'red' },
+        { title: 'Calibración',     value: 0, subtitle: 'Vencidos/Prox', icon: 'heroicons_outline:wrench-screwdriver',    variant: 'orange' },
+        { title: 'Fuera Servicio',  value: 0, subtitle: 'Bajas',         icon: 'heroicons_outline:no-symbol',             variant: 'black' }
     ]);
 
-    categoryDistribution = signal<ChartData[]>([
-        { label: 'Manuales', value: 385, color: '#111A43' },
-        { label: 'Eléctricas', value: 295, color: '#fbad03' },
-        { label: 'Medición', value: 245, color: '#f61104' },
-        { label: 'Calibración', value: 180, color: '#27C93F' },
-        { label: 'Otros', value: 140, color: '#8b5cf6' }
-    ]);
+    categoryDistribution = signal<ChartData[]>([]);
 
     totalItems = computed(() => this.categoryDistribution().reduce((sum, item) => sum + item.value, 0));
 
-    recentActivities = signal<UnifiedActivity[]>([
-        { type: 'Ajuste de Stock', date: '29/12/2024', user: 'Gabriel Cruz', items: 8, origin: 'INVENTARIO' },
-        { type: 'Entrada Compra', date: '28/12/2024', user: 'María López', items: 25, origin: 'INVENTARIO' },
-        { type: 'Préstamo Kit', date: '28/12/2024', user: 'Juan Pérez', items: 1, origin: 'KITS' },
-        { type: 'Salida Préstamo', date: '27/12/2024', user: 'Carlos Rojas', items: 12, origin: 'INVENTARIO' },
-        { type: 'Devolución Kit', date: '27/12/2024', user: 'María González', items: 1, origin: 'KITS' },
-        { type: 'Retorno Calibración', date: '26/12/2024', user: 'Ana Méndez', items: 5, origin: 'INVENTARIO' }
-    ]);
+    recentActivities = signal<UnifiedActivity[]>([]);
 
-    ngOnInit(): void {
-        this.isLoading.set(true);
-        setTimeout(() => this.isLoading.set(false), 800);
-    }
+    ngOnInit(): void {}
 
     ngAfterViewInit(): void {
-        setTimeout(() => {
-            if (!this.isLoading()) {
-                this.createCategoryChart();
-                this.createValueChart();
-            }
-        }, 900);
+        this.createCategoryChart();
+        this.createValueChart();
     }
 
     getVariantStyles(variant: string | undefined): string {
@@ -209,10 +189,10 @@ export class UnifiedDashboardComponent implements OnInit, AfterViewInit {
         const config: ChartConfiguration<'line'> = {
             type: 'line',
             data: {
-                labels: ['JUL', 'AGO', 'SEP', 'OCT', 'NOV', 'DIC'],
+                labels: [],
                 datasets: [{
                     label: 'VALOR INVENTARIO',
-                    data: [2100, 2250, 2300, 2400, 2450, 2500],
+                    data: [],
                     borderColor: '#000000',
                     backgroundColor: (context) => {
                         const ctx = context.chart.ctx;
