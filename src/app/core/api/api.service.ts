@@ -22,19 +22,19 @@ export class ErpApiService {
     }
 
     post (url: string, params: any, options: any = {}) {
-        this._load.show();
+        this._load._setLoadingStatus(true, url);
         return PxpClient.doRequest({
             url: url,
             params: params,
             ...options,
         })
             .then( (resp) => {
-                this._load.hide();
+                this._load._setLoadingStatus(false, url);
                 return resp;
             })
             .catch(
                 (error)=>{
-                    this._load.hide();
+                    this._load._setLoadingStatus(false, url);
                     console.warn('ERROR POST',error);
                     let auth:any = localStorage.getItem('aut');
                     if ( auth !== null)

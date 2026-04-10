@@ -280,7 +280,7 @@ interface Laboratory {
                                     </div>
                                 }
 
-                                @for (lab of labs; track lab.id) {
+                                @for (lab of labs; track lab.id_laboratory) {
                                     <div class="grid grid-cols-12 gap-2 px-3 py-2 items-center border-b border-gray-200 dark:border-slate-700 bg-white dark:bg-[#0F172AFF] hover:bg-gray-50 dark:hover:bg-slate-800 transition-all cursor-pointer"
                                          (click)="openForm(lab)">
 
@@ -324,7 +324,7 @@ interface Laboratory {
                                         <!-- Rating -->
                                         <div class="col-span-1 flex items-center justify-center gap-0.5">
                                             <mat-icon class="text-yellow-500 !text-sm">star</mat-icon>
-                                            <span class="font-black text-xs text-black dark:text-white">{{ lab.rating.toFixed(1) }}</span>
+                                            <span class="font-black text-xs text-black dark:text-white">{{ (+lab.rating || 0).toFixed(1) }}</span>
                                         </div>
 
                                         <!-- Días prom + acciones -->
@@ -416,9 +416,12 @@ export class LaboratoriosComponent implements OnInit, OnDestroy {
             finalize(() => this.isLoading = false)
         ).subscribe({
             next: (res: any) => {
-                this.labs = (res?.data || res)?.length > 0 ? (res.data || res) : this.getMockData();
+                this.labs = Array.isArray(res) ? res : (res?.datos || []);
             },
-            error: () => { this.labs = this.getMockData(); }
+            error: () => {
+                this.labs = [];
+                this.snackBar.open('Error al cargar laboratorios', 'Cerrar', { duration: 3000, panelClass: ['snackbar-error'] });
+            }
         });
     }
 
@@ -444,15 +447,7 @@ export class LaboratoriosComponent implements OnInit, OnDestroy {
                 this.loadLabs();
             },
             error: () => {
-                if (this.editingLab.id) {
-                    const idx = this.labs.findIndex(l => l.id === this.editingLab.id);
-                    if (idx >= 0) this.labs[idx] = { ...this.editingLab };
-                } else {
-                    this.editingLab.id = String(this.labs.length + 1);
-                    this.labs = [...this.labs, { ...this.editingLab }];
-                }
-                this.snackBar.open('Guardado (modo offline)', 'Cerrar', { duration: 3000, horizontalPosition: 'end', verticalPosition: 'top', panelClass: ['snackbar-success'] });
-                this.showForm = false;
+                this.snackBar.open('Error al guardar laboratorio', 'Cerrar', { duration: 3000, panelClass: ['snackbar-error'] });
             }
         });
     }
@@ -467,17 +462,9 @@ export class LaboratoriosComponent implements OnInit, OnDestroy {
                 this.loadLabs();
             },
             error: () => {
-                this.labs = this.labs.filter(l => l.id !== lab.id);
-                this.snackBar.open('Eliminado (modo offline)', 'Cerrar', { duration: 3000, horizontalPosition: 'end', verticalPosition: 'top' });
+                this.snackBar.open('Error al eliminar laboratorio', 'Cerrar', { duration: 3000, panelClass: ['snackbar-error'] });
             }
         });
     }
 
-    private getMockData(): Laboratory[] {
-        return [
-            { id: '1', code: 'LAB-001', name: 'METROTEST S.R.L.', address: 'Calle Sucre #456', city: 'Cochabamba', country: 'Bolivia', contact_person: 'Ing. Carlos Mendoza', phone: '+591 4-4252100', email: 'calibraciones@metrotest.com.bo', website: 'www.metrotest.com.bo', is_certified: true, certification_number: 'ISO/IEC 17025:2017', rating: 4.5, average_delivery_days: 15, active: true },
-            { id: '2', code: 'LAB-002', name: 'METROLOGIA INDUSTRIAL LTDA', address: 'Av. Santos Dumont #789', city: 'Santa Cruz', country: 'Bolivia', contact_person: 'Lic. Maria Flores', phone: '+591 3-3425600', email: 'info@metroindustrial.com.bo', website: 'www.metroindustrial.com.bo', is_certified: true, certification_number: 'ISO 9001:2015', rating: 4.2, average_delivery_days: 20, active: true },
-            { id: '3', code: 'LAB-003', name: 'CALIBRA TECH', address: 'Zona Industrial Km 5', city: 'La Paz', country: 'Bolivia', contact_person: 'Ing. Roberto Quispe', phone: '+591 2-2845300', email: 'servicios@calibratech.bo', website: '', is_certified: false, certification_number: '', rating: 3.8, average_delivery_days: 25, active: true }
-        ];
-    }
 }

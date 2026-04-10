@@ -354,21 +354,13 @@ export class ServiciosGatasComponent implements OnInit, OnDestroy {
             finalize(() => this.isLoading = false)
         ).subscribe({
             next: (res: any) => {
-                if (res?.data?.length > 0) { this.jacks = res.data; }
-                else { this.loadMockData(); }
+                this.jacks = Array.isArray(res) ? res : (res?.datos || []);
             },
-            error: () => this.loadMockData()
+            error: () => {
+                this.jacks = [];
+                this.snackBar.open('Error al cargar gatas', 'Cerrar', { duration: 3000, panelClass: ['snackbar-error'] });
+            }
         });
-    }
-
-    private loadMockData(): void {
-        this.jacks = [
-            { tool_id: 1, tool_code: 'BOA-C-8001', tool_name: 'GATA HIDRAULICA 10 TON', serial_number: 'GH-2022-003', warehouse: 'CBB', calibration_status: 'VIGENTE', calibration_expiry: '20/06/2026', last_semiannual: '15/08/2025', next_semiannual: '11/02/2026', semi_status: 'VENCIDO', last_annual: '15/02/2025', next_annual: '15/02/2026', annual_status: 'CRITICO' },
-            { tool_id: 2, tool_code: 'BOA-C-8005', tool_name: 'GATA TIPO BOTELLA 5 TON', serial_number: 'GB-2023-001', warehouse: 'LPB', calibration_status: 'VIGENTE', calibration_expiry: '08/03/2026', last_semiannual: '10/11/2025', next_semiannual: '09/05/2026', semi_status: 'VIGENTE', last_annual: '10/05/2025', next_annual: '10/05/2026', annual_status: 'VIGENTE' },
-            { tool_id: 3, tool_code: 'BOA-C-8008', tool_name: 'GATA TIJERA 3 TON', serial_number: 'GT-2023-004', warehouse: 'CBB', calibration_status: 'POR VENCER', calibration_expiry: '28/02/2026', last_semiannual: '01/09/2025', next_semiannual: '28/02/2026', semi_status: 'CRITICO', last_annual: '01/03/2025', next_annual: '01/03/2026', annual_status: 'PROXIMO' },
-            { tool_id: 4, tool_code: 'BOA-C-8012', tool_name: 'GATA HIDRAULICA CARRETILLA 2 TON', serial_number: 'GHC-2024-002', warehouse: 'VVI', calibration_status: 'VIGENTE', calibration_expiry: '15/09/2026', last_semiannual: '20/12/2025', next_semiannual: '18/06/2026', semi_status: 'VIGENTE', last_annual: '20/06/2025', next_annual: '20/06/2026', annual_status: 'VIGENTE' },
-            { tool_id: 5, tool_code: 'BOA-C-8015', tool_name: 'GATA TIPO BOTELLA 20 TON', serial_number: 'GB-2022-006', warehouse: 'CBB', calibration_status: 'VENCIDA', calibration_expiry: '05/01/2026', last_semiannual: '10/07/2025', next_semiannual: '06/01/2026', semi_status: 'VENCIDO', last_annual: '10/01/2025', next_annual: '10/01/2026', annual_status: 'VENCIDO' }
-        ];
     }
 
     countSemiExpired():  number { return this.jacks.filter(j => j.semi_status === 'VENCIDO').length; }
@@ -425,9 +417,7 @@ export class ServiciosGatasComponent implements OnInit, OnDestroy {
                 this.loadJacks();
             },
             error: () => {
-                this.snackBar.open('Servicio registrado (modo offline)', 'Cerrar', { duration: 3000, horizontalPosition: 'end', verticalPosition: 'top' });
-                this.showServiceForm = false;
-                this.selectedJack   = null;
+                this.snackBar.open('Error al registrar servicio', 'Cerrar', { duration: 3000, panelClass: ['snackbar-error'] });
             }
         });
     }

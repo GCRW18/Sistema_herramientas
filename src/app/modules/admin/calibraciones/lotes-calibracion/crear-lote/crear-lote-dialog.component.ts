@@ -15,6 +15,7 @@ import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 import { CalibrationBatchService } from '../../../../../core/services/calibration-batch.service';
 import { CalibrationService } from '../../../../../core/services/calibration.service';
+import { MovementService } from '../../../../../core/services/movement.service';
 
 @Component({
     selector: 'app-crear-lote-dialog',
@@ -78,11 +79,36 @@ import { CalibrationService } from '../../../../../core/services/calibration.ser
                         <mat-datepicker #returnPicker></mat-datepicker>
                     </mat-form-field>
 
+                    <!-- Base -->
+                    <mat-form-field appearance="outline" class="w-full" subscriptSizing="dynamic">
+                        <mat-label>Base</mat-label>
+                        <mat-select [(value)]="selectedBaseId" (selectionChange)="onBaseChange($event.value)" required>
+                            @for (base of bases; track base.id) {
+                                <mat-option [value]="base.id">{{ base.nombre }}</mat-option>
+                            }
+                        </mat-select>
+                        <mat-icon matPrefix>location_on</mat-icon>
+                    </mat-form-field>
+
+                    <!-- Orden de Servicio -->
+                    <mat-form-field appearance="outline" class="w-full" subscriptSizing="dynamic">
+                        <mat-label>Orden de Servicio</mat-label>
+                        <input matInput [(ngModel)]="serviceOrder" placeholder="Ej: OS-2026-001">
+                        <mat-icon matPrefix>receipt</mat-icon>
+                    </mat-form-field>
+
                     <!-- Notas -->
                     <mat-form-field appearance="outline" class="w-full" subscriptSizing="dynamic">
                         <mat-label>Notas</mat-label>
-                        <textarea matInput [(ngModel)]="notes" rows="3" placeholder="Observaciones del lote..."></textarea>
+                        <textarea matInput [(ngModel)]="notes" rows="2" placeholder="Notas del lote..."></textarea>
                         <mat-icon matPrefix>notes</mat-icon>
+                    </mat-form-field>
+
+                    <!-- Observaciones -->
+                    <mat-form-field appearance="outline" class="w-full" subscriptSizing="dynamic">
+                        <mat-label>Observaciones</mat-label>
+                        <textarea matInput [(ngModel)]="observations" rows="2" placeholder="Observaciones adicionales..."></textarea>
+                        <mat-icon matPrefix>comment</mat-icon>
                     </mat-form-field>
 
                     <!-- Info -->
@@ -127,20 +153,27 @@ import { CalibrationService } from '../../../../../core/services/calibration.ser
 export class CrearLoteDialogComponent implements OnInit, OnDestroy {
     private batchService = inject(CalibrationBatchService);
     private calibrationService = inject(CalibrationService);
+    private movementService = inject(MovementService);
     private dialogRef = inject(MatDialogRef<CrearLoteDialogComponent>);
     private snackBar = inject(MatSnackBar);
     private _unsubscribeAll = new Subject<void>();
 
     laboratories: any[] = [];
+    bases: any[] = [];
     selectedLabId: number | null = null;
     selectedLabName = '';
+    selectedBaseId: number | null = null;
+    selectedBaseName = '';
     sendDate: Date | null = new Date();
     expectedReturnDate: Date | null = null;
+    serviceOrder = '';
     notes = '';
+    observations = '';
     isSaving = false;
 
     ngOnInit(): void {
         this.loadLaboratories();
+        this.loadBases();
     }
 
     ngOnDestroy(): void {
@@ -157,9 +190,23 @@ export class CrearLoteDialogComponent implements OnInit, OnDestroy {
         });
     }
 
+    loadBases(): void {
+        this.movementService.getBases().pipe(
+            takeUntil(this._unsubscribeAll)
+        ).subscribe({
+            next: (bases) => this.bases = bases,
+            error: () => this.showMessage('Error al cargar bases', 'error')
+        });
+    }
+
     onLabChange(labId: number): void {
         const lab = this.laboratories.find(l => l.id_laboratory === labId);
         this.selectedLabName = lab?.name || '';
+    }
+
+    onBaseChange(baseId: number): void {
+        const base = this.bases.find(b => b.id === baseId);
+        this.selectedBaseName = base?.nombre || '';
     }
 
     createBatch(): void {
@@ -170,12 +217,9 @@ export class CrearLoteDialogComponent implements OnInit, OnDestroy {
             laboratory_id: this.selectedLabId,
             laboratory_name: this.selectedLabName,
             send_date: this.formatDate(this.sendDate),
+            expected_return_date: this.expectedReturnDate ? this.formatDate(this.expectedReturnDate) : '',
             notes: this.notes || ''
         };
-
-        if (this.expectedReturnDate) {
-            params.expected_return_date = this.formatDate(this.expectedReturnDate);
-        }
 
         this.batchService.createBatch(params).pipe(
             takeUntil(this._unsubscribeAll)
@@ -192,11 +236,12 @@ export class CrearLoteDialogComponent implements OnInit, OnDestroy {
         });
     }
 
-    private formatDate(date: Date): string {
-        const y = date.getFullYear();
-        const m = String(date.getMonth() + 1).padStart(2, '0');
-        const d = String(date.getDate()).padStart(2, '0');
-        return `${y}-${m}-${d}`;
+    private formatDate(date: Date | string | null | undefined): string {
+        const d = date instanceof Date ? date : new Date(date as string);
+        const y = d.getFullYear();
+        const m = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return `${y}-${m}-${day}`;
     }
 
     private showMessage(message: string, type: 'success' | 'error' | 'warning' | 'info'): void {

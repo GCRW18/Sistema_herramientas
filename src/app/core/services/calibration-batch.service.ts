@@ -57,7 +57,7 @@ export class CalibrationBatchService {
 
         return from(this._api.post('herramientas/CalibrationBatches/listarCalibrationBatches', params)).pipe(
             switchMap((response: any) => {
-                const data = response?.data || [];
+                const data = response?.datos || response?.data || [];
                 this._batches.set(data);
                 this._batchesSubject.next(data);
                 this._isLoading.set(false);
@@ -108,7 +108,7 @@ export class CalibrationBatchService {
 
         return from(this._api.post('herramientas/CalibrationBatches/listarBatchItems', params)).pipe(
             switchMap((response: any) => {
-                const data = response?.data || [];
+                const data = response?.datos || response?.data || [];
                 this._batchItems.set(data);
                 return of(data);
             }),

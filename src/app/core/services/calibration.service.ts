@@ -7,7 +7,6 @@ import {
     CalibrationDashboard,
     CalibrationLaboratory,
     CalibrationFilters,
-    CalibrationReportMGH102,
     ScanToolResult,
     CalibrationBatch,
     CalibrationBatchItem,
@@ -460,7 +459,8 @@ export class CalibrationService {
         return from(this._api.post('herramientas/calibrations/listarJackServiceStatus', params)).pipe(
             switchMap((response: any) => {
                 return of(response?.datos || []);
-            })
+            }),
+            catchError(() => of([]))
         );
     }
 
@@ -716,6 +716,10 @@ export class CalibrationService {
                 const labs = response?.datos || [];
                 this._laboratories.next(labs);
                 return of(labs);
+            }),
+            catchError(() => {
+                this._laboratories.next([]);
+                return of([]);
             })
         );
     }
@@ -770,44 +774,6 @@ export class CalibrationService {
     // -----------------------------------------------------------------------------------------------------
     // @ Public methods - Reports (MGH)
     // -----------------------------------------------------------------------------------------------------
-
-    /**
-     * Generate MGH-102 Report: Herramientas sujetas a calibración
-     */
-    getReportMGH102(filters?: any): Observable<CalibrationReportMGH102> {
-        return from(this._api.post('herramientas/calibrations/generateReportMGH102', filters || {})).pipe(
-            switchMap((response: any) => {
-                return of(response?.datos || { tools: [], generatedAt: new Date().toISOString() });
-            })
-        );
-    }
-
-    /**
-     * Generate MGH-103 Report: Reporte mensual de calibraciones
-     */
-    getReportMGH103(year: number, month: number): Observable<any> {
-        return from(this._api.post('herramientas/calibrations/generateReportMGH103', {
-            year,
-            month
-        })).pipe(
-            switchMap((response: any) => {
-                return of(response?.datos || { calibrations: [], month, year });
-            })
-        );
-    }
-
-    /**
-     * Generate MGH-104 Report: Próximas a vencer
-     */
-    getReportMGH104(daysAhead: number = 30): Observable<any> {
-        return from(this._api.post('herramientas/calibrations/generateReportMGH104', {
-            days_ahead: daysAhead
-        })).pipe(
-            switchMap((response: any) => {
-                return of(response?.datos || { tools: [], daysAhead });
-            })
-        );
-    }
 
     /**
      * Export report to Excel
@@ -884,6 +850,30 @@ export class CalibrationService {
             switchMap((response: any) => {
                 return of(response?.datos || []);
             })
+        );
+    }
+
+    getReportMGH102(params: any = {}): Observable<any[]> {
+        return from(this._api.post('herramientas/calibrations/getReportMGH102', {
+            start: 0, limit: 500, sort: 'next_calibration_date', dir: 'asc', ...params
+        })).pipe(
+            switchMap((response: any) => of(response?.datos || []))
+        );
+    }
+
+    getReportMGH103(params: any = {}): Observable<any[]> {
+        return from(this._api.post('herramientas/calibrations/getReportMGH103', {
+            start: 0, limit: 12, ...params
+        })).pipe(
+            switchMap((response: any) => of(response?.datos || []))
+        );
+    }
+
+    getReportMGH104(params: any = {}): Observable<any[]> {
+        return from(this._api.post('herramientas/calibrations/getReportMGH104', {
+            start: 0, limit: 500, sort: 'next_calibration_date', dir: 'asc', ...params
+        })).pipe(
+            switchMap((response: any) => of(response?.datos || []))
         );
     }
 }

@@ -5,7 +5,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
-import { Subject } from 'rxjs';
+import { Observable, Subject } from 'rxjs';
 import { takeUntil, finalize } from 'rxjs/operators';
 import { CalibrationService } from '../../../../core/services/calibration.service';
 
@@ -521,53 +521,53 @@ export class ReportesAlertasComponent implements OnInit, OnDestroy {
         this.isGenerating    = true;
         this.reportGenerated = false;
 
-        setTimeout(() => {
-            switch (this.selectedReport!.id) {
-                case 'mgh102':
-                    this.reportColumns = [
-                        { key: 'code', label: 'Código' }, { key: 'name', label: 'Herramienta' },
-                        { key: 'serial', label: 'S/N' }, { key: 'category', label: 'Categoría' },
-                        { key: 'last_cal', label: 'Últ. Cal.' }, { key: 'next_cal', label: 'Próx. Cal.' },
-                        { key: 'status', label: 'Estado' }, { key: 'lab', label: 'Laboratorio' }
-                    ];
-                    this.reportData = [
-                        { code: 'BOA-H-7023', name: 'TORQUIMETRO DIGITAL 50-250 NM', serial: 'TQ-2024-001', category: 'TORQUIMETROS', last_cal: '10/02/2025', next_cal: '10/02/2026', status: 'VENCIDA', lab: 'METROTEST' },
-                        { code: 'BOA-H-7045', name: 'CALIBRADOR PIE DE REY 300MM', serial: 'CP-2023-015', category: 'MEDICION', last_cal: '18/02/2025', next_cal: '18/02/2026', status: 'CRITICA', lab: 'METROTEST' },
-                        { code: 'BOA-C-8001', name: 'GATA HIDRAULICA 10 TON', serial: 'GH-2022-003', category: 'GATAS', last_cal: '20/06/2025', next_cal: '20/06/2026', status: 'VIGENTE', lab: 'METROLOGIA IND.' },
-                        { code: 'BOA-H-7089', name: 'MICROMETRO EXTERIOR 0-25MM', serial: 'ME-2024-008', category: 'MEDICION', last_cal: '25/08/2025', next_cal: '25/02/2026', status: 'URGENTE', lab: 'METROTEST' },
-                        { code: 'BOA-H-7102', name: 'MANOMETRO DIGITAL 0-100 PSI', serial: 'MD-2023-022', category: 'MANOMETROS', last_cal: '05/03/2025', next_cal: '05/03/2026', status: 'PROXIMA', lab: 'CALIBRA TECH' }
-                    ];
-                    break;
-                case 'mgh103':
-                    this.reportColumns = [
-                        { key: 'month', label: 'Mes' }, { key: 'sent', label: 'Enviadas' },
-                        { key: 'returned', label: 'Retornadas' }, { key: 'approved', label: 'Aprobadas' },
-                        { key: 'rejected', label: 'Rechazadas' }, { key: 'cost', label: 'Costo (Bs)' },
-                        { key: 'avg_days', label: 'Días Prom.' }
-                    ];
-                    this.reportData = [
-                        { month: 'ENE 2026', sent: 12, returned: 10, approved: 9, rejected: 1, cost: '15,400', avg_days: 18 },
-                        { month: 'FEB 2026', sent: 8, returned: 6, approved: 6, rejected: 0, cost: '9,200', avg_days: 15 }
-                    ];
-                    break;
-                case 'mgh104':
-                    this.reportColumns = [
-                        { key: 'code', label: 'Código' }, { key: 'name', label: 'Herramienta' },
-                        { key: 'expiry', label: 'Vencimiento' }, { key: 'days', label: 'Días Rest.' },
-                        { key: 'urgency', label: 'Urgencia' }, { key: 'warehouse', label: 'Almacén' }
-                    ];
-                    this.reportData = [
-                        { code: 'BOA-H-7023', name: 'TORQUIMETRO DIGITAL 50-250 NM', expiry: '10/02/2026', days: -3, urgency: 'VENCIDA', warehouse: 'CBB' },
-                        { code: 'BOA-H-7045', name: 'CALIBRADOR PIE DE REY 300MM', expiry: '18/02/2026', days: 5, urgency: 'CRITICA 7D', warehouse: 'CBB' },
-                        { code: 'BOA-H-7089', name: 'MICROMETRO EXTERIOR 0-25MM', expiry: '25/02/2026', days: 12, urgency: 'URGENTE 15D', warehouse: 'VVI' },
-                        { code: 'BOA-H-7102', name: 'MANOMETRO DIGITAL 0-100 PSI', expiry: '05/03/2026', days: 20, urgency: 'PROXIMA 30D', warehouse: 'CBB' },
-                        { code: 'BOA-H-7150', name: 'TERMOMETRO INFRARROJO', expiry: '12/03/2026', days: 27, urgency: 'PROXIMA 30D', warehouse: 'CBB' }
-                    ];
-                    break;
+        const reportMap: Record<string, { call$: Observable<any[]>; columns: any[] }> = {
+            mgh102: {
+                call$: this.calibrationService.getReportMGH102(),
+                columns: [
+                    { key: 'code', label: 'Código' }, { key: 'name', label: 'Herramienta' },
+                    { key: 'serial', label: 'S/N' }, { key: 'category', label: 'Categoría' },
+                    { key: 'last_cal', label: 'Últ. Cal.' }, { key: 'next_cal', label: 'Próx. Cal.' },
+                    { key: 'status', label: 'Estado' }, { key: 'lab', label: 'Laboratorio' }
+                ]
+            },
+            mgh103: {
+                call$: this.calibrationService.getReportMGH103(),
+                columns: [
+                    { key: 'month', label: 'Mes' }, { key: 'sent', label: 'Enviadas' },
+                    { key: 'returned', label: 'Retornadas' }, { key: 'approved', label: 'Aprobadas' },
+                    { key: 'rejected', label: 'Rechazadas' }, { key: 'cost', label: 'Costo (Bs)' },
+                    { key: 'avg_days', label: 'Días Prom.' }
+                ]
+            },
+            mgh104: {
+                call$: this.calibrationService.getReportMGH104(),
+                columns: [
+                    { key: 'code', label: 'Código' }, { key: 'name', label: 'Herramienta' },
+                    { key: 'expiry', label: 'Vencimiento' }, { key: 'days', label: 'Días Rest.' },
+                    { key: 'urgency', label: 'Urgencia' }, { key: 'warehouse', label: 'Almacén' }
+                ]
             }
-            this.reportGenerated = true;
-            this.isGenerating    = false;
-        }, 1200);
+        };
+
+        const config = reportMap[this.selectedReport.id];
+        if (!config) {
+            this.isGenerating = false;
+            return;
+        }
+
+        this.reportColumns = config.columns;
+
+        config.call$.subscribe({
+            next: (data: any[]) => {
+                this.reportData      = data;
+                this.reportGenerated = true;
+                this.isGenerating    = false;
+            },
+            error: () => {
+                this.isGenerating = false;
+            }
+        });
     }
 
     exportToExcel(): void {
@@ -586,7 +586,7 @@ export class ReportesAlertasComponent implements OnInit, OnDestroy {
                 }
                 this.snackBar.open('Reporte Excel generado', 'Cerrar', { duration: 3000, panelClass: ['snackbar-success'] });
             },
-            error: () => { this.snackBar.open('Exportación no disponible en modo offline', 'Cerrar', { duration: 3000 }); }
+            error: () => { this.snackBar.open('Error al exportar reporte', 'Cerrar', { duration: 3000, panelClass: ['snackbar-error'] }); }
         });
     }
 
@@ -620,43 +620,27 @@ export class ReportesAlertasComponent implements OnInit, OnDestroy {
             finalize(() => this.isLoadingAlerts = false)
         ).subscribe({
             next: (res: any) => {
-                if (res?.data?.length > 0) {
-                    let data: AlertItem[] = res.data.map((item: any) => ({
-                        tool_code:          item.tool_code || item.codigo,
-                        tool_name:          item.tool_name || item.nombre,
-                        serial_number:      item.serial_number || item.serie,
-                        category:           item.category || '',
-                        warehouse:          item.warehouse || item.almacen || 'CBB',
-                        calibration_expiry: this.formatDate(item.next_calibration_date || item.calibration_expiry),
-                        days_remaining:     item.days_remaining ?? 0,
-                        urgency:            item.urgency || 'UPCOMING_30D',
-                        is_jack:            item.is_jack || false
-                    }));
-                    this.alerts = this.selectedUrgency !== 'all'
-                        ? data.filter(a => a.urgency === this.selectedUrgency)
-                        : data;
-                } else {
-                    this.loadMockAlerts();
-                }
+                const raw: any[] = Array.isArray(res) ? res : (res?.datos || []);
+                const data: AlertItem[] = raw.map((item: any) => ({
+                    tool_code:          item.tool_code || item.codigo,
+                    tool_name:          item.tool_name || item.nombre,
+                    serial_number:      item.serial_number || item.serie,
+                    category:           item.category || '',
+                    warehouse:          item.warehouse || item.almacen || '',
+                    calibration_expiry: this.formatDate(item.next_calibration_date || item.calibration_expiry),
+                    days_remaining:     item.days_remaining ?? 0,
+                    urgency:            item.urgency || 'UPCOMING_30D',
+                    is_jack:            item.is_jack || false
+                }));
+                this.alerts = this.selectedUrgency !== 'all'
+                    ? data.filter(a => a.urgency === this.selectedUrgency)
+                    : data;
             },
-            error: () => this.loadMockAlerts()
+            error: () => {
+                this.alerts = [];
+                this.snackBar.open('Error al cargar alertas', 'Cerrar', { duration: 3000, panelClass: ['snackbar-error'] });
+            }
         });
-    }
-
-    private loadMockAlerts(): void {
-        const mock: AlertItem[] = [
-            { tool_code: 'BOA-H-7023', tool_name: 'TORQUIMETRO DIGITAL 50-250 NM', serial_number: 'TQ-2024-001', category: 'TORQUIMETROS', warehouse: 'CBB', calibration_expiry: '10/02/2026', days_remaining: -3, urgency: 'EXPIRED', is_jack: false },
-            { tool_code: 'BOA-H-7045', tool_name: 'CALIBRADOR PIE DE REY 300MM', serial_number: 'CP-2023-015', category: 'MEDICION', warehouse: 'CBB', calibration_expiry: '18/02/2026', days_remaining: 5, urgency: 'CRITICAL_7D', is_jack: false },
-            { tool_code: 'BOA-C-8001', tool_name: 'GATA HIDRAULICA 10 TON', serial_number: 'GH-2022-003', category: 'GATAS', warehouse: 'CBB', calibration_expiry: '20/02/2026', days_remaining: 7, urgency: 'CRITICAL_7D', is_jack: true },
-            { tool_code: 'BOA-H-7089', tool_name: 'MICROMETRO EXTERIOR 0-25MM', serial_number: 'ME-2024-008', category: 'MEDICION', warehouse: 'VVI', calibration_expiry: '25/02/2026', days_remaining: 12, urgency: 'URGENT_15D', is_jack: false },
-            { tool_code: 'BOA-H-7102', tool_name: 'MANOMETRO DIGITAL 0-100 PSI', serial_number: 'MD-2023-022', category: 'MANOMETROS', warehouse: 'CBB', calibration_expiry: '05/03/2026', days_remaining: 20, urgency: 'UPCOMING_30D', is_jack: false },
-            { tool_code: 'BOA-C-8005', tool_name: 'GATA TIPO BOTELLA 5 TON', serial_number: 'GB-2023-001', category: 'GATAS', warehouse: 'LPB', calibration_expiry: '08/03/2026', days_remaining: 23, urgency: 'UPCOMING_30D', is_jack: true },
-            { tool_code: 'BOA-H-7150', tool_name: 'TERMOMETRO INFRARROJO', serial_number: 'TI-2024-005', category: 'TEMPERATURA', warehouse: 'CBB', calibration_expiry: '12/03/2026', days_remaining: 27, urgency: 'UPCOMING_30D', is_jack: false },
-            { tool_code: 'BOA-H-7200', tool_name: 'TORQUIMETRO CLICK 20-100 NM', serial_number: 'TC-2024-012', category: 'TORQUIMETROS', warehouse: 'VVI', calibration_expiry: '15/02/2026', days_remaining: 2, urgency: 'CRITICAL_7D', is_jack: false }
-        ];
-        this.alerts = this.selectedUrgency !== 'all'
-            ? mock.filter(a => a.urgency === this.selectedUrgency)
-            : mock;
     }
 
     countByUrgency(urgency: string): number {
