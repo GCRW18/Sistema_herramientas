@@ -21,6 +21,12 @@ export class ErpApiService {
         });
     }
 
+    postRaw(url: string, params: any): Promise<any> {
+        return (PxpClient as any).request({ url, params })
+            ? fetch((PxpClient as any).request({ url, params })).then(r => r.json())
+            : Promise.resolve(null);
+    }
+
     post (url: string, params: any, options: any = {}) {
         this._load._setLoadingStatus(true, url);
         return PxpClient.doRequest({

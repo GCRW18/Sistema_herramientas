@@ -153,31 +153,31 @@ export class ExitsComponent implements OnInit, OnDestroy {
     private readonly MODULE_DEFS: ModuleDef[] = [
         {
             type: 1, label: 'ENVÍO A', sublabel: 'OTRAS BASES',
-            color: '#FF6A00', textColor: '#fff',
+            color: '#ca0505', textColor: '#ffffff',
             svgIcon: 'heroicons_outline:building-office',
             loader: async () => (await import('./envio-otras-bases/envio-otras-bases.component')).EnvioOtrasBasesComponent
         },
         {
             type: 2, label: 'TRASPASO', sublabel: 'OTRA ÁREA',
-            color: '#1AAA1F', textColor: '#fff',
+            color: '#ca0505', textColor: '#ffffff',
             svgIcon: 'heroicons_outline:arrow-path',
             loader: async () => (await import('./traspaso-otra-area/traspaso-otra-area.component')).TraspasoOtraAreaComponent
         },
         {
             type: 3, label: 'PRÉSTAMO', sublabel: 'TÉC./OTROS',
-            color: '#7113CF', textColor: '#fff',
+            color: '#ca0505', textColor: '#ffffff',
             svgIcon: 'heroicons_outline:building-storefront',
             loader: async () => (await import('./prestamo-terceros/prestamo-terceros.component')).PrestamoTercerosComponent
         },
         {
             type: 4, label: 'CUARENTENA', sublabel: 'DE ACTIVO',
-            color: '#FFC501', textColor: '#000',
+            color: '#ca0505', textColor: '#ffffff',
             svgIcon: 'heroicons_outline:exclamation-triangle',
             loader: async () => (await import('./poner-cuarentena/poner-cuarentena.component')).PonerCuarentenaComponent
         },
         {
             type: 5, label: 'BAJA', sublabel: 'DE ACTIVO',
-            color: '#e94125', textColor: '#fff',
+            color: '#ca0505', textColor: '#ffffff',
             svgIcon: 'heroicons_outline:trash',
             loader: async () => (await import('./baja/baja.component')).BajaComponent
         },

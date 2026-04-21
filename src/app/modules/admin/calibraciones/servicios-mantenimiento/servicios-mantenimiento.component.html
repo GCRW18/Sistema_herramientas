@@ -1,0 +1,355 @@
+<div class="flex flex-col w-full h-full bg-[#f8f9fc] dark:bg-[#0F172AFF] transition-colors duration-300 font-sans overflow-hidden">
+
+    <!-- Decorative shapes -->
+    <div class="fixed top-20 right-10 w-40 h-40 bg-[#0F172AFF] rounded-full border-[3px] border-black opacity-5 pointer-events-none"></div>
+    <div class="fixed bottom-10 left-10 w-24 h-24 bg-amber-400 rotate-12 border-[3px] border-black opacity-5 pointer-events-none"></div>
+
+    <div class="flex-1 flex flex-col p-4 gap-3 overflow-hidden relative z-10">
+
+        <!-- HEADER -->
+        <div class="flex items-center justify-between gap-4 shrink-0 flex-wrap">
+
+            <div class="flex items-center gap-4">
+                <div class="flex items-center justify-center w-10 h-10 bg-white dark:bg-[#0F172AFF] border-[3px] border-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] rounded-xl shrink-0">
+                    <mat-icon class="!text-xl text-black dark:text-amber-400">build</mat-icon>
+                </div>
+                <div>
+                    <h1 class="text-xl font-black text-black dark:text-white uppercase tracking-tighter leading-none">
+                        SERVICIOS DE MANTENIMIENTO
+                    </h1>
+                    <div class="flex items-center gap-2 mt-0.5 flex-wrap">
+                        <p class="text-[10px] font-bold bg-amber-400 text-black px-2 py-0.5 inline-block border border-black uppercase">
+                            MGH-109 · Registro de Mantenimiento
+                        </p>
+                        <span *ngIf="getRetrasadasCount() > 0"
+                              class="text-[10px] font-bold px-2 py-0.5 border-[2px] border-red-400 bg-red-50 dark:bg-red-900/30 text-red-700 rounded-lg animate-pulse">
+                            ⚠ {{ getRetrasadasCount() }} retrasada{{ getRetrasadasCount() !== 1 ? 's' : '' }}
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-3 flex-wrap">
+                <div class="relative">
+                    <input type="text"
+                           [formControl]="searchControl"
+                           placeholder="Buscar mantenimientos..."
+                           class="w-56 h-9 pl-9 pr-3 bg-white dark:bg-[#0F172AFF] text-black dark:text-white
+                                  border-[2px] border-black rounded-xl font-bold text-sm
+                                  focus:outline-none focus:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-all">
+                    <mat-icon class="absolute left-2.5 top-1.5 text-gray-400 !text-lg">search</mat-icon>
+                </div>
+
+                <select [formControl]="filterEstado"
+                        class="h-9 px-3 bg-white dark:bg-[#0F172AFF] text-black dark:text-white
+                               border-[2px] border-black rounded-xl font-bold text-sm
+                               focus:outline-none focus:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-all">
+                    <option *ngFor="let e of estadosFiltro" [value]="e.value">{{ e.label }}</option>
+                </select>
+
+                <select [formControl]="tipoServicio"
+                        class="h-9 px-3 bg-white dark:bg-[#0F172AFF] text-black dark:text-white
+                               border-[2px] border-black rounded-xl font-bold text-sm
+                               focus:outline-none focus:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-all">
+                    <option *ngFor="let t of tiposServicio" [value]="t.value">{{ t.label }}</option>
+                </select>
+
+                <button (click)="imprimirReporte()"
+                        matTooltip="Imprimir reporte de auditoría"
+                        class="px-3 py-1.5 bg-indigo-600 text-white font-black text-xs border-2 border-black rounded-xl
+                               hover:bg-indigo-500 transition-all shadow-[2px_2px_0px_0px_#000] flex items-center gap-1">
+                    <mat-icon class="!text-sm">picture_as_pdf</mat-icon>
+                    Reporte
+                </button>
+
+                <button (click)="nuevoEnvio()"
+                        class="px-4 py-2 bg-[#0F172AFF] hover:bg-[#1a2555] text-white font-black text-sm
+                               border-[2px] border-black rounded-full
+                               shadow-[3px_3px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px]
+                               hover:shadow-[2px_2px_0px_0px_#000] active:shadow-none
+                               transition-all uppercase flex items-center gap-2">
+                    <mat-icon class="!text-base text-amber-400">add</mat-icon> Nuevo Envío
+                </button>
+            </div>
+        </div>
+
+        <!-- Filtros avanzados de fecha -->
+        <div class="flex items-center gap-3 flex-wrap bg-white dark:bg-slate-800 p-2 rounded-xl border-2 border-black">
+            <span class="text-[10px] font-black uppercase text-gray-500">Filtros avanzados:</span>
+            <div class="flex items-center gap-1">
+                <span class="text-[9px] font-bold">Desde:</span>
+                <input type="date" [formControl]="fechaDesde" class="h-7 px-2 text-xs border-2 border-black rounded-lg bg-white dark:bg-[#0F172AFF]">
+            </div>
+            <div class="flex items-center gap-1">
+                <span class="text-[9px] font-bold">Hasta:</span>
+                <input type="date" [formControl]="fechaHasta" class="h-7 px-2 text-xs border-2 border-black rounded-lg bg-white dark:bg-[#0F172AFF]">
+            </div>
+            <button *ngIf="fechaDesde.value || fechaHasta.value || tipoServicio.value || filterEstado.value || searchControl.value"
+                    (click)="limpiarFiltros()"
+                    class="text-[9px] font-bold text-red-500 hover:text-red-700">
+                Limpiar filtros
+            </button>
+        </div>
+
+        <!-- TABLA -->
+        <div class="flex-1 flex flex-col overflow-hidden border-[3px] border-black bg-white dark:bg-slate-800 rounded-2xl shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+
+            <div class="px-4 py-2.5 bg-[#0F172AFF] border-b-[3px] border-black flex items-center justify-between shrink-0 flex-wrap gap-2">
+                <h2 class="text-sm font-black text-white uppercase tracking-wider flex items-center gap-2">
+                    <mat-icon class="!text-base text-amber-400">build</mat-icon>
+                    MANTENIMIENTOS ACTIVOS ({{ filteredMantenimientos.length }})
+                </h2>
+
+                <div class="flex items-center gap-4">
+                    <div class="flex items-center gap-2 bg-white/20 rounded-lg px-3 py-1.5 border border-white/30">
+                        <div class="w-5 h-5 bg-[#0F172AFF] border border-white rounded flex items-center justify-center">
+                            <mat-icon class="!text-xs text-amber-400">build</mat-icon>
+                        </div>
+                        <div>
+                            <div class="text-[8px] font-black uppercase text-white/80 leading-none">En Taller</div>
+                            <div class="text-sm font-black text-white leading-none">{{ getEnTallerCount() }}</div>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center gap-2 rounded-lg px-3 py-1.5 border"
+                         [ngClass]="getRetrasadasCount() > 0 ? 'bg-red-500/30 border-red-400' : 'bg-white/20 border-white/30'">
+                        <div class="w-5 h-5 rounded flex items-center justify-center"
+                             [ngClass]="getRetrasadasCount() > 0 ? 'bg-red-500' : 'bg-gray-500'">
+                            <mat-icon class="!text-xs text-white">schedule</mat-icon>
+                        </div>
+                        <div>
+                            <div class="text-[8px] font-black uppercase leading-none"
+                                 [ngClass]="getRetrasadasCount() > 0 ? 'text-red-200' : 'text-white/80'">Retrasadas</div>
+                            <div class="text-sm font-black leading-none"
+                                 [ngClass]="getRetrasadasCount() > 0 ? 'text-red-200' : 'text-white'">{{ getRetrasadasCount() }}</div>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center gap-2 bg-green-600/30 rounded-lg px-3 py-1.5 border border-green-400">
+                        <div class="w-5 h-5 bg-green-600 border border-white rounded flex items-center justify-center">
+                            <mat-icon class="!text-xs text-white">check_circle</mat-icon>
+                        </div>
+                        <div>
+                            <div class="text-[8px] font-black uppercase text-green-200 leading-none">A Tiempo</div>
+                            <div class="text-sm font-black text-green-200 leading-none">{{ getATiempoCount() }}</div>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center gap-2 bg-blue-600/30 rounded-lg px-3 py-1.5 border border-blue-400">
+                        <div class="w-5 h-5 bg-blue-600 border border-white rounded flex items-center justify-center">
+                            <mat-icon class="!text-xs text-white">verified</mat-icon>
+                        </div>
+                        <div>
+                            <div class="text-[8px] font-black uppercase text-blue-200 leading-none">Completados</div>
+                            <div class="text-sm font-black text-blue-200 leading-none">{{ getCompletadosCount() }}</div>
+                        </div>
+                    </div>
+
+                    <button (click)="loadMantenimientos()"
+                            [disabled]="isLoading()"
+                            matTooltip="Recargar lista"
+                            class="w-7 h-7 flex items-center justify-center rounded-lg border border-white/30
+                                   text-white hover:bg-white/20 transition-all disabled:opacity-40">
+                        <mat-icon class="!text-sm text-amber-400">refresh</mat-icon>
+                    </button>
+                </div>
+            </div>
+
+            <div *ngIf="isLoading()" class="flex-1 flex items-center justify-center bg-white dark:bg-slate-800">
+                <div class="flex flex-col items-center gap-3">
+                    <mat-spinner diameter="36"></mat-spinner>
+                    <p class="text-xs font-bold uppercase animate-pulse text-gray-500 dark:text-gray-400">
+                        Cargando mantenimientos...
+                    </p>
+                </div>
+            </div>
+
+            <div *ngIf="!isLoading()" class="overflow-y-auto flex-1 custom-scrollbar">
+                <table class="w-full">
+                    <thead class="sticky top-0 z-10">
+                    <tr class="border-b-[2px] border-black bg-gray-100 dark:bg-[#0F172AFF]">
+                        <th class="text-left px-3 py-2 font-black text-xs uppercase text-black dark:text-white w-28">N° NOTA</th>
+                        <th class="text-left px-3 py-2 font-black text-xs uppercase text-black dark:text-white w-24">TIPO</th>
+                        <th class="text-left px-3 py-2 font-black text-xs uppercase text-black dark:text-white w-32">CÓDIGO</th>
+                        <th class="text-left px-3 py-2 font-black text-xs uppercase text-black dark:text-white">HERRAMIENTA</th>
+                        <th class="text-left px-3 py-2 font-black text-xs uppercase text-black dark:text-white w-36">EMPRESA / TALLER</th>
+                        <th class="text-left px-3 py-2 font-black text-xs uppercase text-black dark:text-white w-24">ENVÍO</th>
+                        <th class="text-left px-3 py-2 font-black text-xs uppercase text-black dark:text-white w-28">RET. ESTIMADO</th>
+                        <th class="text-center px-3 py-2 font-black text-xs uppercase text-black dark:text-white w-24">TIPO SERV.</th>
+                        <th class="text-center px-3 py-2 font-black text-xs uppercase text-black dark:text-white w-24">ESTADO</th>
+                        <th class="text-center px-3 py-2 font-black text-xs uppercase text-black dark:text-white w-28">ACCIONES</th>
+                    </tr>
+                    </thead>
+                    <tbody class="bg-white dark:bg-slate-800">
+                    <tr *ngFor="let mnt of filteredMantenimientos; let last = last"
+                        [class.border-b]="!last"
+                        [class.border-gray-200]="!isOverdue(mnt)"
+                        [class.dark:border-slate-600]="!isOverdue(mnt)"
+                        [class.bg-red-50]="isOverdue(mnt)"
+                        [class.dark:bg-red-900]="isOverdue(mnt)"
+                        class="transition-colors hover:bg-gray-50 dark:hover:bg-slate-700">
+
+                        <td class="px-3 py-2">
+                                <span class="font-mono font-bold text-xs bg-gray-100 dark:bg-slate-700 px-2 py-0.5 rounded-lg border border-gray-200">
+                                    {{ mnt.record_number }}
+                                </span>
+                        </td>
+
+                        <td class="px-3 py-2">
+                                <span class="inline-block px-2 py-0.5 rounded-lg text-[10px] font-black"
+                                      [ngClass]="getTipoNota(mnt.record_number) === 'MANT' ? 'bg-purple-100 text-purple-800' : 'bg-gray-100'">
+                                    {{ getTipoNota(mnt.record_number) }}
+                                </span>
+                        </td>
+
+                        <td class="px-3 py-2">
+                            <div class="flex flex-col leading-tight">
+                                <span class="font-black text-sm font-mono text-black dark:text-white">{{ mnt.tool_code }}</span>
+                            </div>
+                        </td>
+
+                        <td class="px-3 py-2">
+                            <span class="font-bold text-gray-900 dark:text-white text-sm line-clamp-2">{{ mnt.tool_name }}</span>
+                        </td>
+
+                        <td class="px-3 py-2">
+                            <span class="text-gray-700 dark:text-gray-300 font-semibold text-sm">{{ mnt.provider }}</span>
+                        </td>
+
+                        <td class="px-3 py-2">
+                            <span class="font-mono font-semibold text-gray-600 dark:text-gray-400 text-xs">{{ mnt.send_date }}</span>
+                        </td>
+
+                        <td class="px-3 py-2">
+                            <div class="flex flex-col leading-tight">
+                                    <span class="font-mono font-semibold text-xs"
+                                          [class.text-red-600]="isOverdue(mnt)"
+                                          [class.font-black]="isOverdue(mnt)">
+                                        {{ mnt.expected_return_date || '—' }}
+                                    </span>
+                                <span *ngIf="isOverdue(mnt)" class="text-[9px] font-black text-red-600 flex items-center gap-0.5 mt-0.5">
+                                        <mat-icon class="!text-xs">warning</mat-icon>
+                                        +{{ getDiasRetrasado(mnt) }}d retrasado
+                                    </span>
+                            </div>
+                        </td>
+
+                        <td class="px-3 py-2 text-center">
+                                <span class="inline-block px-2 py-0.5 rounded-lg text-[10px] font-black uppercase whitespace-nowrap"
+                                      [ngClass]="getTypeChipClass(mnt.type)">
+                                    {{ getTypeLabel(mnt.type) }}
+                                </span>
+                        </td>
+
+                        <td class="px-3 py-2 text-center">
+                                <span class="inline-block px-2 py-0.5 border-[2px] border-black rounded-lg text-[10px] font-black uppercase"
+                                      [ngClass]="getStatusChipClass(mnt.status)">
+                                    {{ getStatusLabel(mnt.status) }}
+                                </span>
+                        </td>
+
+                        <td class="px-3 py-2">
+                            <div class="flex gap-1.5 justify-center">
+                                <button *ngIf="mnt.status === 'sent'"
+                                        (click)="registrarRetorno(mnt)"
+                                        matTooltip="Registrar retorno de mantenimiento"
+                                        class="w-8 h-8 flex items-center justify-center border-2 border-black
+                                                   bg-green-500 hover:bg-green-400
+                                                   rounded-lg shadow-[2px_2px_0px_0px_#000]
+                                                   active:translate-y-[1px] active:shadow-none transition-all">
+                                    <mat-icon class="text-white !text-base">assignment_return</mat-icon>
+                                </button>
+
+                                <button (click)="printNota(mnt)"
+                                        matTooltip="Imprimir nota de envío"
+                                        class="w-8 h-8 flex items-center justify-center border-2 border-black
+                                                   bg-indigo-100 dark:bg-indigo-900/50 hover:bg-indigo-200 dark:hover:bg-indigo-800
+                                                   rounded-lg shadow-[2px_2px_0px_0px_#000]
+                                                   active:translate-y-[1px] active:shadow-none transition-all">
+                                    <mat-icon class="text-indigo-600 dark:text-indigo-400 !text-base">print</mat-icon>
+                                </button>
+
+                                <span *ngIf="mnt.status === 'returned'"
+                                      class="inline-flex items-center gap-1 px-2 py-1 bg-green-100 border border-green-400 rounded-lg text-[10px] font-black text-green-700">
+                                        <mat-icon class="!text-xs">check_circle</mat-icon>
+                                        COMPLETADO
+                                    </span>
+                            </div>
+                        </td>
+                    </tr>
+
+                    <tr *ngIf="filteredMantenimientos.length === 0">
+                        <td colspan="10" class="p-10 text-center bg-white dark:bg-slate-800">
+                            <mat-icon class="!text-5xl text-gray-300 dark:text-gray-600 mb-2">build</mat-icon>
+                            <p class="text-gray-500 dark:text-gray-400 font-bold">
+                                {{ searchControl.value || filterEstado.value || fechaDesde.value || fechaHasta.value || tipoServicio.value
+                                ? 'No se encontraron mantenimientos con esos criterios'
+                                : 'No hay mantenimientos activos registrados' }}
+                            </p>
+                            <p class="text-xs text-gray-400 mt-1">Los mantenimientos en estado "En Taller" aparecerán aquí</p>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .custom-scrollbar::-webkit-scrollbar {
+        width: 6px;
+        height: 6px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+        background: #e2e8f0;
+        border-radius: 3px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+        background: #0F172AFF;
+        border-radius: 3px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+        background: #1e293b;
+    }
+
+    @keyframes pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.5; }
+    }
+    .animate-pulse {
+        animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
+
+    .line-clamp-2 {
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+
+    .transition-all {
+        transition-property: all;
+        transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+        transition-duration: 150ms;
+    }
+
+    tbody tr:hover {
+        background-color: #f8fafc;
+    }
+
+    .dark tbody tr:hover {
+        background-color: #1e293b;
+    }
+
+    /* Mejoras para inputs date en dark mode */
+    input[type="date"]::-webkit-calendar-picker-indicator {
+        filter: invert(1);
+        opacity: 0.6;
+        cursor: pointer;
+    }
+    .dark input[type="date"]::-webkit-calendar-picker-indicator {
+        filter: invert(1);
+        opacity: 0.8;
+    }
+</style>

@@ -128,7 +128,23 @@ export class DashboardComponent implements OnInit, AfterViewInit {
     private calibrationService = inject(CalibrationService);
     private _dialog           = inject(MatDialog);
 
-    isLoading = signal(true);
+    isLoading     = signal(true);
+    currentPanel  = signal(0);
+
+    readonly panelLabels = ['Indicadores', 'Gráficas', 'Actividad'];
+    readonly TOTAL_PANELS = 3;
+
+    prevPanel(): void {
+        this.currentPanel.update(p => (p - 1 + this.TOTAL_PANELS) % this.TOTAL_PANELS);
+    }
+
+    nextPanel(): void {
+        this.currentPanel.update(p => (p + 1) % this.TOTAL_PANELS);
+    }
+
+    goToPanel(index: number): void {
+        this.currentPanel.set(index);
+    }
 
     private movementsChartInstance?: Chart;
     private topToolsChartInstance?: Chart;
@@ -151,7 +167,7 @@ export class DashboardComponent implements OnInit, AfterViewInit {
             { icon: 'heroicons_outline:document-text',   label: 'Reportes',  description: 'Ver',      variant: 'default', route: '/reportes' }
         ]);
 
-        // Revisar alertas de calibración al cargar (una sola vez por sesión)
+        // Revisar dashboard-alertas de calibración al cargar (una sola vez por sesión)
         setTimeout(() => this.checkCalibrationAlerts(), 1200);
 
         forkJoin({

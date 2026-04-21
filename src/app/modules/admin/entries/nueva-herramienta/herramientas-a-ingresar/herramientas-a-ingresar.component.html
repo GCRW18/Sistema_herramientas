@@ -1,210 +1,210 @@
-<div class="flex flex-col w-full h-full bg-[#f8f9fc] dark:bg-[#0F172AFF] transition-colors duration-300 font-sans overflow-hidden relative"
+<div class="flex flex-col w-full h-full bg-[#f8f9fc] dark:bg-slate-900 transition-colors duration-300 font-sans overflow-hidden"
      cdkDrag cdkDragRootElement=".cdk-overlay-pane" cdkDragBoundary=".cdk-overlay-container">
 
-    <div class="fixed top-20 right-10 w-40 h-40 bg-[#111A43] rounded-full border-4 border-black opacity-5 pointer-events-none"></div>
-    <div class="fixed bottom-10 left-10 w-24 h-24 bg-violet-400 rotate-12 border-4 border-black opacity-10 pointer-events-none"></div>
-
-    <div class="flex-1 overflow-y-auto p-4 md:p-6 relative custom-scrollbar">
-
-        <!-- Header -->
-        <div class="flex flex-wrap items-center justify-between gap-3 mb-6 relative z-10">
-            <div class="flex items-center gap-4">
-                <button (click)="cerrar()"
-                        class="w-12 h-12 bg-white dark:bg-slate-800 border-2 border-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] active:shadow-none active:translate-x-1 active:translate-y-1 hover:bg-white hover:scale-105 transition-all flex items-center justify-center rounded-lg cursor-pointer"
-                        (mousedown)="$event.stopPropagation()">
-                    <mat-icon class="!text-2xl text-black dark:text-white">arrow_back</mat-icon>
-                </button>
-                <div>
-                    <h1 class="text-2xl md:text-3xl font-black text-black dark:text-white uppercase tracking-tight leading-none">
-                        Catálogo Herramientas
-                    </h1>
-                    <div class="flex items-center gap-2 mt-1">
-                        <p class="text-xs font-bold bg-[#111A43] text-white px-2 py-0.5 rounded-sm border border-white">
-                            SELECCIONAR HERRAMIENTA
-                        </p>
-                    </div>
-                </div>
-            </div>
-
-            <div class="flex gap-3">
-                <button (click)="procesar()"
-                        class="px-6 py-2 bg-yellow-400 text-black font-black text-sm border-2 border-black rounded-full shadow-[3px_3px_0px_0px_#000] hover:shadow-[2px_2px_0px_0px_#000] hover:translate-x-[2px] hover:translate-y-[2px] active:shadow-none transition-all uppercase">
-                    Agregar
-                </button>
-                <button (click)="cerrar()"
-                        class="px-6 py-2 bg-red-600 text-white font-black text-sm border-2 border-black rounded-full shadow-[3px_3px_0px_0px_#000] hover:shadow-[2px_2px_0px_0px_#000] hover:translate-x-[2px] hover:translate-y-[2px] active:shadow-none transition-all uppercase">
-                    Cancelar
-                </button>
+    <!-- ══ HEADER BAR ══ -->
+    <div class="bg-white dark:bg-slate-800 border-b-2 border-black px-4 py-2 flex items-center justify-between shrink-0"
+         cdkDragHandle>
+        <div class="flex items-center gap-3">
+            <button (click)="cerrar()"
+                    class="w-8 h-8 bg-slate-100 dark:bg-slate-700 border-2 border-black rounded hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors flex items-center justify-center shrink-0"
+                    (mousedown)="$event.stopPropagation()">
+                <mat-icon class="!text-base text-black dark:text-white">arrow_back</mat-icon>
+            </button>
+            <div>
+                <h1 class="text-sm font-black text-black dark:text-white uppercase tracking-tight leading-none">Catálogo Herramientas</h1>
+                <p class="text-[9px] text-black dark:text-gray-400 font-bold uppercase mt-0.5">Seleccione o registre una herramienta</p>
             </div>
         </div>
+        <div class="flex items-center gap-2">
+            <button (click)="cerrar()"
+                    class="px-3 py-1.5 bg-gray-200 dark:bg-slate-700 text-black dark:text-white font-black text-xs border-2 border-black rounded hover:bg-gray-300 dark:hover:bg-slate-600 transition-colors uppercase flex items-center gap-1">
+                <mat-icon class="!text-sm !w-4 !h-4">close</mat-icon>
+                Cancelar
+            </button>
+            <button (click)="procesar()"
+                    class="px-4 py-1.5 bg-yellow-400 text-black font-black text-xs border-2 border-black rounded shadow-[2px_2px_0px_0px_rgba(0,0,0,0.4)] hover:shadow-none hover:translate-x-[1px] hover:translate-y-[1px] transition-all uppercase flex items-center gap-1">
+                <mat-icon class="!text-sm !w-4 !h-4">add_circle</mat-icon>
+                Agregar
+            </button>
+        </div>
+    </div>
 
-        <!-- Formulario -->
-        <div class="neo-card-base bg-white dark:bg-slate-800 p-6 relative z-10">
-            <form [formGroup]="ingresoForm">
+    <!-- ══ BODY ══ -->
+    <div class="flex-1 overflow-y-auto p-3 custom-scrollbar">
+        <form [formGroup]="ingresoForm">
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-3">
 
-                <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                <!-- ── Columna Principal ── -->
+                <div class="lg:col-span-8">
+                    <div class="neo-card-base bg-white dark:bg-slate-800 overflow-hidden">
 
-                    <!-- Columna Principal -->
-                    <div class="lg:col-span-8">
-
-                        <!-- Búsqueda -->
-                        <div class="grid grid-cols-1 md:grid-cols-12 gap-3 mb-4">
-                            <div class="md:col-span-8 form-group">
-                                <label class="text-[11px] font-black uppercase text-gray-700 dark:text-gray-300 mb-1.5 block">
-                                    Buscar (Código, Nombre o P/N)
-                                </label>
-                                <select formControlName="buscar" (change)="selectHerramienta($any($event.target).value)"
-                                        class="w-full h-11 text-sm font-bold border-2 border-black dark:border-slate-600 rounded-lg px-4 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[3px_3px_0px_0px_#000] transition-shadow outline-none appearance-none cursor-pointer">
-                                    <option value="">-- Seleccione una herramienta --</option>
-                                    <option *ngFor="let h of filteredHerramientas" [value]="h.codigo">
-                                        {{ h.codigo }} - {{ h.nombre }}
-                                    </option>
-                                </select>
-                            </div>
-                            <div class="md:col-span-4">
-                                <label class="text-[11px] font-black uppercase text-gray-700 dark:text-gray-300 mb-1.5 block opacity-0">Acción</label>
-                                <button type="button" (click)="crearItem()"
-                                        class="w-full h-11 bg-green-500 text-white font-black text-sm border-2 border-black rounded-lg shadow-[3px_3px_0px_0px_#000] hover:shadow-[2px_2px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px] active:shadow-none transition-all flex items-center justify-center gap-2 uppercase">
-                                    <mat-icon class="!text-lg">add</mat-icon>
-                                    Nuevo
-                                </button>
-                            </div>
+                        <!-- Header único -->
+                        <div class="flex items-center gap-1.5 px-3 py-2 bg-[#0F172AFF] border-b-2 border-black">
+                            <mat-icon class="text-amber-400 !text-sm">build_circle</mat-icon>
+                            <span class="font-black text-xs uppercase text-white">Datos de la Herramienta</span>
                         </div>
 
-                        <!-- Fila 1: Código, Coincidencias, UM -->
-                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                            <div class="form-group">
-                                <label class="text-[11px] font-black uppercase text-gray-700 dark:text-gray-300 mb-1.5 block">
-                                    Código
-                                </label>
-                                <input type="text" formControlName="codigo" readonly
-                                       class="w-full h-11 text-sm font-bold border-2 border-gray-300 dark:border-slate-600 rounded-lg px-4 bg-gray-100 dark:bg-slate-700 text-black dark:text-white cursor-not-allowed">
+                        <div class="p-3 flex flex-col gap-3">
+
+                            <!-- Búsqueda -->
+                            <div class="grid grid-cols-12 gap-2">
+                                <div class="col-span-9">
+                                    <label class="text-[9px] font-black uppercase text-black dark:text-gray-400 mb-0.5 block">
+                                        Buscar (Código, Nombre o P/N)
+                                        <span *ngIf="isSearching()" class="ml-1 text-amber-500">buscando...</span>
+                                    </label>
+                                    <div class="relative">
+                                        <input type="text"
+                                               formControlName="buscar"
+                                               [matAutocomplete]="autoCatalogo"
+                                               placeholder="Escriba para buscar..."
+                                               class="w-full h-8 text-xs font-bold border-2 border-black dark:border-slate-600 rounded pl-7 pr-2 bg-white dark:bg-slate-700 text-black dark:text-white focus:shadow-[2px_2px_0px_0px_#000] transition-shadow outline-none placeholder:text-gray-400">
+                                        <mat-icon class="absolute left-1.5 top-1/2 -translate-y-1/2 text-gray-500 !text-sm pointer-events-none">search</mat-icon>
+                                        <mat-autocomplete #autoCatalogo="matAutocomplete"
+                                                          [displayWith]="displayHerramienta"
+                                                          (optionSelected)="selectHerramienta($event.option.value)">
+                                            <mat-option *ngFor="let h of filteredHerramientas" [value]="h">
+                                                <div class="flex flex-col py-0.5">
+                                                    <span class="font-bold text-xs">{{ h.codigo }} — {{ h.nombre }}</span>
+                                                    <span class="text-[10px] text-gray-500">P/N: {{ h.pn }} | S/N: {{ h.sn }} | {{ h.estado }}</span>
+                                                </div>
+                                            </mat-option>
+                                            <mat-option *ngIf="filteredHerramientas.length === 0 && !isSearching() && ingresoForm.get('buscar')?.value?.length >= 2" disabled>
+                                                <span class="text-xs text-gray-400">Sin resultados</span>
+                                            </mat-option>
+                                        </mat-autocomplete>
+                                    </div>
+                                </div>
+                                <div class="col-span-3 flex flex-col justify-end">
+                                    <button type="button" (click)="crearItem()"
+                                            class="h-8 bg-green-600 text-white font-black text-xs border-2 border-black rounded shadow-[2px_2px_0px_0px_#000] hover:shadow-none hover:translate-x-[1px] hover:translate-y-[1px] transition-all flex items-center justify-center gap-1 uppercase">
+                                        <mat-icon class="!text-sm">add</mat-icon>
+                                        Nuevo
+                                    </button>
+                                </div>
                             </div>
 
-                            <div class="form-group">
-                                <label class="text-[11px] font-black uppercase text-gray-700 dark:text-gray-300 mb-1.5 block">
-                                    Coincidencias Encontradas
-                                </label>
-                                <input type="text" [value]="coincidencias()" readonly
-                                       class="w-full h-11 text-center text-sm font-black border-2 border-gray-300 dark:border-slate-600 rounded-lg px-4 bg-gray-100 dark:bg-slate-700 text-black dark:text-white cursor-not-allowed">
+                            <!-- Divisor: Identificación -->
+                            <div class="flex items-center gap-2">
+                                <span class="text-[9px] font-black uppercase text-black dark:text-gray-500 whitespace-nowrap">Identificación</span>
+                                <div class="flex-1 border-t border-dashed border-gray-300 dark:border-slate-600"></div>
                             </div>
 
-                            <div class="form-group">
-                                <label class="text-[11px] font-black uppercase text-gray-700 dark:text-gray-300 mb-1.5 block">
-                                    Unidad Medida
-                                </label>
-                                <input type="text" formControlName="um"
-                                       class="w-full h-11 text-sm font-bold border-2 border-black dark:border-slate-600 rounded-lg px-4 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[3px_3px_0px_0px_#000] transition-shadow outline-none">
-                            </div>
-                        </div>
-
-                        <!-- Fila 2: P/N y Estado -->
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                            <div class="form-group">
-                                <label class="text-[11px] font-black uppercase text-gray-700 dark:text-gray-300 mb-1.5 block">
-                                    P/N (Part Number)
-                                </label>
-                                <input type="text" formControlName="pn"
-                                       class="w-full h-11 text-sm font-bold border-2 border-black dark:border-slate-600 rounded-lg px-4 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[3px_3px_0px_0px_#000] transition-shadow outline-none">
-                            </div>
-
-                            <div class="form-group">
-                                <label class="text-[11px] font-black uppercase text-gray-700 dark:text-gray-300 mb-1.5 block">
-                                    Estado
-                                </label>
-                                <input type="text" formControlName="estado"
-                                       class="w-full h-11 text-sm font-bold border-2 border-black dark:border-slate-600 rounded-lg px-4 bg-white dark:bg-[#0F172AFF] text-green-600 dark:text-green-400 focus:shadow-[3px_3px_0px_0px_#000] transition-shadow outline-none">
-                            </div>
-                        </div>
-
-                        <!-- Fila 3: Nombre y Ubicación -->
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                            <div class="form-group">
-                                <label class="text-[11px] font-black uppercase text-gray-700 dark:text-gray-300 mb-1.5 block">
-                                    Nombre / Descripción
-                                </label>
-                                <input type="text" formControlName="nombre"
-                                       class="w-full h-11 text-sm font-bold border-2 border-black dark:border-slate-600 rounded-lg px-4 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[3px_3px_0px_0px_#000] transition-shadow outline-none">
+                            <div class="grid grid-cols-12 gap-2">
+                                <div class="col-span-3">
+                                    <label class="text-[9px] font-black uppercase text-black dark:text-gray-400 mb-0.5 block">Código</label>
+                                    <input type="text" formControlName="codigo" readonly
+                                           class="w-full h-8 text-xs font-bold border-2 border-dashed border-gray-300 dark:border-slate-600 rounded px-2 bg-gray-50 dark:bg-slate-700 text-black dark:text-white cursor-not-allowed">
+                                </div>
+                                <div class="col-span-4">
+                                    <label class="text-[9px] font-black uppercase text-black dark:text-gray-400 mb-0.5 block">P/N (Part Number)</label>
+                                    <input type="text" formControlName="pn"
+                                           class="w-full h-8 text-xs font-bold border-2 border-black dark:border-slate-600 rounded px-2 bg-white dark:bg-slate-700 text-black dark:text-white focus:shadow-[2px_2px_0px_0px_#000] transition-shadow outline-none">
+                                </div>
+                                <div class="col-span-5">
+                                    <label class="text-[9px] font-black uppercase text-black dark:text-gray-400 mb-0.5 block">S/N (Serial Number)</label>
+                                    <input type="text" formControlName="sn"
+                                           class="w-full h-8 text-xs font-bold border-2 border-black dark:border-slate-600 rounded px-2 bg-white dark:bg-slate-700 text-black dark:text-white focus:shadow-[2px_2px_0px_0px_#000] transition-shadow outline-none">
+                                </div>
+                                <div class="col-span-4">
+                                    <label class="text-[9px] font-black uppercase text-black dark:text-gray-400 mb-0.5 block">Unidad Medida</label>
+                                    <input type="text" formControlName="um"
+                                           class="w-full h-8 text-xs font-bold border-2 border-black dark:border-slate-600 rounded px-2 bg-white dark:bg-slate-700 text-black dark:text-white focus:shadow-[2px_2px_0px_0px_#000] transition-shadow outline-none">
+                                </div>
+                                <div class="col-span-4">
+                                    <label class="text-[9px] font-black uppercase text-black dark:text-gray-400 mb-0.5 block">Estado</label>
+                                    <input type="text" formControlName="estado"
+                                           class="w-full h-8 text-xs font-bold border-2 border-black dark:border-slate-600 rounded px-2 bg-white dark:bg-slate-700 text-green-600 dark:text-green-400 focus:shadow-[2px_2px_0px_0px_#000] transition-shadow outline-none">
+                                </div>
+                                <div class="col-span-4">
+                                    <label class="text-[9px] font-black uppercase text-black dark:text-gray-400 mb-0.5 block">Coincidencias</label>
+                                    <input type="text" [value]="coincidencias()" readonly
+                                           class="w-full h-8 text-center text-xs font-black border-2 border-dashed border-gray-300 dark:border-slate-600 rounded px-2 bg-gray-50 dark:bg-slate-700 text-black dark:text-white cursor-not-allowed">
+                                </div>
                             </div>
 
-                            <div class="form-group">
-                                <label class="text-[11px] font-black uppercase text-gray-700 dark:text-gray-300 mb-1.5 block">
-                                    Ubicación
-                                </label>
-                                <input type="text" formControlName="ubicacion"
-                                       class="w-full h-11 text-sm font-bold border-2 border-black dark:border-slate-600 rounded-lg px-4 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[3px_3px_0px_0px_#000] transition-shadow outline-none">
-                            </div>
-                        </div>
-
-                        <!-- S/N -->
-                        <div class="form-group mb-4">
-                            <label class="text-[11px] font-black uppercase text-gray-700 dark:text-gray-300 mb-1.5 block">
-                                S/N (Serial Number)
-                            </label>
-                            <input type="text" formControlName="sn"
-                                   class="w-full h-11 text-sm font-bold border-2 border-black dark:border-slate-600 rounded-lg px-4 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[3px_3px_0px_0px_#000] transition-shadow outline-none">
-                        </div>
-
-                        <!-- Cantidad y Documento -->
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                            <div class="form-group">
-                                <label class="text-[11px] font-black uppercase text-gray-700 dark:text-gray-300 mb-1.5 block">
-                                    Cantidad
-                                </label>
-                                <input type="number" formControlName="cantidad" min="1"
-                                       class="w-full h-11 text-center text-sm font-black border-2 border-black dark:border-slate-600 rounded-lg px-4 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[3px_3px_0px_0px_#000] transition-shadow outline-none">
+                            <!-- Divisor: Descripción -->
+                            <div class="flex items-center gap-2">
+                                <span class="text-[9px] font-black uppercase text-black dark:text-gray-500 whitespace-nowrap">Descripción</span>
+                                <div class="flex-1 border-t border-dashed border-gray-300 dark:border-slate-600"></div>
                             </div>
 
-                            <div class="form-group">
-                                <label class="text-[11px] font-black uppercase text-gray-700 dark:text-gray-300 mb-1.5 block">
-                                    Documento (PO, FAC, REC)
-                                </label>
-                                <input type="text" formControlName="documento"
-                                       class="w-full h-11 text-sm font-bold border-2 border-black dark:border-slate-600 rounded-lg px-4 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[3px_3px_0px_0px_#000] transition-shadow outline-none">
+                            <div class="grid grid-cols-2 gap-2">
+                                <div>
+                                    <label class="text-[9px] font-black uppercase text-black dark:text-gray-400 mb-0.5 block">Nombre / Descripción</label>
+                                    <input type="text" formControlName="nombre"
+                                           class="w-full h-8 text-xs font-bold border-2 border-black dark:border-slate-600 rounded px-2 bg-white dark:bg-slate-700 text-black dark:text-white focus:shadow-[2px_2px_0px_0px_#000] transition-shadow outline-none">
+                                </div>
+                                <div>
+                                    <label class="text-[9px] font-black uppercase text-black dark:text-gray-400 mb-0.5 block">Ubicación</label>
+                                    <input type="text" formControlName="ubicacion"
+                                           class="w-full h-8 text-xs font-bold border-2 border-black dark:border-slate-600 rounded px-2 bg-white dark:bg-slate-700 text-black dark:text-white focus:shadow-[2px_2px_0px_0px_#000] transition-shadow outline-none">
+                                </div>
                             </div>
-                        </div>
 
-                        <!-- Observaciones -->
-                        <div class="form-group">
-                            <label class="text-[11px] font-black uppercase text-gray-700 dark:text-gray-300 mb-1.5 block">
-                                Observaciones
-                            </label>
-                            <textarea formControlName="observaciones" rows="3"
-                                      class="w-full text-sm font-medium border-2 border-gray-300 dark:border-slate-600 rounded-lg px-4 py-2 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[2px_2px_0px_0px_#ccc] transition-shadow outline-none resize-none"></textarea>
+                            <!-- Divisor: Ingreso -->
+                            <div class="flex items-center gap-2">
+                                <span class="text-[9px] font-black uppercase text-black dark:text-gray-500 whitespace-nowrap">Datos de Ingreso</span>
+                                <div class="flex-1 border-t border-dashed border-gray-300 dark:border-slate-600"></div>
+                            </div>
+
+                            <div class="grid grid-cols-2 gap-2">
+                                <div>
+                                    <label class="text-[9px] font-black uppercase text-black dark:text-gray-400 mb-0.5 block">Cantidad</label>
+                                    <input type="number" formControlName="cantidad" min="1"
+                                           class="w-full h-8 text-center text-xs font-black border-2 border-black dark:border-slate-600 rounded px-2 bg-white dark:bg-slate-700 text-black dark:text-white focus:shadow-[2px_2px_0px_0px_#000] transition-shadow outline-none">
+                                </div>
+                                <div>
+                                    <label class="text-[9px] font-black uppercase text-black dark:text-gray-400 mb-0.5 block">Documento (PO, FAC, REC)</label>
+                                    <input type="text" formControlName="documento"
+                                           class="w-full h-8 text-xs font-bold border-2 border-black dark:border-slate-600 rounded px-2 bg-white dark:bg-slate-700 text-black dark:text-white focus:shadow-[2px_2px_0px_0px_#000] transition-shadow outline-none">
+                                </div>
+                                <div class="col-span-2">
+                                    <label class="text-[9px] font-black uppercase text-black dark:text-gray-400 mb-0.5 block">Observaciones</label>
+                                    <textarea formControlName="observaciones" rows="2"
+                                              class="w-full text-xs font-medium border-2 border-gray-300 dark:border-slate-600 rounded px-2 py-1.5 bg-white dark:bg-slate-700 text-black dark:text-white focus:shadow-[2px_2px_0px_0px_#ccc] transition-shadow outline-none resize-none"></textarea>
+                                </div>
+                            </div>
+
                         </div>
                     </div>
+                </div>
 
-                    <!-- Columna Imagen -->
-                    <div class="lg:col-span-4 flex flex-col">
-                        <h3 class="text-lg font-black uppercase mb-3 text-black dark:text-white border-b-2 border-black dark:border-gray-600 pb-2">Imagen</h3>
+                <!-- ── Columna Imagen ── -->
+                <div class="lg:col-span-4">
+                    <div class="neo-card-base bg-white dark:bg-slate-800 overflow-hidden flex flex-col">
+                        <div class="flex items-center gap-1.5 px-3 py-2 bg-[#0F172AFF] border-b-2 border-black shrink-0">
+                            <mat-icon class="text-amber-400 !text-sm">image</mat-icon>
+                            <span class="font-black text-xs uppercase text-white">Imagen</span>
+                        </div>
 
-                        <div class="neo-card-base bg-gray-100 dark:bg-gray-800 overflow-hidden w-full h-[300px] flex flex-col relative group">
-
-                            <div *ngIf="selectedImage(); else noImageTemplate" class="flex-1 p-2 flex items-center justify-center bg-white dark:bg-gray-900 overflow-hidden">
-                                <img [src]="selectedImage()" alt="Herramienta" class="w-full h-full object-contain">
+                        <div class="flex-1 flex flex-col min-h-[180px]">
+                            <div *ngIf="selectedImage(); else noImageTemplate"
+                                 class="flex-1 p-2 flex items-center justify-center bg-white dark:bg-gray-900 overflow-hidden">
+                                <img [src]="selectedImage()" alt="Herramienta" class="w-full h-full object-contain max-h-[220px]">
                             </div>
 
                             <ng-template #noImageTemplate>
-                                <div class="flex-1 flex flex-col items-center justify-center text-gray-400 p-4 border-dashed border-2 border-gray-300 m-4 rounded bg-cyan-100/50 dark:bg-cyan-900/20">
-                                    <mat-icon class="!text-5xl !w-12 !h-12 opacity-20">image</mat-icon>
-                                    <p class="font-bold uppercase text-[10px] opacity-60 mt-2 text-center">Sin imagen disponible</p>
+                                <div class="flex-1 flex flex-col items-center justify-center text-gray-400 m-3 border-2 border-dashed border-gray-300 dark:border-slate-600 rounded bg-gray-50 dark:bg-slate-700/50 min-h-[150px]">
+                                    <mat-icon class="!text-4xl opacity-20">image</mat-icon>
+                                    <p class="text-[9px] font-bold uppercase opacity-50 mt-1">Sin imagen</p>
                                 </div>
                             </ng-template>
-
-                            <div class="bg-[#111A43] py-2 px-3 flex justify-center border-t-2 border-black shrink-0">
-                                <button type="button" (click)="fileInput.click()"
-                                        class="w-full py-1.5 bg-white text-black font-black border-2 border-black rounded shadow-[2px_2px_0px_0px_#fff] hover:translate-y-0.5 hover:shadow-none transition-all uppercase text-xs flex items-center justify-center gap-2">
-                                    <mat-icon class="!text-sm !w-4 !h-4">{{ selectedImage() ? 'refresh' : 'upload' }}</mat-icon>
-                                    {{ selectedImage() ? 'CAMBIAR' : 'SUBIR' }}
-                                </button>
-                            </div>
-
-                            <input type="file" #fileInput (change)="onImageSelected($event)" accept="image/*" class="hidden">
                         </div>
+
+                        <div class="px-3 py-2 border-t-2 border-black bg-slate-50 dark:bg-slate-700 shrink-0">
+                            <button type="button" (click)="fileInput.click()"
+                                    class="w-full h-8 bg-[#0F172AFF] text-white font-black text-xs border-2 border-black rounded shadow-[2px_2px_0px_0px_#000] hover:shadow-none hover:translate-x-[1px] hover:translate-y-[1px] transition-all uppercase flex items-center justify-center gap-1.5">
+                                <mat-icon class="!text-sm !w-4 !h-4">{{ selectedImage() ? 'refresh' : 'upload' }}</mat-icon>
+                                {{ selectedImage() ? 'Cambiar imagen' : 'Subir imagen' }}
+                            </button>
+                        </div>
+
+                        <input type="file" #fileInput (change)="onImageSelected($event)" accept="image/*" class="hidden">
                     </div>
                 </div>
 
-            </form>
-        </div>
+            </div>
+        </form>
     </div>
 </div>

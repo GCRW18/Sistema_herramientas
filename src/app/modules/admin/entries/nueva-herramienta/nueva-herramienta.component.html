@@ -21,7 +21,7 @@
 
             <div class="bg-[#0F172AFF] text-white px-5 py-3 border-b-2 border-black flex justify-between items-center shrink-0">
                 <div class="flex items-center gap-3">
-                    <div class="w-9 h-9 bg-green-500 rounded-full flex items-center justify-center border-2 border-black shrink-0">
+                    <div class="w-9 h-9 bg-[#0F172AFF] rounded-full flex items-center justify-center border-2 border-black shrink-0">
                         <mat-icon class="text-white !text-base">shopping_cart</mat-icon>
                     </div>
                     <div>
@@ -81,7 +81,7 @@
                             </div>
                         </div>
                         <div class="text-right shrink-0 ml-3">
-                            <p class="font-black text-xs text-green-600 dark:text-green-400">Bs {{ item.costoTotal | number:'1.2-2' }}</p>
+                            <p *ngIf="item.costoHora > 0" class="font-black text-xs text-green-600 dark:text-green-400">Bs {{ item.costoHora | number:'1.2-2' }}/h</p>
                             <span class="text-[10px] text-gray-500">{{ item.cantidad }} {{ item.unidadMedida }}</span>
                         </div>
                     </div>
@@ -110,25 +110,25 @@
             <div class="flex items-center gap-3">
                 <div class="flex items-center gap-2 flex-wrap">
                     <div class="font-black text-xs uppercase flex items-center gap-2">
-                        <mat-icon class="text-black dark:text-white !text-base">flight</mat-icon>
+                        <mat-icon class="text-black dark:text-amber-400 !text-base">flight</mat-icon>
                     </div>
                     <h1 class="text-lg font-black text-black dark:text-white uppercase tracking-tight leading-none">
                         Nueva Herramienta
                     </h1>
-                    <p class="text-[10px] font-bold bg-green-500 text-white px-2 py-0.5 rounded-sm border border-black">
+                    <p class="text-[10px] font-bold bg-amber-400 text-black px-2 py-0.5 rounded-sm border border-black">
                         INGRESO DE COMPRA
                     </p>
                 </div>
             </div>
             <div class="flex items-center gap-2">
                 <button type="button" (click)="openHerramientasAIngresar()"
-                        class="h-9 px-4 bg-[#0F172AFF] text-white font-black text-xs border-2 border-black rounded-lg shadow-[3px_3px_0px_0px_#000] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all uppercase flex items-center gap-1.5">
-                    <mat-icon class="!text-sm">inventory_2</mat-icon>
+                        class="h-9 px-4 bg-amber-400 text-black font-black text-xs border-2 border-black rounded-lg shadow-[3px_3px_0px_0px_#000] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all uppercase flex items-center gap-1.5">
+                    <mat-icon class="!text-sm text-black">inventory_2</mat-icon>
                     Catálogo
                 </button>
                 <button type="button" (click)="procesar()" [disabled]="isSaving || dataSource.length === 0"
-                        class="h-9 px-4 bg-green-600 text-white font-black text-xs border-2 border-black rounded-lg shadow-[3px_3px_0px_0px_#000] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all uppercase flex items-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed">
-                    <mat-icon class="!text-sm">check_circle</mat-icon>
+                        class="h-9 px-4 bg-red-600 text-white font-black text-xs border-2 border-black rounded-lg shadow-[3px_3px_0px_0px_#000] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all uppercase flex items-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed">
+                    <mat-icon class="!text-sm text-white">check_circle</mat-icon>
                     Finalizar
                     <span *ngIf="dataSource.length > 0" class="bg-white/20 px-1.5 rounded font-black">{{ dataSource.length }}</span>
                 </button>
@@ -151,11 +151,11 @@
                         </div>
 
                         <!-- Cabecera tipo ingreso -->
-                        <div class="bg-white dark:bg-slate-800/80 border-b-2 border-black px-3 py-1.5 flex items-center gap-2">
-                            <mat-icon class="text-black dark:text-white !text-sm shrink-0">shopping_cart</mat-icon>
+                        <div class="bg-[#0F172AFF] border-b-2 border-black px-3 py-1.5 flex items-center gap-2">
+                            <mat-icon class="text-amber-400 !text-sm shrink-0">shopping_cart</mat-icon>
                             <div>
-                                <p class="text-[9px] font-black uppercase text-black leading-none">Tipo de Ingreso</p>
-                                <p class="text-[11px] font-black text-black uppercase leading-tight">Compra</p>
+                                <p class="text-[9px] font-black uppercase text-white leading-none">Tipo de Ingreso</p>
+                                <p class="text-[11px] font-black text-white uppercase leading-tight">Compra</p>
                             </div>
                         </div>
 
@@ -165,27 +165,27 @@
                             <!-- CMR + Factura -->
                             <div class="grid grid-cols-2 gap-1.5">
                                 <div>
-                                    <label class="text-[9px] font-black uppercase text-gray-600 dark:text-gray-400 mb-0.5 block">CMR *</label>
+                                    <label class="text-[9px] font-black uppercase text-black dark:text-gray-400 mb-0.5 block">CMR *</label>
                                     <input type="text" formControlName="nroCmr" placeholder="CMR-001"
                                            class="w-full h-8 text-xs font-bold border-2 border-black dark:border-slate-600 rounded px-2 bg-white dark:bg-[#0F172AFF] text-black dark:text-white outline-none placeholder:text-gray-400"
                                            [class.border-red-500]="hasRecepcionError('nroCmr', 'required')">
                                 </div>
                                 <div>
-                                    <label class="text-[9px] font-black uppercase text-gray-600 dark:text-gray-400 mb-0.5 block">Factura</label>
+                                    <label class="text-[9px] font-black uppercase text-black dark:text-gray-400 mb-0.5 block">Factura</label>
                                     <input type="text" formControlName="nroFactura" placeholder="FAC-001"
-                                           class="w-full h-8 text-xs font-bold border-2 border-gray-300 dark:border-slate-600 rounded px-2 bg-white dark:bg-[#0F172AFF] text-black dark:text-white outline-none placeholder:text-gray-400">
+                                           class="w-full h-8 text-xs font-bold border-2 border-black dark:border-slate-600 rounded px-2 bg-white dark:bg-[#0F172AFF] text-black dark:text-white outline-none placeholder:text-gray-400">
                                 </div>
                             </div>
 
                             <!-- OC + Fecha -->
                             <div class="grid grid-cols-2 gap-1.5">
                                 <div>
-                                    <label class="text-[9px] font-black uppercase text-gray-600 dark:text-gray-400 mb-0.5 block">Orden Compra</label>
+                                    <label class="text-[9px] font-black uppercase text-black dark:text-gray-400 mb-0.5 block">Orden Compra</label>
                                     <input type="text" formControlName="ordenCompra" placeholder="PO-001"
-                                           class="w-full h-8 text-xs font-bold border-2 border-gray-300 dark:border-slate-600 rounded px-2 bg-white dark:bg-[#0F172AFF] text-black dark:text-white outline-none placeholder:text-gray-400">
+                                           class="w-full h-8 text-xs font-bold border-2 border-black dark:border-slate-600 rounded px-2 bg-white dark:bg-[#0F172AFF] text-black dark:text-white outline-none placeholder:text-gray-400">
                                 </div>
                                 <div>
-                                    <label class="text-[9px] font-black uppercase text-gray-600 dark:text-gray-400 mb-0.5 block">Fecha *</label>
+                                    <label class="text-[9px] font-black uppercase text-black dark:text-gray-400 mb-0.5 block">Fecha *</label>
                                     <input type="date" formControlName="fechaIngreso"
                                            class="w-full h-7 text-xs font-bold border-2 border-black dark:border-slate-600 rounded px-2 bg-white dark:bg-[#0F172AFF] text-black dark:text-white outline-none"
                                            [class.border-red-500]="hasRecepcionError('fechaIngreso', 'required')">
@@ -194,13 +194,13 @@
 
                             <!-- Proveedor -->
                             <div>
-                                <label class="text-[9px] font-black uppercase text-gray-600 dark:text-gray-400 mb-0.5 block">Proveedor</label>
+                                <label class="text-[9px] font-black uppercase text-black dark:text-gray-400 mb-0.5 block">Proveedor</label>
                                 <div class="relative">
                                     <input type="text" formControlName="proveedor"
                                            [matAutocomplete]="autoProveedor"
                                            placeholder="Buscar proveedor..."
                                            class="w-full h-8 text-xs font-bold border-2 border-black dark:border-slate-600 rounded pl-6 pr-2 bg-white dark:bg-[#0F172AFF] text-black dark:text-white outline-none placeholder:text-gray-400">
-                                    <mat-icon class="absolute left-1.5 top-1/2 -translate-y-1/2 text-gray-500 !text-sm">store</mat-icon>
+                                    <mat-icon class="absolute left-1.5 top-1/2 -translate-y-1/2 text-black !text-sm">store</mat-icon>
                                     <mat-autocomplete #autoProveedor="matAutocomplete" [displayWith]="displayProveedor">
                                         <mat-option *ngFor="let prov of proveedoresFiltrados" [value]="prov">
                                             <span class="font-bold text-sm">{{ prov.nombre }}</span>
@@ -212,14 +212,14 @@
 
                             <!-- Recibido por -->
                             <div>
-                                <label class="text-[9px] font-black uppercase text-gray-600 dark:text-gray-400 mb-0.5 block">Recibido por *</label>
+                                <label class="text-[9px] font-black uppercase text-black dark:text-gray-400 mb-0.5 block">Recibido por *</label>
                                 <div class="relative">
                                     <input type="text" formControlName="funcionarioRecibe"
                                            [matAutocomplete]="autoFuncionario"
                                            placeholder="Nombre o licencia..."
                                            class="w-full h-8 text-xs font-bold border-2 border-black dark:border-slate-600 rounded pl-6 pr-2 bg-white dark:bg-[#0F172AFF] text-black dark:text-white outline-none placeholder:text-gray-400"
                                            [class.border-red-500]="hasRecepcionError('funcionarioRecibe', 'required')">
-                                    <mat-icon class="absolute left-1.5 top-1/2 -translate-y-1/2 text-gray-500 !text-sm">person_search</mat-icon>
+                                    <mat-icon class="absolute left-1.5 top-1/2 -translate-y-1/2 text-black !text-sm">person_search</mat-icon>
                                     <mat-autocomplete #autoFuncionario="matAutocomplete" [displayWith]="displayFuncionario">
                                         <mat-option *ngFor="let func of funcionariosFiltrados" [value]="func">
                                             <div class="flex items-center gap-2">
@@ -231,39 +231,46 @@
                                 </div>
                             </div>
 
+                            <!-- Recibí Conforme -->
+                            <div>
+                                <label class="text-[9px] font-black uppercase text-black dark:text-gray-400 mb-0.5 block">Recibí Conforme</label>
+                                <input type="text" formControlName="recibiConforme" placeholder="Nombre quien recibe conforme..."
+                                       class="w-full h-8 text-xs font-bold border-2 border-black dark:border-slate-600 rounded px-2 bg-white dark:bg-[#0F172AFF] text-black dark:text-white outline-none placeholder:text-gray-400">
+                            </div>
+
                             <!-- Observaciones -->
                             <div>
-                                <label class="text-[9px] font-black uppercase text-gray-600 dark:text-gray-400 mb-0.5 block">Observaciones</label>
+                                <label class="text-[9px] font-black uppercase text-black dark:text-gray-400 mb-0.5 block">Observaciones</label>
                                 <textarea formControlName="observaciones" rows="1"
                                           placeholder="Observaciones..."
-                                          class="w-full text-xs font-medium border-2 border-gray-300 dark:border-slate-600 rounded px-2 py-1 bg-white dark:bg-[#0F172AFF] text-black dark:text-white outline-none placeholder:text-gray-400 resize-none"></textarea>
+                                          class="w-full text-xs font-medium border-2 border-black dark:border-slate-600 rounded px-2 py-1 bg-white dark:bg-[#0F172AFF] text-black dark:text-white outline-none placeholder:text-gray-400 resize-none"></textarea>
                             </div>
 
                             <!-- Summary inline -->
-                            <div *ngIf="dataSource.length > 0" class="grid grid-cols-2 gap-1 pt-0.5 border-t border-dashed border-gray-200 dark:border-gray-700">
-                                <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-400 rounded p-1.5 flex items-center gap-1">
-                                    <mat-icon class="text-blue-600 !text-xs !w-3 !h-3 shrink-0">inventory</mat-icon>
+                            <div *ngIf="dataSource.length > 0" class="grid grid-cols-2 gap-1 pt-0.5 border-t border-dashed border-black dark:border-gray-700">
+                                <div class="bg-gray-50 dark:bg-blue-900/20 border border-black rounded p-1.5 flex items-center gap-1">
+                                    <mat-icon class="text-black dark:text-blue-300 !text-xs !w-3 !h-3 shrink-0">inventory</mat-icon>
                                     <div>
-                                        <p class="text-sm font-black text-blue-700 dark:text-blue-300 leading-none">{{ dataSource.length }}</p>
-                                        <p class="text-[8px] font-bold text-blue-600 uppercase">Ítems</p>
+                                        <p class="text-sm font-black text-black dark:text-blue-300 leading-none">{{ dataSource.length }}</p>
+                                        <p class="text-[8px] font-bold text-black dark:text-blue-300 uppercase">Ítems</p>
                                     </div>
                                 </div>
-                                <div class="bg-slate-50 dark:bg-slate-700 border border-gray-400 rounded p-1.5 flex items-center gap-1">
-                                    <mat-icon class="text-gray-500 !text-xs !w-3 !h-3 shrink-0">layers</mat-icon>
+                                <div class="bg-gray-50 dark:bg-slate-700 border border-black rounded p-1.5 flex items-center gap-1">
+                                    <mat-icon class="text-black dark:text-gray-300 !text-xs !w-3 !h-3 shrink-0">layers</mat-icon>
                                     <div>
-                                        <p class="text-sm font-black text-gray-700 dark:text-gray-300 leading-none">{{ getTotalItems() }}</p>
-                                        <p class="text-[8px] font-bold text-gray-600 uppercase">Unid.</p>
+                                        <p class="text-sm font-black text-black dark:text-gray-300 leading-none">{{ getTotalItems() }}</p>
+                                        <p class="text-[8px] font-bold text-black dark:text-gray-300 uppercase">Unid.</p>
                                     </div>
                                 </div>
-                                <div class="col-span-2 bg-green-50 dark:bg-green-900/20 border border-green-400 rounded p-1.5 flex items-center gap-1">
-                                    <mat-icon class="text-green-600 !text-xs !w-3 !h-3 shrink-0">attach_money</mat-icon>
-                                    <p class="text-xs font-black text-green-700 dark:text-green-300">Bs {{ getCostoTotal() | number:'1.2-2' }}</p>
-                                    <span class="text-[8px] font-bold text-green-600 uppercase ml-auto">Total</span>
+                                <div class="col-span-2 bg-gray-50 dark:bg-green-900/20 border border-black rounded p-1.5 flex items-center gap-1">
+                                    <mat-icon class="text-black dark:text-green-300 !text-xs !w-3 !h-3 shrink-0">attach_money</mat-icon>
+                                    <p class="text-xs font-black text-black dark:text-green-300">Bs {{ getCostoTotal() | number:'1.2-2' }}</p>
+                                    <span class="text-[8px] font-bold text-black dark:text-green-300 uppercase ml-auto">Total</span>
                                 </div>
                                 <div *ngIf="getItemsConCalibracion() > 0"
-                                     class="col-span-2 bg-amber-50 dark:bg-amber-900/20 border border-amber-400 rounded p-1.5 flex items-center gap-1">
-                                    <mat-icon class="text-amber-600 !text-xs !w-3 !h-3 shrink-0">schedule</mat-icon>
-                                    <p class="text-xs font-black text-amber-700 dark:text-amber-400">{{ getItemsConCalibracion() }} con calibración</p>
+                                     class="col-span-2 bg-amber-50 dark:bg-amber-900/20 border border-black rounded p-1.5 flex items-center gap-1">
+                                    <mat-icon class="text-black dark:text-amber-400 !text-xs !w-3 !h-3 shrink-0">schedule</mat-icon>
+                                    <p class="text-xs font-black text-black dark:text-amber-400">{{ getItemsConCalibracion() }} con calibración</p>
                                 </div>
                             </div>
 
@@ -282,9 +289,9 @@
                 <form [formGroup]="herramientaForm" class="herramienta-form shrink-0">
                     <div class="neo-card-base bg-white dark:bg-slate-800 p-3 relative">
 
-                        <div class="flex items-center gap-1.5 mb-2 pb-1.5 border-b-2 border-black dark:border-gray-600">
-                            <mat-icon class="text-black dark:text-white !text-base">build</mat-icon>
-                            <h3 class="font-black text-xs uppercase text-black dark:text-white">Datos de la Herramienta</h3>
+                        <div class="flex items-center gap-1.5 mb-2 pb-1.5 border-b-2 border-black bg-[#0F172AFF] -mx-3 -mt-3 px-3 pt-2 rounded-t">
+                            <mat-icon class="text-amber-400 !text-base">build</mat-icon>
+                            <h3 class="font-black text-xs uppercase text-white">Datos de la Herramienta</h3>
                             <span *ngIf="editingIndex !== null"
                                   class="ml-auto text-[10px] font-black uppercase bg-amber-400 text-black px-2 py-0.5 rounded border border-black">
                                 Editando #{{ editingIndex + 1 }}
@@ -294,24 +301,24 @@
                         <!-- FILA 1: P/N · Descripción · S/N · Código BOA -->
                         <div class="grid grid-cols-12 gap-2 mb-2">
                             <div class="col-span-2">
-                                <label class="text-[10px] font-black uppercase text-gray-600 dark:text-gray-400 mb-1 block">P/N *</label>
+                                <label class="text-[10px] font-black uppercase text-black dark:text-gray-400 mb-1 block">P/N *</label>
                                 <input type="text" formControlName="pn" placeholder="ABC-123"
                                        class="w-full h-8 text-xs font-bold border-2 rounded-lg px-2 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[2px_2px_0px_0px_#000] transition-shadow outline-none placeholder:text-gray-400 uppercase"
                                        [class]="hasHerramientaError('pn','required') ? 'border-red-500' : 'border-black dark:border-slate-600'">
                             </div>
                             <div class="col-span-5">
-                                <label class="text-[10px] font-black uppercase text-gray-600 dark:text-gray-400 mb-1 block">Descripción *</label>
+                                <label class="text-[10px] font-black uppercase text-black dark:text-gray-400 mb-1 block">Descripción *</label>
                                 <input type="text" formControlName="descripcion" placeholder="Nombre / descripción de la herramienta"
                                        class="w-full h-8 text-xs font-bold border-2 rounded-lg px-2 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[2px_2px_0px_0px_#000] transition-shadow outline-none placeholder:text-gray-400"
                                        [class]="hasHerramientaError('descripcion','required') ? 'border-red-500' : 'border-black dark:border-slate-600'">
                             </div>
                             <div class="col-span-2">
-                                <label class="text-[10px] font-black uppercase text-gray-600 dark:text-gray-400 mb-1 block">S/N</label>
+                                <label class="text-[10px] font-black uppercase text-black dark:text-gray-400 mb-1 block">S/N</label>
                                 <input type="text" formControlName="sn" placeholder="N/A"
                                        class="w-full h-8 text-xs font-bold border-2 border-black dark:border-slate-600 rounded-lg px-2 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[2px_2px_0px_0px_#000] transition-shadow outline-none placeholder:text-gray-400">
                             </div>
                             <div class="col-span-3">
-                                <label class="text-[10px] font-black uppercase text-gray-600 dark:text-gray-400 mb-1 block">Código BOA *</label>
+                                <label class="text-[10px] font-black uppercase text-black dark:text-gray-400 mb-1 block">Código BOA *</label>
                                 <div class="flex gap-1">
                                     <input type="text" formControlName="codigoBoa" placeholder="BOA-H-0000"
                                            class="flex-1 w-0 h-8 text-xs font-bold border-2 rounded-lg px-2 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[2px_2px_0px_0px_#000] transition-shadow outline-none placeholder:text-gray-400 uppercase"
@@ -328,17 +335,17 @@
                         <!-- FILA 2: Tipo · Marca · Cant · UM · Estado · Costo -->
                         <div class="grid grid-cols-12 gap-2 mb-2">
                             <div class="col-span-3">
-                                <label class="text-[10px] font-black uppercase text-gray-600 dark:text-gray-400 mb-1 block">Tipo *</label>
+                                <label class="text-[10px] font-black uppercase text-black dark:text-gray-400 mb-1 block">Tipo *</label>
                                 <div class="relative">
                                     <select formControlName="tipo"
                                             class="w-full h-8 text-xs font-bold border-2 border-black dark:border-slate-600 rounded-lg pl-2 pr-6 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[2px_2px_0px_0px_#000] transition-shadow outline-none appearance-none cursor-pointer">
                                         <option *ngFor="let t of tiposHerramienta" [value]="t.value">{{ t.label }}</option>
                                     </select>
-                                    <mat-icon class="absolute right-1 top-1/2 -translate-y-1/2 text-gray-500 !text-sm pointer-events-none">expand_more</mat-icon>
+                                    <mat-icon class="absolute right-1 top-1/2 -translate-y-1/2 text-black !text-sm pointer-events-none">expand_more</mat-icon>
                                 </div>
                             </div>
                             <div class="col-span-3">
-                                <label class="text-[10px] font-black uppercase text-gray-600 dark:text-gray-400 mb-1 block">Marca *</label>
+                                <label class="text-[10px] font-black uppercase text-black dark:text-gray-400 mb-1 block">Marca *</label>
                                 <input type="text" formControlName="marca" placeholder="Ej: ASHCROFT"
                                        [matAutocomplete]="marcaAuto"
                                        class="w-full h-8 text-xs font-bold border-2 rounded-lg px-2 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[2px_2px_0px_0px_#000] transition-shadow outline-none placeholder:text-gray-400 uppercase"
@@ -348,55 +355,91 @@
                                 </mat-autocomplete>
                             </div>
                             <div class="col-span-1">
-                                <label class="text-[10px] font-black uppercase text-gray-600 dark:text-gray-400 mb-1 block">Cant. *</label>
+                                <label class="text-[10px] font-black uppercase text-black dark:text-gray-400 mb-1 block">Cant. *</label>
                                 <input type="number" formControlName="cantidad" min="1"
                                        class="w-full h-8 text-xs font-bold border-2 border-black dark:border-slate-600 rounded-lg px-2 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[2px_2px_0px_0px_#000] transition-shadow outline-none text-center">
                             </div>
                             <div class="col-span-2">
-                                <label class="text-[10px] font-black uppercase text-gray-600 dark:text-gray-400 mb-1 block">UM *</label>
+                                <label class="text-[10px] font-black uppercase text-black dark:text-gray-400 mb-1 block">UM *</label>
                                 <div class="relative">
                                     <select formControlName="unidadMedida"
                                             class="w-full h-8 text-xs font-bold border-2 border-black dark:border-slate-600 rounded-lg pl-2 pr-5 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[2px_2px_0px_0px_#000] transition-shadow outline-none appearance-none cursor-pointer">
                                         <option *ngFor="let um of unidadesMedida" [value]="um.value">{{ um.value }}</option>
                                     </select>
-                                    <mat-icon class="absolute right-1 top-1/2 -translate-y-1/2 text-gray-500 !text-sm pointer-events-none">expand_more</mat-icon>
+                                    <mat-icon class="absolute right-1 top-1/2 -translate-y-1/2 text-black !text-sm pointer-events-none">expand_more</mat-icon>
                                 </div>
                             </div>
                             <div class="col-span-3">
-                                <label class="text-[10px] font-black uppercase text-gray-600 dark:text-gray-400 mb-1 block">Estado *</label>
+                                <label class="text-[10px] font-black uppercase text-black dark:text-gray-400 mb-1 block">Estado *</label>
                                 <div class="relative">
                                     <select formControlName="estado"
                                             class="w-full h-8 text-xs font-bold border-2 border-black dark:border-slate-600 rounded-lg pl-2 pr-6 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[2px_2px_0px_0px_#000] transition-shadow outline-none appearance-none cursor-pointer">
                                         <option *ngFor="let est of estados" [value]="est.value">{{ est.label }}</option>
                                     </select>
-                                    <mat-icon class="absolute right-1 top-1/2 -translate-y-1/2 text-gray-500 !text-sm pointer-events-none">expand_more</mat-icon>
+                                    <mat-icon class="absolute right-1 top-1/2 -translate-y-1/2 text-black !text-sm pointer-events-none">expand_more</mat-icon>
                                 </div>
                             </div>
                         </div>
 
-                        <!-- FILA 3: Costo · Toggle Calibración · Botones (fila propia para tamaño correcto) -->
-                        <div class="flex items-end gap-2 mb-2">
-                            <div class="flex-1">
-                                <label class="text-[10px] font-black uppercase text-gray-600 dark:text-gray-400 mb-1 block">Costo Unitario (Bs) *</label>
-                                <input type="number" formControlName="costoUnitario" min="0" step="0.01" placeholder="0.00"
-                                       class="w-full h-8 text-xs font-bold border-2 border-black dark:border-slate-600 rounded-lg px-3 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[2px_2px_0px_0px_#000] transition-shadow outline-none text-right">
+                        <!-- FILA 3: Precio Préstamo · Ubicación (Estante / Nivel) -->
+                        <div class="grid grid-cols-12 gap-2 mb-2">
+                            <div class="col-span-2">
+                                <label class="text-[10px] font-black uppercase text-black dark:text-gray-400 mb-1 block">Costo/Hora (Bs)</label>
+                                <input type="number" formControlName="costoHora" min="0" step="0.01" placeholder="0.00"
+                                       class="w-full h-8 text-xs font-bold border-2 border-black dark:border-slate-600 rounded-lg px-2 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[2px_2px_0px_0px_#000] transition-shadow outline-none text-right">
+                            </div>
+                            <div class="col-span-2">
+                                <label class="text-[10px] font-black uppercase text-black dark:text-gray-400 mb-1 block">Costo/Servicio (Bs)</label>
+                                <input type="number" formControlName="costoServicio" min="0" step="0.01" placeholder="0.00"
+                                       class="w-full h-8 text-xs font-bold border-2 border-black dark:border-slate-600 rounded-lg px-2 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[2px_2px_0px_0px_#000] transition-shadow outline-none text-right">
+                            </div>
+                            <div class="col-span-2">
+                                <label class="text-[10px] font-black uppercase text-black dark:text-gray-400 mb-1 block">Estante</label>
+                                <input type="text" formControlName="estante" placeholder="A1"
+                                       class="w-full h-8 text-xs font-bold border-2 border-black dark:border-slate-600 rounded-lg px-2 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[2px_2px_0px_0px_#000] transition-shadow outline-none placeholder:text-gray-400 uppercase">
+                            </div>
+                            <div class="col-span-2">
+                                <label class="text-[10px] font-black uppercase text-black dark:text-gray-400 mb-1 block">Nivel</label>
+                                <input type="text" formControlName="nivelUbicacion" placeholder="2"
+                                       class="w-full h-8 text-xs font-bold border-2 border-black dark:border-slate-600 rounded-lg px-2 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[2px_2px_0px_0px_#000] transition-shadow outline-none placeholder:text-gray-400">
+                            </div>
+                            <div class="col-span-4">
+                                <label class="text-[10px] font-black uppercase text-black dark:text-gray-400 mb-1 block">Documento (PO, FAC, REC)</label>
+                                <input type="text" formControlName="documento" placeholder="PO-001 / FAC-123"
+                                       class="w-full h-8 text-xs font-bold border-2 border-black dark:border-slate-600 rounded-lg px-2 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[2px_2px_0px_0px_#000] transition-shadow outline-none placeholder:text-gray-400">
+                            </div>
+                        </div>
+
+                        <!-- FILA 4: Accesorios · Observación · Toggle Calibración · Botones -->
+                        <div class="grid grid-cols-12 gap-2 mb-2 items-end">
+                            <div class="col-span-4">
+                                <label class="text-[10px] font-black uppercase text-black dark:text-gray-400 mb-1 block">Accesorios</label>
+                                <input type="text" formControlName="accesorios" placeholder="Maletín, cables, manual..."
+                                       class="w-full h-8 text-xs font-bold border-2 border-black dark:border-slate-600 rounded-lg px-2 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[2px_2px_0px_0px_#000] transition-shadow outline-none placeholder:text-gray-400">
+                            </div>
+                            <div class="col-span-4">
+                                <label class="text-[10px] font-black uppercase text-black dark:text-gray-400 mb-1 block">Observación</label>
+                                <input type="text" formControlName="observacion" placeholder="Observaciones del ítem..."
+                                       class="w-full h-8 text-xs font-bold border-2 border-black dark:border-slate-600 rounded-lg px-2 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[2px_2px_0px_0px_#000] transition-shadow outline-none placeholder:text-gray-400">
                             </div>
                             <!-- Toggle calibración -->
-                            <div class="flex flex-col items-center gap-1 shrink-0 pb-1">
-                                <label class="text-[10px] font-black uppercase text-gray-600 dark:text-gray-400">Calib.</label>
+                            <div class="col-span-1 flex flex-col items-center gap-1 pb-1">
+                                <label class="text-[10px] font-black uppercase text-black dark:text-gray-400">Calib.</label>
                                 <mat-slide-toggle formControlName="requiereCalibracion" color="warn"
                                                   matTooltip="¿Requiere calibración periódica?"></mat-slide-toggle>
                             </div>
                             <!-- Botón cancelar (solo al editar) -->
                             <button *ngIf="editingIndex !== null" type="button" (click)="cancelarEdicion()"
-                                    class="h-8 px-4 bg-gray-200 dark:bg-slate-600 text-black dark:text-white font-black text-xs border-2 border-black dark:border-slate-500 rounded-lg flex items-center gap-1.5 transition-all shadow-[2px_2px_0px_0px_#000] hover:shadow-none hover:translate-x-[1px] hover:translate-y-[1px] shrink-0 uppercase">
+                                    class="col-span-1 h-8 px-3 bg-gray-200 dark:bg-slate-600 text-black dark:text-white font-black text-xs border-2 border-black dark:border-slate-500 rounded-lg flex items-center gap-1 transition-all shadow-[2px_2px_0px_0px_#000] hover:shadow-none hover:translate-x-[1px] hover:translate-y-[1px] uppercase">
                                 <mat-icon class="!text-sm !w-4 !h-4">close</mat-icon>
                                 Cancelar
                             </button>
                             <!-- Botón agregar / actualizar -->
                             <button type="button" (click)="agregarHerramienta()"
-                                    class="h-8 px-5 font-black text-xs border-2 border-black rounded-lg flex items-center gap-1.5 uppercase transition-all shadow-[3px_3px_0px_0px_#000] hover:shadow-[1px_1px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px] shrink-0"
-                                    [ngClass]="editingIndex !== null ? 'bg-amber-400 hover:bg-amber-500 text-black' : 'bg-yellow-300 hover:bg-yellow-400 text-black'">
+                                    class="h-8 px-4 font-black text-xs border-2 border-black rounded-lg flex items-center gap-1 uppercase transition-all shadow-[3px_3px_0px_0px_#000] hover:shadow-[1px_1px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px]"
+                                    [class.col-span-3]="editingIndex === null"
+                                    [class.col-span-2]="editingIndex !== null"
+                                    [ngClass]="editingIndex !== null ? 'bg-amber-400 hover:bg-amber-500 text-black' : 'bg-amber-400 hover:bg-yellow-400 text-black'">
                                 <mat-icon class="!text-sm !w-4 !h-4">{{ editingIndex !== null ? 'save' : 'add' }}</mat-icon>
                                 {{ editingIndex !== null ? 'Actualizar' : 'Agregar' }}
                             </button>
@@ -439,7 +482,7 @@
                     <!-- Header lista -->
                     <div class="bg-[#0F172AFF] px-3 py-1.5 border-b-2 border-black flex items-center justify-between shrink-0 h-9">
                         <span class="font-black text-xs uppercase text-white flex items-center gap-2">
-                            <mat-icon class="!text-base !w-4 !h-4">inventory</mat-icon>
+                            <mat-icon class="text-amber-400 !text-base !w-4 !h-4">inventory</mat-icon>
                             Herramientas a Ingresar
                         </span>
                         <div class="flex items-center gap-2">
@@ -460,7 +503,7 @@
                         <div *ngIf="dataSource.length === 0" class="flex flex-col items-center justify-center h-full py-10 opacity-50">
                             <mat-icon class="!text-6xl text-black dark:text-gray-500">inventory_2</mat-icon>
                             <p class="text-sm font-black mt-2 uppercase text-black dark:text-gray-500">Lista vacía</p>
-                            <p class="text-xs text-gray-500 mt-1">Complete el formulario y presione <strong>Agregar</strong></p>
+                            <p class="text-xs text-black dark:text-gray-500 mt-1">Complete el formulario y presione <strong>Agregar</strong></p>
                         </div>
 
                         <!-- Cards de ítems -->
@@ -480,29 +523,38 @@
                                         <span class="bg-[#0F172AFF] text-white font-mono font-bold px-1.5 py-0.5 rounded text-[10px] inline-block w-fit shadow-[1px_1px_0px_0px_rgba(0,0,0,0.5)] mb-0.5">
                                             {{ item.codigoBoa }}
                                         </span>
-                                        <span class="text-[10px] font-mono text-gray-500 dark:text-gray-400 font-bold">P/N: {{ item.pn }}</span>
-                                        <span class="text-[10px] font-mono text-gray-400 dark:text-gray-500">S/N: {{ item.sn || 'N/A' }}</span>
+                                        <span class="text-[10px] font-mono text-black dark:text-gray-400 font-bold">P/N: {{ item.pn }}</span>
+                                        <span class="text-[10px] font-mono text-black dark:text-gray-500">S/N: {{ item.sn || 'N/A' }}</span>
                                     </div>
 
-                                    <!-- Descripción + Marca -->
+                                    <!-- Descripción + Marca + Obs + Ubicación -->
                                     <div class="col-span-4 flex flex-col justify-center">
-                                        <span class="text-xs font-black text-black dark:text-white leading-tight line-clamp-2">{{ item.descripcion }}</span>
-                                        <span class="text-[10px] text-gray-500 dark:text-gray-400 font-bold uppercase">{{ item.marca }}</span>
+                                        <span class="text-xs font-black text-black dark:text-white leading-tight line-clamp-1">{{ item.descripcion }}</span>
+                                        <span class="text-[10px] text-black dark:text-gray-400 font-bold uppercase">{{ item.marca }}</span>
+                                        <span *ngIf="item.observacion" class="text-[9px] text-gray-500 dark:text-gray-400 italic line-clamp-1">{{ item.observacion }}</span>
+                                        <span *ngIf="item.estante" class="text-[9px] font-bold text-black dark:text-gray-500">
+                                            <mat-icon class="!text-[9px] !w-3 !h-3 align-middle">shelves</mat-icon>
+                                            Est: {{ item.estante }}{{ item.nivelUbicacion ? ' · Niv: ' + item.nivelUbicacion : '' }}
+                                        </span>
                                     </div>
 
                                     <!-- Cantidad + Estado -->
                                     <div class="col-span-2 flex flex-col items-center gap-1">
-                                        <span class="px-2 py-0.5 bg-blue-100 dark:bg-blue-900/30 border border-blue-400 rounded text-[10px] font-black text-blue-800 dark:text-blue-300">
+                                        <span class="px-2 py-0.5 bg-gray-100 dark:bg-blue-900/30 border border-black rounded text-[10px] font-black text-black dark:text-blue-300">
                                             {{ item.cantidad }} {{ item.unidadMedida }}
                                         </span>
                                         <span class="px-2 py-0.5 rounded-full text-[9px] font-black border border-black/20"
                                               [ngClass]="getEstadoColor(item.estado)">{{ item.estado }}</span>
                                     </div>
 
-                                    <!-- Costo + Calibración -->
+                                    <!-- Costo/Hora + Documento + Calibración -->
                                     <div class="col-span-1 flex flex-col items-center gap-1">
-                                        <span class="text-xs font-black text-green-600 dark:text-green-400 whitespace-nowrap">
-                                            Bs {{ item.costoTotal | number:'1.2-2' }}
+                                        <span *ngIf="item.costoHora > 0" class="text-xs font-black text-black dark:text-green-400 whitespace-nowrap">
+                                            Bs {{ item.costoHora | number:'1.2-2' }}/h
+                                        </span>
+                                        <span *ngIf="item.documento" class="text-[9px] font-bold text-gray-500 dark:text-gray-400 truncate max-w-[70px]"
+                                              [matTooltip]="item.documento">
+                                            {{ item.documento }}
                                         </span>
                                         <span *ngIf="item.requiereCalibracion"
                                               class="inline-flex items-center justify-center w-5 h-5 bg-amber-100 border border-amber-400 rounded-full"

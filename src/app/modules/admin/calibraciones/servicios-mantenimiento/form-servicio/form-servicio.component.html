@@ -1,0 +1,527 @@
+<div class="flex flex-col w-full h-full bg-[#f8f9fc] dark:bg-[#0F172AFF] transition-colors duration-300 font-sans overflow-hidden"
+     cdkDrag cdkDragRootElement=".cdk-overlay-pane" cdkDragBoundary=".cdk-overlay-container">
+
+    <!-- HEADER -->
+    <div class="bg-white dark:bg-slate-800 border-b-2 border-black px-4 py-2 flex items-center justify-between shrink-0"
+         cdkDragHandle>
+        <div class="flex items-center gap-3">
+            <button (click)="dialogRef.close(false)"
+                    class="w-8 h-8 bg-slate-100 dark:bg-slate-700 border-2 border-black rounded hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors flex items-center justify-center shrink-0"
+                    (mousedown)="$event.stopPropagation()">
+                <mat-icon class="!text-base text-black dark:text-white">close</mat-icon>
+            </button>
+            <div>
+                <h1 class="text-sm font-black text-black dark:text-white uppercase tracking-tight leading-none">
+                    {{ mode === 'envio' ? 'Nuevo Envío a Mantenimiento' : 'Registro de Retorno de Mantenimiento' }}
+                </h1>
+                <p class="text-[9px] text-black dark:text-gray-400 font-bold uppercase mt-0.5">MGH-109 · Gestión de Mantenimiento</p>
+            </div>
+        </div>
+        <div class="flex items-center gap-2">
+            <button (click)="dialogRef.close(false)"
+                    class="px-3 py-1.5 bg-gray-200 dark:bg-slate-700 text-black dark:text-white font-black text-xs border-2 border-black rounded hover:bg-gray-300 dark:hover:bg-slate-600 transition-colors uppercase flex items-center gap-1">
+                <mat-icon class="!text-sm !w-4 !h-4">close</mat-icon>
+                Cancelar
+            </button>
+            <button (click)="mode === 'envio' ? submitEnvio() : submitRetorno()"
+                    [disabled]="isSaving() || !canSubmit()"
+                    class="px-4 py-1.5 bg-[#0F172AFF] text-white font-black text-xs border-2 border-black rounded shadow-[2px_2px_0px_0px_rgba(0,0,0,0.4)] hover:shadow-none hover:translate-x-[1px] hover:translate-y-[1px] transition-all uppercase flex items-center gap-1 disabled:opacity-40 disabled:cursor-not-allowed">
+                <mat-icon class="!text-sm !w-4 !h-4 text-amber-400">{{ mode === 'envio' ? 'send' : 'check_circle' }}</mat-icon>
+                {{ mode === 'envio' ? 'Procesar Envío' : 'Procesar Retorno' }}
+            </button>
+        </div>
+    </div>
+
+    <!-- SPINNER -->
+    <div *ngIf="isSaving()" class="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
+        <div class="bg-white dark:bg-slate-800 border-2 border-black rounded-xl shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] p-5 flex flex-col items-center gap-3">
+            <mat-spinner diameter="32"></mat-spinner>
+            <span class="font-black text-black dark:text-white uppercase tracking-wider text-xs">
+                {{ mode === 'envio' ? 'Registrando Envío...' : 'Procesando Retorno...' }}
+            </span>
+        </div>
+    </div>
+
+    <!-- BODY -->
+    <div class="flex-1 overflow-y-auto p-3 custom-scrollbar">
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-3 h-full">
+
+            <!-- Columna Izquierda -->
+            <div class="lg:col-span-7">
+                <div class="border-2 border-black bg-white dark:bg-slate-800 rounded-xl shadow-[4px_4px_0px_0px_rgba(0,0,0,0.15)] overflow-hidden">
+
+                    <div class="flex items-center gap-1.5 px-3 py-2 bg-[#0F172AFF] border-b-2 border-black">
+                        <mat-icon class="text-amber-400 !text-sm">{{ mode === 'envio' ? 'build' : 'assignment_return' }}</mat-icon>
+                        <span class="font-black text-xs uppercase text-white">{{ mode === 'envio' ? 'DATOS DEL ENVÍO' : 'DATOS DEL RETORNO' }}</span>
+                        <div class="ml-auto">
+                            <span class="text-[8px] font-black px-1.5 py-0.5 rounded"
+                                  [ngClass]="canSubmit() ? 'bg-green-500 text-white' : 'bg-yellow-500 text-white'">
+                                {{ canSubmit() ? 'COMPLETO' : 'PENDIENTE' }}
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="p-3 flex flex-col gap-3">
+
+                        <!-- MODO ENVÍO: Búsqueda de herramienta -->
+                        @if (mode === 'envio') {
+                            <div class="grid grid-cols-12 gap-2">
+                                <div class="col-span-9">
+                                    <label class="text-[9px] font-black uppercase text-black dark:text-gray-400 mb-0.5 block">
+                                        Herramienta <span class="text-red-500">*</span>
+                                    </label>
+                                    <div class="relative">
+                                        <div class="flex gap-2 mb-1">
+                                            <div class="flex border-2 border-black rounded overflow-hidden">
+                                                <button type="button" (click)="searchMethod = 'manual'"
+                                                        class="px-2 py-0.5 text-[9px] font-bold transition-all"
+                                                        [ngClass]="searchMethod === 'manual' ? 'bg-[#0F172AFF] text-white' : 'bg-white dark:bg-slate-700 text-black dark:text-white'">
+                                                    Manual
+                                                </button>
+                                                <button type="button" (click)="searchMethod = 'scan'"
+                                                        class="px-2 py-0.5 text-[9px] font-bold border-l-2 border-black transition-all"
+                                                        [ngClass]="searchMethod === 'scan' ? 'bg-[#0F172AFF] text-white' : 'bg-white dark:bg-slate-700 text-black dark:text-white'">
+                                                    Escáner
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <input type="text"
+                                               [(ngModel)]="barcodeValue"
+                                               (keydown.enter)="scanTool()"
+                                               [placeholder]="searchMethod === 'scan' ? 'Escanee código...' : 'Código BOA o nombre...'"
+                                               class="w-full h-7 text-xs font-bold border-2 border-black rounded pl-7 pr-2 bg-white dark:bg-[#0F172AFF] text-black dark:text-white">
+                                        <mat-icon class="absolute left-1.5 top-1/2 -translate-y-1/2 text-gray-500 !text-sm">search</mat-icon>
+                                    </div>
+                                </div>
+                                <div class="col-span-3">
+                                    <label class="text-[9px] font-black uppercase text-transparent mb-0.5 block">.</label>
+                                    <button (click)="scanTool()" [disabled]="!barcodeValue.trim() || isScanning()"
+                                            class="w-full h-7 bg-[#0F172AFF] text-white font-black text-[10px] border-2 border-black rounded shadow-[2px_2px_0px_0px_#000] hover:shadow-none hover:translate-x-[1px] hover:translate-y-[1px] transition-all disabled:opacity-40 flex items-center justify-center gap-1">
+                                        <mat-spinner *ngIf="isScanning()" diameter="12" class="inline-block"></mat-spinner>
+                                        <mat-icon *ngIf="!isScanning()" class="!text-xs text-amber-400">search</mat-icon>
+                                        <span *ngIf="!isScanning()">Buscar</span>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div *ngIf="scannedTool" class="border-2 rounded-lg p-2 text-xs border-green-500 bg-green-50 dark:bg-green-900/20">
+                                <div class="flex items-center justify-between">
+                                    <div class="flex items-center gap-2">
+                                        <mat-icon class="text-green-500 !text-xs">check_circle</mat-icon>
+                                        <span class="text-[10px] font-black">{{ scannedTool.code }}</span>
+                                        <span class="text-[9px]">{{ scannedTool.name | slice:0:40 }}</span>
+                                    </div>
+                                    <button (click)="clearScan()" class="text-gray-500 hover:text-gray-700">
+                                        <mat-icon class="!text-xs">close</mat-icon>
+                                    </button>
+                                </div>
+                                <div class="flex gap-3 mt-1 text-[9px]" *ngIf="scannedTool.serial_number">
+                                    <span>N° Serie: <strong>{{ scannedTool.serial_number }}</strong></span>
+                                    <span>Estado: <strong>{{ scannedTool.status || '—' }}</strong></span>
+                                </div>
+                            </div>
+                        }
+
+                        <!-- MODO RETORNO: Información de la herramienta -->
+                        @if (mode === 'retorno' && maintenance) {
+                            <div class="border-2 rounded-lg p-2 text-xs border-blue-500 bg-blue-50 dark:bg-blue-900/20">
+                                <div class="flex items-center gap-2">
+                                    <mat-icon class="text-blue-500 !text-xs">check_circle</mat-icon>
+                                    <span class="text-[10px] font-black">{{ maintenance.tool_code }}</span>
+                                    <span class="text-[9px]">{{ maintenance.tool_name | slice:0:40 }}</span>
+                                </div>
+                                <div class="grid grid-cols-2 gap-1 mt-1 text-[9px]">
+                                    <span>Nota: <strong>{{ maintenance.record_number }}</strong></span>
+                                    <span>Empresa: <strong>{{ maintenance.provider }}</strong></span>
+                                    <span>Envío: <strong>{{ maintenance.send_date }}</strong></span>
+                                    <span *ngIf="maintenance.expected_return_date">Retorno Est.: <strong>{{ maintenance.expected_return_date }}</strong></span>
+                                </div>
+                            </div>
+                        }
+
+                        <!-- ============================================ -->
+                        <!-- FORMULARIO DE ENVÍO -->
+                        <!-- ============================================ -->
+                        @if (mode === 'envio') {
+                            <div class="grid grid-cols-2 gap-2 pt-1" [class.opacity-50]="!scannedTool" [class.pointer-events-none]="!scannedTool">
+
+                                <div class="col-span-2">
+                                    <label class="text-[8px] font-black uppercase text-gray-500 mb-0.5 block">
+                                        <mat-icon class="!text-[10px] align-middle">factory</mat-icon>
+                                        Empresa / Taller *
+                                    </label>
+                                    <select [(ngModel)]="selectedProviderId" (ngModelChange)="onProviderChange($event)"
+                                            class="w-full h-7 text-xs font-bold border-2 border-black rounded px-2 bg-white dark:bg-[#0F172AFF]">
+                                        <option [ngValue]="null">— Seleccionar —</option>
+                                        <option *ngFor="let p of providers" [ngValue]="p.id_laboratory">{{ p.name }}</option>
+                                    </select>
+                                </div>
+
+                                <div>
+                                    <label class="text-[8px] font-black uppercase text-gray-500 mb-0.5 block">
+                                        <mat-icon class="!text-[10px] align-middle">settings</mat-icon>
+                                        Tipo de servicio *
+                                    </label>
+                                    <select [(ngModel)]="maintenanceType" class="w-full h-7 text-xs font-bold border-2 border-black rounded px-2 bg-white dark:bg-[#0F172AFF]">
+                                        <option value="PREVENTIVO">PREVENTIVO</option>
+                                        <option value="CORRECTIVO">CORRECTIVO</option>
+                                        <option value="SEMESTRAL">SEMESTRAL</option>
+                                        <option value="ANUAL">ANUAL</option>
+                                    </select>
+                                </div>
+
+                                <div>
+                                    <label class="text-[8px] font-black uppercase text-gray-500 mb-0.5 block">
+                                        <mat-icon class="!text-[10px] align-middle">inventory</mat-icon>
+                                        Cantidad *
+                                    </label>
+                                    <input type="number" [(ngModel)]="cantidad" min="1" class="w-full h-7 text-xs font-bold border-2 border-black rounded px-2 bg-white dark:bg-[#0F172AFF]">
+                                </div>
+
+                                <div>
+                                    <label class="text-[8px] font-black uppercase text-gray-500 mb-0.5 block">
+                                        <mat-icon class="!text-[10px] align-middle">store</mat-icon>
+                                        Almacén de envío *
+                                    </label>
+                                    <select [(ngModel)]="base" class="w-full h-7 text-xs font-bold border-2 border-black rounded px-2 bg-white dark:bg-[#0F172AFF]">
+                                        <option value="">— Seleccionar —</option>
+                                        <option value="ALMACÉN SERVICIABLES">Serviciables</option>
+                                        <option value="ALMACÉN PRINCIPAL - LPZ">Principal LPZ</option>
+                                        <option value="ALMACÉN HANGAR 3 - CBB">Hangar 3 CBB</option>
+                                        <option value="ALMACÉN BASE - VVI">Base VVI</option>
+                                    </select>
+                                </div>
+
+                                <div>
+                                    <label class="text-[8px] font-black uppercase text-gray-500 mb-0.5 block">
+                                        <mat-icon class="!text-[10px] align-middle">location_on</mat-icon>
+                                        Base origen *
+                                    </label>
+                                    <select [(ngModel)]="base" class="w-full h-7 text-xs font-bold border-2 border-black rounded px-2 bg-white dark:bg-[#0F172AFF]">
+                                        <option value="">— Seleccionar —</option>
+                                        <option value="CBB">Cochabamba</option>
+                                        <option value="LPZ">La Paz</option>
+                                        <option value="VVI">Santa Cruz</option>
+                                        <option value="TJA">Tarija</option>
+                                    </select>
+                                </div>
+
+                                <div>
+                                    <label class="text-[8px] font-black uppercase text-gray-500 mb-0.5 block">Fecha solicitud</label>
+                                    <input type="date" [(ngModel)]="requestDateStr" class="w-full h-7 text-xs border-2 border-black rounded px-2 bg-white dark:bg-[#0F172AFF]">
+                                </div>
+
+                                <div>
+                                    <label class="text-[8px] font-black uppercase text-gray-500 mb-0.5 block">Fecha envío *</label>
+                                    <input type="date" [(ngModel)]="sendDateStr" class="w-full h-7 text-xs font-bold border-2 border-black rounded px-2 bg-white dark:bg-[#0F172AFF]">
+                                </div>
+
+                                <div>
+                                    <label class="text-[8px] font-black uppercase text-gray-500 mb-0.5 block">
+                                        Retorno estimado
+                                        <span class="ml-1 text-[8px] text-amber-600">auto +7d</span>
+                                    </label>
+                                    <input type="text" [value]="expectedReturnDateStr" readonly
+                                           class="w-full h-7 text-xs font-black border-2 border-dashed border-amber-500 rounded px-2 bg-amber-50 dark:bg-amber-900/20 text-amber-700">
+                                </div>
+
+                                <div class="col-span-2">
+                                    <label class="text-[8px] font-black uppercase text-gray-500 mb-0.5 block">
+                                        <mat-icon class="!text-[10px] align-middle">description</mat-icon>
+                                        Descripción del problema
+                                    </label>
+                                    <textarea [(ngModel)]="problem" rows="2" placeholder="Describa el problema o trabajo a realizar..."
+                                              class="w-full text-xs border-2 border-gray-300 rounded px-2 py-1 resize-none"></textarea>
+                                </div>
+
+                                <div>
+                                    <label class="text-[8px] font-black uppercase text-gray-500 mb-0.5 block">
+                                        <mat-icon class="!text-[10px] align-middle">attach_money</mat-icon>
+                                        Costo estimado
+                                    </label>
+                                    <input type="number" [(ngModel)]="sendCost" placeholder="0.00" min="0" class="w-full h-7 text-xs border-2 border-black rounded px-2 bg-white dark:bg-[#0F172AFF]">
+                                </div>
+
+                                <div class="col-span-2">
+                                    <label class="text-[8px] font-black uppercase text-gray-500 mb-0.5 block">
+                                        <mat-icon class="!text-[10px] align-middle">comment</mat-icon>
+                                        Observaciones
+                                    </label>
+                                    <textarea [(ngModel)]="sendNotes" rows="2" placeholder="Notas adicionales sobre el envío..."
+                                              class="w-full text-xs border-2 border-gray-300 rounded px-2 py-1 resize-none"></textarea>
+                                </div>
+
+                                <div class="col-span-2">
+                                    <div class="border-2 rounded-lg p-2 mt-1" [ngClass]="generatedNota() ? 'border-amber-500 bg-amber-50 dark:bg-amber-900/20' : 'border-black'">
+                                        <div class="flex items-center justify-between">
+                                            <div>
+                                                <span class="text-[7px] font-black uppercase text-gray-500">Nota generada:</span>
+                                                <span class="text-xs font-black font-mono ml-1 text-amber-700">{{ generatedNota() || '—' }}</span>
+                                            </div>
+                                            <button (click)="generarNota()" class="px-3 py-1 bg-[#0F172AFF] text-white font-black text-[9px] border border-black rounded">
+                                                {{ generatedNota() ? 'Regenerar' : 'Generar Nota (EM-)' }}
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+
+                        <!-- ============================================ -->
+                        <!-- FORMULARIO DE RETORNO -->
+                        <!-- ============================================ -->
+                        @if (mode === 'retorno') {
+                            <div class="grid grid-cols-2 gap-2 pt-1">
+
+                                <div class="col-span-2">
+                                    <label class="text-[8px] font-black uppercase text-gray-500 mb-0.5 block">
+                                        <mat-icon class="!text-[10px] align-middle">event</mat-icon>
+                                        Fecha retorno real *
+                                    </label>
+                                    <input type="date" [(ngModel)]="actualReturnDateStr" (ngModelChange)="onRetornoFechaChange()"
+                                           [max]="getTodayStr()" class="w-full h-7 text-xs font-bold border-2 border-black rounded px-2 bg-white dark:bg-[#0F172AFF]">
+                                </div>
+
+                                <div class="col-span-2">
+                                    <label class="text-[8px] font-black uppercase text-gray-500 mb-0.5 block">
+                                        <mat-icon class="!text-[10px] align-middle">settings</mat-icon>
+                                        Tipo mantenimiento realizado *
+                                    </label>
+                                    <select [(ngModel)]="tipoMantenimientoRealizado" (ngModelChange)="onTipoMantChange()"
+                                            class="w-full h-7 text-xs font-bold border-2 border-black rounded px-2 bg-white dark:bg-[#0F172AFF]">
+                                        <option value="">— Seleccionar —</option>
+                                        <option value="PREVENTIVO">PREVENTIVO</option>
+                                        <option value="CORRECTIVO">CORRECTIVO</option>
+                                        <option value="SEMESTRAL">SEMESTRAL</option>
+                                        <option value="ANUAL">ANUAL</option>
+                                    </select>
+                                </div>
+
+                                <div class="col-span-2">
+                                    <label class="text-[8px] font-black uppercase text-gray-500 mb-0.5 block">
+                                        <mat-icon class="!text-[10px] align-middle">description</mat-icon>
+                                        Descripción del trabajo realizado *
+                                    </label>
+                                    <textarea [(ngModel)]="descripcionTrabajo" rows="3"
+                                              placeholder="Detalle las acciones ejecutadas durante el mantenimiento..."
+                                              [class.border-red-500]="showDescError && !descripcionTrabajo.trim()"
+                                              class="w-full text-xs border-2 border-black rounded px-2 py-1 resize-none bg-white dark:bg-[#0F172AFF]"></textarea>
+                                    <p *ngIf="showDescError && !descripcionTrabajo.trim()" class="text-[8px] text-red-600 font-bold mt-0.5">
+                                        La descripción del trabajo es obligatoria
+                                    </p>
+                                </div>
+
+                                <div class="col-span-2">
+                                    <label class="text-[8px] font-black uppercase text-gray-500 mb-0.5 block">
+                                        <mat-icon class="!text-[10px] align-middle">verified</mat-icon>
+                                        Prueba de funcionamiento
+                                    </label>
+                                    <div class="flex gap-2">
+                                        <button (click)="pruebaFuncionamiento = true"
+                                                class="flex-1 py-1 text-[9px] font-black border-2 rounded transition-all"
+                                                [ngClass]="pruebaFuncionamiento ? 'bg-green-500 text-white border-black shadow-[1px_1px_0px_0px_#000]' : 'bg-white dark:bg-[#0F172AFF] border-gray-300'">
+                                            ✅ SÍ
+                                        </button>
+                                        <button (click)="pruebaFuncionamiento = false"
+                                                class="flex-1 py-1 text-[9px] font-black border-2 rounded transition-all"
+                                                [ngClass]="!pruebaFuncionamiento ? 'bg-red-500 text-white border-black shadow-[1px_1px_0px_0px_#000]' : 'bg-white dark:bg-[#0F172AFF] border-gray-300'">
+                                            ❌ NO
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label class="text-[8px] font-black uppercase text-gray-500 mb-0.5 block">
+                                        <mat-icon class="!text-[10px] align-middle">event_available</mat-icon>
+                                        Próximo mantenimiento
+                                        <span *ngIf="tipoMantenimientoRealizado && tipoMantenimientoRealizado !== 'CORRECTIVO'"
+                                              class="ml-1 text-[8px] text-amber-600">auto</span>
+                                    </label>
+                                    <input type="date" [(ngModel)]="nextMaintenanceDateStr"
+                                           class="w-full h-7 text-xs border-2 border-black rounded px-2 bg-white dark:bg-[#0F172AFF]">
+                                </div>
+
+                                <div *ngIf="tipoMantenimientoRealizado && tipoMantenimientoRealizado !== 'CORRECTIVO'">
+                                    <label class="text-[8px] font-black uppercase text-gray-500 mb-0.5 block">Tipo próximo mantenimiento</label>
+                                    <select [(ngModel)]="tipoProxMantenimiento" class="w-full h-7 text-xs font-bold border-2 border-black rounded px-2 bg-white dark:bg-[#0F172AFF]">
+                                        <option value="SEMESTRAL">SEMESTRAL (6 meses)</option>
+                                        <option value="ANUAL">ANUAL (12 meses)</option>
+                                    </select>
+                                </div>
+
+                                <div class="col-span-2">
+                                    <label class="text-[8px] font-black uppercase text-gray-500 mb-0.5 block">
+                                        <mat-icon class="!text-[10px] align-middle">comment</mat-icon>
+                                        Observaciones adicionales
+                                    </label>
+                                    <textarea [(ngModel)]="observacionesRetorno" rows="2" placeholder="Observaciones adicionales sobre el retorno..."
+                                              class="w-full text-xs border-2 border-gray-300 rounded px-2 py-1 resize-none"></textarea>
+                                </div>
+                            </div>
+                        }
+
+                        <!-- Errores de campos incompletos -->
+                        @if (!canSubmit() && mode === 'envio' && scannedTool) {
+                            <div class="flex items-center gap-1 p-1.5 bg-red-50 border border-red-300 rounded">
+                                <mat-icon class="text-red-500 !text-xs">error</mat-icon>
+                                <span class="text-[8px] text-red-700 font-bold">
+                                    {{ !selectedProviderId ? 'Seleccione una empresa' :
+                                    !generatedNota() ? 'Genere el número de nota' :
+                                        cantidad < 1 ? 'La cantidad debe ser al menos 1' : 'Complete los campos requeridos' }}
+                                </span>
+                            </div>
+                        }
+
+                        @if (!canSubmit() && mode === 'retorno' && maintenance) {
+                            <div class="flex items-center gap-1 p-1.5 bg-red-50 border border-red-300 rounded">
+                                <mat-icon class="text-red-500 !text-xs">error</mat-icon>
+                                <span class="text-[8px] text-red-700 font-bold">
+                                    {{ !actualReturnDateStr ? 'Seleccione fecha de retorno' :
+                                    !tipoMantenimientoRealizado ? 'Seleccione tipo de mantenimiento' :
+                                        !descripcionTrabajo.trim() ? 'Ingrese descripción del trabajo' : '' }}
+                                </span>
+                            </div>
+                        }
+
+                    </div>
+                </div>
+            </div>
+
+            <!-- Columna Derecha - Confirmación -->
+            <div class="lg:col-span-5">
+                <div class="border-2 border-black bg-white dark:bg-slate-800 rounded-xl shadow-[4px_4px_0px_0px_rgba(0,0,0,0.15)] overflow-hidden sticky top-0">
+                    <div class="flex items-center gap-1.5 px-3 py-2 bg-[#0F172AFF] border-b-2 border-black">
+                        <mat-icon class="text-amber-400 !text-sm">fact_check</mat-icon>
+                        <span class="font-black text-xs uppercase text-white">CONFIRMACIÓN</span>
+                        <mat-icon *ngIf="canSubmit()" class="ml-auto text-amber-400 !text-sm">verified</mat-icon>
+                    </div>
+
+                    <div class="p-3 flex flex-col gap-2">
+
+                        <div class="space-y-1.5">
+                            <div class="flex items-center gap-2">
+                                <mat-icon class="!text-sm" [ngClass]="mode === 'envio' ? (scannedTool ? 'text-green-500' : 'text-gray-300') : (maintenance ? 'text-green-500' : 'text-gray-300')">
+                                    {{ (mode === 'envio' ? scannedTool : maintenance) ? 'check_circle' : 'radio_button_unchecked' }}
+                                </mat-icon>
+                                <span class="text-[10px] font-bold">{{ mode === 'envio' ? 'Herramienta identificada' : 'Mantenimiento seleccionado' }}</span>
+                            </div>
+
+                            @if (mode === 'envio') {
+                                <div class="flex items-center gap-2">
+                                    <mat-icon class="!text-sm" [ngClass]="selectedProviderId ? 'text-green-500' : 'text-gray-300'">business</mat-icon>
+                                    <span class="text-[10px] font-bold">Empresa seleccionada</span>
+                                    <span class="text-[9px] text-green-600 ml-auto">{{ selectedProviderName?.slice(0, 15) || '—' }}</span>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <mat-icon class="!text-sm" [ngClass]="generatedNota() ? 'text-green-500' : 'text-gray-300'">receipt</mat-icon>
+                                    <span class="text-[10px] font-bold">Nota generada</span>
+                                    <span class="text-[9px] font-mono text-amber-600 ml-auto">{{ generatedNota() || '—' }}</span>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <mat-icon class="!text-sm" [ngClass]="cantidad >= 1 ? 'text-green-500' : 'text-gray-300'">inventory</mat-icon>
+                                    <span class="text-[10px] font-bold">Cantidad</span>
+                                    <span class="text-[9px] text-gray-500 ml-auto">{{ cantidad }} unidad(es)</span>
+                                </div>
+                            } @else {
+                                <div class="flex items-center gap-2">
+                                    <mat-icon class="!text-sm" [ngClass]="actualReturnDateStr ? 'text-green-500' : 'text-gray-300'">event</mat-icon>
+                                    <span class="text-[10px] font-bold">Fecha retorno</span>
+                                    <span class="text-[9px] text-gray-500 ml-auto">{{ actualReturnDateStr }}</span>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <mat-icon class="!text-sm" [ngClass]="tipoMantenimientoRealizado ? 'text-green-500' : 'text-gray-300'">settings</mat-icon>
+                                    <span class="text-[10px] font-bold">Tipo realizado</span>
+                                    <span class="text-[9px] text-amber-600 ml-auto">{{ tipoMantenimientoRealizado || '—' }}</span>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <mat-icon class="!text-sm" [ngClass]="descripcionTrabajo.trim() ? 'text-green-500' : 'text-gray-300'">description</mat-icon>
+                                    <span class="text-[10px] font-bold">Descripción del trabajo</span>
+                                    <mat-icon *ngIf="descripcionTrabajo.trim()" class="text-green-500 !text-sm ml-auto">check</mat-icon>
+                                </div>
+                                @if (nextMaintenanceDateStr) {
+                                    <div class="flex items-center gap-2">
+                                        <mat-icon class="!text-sm text-amber-500">event_available</mat-icon>
+                                        <span class="text-[10px] font-bold">Próximo mantenimiento</span>
+                                        <span class="text-[9px] font-bold text-amber-600 ml-auto">{{ nextMaintenanceDateStr }}</span>
+                                    </div>
+                                }
+                            }
+                        </div>
+
+                        <div class="border-t border-gray-200 my-1"></div>
+
+                        <div class="bg-gray-50 dark:bg-[#0F172AFF] rounded-lg p-2 space-y-1 border border-gray-200 dark:border-slate-700">
+                            <div class="flex justify-between text-[9px]">
+                                <span class="text-gray-500">Herramienta:</span>
+                                <span class="font-bold">{{ mode === 'envio' ? (scannedTool?.name?.slice(0, 25) || '—') : (maintenance?.tool_name?.slice(0, 25) || '—') }}</span>
+                            </div>
+                            @if (mode === 'envio') {
+                                <div class="flex justify-between text-[9px]">
+                                    <span class="text-gray-500">Empresa:</span>
+                                    <span class="font-bold">{{ selectedProviderName?.slice(0, 20) || '—' }}</span>
+                                </div>
+                                <div class="flex justify-between text-[9px]">
+                                    <span class="text-gray-500">Tipo / Cant:</span>
+                                    <span class="font-bold">{{ maintenanceType }} / {{ cantidad }}</span>
+                                </div>
+                                <div class="flex justify-between text-[9px]">
+                                    <span class="text-gray-500">Retorno estimado:</span>
+                                    <span class="font-bold text-amber-600">{{ expectedReturnDateStr }}</span>
+                                </div>
+                            } @else {
+                                <div class="flex justify-between text-[9px]">
+                                    <span class="text-gray-500">N° Nota:</span>
+                                    <span class="font-bold font-mono">{{ maintenance?.record_number || '—' }}</span>
+                                </div>
+                                <div class="flex justify-between text-[9px]">
+                                    <span class="text-gray-500">Empresa:</span>
+                                    <span class="font-bold">{{ maintenance?.provider?.slice(0, 20) || '—' }}</span>
+                                </div>
+                                <div class="flex justify-between text-[9px]">
+                                    <span class="text-gray-500">Prueba func.:</span>
+                                    <span class="font-bold" [ngClass]="pruebaFuncionamiento ? 'text-green-600' : 'text-red-600'">
+                                        {{ pruebaFuncionamiento ? 'REALIZADA' : 'NO REALIZADA' }}
+                                    </span>
+                                </div>
+                            }
+                        </div>
+
+                        <div *ngIf="!canSubmit()" class="flex items-center gap-1 p-1.5 bg-red-50 border border-red-300 rounded">
+                            <mat-icon class="text-red-500 !text-xs">warning</mat-icon>
+                            <span class="text-[8px] text-red-700 font-bold">
+                                @if (mode === 'envio') {
+                                    {{ !scannedTool ? 'Identifique herramienta' :
+                                    !selectedProviderId ? 'Seleccione empresa' :
+                                        !generatedNota() ? 'Genere nota' :
+                                            cantidad < 1 ? 'Cantidad inválida' : 'Complete datos' }}
+                                } @else {
+                                    {{ !actualReturnDateStr ? 'Ingrese fecha retorno' :
+                                    !tipoMantenimientoRealizado ? 'Seleccione tipo' :
+                                        !descripcionTrabajo.trim() ? 'Ingrese descripción' : '' }}
+                                }
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<style>
+    .custom-scrollbar::-webkit-scrollbar {
+        width: 6px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+        background: #e2e8f0;
+        border-radius: 3px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+        background: #0F172AFF;
+        border-radius: 3px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+        background: #1e293b;
+    }
+</style>

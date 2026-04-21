@@ -23,6 +23,7 @@ interface EntryRecord {
     responsable: string;
     nroComprobante?: string;
     items?: number;
+    raw?: any;
 }
 
 interface OpenTab {
@@ -292,6 +293,8 @@ export class EntriesComponent implements OnInit, OnDestroy {
     @ViewChild(MatPaginator) paginator!: MatPaginator;
     @ViewChild('entradasRecientesDialog') entradasRecientesDialog!: TemplateRef<any>;
 
+    selectedEntry: EntryRecord | null = null;
+
     // ── Tab system ───────────────────────────────────────────────────────────
     openTabs: OpenTab[] = [];
     activeTabId: number | null = null;
@@ -301,31 +304,31 @@ export class EntriesComponent implements OnInit, OnDestroy {
     private readonly MODULE_DEFS: ModuleDef[] = [
         {
             type: 1, label: 'RETORNO', sublabel: 'BASE/TRASPASO',
-            color: '#FFC501', textColor: '#000',
+            color: '#2563eb', textColor: '#ffffff',
             svgIcon: 'heroicons_outline:building-office-2',
             loader: async () => (await import('./retorno-traspaso/retorno-traspaso.component')).RetornoTraspasoComponent
         },
         {
             type: 2, label: 'NUEVA', sublabel: 'HERRAMIENTA',
-            color: '#FF6A00', textColor: '#fff',
+            color: '#2563eb', textColor: '#ffffff',
             svgIcon: 'heroicons_outline:wrench-screwdriver',
             loader: async () => (await import('./nueva-herramienta/nueva-herramienta.component')).NuevaHerramientaComponent
         },
         {
             type: 3, label: 'DEVOLUCIÓN', sublabel: 'PRÉSTAMO TÉC.',
-            color: '#1A3EDC', textColor: '#fff',
+            color: '#2563eb', textColor: '#ffffff',
             svgIcon: 'heroicons_outline:arrow-uturn-left',
             loader: async () => (await import('./devolucion-herramienta/devolucion-herramienta.component')).DevolucionHerramientaComponent
         },
         {
             type: 4, label: 'AJUSTE', sublabel: 'POR INGRESO',
-            color: '#7113CF', textColor: '#fff',
+            color: '#2563eb', textColor: '#ffffff',
             svgIcon: 'heroicons_outline:adjustments-horizontal',
             loader: async () => (await import('./ajuste-ingreso/ajuste-ingreso.component')).AjusteIngresoComponent
         },
         {
             type: 5, label: 'DEVOLUCIÓN', sublabel: 'TERCEROS',
-            color: '#1AAA1F', textColor: '#fff',
+            color: '#2563eb', textColor: '#ffffff',
             svgIcon: 'heroicons_outline:user-circle',
             loader: async () => (await import('./devolucion-terceros/devolucion-terceros.component')).DevolucionTercerosComponent
         },
@@ -365,13 +368,14 @@ export class EntriesComponent implements OnInit, OnDestroy {
             next: (response) => {
                 if (response.data && response.data.length > 0) {
                     this.recentEntries = response.data.map((item: any) => ({
-                        id: item.id || item.id_movement,
+                        id: item.id_movement || item.id,
                         fecha: this.formatDate(item.date || item.fecha),
-                        tipo: this.mapEntryType(item.entryReason || item.tipo),
+                        tipo: this.mapEntryType(item.entry_reason || item.type || item.entryReason || item.tipo),
                         estado: this.mapStatus(item.status || item.estado),
-                        responsable: item.requestedBy?.fullName || item.responsable || 'N/A',
-                        nroComprobante: item.movementNumber || item.nroComprobante || '-',
-                        items: item.items?.length || 0
+                        responsable: item.requested_by_name || item.requestedBy?.fullName || item.responsable || 'N/A',
+                        nroComprobante: item.movement_number || item.movementNumber || item.nroComprobante || '-',
+                        items: item.items?.length || 0,
+                        raw: item
                     }));
                     this.totalRecords = response.total || this.recentEntries.length;
                 } else {
@@ -407,14 +411,15 @@ export class EntriesComponent implements OnInit, OnDestroy {
 
     private mapEntryType(type: string): string {
         const typeMap: Record<string, string> = {
-            'purchase':           'NUEVA HERRAMIENTA',
-            'return':             'RECEPCION DEVOLUCIÓN',
-            'adjustment':         'AJUSTE INGRESO',
-            'donation':           'DONACION',
-            'calibration_return': 'RETORNO CALIBRACION',
+            // entry_reason (devoluciones / retornos) — coincide con los submodulos
+            'technician_return':  'DEVOLUCIÓN PRÉSTAMO TÉC.',
+            'third_party_return': 'DEVOLUCIÓN TERCEROS',
+            'base_return':        'RETORNO DE BASE',
             'transfer_return':    'RETORNO TRASPASO',
-            'base_return':        'RETORNO BASE',
-            'third_party_return': 'DEVOLUCIÓN TERCEROS'
+            'calibration_return': 'RETORNO CALIBRACIÓN',
+            // type (nueva herramienta / ajuste) — sin entry_reason
+            'purchase':           'NUEVA HERRAMIENTA',
+            'adjustment':         'AJUSTE POR INGRESO',
         };
         return typeMap[type] || type?.toUpperCase() || 'N/A';
     }
@@ -437,11 +442,11 @@ export class EntriesComponent implements OnInit, OnDestroy {
     }
 
     verDetalle(entry: EntryRecord): void {
-        this.showMessage(`Ver detalle de entrada ${entry.nroComprobante}`, 'info');
+        this.selectedEntry = entry;
     }
 
-    editarEntrada(entry: EntryRecord): void {
-        this.showMessage(`Editar entrada ${entry.nroComprobante}`, 'info');
+    cerrarDetalle(): void {
+        this.selectedEntry = null;
     }
 
     getStatusClass(estado: string): string {
@@ -451,9 +456,9 @@ export class EntriesComponent implements OnInit, OnDestroy {
             case 'PENDIENTE':
                 return 'bg-[#F8B400FF] text-black';
             case 'REVISION':
-                return 'bg-[#203F77FF] text-black';
+                return 'bg-[#203F77FF] text-white';
             case 'CANCELADO':
-                return 'bg-red-800 text-black';
+                return 'bg-red-800 text-white';
             default:
                 return 'bg-gray-100 text-gray-800 border-gray-300';
         }
@@ -469,6 +474,7 @@ export class EntriesComponent implements OnInit, OnDestroy {
     }
 
     openEntradasRecientes(): void {
+        this.selectedEntry = null;
         this.loadRecentEntries();
         this.dialog.open(this.entradasRecientesDialog, {
             width: '1100px',

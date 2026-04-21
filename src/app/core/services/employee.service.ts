@@ -8,16 +8,16 @@ export class EmployeeService {
     private _api = inject(ErpApiService);
 
     getEmployees(filters?: { search?: string; area?: string; base?: string; active?: boolean }): Observable<Employee[]> {
-        const params: any = { start: 0, limit: 200, sort: 'full_name', dir: 'asc' };
+        const params: any = { start: 0, limit: 8, sort: 'full_name', dir: 'asc' };
 
         const extra: string[] = [];
         if (filters?.search) {
             const s = filters.search.replace(/'/g, "''");
-            extra.push(`(LOWER(emp.full_name) LIKE LOWER('%${s}%') OR LOWER(emp.license_number) LIKE LOWER('%${s}%'))`);
+            extra.push(`(LOWER(full_name) LIKE LOWER('%${s}%') OR LOWER(license_number) LIKE LOWER('%${s}%'))`);
         }
-        if (filters?.area)   extra.push(`emp.area = '${filters.area}'`);
-        if (filters?.base)   extra.push(`emp.id_base::text = '${filters.base}'`);
-        if (filters?.active !== undefined) extra.push(`emp.active = ${filters.active}`);
+        if (filters?.area)   extra.push(`area = '${filters.area}'`);
+        if (filters?.base)   extra.push(`id_base::text = '${filters.base}'`);
+        if (filters?.active !== undefined) extra.push(`active = ${filters.active}`);
         if (extra.length)    params.filtro_adicional = extra.join(' AND ');
 
         return from(this._api.post('herramientas/employees/listarEmployees', params)).pipe(

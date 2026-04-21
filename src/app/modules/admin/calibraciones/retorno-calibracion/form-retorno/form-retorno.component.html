@@ -1,0 +1,295 @@
+<div class="flex flex-col w-full max-h-[90vh] bg-[#f8f9fc] dark:bg-[#0F172AFF] transition-colors duration-300 font-sans overflow-hidden">
+
+    <div class="bg-white dark:bg-slate-800 border-b-2 border-black px-3 py-2 flex items-center justify-between shrink-0 z-20 shadow-sm">
+        <div class="flex items-center gap-2">
+            <button mat-dialog-close
+                    matTooltip="Cerrar ventana"
+                    class="w-7 h-7 bg-slate-100 dark:bg-slate-700 border-2 border-black rounded-lg hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors flex items-center justify-center shrink-0 shadow-[2px_2px_0px_0px_rgba(0,0,0,0.2)] hover:shadow-none hover:translate-y-[1px] hover:translate-x-[1px]">
+                <mat-icon class="!text-sm text-black dark:text-white">close</mat-icon>
+            </button>
+            <div>
+                <h1 class="text-xs font-black text-black dark:text-white uppercase tracking-tight leading-none">
+                    Registro de Retorno
+                </h1>
+                <p class="text-[8px] text-gray-500 font-black uppercase mt-0.5 tracking-widest">MGH-109</p>
+            </div>
+        </div>
+        <div class="flex items-center gap-2">
+            <button mat-dialog-close
+                    class="px-2 py-1 bg-gray-200 dark:bg-slate-700 text-black dark:text-white font-black text-[9px] border-2 border-black rounded-lg hover:bg-gray-300 dark:hover:bg-slate-600 transition-colors uppercase flex items-center gap-1">
+                Cancelar
+            </button>
+            <button (click)="save()"
+                    [disabled]="isProcessing() || !canSubmit()"
+                    class="px-3 py-1 bg-[#0F172AFF] text-white font-black text-[9px] border-2 border-black rounded-lg shadow-[2px_2px_0px_0px_rgba(0,0,0,0.4)] hover:shadow-none hover:translate-x-[1px] hover:translate-y-[1px] transition-all uppercase flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed">
+                <mat-icon class="!text-[12px] text-amber-400">check_circle</mat-icon>
+                {{ isProcessing() ? 'Procesando...' : 'Procesar' }}
+            </button>
+        </div>
+    </div>
+
+    <div *ngIf="isProcessing()" class="absolute inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50">
+        <div class="bg-white dark:bg-slate-800 border-[3px] border-black rounded-xl shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] p-4 flex flex-col items-center gap-2">
+            <mat-spinner diameter="28"></mat-spinner>
+            <span class="font-black text-black dark:text-white uppercase tracking-widest text-[10px]">Registrando...</span>
+        </div>
+    </div>
+
+    <div class="flex-1 overflow-y-auto p-3 custom-scrollbar">
+
+        <div *ngIf="!calibration" class="flex flex-col items-center justify-center h-full max-w-sm mx-auto text-center gap-3 py-6">
+            <div class="w-12 h-12 bg-[#fbbf24] border-[2px] border-black rounded-xl shadow-[3px_3px_0px_0px_#000] flex items-center justify-center">
+                <mat-icon class="!text-2xl text-black">keyboard</mat-icon>
+            </div>
+            <div>
+                <h2 class="text-lg font-black text-black dark:text-white uppercase leading-tight mb-1">Ingresar Código</h2>
+                <p class="text-[10px] font-bold text-gray-500">Ingrese el código BOA o el Nro. de Nota (Ej. EC-2026/001).</p>
+            </div>
+
+            <div class="w-full relative mt-1">
+                <input type="text"
+                       [(ngModel)]="searchCode"
+                       (keydown.enter)="buscarEnvioPendiente()"
+                       placeholder="Buscar..."
+                       class="w-full h-10 border-[2px] border-black rounded-lg pl-3 pr-10 font-black text-xs bg-white dark:bg-[#0F172AFF] text-black dark:text-white shadow-[3px_3px_0px_0px_#000] focus:outline-none focus:translate-y-[1px] focus:translate-x-[1px] focus:shadow-[2px_2px_0px_0px_#000] transition-all uppercase">
+                <button (click)="buscarEnvioPendiente()"
+                        matTooltip="Buscar"
+                        class="absolute right-1.5 top-1.5 w-7 h-7 bg-black rounded flex items-center justify-center hover:bg-gray-800 transition-colors cursor-pointer">
+                    <mat-icon class="text-amber-400 !text-sm">search</mat-icon>
+                </button>
+            </div>
+        </div>
+
+        <div *ngIf="calibration" class="grid grid-cols-1 lg:grid-cols-12 gap-3 h-full items-start">
+
+            <div class="lg:col-span-7 border-[2px] border-black bg-white dark:bg-slate-800 rounded-xl shadow-[3px_3px_0px_0px_rgba(0,0,0,0.15)] overflow-hidden">
+
+                <div class="flex items-center gap-1.5 px-3 py-1.5 bg-[#0F172AFF] border-b-2 border-black">
+                    <mat-icon class="text-amber-400 !text-sm">assignment_return</mat-icon>
+                    <span class="font-black text-[10px] uppercase text-white tracking-wider">Formulario</span>
+                </div>
+
+                <div class="p-3 flex flex-col gap-3">
+
+                    <div class="border-[2px] rounded-lg p-2"
+                         [ngClass]="isRetrasado() ? 'border-red-500 bg-red-50 dark:bg-red-900/20' : 'border-green-500 bg-green-50 dark:bg-green-900/20'">
+
+                        <div class="flex items-center justify-between border-b-2 border-black/10 pb-1 mb-1.5">
+                            <div class="flex items-center gap-1">
+                                <mat-icon [ngClass]="isRetrasado() ? 'text-red-500' : 'text-green-500'" class="!text-[14px]">
+                                    {{ isRetrasado() ? 'schedule' : 'check_circle' }}
+                                </mat-icon>
+                                <span class="font-black text-[10px] text-black dark:text-white uppercase tracking-tight">Nota: {{ calibration?.record_number }}</span>
+                            </div>
+                            <span class="text-[9px] font-black text-gray-600 dark:text-gray-300 truncate max-w-[120px]">
+                                {{ calibration?.supplier_name }}
+                            </span>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-x-2 gap-y-1 text-[9px] text-black dark:text-white">
+                            <div><span class="text-gray-500 uppercase font-bold">Código:</span> <strong class="font-mono text-[10px]">{{ calibration?.tool_code || calibration?.code }}</strong></div>
+                            <div><span class="text-gray-500 uppercase font-bold">Envío:</span> <strong class="font-mono text-[10px]">{{ calibration?.send_date }}</strong></div>
+                            <div class="col-span-2 truncate"><span class="text-gray-500 uppercase font-bold">Herr:</span> <strong class="text-[10px] uppercase">{{ calibration?.tool_name || calibration?.name }}</strong></div>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-2.5">
+
+                        <div class="col-span-2">
+                            <label class="text-[8px] font-black uppercase text-gray-600 dark:text-gray-400 mb-0.5 flex items-center gap-1">
+                                <mat-icon class="!text-[10px] text-gray-400">workspace_premium</mat-icon>
+                                N° de Certificado <span class="text-red-500 text-[10px] leading-none">*</span>
+                            </label>
+                            <input type="text"
+                                   [(ngModel)]="certificateNumber"
+                                   (ngModelChange)="onCertChange()"
+                                   placeholder="Ej. LAB-2026-001"
+                                   [class.border-red-500]="showCertError() || duplicateError()"
+                                   class="w-full h-7 text-[10px] font-black border-2 border-black rounded-lg px-2 bg-gray-50 dark:bg-[#0F172AFF] text-black dark:text-white uppercase outline-none shadow-[2px_2px_0px_0px_#000] focus:shadow-none focus:translate-x-[1px] focus:translate-y-[1px] transition-all">
+                            <p *ngIf="duplicateError()" class="text-[8px] text-red-600 font-bold mt-0.5 flex items-center gap-0.5"><mat-icon class="!text-[10px]">error</mat-icon> {{ duplicateError() }}</p>
+                        </div>
+
+                        <div>
+                            <label class="text-[8px] font-black uppercase text-gray-600 dark:text-gray-400 mb-0.5 flex items-center gap-1">
+                                <mat-icon class="!text-[10px] text-gray-400">event</mat-icon> Fecha Cal. <span class="text-red-500 text-[10px] leading-none">*</span>
+                            </label>
+                            <input type="date"
+                                   [(ngModel)]="fechaCalStr"
+                                   [max]="todayStr"
+                                   (ngModelChange)="onFechaCalChange()"
+                                   [class.border-red-500]="isFechaFutura()"
+                                   class="w-full h-7 text-[10px] font-black border-2 border-black rounded-lg px-1.5 bg-gray-50 dark:bg-[#0F172AFF] text-black dark:text-white outline-none shadow-[2px_2px_0px_0px_#000] focus:shadow-none focus:translate-x-[1px] focus:translate-y-[1px] transition-all">
+                        </div>
+
+                        <div>
+                            <label class="text-[8px] font-black uppercase text-gray-600 dark:text-gray-400 mb-0.5 flex justify-between items-center">
+                                <span class="flex items-center gap-1"><mat-icon class="!text-[10px] text-gray-400">event_available</mat-icon> Vence</span>
+                                <span class="text-amber-600 bg-amber-100 dark:bg-amber-900/30 px-1 rounded text-[7px]">+1 AÑO</span>
+                            </label>
+                            <input type="text"
+                                   [value]="fechaVencimientoDisplay"
+                                   readonly
+                                   class="w-full h-7 text-[10px] font-black border-2 border-dashed border-amber-500 rounded-lg px-2 bg-amber-50 dark:bg-amber-900/10 text-amber-700 outline-none cursor-not-allowed">
+                        </div>
+
+                        <div class="col-span-2 relative">
+                            <label class="text-[8px] font-black uppercase text-gray-600 dark:text-gray-400 mb-0.5 flex items-center gap-1">
+                                <mat-icon class="!text-[10px] text-gray-400">how_to_reg</mat-icon> Funcionario Receptor
+                            </label>
+                            <div class="relative">
+                                <input type="text"
+                                       [(ngModel)]="receivedByName"
+                                       (input)="onReceivedByInput($any($event.target).value)"
+                                       (blur)="hideReceivedByDropdown()"
+                                       placeholder="Buscar..."
+                                       class="w-full h-7 text-[10px] font-bold border-2 border-black rounded-lg px-2 bg-gray-50 dark:bg-[#0F172AFF] text-black dark:text-white outline-none shadow-[2px_2px_0px_0px_#000] focus:shadow-none focus:translate-x-[1px] focus:translate-y-[1px] transition-all">
+                                <mat-spinner *ngIf="receivedByLoading" diameter="12" class="absolute right-2 top-1.5"></mat-spinner>
+                            </div>
+                            <div *ngIf="showReceivedByDropdown" class="absolute z-50 w-full bg-white dark:bg-slate-800 border-2 border-black rounded-lg shadow-[4px_4px_0px_0px_#000] max-h-24 overflow-y-auto mt-1">
+                                <div *ngFor="let f of receivedByFuncionarios"
+                                     (mousedown)="selectReceivedBy(f)"
+                                     class="px-2 py-1.5 hover:bg-amber-50 dark:hover:bg-slate-700 cursor-pointer border-b border-gray-100 dark:border-slate-700 last:border-0 transition-colors">
+                                    <div class="text-[10px] font-black text-black dark:text-white">{{ f.nombre }}</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-span-2">
+                            <label class="text-[8px] font-black uppercase text-gray-600 dark:text-gray-400 mb-0.5 flex items-center gap-1">
+                                <mat-icon class="!text-[10px] text-gray-400">business</mat-icon> Lab. Emisor (Si es distinto)
+                            </label>
+                            <select [(ngModel)]="empresaIdOverride" class="w-full h-7 text-[10px] font-bold border-2 border-black rounded-lg px-1.5 bg-gray-50 dark:bg-[#0F172AFF] text-black dark:text-white outline-none shadow-[2px_2px_0px_0px_#000] focus:shadow-none focus:translate-x-[1px] focus:translate-y-[1px] transition-all">
+                                <option [ngValue]="null">Mismo del envío ({{ calibration?.supplier_name }})</option>
+                                <option *ngFor="let lab of laboratories" [ngValue]="lab.id_laboratory">{{ lab.name }}</option>
+                            </select>
+                        </div>
+
+                        <div class="col-span-2">
+                            <label class="text-[8px] font-black uppercase text-gray-600 dark:text-gray-400 mb-0.5 flex items-center gap-1">
+                                <mat-icon class="!text-[10px] text-gray-400">description</mat-icon> Observaciones
+                            </label>
+                            <textarea [(ngModel)]="observations"
+                                      rows="1"
+                                      placeholder="Tolerancias o notas..."
+                                      class="w-full text-[10px] font-bold border-2 border-black rounded-lg p-2 bg-gray-50 dark:bg-[#0F172AFF] text-black dark:text-white resize-none outline-none shadow-[2px_2px_0px_0px_#000] focus:shadow-none focus:translate-x-[1px] focus:translate-y-[1px] transition-all"></textarea>
+                        </div>
+
+                        <div class="col-span-2">
+                            <label class="text-[8px] font-black uppercase text-gray-600 dark:text-gray-400 mb-0.5 flex items-center gap-1">
+                                <mat-icon class="!text-[12px] text-blue-500">upload_file</mat-icon> PDF Físico
+                            </label>
+
+                            <div *ngIf="!selectedFile"
+                                 (click)="fileInput.click()"
+                                 class="w-full border-2 border-dashed border-gray-400 dark:border-gray-500 hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg p-2 flex items-center justify-center gap-2 bg-gray-50 dark:bg-slate-700/30 cursor-pointer transition-all">
+                                <mat-icon class="text-blue-500 !text-sm">cloud_upload</mat-icon>
+                                <div class="flex flex-col">
+                                    <span class="text-[10px] font-black text-black dark:text-white leading-none">Click para adjuntar PDF</span>
+                                    <span class="text-[8px] font-bold text-gray-500">Máx. 5MB</span>
+                                </div>
+                            </div>
+
+                            <div *ngIf="selectedFile" class="w-full border-2 border-black rounded-lg p-1.5 bg-blue-50 dark:bg-blue-900/30 flex items-center justify-between shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+                                <div class="flex items-center gap-2 overflow-hidden">
+                                    <div class="w-7 h-7 bg-red-100 border-2 border-red-500 rounded flex items-center justify-center shrink-0">
+                                        <mat-icon class="text-red-600 !text-[14px]">picture_as_pdf</mat-icon>
+                                    </div>
+                                    <div class="flex flex-col overflow-hidden">
+                                        <span class="text-[10px] font-black truncate text-black dark:text-white leading-tight">{{ selectedFile.name }}</span>
+                                        <span class="text-[8px] font-bold text-gray-500">{{ (selectedFile.size / 1024 / 1024).toFixed(2) }} MB</span>
+                                    </div>
+                                </div>
+                                <button (click)="removeFile()" matTooltip="Eliminar"
+                                        class="w-7 h-7 bg-white dark:bg-slate-800 border-2 border-black rounded-lg flex items-center justify-center hover:bg-red-100 shrink-0">
+                                    <mat-icon class="!text-[14px] text-red-600">delete</mat-icon>
+                                </button>
+                            </div>
+                            <input #fileInput type="file" accept="application/pdf" class="hidden" (change)="onFileSelected($event)">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="lg:col-span-5 flex flex-col gap-3">
+
+                <div class="border-[2px] border-black bg-white dark:bg-slate-800 rounded-xl shadow-[3px_3px_0px_0px_rgba(0,0,0,0.15)] overflow-hidden sticky top-0">
+                    <div class="flex items-center gap-1.5 px-3 py-1.5 bg-[#fbbf24] border-b-2 border-black">
+                        <mat-icon class="text-black !text-sm">fact_check</mat-icon>
+                        <span class="font-black text-[10px] uppercase text-black tracking-wider">VALIDACIÓN</span>
+                    </div>
+
+                    <div class="p-3 flex flex-col gap-3">
+                        <div class="space-y-2 bg-gray-50 dark:bg-slate-900 border-2 border-gray-200 dark:border-slate-700 rounded-lg p-2.5">
+                            <div class="flex items-center gap-1.5 text-[10px]">
+                                <mat-icon class="!text-[14px] text-green-500">check_circle</mat-icon>
+                                <span class="font-black text-gray-700 dark:text-gray-300">Nota</span>
+                                <span class="font-mono font-black text-black dark:text-white ml-auto">{{ calibration?.record_number }}</span>
+                            </div>
+                            <div class="border-t border-dashed border-gray-300 dark:border-gray-700"></div>
+                            <div class="flex items-center gap-1.5 text-[10px]">
+                                <mat-icon class="!text-[14px]" [ngClass]="certificateNumber?.trim() ? 'text-green-500' : 'text-gray-300 dark:text-gray-600'">
+                                    {{ certificateNumber?.trim() ? 'check_circle' : 'radio_button_unchecked' }}
+                                </mat-icon>
+                                <span class="font-black text-gray-700 dark:text-gray-300">Certificado</span>
+                                <span *ngIf="certificateNumber" class="font-mono font-black text-blue-600 dark:text-blue-400 ml-auto truncate max-w-[80px] uppercase">{{ certificateNumber }}</span>
+                                <span *ngIf="!certificateNumber" class="font-black text-[8px] text-gray-400 ml-auto">PENDIENTE</span>
+                            </div>
+                            <div class="border-t border-dashed border-gray-300 dark:border-gray-700"></div>
+                            <div class="flex items-center gap-1.5 text-[10px]">
+                                <mat-icon class="!text-[14px]" [ngClass]="selectedFile ? 'text-green-500' : 'text-gray-300 dark:text-gray-600'">
+                                    {{ selectedFile ? 'check_circle' : 'radio_button_unchecked' }}
+                                </mat-icon>
+                                <span class="font-black text-gray-700 dark:text-gray-300">PDF Físico</span>
+                                <span class="font-black text-[8px] ml-auto px-1.5 py-0.5 rounded border"
+                                      [ngClass]="selectedFile ? 'bg-green-100 text-green-700 border-green-300' : 'bg-gray-100 text-gray-500 border-gray-300'">
+                                    {{ selectedFile ? 'ADJUNTADO' : 'NO' }}
+                                </span>
+                            </div>
+                        </div>
+
+                        <div class="bg-[#111827] rounded-lg p-2.5 border-2 border-black shadow-[2px_2px_0px_0px_#000]">
+                            <div class="flex items-center justify-between text-[9px] mb-1.5">
+                                <span class="text-gray-400 font-bold uppercase tracking-wider">Resolución:</span>
+                                <span class="bg-green-500 text-black px-1.5 py-0.5 rounded text-[8px] font-black uppercase shadow-sm">APROBADO</span>
+                            </div>
+                            <div class="flex flex-col gap-1">
+                                <span class="text-gray-400 text-[8px] font-bold uppercase">Validez:</span>
+                                <div class="flex items-center gap-1.5">
+                                    <span class="font-mono font-black text-white text-[10px] bg-gray-800 px-1.5 py-0.5 rounded border border-gray-600">{{ fechaCalStr | date:'dd/MM/yy' }}</span>
+                                    <mat-icon class="text-amber-400 !text-xs">arrow_forward</mat-icon>
+                                    <span class="font-mono font-black text-amber-400 text-[10px] bg-amber-900/30 px-1.5 py-0.5 rounded border border-amber-600/50">{{ fechaVencimientoDisplay | date:'dd/MM/yy' }}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div *ngIf="showFechaWarning()" class="flex items-start gap-1.5 p-2 bg-amber-50 border-2 border-amber-400 rounded-lg">
+                            <mat-icon class="text-amber-500 !text-sm shrink-0">warning</mat-icon>
+                            <p class="text-[8px] text-amber-800 font-black leading-tight">La fecha calibración es anterior al envío ({{ calibration?.send_date }}).</p>
+                        </div>
+
+                        <div *ngIf="!canSubmit() && !isProcessing()" class="flex items-start gap-1.5 p-2 bg-red-50 border-2 border-red-500 rounded-lg">
+                            <mat-icon class="text-red-600 !text-sm shrink-0">error</mat-icon>
+                            <p class="text-[8px] text-red-800 font-black leading-tight">Complete todos los campos (*).</p>
+                        </div>
+
+                        <button (click)="save()"
+                                [disabled]="!canSubmit() || isProcessing()"
+                                class="w-full h-10 bg-[#0F172AFF] text-white font-black text-[11px] border-[2px] border-black rounded-lg shadow-[3px_3px_0px_0px_#000] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1.5">
+                            <mat-spinner *ngIf="isProcessing()" diameter="14" class="inline-block"></mat-spinner>
+                            <mat-icon *ngIf="!isProcessing()" class="!text-sm text-amber-400">offline_pin</mat-icon>
+                            {{ isProcessing() ? 'GUARDANDO...' : 'PROCESAR' }}
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<style>
+    .custom-scrollbar::-webkit-scrollbar { width: 5px; height: 5px; }
+    .custom-scrollbar::-webkit-scrollbar-track { background: #e2e8f0; border-radius: 4px; margin: 2px; }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background: #0F172AFF; border-radius: 4px; }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #1e293b; }
+</style>

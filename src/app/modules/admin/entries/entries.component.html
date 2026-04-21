@@ -5,7 +5,7 @@
         <h1 class="text-3xl md:text-4xl font-black text-black dark:text-white uppercase tracking-tighter leading-none">
             ENTRADAS
         </h1>
-        <span class="text-[10px] font-bold bg-[#111A43] text-white px-3 py-1 rounded-sm border border-black uppercase tracking-wider hidden sm:inline">
+        <span class="text-[10px] font-bold bg-amber-400 text-black px-3 py-1 rounded-sm border border-black uppercase tracking-wider hidden sm:inline">
             MÓDULO DE INGRESOS
         </span>
         <div class="flex-1"></div>
@@ -14,15 +14,15 @@
         <button (click)="toggleBandeja()"
                 [class.!bg-[#111A43]]="showBandeja"
                 [class.!text-white]="showBandeja"
-                class="flex items-center gap-2 px-5 py-2 bg-white dark:bg-slate-800 border-2 border-black font-black text-xs uppercase rounded-full shadow-[3px_3px_0px_0px_#000] hover:shadow-[1px_1px_0px_0px_#000] hover:translate-x-[2px] hover:translate-y-[2px] transition-all text-black dark:text-white">
-            <mat-icon class="!text-base">apps</mat-icon>
+                class="flex items-center gap-2 px-5 py-2 bg-[#2563eb] dark:bg-slate-800 border-2 border-black font-black text-xs uppercase rounded-full shadow-[3px_3px_0px_0px_#000] hover:shadow-[1px_1px_0px_0px_#000] hover:translate-x-[2px] hover:translate-y-[2px] transition-all text-white dark:text-white">
+            <mat-icon class="!text-base text-black">apps</mat-icon>
             <span class="hidden sm:inline">MÓDULOS</span>
-            <mat-icon class="!text-sm transition-transform duration-200" [class.rotate-180]="showBandeja">expand_more</mat-icon>
+            <mat-icon class="!text-sm text-white transition-transform duration-200" [class.rotate-180]="showBandeja">expand_more</mat-icon>
         </button>
 
         <button (click)="openEntradasRecientes()"
-                class="flex items-center gap-2 px-5 py-2 bg-white dark:bg-slate-800 border-2 border-black font-black text-xs uppercase rounded-full shadow-[3px_3px_0px_0px_#000] hover:shadow-[1px_1px_0px_0px_#000] hover:translate-x-[2px] hover:translate-y-[2px] transition-all text-black dark:text-white">
-            <mat-icon class="!text-base">history</mat-icon>
+                class="flex items-center gap-2 px-5 py-2 bg-[#111A43] dark:bg-slate-800 border-2 border-black font-black text-xs uppercase rounded-full shadow-[3px_3px_0px_0px_#000] hover:shadow-[1px_1px_0px_0px_#000] hover:translate-x-[2px] hover:translate-y-[2px] transition-all text-white dark:text-white">
+            <mat-icon class="!text-base text-white">history</mat-icon>
             <span class="hidden sm:inline">Entradas Recientes</span>
         </button>
     </div>
@@ -37,7 +37,7 @@
     <div *ngIf="showBandeja"
          class="absolute top-[56px] left-2 right-2 md:left-auto md:right-4 md:w-auto z-30 bg-white dark:bg-[#111A43] border-2 border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] rounded-2xl p-3 animate-in slide-in-from-top-2 duration-150">
 
-        <p class="text-[9px] font-black uppercase tracking-widest text-gray-400 dark:text-slate-400 mb-2 px-1">
+        <p class="text-[9px] font-black uppercase tracking-widest text-black dark:text-slate-400 mb-2 px-1">
             Seleccionar módulo de entrada
         </p>
 
@@ -47,9 +47,9 @@
             <!-- Módulo 1 -->
             <button (click)="openModule(1)"
                     class="group relative flex flex-col items-center gap-1 p-2 rounded-xl border-2 border-black transition-all hover:scale-[1.04] active:scale-[0.97] flex-1 min-w-0"
-                    [style.background-color]="isTabOpen(1) ? '#FFC501' : 'transparent'"
+                    [style.background-color]="isTabOpen(1) ? '#ffad00' : 'transparent'"
                     [style.box-shadow]="'3px 3px 0px 0px rgba(0,0,0,1)'">
-                <div *ngIf="isTabOpen(1)" class="absolute top-1 right-1 w-2 h-2 rounded-full bg-black"></div>
+                <div *ngIf="isTabOpen(1)" class="absolute top-1 right-1"></div>
                 <mat-icon svgIcon="heroicons_outline:building-office-2"
                           class="!w-6 !h-6 !text-2xl text-black dark:text-white shrink-0"></mat-icon>
                 <p class="text-[9px] font-black uppercase leading-tight text-black dark:text-white text-center w-full truncate">RETORNO</p>
@@ -59,9 +59,9 @@
             <!-- Módulo 2 -->
             <button (click)="openModule(2)"
                     class="group relative flex flex-col items-center gap-1 p-2 rounded-xl border-2 border-black transition-all hover:scale-[1.04] active:scale-[0.97] flex-1 min-w-0"
-                    [style.background-color]="isTabOpen(2) ? '#FF6A00' : 'transparent'"
+                    [style.background-color]="isTabOpen(2) ? '#ffad00' : 'transparent'"
                     [style.box-shadow]="'3px 3px 0px 0px rgba(0,0,0,1)'">
-                <div *ngIf="isTabOpen(2)" class="absolute top-1 right-1 w-2 h-2 rounded-full bg-black"></div>
+                <div *ngIf="isTabOpen(2)" class="absolute top-1 right-1"></div>
                 <mat-icon svgIcon="heroicons_outline:wrench-screwdriver"
                           class="!w-6 !h-6 !text-2xl text-black dark:text-white shrink-0"></mat-icon>
                 <p class="text-[9px] font-black uppercase leading-tight text-black dark:text-white text-center w-full truncate">NUEVA</p>
@@ -71,9 +71,9 @@
             <!-- Módulo 3 -->
             <button (click)="openModule(3)"
                     class="group relative flex flex-col items-center gap-1 p-2 rounded-xl border-2 border-black transition-all hover:scale-[1.04] active:scale-[0.97] flex-1 min-w-0"
-                    [style.background-color]="isTabOpen(3) ? '#1A3EDC' : 'transparent'"
+                    [style.background-color]="isTabOpen(3) ? '#ffad00' : 'transparent'"
                     [style.box-shadow]="'3px 3px 0px 0px rgba(0,0,0,1)'">
-                <div *ngIf="isTabOpen(3)" class="absolute top-1 right-1 w-2 h-2 rounded-full bg-black"></div>
+                <div *ngIf="isTabOpen(3)" class="absolute top-1 right-1"></div>
                 <mat-icon svgIcon="heroicons_outline:arrow-uturn-left"
                           class="!w-6 !h-6 !text-2xl text-black dark:text-white shrink-0"></mat-icon>
                 <p class="text-[9px] font-black uppercase leading-tight text-black dark:text-white text-center w-full truncate">DEVOLUCIÓN</p>
@@ -83,9 +83,9 @@
             <!-- Módulo 4 -->
             <button (click)="openModule(4)"
                     class="group relative flex flex-col items-center gap-1 p-2 rounded-xl border-2 border-black transition-all hover:scale-[1.04] active:scale-[0.97] flex-1 min-w-0"
-                    [style.background-color]="isTabOpen(4) ? '#7113CF' : 'transparent'"
+                    [style.background-color]="isTabOpen(4) ? '#ffad00' : 'transparent'"
                     [style.box-shadow]="'3px 3px 0px 0px rgba(0,0,0,1)'">
-                <div *ngIf="isTabOpen(4)" class="absolute top-1 right-1 w-2 h-2 rounded-full bg-black"></div>
+                <div *ngIf="isTabOpen(4)" class="absolute top-1 right-1"></div>
                 <mat-icon svgIcon="heroicons_outline:adjustments-horizontal"
                           class="!w-6 !h-6 !text-2xl text-black dark:text-white shrink-0"></mat-icon>
                 <p class="text-[9px] font-black uppercase leading-tight text-black dark:text-white text-center w-full truncate">AJUSTE</p>
@@ -95,9 +95,9 @@
             <!-- Módulo 5 -->
             <button (click)="openModule(5)"
                     class="group relative flex flex-col items-center gap-1 p-2 rounded-xl border-2 border-black transition-all hover:scale-[1.04] active:scale-[0.97] flex-1 min-w-0"
-                    [style.background-color]="isTabOpen(5) ? '#1AAA1F' : 'transparent'"
+                    [style.background-color]="isTabOpen(5) ? '#ffad00' : 'transparent'"
                     [style.box-shadow]="'3px 3px 0px 0px rgba(0,0,0,1)'">
-                <div *ngIf="isTabOpen(5)" class="absolute top-1 right-1 w-2 h-2 rounded-full bg-black"></div>
+                <div *ngIf="isTabOpen(5)" class="absolute top-1 right-1"></div>
                 <mat-icon svgIcon="heroicons_outline:user-circle"
                           class="!w-6 !h-6 !text-2xl text-black dark:text-white shrink-0"></mat-icon>
                 <p class="text-[9px] font-black uppercase leading-tight text-black dark:text-white text-center w-full truncate">DEVOLUCIÓN</p>
@@ -212,7 +212,9 @@
                 </button>
             </div>
 
-            <div class="neo-card-base-entry bg-white dark:bg-slate-800 overflow-hidden flex flex-col flex-1 relative z-10 border-2 border-black">
+            <!-- ── VISTA: Tabla (lista de entradas) ── -->
+            <div *ngIf="!selectedEntry"
+                 class="neo-card-base-entry bg-white dark:bg-slate-800 overflow-hidden flex flex-col flex-1 relative z-10 border-2 border-black">
 
                 <div class="bg-[#0F172AFF] px-4 py-2 border-b-2 border-black flex items-center justify-between shrink-0 h-12">
                     <div class="flex items-center gap-3">
@@ -267,15 +269,10 @@
                             <th mat-header-cell *matHeaderCellDef class="header-neo text-right text-sm py-3 px-4">ACCIONES</th>
                             <td mat-cell *matCellDef="let element" class="cell-neo text-right px-4">
                                 <div class="flex gap-2 justify-end">
-                                    <button (click)="verDetalle(element); $event.stopPropagation()"
+                                    <button (click)="$event.stopPropagation(); verDetalle(element)"
                                             matTooltip="Ver detalle"
                                             class="w-8 h-8 flex items-center justify-center border-2 border-black bg-white dark:bg-slate-700 hover:bg-gray-100 hover:scale-110 rounded-lg shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] active:translate-y-[1px] active:shadow-none transition-all">
                                         <mat-icon class="text-black dark:text-white !text-lg !w-5 !h-5">visibility</mat-icon>
-                                    </button>
-                                    <button (click)="editarEntrada(element); $event.stopPropagation()"
-                                            matTooltip="Editar"
-                                            class="w-8 h-8 flex items-center justify-center border-2 border-black bg-[#F8B400FF] hover:bg-yellow-400 hover:scale-110 rounded-lg shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] active:translate-y-[1px] active:shadow-none transition-all">
-                                        <mat-icon class="text-black !text-lg !w-5 !h-5">edit</mat-icon>
                                     </button>
                                 </div>
                             </td>
@@ -303,6 +300,161 @@
                     class="border-t-2 border-black dark:border-slate-700 bg-white dark:bg-slate-800">
                 </mat-paginator>
             </div>
+
+            <!-- ── VISTA: Detalle / Editar ── -->
+            <div *ngIf="selectedEntry"
+                 class="neo-card-base-entry bg-white dark:bg-slate-800 overflow-hidden flex flex-col flex-1 relative z-10 border-2 border-black">
+
+                <!-- Header detalle -->
+                <div class="flex items-center justify-between px-4 py-2 border-b-2 border-black shrink-0 h-12 bg-[#0F172AFF]">
+                    <div class="flex items-center gap-3">
+                        <button (click)="cerrarDetalle()"
+                                class="w-7 h-7 flex items-center justify-center border-2 border-black rounded-lg bg-white/20 hover:bg-white/40 transition-all">
+                            <mat-icon class="!text-base text-white">arrow_back</mat-icon>
+                        </button>
+                        <mat-icon class="!text-xl text-white">visibility</mat-icon>
+                        <span class="font-black text-xs md:text-sm uppercase text-white">Detalle del Movimiento</span>
+                        <span class="font-mono text-[10px] opacity-70 text-white">
+                            {{ selectedEntry?.nroComprobante }}
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Body detalle -->
+                <div class="overflow-y-auto flex-1 p-4 flex flex-col gap-4 custom-scrollbar-entry bg-[#f8f9fc] dark:bg-slate-900/50">
+
+                    <!-- Información General -->
+                    <div class="bg-white dark:bg-slate-800 border-2 border-black rounded-xl shadow-[3px_3px_0px_0px_#000] overflow-hidden">
+                        <div class="bg-[#0F172AFF] px-4 py-2 border-b-2 border-black">
+                            <span class="text-xs font-black uppercase text-white tracking-wide">Información General</span>
+                        </div>
+                        <div class="p-4 grid grid-cols-2 gap-3">
+
+                            <div>
+                                <label class="text-[10px] font-black uppercase text-gray-400 block mb-1">Nro. Comprobante</label>
+                                <div class="h-9 bg-gray-50 dark:bg-slate-900 border-2 border-black rounded-lg px-3 flex items-center font-mono font-black text-sm text-black dark:text-white">
+                                    {{ selectedEntry?.nroComprobante || '-' }}
+                                </div>
+                            </div>
+
+                            <div>
+                                <label class="text-[10px] font-black uppercase text-gray-400 block mb-1">Fecha</label>
+                                <div class="h-9 bg-gray-50 dark:bg-slate-900 border-2 border-black rounded-lg px-3 flex items-center font-bold text-sm text-black dark:text-white">
+                                    {{ selectedEntry?.fecha }}  {{ selectedEntry?.raw?.time || '' }}
+                                </div>
+                            </div>
+
+                            <div>
+                                <label class="text-[10px] font-black uppercase text-gray-400 block mb-1">Tipo de Movimiento</label>
+                                <div class="h-9 border-2 border-black rounded-lg px-3 flex items-center">
+                                    <span class="text-xs font-black uppercase px-2 py-0.5 rounded bg-[#0F172AFF] text-white">
+                                        {{ selectedEntry?.tipo }}
+                                    </span>
+                                </div>
+                            </div>
+
+                            <div>
+                                <label class="text-[10px] font-black uppercase text-gray-400 block mb-1">Estado</label>
+                                <div class="h-9 border-2 border-black rounded-lg px-3 flex items-center">
+                                    <span class="text-xs font-black uppercase px-2 py-0.5 rounded border border-black"
+                                          [ngClass]="getStatusClass(selectedEntry?.estado || '')">
+                                        {{ selectedEntry?.estado }}
+                                    </span>
+                                </div>
+                            </div>
+
+                            <div class="col-span-2">
+                                <label class="text-[10px] font-black uppercase text-gray-400 block mb-1">Responsable / Solicitado por</label>
+                                <div class="h-9 bg-gray-50 dark:bg-slate-900 border-2 border-black rounded-lg px-3 flex items-center font-bold text-sm text-black dark:text-white">
+                                    {{ selectedEntry?.raw?.requested_by_name || selectedEntry?.responsable || '-' }}
+                                </div>
+                            </div>
+
+                            <div *ngIf="selectedEntry?.raw?.responsible_person">
+                                <label class="text-[10px] font-black uppercase text-gray-400 block mb-1">Persona Responsable</label>
+                                <div class="h-9 bg-gray-50 dark:bg-slate-900 border-2 border-black rounded-lg px-3 flex items-center font-bold text-sm text-black dark:text-white">
+                                    {{ selectedEntry?.raw?.responsible_person }}
+                                </div>
+                            </div>
+
+                            <div *ngIf="selectedEntry?.raw?.recipient">
+                                <label class="text-[10px] font-black uppercase text-gray-400 block mb-1">Destinatario / Receptor</label>
+                                <div class="h-9 bg-gray-50 dark:bg-slate-900 border-2 border-black rounded-lg px-3 flex items-center font-bold text-sm text-black dark:text-white">
+                                    {{ selectedEntry?.raw?.recipient }}
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+
+                    <!-- Referencias Documentales -->
+                    <div *ngIf="selectedEntry?.raw?.document_number || selectedEntry?.raw?.invoice_number || selectedEntry?.raw?.purchase_order"
+                         class="bg-white dark:bg-slate-800 border-2 border-black rounded-xl shadow-[3px_3px_0px_0px_#000] overflow-hidden">
+                        <div class="bg-amber-400 px-4 py-2 border-b-2 border-black">
+                            <span class="text-xs font-black uppercase text-black tracking-wide">Referencias Documentales</span>
+                        </div>
+                        <div class="p-4 grid grid-cols-2 gap-3">
+                            <div *ngIf="selectedEntry?.raw?.document_number">
+                                <label class="text-[10px] font-black uppercase text-gray-400 block mb-1">Nro. Documento</label>
+                                <div class="h-9 bg-gray-50 dark:bg-slate-900 border-2 border-black rounded-lg px-3 flex items-center font-mono font-bold text-sm text-black dark:text-white">
+                                    {{ selectedEntry?.raw?.document_number }}
+                                </div>
+                            </div>
+                            <div *ngIf="selectedEntry?.raw?.invoice_number">
+                                <label class="text-[10px] font-black uppercase text-gray-400 block mb-1">Nro. Factura</label>
+                                <div class="h-9 bg-gray-50 dark:bg-slate-900 border-2 border-black rounded-lg px-3 flex items-center font-mono font-bold text-sm text-black dark:text-white">
+                                    {{ selectedEntry?.raw?.invoice_number }}
+                                </div>
+                            </div>
+                            <div *ngIf="selectedEntry?.raw?.purchase_order">
+                                <label class="text-[10px] font-black uppercase text-gray-400 block mb-1">Orden de Compra</label>
+                                <div class="h-9 bg-gray-50 dark:bg-slate-900 border-2 border-black rounded-lg px-3 flex items-center font-mono font-bold text-sm text-black dark:text-white">
+                                    {{ selectedEntry?.raw?.purchase_order }}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Observaciones -->
+                    <div *ngIf="selectedEntry?.raw?.notes || selectedEntry?.raw?.specific_observations || selectedEntry?.raw?.general_observations"
+                         class="bg-white dark:bg-slate-800 border-2 border-black rounded-xl shadow-[3px_3px_0px_0px_#000] overflow-hidden">
+                        <div class="bg-gray-100 dark:bg-slate-700 px-4 py-2 border-b-2 border-black">
+                            <span class="text-xs font-black uppercase text-black dark:text-white tracking-wide">Observaciones</span>
+                        </div>
+                        <div class="p-4 flex flex-col gap-3">
+                            <div *ngIf="selectedEntry?.raw?.notes">
+                                <label class="text-[10px] font-black uppercase text-gray-400 block mb-1">Notas</label>
+                                <div class="bg-gray-50 dark:bg-slate-900 border-2 border-black rounded-lg px-3 py-2 text-sm text-black dark:text-white font-bold leading-snug">
+                                    {{ selectedEntry?.raw?.notes }}
+                                </div>
+                            </div>
+                            <div *ngIf="selectedEntry?.raw?.specific_observations">
+                                <label class="text-[10px] font-black uppercase text-gray-400 block mb-1">Observaciones Específicas</label>
+                                <div class="bg-gray-50 dark:bg-slate-900 border-2 border-black rounded-lg px-3 py-2 text-sm text-black dark:text-white font-bold leading-snug">
+                                    {{ selectedEntry?.raw?.specific_observations }}
+                                </div>
+                            </div>
+                            <div *ngIf="selectedEntry?.raw?.general_observations">
+                                <label class="text-[10px] font-black uppercase text-gray-400 block mb-1">Observaciones Generales</label>
+                                <div class="bg-gray-50 dark:bg-slate-900 border-2 border-black rounded-lg px-3 py-2 text-sm text-black dark:text-white font-bold leading-snug">
+                                    {{ selectedEntry?.raw?.general_observations }}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+
+                </div>
+
+                <!-- Footer detalle -->
+                <div class="shrink-0 flex justify-end gap-2 px-4 py-3 border-t-2 border-black bg-white dark:bg-[#0F172AFF]">
+                    <button (click)="cerrarDetalle()"
+                            class="px-5 py-2 bg-[#0F172AFF] text-white font-black text-xs border-2 border-black rounded-full shadow-[2px_2px_0px_0px_#000] hover:shadow-none hover:translate-y-[1px] transition-all uppercase">
+                        Volver
+                    </button>
+                </div>
+            </div>
         </div>
     </div>
 </ng-template>
+

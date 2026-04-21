@@ -35,7 +35,11 @@ interface DevolucionItem {
     descripcion: string;
     pn: string;
     sn: string;
+    und: string;
     marca?: string;
+    listaContenido: string;
+    fechaCalibracion: string;
+    estadoAlPrestar: string;
     fechaPrestamo: string;
     cantidadPrestada: number;
     cantidadDevolver: number;
@@ -154,9 +158,8 @@ export class DevolucionHerramientaComponent implements OnInit, OnDestroy {
     funcionarios: Funcionario[] = [];
     funcionariosFiltrados: Funcionario[] = [];
     tiposDevolucion = [
-        { value: 'PRESTAMO', label: 'PRÉSTAMO' },
-        { value: 'ASIGNACION', label: 'ASIGNACIÓN' },
-        { value: 'TEMPORAL', label: 'TEMPORAL' }
+        { value: 'RAPIDA', label: 'RÁPIDA' },
+        { value: 'COMPLETA', label: 'COMPLETA' }
     ];
 
     tiposPrestamo = [
@@ -174,9 +177,9 @@ export class DevolucionHerramientaComponent implements OnInit, OnDestroy {
     ];
 
     displayedColumns: string[] = [
-        'select', 'fila', 'codigo', 'descripcion', 'pn', 'sn',
-        'tipoPrestamo', 'aeronave', 'fechaPrestamo', 'diasFuera',
-        'cantidadPrestada', 'cantidadDevolver', 'condicion', 'observacionItem'
+        'select', 'fila', 'herramienta', 'descripcion',
+        'calibEstado', 'destino', 'fechaDias',
+        'cantidades', 'condicion', 'observacionItem'
     ];
 
     dataSource: DevolucionItem[] = [];
@@ -198,6 +201,8 @@ export class DevolucionHerramientaComponent implements OnInit, OnDestroy {
             funcionario: ['', Validators.required],
             tipoDe: ['PRESTAMO'],
             codigoHerramienta: [''],
+            unidadDestino: [''],
+            ordenTrabajo: [''],
             fechaDevolucion: [new Date().toISOString().split('T')[0], Validators.required],
             responsableRecibe: ['', Validators.required],
             observaciones: ['']
@@ -279,56 +284,76 @@ export class DevolucionHerramientaComponent implements OnInit, OnDestroy {
         this.isSearching = true;
         this.dataSource = [];
 
+        const codigoFiltro = (this.devolucionForm.get('codigoHerramienta')?.value || '').trim();
+
+        // filtro_adicional: solo préstamos internos activos del funcionario
+        const nombreSafe = (funcionario.nombreCompleto || '').replace(/'/g, "''");
+        const licenciaSafe = (funcionario.licencia || '').replace(/'/g, "''");
+        let filtroLoans = `loa.status = 'ACTIVO' AND loa.loan_type = 'INTERNO'`
+            + ` AND (loa.borrower_name ILIKE '%${nombreSafe}%' OR loa.borrower_license = '${licenciaSafe}')`;
+
         forkJoin({
-            loans: this.movementService.getActiveLoans(),
+            loans: this.movementService.getActiveLoans({ filtro_adicional: filtroLoans }),
             items: this.movementService.getActiveLoanItems()
         }).pipe(
             takeUntil(this._unsubscribeAll),
             finalize(() => this.isSearching = false)
         ).subscribe({
             next: ({ loans, items }) => {
-                const nombreBuscado = funcionario.nombreCompleto?.toLowerCase() || '';
-                const licencia = funcionario.licencia?.toLowerCase() || '';
-
-                const filtered = (loans || []).filter((loan: any) =>
-                    loan.borrower_name?.toLowerCase() === nombreBuscado ||
-                    loan.borrower_name?.toLowerCase().includes(nombreBuscado) ||
-                    loan.borrower_license?.toLowerCase() === licencia
-                );
-
-                if (filtered.length > 0) {
-                    this.dataSource = filtered.flatMap((loan: any) => {
-                        const loanItems = (items || []).filter((i: any) =>
-                            String(i.loan_id) === String(loan.id_loan)
-                        );
-                        const fechaPrestamo = loan.loan_date || '';
-                        return loanItems.map((item: any) => ({
-                            fila: 0,
-                            toolId: String(item.tool_id || ''),
-                            codigo: item.code || '',
-                            descripcion: item.description || item.name || '',
-                            pn: item.part_number || '',
-                            sn: item.serial_number || '',
-                            marca: item.brand || '',
-                            fechaPrestamo,
-                            cantidadPrestada: Number(item.quantity) || 1,
-                            cantidadDevolver: Number(item.quantity) || 1,
-                            nroNotaSalida: loan.loan_number || '',
-                            aeronave: loan.aircraft || '',
-                            ordenTrabajo: loan.work_order_number || '',
-                            tipoPrestamo: 'EVENTUAL' as any,
-                            diasFuera: fechaPrestamo ? this.calcularDiasFuera(fechaPrestamo) : 0,
-                            condicionDevolucion: 'BUENO' as CondicionDevolucion,
-                            observacionItem: '',
-                            selected: false
-                        }));
-                    });
-                    this.dataSource.forEach((item, idx) => item.fila = idx + 1);
-                    this.showMessage(`Se encontraron ${this.dataSource.length} herramienta(s) prestadas`, 'success');
-                } else {
+                if (!loans || loans.length === 0) {
                     this.dataSource = [];
                     this.showMessage(`No se encontraron préstamos activos para ${funcionario.nombreCompleto}`, 'info');
+                    return;
                 }
+
+                let resultado = loans.flatMap((loan: any) => {
+                    const loanItems = (items || []).filter((i: any) =>
+                        String(i.loan_id) === String(loan.id_loan)
+                    );
+                    const fechaPrestamo = loan.loan_date || '';
+                    return loanItems.map((item: any) => ({
+                        fila: 0,
+                        toolId: String(item.tool_id || ''),
+                        codigo: item.code || '',
+                        descripcion: item.description || item.name || '',
+                        pn: item.part_number || '',
+                        sn: item.serial_number || '',
+                        und: 'UND',
+                        marca: item.brand || '',
+                        listaContenido: '',
+                        fechaCalibracion: '',
+                        estadoAlPrestar: item.condition_on_loan || 'BUENO',
+                        fechaPrestamo,
+                        cantidadPrestada: Number(item.quantity) || 1,
+                        cantidadDevolver: Number(item.quantity) || 1,
+                        nroNotaSalida: loan.loan_number || '',
+                        aeronave: loan.aircraft || '',
+                        ordenTrabajo: loan.work_order_number || '',
+                        tipoPrestamo: 'EVENTUAL' as any,
+                        diasFuera: fechaPrestamo ? this.calcularDiasFuera(fechaPrestamo) : 0,
+                        condicionDevolucion: 'BUENO' as CondicionDevolucion,
+                        observacionItem: '',
+                        selected: false
+                    }));
+                });
+
+                // Fix 3: filtrar por código herramienta si se especificó
+                if (codigoFiltro) {
+                    resultado = resultado.filter((item: DevolucionItem) =>
+                        item.codigo.toLowerCase().includes(codigoFiltro.toLowerCase()) ||
+                        item.pn.toLowerCase().includes(codigoFiltro.toLowerCase())
+                    );
+                }
+
+                if (resultado.length === 0) {
+                    this.dataSource = [];
+                    this.showMessage('No se encontraron herramientas con ese criterio', 'info');
+                    return;
+                }
+
+                this.dataSource = resultado;
+                this.dataSource.forEach((item, idx) => item.fila = idx + 1);
+                this.showMessage(`${this.dataSource.length} herramienta(s) encontradas`, 'success');
             },
             error: (err) => {
                 this.dataSource = [];
@@ -499,6 +524,9 @@ export class DevolucionHerramientaComponent implements OnInit, OnDestroy {
             tool_id: Number(item.toolId),
             quantity: item.cantidadDevolver,
             condicion: item.condicionDevolucion,
+            unit_of_measure: item.und || '',
+            content_list: item.listaContenido || '',
+            estado_al_prestar: item.estadoAlPrestar || '',
             notes: item.observacionItem || ''
         })));
 
@@ -509,6 +537,8 @@ export class DevolucionHerramientaComponent implements OnInit, OnDestroy {
             requested_by_name: funcionario.nombreCompleto,
             responsible_person: this.devolucionForm.value.responsableRecibe,
             recipient: funcionario.nombreCompleto,
+            destination_unit: this.devolucionForm.value.unidadDestino || '',
+            work_order_number: this.devolucionForm.value.ordenTrabajo || '',
             notes: this.devolucionForm.value.observaciones || '',
             items_json: itemsJson
         }).pipe(
@@ -584,11 +614,15 @@ export class DevolucionHerramientaComponent implements OnInit, OnDestroy {
                 <td>${item.codigo || '-'}</td>
                 <td>${item.pn || '-'}</td>
                 <td>${item.sn || '-'}</td>
+                <td style="text-align:center">${item.und || 'UND'}</td>
                 <td style="text-align:center;font-weight:700">${item.cantidadDevolver}</td>
                 <td>${item.descripcion || '-'}</td>
+                <td style="font-size:8px">${item.listaContenido || '-'}</td>
+                <td style="text-align:center">${item.fechaCalibracion || '-'}</td>
+                <td style="text-align:center"><span style="padding:2px 5px;border:1px solid #555;font-size:8px;font-weight:700">${item.estadoAlPrestar || '-'}</span></td>
                 <td>${item.nroNotaSalida || '-'}</td>
                 <td>${item.fechaPrestamo || '-'}</td>
-                <td><span style="padding:2px 6px;background:${this.condiciones.find(c=>c.value===item.condicionDevolucion)?.color||'#eee'};border:1px solid #000;font-size:8.5px;font-weight:700">${item.condicionDevolucion}</span></td>
+                <td><span style="padding:2px 6px;border:1px solid #000;font-size:8.5px;font-weight:700">${item.condicionDevolucion}</span></td>
                 <td>${item.observacionItem || ''}</td>
             </tr>`).join('');
 
@@ -635,7 +669,11 @@ export class DevolucionHerramientaComponent implements OnInit, OnDestroy {
       <td>${funcionario?.nombreCompleto || ''}</td>
       <td class="lbl">LICENCIA:</td>
       <td>${funcionario?.licencia || ''}</td>
-      <td class="nro-cell" rowspan="3"><div style="font-size:8px;font-weight:400">N° NOTA</div>${nro || '___________'}</td>
+      <td class="nro-cell" rowspan="4"><div style="font-size:8px;font-weight:400">N° NOTA</div>${nro || '___________'}</td>
+    </tr>
+    <tr>
+      <td class="lbl">UNIDAD DE DESTINO:</td><td>${fv.unidadDestino || ''}</td>
+      <td class="lbl">ORDEN DE TRABAJO:</td><td>${fv.ordenTrabajo || ''}</td>
     </tr>
     <tr>
       <td class="lbl">FECHA DEVOLUCIÓN:</td><td>${fv.fechaDevolucion || ''}</td>
@@ -648,8 +686,9 @@ export class DevolucionHerramientaComponent implements OnInit, OnDestroy {
   <div class="sec">DATOS DEVOLUCIÓN</div>
   <table class="det">
     <thead><tr>
-      <th>CÓDIGO</th><th>P/N</th><th>S/N</th><th>CANT.</th><th>DESCRIPCIÓN</th>
-      <th>NRO NOTA PRÉSTAMO</th><th>FECHA PRÉSTAMO</th><th>CONDICIÓN</th><th>OBS</th>
+      <th>CÓDIGO</th><th>P/N</th><th>S/N</th><th>UND</th><th>CANT.</th><th>DESCRIPCIÓN</th>
+      <th>LISTA CONTENIDO</th><th>F. CALIBRACIÓN</th><th>ESTADO PRÉSTAMO</th>
+      <th>NRO NOTA PRÉSTAMO</th><th>FECHA PRÉSTAMO</th><th>CONDICIÓN DEVOL.</th><th>OBS</th>
     </tr></thead>
     <tbody>${rows}</tbody>
   </table>

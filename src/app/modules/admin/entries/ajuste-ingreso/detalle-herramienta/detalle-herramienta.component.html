@@ -7,15 +7,15 @@
     <div class="flex-1 overflow-y-auto p-4 md:p-6 relative custom-scrollbar">
 
         <!-- Header -->
-        <div class="flex flex-col md:flex-row md:items-center justify-between mb-6 relative z-10 gap-4">
-            <div class="flex items-center gap-4">
+        <div class="flex flex-col md:flex-row md:items-center justify-between mb-3 relative z-10 gap-2">
+            <div class="flex items-center gap-2">
                 <button (click)="showCrearNueva() ? volverADetalle() : cerrar()"
-                        class="w-12 h-12 bg-white dark:bg-slate-800 border-2 border-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] active:shadow-none active:translate-x-1 active:translate-y-1 hover:bg-white hover:scale-105 transition-all flex items-center justify-center rounded-lg cursor-pointer"
+                        class="w-8 h-8 bg-white dark:bg-slate-800 border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] active:shadow-none active:translate-x-1 active:translate-y-1 hover:bg-white hover:scale-105 transition-all flex items-center justify-center rounded cursor-pointer"
                         (mousedown)="$event.stopPropagation()">
-                    <mat-icon class="!text-2xl text-black dark:text-white">arrow_back</mat-icon>
+                    <mat-icon class="!text-base text-black dark:text-white">arrow_back</mat-icon>
                 </button>
                 <div>
-                    <h1 class="text-2xl md:text-3xl font-black text-black dark:text-white uppercase tracking-tight leading-none">
+                    <h1 class="text-sm font-black text-black dark:text-white uppercase tracking-tight leading-none">
                         {{ showCrearNueva() ? 'Crear Nueva Herramienta' : (isEditMode() ? 'Editar Herramienta' : 'Detalle Herramienta') }}
                     </h1>
                     <div class="flex items-center gap-2 mt-1">
@@ -30,23 +30,23 @@
             <div class="flex gap-3">
                 <ng-container *ngIf="showCrearNueva(); else normalButtons">
                     <button type="button" (click)="registrarNueva()"
-                            class="px-6 py-2 bg-green-500 text-white font-black text-sm border-2 border-black rounded-full shadow-[3px_3px_0px_0px_#000] hover:shadow-[2px_2px_0px_0px_#000] hover:translate-x-[2px] hover:translate-y-[2px] active:shadow-none transition-all uppercase flex items-center gap-2">
-                        <mat-icon class="!text-lg !w-5 !h-5">save</mat-icon>
+                            class="px-3 py-1.5 bg-green-500 text-white font-black text-xs border-2 border-black rounded shadow-[2px_2px_0px_0px_#000] hover:shadow-[1px_1px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px] active:shadow-none transition-all uppercase flex items-center gap-2">
+                        <mat-icon class="!text-sm !w-4 !h-4">save</mat-icon>
                         Registrar
                     </button>
                     <button type="button" (click)="finalizarNueva()"
-                            class="px-6 py-2 bg-[#111A43] text-white font-black text-sm border-2 border-black rounded-full shadow-[3px_3px_0px_0px_#000] hover:shadow-[2px_2px_0px_0px_#000] hover:translate-x-[2px] hover:translate-y-[2px] active:shadow-none transition-all uppercase flex items-center gap-2">
-                        <mat-icon class="!text-lg !w-5 !h-5">check_circle</mat-icon>
+                            class="px-3 py-1.5 bg-[#111A43] text-white font-black text-xs border-2 border-black rounded shadow-[2px_2px_0px_0px_#000] hover:shadow-[1px_1px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px] active:shadow-none transition-all uppercase flex items-center gap-2">
+                        <mat-icon class="!text-sm !w-4 !h-4">check_circle</mat-icon>
                         Finalizar
                     </button>
                 </ng-container>
                 <ng-template #normalButtons>
                     <button type="button" (click)="procesar()"
-                            class="px-6 py-2 bg-yellow-300 text-black font-black text-sm border-2 border-black rounded-full shadow-[3px_3px_0px_0px_#000] hover:shadow-[2px_2px_0px_0px_#000] hover:translate-x-[2px] hover:translate-y-[2px] active:shadow-none transition-all uppercase">
+                            class="px-3 py-1.5 bg-yellow-300 text-black font-black text-xs border-2 border-black rounded shadow-[2px_2px_0px_0px_#000] hover:shadow-[1px_1px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px] active:shadow-none transition-all uppercase">
                         {{ isEditMode() ? 'Actualizar' : 'Agregar' }}
                     </button>
                     <button type="button" (click)="cerrar()"
-                            class="px-6 py-2 bg-red-600 text-white font-black text-sm border-2 border-black rounded-full shadow-[3px_3px_0px_0px_#000] hover:shadow-[2px_2px_0px_0px_#000] hover:translate-x-[2px] hover:translate-y-[2px] active:shadow-none transition-all uppercase">
+                            class="px-3 py-1.5 bg-red-600 text-white font-black text-xs border-2 border-black rounded shadow-[2px_2px_0px_0px_#000] hover:shadow-[1px_1px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px] active:shadow-none transition-all uppercase">
                         Cancelar
                     </button>
                 </ng-template>
@@ -56,40 +56,40 @@
         <!-- ============================================ -->
         <!-- FORMULARIO CREAR NUEVA HERRAMIENTA (H1.png) -->
         <!-- ============================================ -->
-        <div *ngIf="showCrearNueva()" class="flex flex-col gap-6 relative z-10">
+        <div *ngIf="showCrearNueva()" class="flex flex-col gap-3 relative z-10">
 
             <!-- Seccion: Datos Principales -->
-            <div class="neo-card-base bg-white dark:bg-slate-800 p-6">
-                <div class="flex items-center gap-2 mb-4 pb-2 border-b-2 border-black dark:border-gray-600">
-                    <mat-icon class="text-black dark:text-white !text-xl">build</mat-icon>
-                    <h3 class="font-black text-base uppercase text-black dark:text-white">Datos de la Herramienta</h3>
+            <div class="neo-card-base bg-white dark:bg-slate-800 p-3">
+                <div class="flex items-center gap-1.5 px-3 py-1.5 -mx-3 -mt-3 mb-3 bg-[#0F172AFF] border-b-2 border-black">
+                    <mat-icon class="text-amber-400 !text-sm">build</mat-icon>
+                    <span class="font-black text-xs uppercase text-white">Datos de la Herramienta</span>
                 </div>
 
                 <form [formGroup]="crearNuevaForm">
                     <!-- Fila 1: Codigo BoaMM + Fabricacion -->
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-2 mb-2">
                         <div class="form-group">
-                            <label class="text-[11px] font-black uppercase text-gray-700 dark:text-gray-300 mb-1.5 block">
+                            <label class="text-[9px] font-black uppercase text-black dark:text-gray-400 mb-0.5 block">
                                 Codigo de BoaMM *
                             </label>
                             <div class="flex gap-2">
                                 <input type="text" formControlName="codigoBoaMM"
                                        placeholder="BOA-H-94"
-                                       class="flex-1 h-11 text-sm font-bold border-2 border-black dark:border-slate-600 rounded-lg px-4 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[3px_3px_0px_0px_#000] transition-shadow outline-none placeholder:text-gray-400">
+                                       class="flex-1 h-8 text-xs font-bold border-2 border-black dark:border-slate-600 rounded px-2 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[2px_2px_0px_0px_#000] transition-shadow outline-none placeholder:text-gray-400">
                                 <button type="button" (click)="generarCodigoNueva()"
-                                        class="h-11 w-11 bg-[#111A43] text-white font-bold border-2 border-black rounded-lg shadow-[2px_2px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all flex items-center justify-center"
+                                        class="h-8 w-8 bg-[#111A43] text-white font-bold border-2 border-black rounded shadow-[2px_2px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all flex items-center justify-center"
                                         matTooltip="Generar codigo">
-                                    <mat-icon class="!text-lg">auto_awesome</mat-icon>
+                                    <mat-icon class="!text-sm">auto_awesome</mat-icon>
                                 </button>
                             </div>
                         </div>
 
                         <div class="form-group">
-                            <label class="text-[11px] font-black uppercase text-gray-700 dark:text-gray-300 mb-1.5 block">
+                            <label class="text-[9px] font-black uppercase text-black dark:text-gray-400 mb-0.5 block">
                                 Fabricacion *
                             </label>
                             <select formControlName="fabricacion"
-                                    class="w-full h-11 text-sm font-bold border-2 border-black dark:border-slate-600 rounded-lg px-4 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[3px_3px_0px_0px_#000] transition-shadow outline-none appearance-none cursor-pointer">
+                                    class="w-full h-8 text-xs font-bold border-2 border-black dark:border-slate-600 rounded px-2 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[2px_2px_0px_0px_#000] transition-shadow outline-none appearance-none cursor-pointer">
                                 <option value="">Seleccionar...</option>
                                 <option *ngFor="let fab of fabricaciones" [value]="fab">{{ fab }}</option>
                             </select>
@@ -97,22 +97,22 @@
                     </div>
 
                     <!-- Fila 2: Nombre + Nivel -->
-                    <div class="grid grid-cols-1 md:grid-cols-12 gap-4 mb-4">
+                    <div class="grid grid-cols-1 md:grid-cols-12 gap-2 mb-2">
                         <div class="md:col-span-8 form-group">
-                            <label class="text-[11px] font-black uppercase text-gray-700 dark:text-gray-300 mb-1.5 block">
+                            <label class="text-[9px] font-black uppercase text-black dark:text-gray-400 mb-0.5 block">
                                 Nombre *
                             </label>
                             <input type="text" formControlName="nombreNueva"
                                    placeholder="Nombre de la herramienta"
-                                   class="w-full h-11 text-sm font-bold border-2 border-black dark:border-slate-600 rounded-lg px-4 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[3px_3px_0px_0px_#000] transition-shadow outline-none placeholder:text-gray-400">
+                                   class="w-full h-8 text-xs font-bold border-2 border-black dark:border-slate-600 rounded px-2 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[2px_2px_0px_0px_#000] transition-shadow outline-none placeholder:text-gray-400">
                         </div>
 
                         <div class="md:col-span-4 form-group">
-                            <label class="text-[11px] font-black uppercase text-gray-700 dark:text-gray-300 mb-1.5 block">
+                            <label class="text-[9px] font-black uppercase text-black dark:text-gray-400 mb-0.5 block">
                                 Nivel *
                             </label>
                             <select formControlName="nivelHerramienta"
-                                    class="w-full h-11 text-sm font-bold border-2 border-black dark:border-slate-600 rounded-lg px-4 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[3px_3px_0px_0px_#000] transition-shadow outline-none appearance-none cursor-pointer">
+                                    class="w-full h-8 text-xs font-bold border-2 border-black dark:border-slate-600 rounded px-2 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[2px_2px_0px_0px_#000] transition-shadow outline-none appearance-none cursor-pointer">
                                 <option value="">Seleccionar...</option>
                                 <option *ngFor="let niv of nivelesHerramienta" [value]="niv">{{ niv }}</option>
                             </select>
@@ -120,45 +120,45 @@
                     </div>
 
                     <!-- Fila 3: P/N o Modelo + S/N -->
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-2 mb-2">
                         <div class="form-group">
-                            <label class="text-[11px] font-black uppercase text-gray-700 dark:text-gray-300 mb-1.5 block">
+                            <label class="text-[9px] font-black uppercase text-black dark:text-gray-400 mb-0.5 block">
                                 P/N o Modelo *
                             </label>
                             <input type="text" formControlName="pnModelo"
                                    placeholder="Numero de parte o modelo"
-                                   class="w-full h-11 text-sm font-bold border-2 border-black dark:border-slate-600 rounded-lg px-4 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[3px_3px_0px_0px_#000] transition-shadow outline-none placeholder:text-gray-400">
+                                   class="w-full h-8 text-xs font-bold border-2 border-black dark:border-slate-600 rounded px-2 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[2px_2px_0px_0px_#000] transition-shadow outline-none placeholder:text-gray-400">
                         </div>
 
                         <div class="form-group">
-                            <label class="text-[11px] font-black uppercase text-gray-700 dark:text-gray-300 mb-1.5 block">
+                            <label class="text-[9px] font-black uppercase text-black dark:text-gray-400 mb-0.5 block">
                                 S/N
                             </label>
                             <input type="text" formControlName="snNueva"
                                    placeholder="Numero de serie"
-                                   class="w-full h-11 text-sm font-bold border-2 border-black dark:border-slate-600 rounded-lg px-4 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[3px_3px_0px_0px_#000] transition-shadow outline-none placeholder:text-gray-400">
+                                   class="w-full h-8 text-xs font-bold border-2 border-black dark:border-slate-600 rounded px-2 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[2px_2px_0px_0px_#000] transition-shadow outline-none placeholder:text-gray-400">
                         </div>
                     </div>
 
                     <!-- Fila 4: Marca + Tipo -->
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-2 mb-2">
                         <div class="form-group">
-                            <label class="text-[11px] font-black uppercase text-gray-700 dark:text-gray-300 mb-1.5 block">
+                            <label class="text-[9px] font-black uppercase text-black dark:text-gray-400 mb-0.5 block">
                                 Marca *
                             </label>
                             <select formControlName="marcaNueva"
-                                    class="w-full h-11 text-sm font-bold border-2 border-black dark:border-slate-600 rounded-lg px-4 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[3px_3px_0px_0px_#000] transition-shadow outline-none appearance-none cursor-pointer">
+                                    class="w-full h-8 text-xs font-bold border-2 border-black dark:border-slate-600 rounded px-2 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[2px_2px_0px_0px_#000] transition-shadow outline-none appearance-none cursor-pointer">
                                 <option value="">Seleccionar...</option>
                                 <option *ngFor="let m of marcas" [value]="m">{{ m }}</option>
                             </select>
                         </div>
 
                         <div class="form-group">
-                            <label class="text-[11px] font-black uppercase text-gray-700 dark:text-gray-300 mb-1.5 block">
+                            <label class="text-[9px] font-black uppercase text-black dark:text-gray-400 mb-0.5 block">
                                 Tipo *
                             </label>
                             <select formControlName="tipoNueva"
-                                    class="w-full h-11 text-sm font-bold border-2 border-black dark:border-slate-600 rounded-lg px-4 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[3px_3px_0px_0px_#000] transition-shadow outline-none appearance-none cursor-pointer">
+                                    class="w-full h-8 text-xs font-bold border-2 border-black dark:border-slate-600 rounded px-2 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[2px_2px_0px_0px_#000] transition-shadow outline-none appearance-none cursor-pointer">
                                 <option value="">Seleccionar...</option>
                                 <option *ngFor="let t of tiposHerramienta" [value]="t">{{ t }}</option>
                             </select>
@@ -167,63 +167,63 @@
 
                     <!-- Fila 5: Accesorios -->
                     <div class="form-group mb-4">
-                        <label class="text-[11px] font-black uppercase text-gray-700 dark:text-gray-300 mb-1.5 block">
+                        <label class="text-[9px] font-black uppercase text-black dark:text-gray-400 mb-0.5 block">
                             Accesorios
                         </label>
                         <textarea formControlName="accesorios" rows="3"
                                   placeholder="Detalle los accesorios incluidos..."
-                                  class="w-full text-sm font-medium border-2 border-gray-300 dark:border-slate-600 rounded-lg px-4 py-2 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[2px_2px_0px_0px_#ccc] transition-shadow outline-none placeholder:text-gray-400 resize-none"></textarea>
+                                  class="w-full text-xs font-medium border-2 border-black dark:border-slate-600 rounded px-2 py-1.5 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[2px_2px_0px_0px_#000] transition-shadow outline-none placeholder:text-gray-400 resize-none"></textarea>
                     </div>
                 </form>
             </div>
 
             <!-- Seccion: Calibracion y Vencimiento -->
-            <div class="neo-card-base bg-white dark:bg-slate-800 p-6">
-                <div class="flex items-center gap-2 mb-4 pb-2 border-b-2 border-black dark:border-gray-600">
-                    <mat-icon class="text-black dark:text-white !text-xl">engineering</mat-icon>
-                    <h3 class="font-black text-base uppercase text-black dark:text-white">Calibracion y Medidas</h3>
+            <div class="neo-card-base bg-white dark:bg-slate-800 p-3">
+                <div class="flex items-center gap-1.5 px-3 py-1.5 -mx-3 -mt-3 mb-3 bg-[#0F172AFF] border-b-2 border-black">
+                    <mat-icon class="text-amber-400 !text-sm">engineering</mat-icon>
+                    <span class="font-black text-xs uppercase text-white">Calibracion y Medidas</span>
                 </div>
 
                 <form [formGroup]="crearNuevaForm">
                     <!-- Fila 6: Requiere Calibracion + Fecha Vencimiento Calibracion -->
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-2 mb-2">
                         <div class="form-group">
-                            <label class="text-[11px] font-black uppercase text-gray-700 dark:text-gray-300 mb-1.5 block">
+                            <label class="text-[9px] font-black uppercase text-black dark:text-gray-400 mb-0.5 block">
                                 Requiere Calibracion *
                             </label>
                             <select formControlName="requiereCalibracion"
-                                    class="w-full h-11 text-sm font-bold border-2 border-black dark:border-slate-600 rounded-lg px-4 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[3px_3px_0px_0px_#000] transition-shadow outline-none appearance-none cursor-pointer">
+                                    class="w-full h-8 text-xs font-bold border-2 border-black dark:border-slate-600 rounded px-2 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[2px_2px_0px_0px_#000] transition-shadow outline-none appearance-none cursor-pointer">
                                 <option value="NO">NO</option>
                                 <option value="SI">SI</option>
                             </select>
                         </div>
 
                         <div class="form-group">
-                            <label class="text-[11px] font-black uppercase text-gray-700 dark:text-gray-300 mb-1.5 block">
+                            <label class="text-[9px] font-black uppercase text-black dark:text-gray-400 mb-0.5 block">
                                 Fecha Vencimiento Calibracion
                             </label>
                             <input type="date" formControlName="fechaVencimientoCalibracion"
                                    [disabled]="crearNuevaForm.get('requiereCalibracion')?.value === 'NO'"
-                                   class="w-full h-11 text-sm font-bold border-2 border-black dark:border-slate-600 rounded-lg px-4 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[3px_3px_0px_0px_#000] transition-shadow outline-none disabled:opacity-50 disabled:cursor-not-allowed">
+                                   class="w-full h-8 text-xs font-bold border-2 border-black dark:border-slate-600 rounded px-2 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[2px_2px_0px_0px_#000] transition-shadow outline-none disabled:opacity-50 disabled:cursor-not-allowed">
                         </div>
                     </div>
 
                     <!-- Fila 7: Fecha de vencimiento + Unidad de Medida -->
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
                         <div class="form-group">
-                            <label class="text-[11px] font-black uppercase text-gray-700 dark:text-gray-300 mb-1.5 block">
+                            <label class="text-[9px] font-black uppercase text-black dark:text-gray-400 mb-0.5 block">
                                 Fecha de Vencimiento
                             </label>
                             <input type="date" formControlName="fechaVencimiento"
-                                   class="w-full h-11 text-sm font-bold border-2 border-black dark:border-slate-600 rounded-lg px-4 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[3px_3px_0px_0px_#000] transition-shadow outline-none">
+                                   class="w-full h-8 text-xs font-bold border-2 border-black dark:border-slate-600 rounded px-2 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[2px_2px_0px_0px_#000] transition-shadow outline-none">
                         </div>
 
                         <div class="form-group">
-                            <label class="text-[11px] font-black uppercase text-gray-700 dark:text-gray-300 mb-1.5 block">
+                            <label class="text-[9px] font-black uppercase text-black dark:text-gray-400 mb-0.5 block">
                                 Unidad de Medida *
                             </label>
                             <select formControlName="unidadMedida"
-                                    class="w-full h-11 text-sm font-bold border-2 border-black dark:border-slate-600 rounded-lg px-4 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[3px_3px_0px_0px_#000] transition-shadow outline-none appearance-none cursor-pointer">
+                                    class="w-full h-8 text-xs font-bold border-2 border-black dark:border-slate-600 rounded px-2 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[2px_2px_0px_0px_#000] transition-shadow outline-none appearance-none cursor-pointer">
                                 <option *ngFor="let u of unidades" [value]="u.value">{{ u.label }} ({{ u.value }})</option>
                             </select>
                         </div>
@@ -232,38 +232,38 @@
             </div>
 
             <!-- Seccion: Precio Prestamo + Ubicacion (lado a lado) -->
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
 
                 <!-- Precio Prestamo -->
-                <div class="neo-card-base bg-white dark:bg-slate-800 p-6">
-                    <div class="flex items-center gap-2 mb-4 pb-2 border-b-2 border-black dark:border-gray-600">
-                        <mat-icon class="text-black dark:text-white !text-xl">payments</mat-icon>
-                        <h3 class="font-black text-base uppercase text-black dark:text-white">Precio Prestamo</h3>
+                <div class="neo-card-base bg-white dark:bg-slate-800 p-3">
+                    <div class="flex items-center gap-1.5 px-3 py-1.5 -mx-3 -mt-3 mb-3 bg-[#0F172AFF] border-b-2 border-black">
+                        <mat-icon class="text-amber-400 !text-sm">payments</mat-icon>
+                        <span class="font-black text-xs uppercase text-white">Precio Prestamo</span>
                     </div>
 
                     <form [formGroup]="crearNuevaForm">
-                        <div class="grid grid-cols-1 gap-4">
+                        <div class="grid grid-cols-1 gap-2">
                             <div class="form-group">
-                                <label class="text-[11px] font-black uppercase text-gray-700 dark:text-gray-300 mb-1.5 block">
+                                <label class="text-[9px] font-black uppercase text-black dark:text-gray-400 mb-0.5 block">
                                     Costo / Hora (Bs.)
                                 </label>
                                 <div class="relative">
                                     <input type="number" formControlName="costoHora" step="0.01" min="0"
                                            placeholder="0.00"
-                                           class="w-full h-11 text-sm font-bold border-2 border-black dark:border-slate-600 rounded-lg pl-10 pr-4 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[3px_3px_0px_0px_#000] transition-shadow outline-none placeholder:text-gray-400">
-                                    <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 font-bold text-sm">Bs</span>
+                                           class="w-full h-8 text-xs font-bold border-2 border-black dark:border-slate-600 rounded pl-8 pr-2 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[2px_2px_0px_0px_#000] transition-shadow outline-none placeholder:text-gray-400">
+                                    <span class="absolute left-2 top-1/2 -translate-y-1/2 text-black dark:text-gray-400 font-bold text-xs">Bs</span>
                                 </div>
                             </div>
 
                             <div class="form-group">
-                                <label class="text-[11px] font-black uppercase text-gray-700 dark:text-gray-300 mb-1.5 block">
+                                <label class="text-[9px] font-black uppercase text-black dark:text-gray-400 mb-0.5 block">
                                     Costo / Servicio (Bs.)
                                 </label>
                                 <div class="relative">
                                     <input type="number" formControlName="costoServicio" step="0.01" min="0"
                                            placeholder="0.00"
-                                           class="w-full h-11 text-sm font-bold border-2 border-black dark:border-slate-600 rounded-lg pl-10 pr-4 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[3px_3px_0px_0px_#000] transition-shadow outline-none placeholder:text-gray-400">
-                                    <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 font-bold text-sm">Bs</span>
+                                           class="w-full h-8 text-xs font-bold border-2 border-black dark:border-slate-600 rounded pl-8 pr-2 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[2px_2px_0px_0px_#000] transition-shadow outline-none placeholder:text-gray-400">
+                                    <span class="absolute left-2 top-1/2 -translate-y-1/2 text-black dark:text-gray-400 font-bold text-xs">Bs</span>
                                 </div>
                             </div>
                         </div>
@@ -271,30 +271,30 @@
                 </div>
 
                 <!-- Ubicacion -->
-                <div class="neo-card-base bg-white dark:bg-slate-800 p-6">
-                    <div class="flex items-center gap-2 mb-4 pb-2 border-b-2 border-black dark:border-gray-600">
-                        <mat-icon class="text-black dark:text-white !text-xl">location_on</mat-icon>
-                        <h3 class="font-black text-base uppercase text-black dark:text-white">Ubicacion</h3>
+                <div class="neo-card-base bg-white dark:bg-slate-800 p-3">
+                    <div class="flex items-center gap-1.5 px-3 py-1.5 -mx-3 -mt-3 mb-3 bg-[#0F172AFF] border-b-2 border-black">
+                        <mat-icon class="text-amber-400 !text-sm">location_on</mat-icon>
+                        <span class="font-black text-xs uppercase text-white">Ubicacion</span>
                     </div>
 
                     <form [formGroup]="crearNuevaForm">
-                        <div class="grid grid-cols-1 gap-4">
+                        <div class="grid grid-cols-1 gap-2">
                             <div class="form-group">
-                                <label class="text-[11px] font-black uppercase text-gray-700 dark:text-gray-300 mb-1.5 block">
+                                <label class="text-[9px] font-black uppercase text-black dark:text-gray-400 mb-0.5 block">
                                     Estante *
                                 </label>
                                 <input type="text" formControlName="estante"
                                        placeholder="Ej: EST-17"
-                                       class="w-full h-11 text-sm font-bold border-2 border-black dark:border-slate-600 rounded-lg px-4 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[3px_3px_0px_0px_#000] transition-shadow outline-none placeholder:text-gray-400">
+                                       class="w-full h-8 text-xs font-bold border-2 border-black dark:border-slate-600 rounded px-2 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[2px_2px_0px_0px_#000] transition-shadow outline-none placeholder:text-gray-400">
                             </div>
 
                             <div class="form-group">
-                                <label class="text-[11px] font-black uppercase text-gray-700 dark:text-gray-300 mb-1.5 block">
+                                <label class="text-[9px] font-black uppercase text-black dark:text-gray-400 mb-0.5 block">
                                     Nivel *
                                 </label>
                                 <input type="text" formControlName="nivelUbicacion"
                                        placeholder="Ej: 4"
-                                       class="w-full h-11 text-sm font-bold border-2 border-black dark:border-slate-600 rounded-lg px-4 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[3px_3px_0px_0px_#000] transition-shadow outline-none placeholder:text-gray-400">
+                                       class="w-full h-8 text-xs font-bold border-2 border-black dark:border-slate-600 rounded px-2 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[2px_2px_0px_0px_#000] transition-shadow outline-none placeholder:text-gray-400">
                             </div>
                         </div>
                     </form>
@@ -302,13 +302,13 @@
             </div>
 
             <!-- Imagen -->
-            <div class="neo-card-base bg-white dark:bg-slate-800 p-6">
-                <div class="flex items-center gap-2 mb-4 pb-2 border-b-2 border-black dark:border-gray-600">
-                    <mat-icon class="text-black dark:text-white !text-xl">photo_camera</mat-icon>
-                    <h3 class="font-black text-base uppercase text-black dark:text-white">Imagen de la Herramienta</h3>
+            <div class="neo-card-base bg-white dark:bg-slate-800 p-3">
+                <div class="flex items-center gap-1.5 px-3 py-1.5 -mx-3 -mt-3 mb-3 bg-[#0F172AFF] border-b-2 border-black">
+                    <mat-icon class="text-amber-400 !text-sm">photo_camera</mat-icon>
+                    <span class="font-black text-xs uppercase text-white">Imagen de la Herramienta</span>
                 </div>
 
-                <div class="flex flex-col md:flex-row gap-6 items-start">
+                <div class="flex flex-col md:flex-row gap-3 items-start">
                     <div class="neo-card-base bg-gray-100 dark:bg-gray-800 overflow-hidden w-full md:w-[300px] h-[200px] flex flex-col relative group">
                         <div *ngIf="selectedImage(); else noImageNueva" class="flex-1 p-2 flex items-center justify-center bg-white dark:bg-gray-900 overflow-hidden">
                             <img [src]="selectedImage()" alt="Herramienta" class="w-full h-full object-contain">
@@ -359,18 +359,18 @@
         <!-- ============================================ -->
         <!-- FORMULARIO DETALLE EXISTENTE (modo normal)   -->
         <!-- ============================================ -->
-        <div *ngIf="!showCrearNueva()" class="neo-card-base bg-white dark:bg-slate-800 p-6 relative z-10">
+        <div *ngIf="!showCrearNueva()" class="neo-card-base bg-white dark:bg-slate-800 p-3 relative z-10">
             <form [formGroup]="detalleForm">
 
-                <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-3">
 
                     <!-- Columna Principal -->
                     <div class="lg:col-span-8">
 
                         <!-- Busqueda y Crear -->
-                        <div class="grid grid-cols-1 md:grid-cols-12 gap-3 mb-4">
+                        <div class="grid grid-cols-1 md:grid-cols-12 gap-2 mb-2">
                             <div class="md:col-span-8 form-group">
-                                <label class="text-[11px] font-black uppercase text-gray-700 dark:text-gray-300 mb-1.5 block">
+                                <label class="text-[9px] font-black uppercase text-black dark:text-gray-400 mb-0.5 block">
                                     Buscar (Codigo, Nombre, P/N o Marca)
                                 </label>
                                 <div class="relative">
@@ -379,8 +379,8 @@
                                            [matAutocomplete]="autoHerramienta"
                                            (input)="onBuscarChange($any($event.target).value)"
                                            placeholder="Escriba para buscar..."
-                                           class="w-full h-11 text-sm font-bold border-2 border-black dark:border-slate-600 rounded-lg pl-10 pr-4 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[3px_3px_0px_0px_#000] transition-shadow outline-none placeholder:text-gray-400">
-                                    <mat-icon class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 !text-lg">search</mat-icon>
+                                           class="w-full h-8 text-xs font-bold border-2 border-black dark:border-slate-600 rounded pl-8 pr-2 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[2px_2px_0px_0px_#000] transition-shadow outline-none placeholder:text-gray-400">
+                                    <mat-icon class="absolute left-2 top-1/2 -translate-y-1/2 text-gray-500 !text-sm">search</mat-icon>
                                     <mat-autocomplete #autoHerramienta="matAutocomplete"
                                                       [displayWith]="displayHerramienta"
                                                       (optionSelected)="selectHerramienta($event.option.value)">
@@ -394,47 +394,45 @@
                                 </div>
                             </div>
                             <div class="md:col-span-4">
-                                <label class="text-[11px] font-black uppercase text-gray-700 dark:text-gray-300 mb-1.5 block opacity-0">Accion</label>
-                                <button type="button" (click)="crearItem()"
-                                        class="w-full h-11 bg-green-500 text-white font-black text-sm border-2 border-black rounded-lg shadow-[3px_3px_0px_0px_#000] hover:shadow-[2px_2px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px] active:shadow-none transition-all flex items-center justify-center gap-2 uppercase">
-                                    <mat-icon class="!text-lg">add</mat-icon>
-                                    Nuevo
-                                </button>
+                                <label class="text-[9px] font-black uppercase text-black dark:text-gray-400 mb-0.5 block opacity-0">Accion</label>
+                                <div class="w-full h-8 bg-slate-100 dark:bg-slate-700 border-2 border-dashed border-slate-300 dark:border-slate-600 rounded flex items-center justify-center">
+                                    <span class="text-[9px] font-bold text-slate-400 uppercase">Solo herramientas existentes</span>
+                                </div>
                             </div>
                         </div>
 
                         <!-- Fila 1: Codigo, Coincidencias, Tipo Ajuste -->
-                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-2 mb-2">
                             <div class="form-group">
-                                <label class="text-[11px] font-black uppercase text-gray-700 dark:text-gray-300 mb-1.5 block">
+                                <label class="text-[9px] font-black uppercase text-black dark:text-gray-400 mb-0.5 block">
                                     Codigo BOA *
                                 </label>
                                 <div class="flex gap-2">
                                     <input type="text" formControlName="codigo"
                                            placeholder="BOA-H-XXXX"
-                                           class="flex-1 h-11 text-sm font-bold border-2 border-black dark:border-slate-600 rounded-lg px-4 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[3px_3px_0px_0px_#000] transition-shadow outline-none placeholder:text-gray-400">
+                                           class="flex-1 h-8 text-xs font-bold border-2 border-black dark:border-slate-600 rounded px-2 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[2px_2px_0px_0px_#000] transition-shadow outline-none placeholder:text-gray-400">
                                     <button type="button" (click)="generarCodigo()"
-                                            class="h-11 w-11 bg-[#111A43] text-white font-bold border-2 border-black rounded-lg shadow-[2px_2px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all flex items-center justify-center"
+                                            class="h-8 w-8 bg-[#111A43] text-white font-bold border-2 border-black rounded shadow-[2px_2px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all flex items-center justify-center"
                                             matTooltip="Generar codigo">
-                                        <mat-icon class="!text-lg">auto_awesome</mat-icon>
+                                        <mat-icon class="!text-sm">auto_awesome</mat-icon>
                                     </button>
                                 </div>
                             </div>
 
                             <div class="form-group">
-                                <label class="text-[11px] font-black uppercase text-gray-700 dark:text-gray-300 mb-1.5 block">
+                                <label class="text-[9px] font-black uppercase text-black dark:text-gray-400 mb-0.5 block">
                                     Coincidencias
                                 </label>
                                 <input type="text" [value]="coincidencias()" readonly
-                                       class="w-full h-11 text-center text-sm font-black border-2 border-gray-300 dark:border-slate-600 rounded-lg px-4 bg-gray-100 dark:bg-slate-700 text-black dark:text-white cursor-not-allowed">
+                                       class="w-full h-8 text-center text-xs font-black border-2 border-gray-300 dark:border-slate-600 rounded px-2 bg-gray-100 dark:bg-slate-700 text-black dark:text-white cursor-not-allowed">
                             </div>
 
                             <div class="form-group">
-                                <label class="text-[11px] font-black uppercase text-gray-700 dark:text-gray-300 mb-1.5 block">
+                                <label class="text-[9px] font-black uppercase text-black dark:text-gray-400 mb-0.5 block">
                                     Tipo Ajuste *
                                 </label>
                                 <select formControlName="tipoAjuste"
-                                        class="w-full h-11 text-sm font-bold border-2 border-black dark:border-slate-600 rounded-lg px-4 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[3px_3px_0px_0px_#000] transition-shadow outline-none appearance-none cursor-pointer">
+                                        class="w-full h-8 text-xs font-bold border-2 border-black dark:border-slate-600 rounded px-2 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[2px_2px_0px_0px_#000] transition-shadow outline-none appearance-none cursor-pointer">
                                     <option *ngFor="let tipo of tiposAjuste" [value]="tipo.value">
                                         {{ tipo.label }}
                                     </option>
@@ -443,22 +441,22 @@
                         </div>
 
                         <!-- Fila 2: P/N y Estado -->
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-2 mb-2">
                             <div class="form-group">
-                                <label class="text-[11px] font-black uppercase text-gray-700 dark:text-gray-300 mb-1.5 block">
+                                <label class="text-[9px] font-black uppercase text-black dark:text-gray-400 mb-0.5 block">
                                     P/N (Part Number) *
                                 </label>
                                 <input type="text" formControlName="pn"
                                        placeholder="Numero de parte"
-                                       class="w-full h-11 text-sm font-bold border-2 border-black dark:border-slate-600 rounded-lg px-4 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[3px_3px_0px_0px_#000] transition-shadow outline-none placeholder:text-gray-400">
+                                       class="w-full h-8 text-xs font-bold border-2 border-black dark:border-slate-600 rounded px-2 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[2px_2px_0px_0px_#000] transition-shadow outline-none placeholder:text-gray-400">
                             </div>
 
                             <div class="form-group">
-                                <label class="text-[11px] font-black uppercase text-gray-700 dark:text-gray-300 mb-1.5 block">
+                                <label class="text-[9px] font-black uppercase text-black dark:text-gray-400 mb-0.5 block">
                                     Estado *
                                 </label>
                                 <select formControlName="estado"
-                                        class="w-full h-11 text-sm font-bold border-2 border-black dark:border-slate-600 rounded-lg px-4 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[3px_3px_0px_0px_#000] transition-shadow outline-none appearance-none cursor-pointer">
+                                        class="w-full h-8 text-xs font-bold border-2 border-black dark:border-slate-600 rounded px-2 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[2px_2px_0px_0px_#000] transition-shadow outline-none appearance-none cursor-pointer">
                                     <option *ngFor="let est of estados" [value]="est.value">
                                         {{ est.label }}
                                     </option>
@@ -467,69 +465,68 @@
                         </div>
 
                         <!-- Fila 3: Nombre y Marca -->
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-2 mb-2">
                             <div class="form-group">
-                                <label class="text-[11px] font-black uppercase text-gray-700 dark:text-gray-300 mb-1.5 block">
+                                <label class="text-[9px] font-black uppercase text-black dark:text-gray-400 mb-0.5 block">
                                     Nombre / Descripcion *
                                 </label>
                                 <input type="text" formControlName="nombre"
                                        placeholder="Descripcion de la herramienta"
-                                       class="w-full h-11 text-sm font-bold border-2 border-black dark:border-slate-600 rounded-lg px-4 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[3px_3px_0px_0px_#000] transition-shadow outline-none placeholder:text-gray-400">
+                                       class="w-full h-8 text-xs font-bold border-2 border-black dark:border-slate-600 rounded px-2 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[2px_2px_0px_0px_#000] transition-shadow outline-none placeholder:text-gray-400">
                             </div>
 
                             <div class="form-group">
-                                <label class="text-[11px] font-black uppercase text-gray-700 dark:text-gray-300 mb-1.5 block">
+                                <label class="text-[9px] font-black uppercase text-black dark:text-gray-400 mb-0.5 block">
                                     Marca *
                                 </label>
-                                <select formControlName="marca"
-                                        class="w-full h-11 text-sm font-bold border-2 border-black dark:border-slate-600 rounded-lg px-4 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[3px_3px_0px_0px_#000] transition-shadow outline-none appearance-none cursor-pointer">
-                                    <option *ngFor="let m of marcas" [value]="m">
-                                        {{ m }}
-                                    </option>
-                                </select>
+                                <input type="text" formControlName="marca"
+                                       [matAutocomplete]="autoMarca"
+                                       (input)="filterMarcas($any($event.target).value)"
+                                       placeholder="Marca de la herramienta"
+                                       class="w-full h-8 text-xs font-bold border-2 border-black dark:border-slate-600 rounded px-2 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[2px_2px_0px_0px_#000] transition-shadow outline-none placeholder:text-gray-400">
+                                <mat-autocomplete #autoMarca="matAutocomplete">
+                                    <mat-option *ngFor="let m of marcasFiltradas" [value]="m">{{ m }}</mat-option>
+                                </mat-autocomplete>
                             </div>
                         </div>
 
                         <!-- Fila 4: S/N y Ubicacion -->
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-2 mb-2">
                             <div class="form-group">
-                                <label class="text-[11px] font-black uppercase text-gray-700 dark:text-gray-300 mb-1.5 block">
+                                <label class="text-[9px] font-black uppercase text-black dark:text-gray-400 mb-0.5 block">
                                     S/N (Serial Number)
                                 </label>
                                 <input type="text" formControlName="sn"
                                        placeholder="Numero de serie"
-                                       class="w-full h-11 text-sm font-bold border-2 border-black dark:border-slate-600 rounded-lg px-4 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[3px_3px_0px_0px_#000] transition-shadow outline-none placeholder:text-gray-400">
+                                       class="w-full h-8 text-xs font-bold border-2 border-black dark:border-slate-600 rounded px-2 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[2px_2px_0px_0px_#000] transition-shadow outline-none placeholder:text-gray-400">
                             </div>
 
                             <div class="form-group">
-                                <label class="text-[11px] font-black uppercase text-gray-700 dark:text-gray-300 mb-1.5 block">
+                                <label class="text-[9px] font-black uppercase text-black dark:text-gray-400 mb-0.5 block">
                                     Ubicacion *
                                 </label>
-                                <select formControlName="ubicacion"
-                                        class="w-full h-11 text-sm font-bold border-2 border-black dark:border-slate-600 rounded-lg px-4 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[3px_3px_0px_0px_#000] transition-shadow outline-none appearance-none cursor-pointer">
-                                    <option *ngFor="let ub of ubicaciones" [value]="ub.value">
-                                        {{ ub.label }}
-                                    </option>
-                                </select>
+                                <input type="text" formControlName="ubicacion"
+                                       placeholder="Ej: EST-17 / Nivel 3"
+                                       class="w-full h-8 text-xs font-bold border-2 border-black dark:border-slate-600 rounded px-2 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[2px_2px_0px_0px_#000] transition-shadow outline-none placeholder:text-gray-400">
                             </div>
                         </div>
 
                         <!-- Fila 5: Cantidad, UM, Documento -->
-                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-2 mb-2">
                             <div class="form-group">
-                                <label class="text-[11px] font-black uppercase text-gray-700 dark:text-gray-300 mb-1.5 block">
+                                <label class="text-[9px] font-black uppercase text-black dark:text-gray-400 mb-0.5 block">
                                     Cantidad *
                                 </label>
                                 <input type="number" formControlName="cantidad" min="1"
-                                       class="w-full h-11 text-center text-sm font-black border-2 border-black dark:border-slate-600 rounded-lg px-4 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[3px_3px_0px_0px_#000] transition-shadow outline-none">
+                                       class="w-full h-8 text-center text-xs font-black border-2 border-black dark:border-slate-600 rounded px-2 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[2px_2px_0px_0px_#000] transition-shadow outline-none">
                             </div>
 
                             <div class="form-group">
-                                <label class="text-[11px] font-black uppercase text-gray-700 dark:text-gray-300 mb-1.5 block">
+                                <label class="text-[9px] font-black uppercase text-black dark:text-gray-400 mb-0.5 block">
                                     Unidad *
                                 </label>
                                 <select formControlName="um"
-                                        class="w-full h-11 text-sm font-bold border-2 border-black dark:border-slate-600 rounded-lg px-4 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[3px_3px_0px_0px_#000] transition-shadow outline-none appearance-none cursor-pointer">
+                                        class="w-full h-8 text-xs font-bold border-2 border-black dark:border-slate-600 rounded px-2 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[2px_2px_0px_0px_#000] transition-shadow outline-none appearance-none cursor-pointer">
                                     <option *ngFor="let u of unidades" [value]="u.value">
                                         {{ u.label }} ({{ u.value }})
                                     </option>
@@ -537,29 +534,32 @@
                             </div>
 
                             <div class="form-group">
-                                <label class="text-[11px] font-black uppercase text-gray-700 dark:text-gray-300 mb-1.5 block">
+                                <label class="text-[9px] font-black uppercase text-black dark:text-gray-400 mb-0.5 block">
                                     Documento Ref.
                                 </label>
                                 <input type="text" formControlName="documento"
                                        placeholder="INV-2025-XXX"
-                                       class="w-full h-11 text-sm font-bold border-2 border-black dark:border-slate-600 rounded-lg px-4 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[3px_3px_0px_0px_#000] transition-shadow outline-none placeholder:text-gray-400">
+                                       class="w-full h-8 text-xs font-bold border-2 border-black dark:border-slate-600 rounded px-2 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[2px_2px_0px_0px_#000] transition-shadow outline-none placeholder:text-gray-400">
                             </div>
                         </div>
 
                         <!-- Observaciones -->
                         <div class="form-group">
-                            <label class="text-[11px] font-black uppercase text-gray-700 dark:text-gray-300 mb-1.5 block">
+                            <label class="text-[9px] font-black uppercase text-black dark:text-gray-400 mb-0.5 block">
                                 Observaciones
                             </label>
                             <textarea formControlName="observaciones" rows="3"
                                       placeholder="Ingrese observaciones del ajuste..."
-                                      class="w-full text-sm font-medium border-2 border-gray-300 dark:border-slate-600 rounded-lg px-4 py-2 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[2px_2px_0px_0px_#ccc] transition-shadow outline-none placeholder:text-gray-400 resize-none"></textarea>
+                                      class="w-full text-xs font-medium border-2 border-black dark:border-slate-600 rounded px-2 py-1.5 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[2px_2px_0px_0px_#000] transition-shadow outline-none placeholder:text-gray-400 resize-none"></textarea>
                         </div>
                     </div>
 
                     <!-- Columna Imagen -->
                     <div class="lg:col-span-4 flex flex-col">
-                        <h3 class="text-lg font-black uppercase mb-3 text-black dark:text-white border-b-2 border-black dark:border-gray-600 pb-2">Imagen</h3>
+                        <div class="flex items-center gap-1.5 px-3 py-1.5 -mx-3 -mt-3 mb-3 bg-[#0F172AFF] border-b-2 border-black">
+                            <mat-icon class="text-amber-400 !text-sm">photo_camera</mat-icon>
+                            <span class="font-black text-xs uppercase text-white">Imagen</span>
+                        </div>
 
                         <div class="neo-card-base bg-gray-100 dark:bg-gray-800 overflow-hidden w-full h-[300px] flex flex-col relative group">
 

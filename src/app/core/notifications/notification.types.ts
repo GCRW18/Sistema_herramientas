@@ -82,7 +82,7 @@ export interface Notification {
 }
 
 /**
- * Configuración de alertas automáticas
+ * Configuración de dashboard-alertas automáticas
  */
 export interface NotificationRule {
     id: string;
@@ -100,7 +100,7 @@ export interface NotificationRule {
 
     // Configuración de la alerta
     priority: NotificationPriority;
-    notifyDaysBefore?: number; // Para alertas preventivas
+    notifyDaysBefore?: number; // Para dashboard-alertas preventivas
     repeatInterval?: number; // Minutos para repetir si no se atiende
 
     // Destinatarios

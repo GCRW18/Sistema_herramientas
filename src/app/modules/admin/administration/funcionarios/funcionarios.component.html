@@ -52,7 +52,7 @@
             <div class="px-4 py-2.5 bg-[#111A43] border-b-[3px] border-black flex items-center justify-between shrink-0">
                 <h2 class="text-sm font-black text-white uppercase tracking-wider flex items-center gap-2">
                     <mat-icon class="!text-base">groups</mat-icon>
-                    FUNCIONARIOS DEL SISTEMA ({{ filteredEmpleados.length }})
+                    FUNCIONARIOS DEL SISTEMA {{ hasSearched ? '(' + filteredEmpleados.length + ')' : '' }}
                 </h2>
                 <div class="flex items-center gap-4 text-xs font-bold text-white/80">
                     <span *ngIf="isLoading" class="flex items-center gap-1.5">
@@ -157,12 +157,19 @@
                             </td>
                         </tr>
 
-                        <tr *ngIf="filteredEmpleados.length === 0 && !isLoading">
+                        <!-- Sin búsqueda activa -->
+                        <tr *ngIf="!hasSearched && !isLoading">
+                            <td colspan="8" class="p-10 text-center bg-white dark:bg-slate-800">
+                                <mat-icon class="!text-5xl text-gray-300 dark:text-gray-600 mb-2">search</mat-icon>
+                                <p class="text-gray-500 dark:text-gray-400 font-bold">Escribe al menos 2 letras para buscar funcionarios</p>
+                                <p class="text-gray-400 dark:text-gray-500 text-xs mt-1">También puedes filtrar por área</p>
+                            </td>
+                        </tr>
+                        <!-- Búsqueda sin resultados -->
+                        <tr *ngIf="hasSearched && filteredEmpleados.length === 0 && !isLoading">
                             <td colspan="8" class="p-10 text-center bg-white dark:bg-slate-800">
                                 <mat-icon class="!text-5xl text-gray-300 dark:text-gray-600 mb-2">badge</mat-icon>
-                                <p class="text-gray-500 dark:text-gray-400 font-bold">
-                                    {{ searchControl.value || filterArea.value ? 'No se encontraron funcionarios' : 'No hay funcionarios registrados' }}
-                                </p>
+                                <p class="text-gray-500 dark:text-gray-400 font-bold">No se encontraron funcionarios</p>
                             </td>
                         </tr>
                     </tbody>

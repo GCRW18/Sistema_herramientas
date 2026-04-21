@@ -141,6 +141,9 @@ export class DetalleHerramientaComponent implements OnInit, OnDestroy {
         { value: 'LTS', label: 'Litros' }
     ];
 
+    // Marcas para autocomplete (texto libre + sugerencias)
+    marcasFiltradas: string[] = [];
+
     // Resultados de búsqueda reales
     filteredHerramientas: HerramientaOption[] = [];
 
@@ -193,13 +196,9 @@ export class DetalleHerramientaComponent implements OnInit, OnDestroy {
     }
 
     private setupSearch(): void {
-        this.detalleForm.get('buscar')?.valueChanges.pipe(
-            takeUntil(this.destroy$),
-            debounceTime(300),
-            distinctUntilChanged()
-        ).subscribe(value => {
-            this.onBuscarChange(value);
-        });
+        // La búsqueda se dispara desde (input) en el HTML.
+        // Suscripción a valueChanges eliminada para evitar doble llamada.
+        this.marcasFiltradas = [...this.marcas];
     }
 
     private loadEditData(item: any): void {
@@ -219,6 +218,8 @@ export class DetalleHerramientaComponent implements OnInit, OnDestroy {
             observaciones: item.obs        || ''
         });
     }
+
+    displayHerramienta = (h: any): string => h ? (h.codigo || '') : '';
 
     onBuscarChange(value: string): void {
         if (!value || value.length < 2) {
@@ -269,6 +270,23 @@ export class DetalleHerramientaComponent implements OnInit, OnDestroy {
         });
         this.coincidencias.set(1);
         this.filteredHerramientas = [];
+        // Si la marca del backend no está en la lista estática, añadirla temporalmente
+        if (herramienta.marca && !this.marcas.includes(herramienta.marca)) {
+            this.marcasFiltradas = [herramienta.marca, ...this.marcas];
+        }
+    }
+
+    filterMarcas(value: string): void {
+        if (!value) {
+            this.marcasFiltradas = [...this.marcas];
+            return;
+        }
+        const f = value.toLowerCase();
+        this.marcasFiltradas = this.marcas.filter(m => m.toLowerCase().includes(f));
+        // Asegurar que el valor actual siempre aparece
+        if (!this.marcasFiltradas.includes(value)) {
+            this.marcasFiltradas = [value, ...this.marcasFiltradas];
+        }
     }
 
     onImageSelected(event: Event): void {
@@ -291,7 +309,15 @@ export class DetalleHerramientaComponent implements OnInit, OnDestroy {
     procesar(): void {
         const data = this.detalleForm.value;
         if (!data.toolId) {
+            // Marcar campo buscar como tocado para mostrar error visual
+            this.detalleForm.get('buscar')?.markAsTouched();
             return;
+        }
+        if (!data.cantidad || data.cantidad <= 0) {
+            this.detalleForm.patchValue({ cantidad: 1 });
+        }
+        if (!data.estado) {
+            this.detalleForm.patchValue({ estado: 'SERVICEABLE' });
         }
         this.dialogRef?.close({ action: 'procesar', data });
     }

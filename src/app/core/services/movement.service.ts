@@ -8,6 +8,7 @@ export class MovementService {
     private _api = inject(ErpApiService);
     private _movements: ReplaySubject<Movement[]> = new ReplaySubject<Movement[]>(1);
     private _movement: ReplaySubject<Movement> = new ReplaySubject<Movement>(1);
+    private _personalPromise: Promise<any[]> | null = null;
 
     // -----------------------------------------------------------------------------------------------------
     // @ Accessors
@@ -332,6 +333,11 @@ export class MovementService {
      * Get historial de movimientos con filtros y paginación
      */
     getHistorialMovimientos(filtros?: any): Observable<{ data: any[], total: number }> {
+        const isEntradas = filtros?.movement_type === 'entry';
+        const endpoint   = isEntradas
+            ? 'herramientas/movements/listarEntradas'
+            : 'herramientas/movements/listarMovements';
+
         const params = {
             start: ((filtros?.page || 1) - 1) * (filtros?.limit || 25),
             limit: filtros?.limit || 25,
@@ -340,7 +346,7 @@ export class MovementService {
             ...filtros
         };
 
-        return from(this._api.post('herramientas/movements/listarMovements', params)).pipe(
+        return from(this._api.post(endpoint, params)).pipe(
             switchMap((response: any) => {
                 return of({
                     data: response?.datos || response?.data || [],
@@ -473,19 +479,20 @@ export class MovementService {
     }
 
     /**
-     * Get personal/personnel list (uses employees table)
+     * Get personal/personnel list (uses employees table).
+     * La Promise se crea una sola vez: N componentes concurrentes comparten
+     * el mismo request HTTP en vez de disparar N requests independientes.
      */
     getPersonal(): Observable<any[]> {
-        return from(this._api.post('herramientas/employees/listarEmployees', {
-            start: 0,
-            limit: 500,
-            sort: 'full_name',
-            dir: 'asc'
-        })).pipe(
-            switchMap((response: any) => {
+        if (!this._personalPromise) {
+            this._personalPromise = (this._api.post('herramientas/employees/listarEmployees', {
+                start: 0,
+                limit: 100,
+                sort: 'full_name',
+                dir: 'asc'
+            }) as Promise<any>).then((response: any) => {
                 const data = response?.datos || response?.data || [];
-                // Map employee fields to the expected Funcionario shape
-                return of(data.map((emp: any) => ({
+                return data.map((emp: any) => ({
                     id:               emp.id_employee || emp.id,
                     id_employee:      emp.id_employee || emp.id,
                     licencia:         emp.license_number || '',
@@ -498,9 +505,15 @@ export class MovementService {
                     departamento:     emp.area || '',
                     area:             emp.area || '',
                     active:           emp.active
-                })));
-            })
-        );
+                }));
+            });
+        }
+        return from(this._personalPromise);
+    }
+
+    /** Invalida el caché de personal (llamar tras crear/editar/eliminar un empleado) */
+    clearPersonalCache(): void {
+        this._personalPromise = null;
     }
 
     /**
@@ -586,11 +599,13 @@ export class MovementService {
     /**
      * Get funcionarios list (personal que puede recibir/entregar herramientas)
      */
-    getFuncionarios(): Observable<any[]> {
-        return from(this._api.post('herramientas/employees/listarEmployees', {
-            start: 0,
-            limit: 500
-        })).pipe(
+    getFuncionarios(search?: string): Observable<any[]> {
+        const params: any = { start: 0, limit: 8, sort: 'full_name', dir: 'asc' };
+        if (search && search.trim().length >= 2) {
+            const s = search.trim().replace(/'/g, "''");
+            params.filtro_adicional = `(LOWER(full_name) LIKE LOWER('%${s}%') OR LOWER(license_number) LIKE LOWER('%${s}%'))`;
+        }
+        return from(this._api.post('herramientas/employees/listarEmployees', params)).pipe(
             switchMap((response: any) => of((response?.datos || response?.data || []).map((f: any) => ({
                 ...f,
                 id: f.id ?? f.id_employee,
@@ -618,6 +633,8 @@ export class MovementService {
         notes?:              string;
         warehouse_id?:       number;
         items_json:          string;
+        received_by_name?:   string;
+        [key: string]:       any;
     }): Observable<{ id_movement: number; movement_number: string }> {
         return from(this._api.post('herramientas/movements/registrarNuevaCompra', data)).pipe(
             switchMap((response: any) => {
@@ -756,7 +773,7 @@ export class MovementService {
 
     /**
      * Obtener herramientas que requieren calibración (próximas a vencer o vencidas)
-     * Para mostrar alertas y sugerencias de envío
+     * Para mostrar dashboard-alertas y sugerencias de envío
      */
     getHerramientasRequierenCalibracion(diasAnticipacion: number = 30): Observable<any[]> {
         return from(this._api.post('herramientas/herramientas/listRequierenCalibracion', {
@@ -886,17 +903,19 @@ export class MovementService {
      * Obtener préstamos activos (herramientas no devueltas) desde tloans + tloan_items + ttools.
      * Retorna array de loans, cada uno con propiedad items[] conteniendo los datos de la herramienta.
      */
-    getActiveLoans(): Observable<any[]> {
+    getActiveLoans(params?: { filtro_adicional?: string; [key: string]: any }): Observable<any[]> {
         return from(this._api.post('herramientas/movements/listarLoans', {
-            start: 0, limit: 200, sort: 'id_loan', dir: 'desc'
+            start: 0, limit: 200, sort: 'id_loan', dir: 'desc',
+            ...params
         })).pipe(
             switchMap((response: any) => of(response?.datos || response?.data || []))
         );
     }
 
-    getActiveLoanItems(): Observable<any[]> {
+    getActiveLoanItems(params?: { filtro_adicional?: string; [key: string]: any }): Observable<any[]> {
         return from(this._api.post('herramientas/movements/listarLoanItems', {
-            start: 0, limit: 1000, sort: 'id_loan_item', dir: 'asc'
+            start: 0, limit: 1000, sort: 'id_loan_item', dir: 'asc',
+            ...params
         })).pipe(
             switchMap((response: any) => of(response?.datos || response?.data || []))
         );

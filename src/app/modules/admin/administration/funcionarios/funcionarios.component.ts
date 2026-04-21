@@ -1,4 +1,4 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
@@ -6,9 +6,11 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatDialogModule, MatDialog } from '@angular/material/dialog';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
-import { debounceTime, startWith } from 'rxjs/operators';
-import { combineLatest } from 'rxjs';
+import { debounceTime, distinctUntilChanged, combineLatest, startWith, Subscription } from 'rxjs';
+import { switchMap, of } from 'rxjs';
 import { EmployeeService } from '../../../../core/services/employee.service';
+
+const MIN_SEARCH_CHARS = 2;
 
 @Component({
     selector: 'app-funcionarios',
@@ -29,18 +31,20 @@ import { EmployeeService } from '../../../../core/services/employee.service';
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #94a3b8; border-radius: 3px; }
     `]
 })
-export class FuncionariosComponent implements OnInit {
+export class FuncionariosComponent implements OnInit, OnDestroy {
     private router      = inject(Router);
     private dialog      = inject(MatDialog);
     private snackBar    = inject(MatSnackBar);
     private empService  = inject(EmployeeService);
+    private sub         = new Subscription();
 
     searchControl   = new FormControl('');
     filterArea      = new FormControl('');
 
     empleados: any[]         = [];
     filteredEmpleados: any[] = [];
-    isLoading = false;
+    isLoading  = false;
+    hasSearched = false;
 
     areas = [
         { value: '', label: 'Todas las áreas' },
@@ -53,49 +57,60 @@ export class FuncionariosComponent implements OnInit {
     ];
 
     ngOnInit(): void {
-        this.loadEmpleados();
-        this.setupFilters();
+        this.sub.add(
+            combineLatest([
+                this.searchControl.valueChanges.pipe(startWith(''), debounceTime(400), distinctUntilChanged()),
+                this.filterArea.valueChanges.pipe(startWith(''), distinctUntilChanged())
+            ]).pipe(
+                switchMap(([search, area]) => {
+                    const term = (search || '').trim();
+                    // Solo buscar si hay al menos MIN_SEARCH_CHARS chars en el nombre o se filtra por área
+                    if (term.length < MIN_SEARCH_CHARS && !area) {
+                        this.hasSearched = false;
+                        this.empleados = [];
+                        this.filteredEmpleados = [];
+                        return of([]);
+                    }
+                    this.isLoading = true;
+                    this.hasSearched = true;
+                    return this.empService.getEmployees({
+                        search: term.length >= MIN_SEARCH_CHARS ? term : undefined,
+                        area: area || undefined
+                    });
+                })
+            ).subscribe({
+                next: (data) => {
+                    this.empleados = data;
+                    this.filteredEmpleados = data;
+                    this.isLoading = false;
+                },
+                error: () => {
+                    this.isLoading = false;
+                    this.showError('Error al buscar funcionarios');
+                }
+            })
+        );
     }
 
-    loadEmpleados(): void {
+    ngOnDestroy(): void { this.sub.unsubscribe(); }
+
+    // Recarga tras crear/editar aplicando los filtros actuales
+    recargar(): void {
+        const term = (this.searchControl.value || '').trim();
+        const area = this.filterArea.value || '';
+        if (term.length < MIN_SEARCH_CHARS && !area) return;
         this.isLoading = true;
-        this.empService.getEmployees().subscribe({
-            next: (data) => {
-                this.empleados = data;
-                this.applyFilters();
-                this.isLoading = false;
-            },
-            error: () => {
-                this.isLoading = false;
-                this.showError('Error al cargar funcionarios');
-            }
+        this.empService.getEmployees({
+            search: term.length >= MIN_SEARCH_CHARS ? term : undefined,
+            area: area || undefined
+        }).subscribe({
+            next: (data) => { this.empleados = data; this.filteredEmpleados = data; this.isLoading = false; },
+            error: () => { this.isLoading = false; }
         });
     }
 
-    setupFilters(): void {
-        combineLatest([
-            this.searchControl.valueChanges.pipe(startWith('')),
-            this.filterArea.valueChanges.pipe(startWith(''))
-        ]).pipe(debounceTime(300)).subscribe(() => this.applyFilters());
-    }
-
-    applyFilters(): void {
-        let list = [...this.empleados];
-        const q = this.searchControl.value?.toLowerCase() || '';
-        if (q) {
-            list = list.filter(e =>
-                (e.full_name || '').toLowerCase().includes(q) ||
-                (e.license_number || '').toLowerCase().includes(q) ||
-                (e.cargo || '').toLowerCase().includes(q)
-            );
-        }
-        const area = this.filterArea.value;
-        if (area) list = list.filter(e => e.area === area);
-        this.filteredEmpleados = list;
-    }
-
-    getActivos(): number { return this.empleados.filter(e => e.active).length; }
-    getInactivos(): number { return this.empleados.filter(e => !e.active).length; }
+    getActivos(): number { return this.filteredEmpleados.filter(e => e.active).length; }
+    getInactivos(): number { return this.filteredEmpleados.filter(e => !e.active).length; }
 
     async nuevoFuncionario(): Promise<void> {
         const { FormFuncionarioComponent } = await import('./dialogs/form-funcionario/form-funcionario.component');
@@ -104,7 +119,7 @@ export class FuncionariosComponent implements OnInit {
         }).afterClosed().subscribe(result => {
             if (result) {
                 this.empService.createEmployee(result).subscribe({
-                    next: () => { this.showSuccess('Funcionario creado exitosamente'); this.loadEmpleados(); },
+                    next: () => { this.showSuccess('Funcionario creado exitosamente'); this.recargar(); },
                     error: () => this.showError('Error al crear funcionario')
                 });
             }
@@ -119,7 +134,7 @@ export class FuncionariosComponent implements OnInit {
         }).afterClosed().subscribe(result => {
             if (result) {
                 this.empService.updateEmployee(emp.id_employee, result).subscribe({
-                    next: () => { this.showSuccess('Funcionario actualizado'); this.loadEmpleados(); },
+                    next: () => { this.showSuccess('Funcionario actualizado'); this.recargar(); },
                     error: () => this.showError('Error al actualizar funcionario')
                 });
             }
@@ -130,7 +145,7 @@ export class FuncionariosComponent implements OnInit {
         const accion = emp.active ? 'desactivar' : 'activar';
         if (!confirm(`¿Está seguro de ${accion} a ${emp.full_name}?`)) return;
         this.empService.updateEmployee(emp.id_employee, { active: !emp.active } as any).subscribe({
-            next: () => { this.showSuccess(`Funcionario ${emp.active ? 'desactivado' : 'activado'}`); this.loadEmpleados(); },
+            next: () => { this.showSuccess(`Funcionario ${emp.active ? 'desactivado' : 'activado'}`); this.recargar(); },
             error: () => this.showError('Error al cambiar estado')
         });
     }

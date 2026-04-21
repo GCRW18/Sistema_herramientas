@@ -1,0 +1,127 @@
+<div class="flex flex-col h-full bg-[#f8f9fc] dark:bg-[#0F172AFF] font-sans rounded-2xl overflow-hidden border-[4px] border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] relative transition-colors duration-300">
+
+    <div *ngIf="isSaving" class="absolute inset-0 z-50 bg-white/80 dark:bg-[#0F172AFF]/80 backdrop-blur-sm flex flex-col items-center justify-center">
+        <mat-spinner diameter="40"></mat-spinner>
+        <span class="mt-3 font-black text-xs uppercase tracking-widest text-black dark:text-white bg-[#0891b2] px-3 py-1 border-[2px] border-black shadow-[2px_2px_0px_0px_#000]">Creando Lote...</span>
+    </div>
+
+    <div class="flex items-center justify-between p-4 md:p-5 border-b-[3px] border-black bg-white dark:bg-[#0F172AFF] shrink-0">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 md:w-12 md:h-12 bg-[#0891b2] border-[2px] border-black rounded-xl shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] flex items-center justify-center shrink-0">
+                <mat-icon class="text-white !text-xl md:!text-2xl">add_box</mat-icon>
+            </div>
+            <div class="flex flex-col leading-tight">
+                <h2 class="text-lg md:text-xl font-black text-black dark:text-white uppercase tracking-tighter">
+                    Nuevo Lote de Calibración
+                </h2>
+                <p class="text-[9px] md:text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mt-0.5">
+                    El número de lote se generará automáticamente
+                </p>
+            </div>
+        </div>
+        <button mat-dialog-close
+                class="w-9 h-9 flex items-center justify-center bg-gray-200 dark:bg-slate-700 text-black dark:text-white border-[2px] border-black rounded-lg shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-y-[1px] hover:translate-x-[1px] hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] active:shadow-none transition-all shrink-0">
+            <mat-icon class="!text-[18px]">close</mat-icon>
+        </button>
+    </div>
+
+    <div class="flex-1 overflow-y-auto p-4 md:p-6 custom-scrollbar bg-[#f8f9fc] dark:bg-slate-900/50">
+        <div class="flex flex-col gap-4 max-w-lg mx-auto">
+
+            <div class="flex flex-col gap-1">
+                <label class="text-[10px] font-black uppercase text-gray-800 dark:text-gray-300 tracking-wider pl-1">
+                    Laboratorio Destino <span class="text-red-500">*</span>
+                </label>
+                <div class="relative">
+                    <mat-icon class="absolute left-3 top-1/2 -translate-y-1/2 !text-[18px] text-gray-500">science</mat-icon>
+                    <select [(ngModel)]="selectedLabId" (change)="onLabChange()"
+                            class="w-full h-11 pl-10 pr-4 bg-white dark:bg-[#1e293b] text-black dark:text-white border-[3px] border-black rounded-xl font-bold text-xs md:text-sm focus:outline-none focus:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-all appearance-none cursor-pointer">
+                        <option [value]="null" disabled selected>Seleccione un laboratorio...</option>
+                        <option *ngFor="let lab of laboratories" [value]="lab.id_laboratory">{{ lab.name }}</option>
+                    </select>
+                    <mat-icon class="absolute right-3 top-1/2 -translate-y-1/2 !text-[18px] text-gray-500 pointer-events-none">expand_more</mat-icon>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div class="flex flex-col gap-1">
+                    <label class="text-[10px] font-black uppercase text-gray-800 dark:text-gray-300 tracking-wider pl-1">
+                        Fecha de Envío <span class="text-red-500">*</span>
+                    </label>
+                    <input type="date" [(ngModel)]="sendDateStr"
+                           class="w-full h-11 px-3 bg-white dark:bg-[#1e293b] text-black dark:text-white border-[3px] border-black rounded-xl font-bold text-xs md:text-sm focus:outline-none focus:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-all">
+                </div>
+
+                <div class="flex flex-col gap-1">
+                    <label class="text-[10px] font-black uppercase text-gray-800 dark:text-gray-300 tracking-wider pl-1">
+                        Retorno Esperado
+                    </label>
+                    <input type="date" [(ngModel)]="expectedReturnDateStr"
+                           class="w-full h-11 px-3 bg-white dark:bg-[#1e293b] text-black dark:text-white border-[3px] border-black rounded-xl font-bold text-xs md:text-sm focus:outline-none focus:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-all">
+                </div>
+            </div>
+
+            <div class="flex flex-col gap-1">
+                <label class="text-[10px] font-black uppercase text-gray-800 dark:text-gray-300 tracking-wider pl-1">
+                    Base Operativa <span class="text-red-500">*</span>
+                </label>
+                <div class="relative">
+                    <mat-icon class="absolute left-3 top-1/2 -translate-y-1/2 !text-[18px] text-gray-500">location_on</mat-icon>
+                    <select [(ngModel)]="selectedBaseId" (change)="onBaseChange()"
+                            class="w-full h-11 pl-10 pr-4 bg-white dark:bg-[#1e293b] text-black dark:text-white border-[3px] border-black rounded-xl font-bold text-xs md:text-sm focus:outline-none focus:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-all appearance-none cursor-pointer">
+                        <option [value]="null" disabled selected>Seleccione la base...</option>
+                        <option *ngFor="let base of bases" [value]="base.id">{{ base.nombre }}</option>
+                    </select>
+                    <mat-icon class="absolute right-3 top-1/2 -translate-y-1/2 !text-[18px] text-gray-500 pointer-events-none">expand_more</mat-icon>
+                </div>
+            </div>
+
+            <div class="flex flex-col gap-1">
+                <label class="text-[10px] font-black uppercase text-gray-800 dark:text-gray-300 tracking-wider pl-1">
+                    Orden de Servicio (Opcional)
+                </label>
+                <div class="relative">
+                    <mat-icon class="absolute left-3 top-1/2 -translate-y-1/2 !text-[18px] text-gray-500">receipt</mat-icon>
+                    <input type="text" [(ngModel)]="serviceOrder" placeholder="Ej: OS-2026-001"
+                           class="w-full h-11 pl-10 pr-4 bg-white dark:bg-[#1e293b] text-black dark:text-white border-[3px] border-black rounded-xl font-bold text-xs md:text-sm focus:outline-none focus:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-all placeholder:font-normal placeholder:text-gray-400">
+                </div>
+            </div>
+
+            <div class="flex flex-col gap-1">
+                <label class="text-[10px] font-black uppercase text-gray-800 dark:text-gray-300 tracking-wider pl-1">
+                    Notas u Observaciones
+                </label>
+                <textarea [(ngModel)]="notes" rows="2" placeholder="Ingrese detalles adicionales del lote..."
+                          class="w-full p-3 bg-white dark:bg-[#1e293b] text-black dark:text-white border-[3px] border-black rounded-xl font-bold text-xs md:text-sm resize-none focus:outline-none focus:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-all placeholder:font-normal placeholder:text-gray-400"></textarea>
+            </div>
+
+            <div class="bg-blue-50 dark:bg-blue-900/30 border-[3px] border-black rounded-xl p-3 shadow-[3px_3px_0px_0px_#000] mt-2">
+                <div class="flex items-start gap-2">
+                    <mat-icon class="text-blue-600 dark:text-blue-400 !text-xl mt-0.5 shrink-0">info</mat-icon>
+                    <div class="text-[10px] md:text-xs text-blue-900 dark:text-blue-200">
+                        <p class="font-black uppercase tracking-wider mb-1 text-black dark:text-white">Flujo del Lote:</p>
+                        <ol class="font-bold list-decimal list-inside pl-1 space-y-0.5">
+                            <li>Crear este lote de calibración.</li>
+                            <li>Escanear las herramientas a enviar desde "Ver Detalle".</li>
+                            <li>Confirmar el lote para pasarlo a estado "Enviado".</li>
+                        </ol>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <div class="flex items-center justify-end gap-3 p-4 md:p-5 border-t-[3px] border-black bg-white dark:bg-[#0F172AFF] shrink-0">
+        <button mat-dialog-close
+                class="px-5 py-2.5 bg-gray-200 dark:bg-slate-700 text-black dark:text-white font-black text-xs md:text-sm border-[3px] border-black rounded-xl shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-y-[1px] hover:translate-x-[1px] hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] active:shadow-none transition-all uppercase">
+            Cancelar
+        </button>
+        <button (click)="createBatch()"
+                [disabled]="isSaving || !selectedLabId || !sendDateStr"
+                class="px-6 py-2.5 bg-[#0891b2] text-white font-black text-xs md:text-sm border-[3px] border-black rounded-xl shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-y-[1px] hover:translate-x-[1px] hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] active:shadow-none transition-all uppercase flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
+            <mat-icon class="text-white !text-lg md:!text-xl">save</mat-icon>
+            Crear Lote
+        </button>
+    </div>
+</div>

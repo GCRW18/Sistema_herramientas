@@ -20,240 +20,239 @@ import { CalibrationBatch } from '../../../../core/models';
         MatDialogModule, MatSnackBarModule
     ],
     template: `
-    <div class="flex flex-col w-full h-full bg-[#f8f9fc] dark:bg-[#0F172AFF] font-sans overflow-hidden relative">
+        <div class="flex flex-col w-full h-full bg-[#f8f9fc] dark:bg-[#0F172AFF] transition-colors duration-300 font-sans overflow-hidden">
 
-        <!-- DECORATIVE -->
-        <div class="fixed top-16 right-10 w-48 h-48 bg-[#0891b2] rounded-full border-4 border-black opacity-5 pointer-events-none"></div>
-        <div class="fixed bottom-10 left-10 w-28 h-28 bg-[#0891b2] rotate-12 border-4 border-black opacity-5 pointer-events-none"></div>
+            <div class="fixed top-20 right-10 w-40 h-40 bg-[#0F172AFF] rounded-full border-[3px] border-black opacity-5 pointer-events-none"></div>
+            <div class="fixed bottom-10 left-10 w-24 h-24 bg-[#0891b2] rotate-12 border-[3px] border-black opacity-5 pointer-events-none"></div>
 
-        <!-- MAIN -->
-        <div class="flex-1 flex flex-col p-2 gap-2 overflow-hidden h-full relative z-10">
+            <div class="flex-1 flex flex-col p-4 gap-3 overflow-hidden relative z-10">
 
-            <!-- HEADER -->
-            <div class="flex items-center justify-between gap-2 shrink-0">
-                <div class="flex items-center gap-2">
-                    <mat-icon class="text-black dark:text-white !text-base">inventory_2</mat-icon>
-                    <h1 class="text-base font-black text-black dark:text-white uppercase tracking-tight leading-none">
-                        Lotes de Calibración
-                    </h1>
-                    <span class="text-[10px] font-bold px-2 py-0.5 rounded-sm border border-black bg-[#0891b2] text-white uppercase">
-                        SUPERMERCADO
-                    </span>
-                </div>
-                <div class="flex gap-2 shrink-0">
-                    <button (click)="loadBatches()" [disabled]="isLoadingData()"
-                            class="px-3 py-1.5 bg-slate-600 text-white font-bold text-xs border-2 border-black rounded-full shadow-[2px_2px_0px_0px_#000] hover:translate-y-[1px] hover:shadow-[1px_1px_0px_0px_#000] active:shadow-none transition-all uppercase flex items-center gap-1 disabled:opacity-50">
-                        <mat-icon class="!w-4 !h-4 !text-sm">refresh</mat-icon>
-                        <span class="hidden sm:inline">Actualizar</span>
-                    </button>
-                    <button (click)="openCreateBatchDialog()"
-                            class="px-3 py-1.5 bg-[#0891b2] text-white font-black text-xs border-2 border-black rounded-full shadow-[2px_2px_0px_0px_#000] hover:translate-y-[1px] hover:shadow-[1px_1px_0px_0px_#000] active:shadow-none transition-all uppercase flex items-center gap-1">
-                        <mat-icon class="!w-4 !h-4 !text-sm">add_circle</mat-icon>
-                        Nuevo Lote
-                    </button>
-                </div>
-            </div>
+                <div class="flex items-center justify-between gap-4 shrink-0 flex-wrap">
 
-            <!-- BODY: 2 COLUMNAS -->
-            <div class="flex flex-row gap-2 flex-1 overflow-hidden min-h-0">
-
-                <!-- ============================================================ -->
-                <!-- PANEL IZQUIERDO                                               -->
-                <!-- ============================================================ -->
-                <div class="w-[220px] shrink-0 flex flex-col gap-2">
-
-                    <!-- Resumen 2x2 -->
-                    <div class="neo-card-base bg-white dark:bg-slate-800 overflow-hidden">
-                        <div class="bg-[#0891b2] px-3 py-1.5 border-b-2 border-black">
-                            <span class="font-black text-xs uppercase text-white">Resumen</span>
+                    <div class="flex items-center gap-4">
+                        <div class="flex items-center justify-center w-10 h-10 bg-white dark:bg-[#0F172AFF] border-[3px] border-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] rounded-xl shrink-0">
+                            <mat-icon class="text-black dark:text-[#0891b2] !text-base">inventory_2</mat-icon>
                         </div>
-                        <div class="p-1.5 grid grid-cols-2 gap-1.5">
-                            <div class="rounded-lg border-2 border-black p-1.5 bg-blue-100 shadow-[2px_2px_0px_0px_#000]">
-                                <p class="text-xl font-black text-blue-800 leading-none">{{ openBatchCount() }}</p>
-                                <p class="text-[9px] font-black uppercase text-blue-600 leading-tight mt-0.5">Abiertos</p>
-                            </div>
-                            <div class="rounded-lg border-2 border-black p-1.5 bg-amber-100 shadow-[2px_2px_0px_0px_#000]">
-                                <p class="text-xl font-black text-amber-800 leading-none">{{ sentBatchCount() }}</p>
-                                <p class="text-[9px] font-black uppercase text-amber-600 leading-tight mt-0.5">Enviados</p>
-                            </div>
-                            <div class="rounded-lg border-2 border-black p-1.5 bg-green-100 shadow-[2px_2px_0px_0px_#000]">
-                                <p class="text-xl font-black text-green-800 leading-none">{{ completedBatchCount() }}</p>
-                                <p class="text-[9px] font-black uppercase text-green-600 leading-tight mt-0.5">Completados</p>
-                            </div>
-                            <div class="rounded-lg border-2 border-black p-1.5 bg-red-100 shadow-[2px_2px_0px_0px_#000]">
-                                <p class="text-xl font-black text-red-800 leading-none">{{ overdueBatchCount() }}</p>
-                                <p class="text-[9px] font-black uppercase text-red-600 leading-tight mt-0.5">Atrasados</p>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Filtro -->
-                    <div class="neo-card-base bg-white dark:bg-slate-800 overflow-hidden">
-                        <div class="bg-[#0F172AFF] px-3 py-1.5 border-b-2 border-black">
-                            <span class="font-black text-xs uppercase text-white">Filtrar</span>
-                        </div>
-                        <div class="p-2">
-                            <label class="text-[10px] font-black uppercase text-gray-700 dark:text-gray-300 mb-0.5 block">Estado</label>
-                            <select [(ngModel)]="statusFilter" (ngModelChange)="loadBatches()"
-                                    class="w-full h-7 text-xs font-bold border-2 border-black dark:border-slate-600 rounded-lg px-2 bg-white dark:bg-[#0F172AFF] text-black dark:text-white outline-none">
-                                <option value="">Todos</option>
-                                <option value="open">Abiertos</option>
-                                <option value="sent">Enviados</option>
-                                <option value="completed">Completados</option>
-                                <option value="cancelled">Cancelados</option>
-                            </select>
-                        </div>
-                    </div>
-
-                </div>
-
-                <!-- ============================================================ -->
-                <!-- PANEL DERECHO: Tabla de lotes                                 -->
-                <!-- ============================================================ -->
-                <div class="flex-1 flex flex-col overflow-hidden h-full">
-                    <div class="neo-card-base bg-white dark:bg-slate-800 overflow-hidden flex flex-col h-full">
-
-                        <!-- Header tabla -->
-                        <div class="bg-[#0F172AFF] px-3 py-1.5 border-b-2 border-black flex items-center justify-between shrink-0 h-10">
-                            <div class="flex items-center gap-2">
-                                <mat-icon class="text-white !text-xl">inventory_2</mat-icon>
-                                <span class="font-black text-xs md:text-sm uppercase text-white">Lotes Registrados</span>
-                            </div>
-                            <span class="bg-white text-black px-2 py-0.5 rounded text-xs font-black border border-black shadow-[2px_2px_0px_0px_#000]">
-                                Total: {{ batchesList().length }}
+                        <div>
+                            <h1 class="text-xl font-black text-black dark:text-white uppercase tracking-tighter leading-none">
+                                LOTES DE CALIBRACIÓN
+                            </h1>
+                            <div class="flex items-center gap-2 mt-0.5 flex-wrap">
+                                <p class="text-[10px] font-bold bg-[#0891b2] text-white px-2 py-0.5 inline-block border border-black uppercase">
+                                    Supermercado · Gestión de Lotes
+                                </p>
+                                <span *ngIf="overdueBatchCount() > 0"
+                                      class="text-[10px] font-bold px-2 py-0.5 border-[2px] border-red-400 bg-red-50 dark:bg-red-900/30 text-red-700 rounded-lg animate-pulse">
+                                ⚠ {{ overdueBatchCount() }} Lote{{ overdueBatchCount() !== 1 ? 's' : '' }} Atrasado{{ overdueBatchCount() !== 1 ? 's' : '' }}
                             </span>
+                            </div>
                         </div>
+                    </div>
 
-                        @if (isLoadingData()) {
-                            <div class="flex flex-col items-center justify-center flex-1">
-                                <mat-spinner diameter="40"></mat-spinner>
-                                <p class="text-xs font-bold mt-3 uppercase animate-pulse text-black dark:text-white">Cargando lotes...</p>
+                    <div class="flex items-center gap-3 flex-wrap">
+
+                        <select [(ngModel)]="statusFilter" (ngModelChange)="loadBatches()"
+                                class="h-9 px-3 bg-white dark:bg-[#0F172AFF] text-black dark:text-white
+                                   border-[2px] border-black rounded-xl font-bold text-sm
+                                   focus:outline-none focus:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-all uppercase">
+                            <option value="">Todos los Estados</option>
+                            <option value="open">Abiertos</option>
+                            <option value="sent">Enviados</option>
+                            <option value="completed">Completados</option>
+                            <option value="cancelled">Cancelados</option>
+                        </select>
+
+                        <button (click)="openCreateBatchDialog()"
+                                class="px-4 py-2 bg-[#0891b2] text-white font-black text-sm
+                                   border-[2px] border-black rounded-full
+                                   shadow-[3px_3px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px]
+                                   hover:shadow-[2px_2px_0px_0px_#000] active:shadow-none
+                                   transition-all uppercase flex items-center gap-2">
+                            <mat-icon class="!text-base text-white">add</mat-icon> Nuevo Lote
+                        </button>
+                    </div>
+                </div>
+
+                <div class="flex-1 flex flex-col overflow-hidden border-[3px] border-black bg-white dark:bg-[#0F172AFF] rounded-2xl shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+
+                    <div class="px-4 py-2.5 bg-[#0F172AFF] border-b-[3px] border-black flex items-center justify-between shrink-0 flex-wrap gap-2">
+                        <h2 class="text-sm font-black text-white uppercase tracking-wider flex items-center gap-2">
+                            <mat-icon class="!text-base text-[#0891b2]">inbox_stack</mat-icon>
+                            LOTES REGISTRADOS ({{ batchesList().length }})
+                        </h2>
+
+                        <div class="flex items-center gap-4">
+
+                            <div class="flex items-center gap-2 bg-blue-500/30 rounded-lg px-3 py-1.5 border border-blue-400">
+                                <div class="w-5 h-5 bg-blue-500 border border-white rounded flex items-center justify-center">
+                                    <mat-icon class="!text-xs text-white">inbox</mat-icon>
+                                </div>
+                                <div>
+                                    <div class="text-[8px] font-black uppercase text-blue-200 leading-none">Abiertos</div>
+                                    <div class="text-sm font-black text-white leading-none">{{ openBatchCount() }}</div>
+                                </div>
                             </div>
-                        }
 
-                        @if (!isLoadingData()) {
-                            <!-- Cabecera fija -->
-                            <div class="grid grid-cols-12 gap-1 px-3 py-1.5 bg-white dark:bg-[#111A43] border-b-2 border-black shrink-0">
-                                <div class="col-span-2 text-[10px] font-black uppercase text-gray-600 dark:text-gray-300">Nro. Lote</div>
-                                <div class="col-span-2 text-[10px] font-black uppercase text-gray-600 dark:text-gray-300">Estado</div>
-                                <div class="col-span-3 text-[10px] font-black uppercase text-gray-600 dark:text-gray-300">Laboratorio</div>
-                                <div class="col-span-1 text-[10px] font-black uppercase text-gray-600 dark:text-gray-300 text-center">Items</div>
-                                <div class="col-span-2 text-[10px] font-black uppercase text-gray-600 dark:text-gray-300">Fecha Envío</div>
-                                <div class="col-span-2 text-[10px] font-black uppercase text-gray-600 dark:text-gray-300 text-right">Acciones</div>
+                            <div class="flex items-center gap-2 bg-amber-500/30 rounded-lg px-3 py-1.5 border border-amber-400">
+                                <div class="w-5 h-5 bg-amber-500 border border-white rounded flex items-center justify-center">
+                                    <mat-icon class="!text-xs text-black">local_shipping</mat-icon>
+                                </div>
+                                <div>
+                                    <div class="text-[8px] font-black uppercase text-amber-200 leading-none">Enviados</div>
+                                    <div class="text-sm font-black text-white leading-none">{{ sentBatchCount() }}</div>
+                                </div>
                             </div>
 
-                            <div class="overflow-y-auto flex-1 custom-scrollbar bg-[#f8f9fc] dark:bg-slate-900/50">
+                            <div class="flex items-center gap-2 bg-green-600/30 rounded-lg px-3 py-1.5 border border-green-400">
+                                <div class="w-5 h-5 bg-green-600 border border-white rounded flex items-center justify-center">
+                                    <mat-icon class="!text-xs text-white">check_circle</mat-icon>
+                                </div>
+                                <div>
+                                    <div class="text-[8px] font-black uppercase text-green-200 leading-none">Completados</div>
+                                    <div class="text-sm font-black text-green-200 leading-none">{{ completedBatchCount() }}</div>
+                                </div>
+                            </div>
 
-                                @if (batchesList().length === 0) {
-                                    <div class="flex flex-col items-center justify-center h-full opacity-50">
-                                        <mat-icon class="!text-6xl text-black dark:text-gray-500">inventory_2</mat-icon>
-                                        <p class="text-sm font-black mt-2 uppercase text-black dark:text-gray-500">No hay lotes de calibración</p>
-                                        <p class="text-xs font-bold mt-1 text-gray-400 dark:text-gray-500">Cree un nuevo lote para comenzar</p>
+                            <button (click)="loadBatches()"
+                                    [disabled]="isLoadingData()"
+                                    matTooltip="Recargar lista"
+                                    class="w-7 h-7 flex items-center justify-center rounded-lg border border-white/30
+                                       text-white hover:bg-white/20 transition-all disabled:opacity-40 ml-1">
+                                <mat-icon class="!text-base" [ngClass]="isLoadingData() ? 'animate-spin-slow text-[#0891b2]' : 'text-[#0891b2]'">refresh</mat-icon>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div *ngIf="isLoadingData()" class="flex-1 flex items-center justify-center bg-white dark:bg-[#0F172AFF]">
+                        <div class="flex flex-col items-center gap-3">
+                            <mat-spinner diameter="36"></mat-spinner>
+                            <p class="text-xs font-bold uppercase animate-pulse text-gray-500 dark:text-gray-400">
+                                Cargando lotes...
+                            </p>
+                        </div>
+                    </div>
+
+                    <div *ngIf="!isLoadingData()" class="overflow-y-auto flex-1 custom-scrollbar">
+                        <table class="w-full">
+                            <thead class="sticky top-0 z-10">
+                            <tr class="border-b-[2px] border-black bg-gray-100 dark:bg-[#0F172AFF]">
+                                <th class="text-left px-3 py-2 font-black text-xs uppercase text-black dark:text-white w-32">NRO. LOTE</th>
+                                <th class="text-left px-3 py-2 font-black text-xs uppercase text-black dark:text-white w-36">LABORATORIO</th>
+                                <th class="text-center px-3 py-2 font-black text-xs uppercase text-black dark:text-white w-24">ESTADO</th>
+                                <th class="text-center px-3 py-2 font-black text-xs uppercase text-black dark:text-white w-20">CANTIDAD</th>
+                                <th class="text-left px-3 py-2 font-black text-xs uppercase text-black dark:text-white w-32">FECHA ENVÍO</th>
+                                <th class="text-center px-3 py-2 font-black text-xs uppercase text-black dark:text-white w-32">ACCIONES</th>
+                            </tr>
+                            </thead>
+                            <tbody class="bg-white dark:bg-[#0F172AFF]">
+
+                            <tr *ngFor="let batch of batchesList(); let last = last"
+                                (click)="viewBatchDetail(batch)"
+                                [class.border-b]="!last"
+                                [class.bg-red-50]="batch.is_overdue"
+                                [class.dark:bg-red-900]="batch.is_overdue"
+                                class="border-gray-200 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors cursor-pointer group">
+
+                                <td class="px-3 py-2">
+                                <span class="font-black text-sm font-mono text-black dark:text-white group-hover:text-[#0891b2] transition-colors">
+                                    {{ batch.batch_number }}
+                                </span>
+                                </td>
+
+                                <td class="px-3 py-2">
+                                <span class="font-bold text-gray-900 dark:text-white text-sm line-clamp-2">
+                                    {{ batch.laboratory_name || 'Sin Laboratorio' }}
+                                </span>
+                                </td>
+
+                                <td class="px-3 py-2 text-center">
+                                    <div class="flex items-center justify-center gap-1">
+                                    <span class="inline-block px-2 py-0.5 border-[2px] border-black rounded-lg text-[10px] font-black uppercase shadow-[1px_1px_0px_0px_#000]"
+                                          [ngClass]="getStatusClass(batch.status)">
+                                        {{ getStatusLabel(batch.status) }}
+                                    </span>
+                                        <mat-icon *ngIf="batch.is_overdue" class="text-red-500 !text-[16px] animate-pulse" matTooltip="Retorno Atrasado">warning</mat-icon>
                                     </div>
-                                }
+                                </td>
 
-                                @for (batch of batchesList(); track batch.id_batch) {
-                                    <div class="grid grid-cols-12 gap-1 px-3 py-2 items-center border-b border-gray-200 dark:border-slate-700 bg-white dark:bg-[#0F172AFF] hover:bg-gray-50 dark:hover:bg-slate-800 transition-all cursor-pointer"
-                                         (click)="viewBatchDetail(batch)">
+                                <td class="px-3 py-2 text-center">
+                                    <div class="flex flex-col items-center leading-tight">
+                                        <span class="font-black text-sm text-black dark:text-white">{{ batch.total_items }} u.</span>
+                                        <span *ngIf="batch.jack_items_count > 0" class="text-[9px] font-bold text-amber-600 uppercase border border-amber-400 bg-amber-50 px-1 rounded mt-0.5">
+                                        {{ batch.jack_items_count }} Gatas
+                                    </span>
+                                    </div>
+                                </td>
 
-                                        <!-- Nro. Lote -->
-                                        <div class="col-span-2">
-                                            <span class="font-mono font-black text-xs text-black dark:text-white">{{ batch.batch_number }}</span>
-                                        </div>
+                                <td class="px-3 py-2">
+                                <span class="font-mono font-semibold text-gray-600 dark:text-gray-400 text-xs">
+                                    {{ batch.send_date || 'No Registrado' }}
+                                </span>
+                                </td>
 
-                                        <!-- Estado -->
-                                        <div class="col-span-2 flex items-center gap-1">
-                                            <span class="inline-block px-1.5 py-0.5 rounded text-[9px] font-black border border-black uppercase"
-                                                  [ngClass]="getStatusClass(batch.status)">
-                                                {{ getStatusLabel(batch.status) }}
-                                            </span>
-                                            @if (batch.is_overdue) {
-                                                <mat-icon class="text-red-500 !text-sm" matTooltip="Retorno atrasado">warning</mat-icon>
-                                            }
-                                        </div>
+                                <td class="px-3 py-2">
+                                    <div class="flex gap-1.5 justify-center" (click)="$event.stopPropagation()">
 
-                                        <!-- Laboratorio -->
-                                        <div class="col-span-3">
-                                            <span class="font-bold text-xs text-black dark:text-white truncate block">{{ batch.laboratory_name || '—' }}</span>
-                                        </div>
+                                        <button (click)="viewBatchDetail(batch)" matTooltip="Ver detalles"
+                                                class="w-8 h-8 flex items-center justify-center border-[2px] border-black bg-white dark:bg-slate-700 hover:bg-gray-100 dark:hover:bg-slate-600 rounded-lg shadow-[2px_2px_0px_0px_#000] active:translate-y-[1px] active:shadow-none transition-all">
+                                            <mat-icon class="text-blue-600 dark:text-blue-400 !text-base">visibility</mat-icon>
+                                        </button>
 
-                                        <!-- Items -->
-                                        <div class="col-span-1 text-center">
-                                            <span class="font-black text-xs text-black dark:text-white">{{ batch.total_items }}</span>
-                                            @if (batch.jack_items_count > 0) {
-                                                <span class="block text-[9px] text-purple-600 font-bold">{{ batch.jack_items_count }}g</span>
-                                            }
-                                        </div>
+                                        <button *ngIf="batch.status === 'open'" (click)="confirmBatch(batch)" matTooltip="Confirmar Lote"
+                                                class="w-8 h-8 flex items-center justify-center border-[2px] border-black bg-green-400 hover:bg-green-500 rounded-lg shadow-[2px_2px_0px_0px_#000] active:translate-y-[1px] active:shadow-none transition-all">
+                                            <mat-icon class="text-black !text-base">send</mat-icon>
+                                        </button>
 
-                                        <!-- Fecha envío -->
-                                        <div class="col-span-2">
-                                            <span class="font-mono text-xs text-black dark:text-white">{{ batch.send_date || '—' }}</span>
-                                        </div>
+                                        <button *ngIf="batch.status === 'sent'" (click)="processReturn(batch)" matTooltip="Procesar Retorno"
+                                                class="w-8 h-8 flex items-center justify-center border-[2px] border-black bg-indigo-300 hover:bg-indigo-400 rounded-lg shadow-[2px_2px_0px_0px_#000] active:translate-y-[1px] active:shadow-none transition-all">
+                                            <mat-icon class="text-black !text-base">assignment_return</mat-icon>
+                                        </button>
 
-                                        <!-- Acciones -->
-                                        <div class="col-span-2 flex items-center justify-end gap-1" (click)="$event.stopPropagation()">
-
-                                            <button (click)="viewBatchDetail(batch)"
-                                                    matTooltip="Ver detalle"
-                                                    class="w-6 h-6 flex items-center justify-center border-2 border-black bg-white dark:bg-slate-700 hover:bg-gray-100 rounded shadow-[1px_1px_0px_0px_#000] active:shadow-none transition-all">
-                                                <mat-icon class="text-black dark:text-white !text-xs">visibility</mat-icon>
-                                            </button>
-
-                                            @if (batch.status === 'open') {
-                                                <button (click)="confirmBatch(batch)"
-                                                        matTooltip="Confirmar y enviar"
-                                                        class="w-6 h-6 flex items-center justify-center border-2 border-black bg-green-500 hover:bg-green-400 rounded shadow-[1px_1px_0px_0px_#000] active:shadow-none transition-all">
-                                                    <mat-icon class="text-white !text-xs">send</mat-icon>
-                                                </button>
-                                                <button (click)="deleteBatch(batch)"
-                                                        matTooltip="Eliminar lote"
-                                                        class="w-6 h-6 flex items-center justify-center border-2 border-black bg-red-500 hover:bg-red-400 rounded shadow-[1px_1px_0px_0px_#000] active:shadow-none transition-all">
-                                                    <mat-icon class="text-white !text-xs">delete</mat-icon>
-                                                </button>
-                                            }
-
-                                            @if (batch.status === 'sent') {
-                                                <button (click)="processReturn(batch)"
-                                                        matTooltip="Procesar retorno"
-                                                        class="w-6 h-6 flex items-center justify-center border-2 border-black bg-blue-500 hover:bg-blue-400 rounded shadow-[1px_1px_0px_0px_#000] active:shadow-none transition-all">
-                                                    <mat-icon class="text-white !text-xs">assignment_return</mat-icon>
-                                                </button>
-                                            }
-
-                                        </div>
+                                        <button *ngIf="batch.status === 'open'" (click)="deleteBatch(batch)" matTooltip="Eliminar Lote"
+                                                class="w-8 h-8 flex items-center justify-center border-[2px] border-black bg-red-400 hover:bg-red-500 rounded-lg shadow-[2px_2px_0px_0px_#000] active:translate-y-[1px] active:shadow-none transition-all">
+                                            <mat-icon class="text-black !text-base">delete</mat-icon>
+                                        </button>
 
                                     </div>
-                                }
-                            </div>
-                        }
+                                </td>
+                            </tr>
+
+                            <tr *ngIf="batchesList().length === 0">
+                                <td colspan="6" class="p-10 text-center bg-white dark:bg-[#0F172AFF]">
+                                    <mat-icon class="!text-5xl text-gray-300 dark:text-gray-600 mb-2">inbox_stack</mat-icon>
+                                    <p class="text-gray-500 dark:text-gray-400 font-bold uppercase text-sm">
+                                        {{ statusFilter ? 'No hay lotes con este estado' : 'No existen lotes de calibración registrados' }}
+                                    </p>
+                                    <button *ngIf="!statusFilter" (click)="openCreateBatchDialog()"
+                                            class="mt-4 px-4 py-2 bg-[#0891b2] text-white font-black text-sm border-[2px] border-black rounded-full shadow-[3px_3px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[2px_2px_0px_0px_#000] transition-all uppercase inline-flex items-center gap-2">
+                                        <mat-icon class="!text-base">add</mat-icon> Crear Primer Lote
+                                    </button>
+                                </td>
+                            </tr>
+                            </tbody>
+                        </table>
                     </div>
                 </div>
 
             </div>
         </div>
-    </div>
     `,
     styles: [`
-        :host {
-            display: block;
-            height: 100%;
-            --neo-border: 2px solid black;
-            --neo-shadow: 4px 4px 0px 0px rgba(0,0,0,1);
-        }
-        :host-context(.dark) { color-scheme: dark; }
-
-        .neo-card-base {
-            border: var(--neo-border) !important;
-            box-shadow: var(--neo-shadow) !important;
-            border-radius: 8px !important;
-            background-color: white;
-        }
-        :host-context(.dark) .neo-card-base { background-color: #1e293b !important; }
-
         .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
-        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #000; border-radius: 3px; }
-        :host-context(.dark) .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #e2e8f0; border-radius: 3px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #0F172AFF; border-radius: 3px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #1e293b; }
+        .dark .custom-scrollbar::-webkit-scrollbar-track { background: #1e293b; }
+        .dark .custom-scrollbar::-webkit-scrollbar-thumb { background: #0891b2; }
+
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+        .animate-pulse { animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+
+        @keyframes spin-slow { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        .animate-spin-slow { animation: spin-slow 3s linear infinite; }
+
+        .line-clamp-2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+        .transition-all { transition-property: all; transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1); transition-duration: 150ms; }
     `]
 })
 export class LotesCalibracionComponent implements OnInit, OnDestroy {
@@ -284,7 +283,7 @@ export class LotesCalibracionComponent implements OnInit, OnDestroy {
         const filters: any = {};
         if (this.statusFilter) filters.status = this.statusFilter;
 
-        this.batchService.getBatches({ ...filters, start: 0, limit: 100 }).pipe(
+        this.batchService.getBatches({ ...filters, start: 0, limit: 1000 }).pipe(
             takeUntil(this._unsubscribeAll),
             finalize(() => this.isLoadingData.set(false))
         ).subscribe({
@@ -295,19 +294,20 @@ export class LotesCalibracionComponent implements OnInit, OnDestroy {
 
     getStatusLabel(status: string): string {
         const labels: Record<string, string> = {
-            open: 'Abierto', sent: 'Enviado', in_process: 'En Proceso',
-            completed: 'Completado', cancelled: 'Cancelado'
+            open: 'ABIERTO', sent: 'ENVIADO', in_process: 'PROCESO',
+            completed: 'COMPLETADO', cancelled: 'CANCELADO'
         };
-        return labels[status] || status;
+        return labels[status] || status.toUpperCase();
     }
 
+    // Chips Neo-Brutalistas
     getStatusClass(status: string): string {
         switch (status) {
-            case 'open':      return 'bg-blue-500 text-white';
-            case 'sent':      return 'bg-amber-500 text-white';
-            case 'completed': return 'bg-green-500 text-white';
-            case 'cancelled': return 'bg-red-500 text-white';
-            default:          return 'bg-gray-200 text-black';
+            case 'open':      return 'bg-blue-100 text-blue-800 border-blue-300 dark:bg-blue-900/50 dark:text-blue-300';
+            case 'sent':      return 'bg-amber-100 text-amber-800 border-amber-300 dark:bg-amber-900/50 dark:text-amber-300';
+            case 'completed': return 'bg-green-100 text-green-800 border-green-300 dark:bg-green-900/50 dark:text-green-300';
+            case 'cancelled': return 'bg-red-100 text-red-800 border-red-300 dark:bg-red-900/50 dark:text-red-300';
+            default:          return 'bg-gray-100 text-gray-700 border-gray-300';
         }
     }
 

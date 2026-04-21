@@ -1,0 +1,360 @@
+<div class="flex flex-col w-full h-full bg-[#f8f9fc] dark:bg-slate-900 transition-colors duration-300 font-sans overflow-hidden"
+     cdkDrag cdkDragRootElement=".cdk-overlay-pane" cdkDragBoundary=".cdk-overlay-container">
+
+    <!-- HEADER -->
+    <div class="bg-white dark:bg-slate-800 border-b-2 border-black px-4 py-2 flex items-center justify-between shrink-0"
+         cdkDragHandle>
+        <div class="flex items-center gap-3">
+            <button (click)="dialogRef.close(false)"
+                    class="w-8 h-8 bg-slate-100 dark:bg-slate-700 border-2 border-black rounded hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors flex items-center justify-center shrink-0"
+                    (mousedown)="$event.stopPropagation()">
+                <mat-icon class="!text-base text-black dark:text-white">close</mat-icon>
+            </button>
+            <div>
+                <h1 class="text-sm font-black text-black dark:text-white uppercase tracking-tight leading-none">
+                    {{ mode === 'new' ? 'Nueva Empresa de Servicio' : mode === 'edit' ? 'Editar Empresa' : 'Ver Empresa' }}
+                </h1>
+                <p class="text-[9px] text-black dark:text-gray-400 font-bold uppercase mt-0.5">MGH-109 · Gestión de Empresas</p>
+            </div>
+        </div>
+        <div class="flex items-center gap-2">
+            <button (click)="dialogRef.close(false)"
+                    class="px-3 py-1.5 bg-gray-200 dark:bg-slate-700 text-black dark:text-white font-black text-xs border-2 border-black rounded hover:bg-gray-300 dark:hover:bg-slate-600 transition-colors uppercase flex items-center gap-1">
+                <mat-icon class="!text-sm !w-4 !h-4">close</mat-icon>
+                Cancelar
+            </button>
+            @if (mode === 'new' || mode === 'edit') {
+                <button (click)="save()"
+                        [disabled]="isSaving() || !canSubmit()"
+                        class="px-4 py-1.5 bg-[#0F172AFF] text-white font-black text-xs border-2 border-black rounded shadow-[2px_2px_0px_0px_rgba(0,0,0,0.4)] hover:shadow-none hover:translate-x-[1px] hover:translate-y-[1px] transition-all uppercase flex items-center gap-1 disabled:opacity-40 disabled:cursor-not-allowed">
+                    <mat-spinner *ngIf="isSaving()" diameter="16" class="inline-block"></mat-spinner>
+                    <mat-icon *ngIf="!isSaving()" class="!text-sm !w-4 !h-4 text-amber-400">save</mat-icon>
+                    {{ isSaving() ? 'Guardando...' : 'Guardar' }}
+                </button>
+            }
+            @if (mode === 'view') {
+                <button (click)="dialogRef.close(false)"
+                        class="px-4 py-1.5 bg-[#0F172AFF] text-white font-black text-xs border-2 border-black rounded shadow-[2px_2px_0px_0px_rgba(0,0,0,0.4)] hover:shadow-none hover:translate-x-[1px] hover:translate-y-[1px] transition-all uppercase flex items-center gap-1">
+                    <mat-icon class="!text-sm !w-4 !h-4 text-amber-400">check</mat-icon>
+                    Aceptar
+                </button>
+            }
+        </div>
+    </div>
+
+    <!-- SPINNER -->
+    <div *ngIf="isSaving()" class="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
+        <div class="bg-white dark:bg-slate-800 border-2 border-black rounded-xl shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] p-5 flex flex-col items-center gap-3">
+            <mat-spinner diameter="32"></mat-spinner>
+            <span class="font-black text-black dark:text-white uppercase tracking-wider text-xs">Guardando Empresa...</span>
+        </div>
+    </div>
+
+    <!-- BODY -->
+    <div class="flex-1 overflow-y-auto p-4 custom-scrollbar">
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 h-full">
+
+            <!-- Columna Izquierda - Formulario -->
+            <div class="lg:col-span-7">
+                <div class="border-2 border-black bg-white dark:bg-slate-800 rounded-xl shadow-[4px_4px_0px_0px_rgba(0,0,0,0.15)] overflow-hidden">
+
+                    <div class="flex items-center gap-2 px-3 py-2 bg-[#0F172AFF] border-b-2 border-black">
+                        <mat-icon class="text-amber-400 !text-sm">business</mat-icon>
+                        <span class="font-black text-xs uppercase text-white">DATOS DE LA EMPRESA</span>
+                        <div class="ml-auto">
+                            <span class="text-[8px] font-black px-1.5 py-0.5 rounded"
+                                  [ngClass]="canSubmit() && (mode === 'new' || mode === 'edit') ? 'bg-green-500 text-white' : 'bg-yellow-500 text-white'">
+                                {{ (mode === 'new' || mode === 'edit') ? (canSubmit() ? 'COMPLETO' : 'PENDIENTE') : 'VISUALIZACIÓN' }}
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="p-4 flex flex-col gap-4">
+                        <div class="grid grid-cols-2 gap-3">
+
+                            <!-- Código -->
+                            <div>
+                                <label class="text-[9px] font-black uppercase text-gray-500 mb-0.5 block">
+                                    <mat-icon class="!text-[10px] align-middle text-gray-400">tag</mat-icon>
+                                    Código *
+                                </label>
+                                <input type="text" [(ngModel)]="laboratory.code" placeholder="Ej: LAB-001"
+                                       [disabled]="mode === 'view'"
+                                       class="w-full h-8 text-xs font-bold border-2 border-black rounded-lg px-2 bg-white dark:bg-[#0F172AFF]">
+                            </div>
+
+                            <!-- Días promedio entrega -->
+                            <div>
+                                <label class="text-[9px] font-black uppercase text-gray-500 mb-0.5 block">
+                                    <mat-icon class="!text-[10px] align-middle text-gray-400">calendar_today</mat-icon>
+                                    Días promedio
+                                </label>
+                                <input type="number" [(ngModel)]="laboratory.average_delivery_days" min="1"
+                                       [disabled]="mode === 'view'"
+                                       class="w-full h-8 text-xs font-bold border-2 border-black rounded-lg px-2 bg-white dark:bg-[#0F172AFF]">
+                            </div>
+
+                            <!-- Nombre -->
+                            <div class="col-span-2">
+                                <label class="text-[9px] font-black uppercase text-gray-500 mb-0.5 block">
+                                    <mat-icon class="!text-[10px] align-middle text-gray-400">business</mat-icon>
+                                    Nombre *
+                                </label>
+                                <input type="text" [(ngModel)]="laboratory.name" placeholder="Nombre de la empresa"
+                                       [disabled]="mode === 'view'"
+                                       class="w-full h-8 text-xs font-bold border-2 border-black rounded-lg px-2 bg-white dark:bg-[#0F172AFF]">
+                            </div>
+
+                            <!-- RUT/NIT -->
+                            <div>
+                                <label class="text-[9px] font-black uppercase text-gray-500 mb-0.5 block">
+                                    <mat-icon class="!text-[10px] align-middle text-gray-400">assignment_ind</mat-icon>
+                                    RUT / NIT
+                                </label>
+                                <input type="text" [(ngModel)]="laboratory.rut_nit" placeholder="12345678"
+                                       [disabled]="mode === 'view'"
+                                       class="w-full h-8 text-xs font-bold border-2 border-gray-300 rounded-lg px-2">
+                            </div>
+
+                            <!-- Tipo Servicio -->
+                            <div>
+                                <label class="text-[9px] font-black uppercase text-gray-500 mb-0.5 block">
+                                    <mat-icon class="!text-[10px] align-middle text-gray-400">settings</mat-icon>
+                                    Tipo Servicio *
+                                </label>
+                                <select [(ngModel)]="laboratory.tipo_servicio"
+                                        [disabled]="mode === 'view'"
+                                        class="w-full h-8 text-xs font-bold border-2 border-black rounded-lg px-2 bg-white dark:bg-[#0F172AFF]">
+                                    <option value="">— Seleccionar —</option>
+                                    <option *ngFor="let t of tiposServicio" [value]="t.value">{{ t.label }}</option>
+                                </select>
+                            </div>
+
+                            <!-- Dirección -->
+                            <div class="col-span-2">
+                                <label class="text-[9px] font-black uppercase text-gray-500 mb-0.5 block">
+                                    <mat-icon class="!text-[10px] align-middle text-gray-400">location_on</mat-icon>
+                                    Dirección
+                                </label>
+                                <input type="text" [(ngModel)]="laboratory.address" placeholder="Dirección física"
+                                       [disabled]="mode === 'view'"
+                                       class="w-full h-8 text-xs font-bold border-2 border-gray-300 rounded-lg px-2">
+                            </div>
+
+                            <!-- Ciudad -->
+                            <div>
+                                <label class="text-[9px] font-black uppercase text-gray-500 mb-0.5 block">Ciudad</label>
+                                <input type="text" [(ngModel)]="laboratory.city" placeholder="Ciudad"
+                                       [disabled]="mode === 'view'"
+                                       class="w-full h-8 text-xs border-2 border-gray-300 rounded-lg px-2">
+                            </div>
+
+                            <!-- País -->
+                            <div>
+                                <label class="text-[9px] font-black uppercase text-gray-500 mb-0.5 block">País</label>
+                                <input type="text" [(ngModel)]="laboratory.country" placeholder="País"
+                                       [disabled]="mode === 'view'"
+                                       class="w-full h-8 text-xs border-2 border-gray-300 rounded-lg px-2">
+                            </div>
+
+                            <!-- Persona de Contacto -->
+                            <div>
+                                <label class="text-[9px] font-black uppercase text-gray-500 mb-0.5 block">
+                                    <mat-icon class="!text-[10px] align-middle text-gray-400">person</mat-icon>
+                                    Contacto
+                                </label>
+                                <input type="text" [(ngModel)]="laboratory.contact_person" placeholder="Nombre del contacto"
+                                       [disabled]="mode === 'view'"
+                                       class="w-full h-8 text-xs border-2 border-gray-300 rounded-lg px-2">
+                            </div>
+
+                            <!-- Teléfono -->
+                            <div>
+                                <label class="text-[9px] font-black uppercase text-gray-500 mb-0.5 block">
+                                    <mat-icon class="!text-[10px] align-middle text-gray-400">phone</mat-icon>
+                                    Teléfono
+                                </label>
+                                <input type="text" [(ngModel)]="laboratory.phone" placeholder="+591 ..."
+                                       [disabled]="mode === 'view'"
+                                       class="w-full h-8 text-xs border-2 border-gray-300 rounded-lg px-2">
+                            </div>
+
+                            <!-- Email -->
+                            <div class="col-span-2">
+                                <label class="text-[9px] font-black uppercase text-gray-500 mb-0.5 block">
+                                    <mat-icon class="!text-[10px] align-middle text-gray-400">email</mat-icon>
+                                    Email
+                                </label>
+                                <input type="email" [(ngModel)]="laboratory.email" placeholder="correo@empresa.com"
+                                       [disabled]="mode === 'view'"
+                                       class="w-full h-8 text-xs border-2 border-gray-300 rounded-lg px-2">
+                            </div>
+
+                            <!-- Sitio Web -->
+                            <div class="col-span-2">
+                                <label class="text-[9px] font-black uppercase text-gray-500 mb-0.5 block">
+                                    <mat-icon class="!text-[10px] align-middle text-gray-400">language</mat-icon>
+                                    Sitio Web
+                                </label>
+                                <input type="text" [(ngModel)]="laboratory.website" placeholder="www.empresa.com"
+                                       [disabled]="mode === 'view'"
+                                       class="w-full h-8 text-xs border-2 border-gray-300 rounded-lg px-2">
+                            </div>
+
+                            <!-- Observaciones -->
+                            <div class="col-span-2">
+                                <label class="text-[9px] font-black uppercase text-gray-500 mb-0.5 block">
+                                    <mat-icon class="!text-[10px] align-middle text-gray-400">description</mat-icon>
+                                    Observaciones
+                                </label>
+                                <textarea [(ngModel)]="laboratory.observaciones" rows="2" placeholder="Notas adicionales..."
+                                          [disabled]="mode === 'view'"
+                                          class="w-full text-xs border-2 border-gray-300 rounded-lg px-2 py-1 resize-none"></textarea>
+                            </div>
+
+                            <!-- Estado Activo/Inactivo -->
+                            <div class="col-span-2 flex items-center justify-between border-2 rounded-lg px-3 py-2"
+                                 [ngClass]="laboratory.active ? 'border-green-500 bg-green-50 dark:bg-green-900/20' : 'border-red-400 bg-red-50 dark:bg-red-900/20'">
+                                <div class="flex items-center gap-2">
+                                    <mat-icon class="!text-sm" [ngClass]="laboratory.active ? 'text-green-600' : 'text-red-500'">
+                                        {{ laboratory.active ? 'check_circle' : 'cancel' }}
+                                    </mat-icon>
+                                    <span class="text-[10px] font-black uppercase" [ngClass]="laboratory.active ? 'text-green-700' : 'text-red-600'">
+                                        Estado: {{ laboratory.active ? 'ACTIVO' : 'INACTIVO' }}
+                                    </span>
+                                </div>
+                                @if (mode !== 'view') {
+                                    <button type="button" (click)="laboratory.active = !laboratory.active"
+                                            class="w-10 h-5 rounded-full border-2 border-black transition-all relative"
+                                            [ngClass]="laboratory.active ? 'bg-green-500' : 'bg-red-400'">
+                                        <span class="absolute top-0.5 w-3 h-3 bg-white border border-black rounded-full transition-all"
+                                              [ngClass]="laboratory.active ? 'right-0.5' : 'left-0.5'"></span>
+                                    </button>
+                                }
+                            </div>
+
+                            <!-- Certificado -->
+                            <div class="col-span-2 flex items-center justify-between border-2 rounded-lg px-3 py-2"
+                                 [ngClass]="laboratory.is_certified ? 'border-green-500 bg-green-50 dark:bg-green-900/20' : 'border-gray-300'">
+                                <div class="flex items-center gap-2">
+                                    <mat-icon class="!text-sm" [ngClass]="laboratory.is_certified ? 'text-green-600' : 'text-gray-400'">verified</mat-icon>
+                                    <span class="text-[10px] font-black uppercase" [ngClass]="laboratory.is_certified ? 'text-green-700' : 'text-gray-500'">
+                                        {{ laboratory.is_certified ? 'Certificado' : 'Sin certificar' }}
+                                    </span>
+                                </div>
+                                @if (mode !== 'view') {
+                                    <button type="button" (click)="laboratory.is_certified = !laboratory.is_certified"
+                                            class="w-10 h-5 rounded-full border-2 border-black transition-all relative"
+                                            [ngClass]="laboratory.is_certified ? 'bg-green-500' : 'bg-gray-300'">
+                                        <span class="absolute top-0.5 w-3 h-3 bg-white border border-black rounded-full transition-all"
+                                              [ngClass]="laboratory.is_certified ? 'right-0.5' : 'left-0.5'"></span>
+                                    </button>
+                                }
+                            </div>
+
+                            <!-- N° Certificación (visible solo si is_certified es true) -->
+                            <div *ngIf="laboratory.is_certified" class="col-span-2">
+                                <label class="text-[9px] font-black uppercase text-green-700 mb-0.5 block">
+                                    <mat-icon class="!text-[10px] align-middle">verified</mat-icon>
+                                    N° Certificación
+                                </label>
+                                <input type="text" [(ngModel)]="laboratory.certification_number" placeholder="ISO/IEC 17025:2017"
+                                       [disabled]="mode === 'view'"
+                                       class="w-full h-8 text-xs font-bold border-2 border-green-500 rounded-lg px-2">
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Columna Derecha - Confirmación -->
+            <div class="lg:col-span-5">
+                <div class="border-2 border-black bg-white dark:bg-slate-800 rounded-xl shadow-[4px_4px_0px_0px_rgba(0,0,0,0.15)] overflow-hidden sticky top-0">
+                    <div class="flex items-center gap-2 px-3 py-2 bg-[#0F172AFF] border-b-2 border-black">
+                        <mat-icon class="text-amber-400 !text-sm">fact_check</mat-icon>
+                        <span class="font-black text-xs uppercase text-white">RESUMEN</span>
+                        <mat-icon *ngIf="canSubmit() && (mode === 'new' || mode === 'edit')" class="ml-auto text-amber-400 !text-sm">verified</mat-icon>
+                    </div>
+
+                    <div class="p-4 flex flex-col gap-3">
+                        <div class="space-y-2">
+                            <div class="flex items-center gap-2">
+                                <mat-icon class="!text-sm text-green-500">check_circle</mat-icon>
+                                <span class="text-[10px] font-bold">Código:</span>
+                                <span class="text-[9px] font-mono text-gray-500 ml-auto">{{ laboratory?.code || '—' }}</span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <mat-icon class="!text-sm text-green-500">business</mat-icon>
+                                <span class="text-[10px] font-bold">Nombre:</span>
+                                <span class="text-[9px] text-gray-500 ml-auto truncate">{{ laboratory?.name || '—' }}</span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <mat-icon class="!text-sm text-green-500">settings</mat-icon>
+                                <span class="text-[10px] font-bold">Tipo Servicio:</span>
+                                <span class="text-[9px] text-gray-500 ml-auto">{{ laboratory?.tipo_servicio || '—' }}</span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <mat-icon class="!text-sm" [ngClass]="laboratory?.active ? 'text-green-500' : 'text-red-500'">
+                                    {{ laboratory?.active ? 'check_circle' : 'cancel' }}
+                                </mat-icon>
+                                <span class="text-[10px] font-bold">Estado:</span>
+                                <span class="text-[9px] ml-auto" [ngClass]="laboratory?.active ? 'text-green-600' : 'text-red-600'">
+                                    {{ laboratory?.active ? 'ACTIVO' : 'INACTIVO' }}
+                                </span>
+                            </div>
+                        </div>
+
+                        <div class="border-t border-gray-200 my-1"></div>
+
+                        <div class="bg-gray-50 dark:bg-[#0F172AFF] rounded-lg p-2 space-y-1 border border-gray-200 dark:border-slate-700">
+                            <div class="flex justify-between text-[9px]">
+                                <span class="text-gray-500">Contacto:</span>
+                                <span class="font-bold">{{ laboratory?.contact_person || '—' }}</span>
+                            </div>
+                            <div class="flex justify-between text-[9px]">
+                                <span class="text-gray-500">Teléfono:</span>
+                                <span class="font-bold">{{ laboratory?.phone || '—' }}</span>
+                            </div>
+                            <div class="flex justify-between text-[9px]">
+                                <span class="text-gray-500">Email:</span>
+                                <span class="font-bold truncate">{{ laboratory?.email || '—' }}</span>
+                            </div>
+                            <div class="flex justify-between text-[9px]">
+                                <span class="text-gray-500">Ubicación:</span>
+                                <span class="font-bold">{{ laboratory?.city }}{{ laboratory?.city && laboratory?.country ? ', ' : '' }}{{ laboratory?.country || '—' }}</span>
+                            </div>
+                        </div>
+
+                        <div *ngIf="!canSubmit() && (mode === 'new' || mode === 'edit')" class="flex items-center gap-1 p-2 bg-red-50 border border-red-300 rounded">
+                            <mat-icon class="text-red-500 !text-xs">warning</mat-icon>
+                            <span class="text-[8px] text-red-700 font-bold">
+                                {{ !laboratory?.code ? 'Complete el código' :
+                                !laboratory?.name ? 'Complete el nombre' :
+                                    !laboratory?.tipo_servicio ? 'Seleccione tipo de servicio' : '' }}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<style>
+    .custom-scrollbar::-webkit-scrollbar {
+        width: 6px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+        background: #e2e8f0;
+        border-radius: 3px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+        background: #0F172AFF;
+        border-radius: 3px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+        background: #1e293b;
+    }
+</style>

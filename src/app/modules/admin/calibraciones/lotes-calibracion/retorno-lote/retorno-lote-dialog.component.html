@@ -1,0 +1,337 @@
+<div class="flex flex-col h-full bg-white dark:bg-[#0F172AFF] font-sans">
+
+    <!-- Header -->
+    <div class="flex items-center justify-between p-5 border-b-3 border-black">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 bg-blue-600 border-2 border-black rounded-lg shadow-[3px_3px_0px_0px_#000] flex items-center justify-center">
+                <mat-icon class="text-white !text-xl">assignment_return</mat-icon>
+            </div>
+            <div>
+                <h2 class="text-xl font-black text-black dark:text-white uppercase tracking-tight">
+                    Retorno Lote {{ batch.batch_number }}
+                </h2>
+                <div class="flex items-center gap-2 mt-0.5">
+                    <span class="px-2 py-0.5 text-[10px] font-black bg-amber-200 text-amber-800 rounded-full border border-black uppercase">
+                        {{ batch.status === 'sent' ? 'Enviado' : batch.status === 'in_process' ? 'En Proceso' : batch.status }}
+                    </span>
+                    <span class="text-xs font-bold text-gray-500">{{ batch.laboratory_name }}</span>
+                </div>
+            </div>
+        </div>
+        <div class="flex items-center gap-2">
+            @if (returnItems.length > 0) {
+                <button (click)="exportToPdf()"
+                        matTooltip="Guardar como PDF"
+                        class="w-9 h-9 bg-red-500 border-2 border-black rounded-lg shadow-[2px_2px_0px_0px_#000] hover:bg-red-600 flex items-center justify-center transition-all active:shadow-none active:translate-x-[1px] active:translate-y-[1px]">
+                    <mat-icon class="text-white !text-lg">picture_as_pdf</mat-icon>
+                </button>
+                <button (click)="printNotaRetorno()"
+                        matTooltip="Imprimir Nota de Retorno"
+                        class="w-9 h-9 bg-blue-600 border-2 border-black rounded-lg shadow-[2px_2px_0px_0px_#000] hover:bg-blue-700 flex items-center justify-center transition-all active:shadow-none active:translate-x-[1px] active:translate-y-[1px]">
+                    <mat-icon class="text-white !text-lg">print</mat-icon>
+                </button>
+            }
+            <button mat-dialog-close
+                    class="w-9 h-9 bg-white border-2 border-black rounded-lg shadow-[2px_2px_0px_0px_#000] hover:bg-gray-100 flex items-center justify-center transition-all active:shadow-none active:translate-x-[1px] active:translate-y-[1px]">
+                <mat-icon class="!text-lg">close</mat-icon>
+            </button>
+        </div>
+    </div>
+
+    <!-- Global Return Fields -->
+    <div class="px-5 pt-4">
+        <div class="bg-blue-50 dark:bg-gray-800 border-3 border-black rounded-xl p-4 shadow-[3px_3px_0px_0px_#000]">
+            <p class="text-xs font-black uppercase text-blue-800 dark:text-blue-300 mb-3">
+                <mat-icon class="!text-sm align-middle mr-1">tune</mat-icon>
+                Datos generales del retorno
+            </p>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                    <mat-label>Resultado Global</mat-label>
+                    <mat-select [(value)]="globalResult" (selectionChange)="applyGlobalResult()">
+                        <mat-option value="approved">Aprobado</mat-option>
+                        <mat-option value="conditional">Condicional</mat-option>
+                        <mat-option value="rejected">Rechazado</mat-option>
+                    </mat-select>
+                </mat-form-field>
+                <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                    <mat-label>Nro. Certificado Global</mat-label>
+                    <input matInput [(ngModel)]="globalCertificate" (blur)="applyGlobalCertificate()">
+                </mat-form-field>
+                <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                    <mat-label>Fecha Retorno</mat-label>
+                    <input matInput [matDatepicker]="returnDatePicker" [(ngModel)]="returnDate">
+                    <mat-datepicker-toggle matSuffix [for]="returnDatePicker"></mat-datepicker-toggle>
+                    <mat-datepicker #returnDatePicker></mat-datepicker>
+                </mat-form-field>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-2">
+                <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                    <mat-label>Costo Total</mat-label>
+                    <input matInput type="number" [(ngModel)]="totalCost" placeholder="0.00">
+                    <span matPrefix class="text-sm font-bold text-gray-500 ml-2">BOB&nbsp;</span>
+                </mat-form-field>
+                <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                    <mat-label>Moneda</mat-label>
+                    <mat-select [(value)]="currency">
+                        <mat-option value="BOB">BOB - Bolivianos</mat-option>
+                        <mat-option value="USD">USD - Dolares</mat-option>
+                    </mat-select>
+                </mat-form-field>
+                <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                    <mat-label>Observaciones</mat-label>
+                    <input matInput [(ngModel)]="observations" placeholder="Observaciones generales...">
+                </mat-form-field>
+            </div>
+        </div>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="px-5 pt-4">
+        <div class="grid grid-cols-4 gap-3">
+            <div class="bg-blue-50 border-2 border-black rounded-lg p-2 text-center shadow-[2px_2px_0px_0px_#000]">
+                <p class="text-xl font-black text-blue-800">{{ returnItems.length }}</p>
+                <p class="text-[10px] font-bold text-blue-600 uppercase">Total</p>
+            </div>
+            <div class="bg-green-50 border-2 border-black rounded-lg p-2 text-center shadow-[2px_2px_0px_0px_#000]">
+                <p class="text-xl font-black text-green-800">{{ approvedCount() }}</p>
+                <p class="text-[10px] font-bold text-green-600 uppercase">Aprobados</p>
+            </div>
+            <div class="bg-amber-50 border-2 border-black rounded-lg p-2 text-center shadow-[2px_2px_0px_0px_#000]">
+                <p class="text-xl font-black text-amber-800">{{ conditionalCount() }}</p>
+                <p class="text-[10px] font-bold text-amber-600 uppercase">Condicional</p>
+            </div>
+            <div class="bg-purple-50 border-2 border-black rounded-lg p-2 text-center shadow-[2px_2px_0px_0px_#000]">
+                <p class="text-xl font-black text-purple-800">{{ jackCount() }}</p>
+                <p class="text-[10px] font-bold text-purple-600 uppercase">Gatas</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Jack Recalculation Notice -->
+    @if (jackCount() > 0) {
+        <div class="px-5 pt-3">
+            <div class="bg-purple-100 dark:bg-purple-900/30 border-3 border-purple-600 rounded-xl p-3 shadow-[3px_3px_0px_0px_#7e22ce]">
+                <div class="flex items-center gap-2">
+                    <mat-icon class="text-purple-700 !text-xl">precision_manufacturing</mat-icon>
+                    <div>
+                        <p class="text-sm font-black text-purple-800 uppercase">{{ jackCount() }} Gata(s) en este Lote</p>
+                        <p class="text-xs text-purple-700">
+                            Al procesar el retorno, se recalcularan automaticamente las <strong>3 fechas de vencimiento</strong>:
+                            Calibracion, Servicio Semestral (+6 meses) y Servicio Anual (+12 meses).
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+
+    <!-- Items List (Card-based) -->
+    <div class="flex-1 overflow-y-auto px-5 py-4 custom-scrollbar">
+        @if (isLoading()) {
+            <div class="flex justify-center py-8">
+                <mat-spinner [diameter]="40"></mat-spinner>
+            </div>
+        }
+
+        @if (!isLoading() && returnItems.length > 0) {
+            <p class="text-xs font-black uppercase text-gray-600 mb-2">
+                Resultado individual por herramienta ({{ returnItems.length }} items)
+            </p>
+            <div class="flex flex-col gap-2">
+                @for (item of returnItems; track item.id_batch_item; let i = $index) {
+                    <div class="border-3 rounded-xl shadow-[3px_3px_0px_0px_#000] overflow-hidden transition-all"
+                         [ngClass]="{
+                             'border-purple-500 bg-purple-50/50 dark:bg-purple-900/10': item.is_jack || item.tool_is_jack,
+                             'border-black bg-white dark:bg-gray-900': !(item.is_jack || item.tool_is_jack),
+                             'ring-2 ring-red-500': item.return_result === 'rejected',
+                             'ring-2 ring-amber-500': item.return_result === 'conditional'
+                         }">
+                        <!-- Item Header Row -->
+                        <div class="flex items-center gap-3 p-3 cursor-pointer"
+                             (click)="toggleExpand(item)">
+                            <div class="w-8 h-8 flex items-center justify-center rounded-lg border-2 border-black text-sm font-black"
+                                 [ngClass]="{
+                                     'bg-green-200 text-green-800': item.return_result === 'approved',
+                                     'bg-amber-200 text-amber-800': item.return_result === 'conditional',
+                                     'bg-red-200 text-red-800': item.return_result === 'rejected'
+                                 }">
+                                {{ i + 1 }}
+                            </div>
+
+                            <div class="flex-1 min-w-0">
+                                <div class="flex items-center gap-2">
+                                    <span class="font-black text-sm text-black dark:text-white">{{ item.tool_code }}</span>
+                                    @if (item.is_jack || item.tool_is_jack) {
+                                        <span class="px-1.5 py-0.5 text-[9px] font-black bg-purple-300 text-purple-900 rounded border-2 border-purple-600 shadow-[1px_1px_0px_0px_#7e22ce]">
+                                            GATA
+                                        </span>
+                                    }
+                                </div>
+                                <p class="text-xs text-gray-500 dark:text-gray-400 truncate">{{ item.tool_name }}</p>
+                            </div>
+
+                            <div class="flex items-center gap-2">
+                                <mat-form-field appearance="outline" class="!w-36" subscriptSizing="dynamic"
+                                                (click)="$event.stopPropagation()">
+                                    <mat-select [(value)]="returnItems[i].return_result">
+                                        <mat-option value="approved">
+                                            <span class="text-green-700 font-bold">Aprobado</span>
+                                        </mat-option>
+                                        <mat-option value="conditional">
+                                            <span class="text-amber-700 font-bold">Condicional</span>
+                                        </mat-option>
+                                        <mat-option value="rejected">
+                                            <span class="text-red-700 font-bold">Rechazado</span>
+                                        </mat-option>
+                                    </mat-select>
+                                </mat-form-field>
+                            </div>
+
+                            <mat-icon class="!text-lg text-gray-400 transition-transform"
+                                      [class.rotate-180]="expandedItems[item.id_batch_item]">
+                                expand_more
+                            </mat-icon>
+                        </div>
+
+                        <!-- Expanded Details -->
+                        @if (expandedItems[item.id_batch_item]) {
+                            <div class="border-t-2 border-black p-3 bg-gray-50 dark:bg-gray-800/50 animate-fadeIn">
+                                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-3">
+                                    <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                                        <mat-label>Nro. Certificado</mat-label>
+                                        <input matInput [(ngModel)]="returnItems[i].return_certificate" placeholder="Cert. individual">
+                                    </mat-form-field>
+                                    <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                                        <mat-label>Prox. Calibracion</mat-label>
+                                        <input matInput type="date" [(ngModel)]="returnItems[i].return_next_date">
+                                    </mat-form-field>
+                                    <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                                        <mat-label>Costo Individual</mat-label>
+                                        <input matInput type="number" [(ngModel)]="returnItems[i].return_cost" placeholder="0.00">
+                                    </mat-form-field>
+                                </div>
+
+                                <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+                                    <div>
+                                        <p class="font-black text-gray-500 uppercase text-[10px]">Part Number</p>
+                                        <p class="font-bold text-black dark:text-white">{{ item.tool_part_number || '-' }}</p>
+                                    </div>
+                                    <div>
+                                        <p class="font-black text-gray-500 uppercase text-[10px]">Serial</p>
+                                        <p class="font-bold text-black dark:text-white">{{ item.tool_serial || '-' }}</p>
+                                    </div>
+                                    <div>
+                                        <p class="font-black text-gray-500 uppercase text-[10px]">Categoria</p>
+                                        <p class="font-bold text-black dark:text-white">{{ item.category_name || '-' }}</p>
+                                    </div>
+                                    <div>
+                                        <p class="font-black text-gray-500 uppercase text-[10px]">Estado Previo</p>
+                                        <p class="font-bold text-black dark:text-white">{{ item.tool_status_snapshot || '-' }}</p>
+                                    </div>
+                                </div>
+
+                                <!-- JACK SERVICE PANEL -->
+                                @if (item.is_jack || item.tool_is_jack) {
+                                    <div class="mt-3 bg-purple-100 dark:bg-purple-900/30 border-2 border-purple-500 rounded-lg p-3 shadow-[2px_2px_0px_0px_#7e22ce]">
+                                        <div class="flex items-center gap-2 mb-2">
+                                            <mat-icon class="text-purple-700 !text-lg">precision_manufacturing</mat-icon>
+                                            <p class="text-xs font-black text-purple-800 dark:text-purple-300 uppercase">
+                                                Servicios Tecnicos de Gata - Recalculo Automatico
+                                            </p>
+                                        </div>
+                                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                            <div class="bg-white dark:bg-gray-800 rounded-lg p-2 border border-purple-300">
+                                                <p class="text-[10px] font-black text-blue-600 uppercase mb-1">Calibracion</p>
+                                                <p class="text-xs font-bold text-black dark:text-white">
+                                                    Actual: {{ item.next_calibration_date || item.next_calibration_snapshot || 'Pendiente' }}
+                                                </p>
+                                                <p class="text-[10px] text-green-600 font-bold mt-1">
+                                                    Se recalculara al procesar retorno
+                                                </p>
+                                            </div>
+                                            <div class="bg-white dark:bg-gray-800 rounded-lg p-2 border border-purple-300">
+                                                <p class="text-[10px] font-black text-amber-600 uppercase mb-1">Servicio Semestral</p>
+                                                <p class="text-xs font-bold text-black dark:text-white">
+                                                    Actual: {{ item.next_semiannual_service || 'Sin fecha' }}
+                                                </p>
+                                                <p class="text-[10px] text-green-600 font-bold mt-1">
+                                                    Nuevo: +6 meses desde hoy
+                                                </p>
+                                            </div>
+                                            <div class="bg-white dark:bg-gray-800 rounded-lg p-2 border border-purple-300">
+                                                <p class="text-[10px] font-black text-green-600 uppercase mb-1">Servicio Anual</p>
+                                                <p class="text-xs font-bold text-black dark:text-white">
+                                                    Actual: {{ item.next_annual_service || 'Sin fecha' }}
+                                                </p>
+                                                <p class="text-[10px] text-green-600 font-bold mt-1">
+                                                    Nuevo: +12 meses (si >300 dias)
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <p class="text-[10px] text-purple-600 dark:text-purple-400 mt-2 font-bold">
+                                            Las 3 fechas se recalculan automaticamente en el backend (HE_CBT_RET) al confirmar el retorno.
+                                        </p>
+                                    </div>
+                                }
+
+                                @if (item.notes) {
+                                    <div class="mt-2 text-xs">
+                                        <p class="font-black text-gray-500 uppercase text-[10px]">Notas</p>
+                                        <p class="text-gray-700 dark:text-gray-300">{{ item.notes }}</p>
+                                    </div>
+                                }
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+        }
+
+        @if (!isLoading() && returnItems.length === 0) {
+            <div class="flex flex-col items-center justify-center py-12 border-3 border-dashed border-gray-300 rounded-xl">
+                <mat-icon class="!text-6xl text-gray-300 mb-3">inventory_2</mat-icon>
+                <p class="text-lg font-bold text-gray-400">No hay items en el lote</p>
+                <p class="text-sm text-gray-400 mt-1">Este lote no tiene herramientas para procesar</p>
+            </div>
+        }
+    </div>
+
+    <!-- Footer -->
+    <div class="flex items-center justify-between gap-3 p-5 border-t-3 border-black">
+        <div class="text-xs text-gray-500">
+            <span class="font-bold">Lab:</span> {{ batch.laboratory_name }}
+            @if (batch.send_date) {
+                <span class="ml-3"><span class="font-bold">Envio:</span> {{ batch.send_date }}</span>
+            }
+        </div>
+        <div class="flex gap-2">
+            @if (returnItems.length > 0) {
+                <button (click)="exportToPdf()"
+                        class="px-4 py-2 bg-red-500 text-white font-bold text-sm border-2 border-black rounded-full shadow-[3px_3px_0px_0px_#000] hover:translate-y-[1px] hover:shadow-[2px_2px_0px_0px_#000] transition-all uppercase flex items-center gap-2">
+                    <mat-icon class="text-white !h-5 !text-lg">picture_as_pdf</mat-icon>
+                    PDF
+                </button>
+                <button (click)="printNotaRetorno()"
+                        class="px-4 py-2 bg-indigo-600 text-white font-bold text-sm border-2 border-black rounded-full shadow-[3px_3px_0px_0px_#000] hover:translate-y-[1px] hover:shadow-[2px_2px_0px_0px_#000] transition-all uppercase flex items-center gap-2">
+                    <mat-icon class="text-white !h-5 !text-lg">print</mat-icon>
+                    Imprimir
+                </button>
+            }
+            <button mat-dialog-close
+                    class="px-4 py-2 bg-gray-200 text-black font-bold text-sm border-2 border-black rounded-full shadow-[3px_3px_0px_0px_#000] hover:translate-y-[1px] hover:shadow-[2px_2px_0px_0px_#000] transition-all uppercase">
+                Cancelar
+            </button>
+            <button (click)="processReturn()"
+                    [disabled]="isProcessing() || returnItems.length === 0"
+                    class="px-5 py-2 bg-blue-600 text-white font-bold text-sm border-2 border-black rounded-full shadow-[3px_3px_0px_0px_#000] hover:translate-y-[1px] hover:shadow-[2px_2px_0px_0px_#000] transition-all uppercase flex items-center gap-2 disabled:opacity-50">
+                @if (isProcessing()) {
+                    <mat-spinner [diameter]="18"></mat-spinner>
+                } @else {
+                    <mat-icon class="text-white !h-5 !text-lg">check_circle</mat-icon>
+                }
+                Procesar Retorno
+            </button>
+        </div>
+    </div>
+</div>

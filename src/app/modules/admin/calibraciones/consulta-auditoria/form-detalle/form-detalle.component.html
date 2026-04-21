@@ -1,0 +1,181 @@
+<div class="flex flex-col w-full h-full bg-[#f8f9fc] dark:bg-[#0F172AFF] transition-colors duration-300 font-sans overflow-hidden"
+     cdkDrag cdkDragRootElement=".cdk-overlay-pane" cdkDragBoundary=".cdk-overlay-container">
+
+    <!-- HEADER -->
+    <div class="bg-white dark:bg-slate-800 border-b-2 border-black px-4 py-2 flex items-center justify-between shrink-0"
+         cdkDragHandle>
+        <div class="flex items-center gap-3">
+            <button (click)="cerrar()"
+                    class="w-8 h-8 bg-slate-100 dark:bg-slate-700 border-2 border-black rounded hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors flex items-center justify-center shrink-0"
+                    (mousedown)="$event.stopPropagation()">
+                <mat-icon class="!text-base text-black dark:text-white">close</mat-icon>
+            </button>
+            <div>
+                <h1 class="text-sm font-black text-black dark:text-white uppercase tracking-tight leading-none">
+                    Detalle del Registro
+                </h1>
+                <p class="text-[9px] text-black dark:text-gray-400 font-bold uppercase mt-0.5">
+                    MGH-109 · {{ row.tipo_registro === 'calibracion' ? 'Calibración' : 'Mantenimiento' }}
+                </p>
+            </div>
+        </div>
+        <div class="flex items-center gap-2">
+            <button (click)="imprimirDetalle()"
+                    [disabled]="isPrinting()"
+                    class="px-3 py-1.5 bg-indigo-600 text-white font-black text-xs border-2 border-black rounded hover:bg-indigo-500 transition-colors uppercase flex items-center gap-1">
+                <mat-spinner *ngIf="isPrinting()" diameter="14" class="inline-block"></mat-spinner>
+                <mat-icon *ngIf="!isPrinting()" class="!text-sm !w-4 !h-4">print</mat-icon>
+                {{ isPrinting() ? 'Procesando...' : 'Imprimir' }}
+            </button>
+            <button (click)="cerrar()"
+                    class="px-3 py-1.5 bg-gray-200 dark:bg-slate-700 text-black dark:text-white font-black text-xs border-2 border-black rounded hover:bg-gray-300 dark:hover:bg-slate-600 transition-colors uppercase flex items-center gap-1">
+                <mat-icon class="!text-sm !w-4 !h-4">close</mat-icon>
+                Cerrar
+            </button>
+        </div>
+    </div>
+
+    <!-- BODY -->
+    <div class="flex-1 overflow-y-auto p-4 custom-scrollbar">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+
+            <!-- Columna Izquierda - Datos de la Herramienta -->
+            <div class="border-2 border-black bg-white dark:bg-slate-800 rounded-xl shadow-[4px_4px_0px_0px_rgba(0,0,0,0.15)] overflow-hidden">
+                <div class="flex items-center gap-2 px-3 py-2 bg-[#0F172AFF] border-b-2 border-black">
+                    <mat-icon class="text-amber-400 !text-sm">build</mat-icon>
+                    <span class="font-black text-xs uppercase text-white">Datos de la Herramienta</span>
+                </div>
+                <div class="p-4 space-y-3">
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="text-[9px] font-black uppercase text-gray-500 dark:text-gray-400 block">Código BOA</label>
+                            <p class="text-sm font-black font-mono text-black dark:text-white">{{ row.tool_code }}</p>
+                        </div>
+                        <div>
+                            <label class="text-[9px] font-black uppercase text-gray-500 dark:text-gray-400 block">N° Serie</label>
+                            <p class="text-sm font-black text-black dark:text-white">{{ row.tool_serial || '—' }}</p>
+                        </div>
+                        <div class="col-span-2">
+                            <label class="text-[9px] font-black uppercase text-gray-500 dark:text-gray-400 block">Nombre / Descripción</label>
+                            <p class="text-sm font-bold text-black dark:text-white">{{ row.tool_name }}</p>
+                        </div>
+                        <div class="col-span-2">
+                            <label class="text-[9px] font-black uppercase text-gray-500 dark:text-gray-400 block">Empresa / Laboratorio</label>
+                            <p class="text-sm font-bold text-amber-600 dark:text-amber-400">{{ row.provider }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Columna Derecha - Datos del Servicio -->
+            <div class="border-2 border-black bg-white dark:bg-slate-800 rounded-xl shadow-[4px_4px_0px_0px_rgba(0,0,0,0.15)] overflow-hidden">
+                <div class="flex items-center gap-2 px-3 py-2 bg-[#0F172AFF] border-b-2 border-black">
+                    <mat-icon class="text-amber-400 !text-sm">receipt</mat-icon>
+                    <span class="font-black text-xs uppercase text-white">Datos del Servicio</span>
+                </div>
+                <div class="p-4 space-y-3">
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="text-[9px] font-black uppercase text-gray-500 dark:text-gray-400 block">N° Registro</label>
+                            <p class="text-sm font-black font-mono text-black dark:text-white">{{ row.record_number }}</p>
+                        </div>
+                        <div>
+                            <label class="text-[9px] font-black uppercase text-gray-500 dark:text-gray-400 block">Tipo</label>
+                            <p class="text-sm font-black uppercase"
+                               [ngClass]="row.tipo_registro === 'calibracion' ? 'text-blue-600 dark:text-blue-400' : 'text-orange-600 dark:text-orange-400'">
+                                {{ getTipoLabel(row.tipo_registro) }}
+                            </p>
+                        </div>
+                        <div>
+                            <label class="text-[9px] font-black uppercase text-gray-500 dark:text-gray-400 block">Fecha Envío</label>
+                            <p class="text-sm font-black text-black dark:text-white">{{ formatDate(row.send_date) }}</p>
+                        </div>
+                        <div>
+                            <label class="text-[9px] font-black uppercase text-gray-500 dark:text-gray-400 block">Fecha Retorno</label>
+                            <p class="text-sm font-black text-black dark:text-white">{{ row.return_date ? formatDate(row.return_date) : '—' }}</p>
+                        </div>
+                        <div>
+                            <label class="text-[9px] font-black uppercase text-gray-500 dark:text-gray-400 block">Tipo de Servicio</label>
+                            <p class="text-sm font-black text-black dark:text-white">{{ row.type || '—' }}</p>
+                        </div>
+                        <div>
+                            <label class="text-[9px] font-black uppercase text-gray-500 dark:text-gray-400 block">Estado</label>
+                            <span class="inline-block px-2 py-0.5 border-[2px] rounded-lg text-[11px] font-black uppercase"
+                                  [ngClass]="getStatusClass(row.status)">
+                                {{ getStatusLabel(row.status) }}
+                            </span>
+                        </div>
+                        <div *ngIf="row.certificate_number">
+                            <label class="text-[9px] font-black uppercase text-gray-500 dark:text-gray-400 block">N° Certificado</label>
+                            <p class="text-sm font-black text-amber-600 dark:text-amber-400">{{ row.certificate_number }}</p>
+                        </div>
+                        <div *ngIf="row.next_calibration_date">
+                            <label class="text-[9px] font-black uppercase text-gray-500 dark:text-gray-400 block">Próxima Calibración</label>
+                            <p class="text-sm font-black text-purple-600 dark:text-purple-400">{{ formatDate(row.next_calibration_date) }}</p>
+                        </div>
+                        <div *ngIf="row.cost > 0">
+                            <label class="text-[9px] font-black uppercase text-gray-500 dark:text-gray-400 block">Costo</label>
+                            <p class="text-sm font-black text-black dark:text-white">${{ row.cost.toFixed(2) }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Observaciones - Ancho completo -->
+            <div *ngIf="row.notes" class="col-span-1 lg:col-span-2 border-2 border-black bg-white dark:bg-slate-800 rounded-xl shadow-[4px_4px_0px_0px_rgba(0,0,0,0.15)] overflow-hidden">
+                <div class="flex items-center gap-2 px-3 py-2 bg-[#0F172AFF] border-b-2 border-black">
+                    <mat-icon class="text-amber-400 !text-sm">description</mat-icon>
+                    <span class="font-black text-xs uppercase text-white">Observaciones</span>
+                </div>
+                <div class="p-4">
+                    <p class="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">{{ row.notes }}</p>
+                </div>
+            </div>
+
+            <!-- Resultado - Ancho completo -->
+            <div *ngIf="row.result" class="col-span-1 lg:col-span-2 border-2 border-black bg-white dark:bg-slate-800 rounded-xl shadow-[4px_4px_0px_0px_rgba(0,0,0,0.15)] overflow-hidden">
+                <div class="flex items-center gap-2 px-3 py-2 bg-[#0F172AFF] border-b-2 border-black">
+                    <mat-icon class="text-amber-400 !text-sm">fact_check</mat-icon>
+                    <span class="font-black text-xs uppercase text-white">Resultado</span>
+                </div>
+                <div class="p-4">
+                    <p class="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">{{ row.result }}</p>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- FOOTER -->
+    <div class="bg-white dark:bg-slate-800 border-t-2 border-black px-4 py-2 flex justify-end gap-2 shrink-0">
+        <button (click)="cerrar()"
+                class="px-4 py-1.5 bg-gray-200 dark:bg-slate-700 text-black dark:text-white font-black text-xs border-2 border-black rounded hover:bg-gray-300 dark:hover:bg-slate-600 transition-colors uppercase flex items-center gap-1">
+            <mat-icon class="!text-sm !w-4 !h-4">close</mat-icon>
+            Cerrar
+        </button>
+        <button (click)="imprimirDetalle()"
+                [disabled]="isPrinting()"
+                class="px-4 py-1.5 bg-indigo-600 text-white font-black text-xs border-2 border-black rounded hover:bg-indigo-500 transition-colors uppercase flex items-center gap-1">
+            <mat-spinner *ngIf="isPrinting()" diameter="14" class="inline-block"></mat-spinner>
+            <mat-icon *ngIf="!isPrinting()" class="!text-sm !w-4 !h-4">print</mat-icon>
+            {{ isPrinting() ? 'Procesando...' : 'Imprimir' }}
+        </button>
+    </div>
+</div>
+
+<style>
+    .custom-scrollbar::-webkit-scrollbar {
+        width: 6px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+        background: #e2e8f0;
+        border-radius: 3px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+        background: #0F172AFF;
+        border-radius: 3px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+        background: #1e293b;
+    }
+</style>

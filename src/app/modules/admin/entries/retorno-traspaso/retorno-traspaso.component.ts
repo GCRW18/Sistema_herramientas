@@ -15,7 +15,8 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { DragDropModule } from '@angular/cdk/drag-drop';
-import { Subject, takeUntil, finalize, debounceTime, forkJoin, map } from 'rxjs';
+import { Subject, takeUntil, finalize, debounceTime, forkJoin, map, distinctUntilChanged, switchMap, of } from 'rxjs';
+import { FormControl } from '@angular/forms';
 import { MovementService } from '../../../../core/services/movement.service';
 
 // ============================================================================
@@ -202,6 +203,8 @@ export class RetornoTraspasoComponent implements OnInit, OnDestroy {
     bases: Ubicacion[] = [];
     almacenes: Ubicacion[] = [];
     funcionarios: Funcionario[] = [];
+    funcionariosLoading = false;
+    showFuncionarioDropdown = false;
 
     // ========================================================================
     // CONFIGURATION
@@ -262,9 +265,10 @@ export class RetornoTraspasoComponent implements OnInit, OnDestroy {
 
     ngOnInit(): void {
         this.initForm();
+        this.precargarUsuarioSesion();
         this.loadUbicaciones();
-        this.loadFuncionarios();
         this.setupSearchFilter();
+        this.setupFuncionarioSearch();
     }
 
     ngOnDestroy(): void {
@@ -284,7 +288,7 @@ export class RetornoTraspasoComponent implements OnInit, OnDestroy {
             nroDocumento: ['', Validators.required],
             fechaRetorno: [today, Validators.required],
             transportista: [''],
-            responsableRecibe: [null, Validators.required],
+            responsableRecibe: ['', Validators.required],
             observaciones: ['']
         });
     }
@@ -356,6 +360,53 @@ export class RetornoTraspasoComponent implements OnInit, OnDestroy {
         });
     }
 
+    private precargarUsuarioSesion(): void {
+        try {
+            const auth = JSON.parse(localStorage.getItem('aut') || '{}');
+            const nombre = auth.nombre_usuario || '';
+            if (nombre) {
+                this.retornoForm.patchValue({ responsableRecibe: nombre });
+            }
+        } catch {}
+    }
+
+    private setupFuncionarioSearch(): void {
+        this.retornoForm.get('responsableRecibe')?.valueChanges.pipe(
+            debounceTime(500),
+            distinctUntilChanged(),
+            switchMap(term => {
+                const t = (term || '').trim();
+                if (t.length < 3) {
+                    this.funcionarios = [];
+                    this.showFuncionarioDropdown = false;
+                    this.funcionariosLoading = false;
+                    return of([]);
+                }
+                this.funcionariosLoading = true;
+                return this.movementService.getFuncionarios(t);
+            }),
+            takeUntil(this._unsubscribeAll)
+        ).subscribe({
+            next: (data) => {
+                this.funcionarios = data;
+                this.funcionariosLoading = false;
+                this.showFuncionarioDropdown = data.length > 0;
+            },
+            error: () => { this.funcionariosLoading = false; }
+        });
+    }
+
+    selectFuncionario(func: Funcionario): void {
+        this.retornoForm.patchValue({ responsableRecibe: func.nombre });
+        this.funcionarios = [];
+        this.showFuncionarioDropdown = false;
+    }
+
+    hideFuncionarioDropdown(): void {
+        // Pequeño delay para que mousedown en el item se registre antes de ocultar
+        setTimeout(() => { this.showFuncionarioDropdown = false; }, 150);
+    }
+
     private loadFuncionarios(): void {
         this.movementService.getFuncionarios().pipe(
             takeUntil(this._unsubscribeAll)
@@ -408,21 +459,34 @@ export class RetornoTraspasoComponent implements OnInit, OnDestroy {
         }
 
         this.isSearching = true;
+
+        // pxp filtra vía filtro_adicional (no por parámetros sueltos).
+        // Columna en BD: mos.type (exit), mos.exit_reason, mos.destination_warehouse_id.
+        // exit_reason confirmado: 'base_send' (envío a base) / 'transfer' (traspaso).
+        // status 'approved' = movimientos de salida activos aún sin retorno registrado.
         const exitReason = this.tipoOrigenActivo === 'BASE' ? 'base_send' : 'transfer';
+        const destId = Number(ubicacionOrigen.id);
+
+        const filtroAdicional =
+            `mos.type = 'exit'` +
+            ` AND mos.exit_reason = '${exitReason}'` +
+            ` AND mos.destination_warehouse_id = ${destId}` +
+            ` AND mos.status = 'approved'`;
 
         this.movementService.getMovements({
-            type: this.tipoOrigenActivo === 'BASE' ? 'exit' : 'transfer',
-            exit_reason: exitReason,
-            destination_warehouse_id: ubicacionOrigen.id,
-            status: 'completed'
+            filtro_adicional: filtroAdicional,
+            limit: 200
         }).pipe(
             takeUntil(this._unsubscribeAll),
             finalize(() => this.isSearching = false)
         ).subscribe({
             next: (data) => {
-                const filtered = (data || []).filter((m: any) =>
-                    m.type === 'transfer' || m.type === 'exit'
-                );
+                // Filtro defensivo en cliente como respaldo
+                const filtered = (data || []).filter((m: any) => {
+                    const isExit     = m.type === 'exit';
+                    const matchReason = m.exit_reason === exitReason;
+                    return isExit && matchReason;
+                });
 
                 if (filtered.length === 0) {
                     this.allData = [];
@@ -483,7 +547,9 @@ export class RetornoTraspasoComponent implements OnInit, OnDestroy {
             cantidadRetorna: Number(item?.quantity) || 1,
             fechaEnvio: fechaEnvio,
             nroNotaSalida: movement.movement_number || movement.movementNumber || '',
-            ubicacionOrigen: movement.destinationWarehouse?.name || '',
+            ubicacionOrigen: this.bases.find(b => String(b.id) === String(movement.destination_warehouse_id))?.nombre
+                          || this.almacenes.find(a => String(a.id) === String(movement.destination_warehouse_id))?.nombre
+                          || movement.destinationWarehouse?.name || '',
             tipoEnvio: movement.tipoEnvio || movement.sendType || (this.tipoOrigenActivo === 'BASE' ? 'EVENTUAL' : 'TRASPASO'),
             ordenTrabajo: movement.workOrder || movement.ordenTrabajo || '',
             matriculaAeronave: movement.aircraftRegistration || movement.matriculaAeronave || '',
@@ -734,9 +800,12 @@ export class RetornoTraspasoComponent implements OnInit, OnDestroy {
             type: this.tipoOrigenActivo === 'BASE' ? 'RETORNO_BASE' : 'RETORNO_TRASPASO',
             date: formValue.fechaRetorno,
             time: new Date().toTimeString().slice(0, 8),
-            requested_by_name: formValue.responsableRecibe?.nombre || '',
-            responsible_person: formValue.responsableRecibe?.nombre || '',
+            requested_by_name: formValue.responsableRecibe || '',
+            responsible_person: formValue.responsableRecibe || '',
             document_number: formValue.nroDocumento,
+            // destination_warehouse_id: base/almacén de donde retornan las herramientas
+            // Necesario para que el backend cierre el movimiento de salida original
+            destination_warehouse_id: formValue.ubicacionOrigen?.id,
             source_warehouse_id: this.tipoOrigenActivo === 'TRASPASO'
                 ? formValue.ubicacionOrigen?.id
                 : undefined,
@@ -755,6 +824,7 @@ export class RetornoTraspasoComponent implements OnInit, OnDestroy {
                 const selectedIds = selectedItems.map(i => i.id);
                 this.allData = this.allData.filter(item => !selectedIds.includes(item.id));
                 this.dataSource = this.dataSource.filter(item => !selectedIds.includes(item.id));
+                this.generarPdfRetorno(nro, selectedItems, formValue);
                 if (this.dialogRef) this.dialogRef.close({ success: true, data: result });
             },
             error: (err) => {
@@ -765,6 +835,134 @@ export class RetornoTraspasoComponent implements OnInit, OnDestroy {
 
     clearSearch(): void {
         this.retornoForm.patchValue({ searchText: '' });
+    }
+
+    private generarPdfRetorno(nroMovimiento: string, items: TraspasoItem[], form: any): void {
+        const fecha         = new Date(form.fechaRetorno).toLocaleDateString('es-BO', { day: '2-digit', month: '2-digit', year: 'numeric' });
+        const tipo          = this.tipoOrigenActivo === 'BASE' ? 'RETORNO DE BASE' : 'RETORNO DE TRASPASO';
+        const origen        = form.ubicacionOrigen?.nombre || '';
+        const responsable   = form.responsableRecibe || '';
+        const nroCmr        = form.nroDocumento || '';
+        const transportista = form.transportista || '---';
+        const observaciones = form.observaciones || '---';
+        const resumen       = this.getResumenPorCondicion();
+
+        const condLabel: Record<string, string> = {
+            BUENO: 'Bueno', DAÑADO: 'Dañado',
+            REQUIERE_CALIBRACION: 'Req. Calibración', FALTANTE: 'Faltante', '': 'Sin definir'
+        };
+        const condColor: Record<string, string> = {
+            BUENO: '#16a34a', DAÑADO: '#dc2626',
+            REQUIERE_CALIBRACION: '#d97706', FALTANTE: '#991b1b', '': '#555'
+        };
+
+        const filas = items.map((it, i) => `
+            <tr>
+                <td style="text-align:center">${i + 1}</td>
+                <td>${it.codigo}</td>
+                <td>${it.descripcion}</td>
+                <td>${it.pn || '---'}</td>
+                <td>${it.sn || '---'}</td>
+                <td style="text-align:center">${it.cantidadRetorna} / ${it.cantidadEnviada}</td>
+                <td style="text-align:center;font-weight:bold;color:${condColor[it.condicion] || '#555'}">${condLabel[it.condicion] || '---'}</td>
+                <td>${it.observacionItem || '---'}</td>
+            </tr>`).join('');
+
+        const html = `<!DOCTYPE html><html lang="es"><head>
+        <meta charset="UTF-8">
+        <title>${nroMovimiento}</title>
+        <style>
+            body{font-family:Arial,sans-serif;font-size:11px;margin:0;padding:20px;color:#000}
+            .header{display:flex;align-items:center;justify-content:space-between;border-bottom:3px solid #000;padding-bottom:8px;margin-bottom:12px}
+            .header h1{font-size:15px;font-weight:900;text-transform:uppercase;margin:0}
+            .header .nro{background:#0f172a;color:#fff;padding:6px 14px;font-size:14px;font-weight:900;border-radius:4px}
+            .badge{display:inline-block;background:#fbbf24;color:#000;font-weight:900;padding:2px 8px;border-radius:3px;border:1px solid #000;font-size:10px;margin-bottom:6px}
+            .grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px 16px;margin-bottom:12px}
+            .field label{display:block;font-size:9px;font-weight:900;text-transform:uppercase;color:#555}
+            .field span{display:block;font-weight:700;font-size:11px;border-bottom:1px solid #ccc;padding-bottom:2px}
+            table{width:100%;border-collapse:collapse;margin-bottom:12px;font-size:10px}
+            th{background:#0f172a;color:#fff;padding:5px 4px;text-align:left;font-size:9px;text-transform:uppercase}
+            td{padding:4px;border-bottom:1px solid #ddd}
+            tr:nth-child(even) td{background:#f8f9fc}
+            .resumen{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap}
+            .res-card{border:2px solid #000;padding:6px 12px;border-radius:4px;text-align:center;min-width:90px}
+            .res-card .num{font-size:20px;font-weight:900;line-height:1}
+            .res-card .lbl{font-size:9px;text-transform:uppercase;font-weight:700}
+            .firmas{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:24px}
+            .firma{border-top:2px solid #000;padding-top:6px;text-align:center;font-size:10px;font-weight:700}
+            @media print{body{padding:10px}}
+        </style></head><body>
+        <div class="header">
+            <div>
+                <div class="badge">${tipo}</div>
+                <h1>Acta de Retorno de Herramientas</h1>
+                <div style="font-size:10px;color:#555">BOLIVIANA DE AVIACIÓN — Almacén de Herramientas</div>
+            </div>
+            <div class="nro">${nroMovimiento}</div>
+        </div>
+
+        <div class="grid">
+            <div class="field"><label>Fecha Retorno</label><span>${fecha}</span></div>
+            <div class="field"><label>Nro. Documento (CMR)</label><span>${nroCmr}</span></div>
+            <div class="field"><label>Base / Almacén Origen</label><span>${origen}</span></div>
+            <div class="field"><label>Responsable Recibe</label><span>${responsable}</span></div>
+            <div class="field"><label>Transportista</label><span>${transportista}</span></div>
+            <div class="field"><label>Observaciones</label><span>${observaciones}</span></div>
+        </div>
+
+        <div class="resumen">
+            <div class="res-card" style="border-color:#16a34a">
+                <div class="num" style="color:#16a34a">${resumen.buenos}</div>
+                <div class="lbl">Buenos</div>
+            </div>
+            <div class="res-card" style="border-color:#dc2626">
+                <div class="num" style="color:#dc2626">${resumen.danados}</div>
+                <div class="lbl">Dañados</div>
+            </div>
+            <div class="res-card" style="border-color:#d97706">
+                <div class="num" style="color:#d97706">${resumen.calibracion}</div>
+                <div class="lbl">Req. Calib.</div>
+            </div>
+            <div class="res-card" style="border-color:#991b1b">
+                <div class="num" style="color:#991b1b">${resumen.faltantes}</div>
+                <div class="lbl">Faltantes</div>
+            </div>
+            <div class="res-card">
+                <div class="num">${items.length}</div>
+                <div class="lbl">Total Ítems</div>
+            </div>
+        </div>
+
+        <table>
+            <thead><tr>
+                <th style="width:3%">#</th>
+                <th style="width:8%">Código BOA</th>
+                <th style="width:25%">Descripción</th>
+                <th style="width:14%">P/N</th>
+                <th style="width:12%">S/N</th>
+                <th style="width:10%;text-align:center">Cant. Ret/Env</th>
+                <th style="width:12%;text-align:center">Condición</th>
+                <th style="width:16%">Observación</th>
+            </tr></thead>
+            <tbody>${filas}</tbody>
+        </table>
+
+        <div class="firmas">
+            <div class="firma">
+                <div style="height:36px"></div>
+                ENTREGA CONFORME<br>${origen}
+            </div>
+            <div class="firma">
+                <div style="height:36px"></div>
+                RECIBE CONFORME<br>${responsable}
+            </div>
+        </div>
+
+        <script>window.onload=()=>{window.print()}</script>
+        </body></html>`;
+
+        const win = window.open('', '_blank', 'width=900,height=700');
+        if (win) { win.document.write(html); win.document.close(); }
     }
 
     async realizarConsulta() {

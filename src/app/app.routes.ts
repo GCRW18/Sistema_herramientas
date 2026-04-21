@@ -68,7 +68,7 @@ export const appRoutes: Route[] = [
             // SALIDAS - Gestión de salidas de herramientas
             {path: 'salidas', loadChildren: () => import('app/modules/admin/exits/exits.routes')},
 
-            // CALIBRACIONES - Gestión de calibraciones, alertas, laboratorios y gatas
+            // CALIBRACIONES - Gestión de calibraciones, dashboard-alertas, laboratorios y gatas
             {path: 'calibraciones', loadChildren: () => import('app/modules/admin/calibraciones/calibraciones.routes')},
 
             // INVENTARIO - Módulo unificado (inventario + kits + reportes)

@@ -5,7 +5,7 @@
         <h1 class="text-3xl md:text-4xl font-black text-black dark:text-white uppercase tracking-tighter leading-none">
             SALIDAS
         </h1>
-        <span class="text-[10px] font-bold bg-[#e94125] text-white px-3 py-1 rounded-sm border border-black uppercase tracking-wider hidden sm:inline">
+        <span class="text-[10px] font-bold bg-[#FFC501FF] text-black px-3 py-1 rounded-sm border border-black uppercase tracking-wider hidden sm:inline">
             MÓDULO DE EGRESOS
         </span>
         <div class="flex-1"></div>
@@ -14,15 +14,15 @@
         <button (click)="toggleBandeja()"
                 [class.!bg-[#e94125]]="showBandeja"
                 [class.!text-white]="showBandeja"
-                class="flex items-center gap-2 px-5 py-2 bg-white dark:bg-slate-800 border-2 border-black font-black text-xs uppercase rounded-full shadow-[3px_3px_0px_0px_#000] hover:shadow-[1px_1px_0px_0px_#000] hover:translate-x-[2px] hover:translate-y-[2px] transition-all text-black dark:text-white">
-            <mat-icon class="!text-base">apps</mat-icon>
+                class="flex items-center gap-2 px-5 py-2 bg-[#2563eb] dark:bg-slate-800 border-2 border-black font-black text-xs uppercase rounded-full shadow-[3px_3px_0px_0px_#000] hover:shadow-[1px_1px_0px_0px_#000] hover:translate-x-[2px] hover:translate-y-[2px] transition-all text-white dark:text-white">
+            <mat-icon class="!text-base text-black">apps</mat-icon>
             <span class="hidden sm:inline">MÓDULOS</span>
-            <mat-icon class="!text-sm transition-transform duration-200" [class.rotate-180]="showBandeja">expand_more</mat-icon>
+            <mat-icon class="!text-sm text-white transition-transform duration-200" [class.rotate-180]="showBandeja">expand_more</mat-icon>
         </button>
 
         <button (click)="openSalidasRecientes()"
-                class="flex items-center gap-2 px-5 py-2 bg-white dark:bg-slate-800 border-2 border-black font-black text-xs uppercase rounded-full shadow-[3px_3px_0px_0px_#000] hover:shadow-[1px_1px_0px_0px_#000] hover:translate-x-[2px] hover:translate-y-[2px] transition-all text-black dark:text-white">
-            <mat-icon class="!text-base">history</mat-icon>
+                class="flex items-center gap-2 px-5 py-2 bg-[#111A43] dark:bg-slate-800 border-2 border-black font-black text-xs uppercase rounded-full shadow-[3px_3px_0px_0px_#000] hover:shadow-[1px_1px_0px_0px_#000] hover:translate-x-[2px] hover:translate-y-[2px] transition-all text-white dark:text-white">
+            <mat-icon class="!text-base text-white">history</mat-icon>
             <span class="hidden sm:inline">Salidas Recientes</span>
         </button>
     </div>
@@ -37,7 +37,7 @@
     <div *ngIf="showBandeja"
          class="absolute top-[56px] left-2 right-2 md:left-auto md:right-4 md:w-auto z-30 bg-white dark:bg-[#111A43] border-2 border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] rounded-2xl p-3 animate-in slide-in-from-top-2 duration-150">
 
-        <p class="text-[9px] font-black uppercase tracking-widest text-gray-400 dark:text-slate-400 mb-2 px-1">
+        <p class="text-[9px] font-black uppercase tracking-widest text-black dark:text-slate-400 mb-2 px-1">
             Seleccionar módulo de salida
         </p>
 
@@ -47,9 +47,9 @@
             <!-- Módulo 1: Envío a Otras Bases -->
             <button (click)="openModule(1)"
                     class="group relative flex flex-col items-center gap-1 p-2 rounded-xl border-2 border-black transition-all hover:scale-[1.04] active:scale-[0.97] flex-1 min-w-0"
-                    [style.background-color]="isTabOpen(1) ? '#FF6A00' : 'transparent'"
+                    [style.background-color]="isTabOpen(1) ? '#ff1414' : 'transparent'"
                     [style.box-shadow]="'3px 3px 0px 0px rgba(0,0,0,1)'">
-                <div *ngIf="isTabOpen(1)" class="absolute top-1 right-1 w-2 h-2 rounded-full bg-black"></div>
+                <div *ngIf="isTabOpen(1)" class="absolute top-1 right-1 "></div>
                 <mat-icon svgIcon="heroicons_outline:building-office"
                           class="!w-6 !h-6 !text-2xl text-black dark:text-white shrink-0"></mat-icon>
                 <p class="text-[9px] font-black uppercase leading-tight text-black dark:text-white text-center w-full truncate">ENVÍO A</p>
@@ -59,9 +59,9 @@
             <!-- Módulo 2: Traspaso Otra Área -->
             <button (click)="openModule(2)"
                     class="group relative flex flex-col items-center gap-1 p-2 rounded-xl border-2 border-black transition-all hover:scale-[1.04] active:scale-[0.97] flex-1 min-w-0"
-                    [style.background-color]="isTabOpen(2) ? '#1AAA1F' : 'transparent'"
+                    [style.background-color]="isTabOpen(2) ? '#ff1414' : 'transparent'"
                     [style.box-shadow]="'3px 3px 0px 0px rgba(0,0,0,1)'">
-                <div *ngIf="isTabOpen(2)" class="absolute top-1 right-1 w-2 h-2 rounded-full bg-black"></div>
+                <div *ngIf="isTabOpen(2)" class="absolute top-1 right-1"></div>
                 <mat-icon svgIcon="heroicons_outline:arrow-path"
                           class="!w-6 !h-6 !text-2xl text-black dark:text-white shrink-0"></mat-icon>
                 <p class="text-[9px] font-black uppercase leading-tight text-black dark:text-white text-center w-full truncate">TRASPASO</p>
@@ -71,9 +71,9 @@
             <!-- Módulo 3: Préstamo Tec./Otros -->
             <button (click)="openModule(3)"
                     class="group relative flex flex-col items-center gap-1 p-2 rounded-xl border-2 border-black transition-all hover:scale-[1.04] active:scale-[0.97] flex-1 min-w-0"
-                    [style.background-color]="isTabOpen(3) ? '#7113CF' : 'transparent'"
+                    [style.background-color]="isTabOpen(3) ? '#ff1414' : 'transparent'"
                     [style.box-shadow]="'3px 3px 0px 0px rgba(0,0,0,1)'">
-                <div *ngIf="isTabOpen(3)" class="absolute top-1 right-1 w-2 h-2 rounded-full bg-black"></div>
+                <div *ngIf="isTabOpen(3)" class="absolute top-1 right-1"></div>
                 <mat-icon svgIcon="heroicons_outline:building-storefront"
                           class="!w-6 !h-6 !text-2xl text-black dark:text-white shrink-0"></mat-icon>
                 <p class="text-[9px] font-black uppercase leading-tight text-black dark:text-white text-center w-full truncate">PRÉSTAMO</p>
@@ -83,9 +83,9 @@
             <!-- Módulo 4: Cuarentena -->
             <button (click)="openModule(4)"
                     class="group relative flex flex-col items-center gap-1 p-2 rounded-xl border-2 border-black transition-all hover:scale-[1.04] active:scale-[0.97] flex-1 min-w-0"
-                    [style.background-color]="isTabOpen(4) ? '#FFC501' : 'transparent'"
+                    [style.background-color]="isTabOpen(4) ? '#ff1414' : 'transparent'"
                     [style.box-shadow]="'3px 3px 0px 0px rgba(0,0,0,1)'">
-                <div *ngIf="isTabOpen(4)" class="absolute top-1 right-1 w-2 h-2 rounded-full bg-black"></div>
+                <div *ngIf="isTabOpen(4)" class="absolute top-1 right-1"></div>
                 <mat-icon svgIcon="heroicons_outline:exclamation-triangle"
                           class="!w-6 !h-6 !text-2xl text-black dark:text-white shrink-0"></mat-icon>
                 <p class="text-[9px] font-black uppercase leading-tight text-black dark:text-white text-center w-full truncate">CUARENTENA</p>
@@ -95,9 +95,9 @@
             <!-- Módulo 5: Baja -->
             <button (click)="openModule(5)"
                     class="group relative flex flex-col items-center gap-1 p-2 rounded-xl border-2 border-black transition-all hover:scale-[1.04] active:scale-[0.97] flex-1 min-w-0"
-                    [style.background-color]="isTabOpen(5) ? '#e94125' : 'transparent'"
+                    [style.background-color]="isTabOpen(5) ? '#ff1414' : 'transparent'"
                     [style.box-shadow]="'3px 3px 0px 0px rgba(0,0,0,1)'">
-                <div *ngIf="isTabOpen(5)" class="absolute top-1 right-1 w-2 h-2 rounded-full bg-black"></div>
+                <div *ngIf="isTabOpen(5)" class="absolute top-1 right-1"></div>
                 <mat-icon svgIcon="heroicons_outline:trash"
                           class="!w-6 !h-6 !text-2xl text-black dark:text-white shrink-0"></mat-icon>
                 <p class="text-[9px] font-black uppercase leading-tight text-black dark:text-white text-center w-full truncate">BAJA</p>

@@ -1,0 +1,441 @@
+<div class="flex flex-col w-full h-full bg-[#f8f9fc] dark:bg-[#0F172AFF] transition-colors duration-300 font-sans overflow-hidden"
+     cdkDrag cdkDragRootElement=".cdk-overlay-pane" cdkDragBoundary=".cdk-overlay-container">
+
+    <div class="bg-white dark:bg-slate-800 border-b-2 border-black px-4 py-2 flex items-center justify-between shrink-0"
+         cdkDragHandle>
+        <div class="flex items-center gap-3">
+            <button (click)="dialogRef.close(false)"
+                    class="w-8 h-8 bg-slate-100 dark:bg-slate-700 border-2 border-black rounded hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors flex items-center justify-center shrink-0"
+                    (mousedown)="$event.stopPropagation()">
+                <mat-icon class="!text-base text-black dark:text-white">close</mat-icon>
+            </button>
+            <div>
+                <h1 class="text-sm font-black text-black dark:text-white uppercase tracking-tight leading-none">Nuevo Envío a Calibración</h1>
+                <p class="text-[9px] text-black dark:text-gray-400 font-bold uppercase mt-0.5">MGH-109 · Registro de Envío</p>
+            </div>
+        </div>
+        <div class="flex items-center gap-2">
+            <button (click)="dialogRef.close(false)"
+                    class="px-3 py-1.5 bg-gray-200 dark:bg-slate-700 text-black dark:text-white font-black text-xs border-2 border-black rounded hover:bg-gray-300 dark:hover:bg-slate-600 transition-colors uppercase flex items-center gap-1">
+                <mat-icon class="!text-sm !w-4 !h-4">close</mat-icon>
+                Cancelar
+            </button>
+            <button (click)="submitEnvio()"
+                    [disabled]="isSaving() || !canSubmit()"
+                    class="px-4 py-1.5 bg-[#0F172AFF] text-white font-black text-xs border-2 border-black rounded shadow-[2px_2px_0px_0px_rgba(0,0,0,0.4)] hover:shadow-none hover:translate-x-[1px] hover:translate-y-[1px] transition-all uppercase flex items-center gap-1 disabled:opacity-40 disabled:cursor-not-allowed">
+                <mat-icon class="!text-sm !w-4 !h-4 text-amber-400">{{ canSubmit() ? 'rocket_launch' : 'send' }}</mat-icon>
+                {{ canSubmit() ? 'Procesar' : 'Procesar' }}
+            </button>
+        </div>
+    </div>
+
+    <div *ngIf="isSaving()" class="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
+        <div class="bg-white dark:bg-slate-800 border-2 border-black rounded-xl shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] p-5 flex flex-col items-center gap-3">
+            <mat-spinner diameter="32"></mat-spinner>
+            <span class="font-black text-black dark:text-white uppercase tracking-wider text-xs">Registrando Envío...</span>
+        </div>
+    </div>
+
+    <div class="flex-1 overflow-y-auto p-3 custom-scrollbar">
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-3 h-full">
+
+            <div class="lg:col-span-7">
+                <div class="border-2 border-black bg-white dark:bg-slate-800 rounded-xl shadow-[4px_4px_0px_0px_rgba(0,0,0,0.15)] overflow-hidden">
+
+                    <div class="flex items-center gap-1.5 px-3 py-2 bg-[#0F172AFF] border-b-2 border-black">
+                        <mat-icon class="text-amber-400 !text-sm">assignment</mat-icon>
+                        <span class="font-black text-xs uppercase text-white">DATOS DEL ENVÍO</span>
+                        <div class="ml-auto flex items-center gap-1">
+                            <span class="text-[8px] text-white/70">Estado:</span>
+                            <span class="text-[8px] font-black px-1.5 py-0.5 rounded"
+                                  [ngClass]="canSubmit() ? 'bg-green-500 text-white' : 'bg-yellow-500 text-white'">
+                                {{ canSubmit() ? 'COMPLETO' : 'PENDIENTE' }}
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="p-3 flex flex-col gap-3">
+
+                        <div class="grid grid-cols-12 gap-2">
+                            <div class="col-span-9">
+                                <label class="text-[8px] font-black uppercase text-gray-500 mb-0.5 block">
+                                    HERRAMIENTA <span class="text-red-500">*</span>
+                                    <span *ngIf="isScanning()" class="ml-1 text-amber-500 text-[8px]">buscando...</span>
+                                </label>
+                                <div class="flex gap-2 mb-1">
+                                    <div class="flex border-2 border-black rounded overflow-hidden">
+                                        <button type="button" (click)="setSearchMethod('manual')"
+                                                class="px-2 py-0.5 text-[9px] font-bold transition-all"
+                                                [ngClass]="searchMethod === 'manual' ? 'bg-[#0F172AFF] text-white' : 'bg-white dark:bg-slate-700 text-black dark:text-white'">
+                                            Manual
+                                        </button>
+                                        <button type="button" (click)="setSearchMethod('scan')"
+                                                class="px-2 py-0.5 text-[9px] font-bold border-l-2 border-black transition-all"
+                                                [ngClass]="searchMethod === 'scan' ? 'bg-[#0F172AFF] text-white' : 'bg-white dark:bg-slate-700 text-black dark:text-white'">
+                                            Escáner
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="relative">
+                                    <input type="text"
+                                           #searchInput
+                                           [(ngModel)]="barcodeValue"
+                                           [ngModelOptions]="{standalone: true}"
+                                           (keydown.enter)="scanTool()"
+                                           (input)="onToolInput($any($event.target).value)"
+                                           (blur)="hideToolDropdown()"
+                                           [placeholder]="searchMethod === 'scan' ? 'Escanee código...' : 'BOA-H + número...'"
+                                           [disabled]="isScanning()"
+                                           autocomplete="off"
+                                           class="w-full h-7 text-xs font-bold border-2 border-black rounded px-2 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[2px_2px_0px_0px_#000] outline-none">
+                                    <mat-spinner *ngIf="toolSearchLoading" diameter="12"
+                                                 class="absolute right-2 top-1.5"></mat-spinner>
+                                    <div *ngIf="showToolDropdown && searchMethod === 'manual'"
+                                         class="absolute z-50 w-full bg-white dark:bg-slate-800 border-2 border-black rounded shadow-[3px_3px_0px_0px_#000] max-h-48 overflow-y-auto mt-0.5">
+                                        <div *ngFor="let tool of toolSuggestions"
+                                             (mousedown)="selectToolSuggestion(tool)"
+                                             class="px-2 py-1.5 hover:bg-slate-100 dark:hover:bg-slate-700 cursor-pointer border-b border-gray-100 dark:border-slate-700 last:border-0">
+                                            <div class="flex items-center gap-2">
+                                                <span class="text-[10px] font-black text-black dark:text-white">{{ tool.code }}</span>
+                                                <span *ngIf="tool.sent_to_calibration === true || tool.sent_to_calibration === 't'"
+                                                      class="text-[7px] font-black px-1 py-0.5 bg-amber-200 text-amber-800 rounded">EN CALIB</span>
+                                            </div>
+                                            <div class="text-[9px] text-gray-600 dark:text-gray-400 truncate">{{ tool.name }}</div>
+                                            <div class="flex gap-2 text-[8px] text-gray-400">
+                                                <span *ngIf="tool.model">{{ tool.model }}</span>
+                                                <span *ngIf="tool.serial_number">S/N: {{ tool.serial_number }}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-span-3">
+                                <label class="text-[8px] font-black uppercase text-transparent mb-0.5 block">.</label>
+                                <button (click)="scanTool()" [disabled]="isScanning() || !barcodeValue.trim()"
+                                        class="w-full h-7 bg-[#0F172AFF] text-white font-black text-[10px] border-2 border-black rounded shadow-[2px_2px_0px_0px_#000] hover:shadow-none hover:translate-x-[1px] hover:translate-y-[1px] transition-all disabled:opacity-40 flex items-center justify-center gap-1">
+                                    <mat-spinner *ngIf="isScanning()" diameter="12" class="inline-block"></mat-spinner>
+                                    <mat-icon *ngIf="!isScanning()" class="!text-xs text-amber-400">search</mat-icon>
+                                    <span *ngIf="!isScanning()">Buscar</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div *ngIf="scannedTool()" class="border-2 rounded-lg p-2 text-xs"
+                             [ngClass]="isToolBlocked() ? 'border-red-500 bg-red-50 dark:bg-red-900/20' : 'border-green-500 bg-green-50 dark:bg-green-900/20'">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center gap-2">
+                                    <mat-icon [ngClass]="isToolBlocked() ? 'text-red-500' : 'text-green-500'" class="!text-xs">
+                                        {{ isToolBlocked() ? 'lock' : 'check_circle' }}
+                                    </mat-icon>
+                                    <span class="text-[10px] font-black">{{ scannedTool()?.code }}</span>
+                                    <span class="text-[9px]">{{ scannedTool()?.name | slice:0:40 }}</span>
+                                </div>
+                                <button (click)="clearScan()" class="text-gray-500 hover:text-gray-700">
+                                    <mat-icon class="!text-xs">close</mat-icon>
+                                </button>
+                            </div>
+                            <div class="flex gap-3 mt-1 text-[9px]" *ngIf="diasRemanentes() !== null">
+                                <span>Vencimiento:
+                                    <strong [ngClass]="diasRemanentes()! < 0 ? 'text-red-600' : diasRemanentes()! <= 30 ? 'text-amber-600' : 'text-green-600'">
+                                        {{ scannedTool()?.next_calibration_date }}
+                                        <span *ngIf="diasRemanentes()! < 0"> (Herramienta vencida hace {{ Math.abs(diasRemanentes()!) }} días)</span>
+                                        <span *ngIf="diasRemanentes()! >= 0 && diasRemanentes()! <= 30"> (Próxima a vencer — {{ diasRemanentes() }} día(s))</span>
+                                        <span *ngIf="diasRemanentes()! > 30"> ({{ diasRemanentes() }} días remanentes)</span>
+                                    </strong>
+                                </span>
+                            </div>
+                        </div>
+
+                        <div *ngIf="!scannedTool() && !isScanning()" class="flex items-center gap-2 p-1.5 bg-gray-50 border border-dashed border-gray-300 rounded">
+                            <mat-icon class="text-gray-400 !text-xs">info</mat-icon>
+                            <p class="text-[9px] text-gray-500">{{ searchMethod === 'scan' ? 'Pase el lector sobre el código' : 'Ingrese código o nombre de la herramienta' }}</p>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-2 pt-1" [class.opacity-50]="!scannedTool() || isToolBlocked()" [class.pointer-events-none]="!scannedTool() || isToolBlocked()">
+
+                            <div class="col-span-2">
+                                <label class="text-[8px] font-black uppercase text-gray-500 mb-0.5 block">
+                                    <mat-icon class="!text-[10px] align-middle text-gray-400">business</mat-icon>
+                                    EMPRESA DE CALIBRACIÓN <span class="text-red-500">*</span>
+                                </label>
+                                <select [(ngModel)]="selectedLabId" [ngModelOptions]="{standalone: true}" (ngModelChange)="onLabChange($event)"
+                                        class="w-full h-7 text-xs font-bold border-2 border-black rounded px-2 bg-white dark:bg-[#0F172AFF] text-black dark:text-white">
+                                    <option [ngValue]="null">— Seleccionar —</option>
+                                    <option *ngFor="let lab of laboratories" [ngValue]="lab.id_laboratory">{{ lab.name }}</option>
+                                </select>
+                            </div>
+
+                            <div>
+                                <label class="text-[8px] font-black uppercase text-gray-500 mb-0.5 block">
+                                    <mat-icon class="!text-[10px] align-middle text-gray-400">store</mat-icon>
+                                    ALMACÉN <span class="text-red-500">*</span>
+                                </label>
+                                <select [(ngModel)]="almacen" [ngModelOptions]="{standalone: true}"
+                                        class="w-full h-7 text-xs font-bold border-2 border-black rounded px-2 bg-white dark:bg-[#0F172AFF] text-black dark:text-white">
+                                    <option value="">— Seleccionar —</option>
+                                    <option value="ALMACÉN SERVICIABLES">Serviciables</option>
+                                    <option value="ALMACÉN PRINCIPAL - LPZ">Principal LPZ</option>
+                                    <option value="ALMACÉN HANGAR 3 - CBB">Hangar 3 CBB</option>
+                                    <option value="ALMACÉN BASE - VVI">Base VVI</option>
+                                </select>
+                            </div>
+
+                            <div>
+                                <label class="text-[8px] font-black uppercase text-gray-500 mb-0.5 block">
+                                    <mat-icon class="!text-[10px] align-middle text-gray-400">location_on</mat-icon>
+                                    BASE ORIGEN <span class="text-red-500">*</span>
+                                </label>
+                                <select [(ngModel)]="base" [ngModelOptions]="{standalone: true}"
+                                        class="w-full h-7 text-xs font-bold border-2 border-black rounded px-2 bg-white dark:bg-[#0F172AFF] text-black dark:text-white">
+                                    <option value="">— Seleccionar —</option>
+                                    <option value="CBB">Cochabamba</option>
+                                    <option value="LPZ">La Paz</option>
+                                    <option value="VVI">Santa Cruz</option>
+                                    <option value="TJA">Tarija</option>
+                                </select>
+                            </div>
+
+                            <div class="col-span-2">
+                                <label class="text-[8px] font-black uppercase text-gray-500 mb-0.5 block">
+                                    <mat-icon class="!text-[10px] align-middle text-gray-400">build</mat-icon>
+                                    TIPO DE TRABAJO <span class="text-red-500">*</span>
+                                </label>
+                                <div class="flex gap-1">
+                                    <button *ngFor="let opt of workTypeOptions" type="button" (click)="workType = opt.value"
+                                            class="flex-1 h-7 text-[9px] font-black border-2 rounded transition-all"
+                                            [ngClass]="workType === opt.value ? 'bg-[#0F172AFF] text-white border-black' : 'bg-white border-black dark:bg-slate-700 text-black dark:text-white'">
+                                        {{ opt.label === 'CALIBRACIÓN Y REPARACIÓN' ? 'CAL+REP' : (opt.label === 'CALIBRACIÓN' ? 'CALIB' : 'REPAR') }}
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div>
+                                <label class="text-[8px] font-black uppercase text-gray-500 mb-0.5 block">
+                                    <mat-icon class="!text-[10px] align-middle text-gray-400">inventory</mat-icon>
+                                    CANTIDAD
+                                </label>
+                                <input type="number" [(ngModel)]="cantidad" [ngModelOptions]="{standalone: true}" min="1"
+                                       class="w-full h-7 text-center text-xs font-black border-2 border-black rounded px-2 bg-white dark:bg-[#0F172AFF] text-black dark:text-white">
+                            </div>
+
+                            <div>
+                                <label class="text-[8px] font-black uppercase text-gray-500 mb-0.5 block">
+                                    <mat-icon class="!text-[10px] align-middle text-gray-400">receipt</mat-icon>
+                                    N° NOTA
+                                </label>
+                                <button (click)="generarNota()"
+                                        class="w-full h-7 bg-[#0F172AFF] text-white font-black text-[9px] border-2 border-black rounded shadow-[2px_2px_0px_0px_#000] hover:shadow-none transition-all flex items-center justify-center gap-1">
+                                    <mat-icon class="!text-xs text-amber-400">receipt</mat-icon>
+                                    {{ generatedNota() ? 'Regenerar' : 'Generar' }}
+                                </button>
+                            </div>
+
+                            <div class="col-span-2">
+                                <label class="text-[8px] font-black uppercase text-gray-500 mb-0.5 block">
+                                    <mat-icon class="!text-[10px] align-middle text-gray-400">description</mat-icon>
+                                    OBSERVACIONES
+                                </label>
+                                <textarea [(ngModel)]="sendNotes" [ngModelOptions]="{standalone: true}" rows="2"
+                                          placeholder="Notas adicionales sobre el envío..."
+                                          class="w-full text-xs border-2 border-gray-300 rounded px-2 py-1 resize-none"></textarea>
+                            </div>
+
+                            <div class="relative">
+                                <label class="text-[8px] font-black uppercase text-gray-500 mb-0.5 block">
+                                    <mat-icon class="!text-[10px] align-middle text-gray-400">person</mat-icon>
+                                    SOLICITADO POR
+                                </label>
+                                <div class="relative">
+                                    <input type="text"
+                                           [(ngModel)]="requestedByName"
+                                           [ngModelOptions]="{standalone: true}"
+                                           (input)="onRequestedByInput($any($event.target).value)"
+                                           (blur)="hideRequestedByDropdown()"
+                                           placeholder="Buscar funcionario..."
+                                           autocomplete="off"
+                                           class="w-full h-7 text-xs font-bold border-2 border-black rounded px-2 bg-white dark:bg-[#0F172AFF] text-black dark:text-white">
+                                    <mat-spinner *ngIf="requestedByLoading" diameter="12"
+                                                 class="absolute right-2 top-1.5"></mat-spinner>
+                                </div>
+                                <div *ngIf="showRequestedByDropdown"
+                                     class="absolute z-50 w-full bg-white dark:bg-slate-800 border-2 border-black rounded shadow-[3px_3px_0px_0px_#000] max-h-36 overflow-y-auto mt-0.5">
+                                    <div *ngFor="let f of requestedByFuncionarios"
+                                         (mousedown)="selectRequestedBy(f)"
+                                         class="px-2 py-1 hover:bg-slate-100 dark:hover:bg-slate-700 cursor-pointer border-b border-gray-100 dark:border-slate-700 last:border-0">
+                                        <div class="text-xs font-bold text-black dark:text-white">{{ f.nombre }}</div>
+                                        <div class="text-[9px] text-gray-500">{{ f.cargo }}</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="relative">
+                                <label class="text-[8px] font-black uppercase text-gray-500 mb-0.5 block">
+                                    <mat-icon class="!text-[10px] align-middle text-gray-400">person_pin</mat-icon>
+                                    ENTREGADO POR
+                                </label>
+                                <div class="relative">
+                                    <input type="text"
+                                           [(ngModel)]="deliveredByName"
+                                           [ngModelOptions]="{standalone: true}"
+                                           (input)="onDeliveredByInput($any($event.target).value)"
+                                           (blur)="hideDeliveredByDropdown()"
+                                           placeholder="Buscar funcionario..."
+                                           autocomplete="off"
+                                           class="w-full h-7 text-xs font-bold border-2 border-black rounded px-2 bg-white dark:bg-[#0F172AFF] text-black dark:text-white">
+                                    <mat-spinner *ngIf="deliveredByLoading" diameter="12"
+                                                 class="absolute right-2 top-1.5"></mat-spinner>
+                                </div>
+                                <div *ngIf="showDeliveredByDropdown"
+                                     class="absolute z-50 w-full bg-white dark:bg-slate-800 border-2 border-black rounded shadow-[3px_3px_0px_0px_#000] max-h-36 overflow-y-auto mt-0.5">
+                                    <div *ngFor="let f of deliveredByFuncionarios"
+                                         (mousedown)="selectDeliveredBy(f)"
+                                         class="px-2 py-1 hover:bg-slate-100 dark:hover:bg-slate-700 cursor-pointer border-b border-gray-100 dark:border-slate-700 last:border-0">
+                                        <div class="text-xs font-bold text-black dark:text-white">{{ f.nombre }}</div>
+                                        <div class="text-[9px] text-gray-500">{{ f.cargo }}</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div *ngIf="generatedNota()" class="col-span-2 flex items-center justify-between p-1.5 bg-green-50 border border-green-500 rounded">
+                                <div>
+                                    <span class="text-[7px] font-black uppercase text-green-600">Nota generada:</span>
+                                    <span class="text-xs font-black font-mono ml-1">{{ generatedNota() }}</span>
+                                </div>
+                                <button (click)="printNotaPreview()" matTooltip="Imprimir"
+                                        class="w-6 h-6 flex items-center justify-center bg-indigo-600 border border-black rounded text-white">
+                                    <mat-icon class="!text-xs">print</mat-icon>
+                                </button>
+                            </div>
+
+                            <div class="col-span-2 grid grid-cols-3 gap-1 pt-1">
+                                <div class="text-center p-1 bg-blue-50 border border-blue-200 rounded">
+                                    <div class="text-[6px] font-black text-blue-600">ENVÍO</div>
+                                    <div class="text-[9px] font-black">{{ fechaEnvioDisplay }}</div>
+                                </div>
+                                <div class="text-center p-1 bg-amber-50 border border-amber-200 rounded">
+                                    <div class="text-[6px] font-black text-amber-600">RETORNO</div>
+                                    <div class="text-[9px] font-black">{{ fechaRetornoDisplay }}</div>
+                                </div>
+                                <div class="text-center p-1 bg-green-50 border border-green-200 rounded">
+                                    <div class="text-[6px] font-black text-green-600">PRÓX. CAL</div>
+                                    <div class="text-[9px] font-black">{{ fechaProxCalDisplay }}</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div *ngIf="!canSubmit() && !isSaving() && scannedTool() && !isToolBlocked()"
+                             class="flex items-center gap-1 p-1.5 bg-red-50 border border-red-300 rounded">
+                            <mat-icon class="text-red-500 !text-xs">error</mat-icon>
+                            <span class="text-[8px] text-red-700 font-bold">
+                                {{ !selectedLabId ? 'Seleccione una empresa' :
+                                !almacen ? 'Seleccione un almacén' :
+                                    !base ? 'Seleccione una base' :
+                                        !generatedNota() ? 'Genere una nota' : '' }}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="lg:col-span-5">
+                <div class="border-2 border-black bg-white dark:bg-slate-800 rounded-xl shadow-[4px_4px_0px_0px_rgba(0,0,0,0.15)] overflow-hidden sticky top-0">
+                    <div class="flex items-center gap-1.5 px-3 py-2 bg-[#0F172AFF] border-b-2 border-black">
+                        <mat-icon class="text-amber-400 !text-sm">fact_check</mat-icon>
+                        <span class="font-black text-xs uppercase text-white">CONFIRMACIÓN</span>
+                        <mat-icon *ngIf="canSubmit()" class="ml-auto text-amber-400 !text-sm">verified</mat-icon>
+                    </div>
+
+                    <div class="p-3 flex flex-col gap-2">
+
+                        <div class="space-y-1.5">
+                            <div class="flex items-center gap-2 text-xs">
+                                <mat-icon class="!text-sm" [ngClass]="scannedTool() && !isToolBlocked() ? 'text-green-500' : 'text-gray-300'">
+                                    {{ scannedTool() && !isToolBlocked() ? 'check_circle' : 'radio_button_unchecked' }}
+                                </mat-icon>
+                                <span class="text-[10px] font-bold">Herramienta identificada</span>
+                                <span *ngIf="scannedTool() && !isToolBlocked()" class="text-[9px] text-green-600 ml-auto">{{ scannedTool()?.code }}</span>
+                            </div>
+
+                            <div class="flex items-center gap-2 text-xs">
+                                <mat-icon class="!text-sm" [ngClass]="selectedLabId ? 'text-green-500' : 'text-gray-300'">
+                                    {{ selectedLabId ? 'check_circle' : 'radio_button_unchecked' }}
+                                </mat-icon>
+                                <span class="text-[10px] font-bold">Datos de envío</span>
+                                <span class="text-[9px] text-gray-500 ml-auto">{{ almacen }} / {{ base }}</span>
+                            </div>
+
+                            <div class="flex items-center gap-2 text-xs">
+                                <mat-icon class="!text-sm" [ngClass]="generatedNota() ? 'text-green-500' : 'text-gray-300'">
+                                    {{ generatedNota() ? 'check_circle' : 'radio_button_unchecked' }}
+                                </mat-icon>
+                                <span class="text-[10px] font-bold">Nota generada</span>
+                                <span *ngIf="generatedNota()" class="text-[9px] font-mono text-amber-600 ml-auto">{{ generatedNota() }}</span>
+                            </div>
+                        </div>
+
+                        <div class="border-t border-gray-200 my-1"></div>
+
+                        <div class="bg-gray-50 dark:bg-[#0F172AFF] rounded-lg p-2 space-y-1 border border-gray-200 dark:border-slate-700">
+                            <div class="flex justify-between text-[9px]">
+                                <span class="text-gray-500">Herramienta:</span>
+                                <span class="font-bold">{{ scannedTool()?.name?.slice(0, 25) || '—' }}</span>
+                            </div>
+                            <div class="flex justify-between text-[9px]">
+                                <span class="text-gray-500">Empresa:</span>
+                                <span class="font-bold">{{ selectedLabName?.slice(0, 20) || '—' }}</span>
+                            </div>
+                            <div class="flex justify-between text-[9px]">
+                                <span class="text-gray-500">Trabajo / Cant:</span>
+                                <span class="font-bold">{{ getWorkTypeShort() }} / {{ cantidad }}</span>
+                            </div>
+                        </div>
+
+                        <div *ngIf="!canSubmit()" class="flex items-center gap-1 p-1.5 bg-red-50 border border-red-300 rounded">
+                            <mat-icon class="text-red-500 !text-xs">warning</mat-icon>
+                            <span class="text-[8px] text-red-700 font-bold">
+                                {{ !scannedTool() ? 'Identifique herramienta' :
+                                !selectedLabId ? 'Seleccione empresa' :
+                                    !almacen ? 'Seleccione almacén' :
+                                        !base ? 'Seleccione base' :
+                                            !generatedNota() ? 'Genere nota' : '' }}
+                            </span>
+                        </div>
+
+                        <button (click)="submitEnvio()" [disabled]="!canSubmit() || isSaving()"
+                                class="w-full py-2 mt-1 bg-[#0F172AFF] text-white font-black text-xs border-2 border-black rounded shadow-[2px_2px_0px_0px_#000] hover:shadow-none hover:translate-x-[1px] hover:translate-y-[1px] transition-all disabled:opacity-40 flex items-center justify-center gap-2">
+                            <mat-spinner *ngIf="isSaving()" diameter="16" class="inline-block"></mat-spinner>
+                            <mat-icon *ngIf="!isSaving()" class="!text-xs text-amber-400">send</mat-icon>
+                            {{ isSaving() ? 'PROCESANDO...' : 'PROCESAR ENVÍO' }}
+                        </button>
+
+                        <button (click)="dialogRef.close(false)"
+                                class="w-full py-1.5 mt-1 bg-gray-200 dark:bg-slate-700 text-black dark:text-white font-black text-xs border-2 border-black rounded hover:bg-gray-300 transition-all flex items-center justify-center gap-1">
+                            <mat-icon class="!text-xs">close</mat-icon>
+                            CANCELAR
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<style>
+    /* Custom scrollbar */
+    .custom-scrollbar::-webkit-scrollbar {
+        width: 6px;
+        height: 6px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+        background: #e2e8f0;
+        border-radius: 3px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+        background: #0F172AFF;
+        border-radius: 3px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+        background: #1e293b;
+    }
+</style>

@@ -37,6 +37,8 @@ interface ExitItem {
 }
 
 interface Funcionario {
+    nombre: string;
+    Base: string;
     id: number;
     nombreCompleto: string;
     cargo: string;

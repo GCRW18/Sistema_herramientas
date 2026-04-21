@@ -339,7 +339,7 @@ export class AjusteIngresoComponent implements OnInit, OnDestroy {
         const itemsJson = JSON.stringify(this.dataSource.map(item => ({
             tool_id:  Number(item.toolId),
             quantity: item.cantidad,
-            condicion: item.estado || 'good',
+            condicion: item.estado || 'SERVICEABLE',
             notes:    item.obs || ''
         })));
 
@@ -357,6 +357,7 @@ export class AjusteIngresoComponent implements OnInit, OnDestroy {
         ).subscribe({
             next: (result: any) => {
                 const nro = result?.movement_number || '---';
+                this.abrirImpresionAjuste(nro, this.dataSource, fv);
                 this.showSystemMessage(`Ajuste registrado: ${nro}`, 'success');
                 this.showConfirmModal = false;
                 this.dataSource = [];
@@ -479,5 +480,128 @@ export class AjusteIngresoComponent implements OnInit, OnDestroy {
     hasError(field: string, error: string): boolean {
         const control = this.ajusteForm.get(field);
         return control ? control.hasError(error) && control.touched : false;
+    }
+
+    // ── PDF / Impresión Comprobante Ajuste por Ingreso ────────────────────────
+
+    private abrirImpresionAjuste(nro: string, items: AjusteItem[], fv: any): void {
+        const w = window.open('', '_blank');
+        if (!w) return;
+        const now = new Date().toLocaleString('es-BO');
+
+        const rows = items.map((item, idx) => `
+            <tr>
+                <td style="text-align:center">${idx + 1}</td>
+                <td><span style="font-family:monospace;font-weight:700;background:#0f172a;color:white;padding:1px 5px;border-radius:3px;font-size:9px">${item.codigoBoa || '-'}</span></td>
+                <td style="font-family:monospace;font-size:9px">${item.pn || '-'}</td>
+                <td style="font-family:monospace;font-size:9px">${item.sn || '-'}</td>
+                <td style="text-align:center;font-weight:700">${item.cantidad}</td>
+                <td style="font-size:9px">${item.descripcion || '-'}</td>
+                <td style="text-align:center"><span style="padding:2px 5px;border:1px solid #000;font-size:8px;font-weight:700">${item.estado || '-'}</span></td>
+                <td style="font-size:8.5px">${item.documentos || '-'}</td>
+                <td style="font-size:8.5px">${item.ubicacion || '-'}</td>
+                <td style="font-size:8.5px">${item.obs || ''}</td>
+            </tr>`).join('');
+
+        const tipoLabel = this.getTipoAjusteLabel(fv.tipoAjuste || 'INVENTARIO');
+
+        const html = `<!DOCTYPE html>
+<html><head><meta charset="UTF-8"><title>Ajuste Ingreso ${nro}</title>
+<style>
+  @page { size: A4 landscape; margin: 12mm 10mm; }
+  * { box-sizing: border-box; }
+  body { font-family: Arial, sans-serif; font-size: 10px; color: #000; margin: 0; }
+  .top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 5px; }
+  .code-box { border: 2px solid #000; padding: 3px 10px; font-weight: 900; font-size: 13px; display: inline-block; }
+  h1 { text-align: center; font-size: 12px; font-weight: 900; text-transform: uppercase;
+       background: #111A43; color: white; padding: 7px 10px; margin: 0 0 7px; border: 1px solid #000; }
+  .info-tbl { width: 100%; border-collapse: collapse; border: 1px solid #000; margin-bottom: 7px; }
+  .info-tbl td { border: 1px solid #ddd; padding: 3px 6px; }
+  .lbl { background: #f0f0f0; font-weight: 700; font-size: 9px; width: 130px; }
+  .nro-cell { background: #f0f0f0; text-align: center; font-weight: 900; font-size: 15px; vertical-align: middle; width: 120px; }
+  .sec { background: #111A43; color: white; padding: 3px 8px; font-weight: 900; font-size: 10px;
+         text-transform: uppercase; border: 1px solid #000; margin-bottom: 0; }
+  table.det { width: 100%; border-collapse: collapse; border: 1px solid #000; }
+  table.det th { background: #111A43; color: white; padding: 4px 3px; font-size: 8px; font-weight: 900;
+                 text-transform: uppercase; border: 1px solid #000; text-align: center; }
+  table.det td { padding: 3px 4px; border: 1px solid #ddd; font-size: 9px; }
+  table.det tr:nth-child(even) td { background: #f9f9f9; }
+  .sigs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 16px; }
+  .sig { border: 1px solid #000; padding: 6px 8px; text-align: center; }
+  .sig-ttl { font-weight: 900; font-size: 9px; text-transform: uppercase; margin-bottom: 26px; }
+  .sig-line { border-top: 1px solid #000; padding-top: 3px; font-size: 8.5px; }
+  .footer { text-align: center; margin-top: 10px; font-size: 7.5px; color: #888; border-top: 1px dotted #ccc; padding-top: 4px; }
+  @media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
+</style>
+<script>window.onload = function() { setTimeout(function(){ window.print(); }, 500); };</script>
+</head><body>
+  <div class="top">
+    <div style="font-weight:900;font-size:11px">BoAMM &nbsp; OAM145# N-114</div>
+    <div style="text-align:right">
+      <div class="code-box">API</div><br>
+      <span style="font-size:9px">AJUSTE POR INGRESO</span>
+    </div>
+  </div>
+  <h1>COMPROBANTE AJUSTE POR INGRESO<br>
+    <span style="font-size:10px;font-weight:400">HERRAMIENTAS, BANCOS DE PRUEBA Y EQUIPOS DE APOYO</span>
+  </h1>
+  <table class="info-tbl">
+    <tr>
+      <td class="lbl">DOCUMENTO REF.:</td>
+      <td>${fv.documento || '—'}</td>
+      <td class="lbl">TIPO AJUSTE:</td>
+      <td><strong>${tipoLabel}</strong></td>
+      <td class="nro-cell" rowspan="3"><div style="font-size:8px;font-weight:400">N° AJUSTE</div>${nro}</td>
+    </tr>
+    <tr>
+      <td class="lbl">ELABORÓ AJUSTE:</td>
+      <td>${fv.realizadoPorInput || fv.realizadoPor || '—'}</td>
+      <td class="lbl">AUTORIZÓ:</td>
+      <td>${fv.aprobadoPorInput || fv.aprobadoPor || '—'}</td>
+    </tr>
+    <tr>
+      <td class="lbl">FECHA:</td>
+      <td>${fv.fecha || '—'}</td>
+      <td class="lbl">OBSERVACIÓN:</td>
+      <td>${fv.descripcion || '—'}</td>
+    </tr>
+  </table>
+  <div class="sec">DETALLE DE HERRAMIENTAS AJUSTADAS</div>
+  <table class="det">
+    <thead><tr>
+      <th style="width:25px">ITEM</th>
+      <th>CÓDIGO BOA</th>
+      <th>P/N</th>
+      <th>S/N</th>
+      <th style="width:35px">CANT.</th>
+      <th>DESCRIPCIÓN</th>
+      <th>ESTADO</th>
+      <th>LISTA CONT.</th>
+      <th>UBICACIÓN</th>
+      <th>OBS</th>
+    </tr></thead>
+    <tbody>${rows}</tbody>
+  </table>
+  <div class="sigs">
+    <div class="sig">
+      <div class="sig-ttl">ELABORÓ AJUSTE</div>
+      <div style="font-size:9px;margin-bottom:16px">${fv.realizadoPorInput || fv.realizadoPor || '____________________'}</div>
+      <div class="sig-line">Firma / Cargo</div>
+    </div>
+    <div class="sig">
+      <div class="sig-ttl">AUTORIZÓ</div>
+      <div style="font-size:9px;margin-bottom:16px">${fv.aprobadoPorInput || fv.aprobadoPor || '____________________'}</div>
+      <div class="sig-line">Firma / Cargo</div>
+    </div>
+    <div class="sig">
+      <div class="sig-ttl">RECIBIÓ ALMACÉN</div>
+      <div class="sig-line">Firma Almacén Herramientas</div>
+    </div>
+  </div>
+  <div class="footer">Sistema de Gestión de Herramientas - BOA &nbsp;|&nbsp; ${now}</div>
+</body></html>`;
+
+        w.document.write(html);
+        w.document.close();
     }
 }

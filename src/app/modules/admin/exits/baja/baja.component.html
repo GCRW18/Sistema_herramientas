@@ -18,15 +18,16 @@
         <!-- HEADER -->
         <div class="flex flex-row items-center justify-between gap-3 shrink-0 relative z-10">
             <div class="flex items-center gap-2">
-                <div class="font-black text-xs uppercase flex items-center gap-2">
-                    <mat-icon class="text-black dark:text-white !text-base">flight</mat-icon>
+                <div class="flex items-center gap-2 flex-wrap">
+                    <div class="font-black text-xs uppercase flex items-center gap-2">
+                        <mat-icon class="text-black dark:text-amber-400 !text-base">flight</mat-icon>
+                    </div>
+                    <h1 class="text-lg font-black text-black dark:text-white uppercase tracking-tight leading-none">
+                        Baja de Herramientas                    </h1>
+                    <p class="text-[10px] font-bold bg-amber-400 text-black px-2 py-0.5 rounded-sm border border-black">
+                        PROCESO ADMINISTRATIVO
+                    </p>
                 </div>
-                <h1 class="text-lg font-black text-black dark:text-white uppercase tracking-tight leading-none">
-                    Baja de Herramientas
-                </h1>
-                <p class="text-[10px] font-bold bg-red-600 text-white px-2 py-0.5 rounded-sm border border-black">
-                    PROCESO ADMINISTRATIVO
-                </p>
                 <span *ngIf="isProcessValid()"
                       class="text-[10px] font-bold bg-green-600 text-white px-2 py-0.5 rounded-sm border border-black flex items-center gap-0.5">
                     <mat-icon class="!text-xs !w-3 !h-3">check_circle</mat-icon>
@@ -34,19 +35,19 @@
                 </span>
             </div>
             <div class="flex items-center gap-2">
-                <div class="flex items-center gap-1.5 bg-white dark:bg-slate-800 border-2 border-black px-2 py-1 rounded-lg shadow-[2px_2px_0px_0px_#000] shrink-0">
+                <div class="flex items-center gap-1.5 bg-amber-400 dark:bg-slate-800 border-2 border-black px-2 py-1 rounded-lg shadow-[2px_2px_0px_0px_#000] shrink-0">
                     <mat-icon class="text-black dark:text-white !text-sm">receipt</mat-icon>
-                    <span class="text-[9px] font-black uppercase text-gray-600 dark:text-gray-300">Nota:</span>
+                    <span class="text-[9px] font-black uppercase text-black dark:text-gray-300">Nota:</span>
                     <span class="text-sm font-black text-black dark:text-white">{{ nroNota() }}</span>
                 </div>
                 <button (click)="openHerramientaABaja()"
-                        class="h-9 px-4 bg-blue-600 text-white font-black text-xs border-2 border-black rounded-lg shadow-[3px_3px_0px_0px_#000] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all uppercase flex items-center gap-1.5">
-                    <mat-icon class="!text-sm">add_circle</mat-icon>
+                        class="h-9 px-4 bg-[#111A43] text-white font-black text-xs border-2 border-black rounded-lg shadow-[3px_3px_0px_0px_#000] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all uppercase flex items-center gap-1.5">
+                    <mat-icon class="!text-sm text-white">add_circle</mat-icon>
                     Agregar
                 </button>
                 <button (click)="procesarEImprimir()" [disabled]="!isProcessValid()"
-                        class="h-9 px-4 bg-yellow-500 text-black font-black text-xs border-2 border-black rounded-lg shadow-[3px_3px_0px_0px_#000] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all uppercase flex items-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed">
-                    <mat-icon class="!text-sm">print</mat-icon>
+                        class="h-9 px-4 bg-red-600 text-white font-black text-xs border-2 border-black rounded-lg shadow-[3px_3px_0px_0px_#000] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all uppercase flex items-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed">
+                    <mat-icon class="!text-sm text-white">print</mat-icon>
                     Procesar
                     <span *ngIf="dataSource().length > 0" class="bg-black/20 px-1.5 rounded font-black">{{ dataSource().length }}</span>
                 </button>
@@ -62,8 +63,8 @@
                     <div class="neo-card-base bg-white dark:bg-slate-800 relative flex flex-col flex-1 overflow-hidden">
 
                         <!-- Cabecera -->
-                        <div class="bg-red-600 border-b-2 border-black px-2 py-1 flex items-center gap-2 shrink-0">
-                            <mat-icon class="text-white !text-sm shrink-0">assignment_late</mat-icon>
+                        <div class="bg-[#0F172AFF] border-b-2 border-black px-2 py-1 flex items-center gap-2 shrink-0">
+                            <mat-icon class="text-amber-400 !text-sm shrink-0">assignment_late</mat-icon>
                             <div>
                                 <p class="text-[8px] font-black uppercase text-white/70 leading-none">Configuración</p>
                                 <p class="text-[10px] font-black text-white uppercase leading-tight">Datos del Proceso</p>
@@ -85,7 +86,7 @@
 
                             <!-- Procesado Por -->
                             <div>
-                                <label class="text-[8px] font-black uppercase text-gray-600 dark:text-gray-400 mb-0.5 block">Procesado Por *</label>
+                                <label class="text-[8px] font-black uppercase text-black dark:text-gray-400 mb-0.5 block">Procesado Por *</label>
                                 <div class="relative">
                                     <select formControlName="procesadoPor"
                                             class="w-full h-6 text-[11px] font-bold border-2 border-black dark:border-slate-600 rounded pl-5 pr-2 bg-white dark:bg-[#0F172AFF] text-black dark:text-white outline-none appearance-none cursor-pointer"
@@ -93,26 +94,26 @@
                                         <option [ngValue]="null">-- Seleccionar --</option>
                                         <option *ngFor="let u of usuarios" [ngValue]="u.value">{{ u.value }}</option>
                                     </select>
-                                    <mat-icon class="absolute left-1 top-1/2 -translate-y-1/2 text-gray-500 !text-xs">person</mat-icon>
+                                    <mat-icon class="absolute left-1 top-1/2 -translate-y-1/2 text-black !text-xs">person</mat-icon>
                                 </div>
                             </div>
 
                             <!-- Verificado / Autorizado -->
                             <div class="grid grid-cols-2 gap-1">
                                 <div>
-                                    <label class="text-[8px] font-black uppercase text-gray-600 dark:text-gray-400 mb-0.5 block">Verificado Por</label>
+                                    <label class="text-[8px] font-black uppercase text-black dark:text-gray-400 mb-0.5 block">Verificado Por</label>
                                     <div class="relative">
                                         <input type="text" formControlName="verificadoPor" placeholder="Verificador..."
                                                class="w-full h-6 text-[11px] font-bold border-2 border-black dark:border-slate-600 rounded pl-5 pr-1 bg-white dark:bg-[#0F172AFF] text-black dark:text-white outline-none placeholder:text-gray-400">
-                                        <mat-icon class="absolute left-1 top-1/2 -translate-y-1/2 text-gray-500 !text-xs">verified</mat-icon>
+                                        <mat-icon class="absolute left-1 top-1/2 -translate-y-1/2 text-black !text-xs">verified</mat-icon>
                                     </div>
                                 </div>
                                 <div>
-                                    <label class="text-[8px] font-black uppercase text-gray-600 dark:text-gray-400 mb-0.5 block">Autorizado Por</label>
+                                    <label class="text-[8px] font-black uppercase text-black dark:text-gray-400 mb-0.5 block">Autorizado Por</label>
                                     <div class="relative">
                                         <input type="text" formControlName="autorizadoPor" placeholder="Autorizador..."
                                                class="w-full h-6 text-[11px] font-bold border-2 border-black dark:border-slate-600 rounded pl-5 pr-1 bg-white dark:bg-[#0F172AFF] text-black dark:text-white outline-none placeholder:text-gray-400">
-                                        <mat-icon class="absolute left-1 top-1/2 -translate-y-1/2 text-gray-500 !text-xs">approval</mat-icon>
+                                        <mat-icon class="absolute left-1 top-1/2 -translate-y-1/2 text-black !text-xs">approval</mat-icon>
                                     </div>
                                 </div>
                             </div>
@@ -120,7 +121,7 @@
                             <!-- Estado / Inspector -->
                             <div class="grid grid-cols-2 gap-1">
                                 <div>
-                                    <label class="text-[8px] font-black uppercase text-gray-600 dark:text-gray-400 mb-0.5 block">Estado *</label>
+                                    <label class="text-[8px] font-black uppercase text-black dark:text-gray-400 mb-0.5 block">Estado *</label>
                                     <div class="relative">
                                         <select formControlName="estado"
                                                 class="w-full h-6 text-[11px] font-bold border-2 border-black dark:border-slate-600 rounded pl-5 pr-1 bg-white dark:bg-[#0F172AFF] text-black dark:text-white outline-none appearance-none cursor-pointer"
@@ -128,15 +129,15 @@
                                             <option [ngValue]="null">-- Selec. --</option>
                                             <option *ngFor="let e of estados" [ngValue]="e.value">{{ e.label }}</option>
                                         </select>
-                                        <mat-icon class="absolute left-1 top-1/2 -translate-y-1/2 text-gray-500 !text-xs">assignment</mat-icon>
+                                        <mat-icon class="absolute left-1 top-1/2 -translate-y-1/2 text-black !text-xs">assignment</mat-icon>
                                     </div>
                                 </div>
                                 <div>
-                                    <label class="text-[8px] font-black uppercase text-gray-600 dark:text-gray-400 mb-0.5 block">Inspector</label>
+                                    <label class="text-[8px] font-black uppercase text-black dark:text-gray-400 mb-0.5 block">Inspector</label>
                                     <div class="relative">
                                         <input type="text" formControlName="inspector" placeholder="Inspector..."
                                                class="w-full h-6 text-[11px] font-bold border-2 border-black dark:border-slate-600 rounded pl-5 pr-1 bg-white dark:bg-[#0F172AFF] text-black dark:text-white outline-none placeholder:text-gray-400">
-                                        <mat-icon class="absolute left-1 top-1/2 -translate-y-1/2 text-gray-500 !text-xs">gavel</mat-icon>
+                                        <mat-icon class="absolute left-1 top-1/2 -translate-y-1/2 text-black !text-xs">gavel</mat-icon>
                                     </div>
                                 </div>
                             </div>
@@ -144,7 +145,7 @@
                             <!-- Nombre / Unidad -->
                             <div class="grid grid-cols-2 gap-1">
                                 <div>
-                                    <label class="text-[8px] font-black uppercase text-gray-600 dark:text-gray-400 mb-0.5 block">Nombre</label>
+                                    <label class="text-[8px] font-black uppercase text-black dark:text-gray-400 mb-0.5 block">Nombre</label>
                                     <div class="relative">
                                         <input type="text" formControlName="nombre" readonly
                                                class="w-full h-6 text-[11px] font-bold border-2 border-gray-300 dark:border-slate-600 rounded pl-5 pr-1 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 outline-none cursor-not-allowed">
@@ -152,21 +153,21 @@
                                     </div>
                                 </div>
                                 <div>
-                                    <label class="text-[8px] font-black uppercase text-gray-600 dark:text-gray-400 mb-0.5 block">Unidad</label>
+                                    <label class="text-[8px] font-black uppercase text-black dark:text-gray-400 mb-0.5 block">Unidad</label>
                                     <div class="relative">
                                         <select formControlName="unidad"
                                                 class="w-full h-6 text-[11px] font-bold border-2 border-black dark:border-slate-600 rounded pl-5 pr-1 bg-white dark:bg-[#0F172AFF] text-black dark:text-white outline-none appearance-none cursor-pointer">
                                             <option [ngValue]="null">-- Base --</option>
                                             <option *ngFor="let u of unidades" [ngValue]="u">{{ u }}</option>
                                         </select>
-                                        <mat-icon class="absolute left-1 top-1/2 -translate-y-1/2 text-gray-500 !text-xs">flight</mat-icon>
+                                        <mat-icon class="absolute left-1 top-1/2 -translate-y-1/2 text-black !text-xs">flight</mat-icon>
                                     </div>
                                 </div>
                             </div>
 
                             <!-- Cargo -->
                             <div>
-                                <label class="text-[8px] font-black uppercase text-gray-600 dark:text-gray-400 mb-0.5 block">Cargo</label>
+                                <label class="text-[8px] font-black uppercase text-black dark:text-gray-400 mb-0.5 block">Cargo</label>
                                 <div class="relative">
                                     <input type="text" formControlName="cargo" readonly
                                            class="w-full h-6 text-[11px] font-bold border-2 border-gray-300 dark:border-slate-600 rounded pl-5 pr-2 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 outline-none cursor-not-allowed">
@@ -177,58 +178,58 @@
                             <!-- Fecha + Hora -->
                             <div class="grid grid-cols-2 gap-1">
                                 <div>
-                                    <label class="text-[8px] font-black uppercase text-gray-600 dark:text-gray-400 mb-0.5 block">Fecha *</label>
+                                    <label class="text-[8px] font-black uppercase text-black dark:text-gray-400 mb-0.5 block">Fecha *</label>
                                     <div class="relative">
                                         <input type="date" formControlName="fecha"
                                                class="w-full h-6 text-[11px] font-bold border-2 border-black dark:border-slate-600 rounded pl-5 pr-1 bg-white dark:bg-[#0F172AFF] text-black dark:text-white outline-none"
                                                [class.border-red-500]="hasError('fecha', 'required')">
-                                        <mat-icon class="absolute left-0.5 top-1/2 -translate-y-1/2 text-gray-500 !text-xs">calendar_today</mat-icon>
+                                        <mat-icon class="absolute left-0.5 top-1/2 -translate-y-1/2 text-black !text-xs">calendar_today</mat-icon>
                                     </div>
                                 </div>
                                 <div>
-                                    <label class="text-[8px] font-black uppercase text-gray-600 dark:text-gray-400 mb-0.5 block">Hora *</label>
+                                    <label class="text-[8px] font-black uppercase text-black dark:text-gray-400 mb-0.5 block">Hora *</label>
                                     <div class="relative">
                                         <input type="time" formControlName="hora"
                                                class="w-full h-6 text-[11px] font-bold border-2 border-black dark:border-slate-600 rounded pl-5 pr-1 bg-white dark:bg-[#0F172AFF] text-black dark:text-white outline-none"
                                                [class.border-red-500]="hasError('hora', 'required')">
-                                        <mat-icon class="absolute left-0.5 top-1/2 -translate-y-1/2 text-gray-500 !text-xs">schedule</mat-icon>
+                                        <mat-icon class="absolute left-0.5 top-1/2 -translate-y-1/2 text-black !text-xs">schedule</mat-icon>
                                     </div>
                                 </div>
                             </div>
 
                             <!-- Observaciones -->
                             <div>
-                                <label class="text-[8px] font-black uppercase text-gray-600 dark:text-gray-400 mb-0.5 block">Observaciones</label>
+                                <label class="text-[8px] font-black uppercase text-black dark:text-gray-400 mb-0.5 block">Observaciones</label>
                                 <textarea formControlName="observaciones" rows="1"
                                           placeholder="Observaciones adicionales..."
-                                          class="w-full text-[11px] font-medium border-2 border-gray-300 dark:border-slate-600 rounded px-2 py-0.5 bg-white dark:bg-[#0F172AFF] text-black dark:text-white outline-none placeholder:text-gray-400 resize-none"></textarea>
+                                          class="w-full text-[11px] font-medium border-2 border-black dark:border-slate-600 rounded px-2 py-0.5 bg-white dark:bg-[#0F172AFF] text-black dark:text-white outline-none placeholder:text-gray-400 resize-none"></textarea>
                             </div>
 
                             <!-- Summary -->
-                            <div class="border-t border-dashed border-gray-200 dark:border-gray-700 pt-0.5 flex flex-col gap-0.5">
+                            <div class="border-t border-dashed border-black dark:border-gray-700 pt-0.5 flex flex-col gap-0.5">
                                 <div class="grid grid-cols-2 gap-1">
-                                    <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-400 rounded p-1 flex items-center gap-1">
-                                        <mat-icon class="text-blue-600 !text-xs !w-3 !h-3 shrink-0">inventory</mat-icon>
+                                    <div class="bg-gray-50 dark:bg-blue-900/20 border border-black rounded p-1 flex items-center gap-1">
+                                        <mat-icon class="text-black !text-xs !w-3 !h-3 shrink-0">inventory</mat-icon>
                                         <div>
-                                            <p class="text-xs font-black text-blue-700 dark:text-blue-300 leading-none">{{ dataSource().length }}</p>
-                                            <p class="text-[7px] font-bold text-blue-600 uppercase">Herram.</p>
+                                            <p class="text-xs font-black text-black dark:text-blue-300 leading-none">{{ dataSource().length }}</p>
+                                            <p class="text-[7px] font-bold text-black uppercase">Herram.</p>
                                         </div>
                                     </div>
-                                    <div class="bg-green-50 dark:bg-green-900/20 border border-green-400 rounded p-1 flex items-center gap-1">
-                                        <mat-icon class="text-green-600 !text-xs !w-3 !h-3 shrink-0">layers</mat-icon>
+                                    <div class="bg-gray-50 dark:bg-green-900/20 border border-black rounded p-1 flex items-center gap-1">
+                                        <mat-icon class="text-black !text-xs !w-3 !h-3 shrink-0">layers</mat-icon>
                                         <div>
-                                            <p class="text-xs font-black text-green-700 dark:text-green-300 leading-none">{{ getTotalCantidad() }}</p>
-                                            <p class="text-[7px] font-bold text-green-600 uppercase">Total</p>
+                                            <p class="text-xs font-black text-black dark:text-green-300 leading-none">{{ getTotalCantidad() }}</p>
+                                            <p class="text-[7px] font-bold text-black uppercase">Total</p>
                                         </div>
                                     </div>
                                 </div>
-                                <div class="bg-white dark:bg-slate-900/30 border border-gray-300 dark:border-gray-700 rounded p-1 flex flex-col gap-0.5">
+                                <div class="bg-white dark:bg-slate-900/30 border border-black dark:border-gray-700 rounded p-1 flex flex-col gap-0.5">
                                     <div class="flex justify-between text-[9px]">
-                                        <span class="font-bold text-gray-600 dark:text-gray-300">Procesado por:</span>
+                                        <span class="font-bold text-black dark:text-gray-300">Procesado por:</span>
                                         <span class="font-black text-black dark:text-white truncate max-w-[120px]">{{ bajaForm.value.nombre || '-' }}</span>
                                     </div>
                                     <div class="flex justify-between text-[9px]">
-                                        <span class="font-bold text-gray-600 dark:text-gray-300">Fecha/Hora:</span>
+                                        <span class="font-bold text-black dark:text-gray-300">Fecha/Hora:</span>
                                         <span class="font-black text-black dark:text-white">{{ formatDateTime() }}</span>
                                     </div>
                                 </div>
@@ -259,7 +260,7 @@
                     <!-- Header tabla -->
                     <div class="bg-[#0F172AFF] px-3 py-1.5 border-b-2 border-black flex items-center justify-between shrink-0 h-9">
                         <span class="font-black text-xs uppercase text-white flex items-center gap-2">
-                            <mat-icon class="!text-base !w-4 !h-4">inventory</mat-icon>
+                            <mat-icon class="text-amber-400 !text-base !w-4 !h-4">inventory</mat-icon>
                             Herramientas para Baja
                         </span>
                         <span class="bg-white text-black px-2 py-0.5 rounded text-xs font-black border border-black shadow-[2px_2px_0px_0px_#000]">
@@ -274,12 +275,12 @@
                             <mat-icon class="!text-4xl !w-8 !h-8 text-[#111A43]">inventory</mat-icon>
                         </div>
                         <h3 class="text-base font-black uppercase tracking-tight text-black dark:text-white">Lista Vacía</h3>
-                        <p class="text-xs font-bold bg-yellow-300 px-3 py-1 mt-2 border-2 border-black -rotate-1 text-black">
+                        <p class="text-xs font-bold bg-amber-400 px-3 py-1 mt-2 border-2 border-black -rotate-1 text-black">
                             Presione Agregar para añadir herramientas
                         </p>
                         <button (click)="openHerramientaABaja()"
-                                class="mt-4 h-9 px-4 bg-blue-600 text-white font-black text-xs border-2 border-black rounded-lg shadow-[3px_3px_0px_0px_#000] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all uppercase flex items-center gap-1.5">
-                            <mat-icon class="!text-sm">add_circle</mat-icon>
+                                class="mt-4 h-9 px-4 bg-[#111A43] text-white font-black text-xs border-2 border-black rounded-lg shadow-[3px_3px_0px_0px_#000] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all uppercase flex items-center gap-1.5">
+                            <mat-icon class="!text-sm text-white">add_circle</mat-icon>
                             Agregar Primera Herramienta
                         </button>
                     </div>

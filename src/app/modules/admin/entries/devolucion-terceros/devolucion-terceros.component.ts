@@ -35,6 +35,7 @@ interface DevolucionTerceroItem {
     toolId?: string;
     codigo: string;
     pn: string;
+    sn: string;
     descripcion: string;
     marca: string;
     fechaSalida: string;
@@ -325,64 +326,62 @@ export class DevolucionTercerosComponent implements OnInit, OnDestroy {
 
         this.isSearching = true;
 
-        // Buscar préstamos externos activos para este tercero
-        this.movementService.getMovements({
-            type: 'loan',
-            status: 'approved'
+        const razonSocialSafe = (tercero.razonSocial || '').replace(/'/g, "''");
+        const filtroLoans = `loa.status = 'ACTIVO' AND loa.loan_type = 'EXTERNO'`
+            + ` AND loa.borrower_name ILIKE '%${razonSocialSafe}%'`;
+
+        forkJoin({
+            loans: this.movementService.getActiveLoans({ filtro_adicional: filtroLoans }),
+            items: this.movementService.getActiveLoanItems()
         }).pipe(
             takeUntil(this._unsubscribeAll),
             finalize(() => this.isSearching = false)
         ).subscribe({
-            next: (data) => {
-                const filtered = (data || []).filter((mov: any) =>
-                    mov.type === 'loan' &&
-                    (mov.customer === tercero.razonSocial || mov.recipient === tercero.razonSocial)
-                );
-
-                if (filtered.length === 0) {
+            next: ({ loans, items }) => {
+                if (!loans || loans.length === 0) {
                     this.dataSource = [];
                     this.showMessage(`No hay préstamos activos para ${tercero.razonSocial}`, 'warning');
                     return;
                 }
 
-                // Segunda llamada: obtener items de cada movimiento
-                forkJoin(
-                    filtered.map((mov: any) =>
-                        this.movementService.getMovementItems(Number(mov.id_movement)).pipe(
-                            map((items: any[]) => ({ mov, items }))
-                        )
-                    )
-                ).pipe(takeUntil(this._unsubscribeAll)).subscribe({
-                    next: (results: any[]) => {
-                        this.dataSource = results.flatMap(({ mov, items }) =>
-                            items.map((item: any) => ({
-                                id: this.itemIdCounter++,
-                                fila: 0,
-                                toolId: String(item.tool_id || ''),
-                                codigo: item.tool?.code || item.code || '',
-                                pn: item.part_number || item.tool?.partNumber || '',
-                                descripcion: item.tool?.description || item.description || '',
-                                marca: item.tool?.brand || item.brand || '',
-                                fechaSalida: mov.date || '',
-                                diasFuera: mov.date ? this.calcularDiasFuera(mov.date) : 0,
-                                cantidad: Number(item.quantity) || 1,
-                                nroNotaSalida: mov.movement_number || '',
-                                tipoContrato: tercero.tipoEmpresa,
-                                proyecto: mov.work_order_number || '',
-                                estado: 'EN_TERCERO',
-                                condicionDevolucion: '',
-                                observaciones: item.notes || '',
-                                selected: false
-                            }))
-                        );
-                        this.dataSource.forEach((item, idx) => item.fila = idx + 1);
-                        this.showMessage(`Se encontraron ${this.dataSource.length} herramienta(s) en ${tercero.razonSocial}`, 'success');
-                    },
-                    error: (err) => {
-                        this.dataSource = [];
-                        this.showMessage('Error al cargar items: ' + (err?.message || 'Error de conexión'), 'error');
-                    }
-                });
+                const loanIds = new Set(loans.map((l: any) => String(l.id_loan)));
+                const loanMap: Record<string, any> = {};
+                loans.forEach((l: any) => loanMap[String(l.id_loan)] = l);
+
+                const resultado: DevolucionTerceroItem[] = (items || [])
+                    .filter((it: any) => loanIds.has(String(it.id_loan)))
+                    .map((it: any) => {
+                        const loan = loanMap[String(it.id_loan)];
+                        return {
+                            id: this.itemIdCounter++,
+                            fila: 0,
+                            toolId: String(it.tool_id || ''),
+                            codigo: it.code || '',
+                            pn: it.part_number || '',
+                            sn: it.serial_number || '',
+                            descripcion: it.description || '',
+                            marca: it.brand || '',
+                            fechaSalida: loan?.loan_date || '',
+                            diasFuera: loan?.loan_date ? this.calcularDiasFuera(loan.loan_date) : 0,
+                            cantidad: Number(it.quantity) || 1,
+                            nroNotaSalida: loan?.loan_number || '',
+                            tipoContrato: tercero.tipoEmpresa,
+                            proyecto: loan?.work_order_number || '',
+                            estado: 'EN_TERCERO',
+                            condicionDevolucion: '',
+                            observaciones: it.notes || '',
+                            selected: false
+                        };
+                    });
+
+                this.dataSource = resultado;
+                this.dataSource.forEach((item, idx) => item.fila = idx + 1);
+
+                if (this.dataSource.length === 0) {
+                    this.showMessage(`No hay herramientas activas en préstamo para ${tercero.razonSocial}`, 'warning');
+                } else {
+                    this.showMessage(`Se encontraron ${this.dataSource.length} herramienta(s) en ${tercero.razonSocial}`, 'success');
+                }
             },
             error: (err) => {
                 this.dataSource = [];
@@ -552,6 +551,7 @@ export class DevolucionTercerosComponent implements OnInit, OnDestroy {
             <tr>
                 <td>${item.codigo || '-'}</td>
                 <td>${item.pn || '-'}</td>
+                <td>${item.sn || '-'}</td>
                 <td>${item.marca || '-'}</td>
                 <td style="text-align:center;font-weight:700">${item.cantidad}</td>
                 <td>${item.descripcion || '-'}</td>
@@ -619,7 +619,7 @@ export class DevolucionTercerosComponent implements OnInit, OnDestroy {
   <div class="sec">DATOS DEVOLUCIÓN</div>
   <table class="det">
     <thead><tr>
-      <th>CÓDIGO</th><th>P/N</th><th>MARCA</th><th>CANT.</th><th>DESCRIPCIÓN</th>
+      <th>CÓDIGO</th><th>P/N</th><th>S/N</th><th>MARCA</th><th>CANT.</th><th>DESCRIPCIÓN</th>
       <th>NRO NOTA SALIDA</th><th>FECHA SALIDA</th><th>DÍAS FUERA</th><th>CONDICIÓN</th><th>OBS</th>
     </tr></thead>
     <tbody>${rows}</tbody>

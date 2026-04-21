@@ -1,41 +1,37 @@
-// =========================================================================
-// Calibration Batch Types - Modo Supermercado
-// =========================================================================
+// calibration-batch.types.ts
 
 export interface CalibrationBatch {
     id_batch: number;
     estado_reg: string;
     batch_number: string;
-    status: CalibrationBatchStatus;
+    status: 'open' | 'sent' | 'in_process' | 'completed' | 'cancelled';
     laboratory_id: number;
     laboratory_name: string;
     base_id: number;
     base_name: string;
     send_date: string;
     expected_return_date: string;
-    actual_return_date: string | null;
+    actual_return_date: string;
     total_items: number;
     created_by_id: number;
     created_by_name: string;
-    approved_by_id: number | null;
-    approved_by_name: string | null;
+    approved_by_id: number;
+    approved_by_name: string;
     service_order: string;
-    cost: number | null;
+    cost: number;
     currency: string;
     notes: string;
     observations: string;
+    jack_items_count: number;
+    days_since_sent: number;
+    is_overdue: boolean;
     id_usuario_reg: number;
     fecha_reg: string;
-    id_usuario_mod: number | null;
-    fecha_mod: string | null;
+    id_usuario_mod: number;
+    fecha_mod: string;
     usr_reg: string;
-    usr_mod: string | null;
-    jack_items_count: number;
-    days_since_sent: number | null;
-    is_overdue: boolean;
+    usr_mod: string;
 }
-
-export type CalibrationBatchStatus = 'open' | 'sent' | 'in_process' | 'completed' | 'cancelled';
 
 export interface CalibrationBatchItem {
     id_batch_item: number;
@@ -46,65 +42,40 @@ export interface CalibrationBatchItem {
     tool_name: string;
     tool_serial: string;
     tool_part_number: string;
-    calibration_id: number | null;
-    calibration_record: string | null;
+    calibration_id: number;
+    calibration_record: string;
     scan_order: number;
     tool_status_snapshot: string;
-    calibration_date_snapshot: string | null;
-    next_calibration_snapshot: string | null;
+    calibration_date_snapshot: string;
+    next_calibration_snapshot: string;
     is_jack: boolean;
+    tool_is_jack?: boolean;  // ✅ Hacer opcional
     requires_semiannual: boolean;
     requires_annual: boolean;
     scanned_by_barcode: boolean;
     scan_timestamp: string;
     validation_result: 'valid' | 'warning' | 'rejected';
-    validation_message: string | null;
+    validation_message: string;
     notes: string;
+    category_name: string;
+    next_semiannual_service: string;
+    next_annual_service: string;
+    next_calibration_date: string;
+    result: string;
+    certificate_number: string;
+    certificate_date: string;
+    cost: number;
     id_usuario_reg: number;
     fecha_reg: string;
     usr_reg: string;
-    category_name: string;
-    // Campos de retorno (HE_CBI_SEL enriquecido)
-    result: string | null;
-    certificate_number: string | null;
-    certificate_date: string | null;
-    next_calibration_date: string | null;
-    cost: number | null;
-    // Campos de Gata (del JOIN a ttools)
-    tool_is_jack: boolean;
-    next_semiannual_service: string | null;
-    next_annual_service: string | null;
-}
-
-export interface CalibrationBatchSummary {
-    id_batch: number;
-    batch_number: string;
-    status: CalibrationBatchStatus;
-    total_items: number;
-    confirmed_date: string | null;
-    total_jacks: number;
-    total_standard: number;
-    items_approved: number;
-    items_rejected: number;
-    items_pending: number;
-    laboratory_name: string;
-    base_name: string;
-    send_date: string;
-    expected_return_date: string;
 }
 
 export interface CreateBatchParams {
     laboratory_id: number;
-    laboratory_name: string;
-    base_id: number;
-    base_name: string;
+    laboratory_name?: string;
     send_date: string;
     expected_return_date?: string;
-    created_by_id: number;
-    created_by_name: string;
-    service_order?: string;
     notes?: string;
-    observations?: string;
 }
 
 export interface AddToolToBatchParams {
@@ -116,20 +87,28 @@ export interface AddToolToBatchParams {
 
 export interface ConfirmBatchParams {
     batch_id: number;
-    approved_by_id: number;
-    approved_by_name: string;
+    approved_by_id?: number;
+    approved_by_name?: string;
 }
 
 export interface ReturnBatchParams {
     batch_id: number;
     actual_return_date?: string;
-    result: 'approved' | 'conditional' | 'rejected';
+    result?: string;
     certificate_number?: string;
     certificate_date?: string;
-    calibration_date?: string;
-    received_by_id?: number;
-    received_by_name?: string;
     cost?: number;
     currency?: string;
     observations?: string;
+}
+
+export interface CalibrationBatchSummary {
+    id_batch: number;
+    batch_code: string;
+    batch_name: string;
+    status: string;
+    tools_count: number;
+    tools_approved: number;
+    tools_rejected: number;
+    total_cost: number;
 }

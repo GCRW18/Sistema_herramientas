@@ -48,19 +48,22 @@ interface HerramientaItem {
     cantidad: number;
     unidadMedida: string;
     estado: string;
-    costoUnitario: number;
-    precioVenta: number;
-    ubicacion: string;
+    costoHora: number;
+    costoServicio: number;
+    estante: string;
+    nivelUbicacion: string;
+    accesorios: string;
+    documento: string;
+    observacion: string;
     requiereCalibracion: boolean;
     intervaloCalibracion: number | null;
     fechaCalibracion: string | null;
     nroCertificado: string;
     costoTotal: number;
-    // Campos adicionales del Excel
-    tipo: string; // HERRAMIENTA, BANCO DE PRUEBA, CONSUMIBLE
+    tipo: string;
     marca: string;
-    nivelCriticidad: string; // A, B
-    fabricacion: string; // LOCAL, INTERNACIONAL
+    nivelCriticidad: string;
+    fabricacion: string;
 }
 
 @Component({
@@ -260,6 +263,7 @@ export class NuevaHerramientaComponent implements OnInit, OnDestroy {
             proveedor: [''],
             fechaIngreso: [new Date().toISOString().split('T')[0], Validators.required],
             funcionarioRecibe: ['', Validators.required],
+            recibiConforme: [''],
             ordenCompra: [''],
             observaciones: ['']
         });
@@ -273,9 +277,13 @@ export class NuevaHerramientaComponent implements OnInit, OnDestroy {
             cantidad: [1, [Validators.required, Validators.min(1), Validators.max(9999)]],
             unidadMedida: ['UNIDAD', Validators.required],
             estado: ['NUEVO', Validators.required],
-            costoUnitario: [0, [Validators.required, Validators.min(0)]],
-            precioVenta: [0, Validators.min(0)],
-            ubicacion: [''],
+            costoHora: [0, [Validators.required, Validators.min(0)]],
+            costoServicio: [0, Validators.min(0)],
+            estante: [''],
+            nivelUbicacion: [''],
+            accesorios: [''],
+            documento: [''],
+            observacion: [''],
             requiereCalibracion: [false],
             intervaloCalibracion: [null],
             fechaCalibracion: [null],
@@ -481,15 +489,18 @@ export class NuevaHerramientaComponent implements OnInit, OnDestroy {
             cantidad: f.cantidad,
             unidadMedida: f.unidadMedida,
             estado: f.estado,
-            costoUnitario: f.costoUnitario || 0,
-            precioVenta: f.precioVenta || 0,
-            ubicacion: f.ubicacion || '',
+            costoHora: f.costoHora || 0,
+            costoServicio: f.costoServicio || 0,
+            estante: f.estante || '',
+            nivelUbicacion: f.nivelUbicacion || '',
+            accesorios: f.accesorios || '',
+            documento: f.documento || '',
+            observacion: f.observacion || '',
             requiereCalibracion: f.requiereCalibracion || false,
             intervaloCalibracion: f.requiereCalibracion ? f.intervaloCalibracion : null,
             fechaCalibracion: f.requiereCalibracion ? f.fechaCalibracion : null,
             nroCertificado: f.requiereCalibracion ? f.nroCertificado : '',
-            costoTotal: f.cantidad * (f.costoUnitario || 0),
-            // Campos adicionales del Excel
+            costoTotal: f.cantidad * (f.costoHora || 0),
             tipo: f.tipo || 'HERRAMIENTA',
             marca: f.marca || '',
             nivelCriticidad: f.nivelCriticidad || 'B',
@@ -523,14 +534,17 @@ export class NuevaHerramientaComponent implements OnInit, OnDestroy {
             cantidad: item.cantidad,
             unidadMedida: item.unidadMedida,
             estado: item.estado,
-            costoUnitario: item.costoUnitario,
-            precioVenta: item.precioVenta,
-            ubicacion: item.ubicacion,
+            costoHora: item.costoHora,
+            costoServicio: item.costoServicio,
+            estante: item.estante,
+            nivelUbicacion: item.nivelUbicacion,
+            accesorios: item.accesorios,
+            documento: item.documento,
+            observacion: item.observacion,
             requiereCalibracion: item.requiereCalibracion,
             intervaloCalibracion: item.intervaloCalibracion,
             fechaCalibracion: item.fechaCalibracion,
             nroCertificado: item.nroCertificado,
-            // Campos adicionales del Excel
             tipo: item.tipo || 'HERRAMIENTA',
             marca: item.marca || '',
             nivelCriticidad: item.nivelCriticidad || 'B',
@@ -570,14 +584,17 @@ export class NuevaHerramientaComponent implements OnInit, OnDestroy {
             cantidad: 1,
             unidadMedida: 'UNIDAD',
             estado: 'NUEVO',
-            costoUnitario: 0,
-            precioVenta: 0,
-            ubicacion: '',
+            costoHora: 0,
+            costoServicio: 0,
+            estante: '',
+            nivelUbicacion: '',
+            accesorios: '',
+            documento: '',
+            observacion: '',
             requiereCalibracion: false,
             intervaloCalibracion: null,
             fechaCalibracion: null,
             nroCertificado: '',
-            // Campos adicionales del Excel
             tipo: 'HERRAMIENTA',
             marca: '',
             nivelCriticidad: 'B',
@@ -606,7 +623,7 @@ export class NuevaHerramientaComponent implements OnInit, OnDestroy {
     }
 
     getCostoTotal(): number {
-        return this.dataSource.reduce((sum, item) => sum + item.costoTotal, 0);
+        return this.dataSource.reduce((sum, item) => sum + (item.cantidad * item.costoHora), 0);
     }
 
     getItemsConCalibracion(): number {
@@ -682,7 +699,12 @@ export class NuevaHerramientaComponent implements OnInit, OnDestroy {
             part_number:          h.pn || '',
             serial_number:        h.sn || '',
             quantity:             h.cantidad,
-            purchase_price:       h.costoUnitario || 0,
+            purchase_price:       h.costoHora || 0,
+            rental_cost_service:  h.costoServicio || 0,
+            shelf:                h.estante || '',
+            shelf_level:          h.nivelUbicacion || '',
+            accessories:          h.accesorios || '',
+            document_ref:         h.documento || '',
             unit_of_measure:      h.unidadMedida || 'UNIDAD',
             condition:            h.estado === 'NUEVO' ? 'new' : h.estado === 'REACONDICIONADO' ? 'fair' : 'good',
             criticality_level:    h.nivelCriticidad || 'B',
@@ -691,13 +713,14 @@ export class NuevaHerramientaComponent implements OnInit, OnDestroy {
             calibration_interval: h.intervaloCalibracion || null,
             calibration_date:     h.fechaCalibracion || null,
             certificate_number:   h.nroCertificado || '',
-            notes:                ''
+            notes:                h.observacion || ''
         })));
 
         this.movementService.registrarNuevaCompra({
             movement_number:    recepcion.nroCmr,
             date:               recepcion.fechaIngreso,
             responsible_person: funcionario?.nombreCompleto || '',
+            received_by_name:   recepcion.recibiConforme || '',
             supplier:           proveedorNombre,
             invoice_number:     recepcion.nroFactura || '',
             purchase_order:     recepcion.ordenCompra || '',
@@ -782,21 +805,24 @@ export class NuevaHerramientaComponent implements OnInit, OnDestroy {
                     descripcion: data.nombre || data.descripcion || '',
                     codigoBoa: data.codigo || '',
                     cantidad: data.cantidad || 1,
-                    unidadMedida: data.unidadMedida || 'UNIDAD',
+                    unidadMedida: data.um || data.unidadMedida || 'UNIDAD',
                     estado: data.estado || 'NUEVO',
-                    costoUnitario: data.costoUnitario || 0,
-                    precioVenta: data.precioVenta || 0,
-                    ubicacion: data.ubicacion || '',
-                    requiereCalibracion: data.requiereCalibracion || false,
-                    intervaloCalibracion: data.intervaloCalibracion || null,
-                    fechaCalibracion: data.fechaCalibracion || null,
-                    nroCertificado: data.nroCertificado || '',
-                    costoTotal: (data.cantidad || 1) * (data.costoUnitario || 0),
-                    // Campos adicionales del Excel
-                    tipo: data.tipo || 'HERRAMIENTA',
-                    marca: data.marca || '',
-                    nivelCriticidad: data.nivelCriticidad || 'B',
-                    fabricacion: data.fabricacion || 'INTERNACIONAL'
+                    costoHora: 0,
+                    costoServicio: 0,
+                    estante: '',
+                    nivelUbicacion: '',
+                    accesorios: '',
+                    documento: data.documento || '',
+                    observacion: data.observaciones || '',
+                    requiereCalibracion: false,
+                    intervaloCalibracion: null,
+                    fechaCalibracion: null,
+                    nroCertificado: '',
+                    costoTotal: 0,
+                    tipo: 'HERRAMIENTA',
+                    marca: '',
+                    nivelCriticidad: 'B',
+                    fabricacion: 'INTERNACIONAL'
                 };
 
                 this.dataSource = [...this.dataSource, item];
