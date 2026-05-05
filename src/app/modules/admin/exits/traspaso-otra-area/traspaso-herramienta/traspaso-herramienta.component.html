@@ -1,225 +1,144 @@
-<div class="flex flex-col w-full h-full bg-[#f8f9fc] dark:bg-[#0F172AFF] transition-colors duration-300 font-sans overflow-hidden"
-     cdkDrag cdkDragRootElement=".cdk-overlay-pane" cdkDragBoundary=".cdk-overlay-container">
+<div class="bg-gray-100 dark:bg-slate-900 border-[3px] border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] flex flex-col font-sans w-full max-w-[800px] h-auto max-h-[85vh]">
 
-    <div class="fixed top-20 right-10 w-40 h-40 bg-[#111A43] rounded-full border-3 border-black opacity-5 pointer-events-none"></div>
-    <div class="fixed bottom-10 left-10 w-24 h-24 bg-green-400 rotate-12 border-3 border-black opacity-10 pointer-events-none"></div>
-
-    <div class="flex-1 overflow-y-auto p-4 md:p-6 relative custom-scrollbar">
-
-        <!-- Header -->
-        <div class="flex items-center justify-between mb-6 relative z-10">
-            <div class="flex items-center gap-4">
-                <button (click)="cerrar()"
-                        class="w-12 h-12 bg-white dark:bg-slate-800 border-2 border-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] active:shadow-none active:translate-x-1 active:translate-y-1 hover:bg-white hover:scale-105 transition-all flex items-center justify-center rounded-lg cursor-pointer"
-                        (mousedown)="$event.stopPropagation()">
-                    <mat-icon class="!text-2xl text-black dark:text-white">arrow_back</mat-icon>
-                </button>
-                <div>
-                    <h1 class="text-2xl md:text-3xl font-black text-black dark:text-white uppercase tracking-tight leading-none">
-                        Traspaso de Herramienta
-                    </h1>
-                    <div class="flex items-center gap-2 mt-1">
-                        <p class="text-xs font-bold bg-[#111A43] text-white px-2 py-0.5 rounded-sm border border-white">
-                            MOVIMIENTO A OTRA ÁREA
-                        </p>
-                    </div>
-                </div>
-            </div>
-
-            <div class="flex gap-3">
-                <button (click)="agregar()"
-                        class="px-6 py-2 bg-green-500 text-white font-black text-sm border-2 border-black rounded-full shadow-[3px_3px_0px_0px_#000] hover:shadow-[2px_2px_0px_0px_#000] hover:translate-x-[2px] hover:translate-y-[2px] active:shadow-none transition-all uppercase">
-                    Agregar
-                </button>
-                <button (click)="cerrar()"
-                        class="px-6 py-2 bg-[#111A43] text-white font-black text-sm border-2 border-black rounded-full shadow-[3px_3px_0px_0px_#000] hover:shadow-[2px_2px_0px_0px_#000] hover:translate-x-[2px] hover:translate-y-[2px] active:shadow-none transition-all uppercase">
-                    Cerrar
-                </button>
-            </div>
+    <div class="bg-[#0F172AFF] text-white px-4 py-2.5 border-b-[3px] border-black flex justify-between items-center shrink-0" cdkDrag cdkDragRootElement=".cdk-overlay-pane" cdkDragHandle>
+        <div class="flex items-center gap-2">
+            <mat-icon class="!text-xl text-amber-400">{{ isEditMode() ? 'edit' : 'add_box' }}</mat-icon>
+            <h2 class="text-sm font-black uppercase tracking-tight leading-none">{{ isEditMode() ? 'Editar Ítem' : 'Añadir Herramienta para Traspaso' }}</h2>
         </div>
+        <div class="flex items-center gap-2">
+            <button (click)="cerrar()" class="px-3 py-1 bg-red-600 text-white font-black text-[10px] border-2 border-black rounded shadow-[2px_2px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all uppercase">
+                Cancelar
+            </button>
+            <button (click)="agregar()" [disabled]="!traspasoForm.get('codigo')?.value || !validarCantidadState()" class="px-3 py-1 bg-green-600 text-white font-black text-[10px] border-2 border-black rounded shadow-[2px_2px_0px_0px_rgba(255,255,255,0.2)] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none disabled:opacity-50 disabled:shadow-none disabled:translate-x-0 disabled:translate-y-0 transition-all uppercase flex items-center gap-1">
+                <mat-icon class="!text-xs text-black">check</mat-icon> {{ isEditMode() ? 'Actualizar' : 'Agregar' }}
+            </button>
+        </div>
+    </div>
 
-        <!-- Form Card -->
-        <div class="neo-card-base bg-white dark:bg-slate-800 p-5 mb-6 relative z-10">
-            <form [formGroup]="traspasoForm">
+    <div class="flex flex-col md:flex-row flex-1 overflow-hidden">
 
-                <div class="flex items-center gap-2 mb-4 pb-2 border-b-2 border-black dark:border-gray-600">
-                    <mat-icon class="text-black dark:text-white !text-xl">search</mat-icon>
-                    <h3 class="font-black text-base uppercase text-black dark:text-white">Buscar Herramienta</h3>
-                </div>
+        <div class="w-full md:w-[60%] p-3 overflow-y-auto custom-scrollbar border-b-[3px] md:border-b-0 md:border-r-[3px] border-black bg-gray-200 dark:bg-slate-800">
+            <form [formGroup]="traspasoForm" class="flex flex-col gap-3">
 
-                <!-- Row 1: Search + Codigo + Coincidencias -->
-                <div class="flex flex-col lg:flex-row gap-4 mb-4 items-start">
-                    <div class="flex-1 w-full lg:w-auto form-group">
-                        <label class="text-[11px] font-black uppercase text-gray-700 dark:text-gray-300 mb-1.5 block">
-                            Código, Nombre o P/N
-                        </label>
-                        <select (change)="onSelectHerramienta($event)"
-                                class="w-full h-11 text-sm font-bold border-2 border-black dark:border-slate-600 rounded-lg px-4 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[3px_3px_0px_0px_#000] transition-shadow outline-none appearance-none cursor-pointer">
-                            <option value="">-- Seleccionar Herramienta --</option>
-                            <option *ngFor="let h of filteredHerramientas" [value]="h.codigo">
-                                {{ h.codigo }} - {{ h.nombre }}
-                            </option>
-                        </select>
-                    </div>
+                <div class="bg-gray-100 dark:bg-slate-900 border-[2px] border-black rounded-lg p-2 shadow-[2px_2px_0px_0px_#000]">
+                    <label class="text-[10px] font-black uppercase text-black dark:text-gray-300 flex justify-between items-center mb-1">
+                        <span>Buscar en Inventario *</span>
+                        <span *ngIf="isSearching()" class="text-gray-500 flex items-center gap-1"><mat-spinner diameter="10"></mat-spinner></span>
+                    </label>
+                    <div class="relative flex items-center gap-2">
+                        <div class="relative flex-1">
+                            <input type="text" formControlName="buscar" [matAutocomplete]="autoHerramienta" (input)="onBuscarChange($any($event.target).value)"
+                                   class="w-full h-8 text-[11px] font-black uppercase border-[2px] rounded pl-8 pr-2 bg-gray-50 dark:bg-[#0F172AFF] text-black dark:text-white outline-none focus:shadow-[2px_2px_0px_0px_#000]"
+                                   [class]="!traspasoForm.get('codigo')?.value && traspasoForm.get('buscar')?.touched ? 'border-red-500' : 'border-black'">
+                            <mat-icon class="absolute left-2 top-1/2 -translate-y-1/2 text-black dark:text-gray-400 !text-sm pointer-events-none">search</mat-icon>
 
-                    <div class="w-full lg:w-40 form-group">
-                        <label class="text-[11px] font-black uppercase text-gray-700 dark:text-gray-300 mb-1.5 block">
-                            Código
-                        </label>
-                        <select formControlName="codigo"
-                                (change)="onSelectByCodigo($event)"
-                                class="w-full h-11 text-sm font-bold border-2 border-black dark:border-slate-600 rounded-lg px-4 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[3px_3px_0px_0px_#000] transition-shadow outline-none appearance-none cursor-pointer">
-                            <option value="">-- Código --</option>
-                            <option *ngFor="let h of herramientas" [value]="h.codigo">
-                                {{ h.codigo }}
-                            </option>
-                        </select>
-                    </div>
-
-                    <div class="w-full lg:w-32 form-group">
-                        <label class="text-[11px] font-black uppercase text-gray-700 dark:text-gray-300 mb-1.5 block">
-                            Coincidencias
-                        </label>
-                        <input type="text" [value]="coincidencias()" readonly
-                               class="w-full h-11 text-sm font-black text-center border-2 border-black dark:border-slate-600 rounded-lg px-4 bg-gray-50 dark:bg-[#0F172AFF] text-black dark:text-white outline-none cursor-default">
+                            <mat-autocomplete #autoHerramienta="matAutocomplete" [displayWith]="displayHerramienta" (optionSelected)="selectHerramienta($event.option.value)">
+                                <mat-option *ngFor="let h of filteredHerramientas" [value]="h" class="border-b border-black">
+                                    <div class="flex flex-col py-1 leading-tight">
+                                        <span class="font-black text-xs text-black">{{ h.codigo }}</span>
+                                        <span class="text-[9px] text-gray-700 font-bold">{{ h.nombre }} | Stock: {{ h.existencia }}</span>
+                                    </div>
+                                </mat-option>
+                            </mat-autocomplete>
+                        </div>
+                        <button type="button" *ngIf="traspasoForm.get('codigo')?.value" (click)="limpiarBusqueda()"
+                                class="w-8 h-8 bg-gray-300 dark:bg-slate-700 text-black dark:text-white border-[2px] border-black rounded shadow-[2px_2px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none flex items-center justify-center shrink-0">
+                            <mat-icon class="!text-xs">close</mat-icon>
+                        </button>
                     </div>
                 </div>
 
-                <!-- Row 2: Nombre + P/N + S/N + Marca -->
-                <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
-                    <div class="form-group md:col-span-2">
-                        <label class="text-[11px] font-black uppercase text-gray-700 dark:text-gray-300 mb-1.5 block">
-                            Nombre
-                        </label>
-                        <input type="text" formControlName="nombre"
-                               class="w-full h-11 text-sm font-bold border-2 border-black dark:border-slate-600 rounded-lg px-4 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[3px_3px_0px_0px_#000] transition-shadow outline-none placeholder:text-gray-400">
+                <div class="border-[2px] border-black bg-gray-300 dark:bg-slate-700 p-2 rounded-lg">
+                    <h3 class="font-black text-[9px] uppercase text-black dark:text-white border-b-[2px] border-black pb-1 mb-1">Información de la Herramienta</h3>
+                    <ul class="text-[9px] text-black dark:text-white font-medium space-y-0.5">
+                        <li class="flex items-start"><span class="font-black w-14 shrink-0">Código:</span> <span class="font-mono font-bold">{{ traspasoForm.value.codigo || '-' }}</span></li>
+                        <li class="flex items-start"><span class="font-black w-14 shrink-0">P/N:</span> <span class="font-mono">{{ traspasoForm.value.pn || '-' }}</span></li>
+                        <li class="flex items-start"><span class="font-black w-14 shrink-0">S/N:</span> <span class="font-mono">{{ traspasoForm.value.sn || '-' }}</span></li>
+                        <li class="flex items-start"><span class="font-black w-14 shrink-0">Descrip:</span> <span class="truncate">{{ traspasoForm.value.nombre || '-' }}</span></li>
+                        <li class="flex items-start"><span class="font-black w-14 shrink-0">Ubicación:</span> <span>{{ traspasoForm.value.ubicacion || '-' }}</span></li>
+                        <li class="flex items-start"><span class="font-black w-14 shrink-0">Stock:</span> <span class="font-black border-b border-black w-full">{{ traspasoForm.getRawValue().existencia || 0 }} {{ traspasoForm.value.unidad || 'unds' }}</span></li>
+                    </ul>
+                </div>
+
+                <div class="border-[2px] border-black bg-gray-100 dark:bg-slate-900 p-2 rounded-lg flex flex-col gap-2 shadow-[2px_2px_0px_0px_#000]">
+                    <h3 class="font-black text-[9px] uppercase text-black dark:text-white border-b-[2px] border-black pb-1">Valores a Traspasar</h3>
+
+                    <div class="grid grid-cols-12 gap-2">
+                        <div class="col-span-6">
+                            <label class="text-[8px] font-black uppercase text-gray-700 dark:text-gray-400 block mb-0.5">Cant. a Traspasar*</label>
+                            <input type="number" formControlName="cantidad" min="1"
+                                   class="w-full h-7 text-xs text-center font-black border-[2px] rounded bg-gray-50 dark:bg-[#0F172AFF] text-black dark:text-white outline-none focus:shadow-[2px_2px_0px_0px_#000]"
+                                   [class]="hasError('cantidad','required') || traspasoForm.get('cantidad')?.errors?.['excedeStock'] ? 'border-red-500' : 'border-black'">
+                        </div>
+                        <div class="col-span-6">
+                            <label class="text-[8px] font-black uppercase text-gray-700 dark:text-gray-400 block mb-0.5">Estado al Entregar*</label>
+                            <select formControlName="estadoFisico" class="w-full h-7 text-[9px] font-bold border-[2px] border-black rounded px-1 bg-gray-50 dark:bg-[#0F172AFF] text-black dark:text-white outline-none focus:shadow-[2px_2px_0px_0px_#000]">
+                                <option *ngFor="let e of estados" [value]="e.value">{{ e.label }}</option>
+                            </select>
+                        </div>
+                        <div *ngIf="traspasoForm.get('cantidad')?.errors?.['excedeStock']" class="col-span-12 text-[9px] font-bold text-red-600">
+                            ⚠ Supera el stock disponible ({{ traspasoForm.getRawValue().existencia }}).
+                        </div>
                     </div>
 
-                    <div class="form-group">
-                        <label class="text-[11px] font-black uppercase text-gray-700 dark:text-gray-300 mb-1.5 block">
-                            P/N
-                        </label>
-                        <input type="text" formControlName="pn"
-                               class="w-full h-11 text-sm font-bold border-2 border-black dark:border-slate-600 rounded-lg px-4 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[3px_3px_0px_0px_#000] transition-shadow outline-none placeholder:text-gray-400 font-mono">
-                    </div>
-
-                    <div class="form-group">
-                        <label class="text-[11px] font-black uppercase text-gray-700 dark:text-gray-300 mb-1.5 block">
-                            S/N
-                        </label>
-                        <input type="text" formControlName="sn"
-                               class="w-full h-11 text-sm font-bold border-2 border-black dark:border-slate-600 rounded-lg px-4 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[3px_3px_0px_0px_#000] transition-shadow outline-none placeholder:text-gray-400 font-mono">
+                    <div class="flex flex-col flex-1 min-h-[50px]">
+                        <label class="text-[8px] font-black uppercase text-gray-700 dark:text-gray-400 block mb-0.5">Observaciones / Lista de Contenido</label>
+                        <textarea formControlName="observacion" placeholder="Detalles de este ítem (Ej: Incluye manual, cables, etc)..."
+                                  class="w-full flex-1 text-[9px] font-bold border-[2px] border-black rounded p-2 bg-gray-50 dark:bg-[#0F172AFF] text-black dark:text-white outline-none focus:shadow-[2px_2px_0px_0px_#000] resize-none custom-scrollbar"></textarea>
                     </div>
                 </div>
 
-                <!-- Row 3: Ubicacion + Existencia + F. Vencimiento + Unidad -->
-                <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
-                    <div class="form-group">
-                        <label class="text-[11px] font-black uppercase text-gray-700 dark:text-gray-300 mb-1.5 block">
-                            Ubicación
-                        </label>
-                        <input type="text" formControlName="ubicacion"
-                               class="w-full h-11 text-sm font-bold border-2 border-black dark:border-slate-600 rounded-lg px-4 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[3px_3px_0px_0px_#000] transition-shadow outline-none placeholder:text-gray-400">
-                    </div>
-
-                    <div class="form-group">
-                        <label class="text-[11px] font-black uppercase text-gray-700 dark:text-gray-300 mb-1.5 block">
-                            Existencia
-                        </label>
-                        <input type="text" formControlName="existencia" readonly
-                               class="w-full h-11 text-sm font-black text-center border-2 border-black dark:border-slate-600 rounded-lg px-4 bg-gray-50 dark:bg-[#0F172AFF] text-black dark:text-white outline-none cursor-default">
-                    </div>
-
-                    <div class="form-group">
-                        <label class="text-[11px] font-black uppercase text-gray-700 dark:text-gray-300 mb-1.5 block">
-                            Fecha Vencimiento
-                        </label>
-                        <input type="text" formControlName="fechaVencimiento"
-                               class="w-full h-11 text-sm font-bold border-2 border-black dark:border-slate-600 rounded-lg px-4 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[3px_3px_0px_0px_#000] transition-shadow outline-none placeholder:text-gray-400">
-                    </div>
-
-                    <div class="form-group">
-                        <label class="text-[11px] font-black uppercase text-gray-700 dark:text-gray-300 mb-1.5 block">
-                            Unidad
-                        </label>
-                        <input type="text" formControlName="unidad"
-                               class="w-full h-11 text-sm font-bold border-2 border-black dark:border-slate-600 rounded-lg px-4 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[3px_3px_0px_0px_#000] transition-shadow outline-none placeholder:text-gray-400">
-                    </div>
-                </div>
-
-                <!-- Row 4: Estado Fisico + Marca + Cantidad + Observacion -->
-                <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-                    <div class="form-group">
-                        <label class="text-[11px] font-black uppercase text-gray-700 dark:text-gray-300 mb-1.5 block">
-                            Estado Físico
-                        </label>
-                        <select formControlName="estadoFisico"
-                                class="w-full h-11 text-sm font-bold border-2 border-black dark:border-slate-600 rounded-lg px-4 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[3px_3px_0px_0px_#000] transition-shadow outline-none appearance-none cursor-pointer">
-                            <option value="BUENO">BUENO</option>
-                            <option value="REGULAR">REGULAR</option>
-                            <option value="MALO">MALO</option>
-                        </select>
-                    </div>
-
-                    <div class="form-group">
-                        <label class="text-[11px] font-black uppercase text-gray-700 dark:text-gray-300 mb-1.5 block">
-                            Marca
-                        </label>
-                        <input type="text" formControlName="marca"
-                               class="w-full h-11 text-sm font-bold border-2 border-black dark:border-slate-600 rounded-lg px-4 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[3px_3px_0px_0px_#000] transition-shadow outline-none placeholder:text-gray-400">
-                    </div>
-
-                    <div class="form-group">
-                        <label class="text-[11px] font-black uppercase text-gray-700 dark:text-gray-300 mb-1.5 block">
-                            Cantidad
-                        </label>
-                        <input type="number" formControlName="cantidad"
-                               class="w-full h-11 text-sm font-black border-2 border-black dark:border-slate-600 rounded-lg px-4 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[3px_3px_0px_0px_#000] transition-shadow outline-none">
-                    </div>
-
-                    <div class="form-group">
-                        <label class="text-[11px] font-black uppercase text-gray-700 dark:text-gray-300 mb-1.5 block">
-                            Observación
-                        </label>
-                        <input type="text" formControlName="observacion"
-                               placeholder="Notas..."
-                               class="w-full h-11 text-sm font-bold border-2 border-black dark:border-slate-600 rounded-lg px-4 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[3px_3px_0px_0px_#000] transition-shadow outline-none placeholder:text-gray-400">
-                    </div>
-                </div>
             </form>
         </div>
 
-        <!-- Image Card -->
-        <div class="neo-card-base bg-white dark:bg-slate-800 overflow-hidden relative z-10">
-            <div class="flex items-center gap-2 p-4 pb-2 border-b-2 border-black dark:border-gray-600">
-                <mat-icon class="text-black dark:text-white !text-xl">image</mat-icon>
-                <h3 class="font-black text-base uppercase text-black dark:text-white">Imagen de la Herramienta</h3>
+        <div class="w-full md:w-[40%] flex flex-col items-center p-3 bg-gray-300 dark:bg-slate-700 gap-3">
+
+            <div class="w-full flex flex-col items-center">
+                <label class="text-[9px] font-black uppercase text-black dark:text-gray-300 block w-full text-center mb-1">Imagen de Referencia</label>
+                <div class="w-full max-w-[180px] aspect-square bg-gray-100 dark:bg-slate-900 border-[3px] border-black rounded-xl flex flex-col items-center justify-center relative overflow-hidden group cursor-pointer shadow-[3px_3px_0px_0px_#000]" (click)="fileInput.click()">
+
+                    <img *ngIf="selectedImage() || imagenOriginal()" [src]="selectedImage() || imagenOriginal()" class="w-full h-full object-contain p-1 bg-gray-100 dark:bg-slate-900">
+
+                    <div *ngIf="!selectedImage() && !imagenOriginal()" class="flex flex-col items-center justify-center opacity-40 text-black dark:text-white">
+                        <mat-icon class="!text-3xl mb-1">image_search</mat-icon>
+                        <span class="text-[8px] font-black uppercase text-center px-4">Sin Imagen</span>
+                    </div>
+
+                    <div class="absolute inset-0 bg-black/70 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center text-white">
+                        <mat-icon class="!text-xl mb-1">add_a_photo</mat-icon>
+                        <span class="text-[8px] font-black uppercase">{{ selectedImage() ? 'Cambiar Foto' : 'Subir Foto' }}</span>
+                    </div>
+                </div>
+                <input type="file" #fileInput (change)="onImageSelected($event)" accept="image/*" class="hidden">
+                <button *ngIf="selectedImage()" (click)="removeImage()" class="mt-2 text-[9px] font-black text-red-600 hover:underline uppercase">Quitar Imagen</button>
             </div>
 
-            <div class="p-4">
-                <div class="bg-gray-100 dark:bg-gray-800 border-2 border-black rounded-lg overflow-hidden shadow-[3px_3px_0px_0px_#000] w-full h-[300px] flex flex-col relative">
-                    <div *ngIf="selectedImage(); else noImageTemplate" class="flex-1 p-2 flex items-center justify-center bg-white dark:bg-gray-900 overflow-hidden">
-                        <img [src]="selectedImage()" alt="Herramienta" class="w-full h-full object-contain">
-                    </div>
-
-                    <ng-template #noImageTemplate>
-                        <div class="flex-1 flex flex-col items-center justify-center text-gray-400 p-4 border-dashed border-2 border-gray-300 m-4 rounded bg-cyan-100/30 dark:bg-cyan-900/10">
-                            <mat-icon class="!text-5xl !w-12 !h-12 opacity-30">image</mat-icon>
-                            <p class="font-bold uppercase text-[10px] opacity-60 mt-2 text-center">Imagen de la herramienta</p>
-                        </div>
-                    </ng-template>
-
-                    <div class="bg-[#0F172AFF] py-2 px-4 flex justify-center border-t-2 border-black shrink-0">
-                        <button type="button" (click)="fileInput.click()"
-                                class="w-full py-1.5 bg-white text-black font-black border-2 border-black rounded shadow-[2px_2px_0px_0px_#000] hover:translate-y-0.5 hover:shadow-none transition-all uppercase text-xs flex items-center justify-center gap-2">
-                            <mat-icon class="!w-4 !h-4 !text-base">{{ selectedImage() ? 'edit' : 'upload' }}</mat-icon>
-                            {{ selectedImage() ? 'CAMBIAR IMAGEN' : 'SUBIR IMAGEN' }}
-                        </button>
-                    </div>
-
-                    <input type="file" #fileInput (change)="onImageSelected($event)" accept="image/*" class="hidden">
+            <div class="w-full border-[2px] border-black bg-gray-100 dark:bg-slate-900 rounded-lg shadow-[3px_3px_0px_0px_#000] overflow-hidden">
+                <div class="bg-black border-b-[2px] border-black px-2 py-1 text-center shrink-0">
+                    <span class="font-black uppercase text-white text-[10px] tracking-widest">Resumen del Ítem</span>
+                </div>
+                <div class="p-2">
+                    <ul class="text-[9px] text-black dark:text-white font-medium space-y-1">
+                        <li class="flex justify-between items-center border-b border-gray-300 dark:border-gray-700 pb-1">
+                            <span class="font-bold text-gray-600 dark:text-gray-400">Herramienta:</span>
+                            <span class="font-black uppercase truncate max-w-[120px]">{{ traspasoForm.value.codigo || '---' }}</span>
+                        </li>
+                        <li class="flex justify-between items-center border-b border-gray-300 dark:border-gray-700 pb-1">
+                            <span class="font-bold text-gray-600 dark:text-gray-400">Cant. a Traspasar:</span>
+                            <span class="font-black text-blue-600 text-sm">{{ traspasoForm.value.cantidad || 0 }} <span class="text-[8px] text-black dark:text-white">{{ traspasoForm.value.unidad }}</span></span>
+                        </li>
+                        <li class="flex justify-between items-center border-b border-gray-300 dark:border-gray-700 pb-1">
+                            <span class="font-bold text-gray-600 dark:text-gray-400">Estado Físico:</span>
+                            <span class="font-black uppercase">{{ traspasoForm.value.estadoFisico }}</span>
+                        </li>
+                        <li class="flex flex-col pt-0.5">
+                            <span class="font-bold text-gray-600 dark:text-gray-400">Contenido / Notas:</span>
+                            <span class="font-medium italic truncate">{{ traspasoForm.value.observacion || 'Ninguna' }}</span>
+                        </li>
+                    </ul>
                 </div>
             </div>
+
         </div>
     </div>
 </div>

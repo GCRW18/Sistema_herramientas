@@ -1,0 +1,334 @@
+<div class="bg-[#f8f9fc] dark:bg-slate-900 border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] overflow-hidden flex flex-col font-sans h-auto max-h-[95vh]">
+
+    <!-- HEADER -->
+    <div class="bg-[#0F172AFF] text-white px-5 py-3 flex justify-between items-center shrink-0"
+         cdkDrag cdkDragRootElement=".cdk-overlay-pane" cdkDragHandle>
+        <div class="flex items-center gap-3">
+            <div class="w-8 h-8 bg-white border-2 border-black rounded flex items-center justify-center shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+                <mat-icon class="text-black !text-base">build</mat-icon>
+            </div>
+            <div>
+                <h2 class="text-sm font-black uppercase tracking-tight leading-none">{{ titulo }}</h2>
+                <p class="text-[10px] text-gray-300 font-bold uppercase mt-0.5">{{ subtitulo }}</p>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-3">
+            <button (click)="dialogRef.close(false)"
+                    class="px-4 py-1.5 bg-red-600 text-white font-black text-[10px] border-2 border-black rounded-lg shadow-[2px_2px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all uppercase">
+                {{ readOnly ? 'Cerrar' : 'Cancelar' }}
+            </button>
+            <button *ngIf="!readOnly" (click)="save()"
+                    class="px-4 py-1.5 bg-amber-400 text-black font-black text-[10px] border-2 border-black rounded-lg shadow-[2px_2px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all uppercase flex items-center gap-1.5">
+                <mat-icon class="!text-black">save</mat-icon> Guardar Herramienta
+            </button>
+        </div>
+    </div>
+
+    <!-- TABS -->
+    <div class="bg-gray-200 dark:bg-slate-800 border-b-2 border-black px-5 pt-3 shrink-0 flex items-end gap-1 overflow-x-auto custom-scrollbar">
+
+        <button type="button" (click)="setTab('general')"
+                [ngClass]="activeTab === 'general' ? 'bg-white dark:bg-slate-900 border-b-transparent translate-y-[2px]' : 'bg-gray-300 dark:bg-slate-700'"
+                class="px-3 py-2 text-[10px] font-black uppercase border-2 border-black border-b-0 rounded-t-lg transition-all flex items-center gap-1.5 shrink-0">
+            <mat-icon class="!text-sm">build</mat-icon> General
+        </button>
+
+        <button type="button" (click)="setTab('calibracion')"
+                *ngIf="canShowTab('calibracion')"
+                [ngClass]="activeTab === 'calibracion' ? 'bg-amber-100 dark:bg-amber-900/30 border-b-transparent translate-y-[2px]' : 'bg-gray-300 dark:bg-slate-700'"
+                class="px-3 py-2 text-[10px] font-black uppercase border-2 border-black border-b-0 rounded-t-lg transition-all flex items-center gap-1.5 shrink-0">
+            <mat-icon class="!text-sm">science</mat-icon> Calibración
+        </button>
+
+        <button type="button" (click)="setTab('consumibles')"
+                *ngIf="canShowTab('consumibles')"
+                [ngClass]="activeTab === 'consumibles' ? 'bg-blue-100 dark:bg-blue-900/30 border-b-transparent translate-y-[2px]' : 'bg-gray-300 dark:bg-slate-700'"
+                class="px-3 py-2 text-[10px] font-black uppercase border-2 border-black border-b-0 rounded-t-lg transition-all flex items-center gap-1.5 shrink-0">
+            <mat-icon class="!text-sm">inventory_2</mat-icon> Consumibles
+        </button>
+
+        <button type="button" (click)="setTab('misc')"
+                [ngClass]="activeTab === 'misc' ? 'bg-purple-100 dark:bg-purple-900/30 border-b-transparent translate-y-[2px]' : 'bg-gray-300 dark:bg-slate-700'"
+                class="px-3 py-2 text-[10px] font-black uppercase border-2 border-black border-b-0 rounded-t-lg transition-all flex items-center gap-1.5 shrink-0">
+            <mat-icon class="!text-sm">category</mat-icon> Misceláneos
+        </button>
+    </div>
+
+    <!-- BODY -->
+    <div class="flex-1 overflow-y-auto p-5 custom-scrollbar bg-[#f8f9fc] dark:bg-slate-900" style="width:950px; max-width:95vw">
+        <form [formGroup]="form">
+
+            <!-- ════════════════════════════════════════ TAB GENERAL ════════════════════════════════════════ -->
+            <div *ngIf="activeTab === 'general'" class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+                <!-- LEFT: Preview etiqueta -->
+                <div class="lg:col-span-5 flex flex-col gap-4">
+
+                    <div class="bg-amber-100 dark:bg-amber-900/30 border-2 border-black rounded-xl p-4 shadow-[3px_3px_0px_0px_#000] relative overflow-hidden">
+                        <mat-icon class="absolute -right-4 -bottom-4 !text-[80px] text-amber-200 dark:text-amber-800/40 opacity-60 pointer-events-none">sell</mat-icon>
+
+                        <span class="text-[9px] font-black text-black dark:text-amber-500 uppercase mb-2 border-b-2 border-black/10 pb-1 w-full block relative z-10">Vista Previa Etiqueta</span>
+
+                        <div class="relative z-10 flex flex-col gap-1.5">
+                            <p class="font-black text-lg text-black dark:text-white leading-none font-mono">
+                                {{ form.get('codigo')?.value || 'HER-XXX' }}
+                            </p>
+
+                            <p class="text-xs font-bold text-gray-800 dark:text-gray-200 leading-tight line-clamp-2 min-h-[34px]">
+                                {{ form.get('descripcion')?.value || 'Descripción de la herramienta...' }}
+                            </p>
+
+                            <div class="flex flex-wrap gap-1.5 mt-1">
+                                <span class="px-2 py-0.5 bg-white dark:bg-slate-800 border-2 border-black rounded text-[9px] font-black uppercase text-black dark:text-white">
+                                    P/N: {{ form.get('pn')?.value || 'N/A' }}
+                                </span>
+                                <span class="px-2 py-0.5 bg-blue-100 dark:bg-blue-900 border-2 border-black rounded text-[9px] font-black uppercase text-blue-900 dark:text-blue-200" *ngIf="form.get('sn')?.value">
+                                    S/N: {{ form.get('sn')?.value }}
+                                </span>
+                                <span *ngIf="sujetaCalibracion" class="px-2 py-0.5 bg-amber-300 border-2 border-black rounded text-[9px] font-black uppercase text-amber-900 flex items-center gap-1">
+                                    <mat-icon class="!text-[10px] !w-3 !h-3">science</mat-icon> CAL
+                                </span>
+                            </div>
+
+                            <div class="flex justify-between items-end mt-2 pt-2 border-t-2 border-black/10">
+                                <div>
+                                    <span class="px-2 py-1 bg-[#0F172AFF] text-white border-2 border-black rounded-lg text-[10px] font-black shadow-[2px_2px_0px_0px_#000]">
+                                        {{ form.get('cantidad')?.value || 0 }} {{ form.get('unidad')?.value }}
+                                    </span>
+                                </div>
+                                <div class="text-right">
+                                    <p class="text-[8px] font-bold uppercase text-gray-600 dark:text-gray-400">Estado</p>
+                                    <p class="text-[10px] font-black uppercase border-2 border-black bg-white dark:bg-slate-800 px-1.5 rounded">
+                                        {{ form.get('estado')?.value }}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Categoría -->
+                    <div>
+                        <label class="text-[10px] font-black uppercase text-black dark:text-gray-300 mb-1 block">Categoría *</label>
+                        <div class="grid grid-cols-3 gap-2">
+                            <button *ngFor="let c of categorias" type="button"
+                                    (click)="!readOnly && form.patchValue({ categoria: c.value })"
+                                    [disabled]="readOnly"
+                                    [ngClass]="form.value.categoria === c.value
+                                        ? 'bg-amber-400 border-black shadow-[3px_3px_0px_0px_#000] -translate-y-[1px]'
+                                        : 'bg-white dark:bg-slate-800 border-black opacity-70'"
+                                    class="p-2.5 border-2 rounded-lg flex flex-col items-center gap-1 transition-all disabled:opacity-60">
+                                <mat-icon class="!text-base">{{ c.icon }}</mat-icon>
+                                <span class="text-[10px] font-black uppercase">{{ c.label }}</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Toggle Calibración -->
+                    <div class="border-2 border-black rounded-xl p-3 shadow-[3px_3px_0px_0px_#000] flex items-center justify-between"
+                         [ngClass]="sujetaCalibracion ? 'bg-amber-100 dark:bg-amber-900/30' : 'bg-white dark:bg-slate-800'">
+                        <div class="flex items-center gap-2">
+                            <mat-icon class="!text-base" [ngClass]="sujetaCalibracion ? 'text-amber-700' : 'text-gray-500'">
+                                science
+                            </mat-icon>
+                            <div>
+                                <p class="text-[10px] font-black uppercase">Sujeta a calibración</p>
+                                <p class="text-[9px] text-gray-600 dark:text-gray-400 font-bold">Activa la pestaña Calibración</p>
+                            </div>
+                        </div>
+                        <mat-slide-toggle formControlName="sujetaCalibracion" color="warn"></mat-slide-toggle>
+                    </div>
+                </div>
+
+                <!-- RIGHT: Fields -->
+                <div class="lg:col-span-7 flex flex-col gap-4">
+
+                    <div class="bg-white dark:bg-slate-800 border-2 border-black rounded-xl p-4 shadow-[3px_3px_0px_0px_#000]">
+                        <p class="text-[10px] font-black uppercase text-gray-500 mb-2 border-b-2 border-black/10 pb-1">
+                            <mat-icon class="!text-sm align-middle">info</mat-icon> Identificación
+                        </p>
+
+                        <div class="grid grid-cols-12 gap-3">
+                            <div class="col-span-12 sm:col-span-4">
+                                <label class="text-[10px] font-black uppercase text-black dark:text-gray-300 mb-1 block">Código *</label>
+                                <input type="text" formControlName="codigo" placeholder="HER-001"
+                                       class="w-full h-10 text-sm font-black uppercase bg-white dark:bg-slate-900 border-2 border-black dark:border-slate-600 rounded-lg px-3 focus:shadow-[2px_2px_0px_0px_#000] outline-none transition-all"
+                                       [class.border-red-500]="hasError('codigo','required')">
+                            </div>
+                            <div class="col-span-12 sm:col-span-4">
+                                <label class="text-[10px] font-black uppercase text-black dark:text-gray-300 mb-1 block">P/N *</label>
+                                <input type="text" formControlName="pn" placeholder="Ej: TQ-200"
+                                       class="w-full h-10 text-sm font-bold uppercase bg-white dark:bg-slate-900 border-2 border-black dark:border-slate-600 rounded-lg px-3 focus:shadow-[2px_2px_0px_0px_#000] outline-none transition-all"
+                                       [class.border-red-500]="hasError('pn','required')">
+                            </div>
+                            <div class="col-span-12 sm:col-span-4">
+                                <label class="text-[10px] font-black uppercase text-black dark:text-gray-300 mb-1 block">S/N</label>
+                                <input type="text" formControlName="sn" placeholder="Opcional"
+                                       class="w-full h-10 text-sm font-bold uppercase bg-white dark:bg-slate-900 border-2 border-black dark:border-slate-600 rounded-lg px-3 focus:shadow-[2px_2px_0px_0px_#000] outline-none transition-all">
+                            </div>
+
+                            <div class="col-span-12">
+                                <label class="text-[10px] font-black uppercase text-black dark:text-gray-300 mb-1 block">Descripción *</label>
+                                <input type="text" formControlName="descripcion" placeholder="Descripción detallada"
+                                       class="w-full h-10 text-sm font-bold bg-white dark:bg-slate-900 border-2 border-black dark:border-slate-600 rounded-lg px-3 focus:shadow-[2px_2px_0px_0px_#000] outline-none transition-all"
+                                       [class.border-red-500]="hasError('descripcion','required')">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Cantidad / unidad / estado -->
+                    <div class="grid grid-cols-12 gap-3">
+                        <div class="col-span-12 sm:col-span-4">
+                            <label class="text-[10px] font-black uppercase text-black dark:text-gray-300 mb-1 block">Cantidad *</label>
+                            <input type="number" min="1" formControlName="cantidad"
+                                   class="w-full h-10 text-sm font-black text-center bg-white dark:bg-slate-800 border-2 border-black dark:border-slate-600 rounded-lg px-3 focus:shadow-[2px_2px_0px_0px_#000] outline-none transition-all"
+                                   [class.border-red-500]="hasError('cantidad','required')">
+                        </div>
+                        <div class="col-span-12 sm:col-span-4">
+                            <label class="text-[10px] font-black uppercase text-black dark:text-gray-300 mb-1 block">Unidad *</label>
+                            <select formControlName="unidad"
+                                    class="w-full h-10 text-sm font-bold bg-white dark:bg-slate-800 border-2 border-black dark:border-slate-600 rounded-lg px-2 focus:shadow-[2px_2px_0px_0px_#000] outline-none transition-all">
+                                <option *ngFor="let u of unidades" [value]="u">{{ u }}</option>
+                            </select>
+                        </div>
+                        <div class="col-span-12 sm:col-span-4">
+                            <label class="text-[10px] font-black uppercase text-black dark:text-gray-300 mb-1 block">Estado *</label>
+                            <select formControlName="estado"
+                                    class="w-full h-10 text-sm font-bold bg-white dark:bg-slate-800 border-2 border-black dark:border-slate-600 rounded-lg px-2 focus:shadow-[2px_2px_0px_0px_#000] outline-none transition-all">
+                                <option *ngFor="let e of estados" [value]="e">{{ e }}</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Ubicación física -->
+                    <div class="grid grid-cols-12 gap-3 bg-blue-50 dark:bg-blue-900/10 p-3 rounded-xl border-2 border-blue-300 dark:border-blue-600">
+                        <div class="col-span-12">
+                            <p class="text-[10px] font-black uppercase text-blue-800 dark:text-blue-300 flex items-center gap-1">
+                                <mat-icon class="!text-sm">place</mat-icon> Ubicación física
+                            </p>
+                        </div>
+                        <div class="col-span-12 sm:col-span-4">
+                            <label class="text-[10px] font-black uppercase text-blue-800 dark:text-blue-300 mb-1 block">Almacén</label>
+                            <select formControlName="warehouseId"
+                                    class="w-full h-10 text-sm font-bold bg-white dark:bg-slate-800 border-2 border-blue-400 rounded-lg px-2 focus:shadow-[2px_2px_0px_0px_#3b82f6] outline-none transition-all">
+                                <option [ngValue]="null">-- Seleccionar --</option>
+                                <option *ngFor="let a of almacenes" [ngValue]="a.id">{{ a.codigo }}</option>
+                            </select>
+                        </div>
+                        <div class="col-span-12 sm:col-span-4">
+                            <label class="text-[10px] font-black uppercase text-blue-800 dark:text-blue-300 mb-1 block">Estante</label>
+                            <select formControlName="rackId"
+                                    class="w-full h-10 text-sm font-bold bg-white dark:bg-slate-800 border-2 border-blue-400 rounded-lg px-2 focus:shadow-[2px_2px_0px_0px_#3b82f6] outline-none transition-all">
+                                <option [ngValue]="null">-- Estante --</option>
+                            </select>
+                        </div>
+                        <div class="col-span-12 sm:col-span-4">
+                            <label class="text-[10px] font-black uppercase text-blue-800 dark:text-blue-300 mb-1 block">Nivel</label>
+                            <select formControlName="levelId"
+                                    class="w-full h-10 text-sm font-bold bg-white dark:bg-slate-800 border-2 border-blue-400 rounded-lg px-2 focus:shadow-[2px_2px_0px_0px_#3b82f6] outline-none transition-all">
+                                <option [ngValue]="null">-- Nivel --</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ════════════════════════════════════════ TAB CALIBRACIÓN ════════════════════════════════════════ -->
+            <div *ngIf="activeTab === 'calibracion'" class="flex flex-col gap-4">
+
+                <div class="bg-amber-100 dark:bg-amber-900/30 border-2 border-black rounded-xl p-3 shadow-[3px_3px_0px_0px_#000] flex items-center gap-2">
+                    <mat-icon class="!text-base text-amber-700">science</mat-icon>
+                    <span class="text-[11px] font-bold">Datos requeridos para herramientas sujetas a calibración periódica.</span>
+                </div>
+
+                <div class="bg-white dark:bg-slate-800 border-2 border-black rounded-xl p-4 shadow-[3px_3px_0px_0px_#000]">
+                    <p class="text-[10px] font-black uppercase text-gray-500 mb-2 border-b-2 border-black/10 pb-1">
+                        <mat-icon class="!text-sm align-middle">event</mat-icon> Programa de Calibración
+                    </p>
+
+                    <div class="grid grid-cols-12 gap-3">
+                        <div class="col-span-12 sm:col-span-4">
+                            <label class="text-[10px] font-black uppercase text-black dark:text-gray-300 mb-1 block">Frecuencia (meses) *</label>
+                            <input type="number" min="1" formControlName="calFrecuenciaMeses"
+                                   class="w-full h-10 text-sm font-black text-center bg-white dark:bg-slate-900 border-2 border-black dark:border-slate-600 rounded-lg px-3 focus:shadow-[2px_2px_0px_0px_#000] outline-none transition-all"
+                                   [class.border-red-500]="hasError('calFrecuenciaMeses','required')">
+                        </div>
+                        <div class="col-span-12 sm:col-span-4">
+                            <label class="text-[10px] font-black uppercase text-black dark:text-gray-300 mb-1 block">Última calibración</label>
+                            <input type="date" formControlName="calUltima"
+                                   class="w-full h-10 text-sm font-bold bg-white dark:bg-slate-900 border-2 border-black dark:border-slate-600 rounded-lg px-3 focus:shadow-[2px_2px_0px_0px_#000] outline-none transition-all">
+                        </div>
+                        <div class="col-span-12 sm:col-span-4">
+                            <label class="text-[10px] font-black uppercase text-black dark:text-gray-300 mb-1 block">Próxima calibración *</label>
+                            <input type="date" formControlName="calProxima"
+                                   class="w-full h-10 text-sm font-bold bg-white dark:bg-slate-900 border-2 border-black dark:border-slate-600 rounded-lg px-3 focus:shadow-[2px_2px_0px_0px_#000] outline-none transition-all"
+                                   [class.border-red-500]="hasError('calProxima','required')">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-12 gap-3">
+                    <div class="col-span-12 sm:col-span-6">
+                        <label class="text-[10px] font-black uppercase text-black dark:text-gray-300 mb-1 block">Proveedor / Laboratorio</label>
+                        <input type="text" formControlName="calProveedor" placeholder="Ej: CalibraLab S.A."
+                               class="w-full h-10 text-sm font-bold bg-white dark:bg-slate-800 border-2 border-black dark:border-slate-600 rounded-lg px-3 focus:shadow-[2px_2px_0px_0px_#000] outline-none transition-all">
+                    </div>
+                    <div class="col-span-12 sm:col-span-6">
+                        <label class="text-[10px] font-black uppercase text-black dark:text-gray-300 mb-1 block">N° Certificado</label>
+                        <input type="text" formControlName="calCertificado" placeholder="Ej: CRT-2026-0001"
+                               class="w-full h-10 text-sm font-bold uppercase bg-white dark:bg-slate-800 border-2 border-black dark:border-slate-600 rounded-lg px-3 focus:shadow-[2px_2px_0px_0px_#000] outline-none transition-all">
+                    </div>
+                </div>
+            </div>
+
+            <!-- ════════════════════════════════════════ TAB CONSUMIBLES ════════════════════════════════════════ -->
+            <div *ngIf="activeTab === 'consumibles'" class="flex flex-col gap-4">
+
+                <div class="bg-blue-100 dark:bg-blue-900/30 border-2 border-black rounded-xl p-3 shadow-[3px_3px_0px_0px_#000] flex items-center gap-2">
+                    <mat-icon class="!text-base text-blue-700">inventory_2</mat-icon>
+                    <span class="text-[11px] font-bold">Configuración de control de stock para consumibles.</span>
+                </div>
+
+                <div class="bg-white dark:bg-slate-800 border-2 border-black rounded-xl p-4 shadow-[3px_3px_0px_0px_#000]">
+                    <p class="text-[10px] font-black uppercase text-gray-500 mb-2 border-b-2 border-black/10 pb-1">
+                        <mat-icon class="!text-sm align-middle">analytics</mat-icon> Niveles de Stock
+                    </p>
+                    <div class="grid grid-cols-12 gap-3">
+                        <div class="col-span-12 sm:col-span-4">
+                            <label class="text-[10px] font-black uppercase text-black dark:text-gray-300 mb-1 block">Stock mínimo</label>
+                            <input type="number" min="0" formControlName="stockMinimo"
+                                   class="w-full h-10 text-sm font-black text-center bg-white dark:bg-slate-900 border-2 border-black dark:border-slate-600 rounded-lg px-3 focus:shadow-[2px_2px_0px_0px_#000] outline-none transition-all">
+                        </div>
+                        <div class="col-span-12 sm:col-span-4">
+                            <label class="text-[10px] font-black uppercase text-black dark:text-gray-300 mb-1 block">Stock actual</label>
+                            <input type="number" min="0" formControlName="stockActual"
+                                   class="w-full h-10 text-sm font-black text-center bg-white dark:bg-slate-900 border-2 border-black dark:border-slate-600 rounded-lg px-3 focus:shadow-[2px_2px_0px_0px_#000] outline-none transition-all">
+                        </div>
+                        <div class="col-span-12 sm:col-span-4">
+                            <label class="text-[10px] font-black uppercase text-black dark:text-gray-300 mb-1 block">Unidad de consumo</label>
+                            <select formControlName="unidadConsumo"
+                                    class="w-full h-10 text-sm font-bold bg-white dark:bg-slate-900 border-2 border-black dark:border-slate-600 rounded-lg px-2 focus:shadow-[2px_2px_0px_0px_#000] outline-none transition-all">
+                                <option *ngFor="let u of unidades" [value]="u">{{ u }}</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ════════════════════════════════════════ TAB MISCELÁNEOS ════════════════════════════════════════ -->
+            <div *ngIf="activeTab === 'misc'" class="flex flex-col gap-4">
+
+                <div class="bg-purple-100 dark:bg-purple-900/30 border-2 border-black rounded-xl p-3 shadow-[3px_3px_0px_0px_#000] flex items-center gap-2">
+                    <mat-icon class="!text-base text-purple-700">category</mat-icon>
+                    <span class="text-[11px] font-bold">Notas, observaciones y datos adicionales no clasificables.</span>
+                </div>
+
+                <div>
+                    <label class="text-[10px] font-black uppercase text-black dark:text-gray-300 mb-1 block">Notas / Observaciones</label>
+                    <textarea formControlName="notas" rows="6" placeholder="Detalles adicionales, accesorios incluidos, condición especial..."
+                              class="w-full text-sm font-bold border-2 border-black dark:border-slate-600 rounded-xl p-3 bg-white dark:bg-slate-800 text-black dark:text-white outline-none focus:shadow-[2px_2px_0px_0px_#000] transition-shadow resize-none custom-scrollbar"></textarea>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>

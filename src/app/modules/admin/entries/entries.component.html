@@ -1,460 +1,224 @@
 <div class="relative flex flex-col w-full h-full bg-white dark:bg-[#0F172AFF] transition-colors duration-300 font-sans overflow-hidden">
 
-    <!-- ===== HEADER ===== -->
-    <div class="flex items-center gap-3 px-5 py-3 border-b-2 border-black dark:border-slate-700 shrink-0 bg-white dark:bg-[#0F172AFF] relative z-30">
-        <h1 class="text-3xl md:text-4xl font-black text-black dark:text-white uppercase tracking-tighter leading-none">
-            ENTRADAS
-        </h1>
-        <span class="text-[10px] font-bold bg-amber-400 text-black px-3 py-1 rounded-sm border border-black uppercase tracking-wider hidden sm:inline">
-            MÓDULO DE INGRESOS
-        </span>
+    <div class="flex items-center gap-4 px-6 py-4 border-b-[3px] border-black shrink-0 bg-white dark:bg-slate-900 relative z-[110]">
+
+        <div class="flex items-center gap-3">
+            <h1 class="text-2xl md:text-3xl font-black text-black dark:text-white uppercase tracking-tighter leading-none">
+                ENTRADAS
+            </h1>
+            <div class="flex items-center gap-2 mt-0.5 flex-wrap hidden sm:flex">
+                <span class="text-[10px] font-bold bg-amber-400 text-black px-2 py-0.5 rounded inline-block border-2 border-black uppercase tracking-wider">
+                    MÓDULO DE INGRESOS
+                </span>
+            </div>
+        </div>
+
         <div class="flex-1"></div>
 
-        <!-- Botón MÓDULOS / bandeja -->
         <button (click)="toggleBandeja()"
-                [class.!bg-[#111A43]]="showBandeja"
+                [class.!bg-black]="showBandeja"
                 [class.!text-white]="showBandeja"
-                class="flex items-center gap-2 px-5 py-2 bg-[#2563eb] dark:bg-slate-800 border-2 border-black font-black text-xs uppercase rounded-full shadow-[3px_3px_0px_0px_#000] hover:shadow-[1px_1px_0px_0px_#000] hover:translate-x-[2px] hover:translate-y-[2px] transition-all text-white dark:text-white">
-            <mat-icon class="!text-base text-black">apps</mat-icon>
+                class="flex items-center gap-2 px-5 py-2 bg-[#2563eb] border-[2px] border-black font-black text-xs uppercase rounded-xl shadow-[3px_3px_0px_0px_#000] hover:shadow-[1px_1px_0px_0px_#000] hover:translate-x-[2px] hover:translate-y-[2px] transition-all text-white">
+            <mat-icon class="!text-base">apps</mat-icon>
             <span class="hidden sm:inline">MÓDULOS</span>
-            <mat-icon class="!text-sm text-white transition-transform duration-200" [class.rotate-180]="showBandeja">expand_more</mat-icon>
+            <mat-icon class="!text-sm transition-transform duration-200" [class.rotate-180]="showBandeja">expand_more</mat-icon>
         </button>
 
+        <div class="w-px h-8 bg-black/20 dark:bg-white/20 mx-1"></div>
+
         <button (click)="openEntradasRecientes()"
-                class="flex items-center gap-2 px-5 py-2 bg-[#111A43] dark:bg-slate-800 border-2 border-black font-black text-xs uppercase rounded-full shadow-[3px_3px_0px_0px_#000] hover:shadow-[1px_1px_0px_0px_#000] hover:translate-x-[2px] hover:translate-y-[2px] transition-all text-white dark:text-white">
-            <mat-icon class="!text-base text-white">history</mat-icon>
+                class="flex items-center gap-2 px-5 py-2 bg-black dark:bg-slate-700 border-[2px] border-black font-black text-xs uppercase rounded-xl shadow-[3px_3px_0px_0px_rgba(0,0,0,0.5)] hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,0.5)] hover:translate-x-[2px] hover:translate-y-[2px] transition-all text-white">
+            <mat-icon class="!text-base">history</mat-icon>
             <span class="hidden sm:inline">Entradas Recientes</span>
         </button>
     </div>
 
-    <!-- ===== BANDEJA: backdrop ===== -->
-    <div *ngIf="showBandeja"
-         (click)="closeBandeja()"
-         class="fixed inset-0 z-20 bg-black/20">
-    </div>
+    <div *ngIf="showBandeja" (click)="closeBandeja()" class="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm transition-all duration-300"></div>
 
-    <!-- ===== BANDEJA: panel desplegable ===== -->
     <div *ngIf="showBandeja"
-         class="absolute top-[56px] left-2 right-2 md:left-auto md:right-4 md:w-auto z-30 bg-white dark:bg-[#111A43] border-2 border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] rounded-2xl p-3 animate-in slide-in-from-top-2 duration-150">
+         class="absolute top-[80px] left-2 right-2 md:left-auto md:right-6 md:w-auto z-[110] bg-white dark:bg-slate-800 border-[3px] border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] rounded-xl p-4 animate-in slide-in-from-top-2 duration-150">
 
-        <p class="text-[9px] font-black uppercase tracking-widest text-black dark:text-slate-400 mb-2 px-1">
-            Seleccionar módulo de entrada
+        <p class="text-[10px] font-black uppercase tracking-widest text-black dark:text-white mb-3 px-1 border-b-2 border-black pb-1.5">
+            Seleccionar Módulo de Entrada
         </p>
 
-        <!-- Siempre 5 columnas — una fila, sin scroll -->
-        <div class="flex gap-2">
-
-            <!-- Módulo 1 -->
-            <button (click)="openModule(1)"
-                    class="group relative flex flex-col items-center gap-1 p-2 rounded-xl border-2 border-black transition-all hover:scale-[1.04] active:scale-[0.97] flex-1 min-w-0"
-                    [style.background-color]="isTabOpen(1) ? '#ffad00' : 'transparent'"
-                    [style.box-shadow]="'3px 3px 0px 0px rgba(0,0,0,1)'">
-                <div *ngIf="isTabOpen(1)" class="absolute top-1 right-1"></div>
-                <mat-icon svgIcon="heroicons_outline:building-office-2"
-                          class="!w-6 !h-6 !text-2xl text-black dark:text-white shrink-0"></mat-icon>
-                <p class="text-[9px] font-black uppercase leading-tight text-black dark:text-white text-center w-full truncate">RETORNO</p>
-                <p class="text-[9px] font-black uppercase leading-tight text-black dark:text-white text-center w-full truncate">BASE/TRASPASO</p>
+        <div class="flex gap-3 overflow-x-auto custom-scrollbar pb-2 pt-1 px-1">
+            <button (click)="openModule(1)" class="group relative flex flex-col items-center gap-1.5 p-3 rounded-xl border-[2px] border-black transition-all hover:-translate-y-1 w-[120px] shrink-0" [style.background-color]="isTabOpen(1) ? '#ffad00' : '#f8f9fc'" [style.box-shadow]="'3px 3px 0px 0px rgba(0,0,0,1)'">
+                <mat-icon svgIcon="heroicons_outline:building-office-2" class="!w-8 !h-8 !text-3xl text-black shrink-0"></mat-icon>
+                <p class="text-[10px] font-black uppercase leading-tight text-black text-center w-full">RETORNO</p>
+                <p class="text-[9px] font-bold uppercase leading-tight text-gray-700 text-center w-full truncate">BASE/TRASPASO</p>
             </button>
-
-            <!-- Módulo 2 -->
-            <button (click)="openModule(2)"
-                    class="group relative flex flex-col items-center gap-1 p-2 rounded-xl border-2 border-black transition-all hover:scale-[1.04] active:scale-[0.97] flex-1 min-w-0"
-                    [style.background-color]="isTabOpen(2) ? '#ffad00' : 'transparent'"
-                    [style.box-shadow]="'3px 3px 0px 0px rgba(0,0,0,1)'">
-                <div *ngIf="isTabOpen(2)" class="absolute top-1 right-1"></div>
-                <mat-icon svgIcon="heroicons_outline:wrench-screwdriver"
-                          class="!w-6 !h-6 !text-2xl text-black dark:text-white shrink-0"></mat-icon>
-                <p class="text-[9px] font-black uppercase leading-tight text-black dark:text-white text-center w-full truncate">NUEVA</p>
-                <p class="text-[9px] font-black uppercase leading-tight text-black dark:text-white text-center w-full truncate">HERRAMIENTA</p>
+            <button (click)="openModule(2)" class="group relative flex flex-col items-center gap-1.5 p-3 rounded-xl border-[2px] border-black transition-all hover:-translate-y-1 w-[120px] shrink-0" [style.background-color]="isTabOpen(2) ? '#ffad00' : '#f8f9fc'" [style.box-shadow]="'3px 3px 0px 0px rgba(0,0,0,1)'">
+                <mat-icon svgIcon="heroicons_outline:wrench-screwdriver" class="!w-8 !h-8 !text-3xl text-black shrink-0"></mat-icon>
+                <p class="text-[10px] font-black uppercase leading-tight text-black text-center w-full">NUEVA</p>
+                <p class="text-[9px] font-bold uppercase leading-tight text-gray-700 text-center w-full truncate">HERRAMIENTA</p>
             </button>
-
-            <!-- Módulo 3 -->
-            <button (click)="openModule(3)"
-                    class="group relative flex flex-col items-center gap-1 p-2 rounded-xl border-2 border-black transition-all hover:scale-[1.04] active:scale-[0.97] flex-1 min-w-0"
-                    [style.background-color]="isTabOpen(3) ? '#ffad00' : 'transparent'"
-                    [style.box-shadow]="'3px 3px 0px 0px rgba(0,0,0,1)'">
-                <div *ngIf="isTabOpen(3)" class="absolute top-1 right-1"></div>
-                <mat-icon svgIcon="heroicons_outline:arrow-uturn-left"
-                          class="!w-6 !h-6 !text-2xl text-black dark:text-white shrink-0"></mat-icon>
-                <p class="text-[9px] font-black uppercase leading-tight text-black dark:text-white text-center w-full truncate">DEVOLUCIÓN</p>
-                <p class="text-[9px] font-black uppercase leading-tight text-black dark:text-white text-center w-full truncate">PRÉSTAMO TÉC.</p>
+            <button (click)="openModule(3)" class="group relative flex flex-col items-center gap-1.5 p-3 rounded-xl border-[2px] border-black transition-all hover:-translate-y-1 w-[120px] shrink-0" [style.background-color]="isTabOpen(3) ? '#ffad00' : '#f8f9fc'" [style.box-shadow]="'3px 3px 0px 0px rgba(0,0,0,1)'">
+                <mat-icon svgIcon="heroicons_outline:arrow-uturn-left" class="!w-8 !h-8 !text-3xl text-black shrink-0"></mat-icon>
+                <p class="text-[10px] font-black uppercase leading-tight text-black text-center w-full">DEVOLUCIÓN</p>
+                <p class="text-[9px] font-bold uppercase leading-tight text-gray-700 text-center w-full truncate">PRÉSTAMO TÉC.</p>
             </button>
-
-            <!-- Módulo 4 -->
-            <button (click)="openModule(4)"
-                    class="group relative flex flex-col items-center gap-1 p-2 rounded-xl border-2 border-black transition-all hover:scale-[1.04] active:scale-[0.97] flex-1 min-w-0"
-                    [style.background-color]="isTabOpen(4) ? '#ffad00' : 'transparent'"
-                    [style.box-shadow]="'3px 3px 0px 0px rgba(0,0,0,1)'">
-                <div *ngIf="isTabOpen(4)" class="absolute top-1 right-1"></div>
-                <mat-icon svgIcon="heroicons_outline:adjustments-horizontal"
-                          class="!w-6 !h-6 !text-2xl text-black dark:text-white shrink-0"></mat-icon>
-                <p class="text-[9px] font-black uppercase leading-tight text-black dark:text-white text-center w-full truncate">AJUSTE</p>
-                <p class="text-[9px] font-black uppercase leading-tight text-black dark:text-white text-center w-full truncate">POR INGRESO</p>
+            <button (click)="openModule(4)" class="group relative flex flex-col items-center gap-1.5 p-3 rounded-xl border-[2px] border-black transition-all hover:-translate-y-1 w-[120px] shrink-0" [style.background-color]="isTabOpen(4) ? '#ffad00' : '#f8f9fc'" [style.box-shadow]="'3px 3px 0px 0px rgba(0,0,0,1)'">
+                <mat-icon svgIcon="heroicons_outline:adjustments-horizontal" class="!w-8 !h-8 !text-3xl text-black shrink-0"></mat-icon>
+                <p class="text-[10px] font-black uppercase leading-tight text-black text-center w-full">AJUSTE</p>
+                <p class="text-[9px] font-bold uppercase leading-tight text-gray-700 text-center w-full truncate">POR INGRESO</p>
             </button>
-
-            <!-- Módulo 5 -->
-            <button (click)="openModule(5)"
-                    class="group relative flex flex-col items-center gap-1 p-2 rounded-xl border-2 border-black transition-all hover:scale-[1.04] active:scale-[0.97] flex-1 min-w-0"
-                    [style.background-color]="isTabOpen(5) ? '#ffad00' : 'transparent'"
-                    [style.box-shadow]="'3px 3px 0px 0px rgba(0,0,0,1)'">
-                <div *ngIf="isTabOpen(5)" class="absolute top-1 right-1"></div>
-                <mat-icon svgIcon="heroicons_outline:user-circle"
-                          class="!w-6 !h-6 !text-2xl text-black dark:text-white shrink-0"></mat-icon>
-                <p class="text-[9px] font-black uppercase leading-tight text-black dark:text-white text-center w-full truncate">DEVOLUCIÓN</p>
-                <p class="text-[9px] font-black uppercase leading-tight text-black dark:text-white text-center w-full truncate">TERCEROS</p>
+            <button (click)="openModule(5)" class="group relative flex flex-col items-center gap-1.5 p-3 rounded-xl border-[2px] border-black transition-all hover:-translate-y-1 w-[120px] shrink-0" [style.background-color]="isTabOpen(5) ? '#ffad00' : '#f8f9fc'" [style.box-shadow]="'3px 3px 0px 0px rgba(0,0,0,1)'">
+                <mat-icon svgIcon="heroicons_outline:user-circle" class="!w-8 !h-8 !text-3xl text-black shrink-0"></mat-icon>
+                <p class="text-[10px] font-black uppercase leading-tight text-black text-center w-full">DEVOLUCIÓN</p>
+                <p class="text-[9px] font-bold uppercase leading-tight text-gray-700 text-center w-full truncate">TERCEROS</p>
             </button>
-
         </div>
     </div>
 
-    <!-- ===== BARRA DE PESTAÑAS ===== -->
-    <div *ngIf="openTabs.length > 0"
-         class="flex items-center gap-2 px-4 py-2 border-b-2 border-black dark:border-slate-700 shrink-0 bg-white dark:bg-[#0F172AFF] overflow-x-auto relative z-10">
-
-        <div *ngFor="let tab of openTabs; trackBy: trackByTabId"
-             (click)="setActiveTab(tab.id)"
-             class="flex items-center gap-2 px-3 py-1.5 rounded-full border-2 border-black cursor-pointer transition-all whitespace-nowrap select-none shrink-0"
-             [style.background-color]="tab.id === activeTabId ? tab.color : 'transparent'"
-             [style.box-shadow]="tab.id === activeTabId ? '2px 2px 0px 0px rgba(0,0,0,1)' : 'none'">
-
-            <mat-icon [svgIcon]="tab.svgIcon"
-                      class="!text-sm !w-4 !h-4 shrink-0"
-                      [style.color]="tab.id === activeTabId ? tab.textColor : 'inherit'">
-            </mat-icon>
-
-            <div class="flex gap-1 leading-none">
-                <span class="text-[10px] font-black uppercase"
-                      [style.color]="tab.id === activeTabId ? tab.textColor : 'inherit'">
-                    {{ tab.label }}
-                </span>
-                <span class="text-[10px] font-black uppercase opacity-70"
-                      [style.color]="tab.id === activeTabId ? tab.textColor : 'inherit'">
-                    {{ tab.sublabel }}
-                </span>
+    <div *ngIf="openTabs.length > 0" class="flex items-center gap-2 px-5 py-2.5 border-b-[3px] border-black bg-gray-100 dark:bg-slate-800 overflow-x-auto relative z-10 custom-scrollbar shadow-sm">
+        <div *ngFor="let tab of openTabs; trackBy: trackByTabId" (click)="setActiveTab(tab.id)" class="flex items-center gap-2 px-3 py-1.5 rounded-lg border-[2px] border-black cursor-pointer transition-all whitespace-nowrap select-none shrink-0" [style.background-color]="tab.id === activeTabId ? tab.color : 'white'" [style.box-shadow]="tab.id === activeTabId ? '2px 2px 0px 0px rgba(0,0,0,1)' : 'none'">
+            <mat-icon [svgIcon]="tab.svgIcon" class="!text-sm !w-4 !h-4 shrink-0" [style.color]="tab.id === activeTabId ? tab.textColor : 'black'"></mat-icon>
+            <div class="flex gap-1.5 leading-none items-center">
+                <span class="text-[11px] font-black uppercase" [style.color]="tab.id === activeTabId ? tab.textColor : 'black'">{{ tab.label }}</span>
+                <span class="text-[11px] font-black uppercase opacity-70" [style.color]="tab.id === activeTabId ? tab.textColor : 'black'">{{ tab.sublabel }}</span>
             </div>
-
-            <button (click)="closeTab(tab.id); $event.stopPropagation()"
-                    class="w-4 h-4 flex items-center justify-center rounded-full opacity-50 hover:opacity-100 hover:bg-black/20 transition-all shrink-0"
-                    [style.color]="tab.id === activeTabId ? tab.textColor : 'inherit'">
-                <mat-icon class="!text-xs !w-3 !h-3">close</mat-icon>
+            <button (click)="closeTab(tab.id); $event.stopPropagation()" class="w-5 h-5 ml-1 flex items-center justify-center rounded bg-black/10 hover:bg-red-500 hover:text-white transition-all shrink-0" [style.color]="tab.id === activeTabId ? tab.textColor : 'black'">
+                <mat-icon class="!text-[12px] !w-3 !h-3">close</mat-icon>
             </button>
         </div>
-
     </div>
 
-    <!-- ===== ÁREA PRINCIPAL ===== -->
-    <div class="flex-1 overflow-hidden relative">
-
-        <!-- Pestañas activas (todas en DOM, solo la activa visible) -->
-        <div *ngFor="let tab of openTabs; trackBy: trackByTabId"
-             [style.display]="tab.id === activeTabId ? 'flex' : 'none'"
-             class="w-full h-full flex-col overflow-hidden">
-            <ng-container [ngComponentOutlet]="tab.component" [ngComponentOutletInjector]="tab.injector"></ng-container>
+    <div class="flex-1 overflow-hidden relative bg-[#f8f9fc] dark:bg-[#0F172AFF] z-0">
+        <div *ngFor="let tab of openTabs; trackBy: trackByTabId" [class.hidden]="tab.id !== activeTabId" class="w-full h-full flex flex-col overflow-hidden">
+            <ng-container *ngComponentOutlet="tab.component; injector: tab.injector"></ng-container>
         </div>
-
-        <!-- Placeholder cuando no hay pestañas abiertas -->
         <div *ngIf="openTabs.length === 0"
-             class="flex flex-col items-center justify-center h-full bg-[#f8f9fc] dark:bg-[#0F172AFF] relative">
-            <div class="absolute top-10 right-10 w-48 h-48 bg-[#111A43] rounded-full border-4 border-black opacity-5 pointer-events-none"></div>
-            <div class="absolute bottom-10 left-10 w-24 h-24 bg-[#1AAA1FFF] rotate-12 border-4 border-black opacity-5 pointer-events-none"></div>
-            <div class="flex flex-col items-center text-center opacity-30 dark:opacity-20 select-none">
-                <mat-icon class="!text-[100px] !w-28 !h-28 text-black dark:text-white">input</mat-icon>
-                <p class="text-2xl font-black uppercase text-black dark:text-white mt-4 tracking-tight">
-                    Seleccione un módulo de entrada
-                </p>
-                <p class="text-sm font-bold text-gray-500 dark:text-gray-400 mt-2">
-                    Pulse <strong>MÓDULOS</strong> en la barra superior para comenzar
-                </p>
-            </div>
-        </div>
-
-    </div>
-
-</div>
-
-<!-- ========== DIALOG: ENTRADAS RECIENTES ========== -->
-<ng-template #entradasRecientesDialog>
-    <div class="flex flex-col w-full h-full bg-[#f8f9fc] dark:bg-[#0F172AFF] transition-colors duration-300 font-sans overflow-hidden relative"
-         cdkDrag cdkDragRootElement=".cdk-overlay-pane" cdkDragBoundary=".cdk-overlay-container">
-
-        <div class="fixed top-16 left-10 w-64 h-64 bg-[#111A43] rounded-full border-4 border-black opacity-5 pointer-events-none"></div>
-        <div class="fixed bottom-10 right-10 w-32 h-32 bg-[#1AAA1FFF] rotate-45 border-4 border-black opacity-5 pointer-events-none"></div>
-
-        <div *ngIf="isLoading" class="spinner-overlay z-[100]">
-            <div class="neo-card-base-entry p-6 flex flex-col items-center gap-4 bg-white dark:bg-slate-800">
-                <mat-spinner diameter="50"></mat-spinner>
-                <span class="font-black text-black dark:text-white uppercase tracking-wider">Cargando datos...</span>
-            </div>
-        </div>
-
-        <div class="flex-1 flex flex-col p-4 md:p-6 relative h-full overflow-hidden gap-4">
-
-            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 shrink-0 relative z-10">
-                <div class="flex items-center gap-4">
-                    <button mat-dialog-close
-                            class="w-12 h-12 bg-white dark:bg-slate-800 border-2 border-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] active:shadow-none active:translate-x-1 active:translate-y-1 hover:scale-105 transition-all flex items-center justify-center rounded-lg cursor-pointer"
-                            (mousedown)="$event.stopPropagation()">
-                        <mat-icon class="!text-2xl text-black dark:text-white">arrow_back</mat-icon>
-                    </button>
+             class="flex items-start justify-end h-full relative overflow-hidden bg-black">
+            <img src="images/ENTRADAS.png"
+                 alt=""
+                 class="absolute inset-0 w-full h-full object-cover pointer-events-none select-none"
+                 style="opacity: 1;" />
+            <div class="absolute inset-0 hidden dark:block bg-black/50 pointer-events-none z-[1]"></div>
+            <!-- Mensaje tooltip esquina superior derecha -->
+            <div class="relative z-10 mt-4 mr-4 select-none">
+                <div class="flex justify-end pr-6">
+                    <div class="w-3 h-3 bg-white dark:bg-slate-800 border-t-[2px] border-r-[2px] border-black rotate-[-45deg] -mb-[7px] relative z-10"></div>
+                </div>
+                <div class="bg-white dark:bg-slate-800 border-[2px] border-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] rounded-xl px-3 py-2.5 flex items-center gap-2.5 max-w-[230px]">
+                    <mat-icon class="!text-xl !w-5 !h-5 text-black dark:text-white flex-shrink-0">input</mat-icon>
                     <div>
-                        <h1 class="text-2xl md:text-3xl font-black text-black dark:text-white uppercase tracking-tight leading-none">
-                            Entradas Recientes
-                        </h1>
-                        <p class="text-xs font-bold bg-[#1AAA1FFF] text-white px-2 py-0.5 rounded-sm border border-black mt-1 inline-block">
-                            HISTORIAL DE INGRESOS
+                        <p class="text-[11px] font-black uppercase text-black dark:text-white leading-tight">Módulo de Entradas</p>
+                        <p class="text-[10px] font-bold text-gray-500 dark:text-gray-400 mt-0.5 leading-tight">
+                            Pulse <strong class="text-black dark:text-white">MÓDULOS</strong> para iniciar.
                         </p>
                     </div>
                 </div>
-                <button (click)="loadRecentEntries()"
-                        class="px-4 py-2 bg-slate-600 text-white font-bold text-sm border-2 border-black rounded-full shadow-[3px_3px_0px_0px_#000] hover:translate-y-[1px] hover:shadow-[2px_2px_0px_0px_#000] active:shadow-none transition-all uppercase flex items-center gap-2">
-                    <mat-icon class="text-white !h-5 !text-lg">refresh</mat-icon>
-                    Actualizar
+            </div>
+        </div>
+    </div>
+</div>
+
+<ng-template #entradasRecientesDialog>
+    <div class="bg-white dark:bg-slate-900 rounded-2xl border-[3px] border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] overflow-hidden flex flex-col font-sans h-full max-h-[90vh]">
+        <div class="bg-black text-white px-5 py-4 border-b-[3px] border-black flex justify-between items-center shrink-0" cdkDrag cdkDragRootElement=".cdk-overlay-pane" cdkDragHandle>
+            <div class="flex items-center gap-3">
+                <mat-icon class="!text-2xl text-amber-400">history</mat-icon>
+                <div>
+                    <h2 class="text-sm md:text-lg font-black uppercase tracking-tight leading-none">Entradas Recientes</h2>
+                    <p class="text-[10px] font-bold mt-1 text-gray-400 uppercase tracking-wider leading-none">Historial de Ingresos al Almacén</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-3">
+                <button (click)="loadRecentEntries()" class="hover:bg-white hover:text-black rounded px-3 py-1.5 transition-colors flex items-center gap-1.5 text-xs font-black border-2 border-transparent hover:border-black uppercase">
+                    <mat-icon class="!text-sm">refresh</mat-icon> <span class="hidden sm:inline">Actualizar</span>
+                </button>
+                <button mat-dialog-close class="hover:bg-red-500 hover:text-white rounded px-2 py-1 transition-colors border-2 border-transparent hover:border-black">
+                    <mat-icon class="!text-sm">close</mat-icon>
                 </button>
             </div>
+        </div>
 
-            <!-- ── VISTA: Tabla (lista de entradas) ── -->
-            <div *ngIf="!selectedEntry"
-                 class="neo-card-base-entry bg-white dark:bg-slate-800 overflow-hidden flex flex-col flex-1 relative z-10 border-2 border-black">
+        <div *ngIf="isLoading" class="absolute inset-0 bg-white/70 dark:bg-slate-900/70 z-[9999] flex flex-col items-center justify-center backdrop-blur-sm">
+            <mat-spinner diameter="40"></mat-spinner>
+            <span class="font-black text-black dark:text-white uppercase mt-4 text-xs">Cargando historial...</span>
+        </div>
 
-                <div class="bg-[#0F172AFF] px-4 py-2 border-b-2 border-black flex items-center justify-between shrink-0 h-12">
-                    <div class="flex items-center gap-3">
-                        <mat-icon class="text-white !text-xl">history</mat-icon>
-                        <span class="font-black text-xs md:text-sm uppercase text-white">Registro de Ingresos</span>
-                    </div>
-                    <span class="bg-white text-black px-2 py-0.5 rounded text-xs font-black border border-black shadow-[2px_2px_0px_0px_#000]">
-                        Total: {{ totalRecords }}
-                    </span>
-                </div>
-
-                <div class="overflow-auto flex-1 bg-[#f8f9fc] dark:bg-slate-900/50 custom-scrollbar-entry">
+        <div *ngIf="!selectedEntry" class="flex flex-col flex-1 overflow-hidden p-4 bg-[#f8f9fc] dark:bg-slate-900">
+            <div class="flex-1 border-[3px] border-black rounded-xl overflow-hidden flex flex-col bg-white dark:bg-slate-800 shadow-[3px_3px_0px_0px_#000]">
+                <div class="overflow-auto flex-1 custom-scrollbar">
                     <table mat-table [dataSource]="recentEntries" class="w-full">
-
                         <ng-container matColumnDef="fecha">
-                            <th mat-header-cell *matHeaderCellDef class="header-neo text-sm py-3 px-4">FECHA</th>
-                            <td mat-cell *matCellDef="let element" class="cell-neo font-mono font-bold text-sm px-4 text-black dark:text-white">{{ element.fecha }}</td>
+                            <th mat-header-cell *matHeaderCellDef class="!bg-gray-100 dark:!bg-slate-900 !text-black dark:!text-white !font-black !text-[11px] !border-b-[3px] !border-black !p-3 uppercase w-24 sticky top-0 z-20">Fecha</th>
+                            <td mat-cell *matCellDef="let element" class="!p-3 !border-b !border-black/20 dark:!border-white/10 text-xs font-mono font-bold">{{ element.fecha }}</td>
                         </ng-container>
-
                         <ng-container matColumnDef="tipo">
-                            <th mat-header-cell *matHeaderCellDef class="header-neo text-sm py-3 px-4">TIPO</th>
-                            <td mat-cell *matCellDef="let element" class="cell-neo px-4">
-                                <span class="inline-block px-2 py-1 rounded text-[10px] sm:text-xs font-black border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,0.5)] bg-[#0F172AFF] text-white">
-                                    {{ element.tipo }}
-                                </span>
+                            <th mat-header-cell *matHeaderCellDef class="!bg-gray-100 dark:!bg-slate-900 !text-black dark:!text-white !font-black !text-[11px] !border-b-[3px] !border-black !p-3 uppercase sticky top-0 z-20">Tipo</th>
+                            <td mat-cell *matCellDef="let element" class="!p-3 !border-b !border-black/20 dark:!border-white/10">
+                                <span class="px-2 py-0.5 rounded text-[10px] font-black border-2 border-black bg-[#0F172AFF] text-white">{{ element.tipo }}</span>
                             </td>
                         </ng-container>
-
                         <ng-container matColumnDef="nroComprobante">
-                            <th mat-header-cell *matHeaderCellDef class="header-neo text-sm py-3 px-4">NRO. COMPROBANTE</th>
-                            <td mat-cell *matCellDef="let element" class="cell-neo px-4">
-                                <span class="font-mono text-sm font-black text-black dark:text-white tracking-wide">{{ element.nroComprobante }}</span>
-                            </td>
+                            <th mat-header-cell *matHeaderCellDef class="!bg-gray-100 dark:!bg-slate-900 !text-black dark:!text-white !font-black !text-[11px] !border-b-[3px] !border-black !p-3 uppercase sticky top-0 z-20">Comprobante</th>
+                            <td mat-cell *matCellDef="let element" class="!p-3 !border-b !border-black/20 dark:!border-white/10 text-xs font-black font-mono">{{ element.nroComprobante }}</td>
                         </ng-container>
-
                         <ng-container matColumnDef="estado">
-                            <th mat-header-cell *matHeaderCellDef class="header-neo text-sm py-3 px-4">ESTADO</th>
-                            <td mat-cell *matCellDef="let element" class="cell-neo px-4">
-                                <span class="inline-block px-2 py-1 rounded text-[10px] sm:text-xs font-black border border-black uppercase tracking-wider shadow-[2px_2px_0px_0px_rgba(0,0,0,0.5)]"
-                                      [ngClass]="getStatusClass(element.estado)">
-                                    {{ element.estado }}
-                                </span>
+                            <th mat-header-cell *matHeaderCellDef class="!bg-gray-100 dark:!bg-slate-900 !text-black dark:!text-white !font-black !text-[11px] !border-b-[3px] !border-black !p-3 uppercase text-center sticky top-0 z-20">Estado</th>
+                            <td mat-cell *matCellDef="let element" class="!p-3 !border-b !border-black/20 dark:!border-white/10 text-center">
+                                <span class="px-2 py-0.5 rounded text-[10px] font-black border-2 border-black uppercase" [ngClass]="getStatusClass(element.estado)">{{ element.estado }}</span>
                             </td>
                         </ng-container>
-
                         <ng-container matColumnDef="responsable">
-                            <th mat-header-cell *matHeaderCellDef class="header-neo text-sm py-3 px-4">RESPONSABLE</th>
-                            <td mat-cell *matCellDef="let element" class="cell-neo font-black text-xs sm:text-sm px-4 text-black dark:text-white">{{ element.responsable }}</td>
+                            <th mat-header-cell *matHeaderCellDef class="!bg-gray-100 dark:!bg-slate-900 !text-black dark:!text-white !font-black !text-[11px] !border-b-[3px] !border-black !p-3 uppercase sticky top-0 z-20">Responsable</th>
+                            <td mat-cell *matCellDef="let element" class="!p-3 !border-b !border-black/20 dark:!border-white/10 text-xs font-bold">{{ element.responsable }}</td>
                         </ng-container>
-
                         <ng-container matColumnDef="acciones">
-                            <th mat-header-cell *matHeaderCellDef class="header-neo text-right text-sm py-3 px-4">ACCIONES</th>
-                            <td mat-cell *matCellDef="let element" class="cell-neo text-right px-4">
-                                <div class="flex gap-2 justify-end">
-                                    <button (click)="$event.stopPropagation(); verDetalle(element)"
-                                            matTooltip="Ver detalle"
-                                            class="w-8 h-8 flex items-center justify-center border-2 border-black bg-white dark:bg-slate-700 hover:bg-gray-100 hover:scale-110 rounded-lg shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] active:translate-y-[1px] active:shadow-none transition-all">
-                                        <mat-icon class="text-black dark:text-white !text-lg !w-5 !h-5">visibility</mat-icon>
-                                    </button>
-                                </div>
+                            <th mat-header-cell *matHeaderCellDef class="!bg-gray-100 dark:!bg-slate-900 !text-black dark:!text-white !font-black !text-[11px] !border-b-[3px] !border-black !p-3 uppercase text-center w-16 sticky top-0 z-20">Acc.</th>
+                            <td mat-cell *matCellDef="let element" class="!p-3 !border-b !border-black/20 dark:!border-white/10 text-center">
+                                <button (click)="$event.stopPropagation(); verDetalle(element)" class="w-8 h-8 bg-white dark:bg-slate-700 border-2 border-black rounded-lg shadow-[2px_2px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all flex items-center justify-center mx-auto" matTooltip="Ver detalle">
+                                    <mat-icon class="!text-base text-black dark:text-white">visibility</mat-icon>
+                                </button>
                             </td>
                         </ng-container>
-
-                        <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
-                        <tr mat-row *matRowDef="let row; columns: displayedColumns;"
-                            class="hover:bg-white dark:hover:bg-slate-900 transition-all border-b-2 border-black dark:border-slate-700/50 h-14 cursor-pointer"
-                            (click)="verDetalle(row)"></tr>
+                        <tr mat-header-row *matHeaderRowDef="displayedColumns; sticky: true"></tr>
+                        <tr mat-row *matRowDef="let row; columns: displayedColumns;" class="hover:bg-yellow-50 dark:hover:bg-slate-800 transition-colors cursor-pointer" (click)="verDetalle(row)"></tr>
                     </table>
-
-                    <div *ngIf="recentEntries.length === 0 && !isLoading" class="flex flex-col items-center justify-center h-full py-16 opacity-50">
-                        <mat-icon class="!text-6xl text-black dark:text-gray-500">inbox</mat-icon>
-                        <p class="text-sm font-black mt-2 uppercase text-black dark:text-gray-500">No hay entradas recientes</p>
+                    <div *ngIf="recentEntries.length === 0 && !isLoading" class="flex flex-col items-center justify-center py-10 opacity-50">
+                        <mat-icon class="!text-5xl text-black dark:text-white">inbox</mat-icon>
+                        <p class="text-xs font-black mt-2 uppercase">No hay entradas recientes</p>
                     </div>
                 </div>
-
-                <mat-paginator
-                    [length]="totalRecords"
-                    [pageSize]="pageSize"
-                    [pageIndex]="pageIndex"
-                    [pageSizeOptions]="pageSizeOptions"
-                    (page)="onPageChange($event)"
-                    showFirstLastButtons
-                    class="border-t-2 border-black dark:border-slate-700 bg-white dark:bg-slate-800">
-                </mat-paginator>
+                <mat-paginator [length]="totalRecords" [pageSize]="pageSize" [pageIndex]="pageIndex" [pageSizeOptions]="pageSizeOptions" (page)="onPageChange($event)" class="border-t-[3px] border-black bg-gray-50 dark:bg-slate-800"></mat-paginator>
             </div>
+        </div>
 
-            <!-- ── VISTA: Detalle / Editar ── -->
-            <div *ngIf="selectedEntry"
-                 class="neo-card-base-entry bg-white dark:bg-slate-800 overflow-hidden flex flex-col flex-1 relative z-10 border-2 border-black">
-
-                <!-- Header detalle -->
-                <div class="flex items-center justify-between px-4 py-2 border-b-2 border-black shrink-0 h-12 bg-[#0F172AFF]">
-                    <div class="flex items-center gap-3">
-                        <button (click)="cerrarDetalle()"
-                                class="w-7 h-7 flex items-center justify-center border-2 border-black rounded-lg bg-white/20 hover:bg-white/40 transition-all">
-                            <mat-icon class="!text-base text-white">arrow_back</mat-icon>
-                        </button>
-                        <mat-icon class="!text-xl text-white">visibility</mat-icon>
-                        <span class="font-black text-xs md:text-sm uppercase text-white">Detalle del Movimiento</span>
-                        <span class="font-mono text-[10px] opacity-70 text-white">
-                            {{ selectedEntry?.nroComprobante }}
-                        </span>
+        <div *ngIf="selectedEntry" class="flex flex-col flex-1 overflow-hidden p-4 bg-[#f8f9fc] dark:bg-slate-900">
+            <div class="flex justify-between items-center mb-4 px-1">
+                <button (click)="cerrarDetalle()" class="px-4 py-2 bg-white dark:bg-slate-800 text-black dark:text-white border-2 border-black rounded-xl shadow-[2px_2px_0px_0px_#000] text-xs font-black uppercase flex items-center gap-1.5 hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all">
+                    <mat-icon class="!text-sm">arrow_back</mat-icon> Volver a la lista
+                </button>
+                <span class="font-mono text-sm font-black border-b-2 border-black">{{ selectedEntry?.nroComprobante }}</span>
+            </div>
+            <div class="flex-1 overflow-y-auto custom-scrollbar flex flex-col gap-4">
+                <div class="bg-white dark:bg-slate-800 border-[3px] border-black rounded-xl shadow-[4px_4px_0px_0px_#000] overflow-hidden">
+                    <div class="bg-amber-300 px-4 py-2 border-b-[3px] border-black">
+                        <span class="text-xs font-black uppercase text-black tracking-wide">Información del Movimiento</span>
                     </div>
-                </div>
-
-                <!-- Body detalle -->
-                <div class="overflow-y-auto flex-1 p-4 flex flex-col gap-4 custom-scrollbar-entry bg-[#f8f9fc] dark:bg-slate-900/50">
-
-                    <!-- Información General -->
-                    <div class="bg-white dark:bg-slate-800 border-2 border-black rounded-xl shadow-[3px_3px_0px_0px_#000] overflow-hidden">
-                        <div class="bg-[#0F172AFF] px-4 py-2 border-b-2 border-black">
-                            <span class="text-xs font-black uppercase text-white tracking-wide">Información General</span>
+                    <div class="p-4 grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div>
+                            <label class="text-[10px] font-black uppercase text-gray-500 block mb-1">Fecha</label>
+                            <div class="font-bold text-sm">{{ selectedEntry?.fecha }} {{ selectedEntry?.raw?.time || '' }}</div>
                         </div>
-                        <div class="p-4 grid grid-cols-2 gap-3">
-
-                            <div>
-                                <label class="text-[10px] font-black uppercase text-gray-400 block mb-1">Nro. Comprobante</label>
-                                <div class="h-9 bg-gray-50 dark:bg-slate-900 border-2 border-black rounded-lg px-3 flex items-center font-mono font-black text-sm text-black dark:text-white">
-                                    {{ selectedEntry?.nroComprobante || '-' }}
-                                </div>
-                            </div>
-
-                            <div>
-                                <label class="text-[10px] font-black uppercase text-gray-400 block mb-1">Fecha</label>
-                                <div class="h-9 bg-gray-50 dark:bg-slate-900 border-2 border-black rounded-lg px-3 flex items-center font-bold text-sm text-black dark:text-white">
-                                    {{ selectedEntry?.fecha }}  {{ selectedEntry?.raw?.time || '' }}
-                                </div>
-                            </div>
-
-                            <div>
-                                <label class="text-[10px] font-black uppercase text-gray-400 block mb-1">Tipo de Movimiento</label>
-                                <div class="h-9 border-2 border-black rounded-lg px-3 flex items-center">
-                                    <span class="text-xs font-black uppercase px-2 py-0.5 rounded bg-[#0F172AFF] text-white">
-                                        {{ selectedEntry?.tipo }}
-                                    </span>
-                                </div>
-                            </div>
-
-                            <div>
-                                <label class="text-[10px] font-black uppercase text-gray-400 block mb-1">Estado</label>
-                                <div class="h-9 border-2 border-black rounded-lg px-3 flex items-center">
-                                    <span class="text-xs font-black uppercase px-2 py-0.5 rounded border border-black"
-                                          [ngClass]="getStatusClass(selectedEntry?.estado || '')">
-                                        {{ selectedEntry?.estado }}
-                                    </span>
-                                </div>
-                            </div>
-
-                            <div class="col-span-2">
-                                <label class="text-[10px] font-black uppercase text-gray-400 block mb-1">Responsable / Solicitado por</label>
-                                <div class="h-9 bg-gray-50 dark:bg-slate-900 border-2 border-black rounded-lg px-3 flex items-center font-bold text-sm text-black dark:text-white">
-                                    {{ selectedEntry?.raw?.requested_by_name || selectedEntry?.responsable || '-' }}
-                                </div>
-                            </div>
-
-                            <div *ngIf="selectedEntry?.raw?.responsible_person">
-                                <label class="text-[10px] font-black uppercase text-gray-400 block mb-1">Persona Responsable</label>
-                                <div class="h-9 bg-gray-50 dark:bg-slate-900 border-2 border-black rounded-lg px-3 flex items-center font-bold text-sm text-black dark:text-white">
-                                    {{ selectedEntry?.raw?.responsible_person }}
-                                </div>
-                            </div>
-
-                            <div *ngIf="selectedEntry?.raw?.recipient">
-                                <label class="text-[10px] font-black uppercase text-gray-400 block mb-1">Destinatario / Receptor</label>
-                                <div class="h-9 bg-gray-50 dark:bg-slate-900 border-2 border-black rounded-lg px-3 flex items-center font-bold text-sm text-black dark:text-white">
-                                    {{ selectedEntry?.raw?.recipient }}
-                                </div>
-                            </div>
-
+                        <div>
+                            <label class="text-[10px] font-black uppercase text-gray-500 block mb-1">Tipo</label>
+                            <div class="font-black text-sm">{{ selectedEntry?.tipo }}</div>
+                        </div>
+                        <div>
+                            <label class="text-[10px] font-black uppercase text-gray-500 block mb-1">Estado</label>
+                            <div class="font-black text-xs px-2 py-1 border-2 border-black rounded w-fit" [ngClass]="getStatusClass(selectedEntry?.estado || '')">{{ selectedEntry?.estado }}</div>
+                        </div>
+                        <div>
+                            <label class="text-[10px] font-black uppercase text-gray-500 block mb-1">Responsable</label>
+                            <div class="font-bold text-sm">{{ selectedEntry?.raw?.requested_by_name || selectedEntry?.responsable || '-' }}</div>
                         </div>
                     </div>
-
-                    <!-- Referencias Documentales -->
-                    <div *ngIf="selectedEntry?.raw?.document_number || selectedEntry?.raw?.invoice_number || selectedEntry?.raw?.purchase_order"
-                         class="bg-white dark:bg-slate-800 border-2 border-black rounded-xl shadow-[3px_3px_0px_0px_#000] overflow-hidden">
-                        <div class="bg-amber-400 px-4 py-2 border-b-2 border-black">
-                            <span class="text-xs font-black uppercase text-black tracking-wide">Referencias Documentales</span>
-                        </div>
-                        <div class="p-4 grid grid-cols-2 gap-3">
-                            <div *ngIf="selectedEntry?.raw?.document_number">
-                                <label class="text-[10px] font-black uppercase text-gray-400 block mb-1">Nro. Documento</label>
-                                <div class="h-9 bg-gray-50 dark:bg-slate-900 border-2 border-black rounded-lg px-3 flex items-center font-mono font-bold text-sm text-black dark:text-white">
-                                    {{ selectedEntry?.raw?.document_number }}
-                                </div>
-                            </div>
-                            <div *ngIf="selectedEntry?.raw?.invoice_number">
-                                <label class="text-[10px] font-black uppercase text-gray-400 block mb-1">Nro. Factura</label>
-                                <div class="h-9 bg-gray-50 dark:bg-slate-900 border-2 border-black rounded-lg px-3 flex items-center font-mono font-bold text-sm text-black dark:text-white">
-                                    {{ selectedEntry?.raw?.invoice_number }}
-                                </div>
-                            </div>
-                            <div *ngIf="selectedEntry?.raw?.purchase_order">
-                                <label class="text-[10px] font-black uppercase text-gray-400 block mb-1">Orden de Compra</label>
-                                <div class="h-9 bg-gray-50 dark:bg-slate-900 border-2 border-black rounded-lg px-3 flex items-center font-mono font-bold text-sm text-black dark:text-white">
-                                    {{ selectedEntry?.raw?.purchase_order }}
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Observaciones -->
-                    <div *ngIf="selectedEntry?.raw?.notes || selectedEntry?.raw?.specific_observations || selectedEntry?.raw?.general_observations"
-                         class="bg-white dark:bg-slate-800 border-2 border-black rounded-xl shadow-[3px_3px_0px_0px_#000] overflow-hidden">
-                        <div class="bg-gray-100 dark:bg-slate-700 px-4 py-2 border-b-2 border-black">
-                            <span class="text-xs font-black uppercase text-black dark:text-white tracking-wide">Observaciones</span>
-                        </div>
-                        <div class="p-4 flex flex-col gap-3">
-                            <div *ngIf="selectedEntry?.raw?.notes">
-                                <label class="text-[10px] font-black uppercase text-gray-400 block mb-1">Notas</label>
-                                <div class="bg-gray-50 dark:bg-slate-900 border-2 border-black rounded-lg px-3 py-2 text-sm text-black dark:text-white font-bold leading-snug">
-                                    {{ selectedEntry?.raw?.notes }}
-                                </div>
-                            </div>
-                            <div *ngIf="selectedEntry?.raw?.specific_observations">
-                                <label class="text-[10px] font-black uppercase text-gray-400 block mb-1">Observaciones Específicas</label>
-                                <div class="bg-gray-50 dark:bg-slate-900 border-2 border-black rounded-lg px-3 py-2 text-sm text-black dark:text-white font-bold leading-snug">
-                                    {{ selectedEntry?.raw?.specific_observations }}
-                                </div>
-                            </div>
-                            <div *ngIf="selectedEntry?.raw?.general_observations">
-                                <label class="text-[10px] font-black uppercase text-gray-400 block mb-1">Observaciones Generales</label>
-                                <div class="bg-gray-50 dark:bg-slate-900 border-2 border-black rounded-lg px-3 py-2 text-sm text-black dark:text-white font-bold leading-snug">
-                                    {{ selectedEntry?.raw?.general_observations }}
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-
-                </div>
-
-                <!-- Footer detalle -->
-                <div class="shrink-0 flex justify-end gap-2 px-4 py-3 border-t-2 border-black bg-white dark:bg-[#0F172AFF]">
-                    <button (click)="cerrarDetalle()"
-                            class="px-5 py-2 bg-[#0F172AFF] text-white font-black text-xs border-2 border-black rounded-full shadow-[2px_2px_0px_0px_#000] hover:shadow-none hover:translate-y-[1px] transition-all uppercase">
-                        Volver
-                    </button>
                 </div>
             </div>
         </div>
     </div>
 </ng-template>
-

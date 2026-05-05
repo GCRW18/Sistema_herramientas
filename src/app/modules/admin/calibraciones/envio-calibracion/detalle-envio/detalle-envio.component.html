@@ -1,104 +1,117 @@
-<div class="flex flex-col w-full max-h-[85vh] bg-[#f8f9fc] dark:bg-[#0F172AFF] font-sans overflow-hidden">
+<div class="flex flex-col w-full max-h-[85vh] bg-[#f8f9fc] dark:bg-slate-900 border-[3px] border-black rounded-2xl shadow-[6px_6px_0px_0px_#000] font-sans overflow-hidden">
 
-    <div class="bg-white dark:bg-slate-800 border-b-2 border-black px-4 py-3 flex items-center justify-between shrink-0">
+    <!-- HEADER -->
+    <div class="bg-[#0F172AFF] border-b-[3px] border-black px-5 py-4 flex items-center justify-between shrink-0">
         <div class="flex items-center gap-3">
-            <div class="w-10 h-10 bg-blue-50 dark:bg-blue-900/30 border-2 border-blue-200 dark:border-blue-800 rounded-lg flex items-center justify-center shrink-0">
-                <mat-icon class="text-blue-600 dark:text-blue-400 !text-xl">visibility</mat-icon>
+            <div class="w-10 h-10 bg-[#FFC501FF] border-2 border-black rounded-xl flex items-center justify-center shrink-0 shadow-[2px_2px_0px_0px_#000]">
+                <mat-icon class="text-black !text-xl">visibility</mat-icon>
             </div>
             <div>
-                <h1 class="text-sm font-black text-black dark:text-white uppercase tracking-tight leading-none">
-                    DETALLE DEL ENVÍO
-                </h1>
-                <p class="text-[10px] font-bold mt-1">
-                    <span class="text-gray-500 uppercase">NOTA:</span>
-                    <span class="font-mono text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 px-1.5 py-0.5 rounded ml-1 border border-amber-200 dark:border-amber-800">
+                <h1 class="text-base font-black text-white uppercase tracking-tight leading-none">Detalle del Envío</h1>
+                <div class="flex items-center gap-2 mt-1">
+                    <span class="text-[10px] font-black text-gray-400 uppercase">N° NOTA:</span>
+                    <span class="font-mono text-black font-black bg-amber-300 px-2 py-0.5 rounded border border-black text-[10px]">
                         {{ calibracion.record_number }}
                     </span>
-                </p>
+                </div>
             </div>
         </div>
-        <button mat-dialog-close
-                class="w-8 h-8 bg-gray-100 dark:bg-slate-700 border-2 border-black rounded hover:bg-gray-200 dark:hover:bg-slate-600 transition-colors flex items-center justify-center shrink-0">
-            <mat-icon class="!text-base text-black dark:text-white">close</mat-icon>
+        <button mat-dialog-close class="w-8 h-8 bg-white border-2 border-black rounded-lg hover:bg-gray-200 transition-colors flex items-center justify-center shrink-0 shadow-[2px_2px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none">
+            <mat-icon class="!text-base text-black">close</mat-icon>
         </button>
     </div>
 
-    <div class="p-4 overflow-y-auto custom-scrollbar flex flex-col gap-4">
+    <!-- BODY -->
+    <div class="p-5 overflow-y-auto custom-scrollbar flex flex-col gap-5">
 
-        <div class="flex items-center justify-between bg-white dark:bg-slate-800 border-2 border-black rounded-xl p-3 shadow-[3px_3px_0px_0px_rgba(0,0,0,0.15)]">
-            <span class="text-[10px] font-black text-gray-500 uppercase">Estado Actual:</span>
-            <span class="px-3 py-1 text-xs font-black uppercase border-[2px] border-black rounded-lg shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"
-                  [ngClass]="getStatusChipClass(calibracion.status)">
+        <!-- Banner Estado -->
+        <div class="flex items-center justify-between bg-white dark:bg-slate-800 border-[3px] border-black rounded-xl p-4 shadow-[4px_4px_0px_0px_#000]">
+            <span class="text-xs font-black text-black dark:text-white uppercase">Estado Actual</span>
+            <span class="px-4 py-1.5 text-xs font-black uppercase border-[3px] border-black rounded-lg shadow-[2px_2px_0px_0px_#000]" [ngClass]="getStatusChipClass(calibracion.status)">
                 {{ getStatusLabel(calibracion.status) }}
             </span>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
 
-            <div class="bg-white dark:bg-slate-800 border-2 border-black rounded-xl shadow-[3px_3px_0px_0px_rgba(0,0,0,0.15)] overflow-hidden">
-                <div class="bg-[#0F172AFF] px-3 py-1.5 border-b-2 border-black flex items-center gap-2">
-                    <mat-icon class="!text-sm text-amber-400">build</mat-icon>
-                    <span class="text-[10px] font-black text-white uppercase">Herramienta</span>
+            <!-- Tarjeta 1: Herramienta -->
+            <div class="bg-white dark:bg-slate-800 border-[3px] border-black rounded-xl shadow-[4px_4px_0px_0px_#000] overflow-hidden flex flex-col">
+                <div class="bg-amber-300 px-4 py-2 border-b-[3px] border-black flex items-center gap-2">
+                    <mat-icon class="!text-base text-black">build</mat-icon>
+                    <span class="text-xs font-black text-black uppercase">Herramienta</span>
                 </div>
-                <div class="p-3 flex flex-col gap-2">
+                <div class="p-4 flex flex-col gap-3 flex-1">
                     <div>
-                        <span class="block text-[8px] font-black text-gray-400 uppercase">CÓDIGO BOA</span>
-                        <span class="text-xs font-black font-mono text-black dark:text-white">{{ calibracion.tool_code }}</span>
+                        <span class="block text-[9px] font-black text-gray-500 uppercase mb-0.5">CÓDIGO BOA</span>
+                        <span class="text-sm font-black font-mono text-black dark:text-white px-2 py-0.5 bg-gray-100 dark:bg-slate-700 border-2 border-black rounded shadow-[2px_2px_0px_0px_#000]">{{ calibracion.tool_code }}</span>
                     </div>
                     <div>
-                        <span class="block text-[8px] font-black text-gray-400 uppercase">NOMBRE</span>
-                        <span class="text-xs font-bold text-black dark:text-white">{{ calibracion.tool_name }}</span>
+                        <span class="block text-[9px] font-black text-gray-500 uppercase mb-0.5">NOMBRE</span>
+                        <span class="text-sm font-bold text-black dark:text-white leading-tight">{{ calibracion.tool_name }}</span>
                     </div>
-                    <div *ngIf="calibracion.is_jack" class="mt-1">
-                        <span class="inline-block px-1.5 py-0.5 bg-purple-100 border border-purple-300 text-purple-700 rounded text-[9px] font-black uppercase">
+                    <div *ngIf="calibracion.is_jack" class="mt-auto pt-2">
+                        <span class="inline-block px-2 py-1 bg-purple-200 border-2 border-purple-900 text-purple-900 rounded font-black text-[10px] uppercase shadow-[2px_2px_0px_0px_#000]">
                             ES GATA HIDRÁULICA
                         </span>
                     </div>
                 </div>
             </div>
 
-            <div class="bg-white dark:bg-slate-800 border-2 border-black rounded-xl shadow-[3px_3px_0px_0px_rgba(0,0,0,0.15)] overflow-hidden">
-                <div class="bg-[#0F172AFF] px-3 py-1.5 border-b-2 border-black flex items-center gap-2">
-                    <mat-icon class="!text-sm text-amber-400">local_shipping</mat-icon>
-                    <span class="text-[10px] font-black text-white uppercase">Logística & Empresa</span>
+            <!-- Tarjeta 2: Logística -->
+            <div class="bg-white dark:bg-slate-800 border-[3px] border-black rounded-xl shadow-[4px_4px_0px_0px_#000] overflow-hidden flex flex-col">
+                <div class="bg-blue-300 px-4 py-2 border-b-[3px] border-black flex items-center gap-2">
+                    <mat-icon class="!text-base text-black">local_shipping</mat-icon>
+                    <span class="text-xs font-black text-black uppercase">Logística & Empresa</span>
                 </div>
-                <div class="p-3 grid grid-cols-2 gap-2">
+                <div class="p-4 grid grid-cols-2 gap-3 flex-1">
                     <div class="col-span-2">
-                        <span class="block text-[8px] font-black text-gray-400 uppercase">EMPRESA / LABORATORIO</span>
-                        <span class="text-xs font-bold text-black dark:text-white">{{ calibracion.supplier_name }}</span>
+                        <span class="block text-[9px] font-black text-gray-500 uppercase mb-0.5">EMPRESA / LABORATORIO</span>
+                        <span class="text-sm font-black text-black dark:text-white">{{ calibracion.supplier_name }}</span>
                     </div>
+                    <div class="col-span-2 border-t-[3px] border-dashed border-gray-300 dark:border-slate-600 my-1"></div>
                     <div>
-                        <span class="block text-[8px] font-black text-gray-400 uppercase">ALMACÉN ORIGEN</span>
+                        <span class="block text-[9px] font-black text-gray-500 uppercase mb-0.5">ALMACÉN ORIGEN</span>
                         <span class="text-xs font-bold text-black dark:text-white">{{ calibracion.almacen || '—' }}</span>
                     </div>
                     <div>
-                        <span class="block text-[8px] font-black text-gray-400 uppercase">BASE</span>
+                        <span class="block text-[9px] font-black text-gray-500 uppercase mb-0.5">BASE</span>
                         <span class="text-xs font-bold text-black dark:text-white">{{ calibracion.base || '—' }}</span>
                     </div>
-                    <div class="col-span-2">
-                        <span class="block text-[8px] font-black text-gray-400 uppercase">TIPO DE TRABAJO</span>
-                        <span class="text-xs font-black text-indigo-600 dark:text-indigo-400">{{ getWorkTypeLabel(calibracion.work_type) }}</span>
+                    <div class="col-span-2 mt-auto pt-2">
+                        <span class="block text-[9px] font-black text-gray-500 uppercase mb-1">TIPO DE TRABAJO</span>
+                        <span class="inline-block px-2 py-1 bg-black text-white font-black border-2 border-black rounded text-[10px] uppercase shadow-[2px_2px_0px_0px_rgba(255,255,255,0.2)]">
+                            {{ getWorkTypeLabel(calibracion.work_type) }}
+                        </span>
                     </div>
                 </div>
             </div>
 
-            <div class="col-span-1 md:col-span-2 bg-white dark:bg-slate-800 border-2 border-black rounded-xl shadow-[3px_3px_0px_0px_rgba(0,0,0,0.15)] overflow-hidden">
-                <div class="bg-[#0F172AFF] px-3 py-1.5 border-b-2 border-black flex items-center gap-2">
-                    <mat-icon class="!text-sm text-amber-400">calendar_today</mat-icon>
-                    <span class="text-[10px] font-black text-white uppercase">Tiempos del Proceso</span>
+            <!-- Tarjeta 3: Tiempos -->
+            <div class="col-span-1 md:col-span-2 bg-white dark:bg-slate-800 border-[3px] border-black rounded-xl shadow-[4px_4px_0px_0px_#000] overflow-hidden">
+                <div class="bg-green-400 px-4 py-2 border-b-[3px] border-black flex items-center gap-2">
+                    <mat-icon class="!text-base text-black">calendar_month</mat-icon>
+                    <span class="text-xs font-black text-black uppercase">Tiempos del Proceso</span>
                 </div>
-                <div class="p-3 flex justify-between items-center gap-2">
+                <div class="p-5 flex flex-col sm:flex-row justify-between items-center gap-4">
 
-                    <div class="flex-1 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-2 text-center">
-                        <span class="block text-[8px] font-black text-blue-600 dark:text-blue-400 uppercase mb-1">FECHA ENVÍO</span>
-                        <span class="text-xs font-black font-mono text-black dark:text-white">{{ calibracion.send_date }}</span>
+                    <!-- Envio -->
+                    <div class="w-full sm:flex-1 bg-white dark:bg-slate-700 border-[3px] border-black rounded-xl p-3 text-center shadow-[2px_2px_0px_0px_#000]">
+                        <span class="block text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase mb-1">FECHA DE ENVÍO</span>
+                        <span class="text-sm font-black font-mono text-black dark:text-white">{{ calibracion.send_date }}</span>
                     </div>
 
-                    <mat-icon class="text-gray-400">arrow_forward</mat-icon>
+                    <!-- Flecha -->
+                    <div class="w-10 h-10 bg-black text-white rounded-full flex items-center justify-center shrink-0 hidden sm:flex shadow-[2px_2px_0px_0px_rgba(255,255,255,0.3)]">
+                        <mat-icon class="!text-xl">arrow_forward</mat-icon>
+                    </div>
+                    <mat-icon class="!text-3xl text-black sm:hidden rotate-90">arrow_forward</mat-icon>
 
-                    <div class="flex-1 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-2 text-center">
-                        <span class="block text-[8px] font-black text-amber-600 dark:text-amber-400 uppercase mb-1">RETORNO ESTIMADO</span>
-                        <span class="text-xs font-black font-mono text-black dark:text-white">{{ calibracion.expected_return_date || '—' }}</span>
+                    <!-- Retorno -->
+                    <div class="w-full sm:flex-1 bg-white dark:bg-slate-700 border-[3px] border-black rounded-xl p-3 text-center shadow-[2px_2px_0px_0px_#000]">
+                        <span class="block text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase mb-1">RETORNO ESTIMADO</span>
+                        <span class="text-sm font-black font-mono" [ngClass]="calibracion.expected_return_date ? 'text-black dark:text-white' : 'text-gray-400'">
+                            {{ calibracion.expected_return_date || 'Sin fecha' }}
+                        </span>
                     </div>
 
                 </div>
@@ -107,10 +120,10 @@
         </div>
     </div>
 
-    <div class="bg-gray-100 dark:bg-slate-800 border-t-2 border-black px-4 py-3 flex items-center justify-end shrink-0">
-        <button mat-dialog-close
-                class="px-5 py-2 bg-[#0F172AFF] text-white font-black text-xs border-2 border-black rounded-lg shadow-[2px_2px_0px_0px_rgba(0,0,0,0.4)] hover:shadow-none hover:translate-x-[1px] hover:translate-y-[1px] transition-all uppercase">
-            Aceptar
+    <!-- FOOTER -->
+    <div class="bg-gray-100 dark:bg-slate-800 border-t-[3px] border-black px-5 py-4 flex items-center justify-end shrink-0">
+        <button mat-dialog-close class="px-6 py-2.5 bg-black text-white font-black text-xs border-[3px] border-black rounded-xl shadow-[3px_3px_0px_0px_#000] hover:shadow-none hover:translate-x-[1px] hover:translate-y-[1px] transition-all uppercase">
+            Cerrar Detalle
         </button>
     </div>
 </div>

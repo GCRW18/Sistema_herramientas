@@ -1,57 +1,54 @@
 <div class="flex flex-col w-full h-full bg-[#f8f9fc] dark:bg-[#0F172AFF] transition-colors duration-300 font-sans overflow-hidden relative">
 
-    <!-- SPINNER OVERLAY -->
     <div *ngIf="isSaving" class="spinner-overlay z-[100]">
-        <div class="neo-card-base p-6 flex flex-col items-center gap-4 bg-white dark:bg-slate-800">
-            <mat-spinner diameter="50"></mat-spinner>
+        <div class="neo-card-base p-6 flex flex-col items-center gap-4 bg-white dark:bg-slate-800 border-[3px] border-black shadow-[4px_4px_0px_0px_#000]">
+            <mat-spinner diameter="40"></mat-spinner>
             <span class="font-black text-black dark:text-white uppercase tracking-wider">Procesando Retorno...</span>
         </div>
     </div>
 
-    <!-- MAIN CONTENT -->
-    <div class="flex-1 flex flex-col p-3 relative h-full overflow-hidden gap-3">
+    <div class="flex-1 flex flex-col relative h-full overflow-hidden">
 
-        <!-- HEADER -->
-        <div class="flex flex-row items-center justify-between gap-3 shrink-0 relative z-10">
-            <div class="flex items-center gap-3">
-                <div class="font-black text-xs uppercase flex items-center gap-2">
+        <div class="flex items-center justify-between gap-4 shrink-0 flex-wrap p-4 bg-white dark:bg-[#0F172AFF] border-b-[3px] border-black z-10">
+
+            <div class="flex items-center gap-4">
+                <div class="flex items-center justify-center w-10 h-10 bg-white dark:bg-[#0F172AFF] border-[3px] border-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] rounded-xl shrink-0">
+                    <mat-icon class="text-black dark:text-amber-400 !text-base">flight_land</mat-icon>
                 </div>
-                <div class="flex items-center gap-2 flex-wrap">
-                    <div class="font-black text-xs uppercase flex items-center gap-2">
-                        <mat-icon class="text-black dark:text-amber-400 !text-base">flight</mat-icon>
-                    </div>
-                    <h1 class="text-lg font-black text-black dark:text-white uppercase tracking-tight leading-none">
+                <div>
+                    <h1 class="text-xl md:text-2xl font-black text-black dark:text-white uppercase tracking-tighter leading-none">
                         RETORNO BASE OPERATIVA
                     </h1>
-                    <p class="text-[10px] font-bold bg-amber-400 text-black px-2 py-0.5 rounded-sm border border-black">
-                        RETORNO COMAT
-                    </p>
+                    <div class="flex items-center gap-2 mt-0.5 flex-wrap">
+                        <p class="text-[10px] font-bold bg-amber-400 text-black px-2 py-0.5 inline-block border-2 border-black uppercase tracking-wider">
+                            RETORNO COMAT
+                        </p>
+                    </div>
                 </div>
             </div>
 
-            <div class="flex gap-2 shrink-0">
-                <button (click)="realizarConsulta()"
-                        class="px-3 py-1.5 bg-amber-400 text-black font-bold text-xs border-2 border-black rounded-full shadow-[2px_2px_0px_0px_#000] hover:translate-y-[1px] hover:shadow-[1px_1px_0px_0px_#000] active:shadow-none transition-all uppercase flex items-center gap-1">
-                    <mat-icon class="!w-4 !h-4 !text-sm text-black">history</mat-icon>
+            <div class="flex items-center gap-3">
+                <button (click)="abrirModalHistorial()"
+                        class="h-9 px-4 bg-amber-400 dark:bg-blue-900 text-black dark:text-white font-black text-xs border-[2px] border-black rounded-xl shadow-[3px_3px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[2px_2px_0px_0px_#000] active:shadow-none transition-all uppercase flex items-center gap-2">
+                    <mat-icon class="!text-black">history</mat-icon>
                     <span class="hidden sm:inline">Historial</span>
                 </button>
 
+                <div class="w-px h-8 bg-black/20 dark:bg-white/20 mx-1"></div>
+
                 <button (click)="openConfirmModal()" [disabled]="isSaving || isSearching || getSelectedCount() === 0"
-                        class="px-3 py-1.5 bg-red-600 text-white font-black text-xs border-2 border-black rounded-full shadow-[2px_2px_0px_0px_#000] hover:translate-y-[1px] hover:shadow-[1px_1px_0px_0px_#000] active:shadow-none transition-all uppercase disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1">
-                    <mat-icon class="!w-4 !h-4 !text-sm text-white">check_circle</mat-icon>
-                    Finalizar ({{ getSelectedCount() }})
+                        class="h-9 px-5 bg-green-600 text-black font-black text-xs border-[2px] border-black rounded-xl shadow-[3px_3px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[2px_2px_0px_0px_#000] active:shadow-none disabled:opacity-50 disabled:shadow-none disabled:translate-x-0 disabled:translate-y-0 disabled:cursor-not-allowed transition-all uppercase flex items-center gap-2">
+                    <mat-icon class="!text-sm text-black">check_circle</mat-icon>
+                    Finalizar <span class="hidden sm:inline">({{ getSelectedCount() }})</span>
                 </button>
             </div>
         </div>
 
-        <!-- BODY: 3 COLUMNAS -->
-        <form [formGroup]="retornoForm" class="flex flex-row gap-3 flex-1 overflow-hidden min-h-0">
+        <form [formGroup]="retornoForm" class="flex flex-col md:flex-row gap-4 p-4 flex-1 overflow-y-auto md:overflow-hidden bg-[#f8f9fc] dark:bg-slate-900/50 custom-scrollbar">
 
-            <!-- COL 1: Tipo de Origen + Filtros & Carga -->
-            <div class="w-[200px] xl:w-[220px] shrink-0 flex flex-col gap-3 overflow-y-auto custom-scrollbar">
+            <div class="w-full md:w-[220px] shrink-0 flex flex-col gap-3">
 
-                <!-- TIPO DE ORIGEN -->
-                <div class="neo-card-base p-3 bg-white dark:bg-slate-800">
+                <div class="neo-card-base p-3 bg-white dark:bg-slate-800 border-2 border-black shadow-[3px_3px_0px_0px_#000]">
                     <div class="flex items-center gap-1.5 mb-2 pb-2 border-b-2 border-black bg-[#0F172AFF] -mx-3 -mt-3 px-3 pt-2 rounded-t">
                         <mat-icon class="text-amber-400 !text-base">swap_horiz</mat-icon>
                         <h3 class="font-black text-xs uppercase text-white">Tipo de Origen</h3>
@@ -59,403 +56,216 @@
                     <div class="grid grid-cols-2 gap-2">
                         <button type="button" (click)="onTipoOrigenChange('BASE')"
                                 class="p-2 rounded-lg border-2 transition-all flex flex-col items-center gap-1"
-                                [ngClass]="tipoOrigenActivo === 'BASE'
-                                    ? 'bg-[#2563EBFF] border-black text-white shadow-[2px_2px_0px_0px_#000]'
-                                    : 'bg-white dark:bg-slate-700 border-black text-black dark:text-white hover:border-[#2563EBFF] hover:bg-purple-50'">
-                            <mat-icon class="!text-base text-black">flight</mat-icon>
-                            <span class="text-[9px] font-black uppercase leading-tight text-center">Base Operativa</span>
+                                [ngClass]="tipoOrigenActivo === 'BASE' ? 'bg-[#2563EBFF] border-black text-white shadow-[2px_2px_0px_0px_#000]' : 'bg-white dark:bg-slate-700 border-black text-black dark:text-white hover:bg-gray-50'">
+                            <mat-icon class="!text-base">flight</mat-icon>
+                            <span class="text-[9px] font-black uppercase leading-tight text-center">Base<br>Operativa</span>
                         </button>
                         <button type="button" (click)="onTipoOrigenChange('TRASPASO')"
                                 class="p-2 rounded-lg border-2 transition-all flex flex-col items-center gap-1"
-                                [ngClass]="tipoOrigenActivo === 'TRASPASO'
-                                    ? 'bg-amber-500 border-black text-white shadow-[2px_2px_0px_0px_#000]'
-                                    : 'bg-white dark:bg-slate-700 border-black text-black dark:text-white hover:border-amber-500 hover:bg-amber-50'">
-                            <mat-icon class="!text-base text-black">warehouse</mat-icon>
-                            <span class="text-[9px] font-black uppercase leading-tight text-center">Almacén</span>
+                                [ngClass]="tipoOrigenActivo === 'TRASPASO' ? 'bg-amber-500 border-black text-black shadow-[2px_2px_0px_0px_#000]' : 'bg-white dark:bg-slate-700 border-black text-black dark:text-white hover:bg-gray-50'">
+                            <mat-icon class="!text-base">warehouse</mat-icon>
+                            <span class="text-[9px] font-black uppercase leading-tight text-center">Almacén<br>Traspaso</span>
                         </button>
                     </div>
                 </div>
 
-                <!-- FILTROS & CARGA -->
-                <div class="neo-card-base p-3 bg-white dark:bg-slate-800">
+                <div class="neo-card-base p-3 bg-white dark:bg-slate-800 border-2 border-black shadow-[3px_3px_0px_0px_#000]">
                     <div class="flex items-center gap-1.5 mb-2 pb-2 border-b-2 border-black bg-[#0F172AFF] -mx-3 -mt-3 px-3 pt-2 rounded-t">
                         <mat-icon class="text-amber-400 !text-base">tune</mat-icon>
                         <h3 class="font-black text-xs uppercase text-white">Filtros & Carga</h3>
                     </div>
                     <div class="flex flex-col gap-2">
-                        <!-- Ubicación Origen -->
                         <div class="form-group">
-                            <label class="text-[10px] font-black uppercase text-black dark:text-gray-300 mb-1 block">
-                                {{ getTipoOrigenLabel() }} de Origen *
-                            </label>
+                            <label class="text-[10px] font-black uppercase text-black dark:text-gray-300 mb-1 block">{{ getTipoOrigenLabel() }} de Origen *</label>
                             <div class="relative">
-                                <select formControlName="ubicacionOrigen"
-                                        class="w-full h-9 text-xs font-bold border-2 border-black dark:border-slate-600 rounded-lg pl-8 pr-4 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[2px_2px_0px_0px_#000] transition-shadow outline-none appearance-none cursor-pointer"
-                                        [class.border-red-500]="hasError('ubicacionOrigen', 'required')">
+                                <select formControlName="ubicacionOrigen" class="w-full h-9 text-xs font-bold border-2 border-black dark:border-slate-600 rounded pl-8 pr-4 bg-white dark:bg-[#0F172AFF] text-black dark:text-white outline-none appearance-none cursor-pointer" [class.border-red-500]="hasError('ubicacionOrigen', 'required')">
                                     <option [ngValue]="null">-- Seleccionar --</option>
-                                    <option *ngFor="let ubi of getUbicacionesFiltradas()" [ngValue]="ubi">
-                                        {{ ubi.nombre }} ({{ ubi.codigo }})
-                                    </option>
+                                    <option *ngFor="let ubi of getUbicacionesFiltradas()" [ngValue]="ubi">{{ ubi.nombre }}</option>
                                 </select>
-                                <mat-icon class="absolute left-2 top-1/2 -translate-y-1/2 text-black !text-base">
-                                    {{ tipoOrigenActivo === 'BASE' ? 'flight' : 'warehouse' }}
-                                </mat-icon>
-                                <mat-icon class="absolute right-2 top-1/2 -translate-y-1/2 text-black !text-base pointer-events-none">expand_more</mat-icon>
+                                <mat-icon class="absolute left-2 top-1/2 -translate-y-1/2 text-black dark:text-white !text-base">{{ tipoOrigenActivo === 'BASE' ? 'flight' : 'warehouse' }}</mat-icon>
                             </div>
                         </div>
-                        <!-- Búsqueda -->
                         <div class="form-group">
-                            <label class="text-[10px] font-black uppercase text-black dark:text-gray-300 mb-1 block">
-                                Código Herramienta
-                            </label>
+                            <label class="text-[10px] font-black uppercase text-black dark:text-gray-300 mb-1 block">Código Herramienta</label>
                             <div class="relative">
-                                <input type="text" formControlName="searchText"
-                                       placeholder="Ej: BOA-H-0456"
-                                       class="w-full h-9 text-xs font-bold border-2 border-black dark:border-slate-600 rounded-lg pl-8 pr-8 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[2px_2px_0px_0px_#000] transition-shadow outline-none placeholder:text-gray-400">
-                                <mat-icon class="absolute left-2 top-1/2 -translate-y-1/2 text-black !text-base">search</mat-icon>
-                                <button *ngIf="retornoForm.get('searchText')?.value" type="button" (click)="clearSearch()"
-                                        class="absolute right-1 top-1/2 -translate-y-1/2 text-black hover:text-black p-0.5 rounded">
-                                    <mat-icon class="!text-base">close</mat-icon>
-                                </button>
+                                <input type="text" formControlName="searchText" placeholder="Ej: BOA-H-..." class="w-full h-9 text-xs font-bold border-2 border-black dark:border-slate-600 rounded pl-8 pr-8 bg-white dark:bg-[#0F172AFF] text-black dark:text-white outline-none uppercase placeholder:text-gray-400">
+                                <mat-icon class="absolute left-2 top-1/2 -translate-y-1/2 text-black dark:text-white !text-base">search</mat-icon>
                             </div>
                         </div>
-                        <!-- Botón Cargar -->
-                        <button type="button" (click)="consultar()"
-                                [disabled]="isSearching || !retornoForm.get('ubicacionOrigen')?.value"
-                                class="w-full py-2 bg-[#0F172AFF] text-white font-black text-xs border-2 border-black rounded-lg shadow-[3px_3px_0px_0px_#000] hover:shadow-[1px_1px_0px_0px_#000] hover:translate-x-[2px] hover:translate-y-[2px] active:shadow-none transition-all uppercase flex justify-center items-center gap-1 disabled:opacity-50">
+                        <button type="button" (click)="consultar()" [disabled]="isSearching || !retornoForm.get('ubicacionOrigen')?.value" class="w-full h-9 bg-black text-white font-black text-xs border-2 border-black rounded shadow-[2px_2px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all uppercase flex justify-center items-center gap-1 disabled:opacity-50">
                             <mat-spinner *ngIf="isSearching" diameter="16" class="invert-spinner"></mat-spinner>
                             <mat-icon *ngIf="!isSearching" class="!text-base">download</mat-icon>
-                            <span *ngIf="!isSearching">Cargar</span>
+                            <span *ngIf="!isSearching">Cargar Datos</span>
                         </button>
                     </div>
                 </div>
 
             </div>
 
-            <!-- COL 2: Datos Recepción + Summary Cards -->
-            <div class="w-[220px] xl:w-[250px] shrink-0 flex flex-col gap-3 overflow-y-auto custom-scrollbar">
+            <div class="w-full md:w-[250px] shrink-0 flex flex-col gap-3">
 
-                <!-- DATOS RECEPCIÓN -->
-                <div class="neo-card-base p-3 bg-white dark:bg-slate-800">
+                <div class="neo-card-base p-3 bg-white dark:bg-slate-800 border-2 border-black shadow-[3px_3px_0px_0px_#000]">
                     <div class="flex items-center gap-1.5 mb-2 pb-2 border-b-2 border-black bg-[#0F172AFF] -mx-3 -mt-3 px-3 pt-2 rounded-t">
                         <mat-icon class="text-amber-400 !text-base">assignment_returned</mat-icon>
                         <h3 class="font-black text-xs uppercase text-white">Datos Recepción</h3>
                     </div>
                     <div class="flex flex-col gap-2">
-                        <!-- Nro Documento -->
                         <div class="form-group">
-                            <label class="text-[10px] font-black uppercase text-black dark:text-gray-300 mb-1 block">
-                                {{ getDocumentoLabel() }} *
-                            </label>
-                            <input type="text" formControlName="nroDocumento"
-                                   [placeholder]="tipoOrigenActivo === 'BASE' ? 'COMAT-001/2026' : 'TRP-001/2026'"
-                                   class="w-full h-9 text-xs font-bold border-2 border-black dark:border-slate-600 rounded-lg px-3 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[2px_2px_0px_0px_#000] transition-shadow outline-none placeholder:text-gray-400 tracking-wide"
-                                   [class.border-red-500]="hasError('nroDocumento', 'required')">
+                            <label class="text-[10px] font-black uppercase text-black dark:text-gray-300 mb-1 block">{{ getDocumentoLabel() }} *</label>
+                            <input type="text" formControlName="nroDocumento" [placeholder]="tipoOrigenActivo === 'BASE' ? 'COMAT-001' : 'TRP-001'" class="w-full h-8 text-xs font-bold border-2 border-black dark:border-slate-600 rounded px-2 bg-white dark:bg-[#0F172AFF] text-black dark:text-white uppercase outline-none" [class.border-red-500]="hasError('nroDocumento', 'required')">
                         </div>
-                        <!-- Fecha Retorno -->
                         <div class="form-group">
-                            <label class="text-[10px] font-black uppercase text-black dark:text-gray-300 mb-1 block">
-                                Fecha Retorno *
-                            </label>
-                            <input type="date" formControlName="fechaRetorno"
-                                   class="w-full h-9 text-xs font-bold border-2 border-black dark:border-slate-600 rounded-lg px-3 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[2px_2px_0px_0px_#000] transition-shadow outline-none"
-                                   [class.border-red-500]="hasError('fechaRetorno', 'required')">
+                            <label class="text-[10px] font-black uppercase text-black dark:text-gray-300 mb-1 block">Fecha Retorno *</label>
+                            <input type="date" formControlName="fechaRetorno" class="w-full h-8 text-xs font-bold border-2 border-black dark:border-slate-600 rounded px-2 bg-white dark:bg-[#0F172AFF] text-black dark:text-white outline-none" [class.border-red-500]="hasError('fechaRetorno', 'required')">
                         </div>
-                        <!-- Transportista -->
                         <div class="form-group">
-                            <label class="text-[10px] font-black uppercase text-black dark:text-gray-300 mb-1 block">
-                                Transportista
-                            </label>
-                            <input type="text" formControlName="transportista"
-                                   placeholder="Transportista (opcional)"
-                                   class="w-full h-9 text-xs font-bold border-2 border-black dark:border-slate-600 rounded-lg px-3 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[2px_2px_0px_0px_#ccc] transition-shadow outline-none placeholder:text-gray-400">
+                            <label class="text-[10px] font-black uppercase text-black dark:text-gray-300 mb-1 block">Transportista</label>
+                            <input type="text" formControlName="transportista" placeholder="Opcional" class="w-full h-8 text-xs font-bold border-2 border-black dark:border-slate-600 rounded px-2 bg-white dark:bg-[#0F172AFF] text-black dark:text-white outline-none">
                         </div>
-                        <!-- Recibido por -->
-                        <div class="form-group">
-                            <label class="text-[10px] font-black uppercase text-black dark:text-gray-300 mb-1 block">
-                                Recibido por *
-                            </label>
-                            <div class="relative">
-                                <input formControlName="responsableRecibe"
-                                       type="text"
-                                       placeholder="Nombre del responsable..."
-                                       autocomplete="off"
-                                       (blur)="hideFuncionarioDropdown()"
-                                       class="w-full h-9 pl-8 pr-8 text-xs font-bold border-2 border-black dark:border-slate-600 rounded-lg bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[2px_2px_0px_0px_#000] outline-none placeholder:text-gray-400 transition-shadow"
-                                       [class.border-red-500]="hasError('responsableRecibe', 'required')">
-                                <mat-icon class="absolute left-2 top-1/2 -translate-y-1/2 text-gray-500 !text-base pointer-events-none">person</mat-icon>
-                                <mat-icon *ngIf="funcionariosLoading" class="absolute right-2 top-1/2 -translate-y-1/2 animate-spin text-gray-400 !text-base pointer-events-none">refresh</mat-icon>
-                                <!-- Dropdown de resultados -->
-                                <div *ngIf="showFuncionarioDropdown"
-                                     class="absolute z-50 top-full left-0 right-0 mt-0.5 bg-white dark:bg-slate-800 border-2 border-black rounded-lg shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] max-h-48 overflow-y-auto">
-                                    <button *ngFor="let func of funcionarios"
-                                            type="button"
-                                            (mousedown)="selectFuncionario(func)"
-                                            class="w-full text-left px-3 py-2 hover:bg-blue-50 dark:hover:bg-slate-700 border-b border-gray-100 dark:border-slate-600 last:border-0 transition-colors">
-                                        <p class="text-xs font-black text-gray-900 dark:text-white">{{ func.nombre }}</p>
-                                        <p class="text-[10px] text-gray-500 dark:text-gray-400">{{ func.cargo }}</p>
-                                    </button>
-                                </div>
+                        <div class="form-group relative">
+                            <label class="text-[10px] font-black uppercase text-black dark:text-gray-300 mb-1 block">Recibido por *</label>
+                            <input formControlName="responsableRecibe" type="text" placeholder="Nombre..." autocomplete="off" (blur)="hideFuncionarioDropdown()" class="w-full h-8 text-xs font-bold border-2 border-black dark:border-slate-600 rounded px-2 bg-white dark:bg-[#0F172AFF] text-black dark:text-white outline-none uppercase" [class.border-red-500]="hasError('responsableRecibe', 'required')">
+
+                            <div *ngIf="showFuncionarioDropdown" class="absolute z-50 top-full left-0 right-0 mt-0.5 bg-white border-2 border-black rounded shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] max-h-32 overflow-y-auto">
+                                <button *ngFor="let func of funcionarios" type="button" (mousedown)="selectFuncionario(func)" class="w-full text-left px-2 py-1 hover:bg-blue-100 border-b border-gray-200">
+                                    <p class="text-[10px] font-black text-black">{{ func.nombre }}</p>
+                                </button>
                             </div>
                         </div>
-                        <!-- Observaciones -->
                         <div class="form-group">
-                            <label class="text-[10px] font-black uppercase text-black dark:text-gray-300 mb-1 block">
-                                Observaciones
-                            </label>
-                            <textarea formControlName="observaciones" rows="2"
-                                      placeholder="Observaciones..."
-                                      class="w-full text-xs font-medium border-2 border-black dark:border-slate-600 rounded-lg px-3 py-1.5 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[2px_2px_0px_0px_#ccc] transition-shadow outline-none placeholder:text-gray-400 resize-none"></textarea>
+                            <label class="text-[10px] font-black uppercase text-black dark:text-gray-300 mb-1 block">Observaciones</label>
+                            <textarea formControlName="observaciones" rows="1" placeholder="..." class="w-full text-[10px] font-bold border-2 border-black dark:border-slate-600 rounded px-2 py-1 bg-white dark:bg-[#0F172AFF] text-black dark:text-white outline-none resize-none"></textarea>
                         </div>
                     </div>
                 </div>
 
-                <!-- SUMMARY CARDS -->
                 <div *ngIf="getSelectedCount() > 0" class="grid grid-cols-2 gap-2">
-                    <div class="neo-card-base bg-gray-50 dark:bg-green-900/30 p-2 flex items-center gap-1.5 border-2 border-black">
-                        <mat-icon class="text-black dark:text-green-300 !text-base shrink-0">check_circle</mat-icon>
-                        <span class="text-base font-black text-black dark:text-green-300 leading-none">{{ getResumenPorCondicion().buenos }}</span>
-                        <span class="text-[9px] font-bold text-black dark:text-green-300 uppercase">Buenos</span>
+                    <div class="neo-card-base bg-green-100 p-2 flex items-center justify-between border-2 border-black shadow-[2px_2px_0px_0px_#000]">
+                        <span class="text-[9px] font-black text-green-900 uppercase">Buenos</span>
+                        <span class="text-sm font-black text-green-900 bg-white px-1.5 border border-black rounded">{{ getResumenPorCondicion().buenos }}</span>
                     </div>
-                    <div class="neo-card-base bg-gray-50 dark:bg-gray-800 p-2 flex items-center gap-1.5 border-2 border-black">
-                        <mat-icon class="text-black dark:text-gray-300 !text-base shrink-0">hourglass_empty</mat-icon>
-                        <span class="text-base font-black text-black dark:text-gray-300 leading-none">{{ getResumenPorCondicion().pendientes }}</span>
-                        <span class="text-[9px] font-bold text-black dark:text-gray-300 uppercase">Pend.</span>
+                    <div class="neo-card-base bg-yellow-100 p-2 flex items-center justify-between border-2 border-black shadow-[2px_2px_0px_0px_#000]">
+                        <span class="text-[9px] font-black text-yellow-900 uppercase">Calib.</span>
+                        <span class="text-sm font-black text-yellow-900 bg-white px-1.5 border border-black rounded">{{ getResumenPorCondicion().calibracion }}</span>
                     </div>
-                    <div class="neo-card-base bg-gray-50 dark:bg-yellow-900/30 p-2 flex items-center gap-1.5 border-2 border-black">
-                        <mat-icon class="text-black dark:text-yellow-300 !text-base shrink-0">speed</mat-icon>
-                        <span class="text-base font-black text-black dark:text-yellow-300 leading-none">{{ getResumenPorCondicion().calibracion }}</span>
-                        <span class="text-[9px] font-bold text-black dark:text-yellow-300 uppercase">Calib.</span>
+                    <div class="neo-card-base bg-red-100 p-2 flex items-center justify-between border-2 border-black shadow-[2px_2px_0px_0px_#000]">
+                        <span class="text-[9px] font-black text-red-900 uppercase">Dañado</span>
+                        <span class="text-sm font-black text-red-900 bg-white px-1.5 border border-black rounded">{{ getResumenPorCondicion().danados + getResumenPorCondicion().faltantes }}</span>
                     </div>
-                    <div class="neo-card-base bg-gray-50 dark:bg-red-900/30 p-2 flex items-center gap-1.5 border-2 border-black">
-                        <mat-icon class="text-black dark:text-red-300 !text-base shrink-0">report_problem</mat-icon>
-                        <span class="text-base font-black text-black dark:text-red-300 leading-none">{{ getResumenPorCondicion().danados + getResumenPorCondicion().faltantes }}</span>
-                        <span class="text-[9px] font-bold text-black dark:text-red-300 uppercase">Daños</span>
+                    <div class="neo-card-base bg-gray-200 p-2 flex items-center justify-between border-2 border-black shadow-[2px_2px_0px_0px_#000]">
+                        <span class="text-[9px] font-black text-black uppercase">Pend.</span>
+                        <span class="text-sm font-black text-black bg-white px-1.5 border border-black rounded">{{ getResumenPorCondicion().pendientes }}</span>
                     </div>
                 </div>
 
             </div>
 
-            <!-- COL 3: LISTA DE HERRAMIENTAS -->
             <div class="flex-1 flex flex-col gap-3 overflow-hidden h-full">
 
-                <!-- Alert for critical items -->
-                <div *ngIf="getItemsCriticos().length > 0"
-                     class="neo-card-base bg-red-50 dark:bg-slate-800 border-l-8 border-l-red-500 p-3 flex items-center gap-3 shrink-0 animate-pulse border-2 border-black">
-                    <mat-icon class="text-red-600">warning</mat-icon>
-                    <p class="text-xs md:text-sm font-black text-black dark:text-red-200">
-                        Atención: {{ getItemsCriticos().length }} herramienta(s) críticas (AOG o +30 días fuera)
-                    </p>
-                </div>
+                <div class="neo-card-base bg-white dark:bg-slate-800 overflow-hidden flex flex-col h-full relative z-10 border-[3px] border-black shadow-[4px_4px_0px_0px_#000]">
 
-                <!-- LIST CONTAINER -->
-                <div class="neo-card-base bg-white dark:bg-slate-800 overflow-hidden flex flex-col h-full relative z-10 border-2 border-black dark:border-gray-600">
-
-                    <!-- Header -->
-                    <div class="bg-[#0F172AFF] px-4 py-2 border-b-2 border-black flex items-center justify-between shrink-0 h-12">
-                        <div class="flex items-center gap-3">
-                            <mat-checkbox
-                                [checked]="isAllSelected()"
-                                [indeterminate]="isSomeSelected()"
-                                (change)="toggleAllSelection($event)"
-                                class="white-checkbox">
-                            </mat-checkbox>
-                            <span class="font-black text-xs md:text-sm uppercase text-white">
-                                Seleccionar Todo
+                    <div class="bg-[#0F172AFF] px-4 py-2 border-b-[3px] border-black flex items-center justify-between shrink-0 h-10">
+                        <div class="flex items-center gap-3 border-r-2 border-white/20 pr-4">
+                            <mat-checkbox [checked]="isAllSelected()" [indeterminate]="isSomeSelected()" (change)="toggleAllSelection($event)" class="white-checkbox"></mat-checkbox>
+                            <span class="font-black text-xs uppercase text-white tracking-wider">Seleccionar Todo</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="bg-amber-400 text-black px-2 py-0.5 rounded text-[10px] font-black border border-black" *ngIf="getSelectedCount() > 0">
+                                {{ getSelectedCount() }} Sel.
+                            </span>
+                            <span class="bg-white/20 text-white px-2 py-0.5 rounded text-[10px] font-bold">
+                                Total: {{ dataSource.length }}
                             </span>
                         </div>
-                        <span class="bg-white text-black px-2 py-0.5 rounded text-xs font-black border border-black shadow-[2px_2px_0px_0px_#000]">
-                            Total: {{ dataSource.length }}
-                        </span>
                     </div>
 
-                    <!-- Items List -->
-                    <div class="overflow-y-auto flex-1 p-2 md:p-4 space-y-3 custom-scrollbar bg-[#f8f9fc] dark:bg-slate-900/50">
+                    <div class="overflow-y-auto flex-1 p-2 md:p-3 space-y-2 custom-scrollbar bg-[#f8f9fc] dark:bg-slate-900">
 
-                        <!-- Empty State -->
                         <div *ngIf="dataSource.length === 0 && !isSearching" class="flex flex-col items-center justify-center h-full py-10 opacity-50">
-                            <mat-icon class="!text-6xl text-black dark:text-gray-500">inventory_2</mat-icon>
-                            <p class="text-sm font-black mt-2 uppercase text-black dark:text-gray-500">Sin datos para mostrar</p>
-                            <p class="text-xs text-black dark:text-gray-500 mt-1">Seleccione una ubicación y presione "Cargar"</p>
+                            <mat-icon class="!text-5xl text-black dark:text-white">flight_takeoff</mat-icon>
+                            <p class="text-xs font-black mt-2 uppercase text-black dark:text-white">Sin datos para mostrar</p>
+                            <p class="text-[10px] font-bold text-gray-500 mt-1">Seleccione el origen y presione "Cargar Datos"</p>
                         </div>
 
-                        <!-- Loading State -->
                         <div *ngIf="isSearching" class="flex flex-col items-center justify-center h-full py-10">
-                            <mat-spinner diameter="40"></mat-spinner>
-                            <p class="text-xs font-bold mt-3 uppercase animate-pulse text-black dark:text-white">Buscando...</p>
+                            <mat-spinner diameter="30"></mat-spinner>
+                            <p class="text-[10px] font-black mt-3 uppercase animate-pulse text-black dark:text-white">Buscando herramientas...</p>
                         </div>
 
-                        <!-- Items -->
                         <ng-container *ngFor="let item of dataSource; let i = index">
-                            <div class="border-2 border-black dark:border-gray-600 rounded-lg overflow-hidden transition-all duration-200 bg-white dark:bg-[#0F172AFF]"
-                                 [ngClass]="getRowClass(item)">
+                            <div class="border-2 border-black rounded overflow-hidden transition-all duration-200 bg-white dark:bg-slate-800" [ngClass]="getRowClass(item)">
 
-                                <!-- Item Header Row -->
-                                <div class="grid grid-cols-12 gap-2 p-3 cursor-pointer items-center min-h-[60px] transition-all
-                                            hover:bg-white hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,0.1)] hover:-translate-y-0.5
-                                            dark:hover:bg-slate-700 dark:hover:shadow-none"
-                                     (click)="toggleSelection(item)">
+                                <div class="grid grid-cols-12 gap-2 p-2 cursor-pointer items-center min-h-[50px] hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors" (click)="toggleSelection(item)">
 
-                                    <!-- Checkbox -->
                                     <div class="col-span-1 flex justify-center" (click)="$event.stopPropagation()">
                                         <mat-checkbox [checked]="item.selected" (change)="toggleSelection(item)" color="primary"></mat-checkbox>
                                     </div>
 
-                                    <!-- Code & PN -->
-                                    <div class="col-span-11 md:col-span-3 flex flex-col leading-tight">
-                                        <span class="font-black text-sm text-black dark:text-white">{{ item.codigo }}</span>
-                                        <span class="text-[10px] font-mono text-black dark:text-gray-400 font-bold">P/N: {{ item.pn }}</span>
-                                        <span class="md:hidden text-xs text-black dark:text-gray-300 mt-1 font-bold truncate">{{ item.descripcion }}</span>
+                                    <div class="col-span-11 md:col-span-4 flex flex-col leading-tight">
+                                        <span class="font-black text-xs text-black dark:text-white bg-black/10 px-1 rounded w-fit">{{ item.codigo }}</span>
+                                        <span class="text-[11px] font-bold text-gray-800 dark:text-gray-200 truncate mt-0.5">{{ item.descripcion }}</span>
+                                        <span class="text-[9px] text-gray-500 font-mono mt-0.5">P/N: {{ item.pn }} | S/N: {{ item.sn || 'S/N' }}</span>
                                     </div>
 
-                                    <!-- Description (desktop) -->
-                                    <div class="hidden md:flex col-span-3 flex-col justify-center">
-                                        <span class="text-xs font-black text-black dark:text-white leading-tight line-clamp-2">
-                                            {{ item.descripcion }}
-                                        </span>
-                                        <span class="text-[10px] text-black dark:text-gray-400 uppercase font-bold">{{ item.marca }}</span>
+                                    <div class="hidden md:flex col-span-3 flex-col items-center justify-center gap-0.5 border-l-2 border-r-2 border-gray-100 dark:border-gray-700">
+                                        <span class="px-1.5 py-0.5 rounded text-[9px] font-black border uppercase" [ngClass]="getDiasFueraClass(item.diasFuera)">{{ item.diasFuera }} días fuera</span>
+                                        <span class="text-[8px] font-bold uppercase text-gray-500">{{ item.tipoEnvio }}</span>
                                     </div>
 
-                                    <!-- Días Fuera & Tipo -->
-                                    <div class="col-span-6 md:col-span-2 flex flex-col items-center gap-1">
-                                        <span class="px-2 py-0.5 rounded text-[10px] font-black border"
-                                              [ngClass]="getDiasFueraClass(item.diasFuera)">
-                                            {{ item.diasFuera }} días
-                                        </span>
-                                        <span class="text-[9px] font-bold px-1.5 py-0.5 rounded"
-                                              [ngClass]="{
-                                                  'bg-blue-100 text-blue-800': item.tipoEnvio === 'EVENTUAL',
-                                                  'bg-purple-100 text-purple-800': item.tipoEnvio === 'PERMANENTE',
-                                                  'bg-red-100 text-red-800': item.tipoEnvio === 'AOG',
-                                                  'bg-green-100 text-green-800': item.tipoEnvio === 'TRASPASO'
-                                              }">
-                                            {{ item.tipoEnvio }}
-                                        </span>
-                                    </div>
-
-                                    <!-- Status Badge -->
-                                    <div class="col-span-6 md:col-span-2 flex items-center justify-center">
-                                        <span *ngIf="item.condicion"
-                                              class="px-2 py-1 rounded text-[10px] font-black border uppercase tracking-wider inline-flex items-center gap-1 shadow-[2px_2px_0px_0px_rgba(0,0,0,0.5)]"
-                                              [ngClass]="{
-                                                  'bg-green-500 text-white border-green-700': item.condicion === 'BUENO',
-                                                  'bg-red-500 text-white border-red-700': item.condicion === 'DAÑADO',
-                                                  'bg-yellow-500 text-black border-yellow-700': item.condicion === 'REQUIERE_CALIBRACION',
-                                                  'bg-red-600 text-white border-red-800': item.condicion === 'FALTANTE'
-                                              }">
-                                            <mat-icon class="!text-xs !w-3 !h-3">{{ getCondicionConfig(item.condicion)?.icon }}</mat-icon>
+                                    <div class="col-span-6 md:col-span-3 flex items-center justify-center">
+                                        <span *ngIf="item.condicion" class="px-2 py-0.5 rounded text-[9px] font-black border border-black uppercase text-white flex items-center gap-1" [ngClass]="getCondicionConfig(item.condicion)?.bgColor">
+                                            <mat-icon class="!text-[10px] !w-3 !h-3">{{ getCondicionConfig(item.condicion)?.icon }}</mat-icon>
                                             {{ getCondicionConfig(item.condicion)?.label }}
                                         </span>
-                                        <span *ngIf="!item.condicion"
-                                              class="text-[10px] font-black text-black dark:text-gray-400 border border-dashed border-black dark:border-gray-400 px-2 py-1 rounded">
-                                            PENDIENTE
-                                        </span>
+                                        <span *ngIf="!item.condicion" class="text-[9px] font-black text-gray-400 italic border border-dashed px-1 rounded">PENDIENTE</span>
                                     </div>
 
-                                    <!-- Expand Button -->
                                     <div class="col-span-6 md:col-span-1 flex justify-end">
-                                        <button mat-icon-button (click)="toggleExpand(item); $event.stopPropagation()"
-                                                class="!w-8 !h-8 border-2 border-black rounded bg-white dark:bg-slate-700 hover:bg-gray-100 hover:scale-110 transition-transform">
-                                            <mat-icon class="!text-lg leading-none text-black dark:text-white">{{ item.expanded ? 'expand_less' : 'expand_more' }}</mat-icon>
+                                        <button mat-icon-button (click)="toggleExpand(item); $event.stopPropagation()" class="!w-6 !h-6 border-2 border-black rounded bg-white hover:bg-gray-100 flex items-center justify-center">
+                                            <mat-icon class="!text-sm text-black">{{ item.expanded ? 'expand_less' : 'expand_more' }}</mat-icon>
                                         </button>
                                     </div>
                                 </div>
 
-                                <!-- Expanded Content -->
-                                <div *ngIf="item.expanded"
-                                     class="border-t-2 border-black dark:border-gray-600 bg-white dark:bg-slate-900/50 p-4 animate-fadeIn">
+                                <div *ngIf="item.expanded" class="border-t-2 border-black bg-gray-50 dark:bg-slate-900/50 p-3 animate-fadeIn">
 
-                                    <!-- Item Info Tags -->
-                                    <div class="flex flex-wrap gap-2 mb-4 text-[10px] text-black font-mono border-b-2 border-black pb-3">
-                                        <div class="px-2 py-1 bg-white border border-black rounded shadow-[2px_2px_0px_0px_#ccc]">
-                                            S/N: <strong class="text-black">{{ item.sn }}</strong>
-                                        </div>
-                                        <div class="px-2 py-1 bg-white border border-black rounded shadow-[2px_2px_0px_0px_#ccc]">
-                                            Envío: <strong class="text-black">{{ item.fechaEnvio }}</strong>
-                                        </div>
-                                        <div class="px-2 py-1 bg-white border border-black rounded shadow-[2px_2px_0px_0px_#ccc]">
-                                            Nota: <strong class="text-black">{{ item.nroNotaSalida }}</strong>
-                                        </div>
-                                        <div *ngIf="item.ordenTrabajo" class="px-2 py-1 bg-blue-50 border border-black rounded shadow-[2px_2px_0px_0px_#93c5fd]">
-                                            OT: <strong class="text-black">{{ item.ordenTrabajo }}</strong>
-                                        </div>
-                                        <div *ngIf="item.matriculaAeronave" class="px-2 py-1 bg-purple-50 border border-black rounded shadow-[2px_2px_0px_0px_#c4b5fd]">
-                                            Aeronave: <strong class="text-black">{{ item.matriculaAeronave }}</strong>
-                                        </div>
-                                    </div>
-
-                                    <!-- CONDITION SELECTION -->
-                                    <div class="mb-4 p-3 bg-slate-50 dark:bg-slate-800 border-2 border-black dark:border-slate-600 rounded-lg">
-                                        <label class="text-[10px] font-black uppercase text-black dark:text-gray-300 mb-2 block">Condición de Retorno *</label>
+                                    <div class="mb-3 p-2 bg-white dark:bg-slate-800 border-2 border-black rounded">
+                                        <label class="text-[9px] font-black uppercase text-black dark:text-white mb-1.5 block">¿En qué estado retorna? *</label>
                                         <div class="grid grid-cols-2 md:grid-cols-4 gap-2">
-                                            <button *ngFor="let cond of condiciones" type="button"
-                                                    (click)="onCondicionChange(item, cond.value)"
-                                                    class="p-3 rounded-lg border-2 transition-all flex flex-col items-center gap-1"
-                                                    [ngClass]="item.condicion === cond.value
-                                                        ? cond.bgColor + ' border-black text-white shadow-[3px_3px_0px_0px_#000]'
-                                                        : 'bg-white dark:bg-slate-700 border-black dark:border-slate-500 text-black dark:text-white hover:border-black'">
-                                                <mat-icon class="!text-xl">{{ cond.icon }}</mat-icon>
-                                                <span class="text-[10px] font-black uppercase">{{ cond.label }}</span>
+                                            <button *ngFor="let cond of condiciones" type="button" (click)="onCondicionChange(item, cond.value)"
+                                                    class="p-2 rounded border-2 transition-all flex flex-col items-center gap-0.5"
+                                                    [ngClass]="item.condicion === cond.value ? cond.bgColor + ' border-black text-white shadow-[2px_2px_0px_0px_#000]' : 'bg-gray-100 dark:bg-slate-700 border-gray-300 text-gray-700 dark:text-gray-300 hover:border-black'">
+                                                <mat-icon class="!text-sm">{{ cond.icon }}</mat-icon>
+                                                <span class="text-[8px] font-black uppercase">{{ cond.label }}</span>
                                             </button>
                                         </div>
                                     </div>
 
-                                    <!-- QUANTITY (if not FALTANTE) -->
-                                    <div *ngIf="item.condicion && item.condicion !== 'FALTANTE'"
-                                         class="mb-4 p-3 bg-blue-50 dark:bg-blue-900/20 border-2 border-black dark:border-blue-700 rounded-lg animate-fadeIn">
-                                        <div class="grid grid-cols-3 gap-3 items-center">
-                                            <div class="text-center">
-                                                <label class="text-[10px] font-black uppercase text-black dark:text-gray-400 block mb-1">Enviado</label>
-                                                <span class="text-2xl font-black text-blue-600">{{ item.cantidadEnviada }}</span>
-                                            </div>
-                                            <div class="text-center">
-                                                <label class="text-[10px] font-black uppercase text-black dark:text-gray-400 block mb-1">Retorna *</label>
-                                                <input type="number" [(ngModel)]="item.cantidadRetorna" [ngModelOptions]="{standalone: true}"
-                                                       (blur)="validateCantidadRetorna(item)"
-                                                       min="1" [max]="item.cantidadEnviada"
-                                                       class="w-20 h-10 text-center text-lg font-black border-2 border-black rounded bg-white text-black focus:shadow-[3px_3px_0px_0px_#000] outline-none">
-                                            </div>
-                                            <div class="text-center">
-                                                <label class="text-[10px] font-black uppercase text-black dark:text-gray-400 block mb-1">Pendiente</label>
-                                                <span class="text-2xl font-black"
-                                                      [ngClass]="item.cantidadEnviada - item.cantidadRetorna > 0 ? 'text-orange-600' : 'text-green-600'">
-                                                    {{ item.cantidadEnviada - item.cantidadRetorna }}
-                                                </span>
-                                            </div>
+                                    <div *ngIf="item.condicion && item.condicion !== 'FALTANTE'" class="mb-3 p-2 bg-blue-50 dark:bg-blue-900/20 border-2 border-blue-300 rounded flex items-center justify-around gap-4">
+                                        <div class="text-center">
+                                            <label class="text-[8px] font-black uppercase text-gray-500 block">Enviado</label>
+                                            <span class="text-lg font-black text-gray-700">{{ item.cantidadEnviada }}</span>
+                                        </div>
+                                        <div class="text-center">
+                                            <label class="text-[8px] font-black uppercase text-blue-800 block">Retorna *</label>
+                                            <input type="number" [(ngModel)]="item.cantidadRetorna" [ngModelOptions]="{standalone: true}" (blur)="validateCantidadRetorna(item)" min="1" [max]="item.cantidadEnviada"
+                                                   class="w-16 h-8 text-center text-sm font-black border-2 border-blue-500 rounded bg-white text-blue-700 focus:shadow-[2px_2px_0px_0px_#3b82f6] outline-none">
+                                        </div>
+                                        <div class="text-center">
+                                            <label class="text-[8px] font-black uppercase text-gray-500 block">Pendiente</label>
+                                            <span class="text-lg font-black text-red-500">{{ item.cantidadEnviada - item.cantidadRetorna }}</span>
                                         </div>
                                     </div>
 
-                                    <!-- OBSERVATIONS (required for DAÑADO or FALTANTE) -->
-                                    <div *ngIf="item.condicion === 'DAÑADO' || item.condicion === 'FALTANTE'"
-                                         class="mb-4 p-3 bg-red-50 dark:bg-red-900/20 border-2 border-red-300 dark:border-red-700 rounded-lg animate-fadeIn">
-                                        <div class="flex items-center gap-2 mb-2">
-                                            <mat-icon class="text-red-600 dark:text-red-400 !text-lg">report_problem</mat-icon>
-                                            <span class="text-xs font-black uppercase text-red-800 dark:text-red-300">
-                                                {{ item.condicion === 'FALTANTE' ? 'Motivo del Faltante' : 'Descripción del Daño' }} *
-                                            </span>
-                                        </div>
-                                        <textarea [(ngModel)]="item.observacionItem" [ngModelOptions]="{standalone: true}"
-                                                  [placeholder]="item.condicion === 'FALTANTE' ? 'Detalle el motivo del faltante...' : 'Describa el daño encontrado...'"
-                                                  rows="2"
-                                                  class="w-full text-xs font-bold border-2 border-black dark:border-slate-600 rounded px-2 py-2 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[3px_3px_0px_0px_#000] transition-shadow outline-none placeholder:text-gray-400 resize-none"
-                                                  [class.border-red-500]="!item.observacionItem"></textarea>
+                                    <div *ngIf="item.condicion" class="mb-1">
+                                        <label class="text-[9px] font-black uppercase text-black dark:text-white mb-0.5 flex items-center gap-1">
+                                            Observaciones <span *ngIf="item.condicion === 'DAÑADO' || item.condicion === 'FALTANTE'" class="text-red-500">* (Obligatorio)</span>
+                                        </label>
+                                        <input type="text" [(ngModel)]="item.observacionItem" [ngModelOptions]="{standalone: true}" placeholder="Detalles de la condición..."
+                                               class="w-full h-8 text-[10px] font-bold border-2 border-black rounded px-2 bg-white text-black outline-none focus:shadow-[2px_2px_0px_0px_#000]"
+                                               [ngClass]="{'border-red-500 bg-red-50': (item.condicion === 'DAÑADO' || item.condicion === 'FALTANTE') && !item.observacionItem}">
                                     </div>
 
-                                    <!-- GENERAL OBSERVATIONS -->
-                                    <div *ngIf="item.condicion && item.condicion !== 'DAÑADO' && item.condicion !== 'FALTANTE'" class="mb-3">
-                                        <label class="text-[10px] font-black uppercase text-black dark:text-gray-400 mb-1 block">Observaciones (opcional)</label>
-                                        <input type="text" [(ngModel)]="item.observacionItem" [ngModelOptions]="{standalone: true}"
-                                               placeholder="Observaciones adicionales..."
-                                               class="w-full h-9 text-xs border-2 border-black dark:border-slate-600 rounded px-2 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[2px_2px_0px_0px_#ccc] transition-shadow outline-none placeholder:text-gray-400">
-                                    </div>
-
-                                    <!-- VALIDATION ERRORS -->
-                                    <div *ngIf="getItemErrors(item).length > 0" class="mt-2 text-[10px] text-red-600 dark:text-red-300 font-bold bg-red-50 dark:bg-red-900/20 p-2 rounded flex flex-wrap gap-2 border border-red-200 dark:border-red-800">
-                                        <span *ngFor="let err of getItemErrors(item)" class="flex items-center gap-1 bg-white dark:bg-red-900/40 px-2 py-0.5 rounded border border-red-300">
-                                            <mat-icon class="!text-xs !w-3 !h-3">error</mat-icon>
-                                            {{ err }}
-                                        </span>
-                                    </div>
                                 </div>
                             </div>
                         </ng-container>
@@ -466,121 +276,205 @@
     </div>
 </div>
 
-<!-- CONFIRMATION MODAL -->
-<div *ngIf="showConfirmModal"
-     class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[9999] p-4 animate-fadeIn"
-     (click)="closeConfirmModal()">
-    <div class="neo-card-base bg-white dark:bg-slate-800 w-full max-w-lg overflow-hidden flex flex-col shadow-2xl"
-         (click)="$event.stopPropagation()">
+<ng-template #historialDialog>
+    <div class="bg-white dark:bg-slate-900 rounded-2xl border-[3px] border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] overflow-hidden flex flex-col font-sans h-full max-h-[90vh]">
 
-        <!-- Modal Header -->
-        <div class="bg-[#0F172AFF] text-white px-5 py-3 border-b-2 border-black flex justify-between items-center">
-            <h2 class="text-lg font-black uppercase">Confirmar Retorno</h2>
-            <button (click)="closeConfirmModal()" class="hover:bg-white/20 rounded p-1">
-                <mat-icon class="text-white">close</mat-icon>
+        <div class="bg-black text-white px-5 py-3 border-b-[3px] border-black flex justify-between items-center shrink-0">
+            <div class="flex items-center gap-3">
+                <mat-icon class="!text-2xl text-amber-400">history</mat-icon>
+                <div>
+                    <h2 class="text-sm md:text-base font-black uppercase tracking-tight leading-none">Historial de Retornos</h2>
+                    <p class="text-[9px] font-bold mt-1 text-gray-400 uppercase tracking-wider leading-none">Retornos de Base y Traspasos Completados</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-2">
+                <button (click)="loadHistorial()" class="hover:bg-white hover:text-black rounded px-2 py-1 transition-colors flex items-center gap-1 text-[10px] font-black border-2 border-transparent hover:border-black uppercase">
+                    <mat-icon class="!text-sm">refresh</mat-icon> <span class="hidden sm:inline">Actualizar</span>
+                </button>
+                <button (click)="cerrarModalHistorial()" class="hover:bg-red-500 hover:text-white rounded px-1.5 py-0.5 transition-colors border-2 border-transparent hover:border-black">
+                    <mat-icon class="!text-sm">close</mat-icon>
+                </button>
+            </div>
+        </div>
+
+        <div *ngIf="isLoadingHistorial" class="absolute inset-0 bg-white/70 dark:bg-slate-900/70 z-50 flex flex-col items-center justify-center backdrop-blur-sm">
+            <mat-spinner diameter="40"></mat-spinner>
+            <span class="font-black text-black dark:text-white uppercase mt-4 text-xs">Cargando historial...</span>
+        </div>
+
+        <div *ngIf="!selectedHistorialEntry" class="flex flex-col flex-1 overflow-hidden p-3 bg-[#f8f9fc] dark:bg-slate-900">
+            <div class="flex-1 border-[3px] border-black rounded-xl overflow-hidden flex flex-col bg-white dark:bg-slate-800 shadow-[3px_3px_0px_0px_#000]">
+
+                <div class="overflow-auto flex-1 custom-scrollbar">
+                    <table mat-table [dataSource]="historialRecords" class="w-full">
+                        <ng-container matColumnDef="fecha">
+                            <th mat-header-cell *matHeaderCellDef class="!bg-gray-100 dark:!bg-slate-900 !text-black dark:!text-white !font-black !text-[10px] !border-b-[3px] !border-black !p-3 uppercase w-24 sticky top-0 z-[20]">Fecha</th>
+                            <td mat-cell *matCellDef="let element" class="!p-3 !border-b !border-black/20 dark:!border-white/10 text-xs font-mono font-bold">{{ element.fecha }}</td>
+                        </ng-container>
+
+                        <ng-container matColumnDef="tipo">
+                            <th mat-header-cell *matHeaderCellDef class="!bg-gray-100 dark:!bg-slate-900 !text-black dark:!text-white !font-black !text-[10px] !border-b-[3px] !border-black !p-3 uppercase sticky top-0 z-[20]">Origen</th>
+                            <td mat-cell *matCellDef="let element" class="!p-3 !border-b !border-black/20 dark:!border-white/10">
+                                <span class="px-2 py-0.5 rounded text-[9px] font-black border-2 border-black bg-blue-100 text-blue-900">{{ element.tipo }}</span>
+                            </td>
+                        </ng-container>
+
+                        <ng-container matColumnDef="documento">
+                            <th mat-header-cell *matHeaderCellDef class="!bg-gray-100 dark:!bg-slate-900 !text-black dark:!text-white !font-black !text-[10px] !border-b-[3px] !border-black !p-3 uppercase sticky top-0 z-[20]">Documento</th>
+                            <td mat-cell *matCellDef="let element" class="!p-3 !border-b !border-black/20 dark:!border-white/10 text-xs font-black font-mono">{{ element.documento }}</td>
+                        </ng-container>
+
+                        <ng-container matColumnDef="estado">
+                            <th mat-header-cell *matHeaderCellDef class="!bg-gray-100 dark:!bg-slate-900 !text-black dark:!text-white !font-black !text-[10px] !border-b-[3px] !border-black !p-3 uppercase text-center sticky top-0 z-[20]">Estado</th>
+                            <td mat-cell *matCellDef="let element" class="!p-3 !border-b !border-black/20 dark:!border-white/10 text-center">
+                                <span class="px-2 py-0.5 rounded text-[9px] font-black border-2 border-black uppercase" [ngClass]="getStatusClass(element.estado)">{{ element.estado }}</span>
+                            </td>
+                        </ng-container>
+
+                        <ng-container matColumnDef="responsable">
+                            <th mat-header-cell *matHeaderCellDef class="!bg-gray-100 dark:!bg-slate-900 !text-black dark:!text-white !font-black !text-[10px] !border-b-[3px] !border-black !p-3 uppercase sticky top-0 z-[20]">Responsable</th>
+                            <td mat-cell *matCellDef="let element" class="!p-3 !border-b !border-black/20 dark:!border-white/10 text-[10px] font-bold">{{ element.responsable }}</td>
+                        </ng-container>
+
+                        <ng-container matColumnDef="acciones">
+                            <th mat-header-cell *matHeaderCellDef class="!bg-gray-100 dark:!bg-slate-900 !text-black dark:!text-white !font-black !text-[10px] !border-b-[3px] !border-black !p-3 uppercase text-center w-16 sticky top-0 z-[20]">Acc.</th>
+                            <td mat-cell *matCellDef="let element" class="!p-3 !border-b !border-black/20 dark:!border-white/10 text-center">
+                                <button (click)="$event.stopPropagation(); verDetalleHistorial(element)" class="w-7 h-7 bg-white dark:bg-slate-700 border-2 border-black rounded shadow-[2px_2px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all flex items-center justify-center mx-auto" matTooltip="Ver detalle">
+                                    <mat-icon class="!text-sm text-black dark:text-white">visibility</mat-icon>
+                                </button>
+                            </td>
+                        </ng-container>
+
+                        <tr mat-header-row *matHeaderRowDef="displayedHistorialColumns; sticky: true"></tr>
+                        <tr mat-row *matRowDef="let row; columns: displayedHistorialColumns;" class="hover:bg-yellow-50 dark:hover:bg-slate-800 transition-colors cursor-pointer" (click)="verDetalleHistorial(row)"></tr>
+                    </table>
+
+                    <div *ngIf="historialRecords.length === 0 && !isLoadingHistorial" class="flex flex-col items-center justify-center py-10 opacity-50">
+                        <mat-icon class="!text-5xl text-black dark:text-white">inbox</mat-icon>
+                        <p class="text-xs font-black mt-2 uppercase">No hay retornos registrados</p>
+                    </div>
+                </div>
+
+                <mat-paginator [length]="totalRecords" [pageSize]="pageSize" [pageIndex]="pageIndex" [pageSizeOptions]="pageSizeOptions" (page)="onPageChange($event)" class="border-t-[3px] border-black bg-gray-50 dark:bg-slate-800"></mat-paginator>
+            </div>
+        </div>
+
+        <div *ngIf="selectedHistorialEntry" class="flex flex-col flex-1 overflow-hidden p-3 bg-[#f8f9fc] dark:bg-slate-900">
+            <div class="flex justify-between items-center mb-3 px-1">
+                <button (click)="cerrarDetalleHistorial()" class="px-3 py-1.5 bg-white dark:bg-slate-800 text-black dark:text-white border-2 border-black rounded-lg shadow-[2px_2px_0px_0px_#000] text-[10px] font-black uppercase flex items-center gap-1 hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all">
+                    <mat-icon class="!text-sm">arrow_back</mat-icon> Volver a la lista
+                </button>
+                <span class="font-mono text-sm font-black border-b-2 border-black">{{ selectedHistorialEntry?.documento }}</span>
+            </div>
+
+            <div class="flex-1 overflow-y-auto custom-scrollbar flex flex-col gap-3">
+                <div class="bg-white dark:bg-slate-800 border-2 border-black rounded-xl shadow-[3px_3px_0px_0px_#000] overflow-hidden">
+                    <div class="bg-amber-300 px-3 py-1.5 border-b-2 border-black">
+                        <span class="text-[10px] font-black uppercase text-black tracking-wide">Información del Retorno</span>
+                    </div>
+                    <div class="p-3 grid grid-cols-2 md:grid-cols-4 gap-3">
+                        <div>
+                            <label class="text-[9px] font-black uppercase text-gray-500 block mb-0.5">Fecha</label>
+                            <div class="font-bold text-xs">{{ selectedHistorialEntry?.fecha }}</div>
+                        </div>
+                        <div>
+                            <label class="text-[9px] font-black uppercase text-gray-500 block mb-0.5">Origen</label>
+                            <div class="font-black text-xs">{{ selectedHistorialEntry?.tipo }}</div>
+                        </div>
+                        <div>
+                            <label class="text-[9px] font-black uppercase text-gray-500 block mb-0.5">Estado</label>
+                            <div class="font-black text-[10px] px-1.5 py-0.5 border-2 border-black rounded w-fit" [ngClass]="getStatusClass(selectedHistorialEntry?.estado || '')">{{ selectedHistorialEntry?.estado }}</div>
+                        </div>
+                        <div>
+                            <label class="text-[9px] font-black uppercase text-gray-500 block mb-0.5">Responsable</label>
+                            <div class="font-bold text-[10px]">{{ selectedHistorialEntry?.responsable }}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</ng-template>
+
+<ng-template #confirmacionModal>
+    <div class="bg-white dark:bg-slate-800 rounded-2xl border-[3px] border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] overflow-hidden flex flex-col w-full max-w-2xl">
+        <div class="bg-red-500 text-white px-5 py-4 border-b-[3px] border-black flex justify-between items-center shrink-0">
+            <div class="flex items-center gap-3">
+                <mat-icon class="text-white !text-3xl">fact_check</mat-icon>
+                <div>
+                    <h2 class="text-lg font-black uppercase leading-none">Confirmar Retorno a Base</h2>
+                    <p class="text-[10px] font-bold mt-1 uppercase tracking-wider text-red-100">Verifique los datos antes de procesar el inventario</p>
+                </div>
+            </div>
+            <button (click)="closeConfirmModal()" class="hover:bg-white/20 rounded p-1 transition-colors">
+                <mat-icon class="text-white !text-sm">close</mat-icon>
             </button>
         </div>
 
-        <!-- Modal Content -->
-        <div class="p-5 max-h-[70vh] overflow-y-auto custom-scrollbar">
-            <!-- Reception Data -->
-            <div class="bg-gray-50 dark:bg-[#0F172AFF] border-2 border-black dark:border-slate-700 rounded p-4 mb-4 text-sm space-y-1">
-                <p class="dark:text-white flex justify-between">
-                    <strong>{{ getDocumentoLabel() }}:</strong>
-                    <span class="font-black text-purple-700 dark:text-purple-400">{{ retornoForm.value.nroDocumento }}</span>
-                </p>
-                <p class="dark:text-white flex justify-between"><strong>Fecha:</strong> <span>{{ retornoForm.value.fechaRetorno }}</span></p>
-                <p class="dark:text-white flex justify-between"><strong>Origen:</strong> <span>{{ retornoForm.value.ubicacionOrigen?.nombre }}</span></p>
-                <p class="dark:text-white flex justify-between">
-                    <strong>Recibido por:</strong>
-                    <span>{{ retornoForm.value.responsableRecibe?.nombre || 'No especificado' }}</span>
-                </p>
-            </div>
+        <div class="p-6 flex flex-col gap-4 max-h-[70vh] overflow-y-auto custom-scrollbar">
 
-            <!-- Summary by Condition -->
-            <p class="font-bold mb-2 dark:text-white text-sm uppercase">Resumen por Condición:</p>
-            <ul class="space-y-2 mb-4">
-                <li *ngIf="getResumenPorCondicion().buenos > 0" class="flex justify-between items-center bg-green-50 dark:bg-green-900/30 p-3 rounded border-2 border-green-300 dark:border-green-700">
-                    <div class="flex items-center gap-2">
-                        <mat-icon class="text-green-600">check_circle</mat-icon>
-                        <span class="text-green-800 dark:text-green-300 font-bold">Buenos</span>
+            <div class="bg-gray-50 dark:bg-slate-700 border-2 border-black rounded-xl p-4 shadow-[2px_2px_0px_0px_#000]">
+                <h3 class="text-[10px] font-black uppercase text-gray-800 dark:text-gray-300 border-b-2 border-gray-300 dark:border-gray-600 pb-1 mb-2">1. Datos Generales</h3>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div>
+                        <p class="text-[9px] font-bold text-gray-500 uppercase">Documento / COMAT:</p>
+                        <p class="font-black text-sm text-black dark:text-white">{{ retornoForm.value.nroDocumento }}</p>
                     </div>
-                    <span class="font-black text-2xl text-green-900 dark:text-green-200">{{ getResumenPorCondicion().buenos }}</span>
-                </li>
-                <li *ngIf="getResumenPorCondicion().calibracion > 0" class="flex justify-between items-center bg-yellow-50 dark:bg-yellow-900/30 p-3 rounded border-2 border-yellow-300 dark:border-yellow-700">
-                    <div class="flex items-center gap-2">
-                        <mat-icon class="text-yellow-600">speed</mat-icon>
-                        <span class="text-yellow-800 dark:text-yellow-300 font-bold">Req. Calibración</span>
+                    <div>
+                        <p class="text-[9px] font-bold text-gray-500 uppercase">Fecha:</p>
+                        <p class="font-black text-sm text-black dark:text-white">{{ retornoForm.value.fechaRetorno }}</p>
                     </div>
-                    <span class="font-black text-2xl text-yellow-900 dark:text-yellow-200">{{ getResumenPorCondicion().calibracion }}</span>
-                </li>
-                <li *ngIf="getResumenPorCondicion().danados > 0" class="flex justify-between items-center bg-red-50 dark:bg-red-900/30 p-3 rounded border-2 border-red-300 dark:border-red-700">
-                    <div class="flex items-center gap-2">
-                        <mat-icon class="text-red-600">report_problem</mat-icon>
-                        <span class="text-red-800 dark:text-red-300 font-bold">Dañados</span>
+                    <div class="col-span-2">
+                        <p class="text-[9px] font-bold text-gray-500 uppercase">Origen:</p>
+                        <p class="font-black text-sm text-black dark:text-white">{{ retornoForm.value.ubicacionOrigen?.nombre }}</p>
                     </div>
-                    <span class="font-black text-2xl text-red-900 dark:text-red-200">{{ getResumenPorCondicion().danados }}</span>
-                </li>
-                <li *ngIf="getResumenPorCondicion().faltantes > 0" class="flex justify-between items-center bg-red-100 dark:bg-red-900/40 p-3 rounded border-2 border-red-400 dark:border-red-600">
-                    <div class="flex items-center gap-2">
-                        <mat-icon class="text-red-700">help_outline</mat-icon>
-                        <span class="text-red-900 dark:text-red-200 font-bold">Faltantes</span>
+                    <div class="col-span-2">
+                        <p class="text-[9px] font-bold text-gray-500 uppercase">Recibido Por:</p>
+                        <p class="font-black text-sm text-black dark:text-white">{{ retornoForm.value.responsableRecibe }}</p>
                     </div>
-                    <span class="font-black text-2xl text-red-900 dark:text-red-100">{{ getResumenPorCondicion().faltantes }}</span>
-                </li>
-            </ul>
-
-            <!-- Quantities Summary -->
-            <div class="grid grid-cols-2 gap-3 mb-4">
-                <div class="bg-blue-50 dark:bg-blue-900/30 p-3 rounded border-2 border-blue-300 text-center">
-                    <span class="text-xs font-bold text-blue-600 dark:text-blue-400 uppercase block">Total Enviado</span>
-                    <span class="text-2xl font-black text-blue-800 dark:text-blue-200">{{ getTotalEnviado() }}</span>
-                </div>
-                <div class="bg-green-50 dark:bg-green-900/30 p-3 rounded border-2 border-green-300 text-center">
-                    <span class="text-xs font-bold text-green-600 dark:text-green-400 uppercase block">Total Retorna</span>
-                    <span class="text-2xl font-black text-green-800 dark:text-green-200">{{ getTotalRetornado() }}</span>
+                    <div class="col-span-2">
+                        <p class="text-[9px] font-bold text-gray-500 uppercase">Transportista:</p>
+                        <p class="font-black text-sm text-black dark:text-white">{{ retornoForm.value.transportista || 'N/A' }}</p>
+                    </div>
                 </div>
             </div>
 
-            <!-- Items Detail -->
-            <p class="font-bold mb-2 dark:text-white text-sm uppercase">Detalle de Herramientas:</p>
-            <div class="space-y-2 mb-4 max-h-48 overflow-y-auto custom-scrollbar">
-                <div *ngFor="let item of getSelectedItems()"
-                     class="flex items-center justify-between p-2 rounded border text-xs"
-                     [ngClass]="{
-                         'bg-green-50 border-green-300': item.condicion === 'BUENO',
-                         'bg-yellow-50 border-yellow-300': item.condicion === 'REQUIERE_CALIBRACION',
-                         'bg-red-50 border-red-300': item.condicion === 'DAÑADO',
-                         'bg-red-100 border-red-400': item.condicion === 'FALTANTE'
-                     }">
-                    <div class="flex-1">
-                        <span class="font-black text-black">{{ item.codigo }}</span>
-                        <span class="text-gray-600 mx-2">|</span>
-                        <span class="text-gray-700">{{ item.cantidadRetorna }}/{{ item.cantidadEnviada }}</span>
-                    </div>
-                    <span class="px-2 py-0.5 rounded text-[10px] font-black text-white"
-                          [ngClass]="getCondicionConfig(item.condicion)?.bgColor">
-                        {{ getCondicionConfig(item.condicion)?.label }}
+            <div class="grid grid-cols-2 gap-4">
+                <div class="bg-blue-50 dark:bg-blue-900/20 border-2 border-black rounded-xl p-4 shadow-[2px_2px_0px_0px_#000] text-center">
+                    <p class="text-[10px] font-bold text-blue-800 dark:text-blue-300 uppercase">Total Ítems Seleccionados</p>
+                    <p class="font-black text-3xl text-blue-600 dark:text-blue-400 mt-1">{{ getSelectedCount() }}</p>
+                </div>
+                <div class="bg-green-50 dark:bg-green-900/20 border-2 border-black rounded-xl p-4 shadow-[2px_2px_0px_0px_#000] text-center">
+                    <p class="text-[10px] font-bold text-green-800 dark:text-green-300 uppercase">Unidades a Retornar</p>
+                    <p class="font-black text-3xl text-green-600 dark:text-green-400 mt-1">{{ getTotalRetornado() }}</p>
+                </div>
+            </div>
+
+            <div>
+                <h3 class="text-[10px] font-black uppercase text-gray-600 dark:text-gray-400 mb-2">3. Estado Físico del Retorno</h3>
+                <div class="flex flex-wrap gap-2">
+                    <span *ngIf="getResumenPorCondicion().buenos > 0" class="border-2 border-black px-3 py-1.5 rounded-lg flex items-center gap-2 shadow-[2px_2px_0px_0px_#000] bg-green-500 text-white font-black text-[10px] uppercase">
+                        BUENOS <span class="bg-black/20 px-1.5 rounded text-sm">{{ getResumenPorCondicion().buenos }}</span>
+                    </span>
+                    <span *ngIf="getResumenPorCondicion().danados > 0" class="border-2 border-black px-3 py-1.5 rounded-lg flex items-center gap-2 shadow-[2px_2px_0px_0px_#000] bg-red-500 text-white font-black text-[10px] uppercase">
+                        DAÑADOS <span class="bg-black/20 px-1.5 rounded text-sm">{{ getResumenPorCondicion().danados }}</span>
+                    </span>
+                    <span *ngIf="getResumenPorCondicion().calibracion > 0" class="border-2 border-black px-3 py-1.5 rounded-lg flex items-center gap-2 shadow-[2px_2px_0px_0px_#000] bg-yellow-500 text-black font-black text-[10px] uppercase">
+                        CALIBRACIÓN <span class="bg-white/50 px-1.5 rounded text-sm">{{ getResumenPorCondicion().calibracion }}</span>
+                    </span>
+                    <span *ngIf="getResumenPorCondicion().faltantes > 0" class="border-2 border-black px-3 py-1.5 rounded-lg flex items-center gap-2 shadow-[2px_2px_0px_0px_#000] bg-red-700 text-white font-black text-[10px] uppercase">
+                        FALTANTES <span class="bg-black/20 px-1.5 rounded text-sm">{{ getResumenPorCondicion().faltantes }}</span>
                     </span>
                 </div>
             </div>
 
-            <div class="text-xs text-gray-500 dark:text-gray-400 italic text-center bg-gray-100 dark:bg-slate-800 p-2 rounded border border-gray-300 dark:border-slate-600">
-                Se procesarán <strong class="text-black dark:text-white">{{ getSelectedCount() }}</strong> ítems seleccionados.
-            </div>
         </div>
 
-        <!-- Modal Footer -->
-        <div class="border-t-2 border-black p-4 bg-white dark:bg-slate-800">
-            <div class="flex justify-end gap-3">
-                <button (click)="closeConfirmModal()" class="px-4 py-2 bg-gray-200 dark:bg-slate-700 text-black dark:text-white border-2 border-black dark:border-slate-500 rounded font-bold uppercase hover:bg-gray-300 dark:hover:bg-slate-600 text-sm">
-                    Cancelar
-                </button>
-                <button (click)="finalizar()" class="px-5 py-2 bg-green-500 text-white border-2 border-black rounded font-black uppercase hover:bg-green-400 shadow-[3px_3px_0px_0px_#000] active:translate-y-[1px] active:shadow-none text-sm flex items-center gap-2">
-                    <mat-icon class="!text-lg !w-5 !h-5">check</mat-icon>
-                    Confirmar Retorno
-                </button>
-            </div>
+        <div class="border-t-[3px] border-black p-4 bg-gray-50 dark:bg-[#0F172AFF] flex justify-end gap-3 shrink-0">
+            <button (click)="closeConfirmModal()" class="px-5 py-2.5 bg-white text-black font-black text-xs border-[2px] border-black rounded-lg shadow-[3px_3px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all uppercase">Revisar Nuevamente</button>
+            <button (click)="finalizar()" class="px-6 py-2.5 bg-red-500 text-white font-black text-xs border-[2px] border-black rounded-lg shadow-[3px_3px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all uppercase flex items-center gap-2">
+                <mat-icon class="!text-sm">done_all</mat-icon> Confirmar e Imprimir
+            </button>
         </div>
     </div>
-</div>
+</ng-template>

@@ -31,7 +31,8 @@ export class MaintenanceService {
 
         return from(this._api.post('herramientas/maintenances/listMaintenances', params)).pipe(
             switchMap((response: any) => {
-                const maintenances = (response?.data || []).map((item: any) => ({
+                const raw: any[] = response?.ROOT?.datos ?? response?.datos ?? response?.data ?? [];
+                const maintenances = raw.map((item: any) => ({
                     id: item.id_maintenance,
                     id_maintenance: item.id_maintenance,
                     toolId: item.tool_id,
@@ -47,6 +48,16 @@ export class MaintenanceService {
                     notes: item.notes,
                     createdAt: item.created_at ? new Date(item.created_at) : undefined,
                     updatedAt: item.updated_at ? new Date(item.updated_at) : undefined,
+                    // campos extra que usa consulta-auditoria
+                    record_number: item.record_number,
+                    tool_serial: item.tool_serial,
+                    provider: item.provider ?? item.supplier_name,
+                    send_date: item.send_date,
+                    actual_return_date: item.actual_return_date,
+                    return_date: item.actual_return_date,
+                    result: item.result,
+                    certificate_number: item.certificate_number,
+                    next_calibration_date: item.next_maintenance_date,
                 }));
                 this._maintenances.next(maintenances);
                 return of(maintenances);
@@ -381,29 +392,38 @@ export class MaintenanceService {
      * @param pdfBase64 - String en base64 del PDF
      * @param filename - Nombre del archivo (opcional)
      */
-    private abrirPdf(pdfBase64: string, filename?: string): void {
-        if (!pdfBase64) {
-            console.error('No se recibió contenido PDF');
+    private abrirPdf(base64OrHtml: string, filename?: string): void {
+        if (!base64OrHtml) return;
+
+        const trimmed = base64OrHtml.trimStart();
+        if (trimmed.startsWith('<')) {
+            const blob = new Blob([base64OrHtml], { type: 'text/html; charset=utf-8' });
+            const url  = window.URL.createObjectURL(blob);
+            window.open(url, '_blank');
+            setTimeout(() => window.URL.revokeObjectURL(url), 100);
             return;
         }
 
-        // Convertir base64 a blob
-        const byteCharacters = atob(pdfBase64);
-        const byteNumbers = new Array(byteCharacters.length);
-        for (let i = 0; i < byteCharacters.length; i++) {
-            byteNumbers[i] = byteCharacters.charCodeAt(i);
+        let decoded: string;
+        try {
+            decoded = atob(base64OrHtml);
+        } catch {
+            const blob = new Blob([base64OrHtml], { type: 'text/plain; charset=utf-8' });
+            const url  = window.URL.createObjectURL(blob);
+            window.open(url, '_blank');
+            setTimeout(() => window.URL.revokeObjectURL(url), 100);
+            return;
         }
-        const byteArray = new Uint8Array(byteNumbers);
-        const blob = new Blob([byteArray], { type: 'application/pdf' });
 
-        // Crear URL y abrir en nueva pestaña
-        const url = window.URL.createObjectURL(blob);
+        const mimeType = decoded.trimStart().startsWith('<')
+            ? 'text/html; charset=utf-8'
+            : 'application/pdf';
+
+        const bytes = new Uint8Array(decoded.split('').map(c => c.charCodeAt(0)));
+        const blob  = new Blob([bytes], { type: mimeType });
+        const url   = window.URL.createObjectURL(blob);
         window.open(url, '_blank');
-
-        // Limpiar URL después de un tiempo
-        setTimeout(() => {
-            window.URL.revokeObjectURL(url);
-        }, 100);
+        setTimeout(() => window.URL.revokeObjectURL(url), 100);
     }
 
     /**

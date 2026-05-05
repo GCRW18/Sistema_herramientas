@@ -9,7 +9,7 @@ import { MatDialogRef, MatDialogModule, MAT_DIALOG_DATA } from '@angular/materia
 import { MatAutocompleteModule } from '@angular/material/autocomplete';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup } from '@angular/forms';
+import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { DragDropModule } from '@angular/cdk/drag-drop';
 import { Subject } from 'rxjs';
 import { takeUntil, debounceTime, distinctUntilChanged } from 'rxjs/operators';
@@ -26,54 +26,26 @@ interface HerramientaOption {
     estado: string;
     ubicacion: string;
     um: string;
+    imagen?: string;
 }
 
 @Component({
     selector: 'app-detalle-herramienta',
     standalone: true,
     imports: [
-        CommonModule,
-        MatIconModule,
-        MatButtonModule,
-        MatInputModule,
-        MatFormFieldModule,
-        MatSelectModule,
-        MatDialogModule,
-        MatAutocompleteModule,
-        MatTooltipModule,
-        MatProgressSpinnerModule,
-        FormsModule,
-        ReactiveFormsModule,
+        CommonModule, MatIconModule, MatButtonModule, MatInputModule,
+        MatFormFieldModule, MatSelectModule, MatDialogModule, MatAutocompleteModule,
+        MatTooltipModule, MatProgressSpinnerModule, FormsModule, ReactiveFormsModule,
         DragDropModule
     ],
     templateUrl: './detalle-herramienta.component.html',
     styles: [`
-        :host {
-            display: block;
-            height: 100%;
-            --neo-border: 2px solid black;
-            --neo-shadow: 4px 4px 0px 0px rgba(0,0,0,1);
-        }
-
-        :host-context(.dark) {
-            color-scheme: dark;
-        }
-
-        .neo-card-base {
-            border: var(--neo-border) !important;
-            box-shadow: var(--neo-shadow) !important;
-            border-radius: 8px !important;
-            background-color: white;
-        }
-
-        :host-context(.dark) .neo-card-base {
-            background-color: #1e293b !important;
-        }
-
-        .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
-        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #000; border-radius: 3px; }
-        :host-context(.dark) .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; }
+        :host { display: block; width: 100%; height: 100%; }
+        .custom-scrollbar::-webkit-scrollbar { width: 5px; height: 5px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; border-radius: 0; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #000; border-radius: 0; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #333; }
+        :host-context(.dark) .custom-scrollbar::-webkit-scrollbar-thumb { background: #fff; }
     `]
 })
 export class DetalleHerramientaComponent implements OnInit, OnDestroy {
@@ -84,53 +56,20 @@ export class DetalleHerramientaComponent implements OnInit, OnDestroy {
     private destroy$ = new Subject<void>();
 
     detalleForm!: FormGroup;
-    crearNuevaForm!: FormGroup;
-    selectedImage = signal<string | null>(null);
-    coincidencias = signal<number>(0);
     isEditMode = signal<boolean>(false);
     isSearching = signal<boolean>(false);
-    // Siempre false: ajuste ingreso solo trabaja con herramientas existentes
-    showCrearNueva = signal<boolean>(false);
 
-    // Listas estáticas requeridas por el template
-    marcas: string[] = [
-        'SNAP-ON', 'TOHNICHI', 'MITUTOYO', 'MALABAR', 'CLEVELAND', 'AIRBUS GSE',
-        'BOEING GSE', 'ATLAS COPCO', 'INGERSOLL RAND', 'FACOM', 'STAHLWILLE',
-        'HAZET', 'PROTO', 'WIHA', 'WERA', 'KNIPEX', 'GEDORE', 'BAHCO'
-    ];
-    tiposHerramienta: string[] = [
-        'HERRAMIENTA MANUAL', 'HERRAMIENTA ELECTRICA', 'HERRAMIENTA NEUMATICA',
-        'EQUIPO MEDICION', 'EQUIPO CALIBRACION', 'HERRAMIENTA ESPECIAL',
-        'GSE AVIACION', 'EQUIPO PRUEBA', 'CONSUMIBLE'
-    ];
-    fabricaciones: string[] = [
-        'NACIONAL', 'IMPORTADA', 'OEM', 'AFTERMARKET', 'CERTIFICADA FAA', 'CERTIFICADA EASA', 'CUSTOM'
-    ];
-    nivelesHerramienta: string[] = [
-        'NIVEL 1 - BASICO', 'NIVEL 2 - INTERMEDIO', 'NIVEL 3 - AVANZADO',
-        'NIVEL 4 - ESPECIALIZADO', 'NIVEL 5 - CRITICO'
-    ];
+    imagenOriginal = signal<string | null>(null);
+    imagenNueva = signal<string | null>(null);
 
-    // Tipos de ajuste (estático)
-    tiposAjuste = [
-        { value: 'INVENTARIO',  label: 'Ajuste Inventario' },
-        { value: 'REUBICACION', label: 'Reubicacion' },
-        { value: 'DONACION',    label: 'Donacion Recibida' },
-        { value: 'ENCONTRADO',  label: 'Item Encontrado' },
-        { value: 'SOBRANTE',    label: 'Sobrante' },
-        { value: 'CORRECCION',  label: 'Correccion Sistema' }
-    ];
-
-    // Estados de herramienta (estático)
     estados = [
         { value: 'SERVICEABLE',    label: 'Serviceable' },
         { value: 'UNSERVICEABLE',  label: 'Unserviceable' },
-        { value: 'EN_CALIBRACION', label: 'En Calibracion' },
-        { value: 'REPARACION',     label: 'En Reparacion' },
+        { value: 'EN_CALIBRACION', label: 'En Calibración' },
+        { value: 'REPARACION',     label: 'En Reparación' },
         { value: 'NUEVO',          label: 'Nuevo' }
     ];
 
-    // Unidades de medida (estático)
     unidades = [
         { value: 'PZA', label: 'Pieza' },
         { value: 'SET', label: 'Set/Juego' },
@@ -141,23 +80,14 @@ export class DetalleHerramientaComponent implements OnInit, OnDestroy {
         { value: 'LTS', label: 'Litros' }
     ];
 
-    // Marcas para autocomplete (texto libre + sugerencias)
-    marcasFiltradas: string[] = [];
-
-    // Resultados de búsqueda reales
     filteredHerramientas: HerramientaOption[] = [];
 
     ngOnInit(): void {
         this.initForm();
-        this.setupSearch();
 
         if (this.data?.editItem) {
             this.isEditMode.set(true);
             this.loadEditData(this.data.editItem);
-        }
-
-        if (this.data?.tipoAjuste) {
-            this.detalleForm.patchValue({ tipoAjuste: this.data.tipoAjuste });
         }
     }
 
@@ -167,85 +97,80 @@ export class DetalleHerramientaComponent implements OnInit, OnDestroy {
     }
 
     private initForm(): void {
-        this.crearNuevaForm = this.fb.group({
-            codigoBoaMM: [''], fabricacion: [''], nombreNueva: [''],
-            nivelHerramienta: [''], pnModelo: [''], snNueva: [''],
-            marcaNueva: [''], tipoNueva: [''], accesorios: [''],
-            requiereCalibracion: ['NO'], fechaVencimientoCalibracion: [''],
-            fechaVencimiento: [''], unidadMedida: ['PZA'],
-            costoHora: [0], costoServicio: [0], estante: [''], nivelUbicacion: ['']
-        });
-
         this.detalleForm = this.fb.group({
-            buscar:        [''],
-            toolId:        [null],
+            buscar:        ['BOA-H-'], // Pre-escrito
+            toolId:        [null, Validators.required],
+            // Campos Maestro (Ocultos/Internos)
             codigo:        [''],
             pn:            [''],
+            sn:            [''],
             nombre:        [''],
             marca:         [''],
-            tipo:          [''],
-            sn:            [''],
-            estado:        ['SERVICEABLE'],
-            ubicacion:     [''],
-            um:            ['PZA'],
-            cantidad:      [1],
-            tipoAjuste:    ['INVENTARIO'],
-            documento:     [''],
-            observaciones: ['']
+            // Campos Ajuste
+            cantidad:      [1, [Validators.required, Validators.min(1)]],
+            um:            ['UND', Validators.required],
+            estado:        ['SERVICEABLE', Validators.required],
+            estante:       [''],
+            nivelUbicacion:[''],
+            observaciones: [''],
+            tipoAjuste:    [this.data?.tipoAjuste || 'INVENTARIO']
         });
-    }
 
-    private setupSearch(): void {
-        // La búsqueda se dispara desde (input) en el HTML.
-        // Suscripción a valueChanges eliminada para evitar doble llamada.
-        this.marcasFiltradas = [...this.marcas];
+        // Forzar que el buscador siempre tenga BOA-H-
+        this.detalleForm.get('buscar')?.valueChanges.pipe(takeUntil(this.destroy$)).subscribe(val => {
+            if (!val || !val.startsWith('BOA-H-')) {
+                this.detalleForm.patchValue({ buscar: 'BOA-H-' }, { emitEvent: false });
+            }
+        });
     }
 
     private loadEditData(item: any): void {
         this.detalleForm.patchValue({
-            toolId:        item.toolId     || null,
-            codigo:        item.codigoBoa  || '',
-            pn:            item.pn         || '',
-            nombre:        item.descripcion || '',
-            marca:         item.marca      || '',
-            sn:            item.sn         || '',
-            estado:        item.estado     || 'SERVICEABLE',
-            ubicacion:     item.ubicacion  || '',
-            um:            item.um         || 'PZA',
-            cantidad:      item.cantidad   || 1,
-            tipoAjuste:    item.tipoAjuste || 'INVENTARIO',
-            documento:     item.documentos || '',
-            observaciones: item.obs        || ''
+            toolId:        item.toolId,
+            buscar:        item.codigoBoa + ' - ' + item.descripcion,
+            codigo:        item.codigoBoa,
+            pn:            item.pn,
+            sn:            item.sn,
+            nombre:        item.descripcion,
+            marca:         item.marca,
+            estado:        item.estado || 'SERVICEABLE',
+            estante:       item.ubicacion ? item.ubicacion.split(' / ')[0] : '',
+            nivelUbicacion:item.ubicacion ? item.ubicacion.split(' / ')[1] : '',
+            um:            item.um || 'UND',
+            cantidad:      item.cantidad || 1,
+            observaciones: item.obs || '',
+            tipoAjuste:    item.tipoAjuste || 'INVENTARIO'
         });
+        if (item.imagenMaster) this.imagenOriginal.set(item.imagenMaster);
+        if (item.imagenNueva) this.imagenNueva.set(item.imagenNueva);
     }
 
-    displayHerramienta = (h: any): string => h ? (h.codigo || '') : '';
+    displayHerramienta = (h: any): string => h ? (h.codigo || '') : 'BOA-H-';
 
     onBuscarChange(value: string): void {
-        if (!value || value.length < 2) {
+        if (!value || value.length <= 6) {
             this.filteredHerramientas = [];
-            this.coincidencias.set(0);
             return;
         }
 
         this.isSearching.set(true);
         this.toolService.getTools({ query: value }).pipe(
-            takeUntil(this.destroy$)
+            takeUntil(this.destroy$), debounceTime(300), distinctUntilChanged()
         ).subscribe({
             next: (tools: any[]) => {
                 this.filteredHerramientas = tools.map(t => ({
                     id_tool:   t.id_tool,
-                    codigo:    t.code            || '',
-                    pn:        t.part_number     || '',
-                    nombre:    t.name            || t.description || '',
-                    marca:     t.brand           || '',
-                    tipo:      t.category        || '',
-                    sn:        t.serial_number   || '',
-                    estado:    t.status          || '',
-                    ubicacion: t.location        || t.location_id || '',
-                    um:        t.unit_of_measure || 'PZA'
+                    codigo:    t.code || '',
+                    pn:        t.part_number || '',
+                    nombre:    t.name || t.description || '',
+                    marca:     t.brand || '',
+                    tipo:      t.category || '',
+                    sn:        t.serial_number || '',
+                    estado:    t.status || '',
+                    ubicacion: t.location || t.location_id || '',
+                    um:        t.unit_of_measure || 'UND',
+                    imagen:    t.image_url || null
                 }));
-                this.coincidencias.set(this.filteredHerramientas.length);
                 this.isSearching.set(false);
             },
             error: () => {
@@ -258,82 +183,69 @@ export class DetalleHerramientaComponent implements OnInit, OnDestroy {
     selectHerramienta(herramienta: HerramientaOption): void {
         this.detalleForm.patchValue({
             toolId:    herramienta.id_tool,
+            buscar:    `${herramienta.codigo} - ${herramienta.nombre}`,
             codigo:    herramienta.codigo,
             pn:        herramienta.pn,
+            sn:        herramienta.sn,
             nombre:    herramienta.nombre,
             marca:     herramienta.marca,
-            tipo:      herramienta.tipo,
-            sn:        herramienta.sn,
-            estado:    herramienta.estado,
-            ubicacion: herramienta.ubicacion,
-            um:        herramienta.um
+            estado:    this.estados.some(e => e.value === herramienta.estado) ? herramienta.estado : 'SERVICEABLE',
+            um:        this.unidades.some(u => u.value === herramienta.um) ? herramienta.um : 'UND'
         });
-        this.coincidencias.set(1);
+        this.imagenOriginal.set(herramienta.imagen || null);
         this.filteredHerramientas = [];
-        // Si la marca del backend no está en la lista estática, añadirla temporalmente
-        if (herramienta.marca && !this.marcas.includes(herramienta.marca)) {
-            this.marcasFiltradas = [herramienta.marca, ...this.marcas];
-        }
     }
 
-    filterMarcas(value: string): void {
-        if (!value) {
-            this.marcasFiltradas = [...this.marcas];
-            return;
-        }
-        const f = value.toLowerCase();
-        this.marcasFiltradas = this.marcas.filter(m => m.toLowerCase().includes(f));
-        // Asegurar que el valor actual siempre aparece
-        if (!this.marcasFiltradas.includes(value)) {
-            this.marcasFiltradas = [value, ...this.marcasFiltradas];
-        }
+    clearSearch(): void {
+        this.detalleForm.reset({
+            buscar: 'BOA-H-', toolId: null, codigo: '', pn: '', sn: '', nombre: '', marca: '',
+            estado: 'SERVICEABLE', estante: '', nivelUbicacion: '', um: 'UND', cantidad: 1, observaciones: '',
+            tipoAjuste: this.data?.tipoAjuste || 'INVENTARIO'
+        });
+        this.filteredHerramientas = [];
+        this.imagenOriginal.set(null);
+        this.imagenNueva.set(null);
     }
 
     onImageSelected(event: Event): void {
         const file = (event.target as HTMLInputElement).files?.[0];
         if (file) {
             const reader = new FileReader();
-            reader.onload = () => { this.selectedImage.set(reader.result as string); };
+            reader.onload = () => { this.imagenNueva.set(reader.result as string); };
             reader.readAsDataURL(file);
         }
     }
 
-    // Stubs — sección "Crear Nueva" deshabilitada (solo herramientas existentes)
-    crearItem(): void {}
-    volverADetalle(): void { this.showCrearNueva.set(false); }
-    registrarNueva(): void {}
-    finalizarNueva(): void {}
-    generarCodigo(): void {}
-    generarCodigoNueva(): void {}
-
     procesar(): void {
-        const data = this.detalleForm.value;
-        if (!data.toolId) {
-            // Marcar campo buscar como tocado para mostrar error visual
+        this.detalleForm.markAllAsTouched();
+        if (!this.detalleForm.get('toolId')?.value) {
             this.detalleForm.get('buscar')?.markAsTouched();
             return;
         }
-        if (!data.cantidad || data.cantidad <= 0) {
-            this.detalleForm.patchValue({ cantidad: 1 });
-        }
-        if (!data.estado) {
-            this.detalleForm.patchValue({ estado: 'SERVICEABLE' });
-        }
-        this.dialogRef?.close({ action: 'procesar', data });
+        if (this.detalleForm.invalid) return;
+
+        const rawData = this.detalleForm.getRawValue();
+        const estante = rawData.estante?.trim();
+        const nivel = rawData.nivelUbicacion?.trim();
+        const ubicacionFinal = (estante && nivel) ? `${estante} / ${nivel}` : (estante || nivel || '');
+
+        const finalData = {
+            ...rawData,
+            ubicacion: ubicacionFinal,
+            imagenMaster: this.imagenOriginal(),
+            imagenNueva: this.imagenNueva()
+        };
+
+        this.dialogRef?.close({ action: 'procesar', data: finalData });
     }
 
     cerrar(): void {
         this.dialogRef?.close();
     }
 
-    getEstadoClass(estado: string): string {
-        switch (estado) {
-            case 'SERVICEABLE':    return 'text-green-600';
-            case 'UNSERVICEABLE':  return 'text-red-600';
-            case 'EN_CALIBRACION': return 'text-yellow-600';
-            case 'REPARACION':     return 'text-orange-600';
-            case 'NUEVO':          return 'text-blue-600';
-            default:               return 'text-gray-600';
-        }
+    // --- CORRECCIÓN: Método agregado para evitar el error de compilación ---
+    hasError(field: string, error: string): boolean {
+        const control = this.detalleForm.get(field);
+        return control ? control.hasError(error) && control.touched : false;
     }
 }

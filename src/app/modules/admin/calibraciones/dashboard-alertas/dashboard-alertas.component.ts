@@ -105,8 +105,8 @@ export class DashboardAlertasComponent implements OnInit, OnDestroy {
                     category: item.category || '',
                     warehouse: item.warehouse || item.almacen || '—',
                     calibration_expiry: this.formatDate(item.next_calibration_date || item.calibration_expiry),
-                    days_remaining: item.days_remaining ?? 0,
-                    urgency: item.urgency || 'UPCOMING_30D',
+                    days_remaining: item.days_until_calibration ?? item.days_remaining ?? 0,
+                    urgency: item.alert_type || item.urgency || 'UPCOMING_30D',
                     is_jack: item.is_jack || false
                 }));
                 this.applyUrgencyFilter();

@@ -1,0 +1,188 @@
+<div class="bg-[#f8f9fc] dark:bg-slate-900 border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] overflow-hidden flex flex-col font-sans h-auto max-h-[95vh]">
+
+    <!-- HEADER -->
+    <div class="bg-[#0F172AFF] text-white px-5 py-3 flex justify-between items-center shrink-0"
+         cdkDrag cdkDragRootElement=".cdk-overlay-pane" cdkDragHandle>
+        <div class="flex items-center gap-3">
+            <div class="w-8 h-8 bg-white border-2 border-black rounded flex items-center justify-center shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+                <mat-icon class="text-black !text-base">handyman</mat-icon>
+            </div>
+            <div>
+                <h2 class="text-sm font-black uppercase tracking-tight leading-none">{{ titulo }}</h2>
+                <p class="text-[10px] text-gray-300 font-bold uppercase mt-0.5">
+                    {{ rack.codigo }} · Nivel {{ level.numero }} · {{ level.nombre }}
+                </p>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-3">
+            <button (click)="cerrar()"
+                    class="px-4 py-1.5 bg-[#FF1414FF] text-white font-black text-[10px] border-2 border-black rounded-lg shadow-[2px_2px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all uppercase">
+                Cancelar
+            </button>
+            <button (click)="procesar()"
+                    class="px-4 py-1.5 bg-amber-400 text-black font-black text-[10px] border-2 border-black rounded-lg shadow-[2px_2px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all uppercase flex items-center gap-1.5">
+                <mat-icon class="!text-black">save</mat-icon>
+                {{ mode === 'new' ? 'Agregar' : 'Guardar' }}
+            </button>
+        </div>
+    </div>
+
+    <!-- BANDA NIVEL ASIGNADO -->
+    <div class="bg-blue-100 dark:bg-blue-900/30 border-b-2 border-black px-5 py-2 flex items-center gap-2 shrink-0">
+        <mat-icon class="!text-base text-blue-700">place</mat-icon>
+        <span class="text-[11px] font-black uppercase text-blue-900 dark:text-blue-200">
+            Esta herramienta será asignada a:
+            <span class="ml-1 px-2 py-0.5 bg-white dark:bg-slate-800 border-2 border-black rounded text-black dark:text-white font-mono text-[10px]">
+                {{ level.codigo }}
+            </span>
+        </span>
+    </div>
+
+    <!-- BODY -->
+    <div class="flex-1 overflow-y-auto p-5 custom-scrollbar" style="width:900px; max-width:95vw">
+        <form [formGroup]="form" class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+            <!-- LEFT: foto + preview -->
+            <div class="lg:col-span-5 flex flex-col gap-4">
+
+                <div>
+                    <label class="text-[10px] font-black uppercase text-black dark:text-gray-300 mb-1 block">Fotografía Físico (Opcional)</label>
+                    <div class="border-2 border-dashed border-black dark:border-slate-500 rounded-xl bg-white dark:bg-slate-800 h-44 flex flex-col items-center justify-center relative overflow-hidden cursor-pointer hover:bg-white transition-colors group" (click)="fileInput.click()">
+
+                        <div *ngIf="selectedImage(); else noImageTemplate" class="w-full h-full p-2 relative">
+                            <img [src]="selectedImage()" class="w-full h-full object-contain rounded" alt="Foto">
+                            <div class="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                <span class="text-white text-xs font-black uppercase bg-black/60 px-3 py-1 border-2 border-white rounded shadow-[2px_2px_0px_0px_#fff]">Cambiar Foto</span>
+                            </div>
+                        </div>
+
+                        <ng-template #noImageTemplate>
+                            <mat-icon class="!text-4xl text-black dark:text-gray-400 mb-1">add_photo_alternate</mat-icon>
+                            <span class="text-[10px] font-black uppercase text-black dark:text-gray-400">Click para subir foto</span>
+                        </ng-template>
+
+                        <input type="file" #fileInput (change)="onImageSelected($event)" accept="image/*" class="hidden">
+                    </div>
+                </div>
+
+                <div class="bg-white dark:bg-gray-600 border-2 border-black rounded-xl p-4 shadow-[3px_3px_0px_0px_#000] relative overflow-hidden mt-2">
+                    <mat-icon class="absolute -right-4 -bottom-4 !text-[80px] text-amber-200 dark:text-amber-800/40 opacity-60 pointer-events-none">sell</mat-icon>
+
+                    <span class="text-[9px] font-black text-black dark:text-amber-500 uppercase mb-2 border-b-2 border-black/10 pb-1 w-full block relative z-10">Vista Previa Etiqueta</span>
+
+                    <div class="relative z-10 flex flex-col gap-1.5">
+                        <p class="font-black text-lg text-black dark:text-white leading-none font-mono">
+                            {{ form.get('codigo')?.value || 'BOA-H-' }}
+                        </p>
+
+                        <p class="text-xs font-bold text-gray-800 dark:text-gray-200 leading-tight line-clamp-2 min-h-[34px]">
+                            {{ form.get('nombre')?.value || 'Nombre de la herramienta...' }}
+                        </p>
+
+                        <div class="flex flex-wrap gap-1.5 mt-1">
+                            <span class="px-2 py-0.5 bg-white dark:bg-slate-800 border-2 border-black rounded text-[9px] font-black uppercase text-black dark:text-white">
+                                P/N: {{ form.get('pn')?.value || 'N/A' }}
+                            </span>
+                            <span class="px-2 py-0.5 bg-blue-100 dark:bg-blue-900 border-2 border-black rounded text-[9px] font-black uppercase text-blue-900 dark:text-blue-200" *ngIf="form.get('sn')?.value">
+                                S/N: {{ form.get('sn')?.value }}
+                            </span>
+                        </div>
+
+                        <div class="flex justify-between items-end mt-2 pt-2 border-t-2 border-black/10">
+                            <span class="px-2 py-1 bg-[#0F172AFF] text-white border-2 border-black rounded-lg text-[10px] font-black shadow-[2px_2px_0px_0px_#000]">
+                                {{ form.get('cantidad')?.value || 0 }} {{ form.get('um')?.value }}
+                            </span>
+                            <span class="px-2 py-0.5 text-[9px] font-black uppercase border-2 border-black rounded bg-white dark:bg-slate-800 text-black">
+                                {{ rack.codigo }} / N{{ level.numero }}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- RIGHT: campos -->
+            <div class="lg:col-span-7 flex flex-col gap-4">
+
+                <div class="bg-white dark:bg-slate-800 border-2 border-black rounded-xl p-4 shadow-[3px_3px_0px_0px_#000]">
+                    <div class="grid grid-cols-12 gap-3">
+                        <div class="col-span-12 sm:col-span-6">
+                            <label class="text-[10px] font-black uppercase text-black dark:text-gray-300 mb-1 block">Código BOA *</label>
+                            <div class="relative flex">
+                                <input type="text" formControlName="codigo"
+                                       class="w-full h-10 text-sm font-black uppercase bg-white dark:bg-slate-900 border-2 border-black dark:border-slate-600 rounded-lg px-3 pr-11 focus:shadow-[2px_2px_0px_0px_#000] outline-none transition-all"
+                                       [class.border-red-500]="hasError('codigo','required')">
+                                <button type="button" (click)="generarCodigoBoa()"
+                                        class="absolute right-1 top-1 w-8 h-8 bg-amber-400 border-2 border-black rounded flex items-center justify-center shadow-[1px_1px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all"
+                                        matTooltip="Auto-generar">
+                                    <mat-icon class="!text-sm text-black">auto_awesome</mat-icon>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="col-span-12 sm:col-span-6">
+                            <label class="text-[10px] font-black uppercase text-black dark:text-gray-300 mb-1 block">P/N (Part Number) *</label>
+                            <input type="text" formControlName="pn" placeholder="Ej: 10M123"
+                                   class="w-full h-10 text-sm font-bold uppercase bg-white dark:bg-slate-900 border-2 border-black dark:border-slate-600 rounded-lg px-3 focus:shadow-[2px_2px_0px_0px_#000] outline-none transition-all"
+                                   [class.border-red-500]="hasError('pn','required')">
+                        </div>
+
+                        <div class="col-span-12 sm:col-span-8">
+                            <label class="text-[10px] font-black uppercase text-black dark:text-gray-300 mb-1 block">Nombre / Descripción *</label>
+                            <input type="text" formControlName="nombre" placeholder="Descripción detallada"
+                                   class="w-full h-10 text-sm font-bold bg-white dark:bg-slate-900 border-2 border-black dark:border-slate-600 rounded-lg px-3 focus:shadow-[2px_2px_0px_0px_#000] outline-none transition-all"
+                                   [class.border-red-500]="hasError('nombre','required')">
+                        </div>
+
+                        <div class="col-span-12 sm:col-span-4">
+                            <label class="text-[10px] font-black uppercase text-black dark:text-gray-300 mb-1 block">S/N (Serial)</label>
+                            <input type="text" formControlName="sn" placeholder="Opcional"
+                                   class="w-full h-10 text-sm font-bold uppercase bg-white dark:bg-slate-900 border-2 border-black dark:border-slate-600 rounded-lg px-3 focus:shadow-[2px_2px_0px_0px_#000] outline-none transition-all">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-12 gap-3">
+                    <div class="col-span-12 sm:col-span-4">
+                        <label class="text-[10px] font-black uppercase text-black dark:text-gray-300 mb-1 block">Marca</label>
+                        <input type="text" formControlName="marca" placeholder="Ej: FLUKE"
+                               class="w-full h-10 text-sm font-bold uppercase bg-white dark:bg-slate-800 border-2 border-black dark:border-slate-600 rounded-lg px-3 focus:shadow-[2px_2px_0px_0px_#000] outline-none transition-all">
+                    </div>
+                    <div class="col-span-12 sm:col-span-4">
+                        <label class="text-[10px] font-black uppercase text-black dark:text-gray-300 mb-1 block">Cantidad *</label>
+                        <input type="number" formControlName="cantidad" min="1"
+                               class="w-full h-10 text-sm font-black text-center bg-white dark:bg-slate-800 border-2 border-black dark:border-slate-600 rounded-lg px-3 focus:shadow-[2px_2px_0px_0px_#000] outline-none transition-all"
+                               [class.border-red-500]="hasError('cantidad','required')">
+                    </div>
+                    <div class="col-span-12 sm:col-span-4">
+                        <label class="text-[10px] font-black uppercase text-black dark:text-gray-300 mb-1 block">Unidad *</label>
+                        <select formControlName="um" class="w-full h-10 text-sm font-bold bg-white dark:bg-slate-800 border-2 border-black dark:border-slate-600 rounded-lg px-2 focus:shadow-[2px_2px_0px_0px_#000] outline-none transition-all">
+                            <option *ngFor="let u of unidadesMedida" [value]="u.value">{{ u.label }}</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-12 gap-3 bg-blue-50 dark:bg-blue-900/10 p-3 rounded-xl border-2 border-blue-300 dark:border-blue-600">
+                    <div class="col-span-12 sm:col-span-6">
+                        <label class="text-[10px] font-black uppercase text-blue-800 dark:text-blue-300 mb-1 block">Estado *</label>
+                        <select formControlName="estado" class="w-full h-10 text-sm font-bold bg-white dark:bg-slate-800 border-2 border-blue-400 rounded-lg px-2 focus:shadow-[2px_2px_0px_0px_#3b82f6] outline-none transition-all">
+                            <option *ngFor="let e of estados" [value]="e.value">{{ e.label }}</option>
+                        </select>
+                    </div>
+                    <div class="col-span-12 sm:col-span-6 flex items-end">
+                        <div class="px-3 py-2 bg-white dark:bg-slate-800 border-2 border-blue-400 rounded-lg w-full text-[11px] font-black uppercase text-blue-900 dark:text-blue-200 flex items-center gap-2">
+                            <mat-icon class="!text-sm">place</mat-icon>
+                            <span class="truncate">{{ rack.codigo }} · N{{ level.numero }} · {{ level.nombre }}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="text-[10px] font-black uppercase text-black dark:text-gray-300 mb-1 block">Observaciones Específicas</label>
+                    <textarea formControlName="observaciones" rows="2" placeholder="Detalle si la herramienta tiene algún daño, falta accesorio, etc..."
+                              class="w-full text-sm font-bold border-2 border-black dark:border-slate-600 rounded-xl p-3 bg-white dark:bg-slate-800 text-black dark:text-white outline-none focus:shadow-[2px_2px_0px_0px_#000] transition-shadow resize-none custom-scrollbar"></textarea>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>

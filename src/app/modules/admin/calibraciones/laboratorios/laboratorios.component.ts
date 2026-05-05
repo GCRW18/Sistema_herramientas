@@ -125,34 +125,6 @@ export class LaboratoriosComponent implements OnInit, OnDestroy {
         });
     }
 
-    /**
-     * ✅ NUEVO: Carga solo laboratorios activos (útil para dropdowns)
-     */
-    loadActiveLaboratorios(tipo_servicio?: string): void {
-        this.calibrationService.getActiveLaboratoriesPxp(tipo_servicio).pipe(
-            takeUntil(this._destroy$)
-        ).subscribe({
-            next: (labs) => {
-                console.log('[loadActiveLaboratorios] activos cargados:', labs?.length);
-            },
-            error: (err) => console.error('Error loading active laboratories:', err),
-        });
-    }
-
-    /**
-     * ✅ NUEVO: Obtiene un laboratorio por ID
-     */
-    getLaboratoryById(id: string): void {
-        this.calibrationService.getLaboratoryById(id).pipe(
-            takeUntil(this._destroy$)
-        ).subscribe({
-            next: (lab) => {
-                console.log('[getLaboratoryById] laboratorio:', lab);
-            },
-            error: (err) => console.error('Error getting laboratory:', err),
-        });
-    }
-
     setupFilters(): void {
         combineLatest([
             this.searchControl.valueChanges.pipe(startWith('')),
@@ -302,39 +274,23 @@ export class LaboratoriosComponent implements OnInit, OnDestroy {
     async eliminarLaboratorio(lab: Laboratory, event: Event): Promise<void> {
         event.stopPropagation();
 
-        const confirmMsg = lab.active
-            ? `⚠️ La empresa "${lab.name}" tiene registros asociados.\n\n¿Desea desactivarla en lugar de eliminarla?`
-            : `¿Está seguro de eliminar permanentemente la empresa "${lab.name}"?`;
+        const confirmMsg = `¿Desea eliminar la empresa "${lab.name}"?\n\nSi tiene calibraciones registradas será desactivada; de lo contrario se eliminará permanentemente.`;
 
         if (!confirm(confirmMsg)) return;
 
-        if (lab.active) {
-            // Desactivar
-            const updated = { ...lab, active: false };
-            this.calibrationService.saveLaboratory(updated).pipe(
-                takeUntil(this._destroy$)
-            ).subscribe({
-                next: () => {
-                    this.showMsg(`Empresa "${lab.name}" desactivada`, 'success');
-                    this.loadLaboratorios();
-                },
-                error: () => this.showMsg('Error al desactivar la empresa', 'error')
-            });
-        } else {
-            // Eliminar físicamente (solo si no tiene registros asociados)
-            this.calibrationService.deleteLaboratory(lab.id_laboratory!).pipe(
-                takeUntil(this._destroy$)
-            ).subscribe({
-                next: () => {
-                    this.showMsg(`Empresa "${lab.name}" eliminada`, 'success');
-                    this.loadLaboratorios();
-                },
-                error: (err) => {
-                    console.error('Error deleting laboratory:', err);
-                    this.showMsg(err?.message || 'Error al eliminar la empresa', 'error');
-                }
-            });
-        }
+        // El backend (HE_CAL_ELI) decide automáticamente si desactivar o eliminar
+        this.calibrationService.deleteLaboratory(lab.id_laboratory!).pipe(
+            takeUntil(this._destroy$)
+        ).subscribe({
+            next: () => {
+                this.showMsg(`Operación completada para "${lab.name}"`, 'success');
+                this.loadLaboratorios();
+            },
+            error: (err) => {
+                console.error('Error:', err);
+                this.showMsg(err?.message || 'Error al procesar la empresa', 'error');
+            }
+        });
     }
 
     private showMsg(message: string, type: 'success' | 'error' | 'warning' | 'info'): void {

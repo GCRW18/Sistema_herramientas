@@ -1,4 +1,4 @@
-import { Component, OnInit, signal, inject } from '@angular/core';
+import { Component, OnInit, signal, inject, OnDestroy, ViewChild, TemplateRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule, Router } from '@angular/router';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
@@ -21,7 +21,6 @@ import { Subject, takeUntil, finalize, forkJoin } from 'rxjs';
 import { QuarantineService } from '../../../../core/services/quarantine.service';
 import { MovementService } from '../../../../core/services/movement.service';
 
-// Interfaces
 interface BajaItem {
     toolId?: number;
     codigo: string;
@@ -32,6 +31,7 @@ interface BajaItem {
     contenido: string;
     base: string;
     marca: string;
+    estadoFisico?: string;
     id?: string;
     selected?: boolean;
     expanded?: boolean;
@@ -74,107 +74,24 @@ interface Estado {
     ],
     templateUrl: './baja.component.html',
     styles: [`
-        :host {
-            display: block;
-            height: 100%;
-            --neo-border: 2px solid black;
-            --neo-shadow: 4px 4px 0px 0px rgba(0,0,0,1);
-        }
-
-        .neo-card-base {
-            border: var(--neo-border) !important;
-            box-shadow: var(--neo-shadow) !important;
-            border-radius: 8px !important;
-            background-color: white;
-        }
-
-        :host-context(.dark) .neo-card-base {
-            background-color: #1e293b !important;
-        }
-
-        .spinner-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(255,255,255,0.8);
-            backdrop-filter: blur(4px);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 1000;
-        }
-
-        :host-context(.dark) .spinner-overlay {
-            background: rgba(0,0,0,0.7);
-        }
-
-        .custom-scrollbar::-webkit-scrollbar {
-            width: 6px;
-            height: 6px;
-        }
-
-        .custom-scrollbar::-webkit-scrollbar-track {
-            background: transparent;
-        }
-
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-            background: #000;
-            border-radius: 3px;
-        }
-
-        :host-context(.dark) .custom-scrollbar::-webkit-scrollbar-thumb {
-            background: #cbd5e1;
-        }
-
+        :host { display: block; height: 100%; }
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #000; border-radius: 3px; }
+        :host-context(.dark) .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; }
         @keyframes fadeIn {
             from { opacity: 0; transform: translateY(-5px); }
             to { opacity: 1; transform: translateY(0); }
         }
-
-        .animate-fadeIn {
-            animation: fadeIn 0.2s ease-out forwards;
+        .animate-fadeIn { animation: fadeIn 0.2s ease-out forwards; }
+        @keyframes pulse-border {
+            0%, 100% { border-color: #FF1414FF; box-shadow: 3px 3px 0px 0px #FF1414FF; }
+            50% { border-color: rgba(255,20,20,0.5); box-shadow: 3px 3px 0px 0px rgba(255,20,20,0.5); }
         }
-
-        /* Estilos para inputs readonly */
-        input:read-only {
-            background-color: #f3f4f6;
-            border-color: #9ca3af;
-            cursor: not-allowed;
-        }
-
-        :host-context(.dark) input:read-only {
-            background-color: #1f2937;
-            border-color: #4b5563;
-            color: #9ca3af;
-        }
-
-        /* Estilos para select en dark mode */
-        :host-context(.dark) select option {
-            background-color: #0F172A;
-            color: white;
-        }
-
-        /* Estilos para tablas */
-        table {
-            border-collapse: collapse;
-            width: 100%;
-        }
-
-        th {
-            position: sticky;
-            top: 0;
-            background-color: #f3f4f6;
-            z-index: 10;
-        }
-
-        :host-context(.dark) th {
-            background-color: #0f172a;
-        }
+        .animate-pulse-border { animation: pulse-border 2s infinite; }
     `]
 })
-export class BajaComponent implements OnInit {
+export class BajaComponent implements OnInit, OnDestroy {
     public dialogRef = inject(MatDialogRef<BajaComponent>, { optional: true });
     private dialog = inject(MatDialog);
     private iconRegistry = inject(MatIconRegistry);
@@ -183,24 +100,20 @@ export class BajaComponent implements OnInit {
     private router = inject(Router);
     private snackBar = inject(MatSnackBar);
     private quarantineService = inject(QuarantineService);
-
-    private _unsubscribeAll = new Subject<void>();
     private movementService = inject(MovementService);
 
-    // Formulario
-    bajaForm!: FormGroup;
+    private _unsubscribeAll = new Subject<void>();
 
-    // Signals
+    @ViewChild('datosBajaModal') datosBajaModal!: TemplateRef<any>;
+    private activeDialog: MatDialogRef<any> | null = null;
+
+    bajaForm!: FormGroup;
     dataSource = signal<BajaItem[]>([]);
     nroNota = signal('---');
 
-    // Estados
     isLoading = false;
-    isSaving = false;
 
-    // Personal desde API
     usuarios: Usuario[] = [];
-
     unidades: string[] = ['CBB', 'LPB', 'SRE', 'TJA', 'SRZ', 'CIJ', 'TDD', 'GYA', 'RIB', 'BYC'];
 
     estados: Estado[] = [
@@ -236,9 +149,9 @@ export class BajaComponent implements OnInit {
         const currentTime = this.formatTime(now);
 
         this.bajaForm = this.fb.group({
-            procesadoPor: ['SISTEMASBOA', Validators.required],
-            nombre: ['DEPARTAMENTO SISTEMAS BOLIVIA'],
-            cargo: ['DPTO. SISTEMAS'],
+            procesadoPor: [null, Validators.required], // Sin valor default para obligar validación
+            nombre: [''],
+            cargo: [''],
             fecha: [today, Validators.required],
             hora: [currentTime, Validators.required],
             verificadoPor: [''],
@@ -251,34 +164,25 @@ export class BajaComponent implements OnInit {
             observaciones: ['']
         });
 
-        // Suscripción para actualizar nombre y cargo
         this.bajaForm.get('procesadoPor')?.valueChanges
             .pipe(takeUntil(this._unsubscribeAll))
             .subscribe(value => {
                 const usuario = this.usuarios.find(u => u.value === value);
                 if (usuario) {
-                    this.bajaForm.patchValue({
-                        nombre: usuario.nombre,
-                        cargo: usuario.cargo
-                    }, { emitEvent: false });
+                    this.bajaForm.patchValue({ nombre: usuario.nombre, cargo: usuario.cargo }, { emitEvent: false });
                 } else {
-                    this.bajaForm.patchValue({
-                        nombre: '',
-                        cargo: ''
-                    }, { emitEvent: false });
+                    this.bajaForm.patchValue({ nombre: '', cargo: '' }, { emitEvent: false });
                 }
             });
 
-        // Validación de fecha futura
         this.bajaForm.get('fecha')?.valueChanges
             .pipe(takeUntil(this._unsubscribeAll))
             .subscribe(value => {
                 if (value) {
                     const selectedDate = new Date(value);
-                    const today = new Date();
-                    today.setHours(0, 0, 0, 0);
-
-                    if (selectedDate > today) {
+                    const todayDate = new Date();
+                    todayDate.setHours(0, 0, 0, 0);
+                    if (selectedDate > todayDate) {
                         this.bajaForm.get('fecha')?.setErrors({ futureDate: true });
                         this.showMessage('La fecha no puede ser futura', 'warning');
                     }
@@ -304,18 +208,48 @@ export class BajaComponent implements OnInit {
         });
     }
 
+    // MODAL DE DATOS GENERALES
+    abrirModalDatos(): void {
+        this.activeDialog = this.dialog.open(this.datosBajaModal, {
+            panelClass: ['!p-0', '!bg-transparent', '!shadow-none'],
+            disableClose: true,
+            maxWidth: '100vw'
+        });
+    }
+
+    cerrarModalDatos(): void {
+        if (this.bajaForm.invalid) {
+            this.bajaForm.markAllAsTouched();
+            this.showMessage('Complete los campos obligatorios.', 'error');
+            return;
+        }
+        if (this.activeDialog) {
+            this.activeDialog.close();
+            this.activeDialog = null;
+        }
+    }
+
+    cancelarModalDatos(): void {
+        if (this.activeDialog) {
+            this.activeDialog.close();
+            this.activeDialog = null;
+        }
+    }
+
+// En el archivo baja.component.ts
     async openHerramientaABaja(): Promise<void> {
         try {
             const { HerramientaABajaComponent } = await import('./herramienta-a-baja/herramienta-a-baja.component');
 
             const dialogRef = this.dialog.open(HerramientaABajaComponent, {
-                width: '1100px',
+                width: '850px', // Ancho perfecto para 2 columnas holgadas
                 maxWidth: '95vw',
                 height: 'auto',
-                maxHeight: '90vh',
-                panelClass: ['neo-dialog', 'border-2', 'border-black'],
+                maxHeight: '95vh',
+                // Estas 4 clases son CRUCIALES para evitar el desbordamiento blanco:
+                panelClass: ['!p-0', '!bg-transparent', '!shadow-none', '!border-none'],
                 hasBackdrop: true,
-                disableClose: false,
+                disableClose: true,
                 autoFocus: false
             });
 
@@ -344,24 +278,11 @@ export class BajaComponent implements OnInit {
             contenido: data.contenido || '',
             base: data.base || '',
             marca: data.marca || '',
+            estadoFisico: data.estadoFisico || 'INSERVIBLE',
             selected: false,
             expanded: false
         };
-
         this.dataSource.update(items => [...items, newItem]);
-        this.showMessage(`Herramienta ${newItem.codigo} agregada a la lista`, 'success');
-    }
-
-    removeLastItem(): void {
-        if (this.dataSource().length > 0) {
-            const removed = this.dataSource()[this.dataSource().length - 1];
-            this.dataSource.update(items => {
-                const newItems = [...items];
-                newItems.pop();
-                return newItems;
-            });
-            this.showMessage(`Última herramienta (${removed.codigo}) removida`, 'info');
-        }
     }
 
     removeItem(index: number): void {
@@ -376,13 +297,6 @@ export class BajaComponent implements OnInit {
         }
     }
 
-    clearAllItems(): void {
-        if (this.dataSource().length > 0 && confirm('¿Eliminar todas las herramientas de la lista?')) {
-            this.dataSource.set([]);
-            this.showMessage('Lista de herramientas vaciada', 'info');
-        }
-    }
-
     getTotalCantidad(): number {
         return this.dataSource().reduce((total, item) => total + (Number(item.cantidad) || 1), 0);
     }
@@ -392,78 +306,26 @@ export class BajaComponent implements OnInit {
         return estado ? estado.label : 'No definido';
     }
 
-    getEstadoIcon(estadoValue: string): string {
-        const estado = this.estados.find(e => e.value === estadoValue);
-        return estado ? estado.icon : 'help_outline';
-    }
-
-    getEstadoColor(estadoValue: string): string {
-        const estado = this.estados.find(e => e.value === estadoValue);
-        return estado ? estado.color : 'gray';
-    }
-
-    formatDateTime(): string {
-        const fecha = this.bajaForm.get('fecha')?.value;
-        const hora = this.bajaForm.get('hora')?.value;
-
-        if (fecha && hora) {
-            try {
-                const [year, month, day] = fecha.split('-');
-                const date = new Date(year, month - 1, day);
-                const formattedDate = date.toLocaleDateString('es-ES', {
-                    day: '2-digit',
-                    month: '2-digit',
-                    year: 'numeric'
-                });
-                return `${formattedDate} ${hora}`;
-            } catch {
-                return `${fecha} ${hora}`;
-            }
-        }
-        return 'No definido';
-    }
-
     isProcessValid(): boolean {
-        // Validar formulario
         if (this.bajaForm.invalid) return false;
-
-        // Validar que haya al menos una herramienta
-        if (this.dataSource().length === 0) return false;
-
-        // Validar campos requeridos específicos
-        const procesadoPor = this.bajaForm.get('procesadoPor')?.value;
-        const fecha = this.bajaForm.get('fecha')?.value;
-        const hora = this.bajaForm.get('hora')?.value;
-        const estado = this.bajaForm.get('estado')?.value;
-
-        return !!(procesadoPor && fecha && hora && estado);
+        const fv = this.bajaForm.value;
+        return !!(fv.procesadoPor && fv.fecha && fv.hora && fv.estado);
     }
 
     procesarEImprimir(): void {
         if (!this.isProcessValid()) {
-            if (this.dataSource().length === 0) {
-                this.showMessage('Agregue al menos una herramienta para procesar', 'error');
-                return;
-            }
-
             this.bajaForm.markAllAsTouched();
+            this.abrirModalDatos();
+            this.showMessage('Complete los campos de configuración.', 'error');
+            return;
+        }
 
-            // Mostrar campos faltantes
-            if (this.bajaForm.get('procesadoPor')?.invalid) {
-                this.showMessage('Complete el campo "Procesado Por"', 'error');
-            } else if (this.bajaForm.get('fecha')?.invalid) {
-                this.showMessage('Complete la fecha', 'error');
-            } else if (this.bajaForm.get('hora')?.invalid) {
-                this.showMessage('Complete la hora', 'error');
-            } else if (this.bajaForm.get('estado')?.invalid) {
-                this.showMessage('Complete el estado', 'error');
-            }
-
+        if (this.dataSource().length === 0) {
+            this.showMessage('Agregue al menos una herramienta para dar de baja.', 'error');
             return;
         }
 
         this.isLoading = true;
-
         const fv      = this.bajaForm.getRawValue();
         const items   = this.dataSource();
         const usuario = this.usuarios.find(u => u.value === fv.procesadoPor);
@@ -490,10 +352,9 @@ export class BajaComponent implements OnInit {
             next: (results: any[]) => {
                 const nro = results[0]?.decommission_number || results[0]?.record_number || 'BJA';
                 this.nroNota.set(nro);
-                this.generarReporteBaja({ nroNota: nro, ...fv, herramientas: items });
+                this.generarReporteBaja({ nroNota: nro, ...fv, herramientas: items, totalHerramientas: items.length, totalItems: this.getTotalCantidad() });
                 this.showMessage(`Baja ${this.nroNota()} procesada exitosamente`, 'success');
 
-                // Navegar después de éxito
                 setTimeout(() => {
                     if (this.dialogRef) {
                         this.dialogRef.close({ success: true });
@@ -514,13 +375,8 @@ export class BajaComponent implements OnInit {
             this.showMessage('Permita ventanas emergentes para imprimir', 'warning');
             return;
         }
-
         const fechaActual = new Date().toLocaleDateString('es-ES', {
-            day: '2-digit',
-            month: '2-digit',
-            year: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit'
+            day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit'
         });
 
         const htmlContent = `
@@ -530,106 +386,21 @@ export class BajaComponent implements OnInit {
     <meta charset="UTF-8">
     <title>Baja de Herramientas - ${processData.nroNota}</title>
     <style>
-        body {
-            font-family: 'Arial', sans-serif;
-            margin: 30px;
-            font-size: 12px;
-            color: #000;
-        }
-        .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-bottom: 3px solid #000;
-            padding-bottom: 15px;
-            margin-bottom: 20px;
-        }
-        .logo {
-            font-size: 24px;
-            font-weight: 900;
-            text-transform: uppercase;
-        }
-        .nota {
-            background: #000;
-            color: #fff;
-            padding: 8px 20px;
-            font-weight: 900;
-            border: 2px solid #000;
-            letter-spacing: 1px;
-        }
-        h1 {
-            text-align: center;
-            background: #ef4444;
-            color: white;
-            padding: 12px;
-            border: 2px solid #000;
-            font-weight: 900;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-        }
-        .info-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 20px;
-            margin-bottom: 30px;
-        }
-        .info-box {
-            border: 2px solid #000;
-            padding: 15px;
-            box-shadow: 4px 4px 0px 0px #000;
-        }
-        .info-box h3 {
-            margin: -15px -15px 15px -15px;
-            padding: 8px 15px;
-            background: #0F172A;
-            color: white;
-            font-size: 14px;
-            font-weight: 900;
-            text-transform: uppercase;
-        }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin: 20px 0;
-            border: 2px solid #000;
-        }
-        th {
-            background: #0F172A;
-            color: white;
-            padding: 10px;
-            text-align: left;
-            font-size: 11px;
-            font-weight: 900;
-            text-transform: uppercase;
-            border: 1px solid #000;
-        }
-        td {
-            padding: 8px 10px;
-            border: 1px solid #000;
-        }
-        .footer {
-            margin-top: 50px;
-            display: flex;
-            justify-content: space-around;
-        }
-        .signature {
-            text-align: center;
-            width: 200px;
-        }
-        .signature-line {
-            border-top: 2px solid #000;
-            margin-top: 50px;
-            padding-top: 10px;
-            font-weight: 900;
-        }
-        .badge {
-            display: inline-block;
-            padding: 3px 8px;
-            background: #ef4444;
-            color: white;
-            font-weight: 900;
-            border: 1px solid #000;
-        }
+        body { font-family: 'Arial', sans-serif; margin: 30px; font-size: 12px; color: #000; }
+        .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid #000; padding-bottom: 15px; margin-bottom: 20px; }
+        .logo { font-size: 24px; font-weight: 900; text-transform: uppercase; }
+        .nota { background: #000; color: #fff; padding: 8px 20px; font-weight: 900; border: 2px solid #000; letter-spacing: 1px; }
+        h1 { text-align: center; background: #ef4444; color: white; padding: 12px; border: 2px solid #000; font-weight: 900; text-transform: uppercase; letter-spacing: 2px; }
+        .info-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 30px; }
+        .info-box { border: 2px solid #000; padding: 15px; box-shadow: 4px 4px 0px 0px #000; }
+        .info-box h3 { margin: -15px -15px 15px -15px; padding: 8px 15px; background: #0F172A; color: white; font-size: 14px; font-weight: 900; text-transform: uppercase; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; border: 2px solid #000; }
+        th { background: #0F172A; color: white; padding: 10px; text-align: left; font-size: 11px; font-weight: 900; text-transform: uppercase; border: 1px solid #000; }
+        td { padding: 8px 10px; border: 1px solid #000; }
+        .footer { margin-top: 50px; display: flex; justify-content: space-around; }
+        .signature { text-align: center; width: 200px; }
+        .signature-line { border-top: 2px solid #000; margin-top: 50px; padding-top: 10px; font-weight: 900; }
+        .badge { display: inline-block; padding: 3px 8px; background: #ef4444; color: white; font-weight: 900; border: 1px solid #000; }
     </style>
 </head>
 <body>
@@ -637,9 +408,7 @@ export class BajaComponent implements OnInit {
         <div class="logo">BOA - SISTEMA DE HERRAMIENTAS</div>
         <div class="nota">${processData.nroNota}</div>
     </div>
-
     <h1>ACTA DE BAJA DE HERRAMIENTAS</h1>
-
     <div class="info-grid">
         <div class="info-box">
             <h3>PROCESADO POR</h3>
@@ -661,20 +430,11 @@ export class BajaComponent implements OnInit {
             <p><strong>Unidad:</strong> ${processData.unidad || 'No especificada'}</p>
         </div>
     </div>
-
     <h2 style="font-size: 16px; margin: 20px 0 10px 0;">LISTA DE HERRAMIENTAS DADAS DE BAJA</h2>
-
     <table>
         <thead>
             <tr>
-                <th>#</th>
-                <th>CÓDIGO</th>
-                <th>P/N</th>
-                <th>S/N</th>
-                <th>DESCRIPCIÓN</th>
-                <th>CANT.</th>
-                <th>BASE</th>
-                <th>MARCA</th>
+                <th>#</th><th>CÓDIGO</th><th>P/N</th><th>S/N</th><th>DESCRIPCIÓN</th><th>ESTADO</th><th>CANT.</th>
             </tr>
         </thead>
         <tbody>
@@ -685,27 +445,20 @@ export class BajaComponent implements OnInit {
                 <td>${item.pn || '-'}</td>
                 <td>${item.sn || '-'}</td>
                 <td>${item.nombre || item.descripcion || '-'}</td>
+                <td>${item.estadoFisico || '-'}</td>
                 <td style="text-align: center;"><strong>${item.cantidad || 1}</strong></td>
-                <td>${item.base || '-'}</td>
-                <td>${item.marca || '-'}</td>
-            </tr>
-            `).join('')}
+            </tr>`).join('')}
         </tbody>
     </table>
-
     <div style="display: flex; justify-content: space-between; margin: 20px 0; padding: 15px; border: 2px solid #000; background: #f3f4f6;">
-        <div><strong>TOTAL HERRAMIENTAS:</strong> ${processData.totalHerramientas}</div>
-        <div><strong>TOTAL ÍTEMS:</strong> ${processData.totalItems}</div>
+        <div><strong>TOTAL LÍNEAS:</strong> ${processData.totalHerramientas}</div>
+        <div><strong>TOTAL UND:</strong> ${processData.totalItems}</div>
         <div><strong>FECHA PROCESAMIENTO:</strong> ${fechaActual}</div>
     </div>
-
     ${processData.observaciones ? `
     <div style="margin: 20px 0; padding: 15px; border: 2px solid #000;">
-        <strong>OBSERVACIONES:</strong><br>
-        ${processData.observaciones}
-    </div>
-    ` : ''}
-
+        <strong>OBSERVACIONES:</strong><br>${processData.observaciones}
+    </div>` : ''}
     <div class="footer">
         <div class="signature">
             <div class="signature-line">PROCESADO POR</div>
@@ -721,52 +474,20 @@ export class BajaComponent implements OnInit {
             <p style="margin-top: 5px;">${processData.autorizadoPor || '____________________'}</p>
         </div>
     </div>
-
-    <div style="text-align: center; margin-top: 40px; font-size: 10px; color: #666; border-top: 1px solid #ccc; padding-top: 15px;">
-        Documento generado desde el Sistema de Gestión de Herramientas - BOA<br>
-        Fecha de impresión: ${new Date().toLocaleString('es-BO')}
-    </div>
 </body>
 </html>`;
-
         const printHtml = htmlContent.replace('</body>', '<script>window.onload=function(){setTimeout(function(){window.print();},500);};<\/script></body>');
         printWindow.document.write(printHtml);
         printWindow.document.close();
         printWindow.focus();
     }
 
-    // Helpers para validación
     hasError(field: string, error: string): boolean {
         const control = this.bajaForm.get(field);
         return control ? control.hasError(error) && control.touched : false;
     }
 
-    // Navegación
-    goBack(): void {
-        if (this.dataSource().length > 0 || this.bajaForm.dirty) {
-            if (confirm('Hay cambios sin guardar. ¿Desea salir?')) {
-                this.cerrarVentana();
-            }
-        } else {
-            this.cerrarVentana();
-        }
-    }
-
-    private cerrarVentana(): void {
-        if (this.dialogRef) {
-            this.dialogRef.close();
-        } else {
-            this.router.navigate(['/salidas']);
-        }
-    }
-
-    // Snackbar
     private showMessage(message: string, type: 'success' | 'error' | 'warning' | 'info'): void {
-        this.snackBar.open(message, 'OK', {
-            duration: 3000,
-            panelClass: [`snackbar-${type}`],
-            horizontalPosition: 'center',
-            verticalPosition: 'bottom'
-        });
+        this.snackBar.open(message, 'OK', { duration: 3000, panelClass: [`snackbar-${type}`], horizontalPosition: 'center', verticalPosition: 'top' });
     }
 }

@@ -6,6 +6,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { DragDropModule } from '@angular/cdk/drag-drop';
 import { CalibrationService } from '../../../../../core/services/calibration.service';
 import { MaintenanceService } from '../../../../../core/services/maintenance.service';
 import { AuditRow } from '../consulta-auditoria.component';
@@ -21,6 +22,7 @@ import { AuditRow } from '../consulta-auditoria.component';
         MatProgressSpinnerModule,
         MatSnackBarModule,
         MatTooltipModule,
+        DragDropModule,
     ],
     templateUrl: './form-detalle.component.html',
 })
@@ -103,9 +105,7 @@ export class FormDetalleComponent {
                 this.isPrinting.set(false);
             }, 1500);
         } else if (this.row.tipo_registro === 'mantenimiento') {
-            // Para mantenimiento, cuando el backend esté listo
-            // this.maintenanceService.generarYVerPdfEnvioMantenimiento(this.row.id);
-            this.imprimirDetalleFallback();
+            this.maintenanceService.generarYVerPdfEnvioMantenimiento(this.row.id);
             setTimeout(() => {
                 this.isPrinting.set(false);
             }, 1500);

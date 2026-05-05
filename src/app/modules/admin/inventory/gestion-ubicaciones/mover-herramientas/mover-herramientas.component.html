@@ -1,0 +1,79 @@
+<div class="bg-[#f8f9fc] dark:bg-slate-900 border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] overflow-hidden flex flex-col font-sans"
+     style="width:560px; max-width:95vw">
+
+    <div class="bg-[#0F172AFF] text-white px-5 py-3 flex justify-between items-center shrink-0"
+         cdkDrag cdkDragRootElement=".cdk-overlay-pane" cdkDragHandle>
+        <div class="flex items-center gap-3">
+            <div class="w-8 h-8 bg-white border-2 border-black rounded flex items-center justify-center shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+                <mat-icon class="text-black !text-base">swap_horiz</mat-icon>
+            </div>
+            <div>
+                <h2 class="text-sm font-black uppercase tracking-tight leading-none">Mover Herramientas</h2>
+                <p class="text-[10px] text-white font-bold uppercase mt-0.5">{{ count }} herramienta{{ count === 1 ? '' : 's' }} seleccionada{{ count === 1 ? '' : 's' }}</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="p-5 flex flex-col gap-4">
+
+        <!-- ORIGEN -->
+        <div class="bg-blue-500 dark:bg-slate-800 border-2 border-black rounded-xl p-3 flex items-center gap-2">
+            <mat-icon class="!text-base text-white dark:text-gray-300">my_location</mat-icon>
+            <span class="text-[11px] text-white font-black uppercase">Origen actual:</span>
+            <span class="px-2 py-0.5 bg-white dark:bg-slate-900 border-2 border-black rounded font-mono text-[10px] font-black">{{ currentRackCode }}</span>
+        </div>
+
+        <!-- DESTINO -->
+        <form [formGroup]="form" class="flex flex-col gap-3">
+
+            <p class="text-[10px] font-black uppercase text-black dark:text-gray-300 flex items-center gap-1">
+                <mat-icon class="!text-sm text-green-500">place</mat-icon> Destino
+            </p>
+
+            <div>
+                <label class="text-[10px] font-black uppercase text-black dark:text-gray-300 mb-1 block">Almacén *</label>
+                <select formControlName="warehouseId"
+                        class="w-full h-10 text-sm font-bold bg-white dark:bg-slate-800 border-2 border-black rounded-lg px-2 focus:shadow-[2px_2px_0px_0px_#000] outline-none transition-all">
+                    <option [ngValue]="null">— Seleccionar almacén —</option>
+                    <option *ngFor="let a of almacenes" [ngValue]="a.id">{{ a.codigo }} · {{ a.nombre }}</option>
+                </select>
+            </div>
+
+            <div>
+                <label class="text-[10px] font-black uppercase text-black dark:text-gray-300 mb-1 block">Estante *</label>
+                <select formControlName="rackId" [disabled]="!racks().length"
+                        class="w-full h-10 text-sm font-bold bg-white dark:bg-slate-800 border-2 border-black rounded-lg px-2 focus:shadow-[2px_2px_0px_0px_#000] outline-none transition-all disabled:opacity-60">
+                    <option [ngValue]="null">— Seleccionar estante —</option>
+                    <option *ngFor="let r of racks()" [ngValue]="r.id">{{ r.codigo }} · {{ r.nombre }}</option>
+                </select>
+            </div>
+
+            <div>
+                <label class="text-[10px] font-black uppercase text-black dark:text-gray-300 mb-1 block">Nivel *</label>
+                <select formControlName="levelId" [disabled]="!niveles().length"
+                        class="w-full h-10 text-sm font-bold bg-white dark:bg-slate-800 border-2 border-black rounded-lg px-2 focus:shadow-[2px_2px_0px_0px_#000] outline-none transition-all disabled:opacity-60">
+                    <option [ngValue]="null">— Seleccionar nivel —</option>
+                    <option *ngFor="let l of niveles()" [ngValue]="l.id" [disabled]="l.id === currentLevelId">
+                        N{{ l.numero }} · {{ l.codigo }} · {{ l.nombre }}
+                        <ng-container *ngIf="l.id === currentLevelId"> (origen)</ng-container>
+                    </option>
+                </select>
+            </div>
+
+            <div *ngIf="isCurrentLevel()" class="bg-red-100 border-2 border-[#FF1414FF] rounded-lg p-2 text-[11px] font-bold text-red-800">
+                El nivel destino no puede ser el mismo que el origen.
+            </div>
+        </form>
+    </div>
+
+    <div class="bg-gray-200 dark:bg-slate-800 border-t-2 border-black px-5 py-3 flex justify-end gap-2 shrink-0">
+        <button (click)="cerrar()"
+                class="px-4 py-1.5 bg-[#FF1414FF] text-white font-black text-[10px] border-2 border-black rounded-lg shadow-[2px_2px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all uppercase">
+            Cancelar
+        </button>
+        <button (click)="confirmar()" [disabled]="form.invalid || isCurrentLevel()"
+                class="px-4 py-1.5 bg-amber-400 text-black font-black text-[10px] border-2 border-black rounded-lg shadow-[2px_2px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all uppercase flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:shadow-[2px_2px_0px_0px_#000] disabled:hover:translate-x-0 disabled:hover:translate-y-0">
+            <mat-icon class="!text-sm">check</mat-icon> Mover {{ count }}
+        </button>
+    </div>
+</div>

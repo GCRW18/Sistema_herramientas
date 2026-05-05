@@ -92,6 +92,7 @@ export class ConsultaAuditoriaComponent implements OnInit, OnDestroy {
     filterEmpresa = '';
     filterDateFrom = '';
     filterDateTo = '';
+    is90DaysActive = false;
 
     // Stats para los chips de cabecera
     statCerrados = 0;
@@ -120,6 +121,17 @@ export class ConsultaAuditoriaComponent implements OnInit, OnDestroy {
         const year = new Date().getFullYear();
         this.filterDateFrom = `${year}-01-01`;
         this.filterDateTo = new Date().toISOString().split('T')[0];
+        this.is90DaysActive = false;
+    }
+
+    apply90DaysFilter(): void {
+        const today = new Date();
+        const from = new Date(today);
+        from.setDate(from.getDate() - 90);
+        this.filterDateFrom = from.toISOString().split('T')[0];
+        this.filterDateTo = today.toISOString().split('T')[0];
+        this.is90DaysActive = true;
+        this.applyFilters();
     }
 
     loadLaboratorios(): void {
@@ -143,6 +155,10 @@ export class ConsultaAuditoriaComponent implements OnInit, OnDestroy {
         this.filterEmpresa = '';
         this.resetDateFilters();
         this.applyFilters();
+    }
+
+    onDateChange(): void {
+        this.is90DaysActive = false;
     }
 
     async applyFilters(): Promise<void> {
@@ -269,12 +285,18 @@ export class ConsultaAuditoriaComponent implements OnInit, OnDestroy {
     imprimirReporte(): void {
         const win = window.open('', '_blank');
         if (!win) return;
+        const titulo = this.is90DaysActive
+            ? `Histórico Últimos 90 Días — ${this.formatDate(this.filterDateFrom)} al ${this.formatDate(this.filterDateTo)}`
+            : 'Registro Histórico de Auditoría Técnica';
         const rowsHtml = this.rows().map(r => `
             <tr>
                 <td><strong>${r.record_number}</strong></td>
                 <td>${this.getTipoLabel(r.tipo_registro)}</td>
-                <td>${r.tool_name} <br><small>${r.tool_code}</small></td>
+                <td>${r.tool_name}<br><small style="color:#666">${r.tool_code}</small></td>
+                <td>${r.provider}</td>
                 <td>${this.formatDate(r.send_date)}</td>
+                <td>${r.return_date ? this.formatDate(r.return_date) : '—'}</td>
+                <td>${r.certificate_number || '—'}</td>
                 <td>${this.getStatusLabel(r.status)}</td>
             </tr>
         `).join('');
@@ -283,13 +305,21 @@ export class ConsultaAuditoriaComponent implements OnInit, OnDestroy {
             <html><head><style>
                 body{font-family:sans-serif; padding:20px; color:#0F172AFF;}
                 table{width:100%; border-collapse:collapse; border: 3px solid #000;}
-                th,td{border: 2px solid #000; padding:10px; text-align:left; font-size:12px;}
-                th{background:#f87171; color:white; font-weight:900; text-transform:uppercase;}
+                th,td{border: 2px solid #000; padding:8px; text-align:left; font-size:11px;}
+                th{background:#f87171; color:white; font-weight:900; text-transform:uppercase; font-size:10px;}
                 h2 { font-weight: 900; text-transform: uppercase; border-bottom: 4px solid #000; padding-bottom: 10px; display:inline-block; }
+                .badge { display:inline-block; background:#fbbf24; color:#000; font-weight:900; font-size:10px; padding:2px 8px; border:2px solid #000; text-transform:uppercase; margin-bottom:8px; }
+                .meta { font-size:9px; color:#888; margin-top:8px; }
             </style></head>
             <body>
-                <h2>Registro Histórico de Auditoría Técnica</h2>
-                <table><thead><tr><th>N° Registro</th><th>Tipo</th><th>Equipo / Herramienta</th><th>Fecha Envío</th><th>Estado</th></tr></thead>
+                ${this.is90DaysActive ? '<div class="badge">Últimos 90 días</div>' : ''}
+                <h2>${titulo}</h2>
+                <div class="meta">Total registros: ${this.rows().length} &nbsp;|&nbsp; Generado: ${new Date().toLocaleDateString('es-BO')}</div>
+                <table><thead><tr>
+                    <th>N° Registro</th><th>Tipo</th><th>Equipo / Herramienta</th>
+                    <th>Proveedor / Lab</th><th>Fecha Envío</th><th>Retorno</th>
+                    <th>N° Certificado</th><th>Estado</th>
+                </tr></thead>
                 <tbody>${rowsHtml}</tbody></table>
                 <script>window.print()</script>
             </body></html>

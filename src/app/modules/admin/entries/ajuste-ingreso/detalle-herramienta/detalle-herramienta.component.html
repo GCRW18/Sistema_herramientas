@@ -1,619 +1,159 @@
-<div class="flex flex-col w-full h-full bg-[#f8f9fc] dark:bg-[#0F172AFF] transition-colors duration-300 font-sans overflow-hidden relative"
-     cdkDrag cdkDragRootElement=".cdk-overlay-pane" cdkDragBoundary=".cdk-overlay-container">
+<div class="bg-white dark:bg-slate-900 border-[3px] border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] flex flex-col font-sans h-auto max-h-[90vh]">
 
-    <div class="fixed top-20 right-10 w-40 h-40 bg-[#111A43] rounded-full border-4 border-black opacity-5 pointer-events-none"></div>
-    <div class="fixed bottom-10 left-10 w-24 h-24 bg-amber-400 rotate-12 border-4 border-black opacity-10 pointer-events-none"></div>
+    <div class="bg-black text-white px-4 py-2 border-b-[3px] border-black flex justify-between items-center shrink-0">
+        <div class="flex items-center gap-2">
+            <mat-icon class="!text-white">{{ isEditMode() ? 'edit' : 'add_box' }}</mat-icon>
+            <h2 class="text-sm font-black uppercase tracking-tight leading-none">{{ isEditMode() ? 'Editar Ajuste' : 'Añadir Ítem' }}</h2>
+        </div>
+        <button (click)="cerrar()" class="hover:bg-white hover:text-black rounded px-1 py-0.5 transition-colors" matTooltip="Cerrar">
+            <mat-icon class="!text-sm">close</mat-icon>
+        </button>
+    </div>
 
-    <div class="flex-1 overflow-y-auto p-4 md:p-6 relative custom-scrollbar">
+    <div class="p-3 bg-[#f8f9fc] dark:bg-slate-900 custom-scrollbar overflow-y-auto">
+        <form [formGroup]="detalleForm" class="grid grid-cols-1 md:grid-cols-12 gap-4">
 
-        <!-- Header -->
-        <div class="flex flex-col md:flex-row md:items-center justify-between mb-3 relative z-10 gap-2">
-            <div class="flex items-center gap-2">
-                <button (click)="showCrearNueva() ? volverADetalle() : cerrar()"
-                        class="w-8 h-8 bg-white dark:bg-slate-800 border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] active:shadow-none active:translate-x-1 active:translate-y-1 hover:bg-white hover:scale-105 transition-all flex items-center justify-center rounded cursor-pointer"
-                        (mousedown)="$event.stopPropagation()">
-                    <mat-icon class="!text-base text-black dark:text-white">arrow_back</mat-icon>
-                </button>
+            <div class="md:col-span-7 flex flex-col gap-3">
+
                 <div>
-                    <h1 class="text-sm font-black text-black dark:text-white uppercase tracking-tight leading-none">
-                        {{ showCrearNueva() ? 'Crear Nueva Herramienta' : (isEditMode() ? 'Editar Herramienta' : 'Detalle Herramienta') }}
-                    </h1>
-                    <div class="flex items-center gap-2 mt-1">
-                        <p class="text-xs font-bold px-2 py-0.5 rounded-sm border"
-                           [ngClass]="showCrearNueva() ? 'bg-green-500 text-white border-green-700' : (isEditMode() ? 'bg-blue-400 text-black border-black' : 'bg-[#111A43] text-white border-white')">
-                            {{ showCrearNueva() ? 'REGISTRO NUEVO' : (isEditMode() ? 'MODO EDICION' : 'AJUSTE INVENTARIO') }}
-                        </p>
+                    <label class="text-[10px] font-black uppercase text-black dark:text-white flex justify-between items-center mb-1">
+                        <span>Buscar Herramienta *</span>
+                        <span *ngIf="isSearching()" class="text-gray-500 flex items-center gap-1"><mat-spinner diameter="10"></mat-spinner></span>
+                    </label>
+                    <div class="relative flex items-center gap-2">
+                        <div class="relative flex-1">
+                            <input type="text" formControlName="buscar" [matAutocomplete]="autoHerramienta" (input)="onBuscarChange($any($event.target).value)"
+                                   class="w-full h-8 text-xs font-black uppercase border-2 border-black rounded px-2 pl-8 bg-white dark:bg-slate-800 text-black dark:text-white outline-none focus:shadow-[2px_2px_0px_0px_#000]"
+                                   [class]="!detalleForm.get('toolId')?.value && detalleForm.get('buscar')?.touched ? 'border-red-500' : 'border-black'">
+                            <mat-icon class="absolute left-2 top-1/2 -translate-y-1/2 text-black dark:text-white !text-sm pointer-events-none">search</mat-icon>
+
+                            <mat-autocomplete #autoHerramienta="matAutocomplete" [displayWith]="displayHerramienta" (optionSelected)="selectHerramienta($event.option.value)">
+                                <mat-option *ngFor="let h of filteredHerramientas" [value]="h" class="border-b border-black">
+                                    <div class="flex flex-col py-1 leading-tight">
+                                        <span class="font-black text-xs text-black">{{ h.codigo }}</span>
+                                        <span class="text-[9px] text-gray-700 font-bold">{{ h.nombre }} | P/N: {{ h.pn }}</span>
+                                    </div>
+                                </mat-option>
+                            </mat-autocomplete>
+                        </div>
+                        <button type="button" *ngIf="detalleForm.get('toolId')?.value" (click)="clearSearch()"
+                                class="w-8 h-8 bg-white text-black border-2 border-black rounded shadow-[2px_2px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none flex items-center justify-center shrink-0">
+                            <mat-icon class="!text-sm">close</mat-icon>
+                        </button>
                     </div>
                 </div>
-            </div>
 
-            <div class="flex gap-3">
-                <ng-container *ngIf="showCrearNueva(); else normalButtons">
-                    <button type="button" (click)="registrarNueva()"
-                            class="px-3 py-1.5 bg-green-500 text-white font-black text-xs border-2 border-black rounded shadow-[2px_2px_0px_0px_#000] hover:shadow-[1px_1px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px] active:shadow-none transition-all uppercase flex items-center gap-2">
-                        <mat-icon class="!text-sm !w-4 !h-4">save</mat-icon>
-                        Registrar
-                    </button>
-                    <button type="button" (click)="finalizarNueva()"
-                            class="px-3 py-1.5 bg-[#111A43] text-white font-black text-xs border-2 border-black rounded shadow-[2px_2px_0px_0px_#000] hover:shadow-[1px_1px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px] active:shadow-none transition-all uppercase flex items-center gap-2">
-                        <mat-icon class="!text-sm !w-4 !h-4">check_circle</mat-icon>
-                        Finalizar
-                    </button>
-                </ng-container>
-                <ng-template #normalButtons>
-                    <button type="button" (click)="procesar()"
-                            class="px-3 py-1.5 bg-yellow-300 text-black font-black text-xs border-2 border-black rounded shadow-[2px_2px_0px_0px_#000] hover:shadow-[1px_1px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px] active:shadow-none transition-all uppercase">
-                        {{ isEditMode() ? 'Actualizar' : 'Agregar' }}
-                    </button>
-                    <button type="button" (click)="cerrar()"
-                            class="px-3 py-1.5 bg-red-600 text-white font-black text-xs border-2 border-black rounded shadow-[2px_2px_0px_0px_#000] hover:shadow-[1px_1px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px] active:shadow-none transition-all uppercase">
-                        Cancelar
-                    </button>
-                </ng-template>
-            </div>
-        </div>
-
-        <!-- ============================================ -->
-        <!-- FORMULARIO CREAR NUEVA HERRAMIENTA (H1.png) -->
-        <!-- ============================================ -->
-        <div *ngIf="showCrearNueva()" class="flex flex-col gap-3 relative z-10">
-
-            <!-- Seccion: Datos Principales -->
-            <div class="neo-card-base bg-white dark:bg-slate-800 p-3">
-                <div class="flex items-center gap-1.5 px-3 py-1.5 -mx-3 -mt-3 mb-3 bg-[#0F172AFF] border-b-2 border-black">
-                    <mat-icon class="text-amber-400 !text-sm">build</mat-icon>
-                    <span class="font-black text-xs uppercase text-white">Datos de la Herramienta</span>
+                <div class="border-2 border-black bg-gray-100 dark:bg-slate-800 p-2 rounded">
+                    <h3 class="font-black text-[10px] uppercase text-black dark:text-white border-b-2 border-black pb-1 mb-1">Datos Fijos</h3>
+                    <ul class="text-[10px] text-black dark:text-white font-medium space-y-0.5">
+                        <li class="flex items-start"><span class="font-black w-14 shrink-0">Código:</span> <span>{{ detalleForm.value.codigo || '-' }}</span></li>
+                        <li class="flex items-start"><span class="font-black w-14 shrink-0">P/N:</span> <span>{{ detalleForm.value.pn || '-' }}</span></li>
+                        <li class="flex items-start"><span class="font-black w-14 shrink-0">S/N:</span> <span>{{ detalleForm.value.sn || '-' }}</span></li>
+                        <li class="flex items-start"><span class="font-black w-14 shrink-0">Descrip:</span> <span class="truncate">{{ detalleForm.value.nombre || '-' }}</span></li>
+                        <li class="flex items-start"><span class="font-black w-14 shrink-0">Marca:</span> <span>{{ detalleForm.value.marca || '-' }}</span></li>
+                    </ul>
                 </div>
 
-                <form [formGroup]="crearNuevaForm">
-                    <!-- Fila 1: Codigo BoaMM + Fabricacion -->
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-2 mb-2">
-                        <div class="form-group">
-                            <label class="text-[9px] font-black uppercase text-black dark:text-gray-400 mb-0.5 block">
-                                Codigo de BoaMM *
-                            </label>
-                            <div class="flex gap-2">
-                                <input type="text" formControlName="codigoBoaMM"
-                                       placeholder="BOA-H-94"
-                                       class="flex-1 h-8 text-xs font-bold border-2 border-black dark:border-slate-600 rounded px-2 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[2px_2px_0px_0px_#000] transition-shadow outline-none placeholder:text-gray-400">
-                                <button type="button" (click)="generarCodigoNueva()"
-                                        class="h-8 w-8 bg-[#111A43] text-white font-bold border-2 border-black rounded shadow-[2px_2px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all flex items-center justify-center"
-                                        matTooltip="Generar codigo">
-                                    <mat-icon class="!text-sm">auto_awesome</mat-icon>
-                                </button>
-                            </div>
-                        </div>
+                <div class="border-2 border-black bg-white dark:bg-slate-800 p-2 rounded flex flex-col gap-2">
+                    <h3 class="font-black text-[10px] uppercase text-black dark:text-white border-b-2 border-black pb-1">Configuración Ajuste</h3>
 
-                        <div class="form-group">
-                            <label class="text-[9px] font-black uppercase text-black dark:text-gray-400 mb-0.5 block">
-                                Fabricacion *
-                            </label>
-                            <select formControlName="fabricacion"
-                                    class="w-full h-8 text-xs font-bold border-2 border-black dark:border-slate-600 rounded px-2 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[2px_2px_0px_0px_#000] transition-shadow outline-none appearance-none cursor-pointer">
-                                <option value="">Seleccionar...</option>
-                                <option *ngFor="let fab of fabricaciones" [value]="fab">{{ fab }}</option>
+                    <div class="grid grid-cols-3 gap-2">
+                        <div>
+                            <label class="text-[9px] font-black uppercase text-black dark:text-white block mb-0.5">Cant.*</label>
+                            <input type="number" formControlName="cantidad" min="1"
+                                   class="w-full h-7 text-xs text-center font-black border-2 border-black rounded px-1 bg-white dark:bg-slate-800 text-black dark:text-white outline-none focus:shadow-[2px_2px_0px_0px_#000]"
+                                   [class]="hasError('cantidad','required') ? 'border-red-500' : 'border-black'">
+                        </div>
+                        <div>
+                            <label class="text-[9px] font-black uppercase text-black dark:text-white block mb-0.5">Unidad*</label>
+                            <select formControlName="um" class="w-full h-7 text-[9px] font-bold border-2 border-black rounded px-1 bg-white dark:bg-slate-800 text-black dark:text-white outline-none focus:shadow-[2px_2px_0px_0px_#000]">
+                                <option *ngFor="let u of unidades" [value]="u.value">{{ u.label }}</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="text-[9px] font-black uppercase text-black dark:text-white block mb-0.5">Estado*</label>
+                            <select formControlName="estado" class="w-full h-7 text-[9px] font-bold border-2 border-black rounded px-1 bg-white dark:bg-slate-800 text-black dark:text-white outline-none focus:shadow-[2px_2px_0px_0px_#000]">
+                                <option *ngFor="let e of estados" [value]="e.value">{{ e.value }}</option>
                             </select>
                         </div>
                     </div>
 
-                    <!-- Fila 2: Nombre + Nivel -->
-                    <div class="grid grid-cols-1 md:grid-cols-12 gap-2 mb-2">
-                        <div class="md:col-span-8 form-group">
-                            <label class="text-[9px] font-black uppercase text-black dark:text-gray-400 mb-0.5 block">
-                                Nombre *
-                            </label>
-                            <input type="text" formControlName="nombreNueva"
-                                   placeholder="Nombre de la herramienta"
-                                   class="w-full h-8 text-xs font-bold border-2 border-black dark:border-slate-600 rounded px-2 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[2px_2px_0px_0px_#000] transition-shadow outline-none placeholder:text-gray-400">
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <label class="text-[9px] font-black uppercase text-black dark:text-white block mb-0.5">Estante</label>
+                            <input type="text" formControlName="estante" placeholder="A-1"
+                                   class="w-full h-7 text-[10px] font-bold border-2 border-black rounded px-2 uppercase bg-white dark:bg-slate-800 text-black outline-none focus:shadow-[2px_2px_0px_0px_#000]">
                         </div>
-
-                        <div class="md:col-span-4 form-group">
-                            <label class="text-[9px] font-black uppercase text-black dark:text-gray-400 mb-0.5 block">
-                                Nivel *
-                            </label>
-                            <select formControlName="nivelHerramienta"
-                                    class="w-full h-8 text-xs font-bold border-2 border-black dark:border-slate-600 rounded px-2 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[2px_2px_0px_0px_#000] transition-shadow outline-none appearance-none cursor-pointer">
-                                <option value="">Seleccionar...</option>
-                                <option *ngFor="let niv of nivelesHerramienta" [value]="niv">{{ niv }}</option>
-                            </select>
+                        <div>
+                            <label class="text-[9px] font-black uppercase text-black dark:text-white block mb-0.5">Nivel</label>
+                            <input type="text" formControlName="nivelUbicacion" placeholder="Niv 2"
+                                   class="w-full h-7 text-[10px] font-bold border-2 border-black rounded px-2 uppercase bg-white dark:bg-slate-800 text-black outline-none focus:shadow-[2px_2px_0px_0px_#000]">
                         </div>
                     </div>
 
-                    <!-- Fila 3: P/N o Modelo + S/N -->
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-2 mb-2">
-                        <div class="form-group">
-                            <label class="text-[9px] font-black uppercase text-black dark:text-gray-400 mb-0.5 block">
-                                P/N o Modelo *
-                            </label>
-                            <input type="text" formControlName="pnModelo"
-                                   placeholder="Numero de parte o modelo"
-                                   class="w-full h-8 text-xs font-bold border-2 border-black dark:border-slate-600 rounded px-2 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[2px_2px_0px_0px_#000] transition-shadow outline-none placeholder:text-gray-400">
-                        </div>
-
-                        <div class="form-group">
-                            <label class="text-[9px] font-black uppercase text-black dark:text-gray-400 mb-0.5 block">
-                                S/N
-                            </label>
-                            <input type="text" formControlName="snNueva"
-                                   placeholder="Numero de serie"
-                                   class="w-full h-8 text-xs font-bold border-2 border-black dark:border-slate-600 rounded px-2 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[2px_2px_0px_0px_#000] transition-shadow outline-none placeholder:text-gray-400">
-                        </div>
-                    </div>
-
-                    <!-- Fila 4: Marca + Tipo -->
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-2 mb-2">
-                        <div class="form-group">
-                            <label class="text-[9px] font-black uppercase text-black dark:text-gray-400 mb-0.5 block">
-                                Marca *
-                            </label>
-                            <select formControlName="marcaNueva"
-                                    class="w-full h-8 text-xs font-bold border-2 border-black dark:border-slate-600 rounded px-2 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[2px_2px_0px_0px_#000] transition-shadow outline-none appearance-none cursor-pointer">
-                                <option value="">Seleccionar...</option>
-                                <option *ngFor="let m of marcas" [value]="m">{{ m }}</option>
-                            </select>
-                        </div>
-
-                        <div class="form-group">
-                            <label class="text-[9px] font-black uppercase text-black dark:text-gray-400 mb-0.5 block">
-                                Tipo *
-                            </label>
-                            <select formControlName="tipoNueva"
-                                    class="w-full h-8 text-xs font-bold border-2 border-black dark:border-slate-600 rounded px-2 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[2px_2px_0px_0px_#000] transition-shadow outline-none appearance-none cursor-pointer">
-                                <option value="">Seleccionar...</option>
-                                <option *ngFor="let t of tiposHerramienta" [value]="t">{{ t }}</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <!-- Fila 5: Accesorios -->
-                    <div class="form-group mb-4">
-                        <label class="text-[9px] font-black uppercase text-black dark:text-gray-400 mb-0.5 block">
-                            Accesorios
-                        </label>
-                        <textarea formControlName="accesorios" rows="3"
-                                  placeholder="Detalle los accesorios incluidos..."
-                                  class="w-full text-xs font-medium border-2 border-black dark:border-slate-600 rounded px-2 py-1.5 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[2px_2px_0px_0px_#000] transition-shadow outline-none placeholder:text-gray-400 resize-none"></textarea>
-                    </div>
-                </form>
-            </div>
-
-            <!-- Seccion: Calibracion y Vencimiento -->
-            <div class="neo-card-base bg-white dark:bg-slate-800 p-3">
-                <div class="flex items-center gap-1.5 px-3 py-1.5 -mx-3 -mt-3 mb-3 bg-[#0F172AFF] border-b-2 border-black">
-                    <mat-icon class="text-amber-400 !text-sm">engineering</mat-icon>
-                    <span class="font-black text-xs uppercase text-white">Calibracion y Medidas</span>
-                </div>
-
-                <form [formGroup]="crearNuevaForm">
-                    <!-- Fila 6: Requiere Calibracion + Fecha Vencimiento Calibracion -->
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-2 mb-2">
-                        <div class="form-group">
-                            <label class="text-[9px] font-black uppercase text-black dark:text-gray-400 mb-0.5 block">
-                                Requiere Calibracion *
-                            </label>
-                            <select formControlName="requiereCalibracion"
-                                    class="w-full h-8 text-xs font-bold border-2 border-black dark:border-slate-600 rounded px-2 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[2px_2px_0px_0px_#000] transition-shadow outline-none appearance-none cursor-pointer">
-                                <option value="NO">NO</option>
-                                <option value="SI">SI</option>
-                            </select>
-                        </div>
-
-                        <div class="form-group">
-                            <label class="text-[9px] font-black uppercase text-black dark:text-gray-400 mb-0.5 block">
-                                Fecha Vencimiento Calibracion
-                            </label>
-                            <input type="date" formControlName="fechaVencimientoCalibracion"
-                                   [disabled]="crearNuevaForm.get('requiereCalibracion')?.value === 'NO'"
-                                   class="w-full h-8 text-xs font-bold border-2 border-black dark:border-slate-600 rounded px-2 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[2px_2px_0px_0px_#000] transition-shadow outline-none disabled:opacity-50 disabled:cursor-not-allowed">
-                        </div>
-                    </div>
-
-                    <!-- Fila 7: Fecha de vencimiento + Unidad de Medida -->
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
-                        <div class="form-group">
-                            <label class="text-[9px] font-black uppercase text-black dark:text-gray-400 mb-0.5 block">
-                                Fecha de Vencimiento
-                            </label>
-                            <input type="date" formControlName="fechaVencimiento"
-                                   class="w-full h-8 text-xs font-bold border-2 border-black dark:border-slate-600 rounded px-2 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[2px_2px_0px_0px_#000] transition-shadow outline-none">
-                        </div>
-
-                        <div class="form-group">
-                            <label class="text-[9px] font-black uppercase text-black dark:text-gray-400 mb-0.5 block">
-                                Unidad de Medida *
-                            </label>
-                            <select formControlName="unidadMedida"
-                                    class="w-full h-8 text-xs font-bold border-2 border-black dark:border-slate-600 rounded px-2 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[2px_2px_0px_0px_#000] transition-shadow outline-none appearance-none cursor-pointer">
-                                <option *ngFor="let u of unidades" [value]="u.value">{{ u.label }} ({{ u.value }})</option>
-                            </select>
-                        </div>
-                    </div>
-                </form>
-            </div>
-
-            <!-- Seccion: Precio Prestamo + Ubicacion (lado a lado) -->
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-
-                <!-- Precio Prestamo -->
-                <div class="neo-card-base bg-white dark:bg-slate-800 p-3">
-                    <div class="flex items-center gap-1.5 px-3 py-1.5 -mx-3 -mt-3 mb-3 bg-[#0F172AFF] border-b-2 border-black">
-                        <mat-icon class="text-amber-400 !text-sm">payments</mat-icon>
-                        <span class="font-black text-xs uppercase text-white">Precio Prestamo</span>
-                    </div>
-
-                    <form [formGroup]="crearNuevaForm">
-                        <div class="grid grid-cols-1 gap-2">
-                            <div class="form-group">
-                                <label class="text-[9px] font-black uppercase text-black dark:text-gray-400 mb-0.5 block">
-                                    Costo / Hora (Bs.)
-                                </label>
-                                <div class="relative">
-                                    <input type="number" formControlName="costoHora" step="0.01" min="0"
-                                           placeholder="0.00"
-                                           class="w-full h-8 text-xs font-bold border-2 border-black dark:border-slate-600 rounded pl-8 pr-2 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[2px_2px_0px_0px_#000] transition-shadow outline-none placeholder:text-gray-400">
-                                    <span class="absolute left-2 top-1/2 -translate-y-1/2 text-black dark:text-gray-400 font-bold text-xs">Bs</span>
-                                </div>
-                            </div>
-
-                            <div class="form-group">
-                                <label class="text-[9px] font-black uppercase text-black dark:text-gray-400 mb-0.5 block">
-                                    Costo / Servicio (Bs.)
-                                </label>
-                                <div class="relative">
-                                    <input type="number" formControlName="costoServicio" step="0.01" min="0"
-                                           placeholder="0.00"
-                                           class="w-full h-8 text-xs font-bold border-2 border-black dark:border-slate-600 rounded pl-8 pr-2 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[2px_2px_0px_0px_#000] transition-shadow outline-none placeholder:text-gray-400">
-                                    <span class="absolute left-2 top-1/2 -translate-y-1/2 text-black dark:text-gray-400 font-bold text-xs">Bs</span>
-                                </div>
-                            </div>
-                        </div>
-                    </form>
-                </div>
-
-                <!-- Ubicacion -->
-                <div class="neo-card-base bg-white dark:bg-slate-800 p-3">
-                    <div class="flex items-center gap-1.5 px-3 py-1.5 -mx-3 -mt-3 mb-3 bg-[#0F172AFF] border-b-2 border-black">
-                        <mat-icon class="text-amber-400 !text-sm">location_on</mat-icon>
-                        <span class="font-black text-xs uppercase text-white">Ubicacion</span>
-                    </div>
-
-                    <form [formGroup]="crearNuevaForm">
-                        <div class="grid grid-cols-1 gap-2">
-                            <div class="form-group">
-                                <label class="text-[9px] font-black uppercase text-black dark:text-gray-400 mb-0.5 block">
-                                    Estante *
-                                </label>
-                                <input type="text" formControlName="estante"
-                                       placeholder="Ej: EST-17"
-                                       class="w-full h-8 text-xs font-bold border-2 border-black dark:border-slate-600 rounded px-2 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[2px_2px_0px_0px_#000] transition-shadow outline-none placeholder:text-gray-400">
-                            </div>
-
-                            <div class="form-group">
-                                <label class="text-[9px] font-black uppercase text-black dark:text-gray-400 mb-0.5 block">
-                                    Nivel *
-                                </label>
-                                <input type="text" formControlName="nivelUbicacion"
-                                       placeholder="Ej: 4"
-                                       class="w-full h-8 text-xs font-bold border-2 border-black dark:border-slate-600 rounded px-2 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[2px_2px_0px_0px_#000] transition-shadow outline-none placeholder:text-gray-400">
-                            </div>
-                        </div>
-                    </form>
-                </div>
-            </div>
-
-            <!-- Imagen -->
-            <div class="neo-card-base bg-white dark:bg-slate-800 p-3">
-                <div class="flex items-center gap-1.5 px-3 py-1.5 -mx-3 -mt-3 mb-3 bg-[#0F172AFF] border-b-2 border-black">
-                    <mat-icon class="text-amber-400 !text-sm">photo_camera</mat-icon>
-                    <span class="font-black text-xs uppercase text-white">Imagen de la Herramienta</span>
-                </div>
-
-                <div class="flex flex-col md:flex-row gap-3 items-start">
-                    <div class="neo-card-base bg-gray-100 dark:bg-gray-800 overflow-hidden w-full md:w-[300px] h-[200px] flex flex-col relative group">
-                        <div *ngIf="selectedImage(); else noImageNueva" class="flex-1 p-2 flex items-center justify-center bg-white dark:bg-gray-900 overflow-hidden">
-                            <img [src]="selectedImage()" alt="Herramienta" class="w-full h-full object-contain">
-                        </div>
-                        <ng-template #noImageNueva>
-                            <div class="flex-1 flex flex-col items-center justify-center text-gray-400 p-4 border-dashed border-2 border-gray-300 m-3 rounded">
-                                <mat-icon class="!text-4xl !w-10 !h-10 opacity-20">image</mat-icon>
-                                <p class="font-bold uppercase text-[10px] opacity-60 mt-2 text-center">Sin imagen</p>
-                            </div>
-                        </ng-template>
-
-                        <div class="bg-[#111A43] py-2 px-3 flex justify-center border-t-2 border-black shrink-0">
-                            <button type="button" (click)="fileInputNueva.click()"
-                                    class="w-full py-1.5 bg-white text-black font-black border-2 border-black rounded shadow-[2px_2px_0px_0px_#fff] hover:translate-y-0.5 hover:shadow-none transition-all uppercase text-xs flex items-center justify-center gap-2">
-                                <mat-icon class="!text-sm !w-4 !h-4">{{ selectedImage() ? 'refresh' : 'upload' }}</mat-icon>
-                                {{ selectedImage() ? 'CAMBIAR' : 'SUBIR' }}
-                            </button>
-                        </div>
-                        <input type="file" #fileInputNueva (change)="onImageSelected($event)" accept="image/*" class="hidden">
-                    </div>
-
-                    <div class="flex-1">
-                        <div class="bg-amber-50 dark:bg-amber-900/20 border-2 border-black dark:border-amber-700 rounded-lg p-4">
-                            <h4 class="font-black text-xs uppercase mb-3 flex items-center gap-2 text-black dark:text-white">
-                                <mat-icon class="!text-sm !w-4 !h-4">info</mat-icon>
-                                Informacion
-                            </h4>
-                            <ul class="text-xs space-y-2 text-gray-700 dark:text-gray-300">
-                                <li class="flex items-start gap-2">
-                                    <span class="w-2 h-2 bg-green-500 rounded-full mt-1 shrink-0"></span>
-                                    <span>La imagen debe ser clara y mostrar la herramienta completa</span>
-                                </li>
-                                <li class="flex items-start gap-2">
-                                    <span class="w-2 h-2 bg-blue-500 rounded-full mt-1 shrink-0"></span>
-                                    <span>Formatos aceptados: JPG, PNG, WEBP (max 5MB)</span>
-                                </li>
-                                <li class="flex items-start gap-2">
-                                    <span class="w-2 h-2 bg-amber-500 rounded-full mt-1 shrink-0"></span>
-                                    <span>El codigo BoaMM se genera automaticamente si no se ingresa</span>
-                                </li>
-                            </ul>
-                        </div>
+                    <div>
+                        <label class="text-[9px] font-black uppercase text-black dark:text-white block mb-0.5">Observaciones</label>
+                        <textarea formControlName="observaciones" rows="1" placeholder="Detalles extra..."
+                                  class="w-full text-[10px] font-bold border-2 border-black rounded p-1.5 bg-white dark:bg-slate-800 text-black outline-none focus:shadow-[2px_2px_0px_0px_#000] resize-none"></textarea>
                     </div>
                 </div>
             </div>
-        </div>
 
-        <!-- ============================================ -->
-        <!-- FORMULARIO DETALLE EXISTENTE (modo normal)   -->
-        <!-- ============================================ -->
-        <div *ngIf="!showCrearNueva()" class="neo-card-base bg-white dark:bg-slate-800 p-3 relative z-10">
-            <form [formGroup]="detalleForm">
+            <div class="md:col-span-5 flex flex-col items-center justify-start gap-2">
+                <label class="text-[10px] font-black uppercase text-black dark:text-gray-400 block w-full text-center">Fotografía</label>
 
-                <div class="grid grid-cols-1 lg:grid-cols-12 gap-3">
+                <div class="w-full max-w-[220px] aspect-square bg-white dark:bg-slate-800 border-[3px] border-black rounded flex flex-col items-center justify-center relative overflow-hidden group cursor-pointer shadow-[4px_4px_0px_0px_#000]" (click)="fileInput.click()">
 
-                    <!-- Columna Principal -->
-                    <div class="lg:col-span-8">
+                    <img *ngIf="imagenNueva() || imagenOriginal()" [src]="imagenNueva() || imagenOriginal()" class="w-full h-full object-contain p-2 bg-white">
 
-                        <!-- Busqueda y Crear -->
-                        <div class="grid grid-cols-1 md:grid-cols-12 gap-2 mb-2">
-                            <div class="md:col-span-8 form-group">
-                                <label class="text-[9px] font-black uppercase text-black dark:text-gray-400 mb-0.5 block">
-                                    Buscar (Codigo, Nombre, P/N o Marca)
-                                </label>
-                                <div class="relative">
-                                    <input type="text"
-                                           formControlName="buscar"
-                                           [matAutocomplete]="autoHerramienta"
-                                           (input)="onBuscarChange($any($event.target).value)"
-                                           placeholder="Escriba para buscar..."
-                                           class="w-full h-8 text-xs font-bold border-2 border-black dark:border-slate-600 rounded pl-8 pr-2 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[2px_2px_0px_0px_#000] transition-shadow outline-none placeholder:text-gray-400">
-                                    <mat-icon class="absolute left-2 top-1/2 -translate-y-1/2 text-gray-500 !text-sm">search</mat-icon>
-                                    <mat-autocomplete #autoHerramienta="matAutocomplete"
-                                                      [displayWith]="displayHerramienta"
-                                                      (optionSelected)="selectHerramienta($event.option.value)">
-                                        <mat-option *ngFor="let h of filteredHerramientas" [value]="h">
-                                            <div class="flex flex-col py-1">
-                                                <span class="font-bold">{{ h.codigo }} - {{ h.nombre }}</span>
-                                                <span class="text-xs text-gray-500">{{ h.marca }} | P/N: {{ h.pn }}</span>
-                                            </div>
-                                        </mat-option>
-                                    </mat-autocomplete>
-                                </div>
-                            </div>
-                            <div class="md:col-span-4">
-                                <label class="text-[9px] font-black uppercase text-black dark:text-gray-400 mb-0.5 block opacity-0">Accion</label>
-                                <div class="w-full h-8 bg-slate-100 dark:bg-slate-700 border-2 border-dashed border-slate-300 dark:border-slate-600 rounded flex items-center justify-center">
-                                    <span class="text-[9px] font-bold text-slate-400 uppercase">Solo herramientas existentes</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Fila 1: Codigo, Coincidencias, Tipo Ajuste -->
-                        <div class="grid grid-cols-1 md:grid-cols-3 gap-2 mb-2">
-                            <div class="form-group">
-                                <label class="text-[9px] font-black uppercase text-black dark:text-gray-400 mb-0.5 block">
-                                    Codigo BOA *
-                                </label>
-                                <div class="flex gap-2">
-                                    <input type="text" formControlName="codigo"
-                                           placeholder="BOA-H-XXXX"
-                                           class="flex-1 h-8 text-xs font-bold border-2 border-black dark:border-slate-600 rounded px-2 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[2px_2px_0px_0px_#000] transition-shadow outline-none placeholder:text-gray-400">
-                                    <button type="button" (click)="generarCodigo()"
-                                            class="h-8 w-8 bg-[#111A43] text-white font-bold border-2 border-black rounded shadow-[2px_2px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all flex items-center justify-center"
-                                            matTooltip="Generar codigo">
-                                        <mat-icon class="!text-sm">auto_awesome</mat-icon>
-                                    </button>
-                                </div>
-                            </div>
-
-                            <div class="form-group">
-                                <label class="text-[9px] font-black uppercase text-black dark:text-gray-400 mb-0.5 block">
-                                    Coincidencias
-                                </label>
-                                <input type="text" [value]="coincidencias()" readonly
-                                       class="w-full h-8 text-center text-xs font-black border-2 border-gray-300 dark:border-slate-600 rounded px-2 bg-gray-100 dark:bg-slate-700 text-black dark:text-white cursor-not-allowed">
-                            </div>
-
-                            <div class="form-group">
-                                <label class="text-[9px] font-black uppercase text-black dark:text-gray-400 mb-0.5 block">
-                                    Tipo Ajuste *
-                                </label>
-                                <select formControlName="tipoAjuste"
-                                        class="w-full h-8 text-xs font-bold border-2 border-black dark:border-slate-600 rounded px-2 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[2px_2px_0px_0px_#000] transition-shadow outline-none appearance-none cursor-pointer">
-                                    <option *ngFor="let tipo of tiposAjuste" [value]="tipo.value">
-                                        {{ tipo.label }}
-                                    </option>
-                                </select>
-                            </div>
-                        </div>
-
-                        <!-- Fila 2: P/N y Estado -->
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-2 mb-2">
-                            <div class="form-group">
-                                <label class="text-[9px] font-black uppercase text-black dark:text-gray-400 mb-0.5 block">
-                                    P/N (Part Number) *
-                                </label>
-                                <input type="text" formControlName="pn"
-                                       placeholder="Numero de parte"
-                                       class="w-full h-8 text-xs font-bold border-2 border-black dark:border-slate-600 rounded px-2 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[2px_2px_0px_0px_#000] transition-shadow outline-none placeholder:text-gray-400">
-                            </div>
-
-                            <div class="form-group">
-                                <label class="text-[9px] font-black uppercase text-black dark:text-gray-400 mb-0.5 block">
-                                    Estado *
-                                </label>
-                                <select formControlName="estado"
-                                        class="w-full h-8 text-xs font-bold border-2 border-black dark:border-slate-600 rounded px-2 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[2px_2px_0px_0px_#000] transition-shadow outline-none appearance-none cursor-pointer">
-                                    <option *ngFor="let est of estados" [value]="est.value">
-                                        {{ est.label }}
-                                    </option>
-                                </select>
-                            </div>
-                        </div>
-
-                        <!-- Fila 3: Nombre y Marca -->
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-2 mb-2">
-                            <div class="form-group">
-                                <label class="text-[9px] font-black uppercase text-black dark:text-gray-400 mb-0.5 block">
-                                    Nombre / Descripcion *
-                                </label>
-                                <input type="text" formControlName="nombre"
-                                       placeholder="Descripcion de la herramienta"
-                                       class="w-full h-8 text-xs font-bold border-2 border-black dark:border-slate-600 rounded px-2 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[2px_2px_0px_0px_#000] transition-shadow outline-none placeholder:text-gray-400">
-                            </div>
-
-                            <div class="form-group">
-                                <label class="text-[9px] font-black uppercase text-black dark:text-gray-400 mb-0.5 block">
-                                    Marca *
-                                </label>
-                                <input type="text" formControlName="marca"
-                                       [matAutocomplete]="autoMarca"
-                                       (input)="filterMarcas($any($event.target).value)"
-                                       placeholder="Marca de la herramienta"
-                                       class="w-full h-8 text-xs font-bold border-2 border-black dark:border-slate-600 rounded px-2 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[2px_2px_0px_0px_#000] transition-shadow outline-none placeholder:text-gray-400">
-                                <mat-autocomplete #autoMarca="matAutocomplete">
-                                    <mat-option *ngFor="let m of marcasFiltradas" [value]="m">{{ m }}</mat-option>
-                                </mat-autocomplete>
-                            </div>
-                        </div>
-
-                        <!-- Fila 4: S/N y Ubicacion -->
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-2 mb-2">
-                            <div class="form-group">
-                                <label class="text-[9px] font-black uppercase text-black dark:text-gray-400 mb-0.5 block">
-                                    S/N (Serial Number)
-                                </label>
-                                <input type="text" formControlName="sn"
-                                       placeholder="Numero de serie"
-                                       class="w-full h-8 text-xs font-bold border-2 border-black dark:border-slate-600 rounded px-2 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[2px_2px_0px_0px_#000] transition-shadow outline-none placeholder:text-gray-400">
-                            </div>
-
-                            <div class="form-group">
-                                <label class="text-[9px] font-black uppercase text-black dark:text-gray-400 mb-0.5 block">
-                                    Ubicacion *
-                                </label>
-                                <input type="text" formControlName="ubicacion"
-                                       placeholder="Ej: EST-17 / Nivel 3"
-                                       class="w-full h-8 text-xs font-bold border-2 border-black dark:border-slate-600 rounded px-2 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[2px_2px_0px_0px_#000] transition-shadow outline-none placeholder:text-gray-400">
-                            </div>
-                        </div>
-
-                        <!-- Fila 5: Cantidad, UM, Documento -->
-                        <div class="grid grid-cols-1 md:grid-cols-3 gap-2 mb-2">
-                            <div class="form-group">
-                                <label class="text-[9px] font-black uppercase text-black dark:text-gray-400 mb-0.5 block">
-                                    Cantidad *
-                                </label>
-                                <input type="number" formControlName="cantidad" min="1"
-                                       class="w-full h-8 text-center text-xs font-black border-2 border-black dark:border-slate-600 rounded px-2 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[2px_2px_0px_0px_#000] transition-shadow outline-none">
-                            </div>
-
-                            <div class="form-group">
-                                <label class="text-[9px] font-black uppercase text-black dark:text-gray-400 mb-0.5 block">
-                                    Unidad *
-                                </label>
-                                <select formControlName="um"
-                                        class="w-full h-8 text-xs font-bold border-2 border-black dark:border-slate-600 rounded px-2 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[2px_2px_0px_0px_#000] transition-shadow outline-none appearance-none cursor-pointer">
-                                    <option *ngFor="let u of unidades" [value]="u.value">
-                                        {{ u.label }} ({{ u.value }})
-                                    </option>
-                                </select>
-                            </div>
-
-                            <div class="form-group">
-                                <label class="text-[9px] font-black uppercase text-black dark:text-gray-400 mb-0.5 block">
-                                    Documento Ref.
-                                </label>
-                                <input type="text" formControlName="documento"
-                                       placeholder="INV-2025-XXX"
-                                       class="w-full h-8 text-xs font-bold border-2 border-black dark:border-slate-600 rounded px-2 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[2px_2px_0px_0px_#000] transition-shadow outline-none placeholder:text-gray-400">
-                            </div>
-                        </div>
-
-                        <!-- Observaciones -->
-                        <div class="form-group">
-                            <label class="text-[9px] font-black uppercase text-black dark:text-gray-400 mb-0.5 block">
-                                Observaciones
-                            </label>
-                            <textarea formControlName="observaciones" rows="3"
-                                      placeholder="Ingrese observaciones del ajuste..."
-                                      class="w-full text-xs font-medium border-2 border-black dark:border-slate-600 rounded px-2 py-1.5 bg-white dark:bg-[#0F172AFF] text-black dark:text-white focus:shadow-[2px_2px_0px_0px_#000] transition-shadow outline-none placeholder:text-gray-400 resize-none"></textarea>
-                        </div>
+                    <div *ngIf="!imagenNueva() && !imagenOriginal()" class="flex flex-col items-center justify-center opacity-40">
+                        <mat-icon class="!text-5xl mb-2 text-black dark:text-white">image_search</mat-icon>
+                        <span class="text-[10px] font-black uppercase text-center px-4 text-black dark:text-white">Sin Imagen Registrada</span>
                     </div>
 
-                    <!-- Columna Imagen -->
-                    <div class="lg:col-span-4 flex flex-col">
-                        <div class="flex items-center gap-1.5 px-3 py-1.5 -mx-3 -mt-3 mb-3 bg-[#0F172AFF] border-b-2 border-black">
-                            <mat-icon class="text-amber-400 !text-sm">photo_camera</mat-icon>
-                            <span class="font-black text-xs uppercase text-white">Imagen</span>
-                        </div>
-
-                        <div class="neo-card-base bg-gray-100 dark:bg-gray-800 overflow-hidden w-full h-[300px] flex flex-col relative group">
-
-                            <div *ngIf="selectedImage(); else noImageTemplate" class="flex-1 p-2 flex items-center justify-center bg-white dark:bg-gray-900 overflow-hidden">
-                                <img [src]="selectedImage()" alt="Herramienta" class="w-full h-full object-contain">
-                            </div>
-
-                            <ng-template #noImageTemplate>
-                                <div class="flex-1 flex flex-col items-center justify-center text-gray-400 p-4 border-dashed border-2 border-gray-300 m-4 rounded">
-                                    <mat-icon class="!text-5xl !w-12 !h-12 opacity-20">image</mat-icon>
-                                    <p class="font-bold uppercase text-[10px] opacity-60 mt-2 text-center">Sin imagen disponible</p>
-                                </div>
-                            </ng-template>
-
-                            <div class="bg-[#111A43] py-2 px-3 flex justify-center border-t-2 border-black shrink-0">
-                                <button type="button" (click)="fileInput.click()"
-                                        class="w-full py-1.5 bg-white text-black font-black border-2 border-black rounded shadow-[2px_2px_0px_0px_#fff] hover:translate-y-0.5 hover:shadow-none transition-all uppercase text-xs flex items-center justify-center gap-2">
-                                    <mat-icon class="!text-sm !w-4 !h-4">{{ selectedImage() ? 'refresh' : 'upload' }}</mat-icon>
-                                    {{ selectedImage() ? 'CAMBIAR' : 'SUBIR' }}
-                                </button>
-                            </div>
-
-                            <input type="file" #fileInput (change)="onImageSelected($event)" accept="image/*" class="hidden">
-                        </div>
-
-                        <!-- Info adicional -->
-                        <div class="mt-4 bg-amber-50 dark:bg-amber-900/20 border-2 border-black dark:border-amber-700 rounded-lg p-3">
-                            <h4 class="font-black text-xs uppercase mb-2 flex items-center gap-2 text-black dark:text-white">
-                                <mat-icon class="!text-sm !w-4 !h-4">info</mat-icon>
-                                Estados
-                            </h4>
-                            <ul class="text-[10px] space-y-1">
-                                <li class="flex items-start gap-2">
-                                    <span class="w-2 h-2 bg-green-500 rounded-full mt-0.5 shrink-0"></span>
-                                    <span><strong>Serviceable:</strong> Listo para uso</span>
-                                </li>
-                                <li class="flex items-start gap-2">
-                                    <span class="w-2 h-2 bg-yellow-500 rounded-full mt-0.5 shrink-0"></span>
-                                    <span><strong>En Calibracion:</strong> Pendiente calibracion</span>
-                                </li>
-                                <li class="flex items-start gap-2">
-                                    <span class="w-2 h-2 bg-red-500 rounded-full mt-0.5 shrink-0"></span>
-                                    <span><strong>Unserviceable:</strong> No operable</span>
-                                </li>
-                                <li class="flex items-start gap-2">
-                                    <span class="w-2 h-2 bg-blue-500 rounded-full mt-0.5 shrink-0"></span>
-                                    <span><strong>Nuevo:</strong> Sin uso previo</span>
-                                </li>
-                            </ul>
-                        </div>
+                    <div class="absolute inset-0 bg-black/70 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center text-white">
+                        <mat-icon class="!text-3xl mb-1">add_a_photo</mat-icon>
+                        <span class="text-[10px] font-black uppercase">{{ imagenNueva() ? 'Cambiar Imagen' : 'Subir Nueva Foto' }}</span>
                     </div>
                 </div>
 
-            </form>
-        </div>
+                <input type="file" #fileInput (change)="onImageSelected($event)" accept="image/*" class="hidden">
+                <span class="text-[8px] font-bold text-gray-500 uppercase mt-1 text-center w-full max-w-[200px]">
+                    Clic en el recuadro para subir evidencia fotográfica del ajuste.
+                </span>
+
+                <div class="border-2 border-black bg-white dark:bg-slate-800 p-2 rounded mt-2 w-full max-w-[220px]">
+                    <h3 class="font-black text-[10px] uppercase text-black dark:text-white border-b-2 border-black pb-1 mb-1 text-center">Detalle del Ajuste</h3>
+
+                    <ul class="text-[10px] text-black dark:text-white font-bold space-y-0.5">
+                        <li class="flex items-center gap-1">
+                            <mat-icon class="!text-[12px] !w-3 !h-3">add</mat-icon>
+                            <span>Ingreso: <span class="font-black">{{ detalleForm.value.cantidad || 0 }} {{ detalleForm.value.um }}</span></span>
+                        </li>
+                        <li class="flex items-center gap-1">
+                            <mat-icon class="!text-[12px] !w-3 !h-3">sell</mat-icon>
+                            <span>Condición: <span class="font-black">{{ detalleForm.value.estado }}</span></span>
+                        </li>
+                        <li class="flex items-center gap-1">
+                            <mat-icon class="!text-[12px] !w-3 !h-3">place</mat-icon>
+                            <span>Destino: <span class="font-black truncate max-w-[120px]">{{ detalleForm.value.estante || '-' }} / {{ detalleForm.value.nivelUbicacion || '-' }}</span></span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+        </form>
+    </div>
+
+    <div class="border-t-[3px] border-black p-3 bg-gray-50 dark:bg-slate-800 flex justify-end gap-2 shrink-0">
+        <button (click)="cerrar()"
+                class="px-4 py-1.5 bg-red-600 text-white font-black text-xs border-2 border-black rounded shadow-[2px_2px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all uppercase">
+            Cancelar
+        </button>
+        <button (click)="procesar()" [disabled]="!detalleForm.get('toolId')?.value"
+                class="px-4 py-1.5 bg-green-600 text-white font-black text-xs border-2 border-black rounded shadow-[2px_2px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none disabled:opacity-50 disabled:shadow-none disabled:translate-x-0 disabled:translate-y-0 disabled:cursor-not-allowed transition-all uppercase flex items-center gap-1">
+            <mat-icon class="!text-white text-sm">done</mat-icon>
+            {{ isEditMode() ? 'Actualizar' : 'Agregar' }}
+        </button>
     </div>
 </div>

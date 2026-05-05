@@ -1,351 +1,265 @@
-<div class="flex flex-col w-full h-full bg-[#f8f9fc] dark:bg-[#0F172AFF] transition-colors duration-300 font-sans overflow-hidden relative">
+<!-- Contenedor Raíz -->
+<div class="flex flex-col w-full h-full min-h-[600px] bg-[#f8f9fc] dark:bg-[#0F172AFF] transition-colors duration-300 font-sans overflow-hidden relative">
 
-    <!-- DECORATIVOS -->
-    <div class="fixed top-20 right-10 w-64 h-64 bg-[#111A43] rounded-full border-4 border-black opacity-5 pointer-events-none"></div>
-    <div class="fixed bottom-10 left-10 w-32 h-32 bg-red-600 rotate-12 border-4 border-black opacity-5 pointer-events-none"></div>
+    <!-- Elementos de fondo decorativos -->
+    <div class="fixed top-20 right-10 w-40 h-40 bg-[#0F172AFF] rounded-full border-[3px] border-black opacity-5 pointer-events-none z-0"></div>
+    <div class="fixed bottom-10 left-10 w-24 h-24 bg-[#FF1414FF] rotate-12 border-[3px] border-black opacity-5 pointer-events-none z-0"></div>
 
-    <!-- SPINNER -->
-    <div *ngIf="isLoading" class="spinner-overlay z-[100]">
-        <div class="neo-card-base p-6 flex flex-col items-center gap-4 bg-white dark:bg-slate-800">
-            <mat-spinner diameter="50"></mat-spinner>
-            <span class="font-black text-black dark:text-white uppercase tracking-wider">Procesando Baja...</span>
+    <!-- Spinner superpuesto -->
+    <div *ngIf="isLoading" class="absolute inset-0 z-[100] flex items-center justify-center bg-white/60 dark:bg-black/60 backdrop-blur-sm">
+        <div class="border-[3px] border-black rounded-xl p-6 flex flex-col items-center gap-4 bg-white dark:bg-slate-800 shadow-[4px_4px_0px_0px_#000] animate-fadeIn">
+            <mat-spinner diameter="40"></mat-spinner>
+            <span class="font-black text-black dark:text-[#FF1414FF] uppercase tracking-wider animate-pulse">
+                Procesando Baja...
+            </span>
         </div>
     </div>
 
-    <!-- MAIN CONTENT -->
-    <div class="flex-1 flex flex-col p-1.5 relative h-full overflow-hidden gap-1.5">
+    <div class="flex flex-col h-full overflow-hidden animate-fadeIn relative z-10">
 
-        <!-- HEADER -->
-        <div class="flex flex-row items-center justify-between gap-3 shrink-0 relative z-10">
-            <div class="flex items-center gap-2">
-                <div class="flex items-center gap-2 flex-wrap">
-                    <div class="font-black text-xs uppercase flex items-center gap-2">
-                        <mat-icon class="text-black dark:text-amber-400 !text-base">flight</mat-icon>
-                    </div>
-                    <h1 class="text-lg font-black text-black dark:text-white uppercase tracking-tight leading-none">
-                        Baja de Herramientas                    </h1>
-                    <p class="text-[10px] font-bold bg-amber-400 text-black px-2 py-0.5 rounded-sm border border-black">
-                        PROCESO ADMINISTRATIVO
-                    </p>
+        <!-- HEADER ACTIONS -->
+        <div class="flex items-center justify-between gap-4 shrink-0 flex-wrap p-4 bg-white dark:bg-[#0F172AFF] border-b-[3px] border-black z-10 shadow-sm">
+            <div class="flex items-center gap-4">
+                <div class="flex items-center justify-center w-10 h-10 bg-white dark:bg-[#0F172AFF] border-[3px] border-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] rounded-xl shrink-0">
+                    <mat-icon class="text-black dark:text-red-500 !text-xl">delete_sweep</mat-icon>
                 </div>
-                <span *ngIf="isProcessValid()"
-                      class="text-[10px] font-bold bg-green-600 text-white px-2 py-0.5 rounded-sm border border-black flex items-center gap-0.5">
-                    <mat-icon class="!text-xs !w-3 !h-3">check_circle</mat-icon>
-                    LISTO
-                </span>
-            </div>
-            <div class="flex items-center gap-2">
-                <div class="flex items-center gap-1.5 bg-amber-400 dark:bg-slate-800 border-2 border-black px-2 py-1 rounded-lg shadow-[2px_2px_0px_0px_#000] shrink-0">
-                    <mat-icon class="text-black dark:text-white !text-sm">receipt</mat-icon>
-                    <span class="text-[9px] font-black uppercase text-black dark:text-gray-300">Nota:</span>
-                    <span class="text-sm font-black text-black dark:text-white">{{ nroNota() }}</span>
-                </div>
-                <button (click)="openHerramientaABaja()"
-                        class="h-9 px-4 bg-[#111A43] text-white font-black text-xs border-2 border-black rounded-lg shadow-[3px_3px_0px_0px_#000] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all uppercase flex items-center gap-1.5">
-                    <mat-icon class="!text-sm text-white">add_circle</mat-icon>
-                    Agregar
-                </button>
-                <button (click)="procesarEImprimir()" [disabled]="!isProcessValid()"
-                        class="h-9 px-4 bg-red-600 text-white font-black text-xs border-2 border-black rounded-lg shadow-[3px_3px_0px_0px_#000] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all uppercase flex items-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed">
-                    <mat-icon class="!text-sm text-white">print</mat-icon>
-                    Procesar
-                    <span *ngIf="dataSource().length > 0" class="bg-black/20 px-1.5 rounded font-black">{{ dataSource().length }}</span>
-                </button>
-            </div>
-        </div>
-
-        <!-- BODY: 2 COLUMNAS -->
-        <div class="flex flex-row gap-1.5 flex-1 overflow-hidden min-h-0">
-
-            <!-- COL 1: Formulario del proceso -->
-            <div class="w-[360px] xl:w-[380px] 2xl:w-[400px] shrink-0 flex flex-col overflow-hidden">
-                <form [formGroup]="bajaForm" class="flex-1 flex flex-col overflow-hidden">
-                    <div class="neo-card-base bg-white dark:bg-slate-800 relative flex flex-col flex-1 overflow-hidden">
-
-                        <!-- Cabecera -->
-                        <div class="bg-[#0F172AFF] border-b-2 border-black px-2 py-1 flex items-center gap-2 shrink-0">
-                            <mat-icon class="text-amber-400 !text-sm shrink-0">assignment_late</mat-icon>
-                            <div>
-                                <p class="text-[8px] font-black uppercase text-white/70 leading-none">Configuración</p>
-                                <p class="text-[10px] font-black text-white uppercase leading-tight">Datos del Proceso</p>
-                            </div>
-                            <span *ngIf="bajaForm.get('estado')?.value"
-                                  class="ml-auto px-1.5 py-0.5 rounded text-[8px] font-black uppercase border border-white text-white"
-                                  [ngClass]="{
-                                      'bg-yellow-600': bajaForm.value.estado === 'PENDIENTE',
-                                      'bg-blue-700': bajaForm.value.estado === 'EN_PROCESO',
-                                      'bg-green-700': bajaForm.value.estado === 'APROBADO',
-                                      'bg-red-900': bajaForm.value.estado === 'RECHAZADO'
-                                  }">
-                                {{ getEstadoLabel(bajaForm.value.estado) }}
-                            </span>
-                        </div>
-
-                        <!-- Campos compactos -->
-                        <div class="p-1.5 flex flex-col gap-0.5 flex-1">
-
-                            <!-- Procesado Por -->
-                            <div>
-                                <label class="text-[8px] font-black uppercase text-black dark:text-gray-400 mb-0.5 block">Procesado Por *</label>
-                                <div class="relative">
-                                    <select formControlName="procesadoPor"
-                                            class="w-full h-6 text-[11px] font-bold border-2 border-black dark:border-slate-600 rounded pl-5 pr-2 bg-white dark:bg-[#0F172AFF] text-black dark:text-white outline-none appearance-none cursor-pointer"
-                                            [class.border-red-500]="hasError('procesadoPor', 'required')">
-                                        <option [ngValue]="null">-- Seleccionar --</option>
-                                        <option *ngFor="let u of usuarios" [ngValue]="u.value">{{ u.value }}</option>
-                                    </select>
-                                    <mat-icon class="absolute left-1 top-1/2 -translate-y-1/2 text-black !text-xs">person</mat-icon>
-                                </div>
-                            </div>
-
-                            <!-- Verificado / Autorizado -->
-                            <div class="grid grid-cols-2 gap-1">
-                                <div>
-                                    <label class="text-[8px] font-black uppercase text-black dark:text-gray-400 mb-0.5 block">Verificado Por</label>
-                                    <div class="relative">
-                                        <input type="text" formControlName="verificadoPor" placeholder="Verificador..."
-                                               class="w-full h-6 text-[11px] font-bold border-2 border-black dark:border-slate-600 rounded pl-5 pr-1 bg-white dark:bg-[#0F172AFF] text-black dark:text-white outline-none placeholder:text-gray-400">
-                                        <mat-icon class="absolute left-1 top-1/2 -translate-y-1/2 text-black !text-xs">verified</mat-icon>
-                                    </div>
-                                </div>
-                                <div>
-                                    <label class="text-[8px] font-black uppercase text-black dark:text-gray-400 mb-0.5 block">Autorizado Por</label>
-                                    <div class="relative">
-                                        <input type="text" formControlName="autorizadoPor" placeholder="Autorizador..."
-                                               class="w-full h-6 text-[11px] font-bold border-2 border-black dark:border-slate-600 rounded pl-5 pr-1 bg-white dark:bg-[#0F172AFF] text-black dark:text-white outline-none placeholder:text-gray-400">
-                                        <mat-icon class="absolute left-1 top-1/2 -translate-y-1/2 text-black !text-xs">approval</mat-icon>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Estado / Inspector -->
-                            <div class="grid grid-cols-2 gap-1">
-                                <div>
-                                    <label class="text-[8px] font-black uppercase text-black dark:text-gray-400 mb-0.5 block">Estado *</label>
-                                    <div class="relative">
-                                        <select formControlName="estado"
-                                                class="w-full h-6 text-[11px] font-bold border-2 border-black dark:border-slate-600 rounded pl-5 pr-1 bg-white dark:bg-[#0F172AFF] text-black dark:text-white outline-none appearance-none cursor-pointer"
-                                                [class.border-red-500]="hasError('estado', 'required')">
-                                            <option [ngValue]="null">-- Selec. --</option>
-                                            <option *ngFor="let e of estados" [ngValue]="e.value">{{ e.label }}</option>
-                                        </select>
-                                        <mat-icon class="absolute left-1 top-1/2 -translate-y-1/2 text-black !text-xs">assignment</mat-icon>
-                                    </div>
-                                </div>
-                                <div>
-                                    <label class="text-[8px] font-black uppercase text-black dark:text-gray-400 mb-0.5 block">Inspector</label>
-                                    <div class="relative">
-                                        <input type="text" formControlName="inspector" placeholder="Inspector..."
-                                               class="w-full h-6 text-[11px] font-bold border-2 border-black dark:border-slate-600 rounded pl-5 pr-1 bg-white dark:bg-[#0F172AFF] text-black dark:text-white outline-none placeholder:text-gray-400">
-                                        <mat-icon class="absolute left-1 top-1/2 -translate-y-1/2 text-black !text-xs">gavel</mat-icon>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Nombre / Unidad -->
-                            <div class="grid grid-cols-2 gap-1">
-                                <div>
-                                    <label class="text-[8px] font-black uppercase text-black dark:text-gray-400 mb-0.5 block">Nombre</label>
-                                    <div class="relative">
-                                        <input type="text" formControlName="nombre" readonly
-                                               class="w-full h-6 text-[11px] font-bold border-2 border-gray-300 dark:border-slate-600 rounded pl-5 pr-1 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 outline-none cursor-not-allowed">
-                                        <mat-icon class="absolute left-1 top-1/2 -translate-y-1/2 text-gray-400 !text-xs">badge</mat-icon>
-                                    </div>
-                                </div>
-                                <div>
-                                    <label class="text-[8px] font-black uppercase text-black dark:text-gray-400 mb-0.5 block">Unidad</label>
-                                    <div class="relative">
-                                        <select formControlName="unidad"
-                                                class="w-full h-6 text-[11px] font-bold border-2 border-black dark:border-slate-600 rounded pl-5 pr-1 bg-white dark:bg-[#0F172AFF] text-black dark:text-white outline-none appearance-none cursor-pointer">
-                                            <option [ngValue]="null">-- Base --</option>
-                                            <option *ngFor="let u of unidades" [ngValue]="u">{{ u }}</option>
-                                        </select>
-                                        <mat-icon class="absolute left-1 top-1/2 -translate-y-1/2 text-black !text-xs">flight</mat-icon>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Cargo -->
-                            <div>
-                                <label class="text-[8px] font-black uppercase text-black dark:text-gray-400 mb-0.5 block">Cargo</label>
-                                <div class="relative">
-                                    <input type="text" formControlName="cargo" readonly
-                                           class="w-full h-6 text-[11px] font-bold border-2 border-gray-300 dark:border-slate-600 rounded pl-5 pr-2 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 outline-none cursor-not-allowed">
-                                    <mat-icon class="absolute left-1 top-1/2 -translate-y-1/2 text-gray-400 !text-xs">work</mat-icon>
-                                </div>
-                            </div>
-
-                            <!-- Fecha + Hora -->
-                            <div class="grid grid-cols-2 gap-1">
-                                <div>
-                                    <label class="text-[8px] font-black uppercase text-black dark:text-gray-400 mb-0.5 block">Fecha *</label>
-                                    <div class="relative">
-                                        <input type="date" formControlName="fecha"
-                                               class="w-full h-6 text-[11px] font-bold border-2 border-black dark:border-slate-600 rounded pl-5 pr-1 bg-white dark:bg-[#0F172AFF] text-black dark:text-white outline-none"
-                                               [class.border-red-500]="hasError('fecha', 'required')">
-                                        <mat-icon class="absolute left-0.5 top-1/2 -translate-y-1/2 text-black !text-xs">calendar_today</mat-icon>
-                                    </div>
-                                </div>
-                                <div>
-                                    <label class="text-[8px] font-black uppercase text-black dark:text-gray-400 mb-0.5 block">Hora *</label>
-                                    <div class="relative">
-                                        <input type="time" formControlName="hora"
-                                               class="w-full h-6 text-[11px] font-bold border-2 border-black dark:border-slate-600 rounded pl-5 pr-1 bg-white dark:bg-[#0F172AFF] text-black dark:text-white outline-none"
-                                               [class.border-red-500]="hasError('hora', 'required')">
-                                        <mat-icon class="absolute left-0.5 top-1/2 -translate-y-1/2 text-black !text-xs">schedule</mat-icon>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Observaciones -->
-                            <div>
-                                <label class="text-[8px] font-black uppercase text-black dark:text-gray-400 mb-0.5 block">Observaciones</label>
-                                <textarea formControlName="observaciones" rows="1"
-                                          placeholder="Observaciones adicionales..."
-                                          class="w-full text-[11px] font-medium border-2 border-black dark:border-slate-600 rounded px-2 py-0.5 bg-white dark:bg-[#0F172AFF] text-black dark:text-white outline-none placeholder:text-gray-400 resize-none"></textarea>
-                            </div>
-
-                            <!-- Summary -->
-                            <div class="border-t border-dashed border-black dark:border-gray-700 pt-0.5 flex flex-col gap-0.5">
-                                <div class="grid grid-cols-2 gap-1">
-                                    <div class="bg-gray-50 dark:bg-blue-900/20 border border-black rounded p-1 flex items-center gap-1">
-                                        <mat-icon class="text-black !text-xs !w-3 !h-3 shrink-0">inventory</mat-icon>
-                                        <div>
-                                            <p class="text-xs font-black text-black dark:text-blue-300 leading-none">{{ dataSource().length }}</p>
-                                            <p class="text-[7px] font-bold text-black uppercase">Herram.</p>
-                                        </div>
-                                    </div>
-                                    <div class="bg-gray-50 dark:bg-green-900/20 border border-black rounded p-1 flex items-center gap-1">
-                                        <mat-icon class="text-black !text-xs !w-3 !h-3 shrink-0">layers</mat-icon>
-                                        <div>
-                                            <p class="text-xs font-black text-black dark:text-green-300 leading-none">{{ getTotalCantidad() }}</p>
-                                            <p class="text-[7px] font-bold text-black uppercase">Total</p>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="bg-white dark:bg-slate-900/30 border border-black dark:border-gray-700 rounded p-1 flex flex-col gap-0.5">
-                                    <div class="flex justify-between text-[9px]">
-                                        <span class="font-bold text-black dark:text-gray-300">Procesado por:</span>
-                                        <span class="font-black text-black dark:text-white truncate max-w-[120px]">{{ bajaForm.value.nombre || '-' }}</span>
-                                    </div>
-                                    <div class="flex justify-between text-[9px]">
-                                        <span class="font-bold text-black dark:text-gray-300">Fecha/Hora:</span>
-                                        <span class="font-black text-black dark:text-white">{{ formatDateTime() }}</span>
-                                    </div>
-                                </div>
-                                <div class="flex items-center gap-1 p-1 rounded"
-                                     [ngClass]="{
-                                        'bg-green-50 dark:bg-green-900/20 border border-green-500': isProcessValid(),
-                                        'bg-red-50 dark:bg-red-900/20 border border-red-500': !isProcessValid()
-                                     }">
-                                    <mat-icon class="!text-xs !w-3 !h-3" [ngClass]="isProcessValid() ? 'text-green-600' : 'text-red-600'">
-                                        {{ isProcessValid() ? 'check_circle' : 'error' }}
-                                    </mat-icon>
-                                    <span class="text-[8px] font-black uppercase"
-                                          [ngClass]="isProcessValid() ? 'text-green-700 dark:text-green-400' : 'text-red-700 dark:text-red-400'">
-                                        {{ isProcessValid() ? 'LISTO PARA IMPRIMIR' : 'FALTAN DATOS' }}
-                                    </span>
-                                </div>
-                            </div>
-
-                        </div>
-                    </div>
-                </form>
-            </div>
-
-            <!-- COL 2: Tabla de herramientas -->
-            <div class="flex-1 flex flex-col overflow-hidden">
-                <div class="neo-card-base bg-white dark:bg-slate-800 overflow-hidden flex flex-col flex-1 relative z-10 border-2 border-black dark:border-gray-600">
-
-                    <!-- Header tabla -->
-                    <div class="bg-[#0F172AFF] px-3 py-1.5 border-b-2 border-black flex items-center justify-between shrink-0 h-9">
-                        <span class="font-black text-xs uppercase text-white flex items-center gap-2">
-                            <mat-icon class="text-amber-400 !text-base !w-4 !h-4">inventory</mat-icon>
-                            Herramientas para Baja
-                        </span>
-                        <span class="bg-white text-black px-2 py-0.5 rounded text-xs font-black border border-black shadow-[2px_2px_0px_0px_#000]">
-                            {{ dataSource().length }} ítem(s)
-                        </span>
-                    </div>
-
-                    <!-- Empty State -->
-                    <div *ngIf="dataSource().length === 0"
-                         class="flex flex-col items-center justify-center py-12 text-black dark:text-gray-300 flex-1">
-                        <div class="w-16 h-16 bg-white border-2 border-black rounded-full flex items-center justify-center mb-3 shadow-[3px_3px_0px_0px_#000]">
-                            <mat-icon class="!text-4xl !w-8 !h-8 text-[#111A43]">inventory</mat-icon>
-                        </div>
-                        <h3 class="text-base font-black uppercase tracking-tight text-black dark:text-white">Lista Vacía</h3>
-                        <p class="text-xs font-bold bg-amber-400 px-3 py-1 mt-2 border-2 border-black -rotate-1 text-black">
-                            Presione Agregar para añadir herramientas
+                <div>
+                    <h1 class="text-xl font-black text-black dark:text-white uppercase tracking-tighter leading-none">
+                        BAJA DE HERRAMIENTAS
+                    </h1>
+                    <div class="flex items-center gap-2 mt-0.5 flex-wrap">
+                        <p class="text-[10px] font-bold bg-[#FF1414FF] text-white px-2 py-0.5 inline-block border-2 border-black uppercase shadow-[1px_1px_0px_0px_#000]">
+                            PROCESO ADMINISTRATIVO
                         </p>
-                        <button (click)="openHerramientaABaja()"
-                                class="mt-4 h-9 px-4 bg-[#111A43] text-white font-black text-xs border-2 border-black rounded-lg shadow-[3px_3px_0px_0px_#000] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all uppercase flex items-center gap-1.5">
-                            <mat-icon class="!text-sm text-white">add_circle</mat-icon>
-                            Agregar Primera Herramienta
-                        </button>
                     </div>
-
-                    <!-- Tabla -->
-                    <div *ngIf="dataSource().length > 0" class="overflow-auto flex-1 custom-scrollbar">
-                        <table class="w-full border-collapse">
-                            <thead class="sticky top-0 z-10">
-                            <tr class="bg-slate-50 dark:bg-slate-900">
-                                <th class="text-left p-2 text-[10px] font-black uppercase text-black dark:text-white border-b-2 border-black">Código</th>
-                                <th class="text-left p-2 text-[10px] font-black uppercase text-black dark:text-white border-b-2 border-black">P/N</th>
-                                <th class="text-left p-2 text-[10px] font-black uppercase text-black dark:text-white border-b-2 border-black">S/N</th>
-                                <th class="text-left p-2 text-[10px] font-black uppercase text-black dark:text-white border-b-2 border-black">Nombre</th>
-                                <th class="text-center p-2 text-[10px] font-black uppercase text-black dark:text-white border-b-2 border-black">Cant.</th>
-                                <th class="text-left p-2 text-[10px] font-black uppercase text-black dark:text-white border-b-2 border-black">Contenido</th>
-                                <th class="text-left p-2 text-[10px] font-black uppercase text-black dark:text-white border-b-2 border-black">Base</th>
-                                <th class="text-left p-2 text-[10px] font-black uppercase text-black dark:text-white border-b-2 border-black">Marca</th>
-                            </tr>
-                            </thead>
-                            <tbody>
-                            <tr *ngFor="let item of dataSource(); let i = index"
-                                class="border-b border-gray-200 dark:border-gray-700 hover:bg-red-50 dark:hover:bg-red-900/10 transition-colors">
-                                <td class="p-2">
-                                    <span class="bg-[#0F172AFF] text-white font-mono font-bold px-1.5 py-0.5 rounded text-[10px] inline-block shadow-[1px_1px_0px_0px_rgba(0,0,0,0.5)]">{{ item.codigo }}</span>
-                                </td>
-                                <td class="p-2 text-xs font-bold text-gray-700 dark:text-gray-300 font-mono">{{ item.pn }}</td>
-                                <td class="p-2 text-xs text-gray-600 dark:text-gray-400 font-mono">{{ item.sn }}</td>
-                                <td class="p-2 text-xs font-bold text-black dark:text-white max-w-[160px] truncate" [matTooltip]="item.nombre">{{ item.nombre }}</td>
-                                <td class="p-2 text-center">
-                                    <span class="bg-yellow-400 text-black border-2 border-black rounded px-1.5 py-0.5 font-black text-xs">{{ item.cantidad }}</span>
-                                </td>
-                                <td class="p-2 text-xs text-gray-600 dark:text-gray-400">{{ item.contenido }}</td>
-                                <td class="p-2">
-                                    <span class="font-mono text-[10px] font-bold text-purple-700 dark:text-purple-300 bg-purple-50 dark:bg-purple-900/20 px-1.5 py-0.5 rounded border border-purple-200">{{ item.base }}</span>
-                                </td>
-                                <td class="p-2 text-xs text-gray-600 dark:text-gray-400">{{ item.marca }}</td>
-                            </tr>
-                            </tbody>
-                        </table>
-                    </div>
-
-                    <!-- Footer controls -->
-                    <div *ngIf="dataSource().length > 0"
-                         class="bg-yellow-50 dark:bg-yellow-900/20 px-3 py-2 border-t-2 border-black flex items-center justify-between shrink-0">
-                        <span class="text-xs font-black text-yellow-800 dark:text-yellow-300">
-                            {{ dataSource().length }} herramienta(s) · Total: {{ getTotalCantidad() }} ítems
-                        </span>
-                        <div class="flex items-center gap-1.5">
-                            <button (click)="removeLastItem()"
-                                    class="w-7 h-7 bg-white dark:bg-slate-800 border-2 border-red-500 rounded-full flex items-center justify-center text-red-600 hover:bg-red-50 transition-all shadow-[2px_2px_0px_0px_#000] hover:shadow-none hover:translate-x-[1px] hover:translate-y-[1px]"
-                                    matTooltip="Eliminar último">
-                                <mat-icon class="!text-sm">remove</mat-icon>
-                            </button>
-                            <button (click)="openHerramientaABaja()"
-                                    class="w-7 h-7 bg-white dark:bg-slate-800 border-2 border-green-500 rounded-full flex items-center justify-center text-green-600 hover:bg-green-50 transition-all shadow-[2px_2px_0px_0px_#000] hover:shadow-none hover:translate-x-[1px] hover:translate-y-[1px]"
-                                    matTooltip="Agregar más">
-                                <mat-icon class="!text-sm">add</mat-icon>
-                            </button>
-                        </div>
-                    </div>
-
                 </div>
             </div>
 
+            <div class="flex items-center gap-3">
+                <button (click)="abrirModalDatos()"
+                        class="h-9 px-4 bg-amber-400 dark:bg-amber-400 text-black font-black text-xs border-[2px] border-black rounded-xl shadow-[3px_3px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[2px_2px_0px_0px_#000] active:shadow-none transition-all uppercase flex items-center gap-2">
+                    <mat-icon class="!text-black">edit_document</mat-icon>
+                    <span class="hidden sm:inline">Datos Proceso</span>
+                </button>
+
+                <div class="w-px h-8 bg-black/20 dark:bg-white/20 mx-1"></div>
+
+                <button (click)="openHerramientaABaja()"
+                        class="h-9 px-4 bg-[#0F172AFF] text-white font-black text-xs border-[2px] border-black rounded-xl shadow-[3px_3px_0px_0px_rgba(0,0,0,0.5)] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,0.5)] active:shadow-none transition-all uppercase flex items-center gap-2">
+                    <mat-icon class="text-white">add_circle</mat-icon> Agregar Ítem
+                </button>
+
+                <button (click)="procesarEImprimir()" [disabled]="dataSource().length === 0 || !isProcessValid()"
+                        class="h-9 px-5 bg-red-600 text-white font-black text-xs border-[2px] border-black rounded-xl shadow-[3px_3px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[2px_2px_0px_0px_#000] active:shadow-none disabled:opacity-50 disabled:cursor-not-allowed transition-all uppercase flex items-center gap-2">
+                    <mat-icon class="!text-sm text-white">print</mat-icon>
+                    <span class="hidden sm:inline">Procesar Baja</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- BANNERS DE ESTADO -->
+        <div class="px-4 pt-3 shrink-0 z-0 relative">
+            <div *ngIf="!isProcessValid()" class="bg-white dark:bg-gray-800 border-[2px] border-black p-2.5 rounded-lg flex items-center justify-between shadow-[3px_3px_0px_0px_#000] animate-pulse-border">
+                <div class="flex items-center gap-2">
+                    <mat-icon class="text-[#FF1414FF] !text-xl hidden sm:block">warning</mat-icon>
+                    <div>
+                        <h3 class="font-black text-xs text-black dark:text-white uppercase leading-none">Faltan Datos del Proceso</h3>
+                        <p class="text-[10px] font-bold text-gray-600 dark:text-gray-400 mt-0.5 hidden sm:block">Debe configurar los responsables y autorizaciones para la baja.</p>
+                    </div>
+                </div>
+                <button (click)="abrirModalDatos()" class="px-4 py-1.5 bg-[#FF1414FF] text-white font-black text-xs border-[2px] border-black rounded-lg shadow-[2px_2px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all uppercase flex items-center gap-1.5">
+                    <mat-icon class="!text-black">edit</mat-icon> Configurar
+                </button>
+            </div>
+
+            <div *ngIf="isProcessValid()" class="bg-gray-100 dark:bg-slate-800 border-[2px] border-black p-2.5 rounded-lg shadow-[3px_3px_0px_0px_#000] flex justify-between items-center relative overflow-hidden">
+                <div class="absolute right-0 top-0 bottom-0 w-32 bg-gray-200 dark:bg-slate-700 transform skew-x-12 -mr-10 hidden sm:block"></div>
+
+                <div class="flex flex-wrap gap-x-6 gap-y-2 relative z-10 w-full pr-10 sm:pr-12">
+                    <div class="flex flex-col">
+                        <p class="text-[9px] font-black uppercase text-gray-500 dark:text-gray-400">Procesado Por</p>
+                        <p class="font-black text-sm text-black dark:text-white">{{ bajaForm.value.nombre }}</p>
+                    </div>
+                    <div class="flex flex-col hidden md:flex">
+                        <p class="text-[9px] font-black uppercase text-gray-500 dark:text-gray-400">Autorizado Por</p>
+                        <p class="font-black text-sm text-black dark:text-white">{{ bajaForm.value.autorizadoPor || 'S/A' }}</p>
+                    </div>
+                    <div class="flex flex-col hidden lg:flex">
+                        <p class="text-[9px] font-black uppercase text-gray-500 dark:text-gray-400">Estado / Fecha</p>
+                        <p class="font-black text-sm text-black dark:text-white">{{ getEstadoLabel(bajaForm.value.estado) }} · {{ bajaForm.value.fecha }}</p>
+                    </div>
+                </div>
+
+                <button (click)="abrirModalDatos()" class="absolute right-2 sm:right-3 top-1/2 -translate-y-1/2 z-10 w-8 h-8 flex items-center justify-center bg-white dark:bg-slate-700 border-[2px] border-black rounded-md shadow-[2px_2px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all" matTooltip="Modificar Datos">
+                    <mat-icon class="text-black dark:text-white !text-sm">edit</mat-icon>
+                </button>
+            </div>
+        </div>
+
+        <!-- TABLA -->
+        <div class="flex-1 flex flex-col p-4 overflow-hidden z-0">
+            <div class="flex-1 flex flex-col border-[3px] border-black bg-white dark:bg-[#0F172AFF] rounded-2xl shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] overflow-hidden z-0">
+
+                <div class="bg-[#0F172AFF] px-4 py-2.5 border-b-[3px] border-black flex items-center justify-between shrink-0 flex-wrap gap-2">
+                    <div class="flex items-center gap-3 border-r-[2px] border-white/20 pr-4">
+                        <mat-icon class="!text-xl text-red-500">delete_sweep</mat-icon>
+                        <h2 class="text-xs sm:text-sm font-black text-white uppercase tracking-wider flex items-center gap-2">
+                            <span class="hidden sm:inline">ÍTEMS A</span> BAJA
+                        </h2>
+                    </div>
+
+                    <div class="flex items-center gap-2 sm:gap-4">
+                        <div class="flex items-center gap-2 bg-white/20 rounded-lg px-2 sm:px-3 py-1.5 border border-white/30">
+                            <div class="text-[9px] font-black uppercase text-white/80 leading-none hidden sm:block">Líneas Ítems</div>
+                            <div class="text-xs sm:text-sm font-black text-white leading-none">{{ dataSource().length }}</div>
+                        </div>
+                        <div class="flex items-center gap-2 bg-red-600 rounded-lg px-2 sm:px-3 py-1.5 border-2 border-black" *ngIf="dataSource().length > 0">
+                            <div class="text-[9px] font-black uppercase text-white leading-none hidden sm:block">Unidades</div>
+                            <div class="text-xs sm:text-sm font-black text-white leading-none">{{ getTotalCantidad() }}</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="overflow-y-auto flex-1 custom-scrollbar">
+                    <table class="w-full min-w-[800px] border-collapse">
+                        <thead class="sticky top-0 z-10">
+                        <tr>
+                            <th class="!bg-gray-100 dark:!bg-slate-900 !text-black dark:!text-white !font-black !text-[10px] !border-b-[3px] !border-black !p-3 uppercase !w-12 text-center">N°</th>
+                            <th class="!bg-gray-100 dark:!bg-slate-900 !text-black dark:!text-white !font-black !text-[10px] !border-b-[3px] !border-black !p-3 uppercase text-left !w-32">Código</th>
+                            <th class="!bg-gray-100 dark:!bg-slate-900 !text-black dark:!text-white !font-black !text-[10px] !border-b-[3px] !border-black !p-3 uppercase text-left">Herramienta</th>
+                            <th class="!bg-gray-100 dark:!bg-slate-900 !text-black dark:!text-white !font-black !text-[10px] !border-b-[3px] !border-black !p-3 uppercase text-center !w-24">P/N</th>
+                            <th class="!bg-gray-100 dark:!bg-slate-900 !text-black dark:!text-white !font-black !text-[10px] !border-b-[3px] !border-black !p-3 uppercase text-center !w-24">S/N</th>
+                            <th class="!bg-gray-100 dark:!bg-slate-900 !text-black dark:!text-white !font-black !text-[10px] !border-b-[3px] !border-black !p-3 uppercase text-center !w-16">Cant.</th>
+                            <th class="!bg-gray-100 dark:!bg-slate-900 !text-black dark:!text-white !font-black !text-[10px] !border-b-[3px] !border-black !p-3 uppercase text-center !w-28">Estado</th>
+                            <th class="!bg-gray-100 dark:!bg-slate-900 !text-black dark:!text-white !font-black !text-[10px] !border-b-[3px] !border-black !p-3 uppercase text-center !w-16">Acc.</th>
+                        </tr>
+                        </thead>
+
+                        <tbody class="bg-white dark:bg-[#0F172AFF]">
+                        <tr *ngFor="let item of dataSource(); let i = index" class="hover:bg-gray-100 dark:hover:bg-slate-800/50 transition-colors cursor-pointer border-b-[2px] border-black dark:border-slate-700">
+                            <td class="!px-3 !py-2 text-center font-black text-[11px] text-gray-500">{{ i + 1 }}</td>
+                            <td class="!px-3 !py-2">
+                                <span class="bg-[#0F172AFF] text-white font-mono font-bold px-1.5 py-0.5 rounded text-[10px] block shadow-[1px_1px_0px_0px_rgba(0,0,0,0.5)] w-fit">{{ item.codigo }}</span>
+                            </td>
+                            <td class="!px-3 !py-2">
+                                <div class="font-black text-[11px] text-black dark:text-white leading-tight line-clamp-2" [matTooltip]="item.nombre">{{ item.nombre }}</div>
+                                <div class="font-bold text-[9px] uppercase text-gray-500 mt-1">{{ item.base }}</div>
+                            </td>
+                            <td class="!px-3 !py-2 text-center font-mono text-[11px] font-bold">{{ item.pn || '-' }}</td>
+                            <td class="!px-3 !py-2 text-center font-mono text-[11px] font-bold text-blue-600 dark:text-blue-400">{{ item.sn || '-' }}</td>
+                            <td class="!px-3 !py-2 text-center">
+                                <span class="bg-gray-100 dark:bg-slate-800 border-2 border-black text-black dark:text-white rounded px-2 py-0.5 font-black text-xs block w-fit mx-auto">{{ item.cantidad }}</span>
+                            </td>
+                            <td class="!px-3 !py-2 text-center">
+                                    <span class="px-1.5 py-0.5 rounded text-[9px] font-bold border-2 border-black uppercase text-white bg-[#FF1414FF] shadow-[2px_2px_0px_0px_#000]">
+                                        {{ item.estadoFisico }}
+                                    </span>
+                            </td>
+                            <td class="!px-3 !py-2 text-center">
+                                <button (click)="removeItem(i)" matTooltip="Eliminar"
+                                        class="w-7 h-7 bg-red-500 text-white rounded border-2 border-black shadow-[2px_2px_0px_0px_#000] hover:shadow-none hover:translate-x-[1px] hover:translate-y-[1px] transition-all flex items-center justify-center mx-auto">
+                                    <mat-icon class="!text-sm">delete</mat-icon>
+                                </button>
+                            </td>
+                        </tr>
+                        <tr *ngIf="dataSource().length === 0">
+                            <td colspan="8" class="py-10 sm:py-20 bg-white dark:bg-slate-800 text-center border-b-[2px] border-black">
+                                <div class="flex flex-col items-center justify-center opacity-60">
+                                    <mat-icon class="!text-5xl sm:!text-7xl text-gray-300 dark:text-gray-600 mb-2 sm:mb-4">assignment_late</mat-icon>
+                                    <p class="text-base sm:text-lg font-black uppercase text-gray-400">Lista Vacía</p>
+                                    <p class="text-[10px] sm:text-xs font-bold text-gray-500 mt-1">Presione "Agregar Ítem" en la parte superior.</p>
+                                </div>
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
         </div>
     </div>
-
 </div>
+
+<!-- ========================================================================================= -->
+<!-- MODALES -->
+<!-- ========================================================================================= -->
+
+<!-- MODAL: DATOS PROCESO BAJA -->
+<ng-template #datosBajaModal>
+    <div class="bg-gray-100 dark:bg-slate-900 rounded-2xl border-[3px] border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] flex flex-col w-full max-w-[700px] max-h-[90vh] overflow-hidden m-auto animate-fadeIn">
+
+        <div class="bg-[#0F172AFF] text-white px-4 py-2 border-b-[3px] border-black flex justify-between items-center shrink-0 cursor-move" cdkDrag cdkDragRootElement=".cdk-overlay-pane" cdkDragHandle>
+            <h2 class="text-xs sm:text-sm font-black uppercase flex items-center gap-2 pointer-events-none">
+                <mat-icon class="text-amber-400 !text-lg sm:!text-xl">edit_document</mat-icon> Datos Proceso de Baja
+            </h2>
+            <div class="flex items-center gap-2">
+                <button (click)="cancelarModalDatos()" class="px-2 sm:px-3 py-1 bg-[#FF1414FF] text-white font-black text-[9px] sm:text-[10px] border-2 border-black rounded shadow-[2px_2px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all uppercase cursor-pointer">
+                    <span class="hidden sm:inline">Cancelar</span><mat-icon class="sm:hidden !text-xs">close</mat-icon>
+                </button>
+                <button (click)="cerrarModalDatos()" class="px-2 sm:px-3 py-1 bg-green-600 text-white font-black text-[9px] sm:text-[10px] border-2 border-black rounded shadow-[2px_2px_0px_0px_rgba(255,255,255,0.2)] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all uppercase flex items-center gap-1 cursor-pointer">
+                    <span class="hidden sm:inline">Guardar</span><span class="sm:hidden">Ok</span>
+                </button>
+            </div>
+        </div>
+
+        <div class="flex flex-col flex-1 overflow-y-auto p-3 sm:p-4 bg-gray-200 dark:bg-slate-700 custom-scrollbar">
+            <form [formGroup]="bajaForm" class="flex flex-col bg-gray-50 dark:bg-slate-800 border-[2px] border-black rounded-lg p-3 sm:p-4 shadow-[3px_3px_0px_0px_#000] gap-3 sm:gap-4">
+
+                <h3 class="text-[9px] sm:text-[10px] font-black uppercase text-black dark:text-white border-b-2 border-black pb-1 flex items-center gap-1">
+                    <mat-icon class="!text-xs sm:!text-sm text-black dark:text-white">engineering</mat-icon> Responsables y Autorización
+                </h3>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
+                    <div>
+                        <label class="text-[8px] sm:text-[9px] font-black uppercase text-gray-700 dark:text-gray-400 block mb-0.5">Procesado Por *</label>
+                        <select formControlName="procesadoPor" class="w-full h-8 text-[9px] sm:text-[10px] font-bold border-2 border-black rounded px-2 bg-white dark:bg-slate-900 text-black dark:text-white outline-none focus:shadow-[2px_2px_0px_0px_#000]" [class.border-red-500]="hasError('procesadoPor', 'required')">
+                            <option [ngValue]="null">-- Seleccionar --</option>
+                            <option *ngFor="let u of usuarios" [ngValue]="u.value">{{ u.nombre }}</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="text-[8px] sm:text-[9px] font-black uppercase text-gray-700 dark:text-gray-400 block mb-0.5">Inspector Asignado</label>
+                        <input formControlName="inspector" type="text" placeholder="Nombre inspector..." class="w-full h-8 text-[9px] sm:text-[10px] font-bold border-2 border-black rounded px-2 bg-white dark:bg-slate-900 text-black dark:text-white outline-none focus:shadow-[2px_2px_0px_0px_#000] uppercase" />
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
+                    <div>
+                        <label class="text-[8px] sm:text-[9px] font-black uppercase text-gray-700 dark:text-gray-400 block mb-0.5">Verificado Por</label>
+                        <input formControlName="verificadoPor" type="text" placeholder="Nombre..." class="w-full h-8 text-[9px] sm:text-[10px] font-bold border-2 border-black rounded px-2 bg-white dark:bg-slate-900 text-black dark:text-white outline-none focus:shadow-[2px_2px_0px_0px_#000] uppercase" />
+                    </div>
+                    <div>
+                        <label class="text-[8px] sm:text-[9px] font-black uppercase text-gray-700 dark:text-gray-400 block mb-0.5">Autorizado Por</label>
+                        <input formControlName="autorizadoPor" type="text" placeholder="Nombre..." class="w-full h-8 text-[9px] sm:text-[10px] font-bold border-2 border-black rounded px-2 bg-white dark:bg-slate-900 text-black dark:text-white outline-none focus:shadow-[2px_2px_0px_0px_#000] uppercase" />
+                    </div>
+                </div>
+
+                <h3 class="text-[9px] sm:text-[10px] font-black uppercase text-black dark:text-white border-b-2 border-black pb-1 flex items-center gap-1 mt-2">
+                    <mat-icon class="!text-xs sm:!text-sm text-black dark:text-white">schedule</mat-icon> Detalles del Proceso
+                </h3>
+
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3">
+                    <div>
+                        <label class="text-[8px] sm:text-[9px] font-black uppercase text-gray-700 dark:text-gray-400 block mb-0.5">Estado Inicial *</label>
+                        <select formControlName="estado" class="w-full h-8 text-[9px] sm:text-[10px] font-bold border-2 border-black rounded px-2 bg-white dark:bg-slate-900 text-black dark:text-white outline-none focus:shadow-[2px_2px_0px_0px_#000]" [class.border-red-500]="hasError('estado', 'required')">
+                            <option [ngValue]="null">-- Selec. --</option>
+                            <option *ngFor="let e of estados" [ngValue]="e.value">{{ e.label }}</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="text-[8px] sm:text-[9px] font-black uppercase text-gray-700 dark:text-gray-400 block mb-0.5">Fecha *</label>
+                        <input type="date" formControlName="fecha" class="w-full h-8 text-[9px] sm:text-[10px] font-bold border-2 border-black rounded px-1 bg-white dark:bg-slate-900 text-black dark:text-white outline-none focus:shadow-[2px_2px_0px_0px_#000]" [class.border-red-500]="hasError('fecha', 'required')">
+                    </div>
+                    <div>
+                        <label class="text-[8px] sm:text-[9px] font-black uppercase text-gray-700 dark:text-gray-400 block mb-0.5">Hora *</label>
+                        <input type="time" formControlName="hora" class="w-full h-8 text-[9px] sm:text-[10px] font-bold border-2 border-black rounded px-1 bg-white dark:bg-slate-900 text-black dark:text-white outline-none focus:shadow-[2px_2px_0px_0px_#000]" [class.border-red-500]="hasError('hora', 'required')">
+                    </div>
+                </div>
+
+                <div class="flex flex-col min-h-[50px] pb-4 sm:pb-0">
+                    <label class="text-[8px] sm:text-[9px] font-black uppercase text-gray-700 dark:text-gray-400 block mb-0.5">Observaciones</label>
+                    <textarea formControlName="observaciones" rows="3" placeholder="Notas adicionales..." class="w-full text-[9px] sm:text-[10px] font-bold border-2 border-black rounded p-2 bg-white dark:bg-slate-900 text-black dark:text-white outline-none focus:shadow-[2px_2px_0px_0px_#000] resize-none custom-scrollbar"></textarea>
+                </div>
+            </form>
+        </div>
+    </div>
+</ng-template>

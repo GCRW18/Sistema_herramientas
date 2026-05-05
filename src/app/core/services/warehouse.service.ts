@@ -14,7 +14,7 @@ import PxpClient from 'pxp-client';
 export class WarehouseService {
 
     constructor() {
-        console.log('🏭 WarehouseService inicializado');
+        console.log(' WarehouseService inicializado');
     }
 
     // ============================================
@@ -22,7 +22,7 @@ export class WarehouseService {
     // ============================================
 
     getWarehouses(): Observable<Warehouse[]> {
-        console.log('📦 Obteniendo lista de almacenes...');
+        console.log(' Obteniendo lista de almacenes...');
 
         return from(
             PxpClient.doRequest({
@@ -34,7 +34,7 @@ export class WarehouseService {
             })
         ).pipe(
             map((response: any) => {
-                console.log('✅ Respuesta getWarehouses:', response);
+                console.log(' Respuesta getWarehouses:', response);
 
                 if (response?.data) {
                     return response.data;
@@ -45,14 +45,14 @@ export class WarehouseService {
                 return [];
             }),
             catchError((error) => {
-                console.error('❌ Error en getWarehouses:', error);
+                console.error(' Error en getWarehouses:', error);
                 return throwError(() => error);
             })
         );
     }
 
     getWarehouseById(id: string): Observable<Warehouse> {
-        console.log('🔍 Obteniendo almacén por ID:', id);
+        console.log(' Obteniendo almacén por ID:', id);
 
         return from(
             PxpClient.doRequest({
@@ -65,7 +65,7 @@ export class WarehouseService {
             })
         ).pipe(
             map((response: any) => {
-                console.log('✅ Respuesta getWarehouseById:', response);
+                console.log(' Respuesta getWarehouseById:', response);
 
                 const data = response?.data || response?.data;
                 if (data && data.length > 0) {
@@ -74,14 +74,14 @@ export class WarehouseService {
                 throw new Error('Almacén no encontrado');
             }),
             catchError((error) => {
-                console.error('❌ Error en getWarehouseById:', error);
+                console.error(' Error en getWarehouseById:', error);
                 return throwError(() => error);
             })
         );
     }
 
     createWarehouse(warehouse: Partial<Warehouse>): Observable<any> {
-        console.log('➕ Creando almacén:', warehouse);
+        console.log(' Creando almacén:', warehouse);
 
         return from(
             PxpClient.doRequest({
@@ -90,18 +90,18 @@ export class WarehouseService {
             })
         ).pipe(
             map((response: any) => {
-                console.log('✅ Respuesta createWarehouse:', response);
+                console.log(' Respuesta createWarehouse:', response);
                 return response;
             }),
             catchError((error) => {
-                console.error('❌ Error en createWarehouse:', error);
+                console.error(' Error en createWarehouse:', error);
                 return throwError(() => error);
             })
         );
     }
 
     updateWarehouse(id: string, warehouse: Partial<Warehouse>): Observable<any> {
-        console.log('✏️ Actualizando almacén:', id, warehouse);
+        console.log('✏ Actualizando almacén:', id, warehouse);
 
         return from(
             PxpClient.doRequest({
@@ -113,18 +113,18 @@ export class WarehouseService {
             })
         ).pipe(
             map((response: any) => {
-                console.log('✅ Respuesta updateWarehouse:', response);
+                console.log(' Respuesta updateWarehouse:', response);
                 return response;
             }),
             catchError((error) => {
-                console.error('❌ Error en updateWarehouse:', error);
+                console.error(' Error en updateWarehouse:', error);
                 return throwError(() => error);
             })
         );
     }
 
     deleteWarehouse(id: string): Observable<any> {
-        console.log('🗑️ Eliminando almacén:', id);
+        console.log(' Eliminando almacén:', id);
 
         return from(
             PxpClient.doRequest({
@@ -135,11 +135,11 @@ export class WarehouseService {
             })
         ).pipe(
             map((response: any) => {
-                console.log('✅ Respuesta deleteWarehouse:', response);
+                console.log(' Respuesta deleteWarehouse:', response);
                 return response;
             }),
             catchError((error) => {
-                console.error('❌ Error en deleteWarehouse:', error);
+                console.error(' Error en deleteWarehouse:', error);
                 return throwError(() => error);
             })
         );
@@ -150,7 +150,7 @@ export class WarehouseService {
     // ============================================
 
     getLocations(warehouseId: string): Observable<Location[]> {
-        console.log('📍 Obteniendo ubicaciones del almacén:', warehouseId);
+        console.log(' Obteniendo ubicaciones del almacén:', warehouseId);
 
         return from(
             PxpClient.doRequest({
@@ -163,7 +163,7 @@ export class WarehouseService {
             })
         ).pipe(
             map((response: any) => {
-                console.log('✅ Respuesta getLocations:', response);
+                console.log(' Respuesta getLocations:', response);
 
                 if (response?.data) {
                     return response.data;
@@ -174,14 +174,14 @@ export class WarehouseService {
                 return [];
             }),
             catchError((error) => {
-                console.error('❌ Error en getLocations:', error);
+                console.error(' Error en getLocations:', error);
                 return throwError(() => error);
             })
         );
     }
 
     getLocationById(id: string): Observable<Location> {
-        console.log('🔍 Obteniendo ubicación por ID:', id);
+        console.log(' Obteniendo ubicación por ID:', id);
 
         return from(
             PxpClient.doRequest({
@@ -194,7 +194,7 @@ export class WarehouseService {
             })
         ).pipe(
             map((response: any) => {
-                console.log('✅ Respuesta getLocationById:', response);
+                console.log(' Respuesta getLocationById:', response);
 
                 const data = response?.data || response?.data;
                 if (data && data.length > 0) {
@@ -203,14 +203,14 @@ export class WarehouseService {
                 throw new Error('Ubicación no encontrada');
             }),
             catchError((error) => {
-                console.error('❌ Error en getLocationById:', error);
+                console.error(' Error en getLocationById:', error);
                 return throwError(() => error);
             })
         );
     }
 
     createLocation(location: Partial<Location>): Observable<any> {
-        console.log('➕ Creando ubicación:', location);
+        console.log(' Creando ubicación:', location);
 
         return from(
             PxpClient.doRequest({
@@ -219,18 +219,18 @@ export class WarehouseService {
             })
         ).pipe(
             map((response: any) => {
-                console.log('✅ Respuesta createLocation:', response);
+                console.log(' Respuesta createLocation:', response);
                 return response;
             }),
             catchError((error) => {
-                console.error('❌ Error en createLocation:', error);
+                console.error(' Error en createLocation:', error);
                 return throwError(() => error);
             })
         );
     }
 
     updateLocation(id: string, location: Partial<Location>): Observable<any> {
-        console.log('✏️ Actualizando ubicación:', id, location);
+        console.log(' Actualizando ubicación:', id, location);
 
         return from(
             PxpClient.doRequest({
@@ -242,18 +242,18 @@ export class WarehouseService {
             })
         ).pipe(
             map((response: any) => {
-                console.log('✅ Respuesta updateLocation:', response);
+                console.log(' Respuesta updateLocation:', response);
                 return response;
             }),
             catchError((error) => {
-                console.error('❌ Error en updateLocation:', error);
+                console.error(' Error en updateLocation:', error);
                 return throwError(() => error);
             })
         );
     }
 
     deleteLocation(id: string): Observable<any> {
-        console.log('🗑️ Eliminando ubicación:', id);
+        console.log('🗑 Eliminando ubicación:', id);
 
         return from(
             PxpClient.doRequest({
@@ -264,11 +264,11 @@ export class WarehouseService {
             })
         ).pipe(
             map((response: any) => {
-                console.log('✅ Respuesta deleteLocation:', response);
+                console.log(' Respuesta deleteLocation:', response);
                 return response;
             }),
             catchError((error) => {
-                console.error('❌ Error en deleteLocation:', error);
+                console.error(' Error en deleteLocation:', error);
                 return throwError(() => error);
             })
         );

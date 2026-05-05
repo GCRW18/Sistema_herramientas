@@ -52,233 +52,31 @@ interface ModuleDef {
     selector: 'app-entries',
     standalone: true,
     imports: [
-        CommonModule,
-        NgComponentOutlet,
-        MatCardModule,
-        MatIconModule,
-        MatButtonModule,
-        MatTableModule,
-        MatPaginatorModule,
-        MatDialogModule,
-        MatSnackBarModule,
-        MatProgressSpinnerModule,
-        MatTooltipModule,
-        DragDropModule
+        CommonModule, NgComponentOutlet, MatCardModule, MatIconModule, MatButtonModule,
+        MatTableModule, MatPaginatorModule, MatDialogModule, MatSnackBarModule,
+        MatProgressSpinnerModule, MatTooltipModule, DragDropModule
     ],
     templateUrl: './entries.component.html',
-
     styles: [`
         :host {
             display: block;
             height: 100%;
-            --neo-border: 3px solid #1a1a1a;
-            --neo-shadow: 4px 4px 0px 0px rgba(0, 0, 0, 1);
         }
 
-        /* ===== ENTRY CARDS ===== */
-        .neo-card-entry {
-            border: var(--neo-border);
-            box-shadow: var(--neo-shadow);
-            border-radius: 20px;
-            background-color: #ffffff;
-            cursor: pointer;
-            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-            position: relative;
-            overflow: hidden;
-        }
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; border-radius: 3px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #000; border-radius: 3px; }
+        :host-context(.dark) .custom-scrollbar::-webkit-scrollbar-thumb { background: #fff; }
 
-        .neo-card-entry:hover {
-            transform: translate(-3px, -3px);
-            box-shadow: 8px 8px 0px 0px rgba(0, 0, 0, 1);
-        }
-
-        .neo-card-entry:active {
-            transform: translate(0px, 0px);
-            box-shadow: 2px 2px 0px 0px rgba(0, 0, 0, 1);
-        }
-
-        :host-context(.dark) .neo-card-entry {
-            background-color: #203f77;
-            border-color: #000000;
-            box-shadow: 4px 4px 0px 0px rgb(0, 0, 0);
-        }
-
-        :host-context(.dark) .neo-card-entry:hover {
-            box-shadow: 8px 8px 0px 0px rgb(0, 0, 0);
-        }
-
-        :host-context(.dark) .neo-card-entry:active {
-            box-shadow: 2px 2px 0px 0px rgba(30, 41, 59, 1);
-        }
-
-        /* ===== CARD NUMBERS ===== */
-        .entry-number {
-            font-size: 4rem;
-            font-weight: 900;
-            line-height: 1;
-            color: #1a1a1a;
-            letter-spacing: -0.03em;
-        }
-
-        .entry-number-sm {
-            font-size: 2.5rem;
-        }
-
-        :host-context(.dark) .entry-number {
-            color: #fff6f6;
-        }
-
-        /* ===== CARD LABELS ===== */
-        .entry-label {
-            font-size: 0.95rem;
-            font-weight: 900;
-            text-transform: uppercase;
-            letter-spacing: 0.01em;
-            line-height: 1.25;
-            color: #1a1a1a;
-        }
-
-        .entry-label-lg {
-            font-size: 1.35rem;
-        }
-
-        .entry-label-sm {
-            font-size: 0.85rem;
-        }
-
-        :host-context(.dark) .entry-label {
-            color: #c2cee6;
-        }
-
-        /* ===== CARD ICONS ===== */
-        .entry-icon-lg {
-            width: 70px !important;
-            height: 70px !important;
-            font-size: 70px !important;
-            color: #1a1a1a;
-        }
-
-        .entry-icon-md {
-            width: 48px !important;
-            height: 48px !important;
-            font-size: 48px !important;
-            color: #1a1a1a;
-        }
-
-        .entry-icon-xl {
-            width: 130px !important;
-            height: 130px !important;
-            font-size: 130px !important;
-            color: #1a1a1a;
-        }
-
-        :host-context(.dark) .entry-icon-lg,
-        :host-context(.dark) .entry-icon-md,
-        :host-context(.dark) .entry-icon-xl {
-            color: #ffffff;
-        }
-
-        /* ===== SIDEBAR BUTTONS ===== */
-        .entry-sidebar-btn {
-            width: 100%;
-            padding: 14px 20px;
-            font-weight: 900;
-            font-size: 0.85rem;
-            text-transform: uppercase;
-            letter-spacing: 0.06em;
-            background-color: #ffffff;
-            color: #1a1a1a;
-            border: 3px solid #1a1a1a;
-            border-radius: 14px;
-            box-shadow: 3px 3px 0px 0px rgba(0, 0, 0, 1);
-            cursor: pointer;
-            transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-
-        .entry-sidebar-btn:hover {
-            transform: translate(-2px, -2px);
-            box-shadow: 5px 5px 0px 0px rgba(0, 0, 0, 1);
-            color: #ffffff;
-        }
-
-        .entry-sidebar-btn:active {
-            transform: translate(0, 0);
-            box-shadow: 1px 1px 0px 0px rgba(0, 0, 0, 1);
-        }
-
-        :host-context(.dark) .entry-sidebar-btn {
-            background-color: #203f77;
-            color: #ffffff;
-            border-color: #000000;
-            box-shadow: 3px 3px 0px 0px rgb(30, 41, 59);
-        }
-
-        /* ===== TABLE STYLES ===== */
-        .header-neo {
-            background-color: white !important;
-            color: #111A43 !important;
-            font-weight: 900 !important;
-            font-size: 14px !important;
-            border-bottom: 3px solid black !important;
-            padding: 20px !important;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-        }
-
-        .cell-neo {
-            padding: 18px 20px !important;
-            border-bottom: 1px solid #000000 !important;
-            font-size: 14px !important;
-            color: black;
-        }
-
-        :host-context(.dark) .header-neo {
-            background-color: #111A43 !important;
-            color: white !important;
-        }
-
-        :host-context(.dark) .cell-neo {
-            color: white;
-            border-bottom-color: #333;
-        }
-
-        /* ===== DIALOG: Neo Card Base ===== */
-        .neo-card-base-entry {
-            border: 2px solid black !important;
-            box-shadow: 4px 4px 0px 0px rgba(0,0,0,1) !important;
-            border-radius: 8px !important;
-            background-color: white;
-        }
-
-        :host-context(.dark) .neo-card-base-entry {
-            background-color: #1e293b !important;
-        }
-
-        /* ===== DIALOG: Spinner Overlay ===== */
         .spinner-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(255,255,255,0.8);
-            backdrop-filter: blur(4px);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 100;
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(255,255,255,0.8); backdrop-filter: blur(4px);
+            display: flex; align-items: center; justify-content: center; z-index: 9999;
         }
+        :host-context(.dark) .spinner-overlay { background: rgba(15, 23, 42, 0.8); }
 
-        :host-context(.dark) .spinner-overlay {
-            background: rgba(0,0,0,0.7);
-        }
-
-        /* ===== DIALOG: Custom Scrollbar ===== */
-        .custom-scrollbar-entry::-webkit-scrollbar { width: 6px; height: 6px; }
-        .custom-scrollbar-entry::-webkit-scrollbar-track { background: transparent; }
-        .custom-scrollbar-entry::-webkit-scrollbar-thumb { background: #000; border-radius: 3px; }
-        :host-context(.dark) .custom-scrollbar-entry::-webkit-scrollbar-thumb { background: #cbd5e1; }
-
+        .row-selected { background-color: #fef3c7 !important; }
+        :host-context(.dark) .row-selected { background-color: rgba(251, 191, 36, 0.2) !important; }
     `]
 })
 export class EntriesComponent implements OnInit, OnDestroy {
@@ -411,15 +209,13 @@ export class EntriesComponent implements OnInit, OnDestroy {
 
     private mapEntryType(type: string): string {
         const typeMap: Record<string, string> = {
-            // entry_reason (devoluciones / retornos) — coincide con los submodulos
-            'technician_return':  'DEVOLUCIÓN PRÉSTAMO TÉC.',
+            'technician_return':  'DEVOLUCIÓN PRÉSTAMO',
             'third_party_return': 'DEVOLUCIÓN TERCEROS',
             'base_return':        'RETORNO DE BASE',
             'transfer_return':    'RETORNO TRASPASO',
             'calibration_return': 'RETORNO CALIBRACIÓN',
-            // type (nueva herramienta / ajuste) — sin entry_reason
             'purchase':           'NUEVA HERRAMIENTA',
-            'adjustment':         'AJUSTE POR INGRESO',
+            'adjustment':         'AJUSTE INGRESO',
         };
         return typeMap[type] || type?.toUpperCase() || 'N/A';
     }
@@ -451,25 +247,17 @@ export class EntriesComponent implements OnInit, OnDestroy {
 
     getStatusClass(estado: string): string {
         switch (estado) {
-            case 'COMPLETADO':
-                return 'bg-[#177f0f] text-black';
-            case 'PENDIENTE':
-                return 'bg-[#F8B400FF] text-black';
-            case 'REVISION':
-                return 'bg-[#203F77FF] text-white';
-            case 'CANCELADO':
-                return 'bg-red-800 text-white';
-            default:
-                return 'bg-gray-100 text-gray-800 border-gray-300';
+            case 'COMPLETADO': return 'bg-green-100 text-green-800 border-green-400';
+            case 'PENDIENTE':  return 'bg-yellow-100 text-yellow-800 border-yellow-400';
+            case 'REVISION':   return 'bg-blue-100 text-blue-800 border-blue-400';
+            case 'CANCELADO':  return 'bg-red-100 text-red-800 border-red-400';
+            default:           return 'bg-gray-100 text-gray-800 border-gray-400';
         }
     }
 
     private showMessage(message: string, type: 'success' | 'error' | 'warning' | 'info'): void {
         this.snackBar.open(message, 'Cerrar', {
-            duration: 3000,
-            horizontalPosition: 'end',
-            verticalPosition: 'top',
-            panelClass: [`snackbar-${type}`]
+            duration: 3000, horizontalPosition: 'end', verticalPosition: 'top', panelClass: [`snackbar-${type}`]
         });
     }
 
@@ -477,11 +265,11 @@ export class EntriesComponent implements OnInit, OnDestroy {
         this.selectedEntry = null;
         this.loadRecentEntries();
         this.dialog.open(this.entradasRecientesDialog, {
-            width: '1100px',
+            width: '900px',
             maxWidth: '95vw',
-            height: '85vh',
+            height: 'auto',
             maxHeight: '90vh',
-            panelClass: 'neo-dialog-entradas',
+            panelClass: 'neo-dialog-transparent',
             hasBackdrop: true,
             disableClose: false,
             autoFocus: false
@@ -505,7 +293,6 @@ export class EntriesComponent implements OnInit, OnDestroy {
     async openModule(type: number): Promise<void> {
         this.showBandeja = false;
 
-        // Si ya está abierto, solo enfocar
         const existing = this.openTabs.find(t => t.type === type);
         if (existing) {
             this.activeTabId = existing.id;

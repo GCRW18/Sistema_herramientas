@@ -26,6 +26,7 @@ export interface Laboratory {
     website: string;
     is_certified: boolean;
     certification_number: string;
+    certification_types: string; // 🚀 FIX: Agregado al modelo
     rating: number;
     average_delivery_days: number;
     active: boolean;
@@ -47,7 +48,6 @@ export type DialogMode = 'new' | 'edit' | 'view';
 export class FormLaboratorioComponent implements OnDestroy {
 
     private calibrationService = inject(CalibrationService);
-    // ✅ CORREGIDO: dialogRef debe ser pública para usarse en el template
     public dialogRef = inject(MatDialogRef<FormLaboratorioComponent>);
     private snackBar = inject(MatSnackBar);
     private data = inject<{ mode: DialogMode; laboratory?: Laboratory }>(MAT_DIALOG_DATA);
@@ -76,6 +76,10 @@ export class FormLaboratorioComponent implements OnDestroy {
         // Inicializar laboratorio
         if (this.data?.laboratory) {
             this.laboratory = { ...this.data.laboratory };
+            // Asegurar que el campo exista al editar si venía nulo
+            if (!this.laboratory.certification_types) {
+                this.laboratory.certification_types = '';
+            }
         } else {
             this.laboratory = this.getEmptyLaboratory();
         }
@@ -105,6 +109,7 @@ export class FormLaboratorioComponent implements OnDestroy {
             website: '',
             is_certified: false,
             certification_number: '',
+            certification_types: '', // 🚀 FIX: Inicializado para que viaje en el JSON
             rating: 0,
             average_delivery_days: 30,
             active: true,

@@ -1,307 +1,251 @@
 <div class="relative flex flex-col w-full h-full bg-white dark:bg-[#0F172AFF] transition-colors duration-300 font-sans overflow-hidden">
 
-    <!-- ===== HEADER ===== -->
-    <div class="flex items-center gap-3 px-5 py-3 border-b-2 border-black dark:border-slate-700 shrink-0 bg-white dark:bg-[#0F172AFF] relative z-30">
-        <h1 class="text-3xl md:text-4xl font-black text-black dark:text-white uppercase tracking-tighter leading-none">
-            SALIDAS
-        </h1>
-        <span class="text-[10px] font-bold bg-[#FFC501FF] text-black px-3 py-1 rounded-sm border border-black uppercase tracking-wider hidden sm:inline">
-            MÓDULO DE EGRESOS
-        </span>
+    <div class="flex items-center gap-4 px-6 py-4 border-b-[3px] border-black shrink-0 bg-white dark:bg-slate-900 relative z-[110] shadow-sm">
+
+        <div class="flex items-center gap-3">
+            <h1 class="text-2xl md:text-3xl font-black text-black dark:text-white uppercase tracking-tighter leading-none">
+                SALIDAS
+            </h1>
+            <div class="flex items-center gap-2 mt-0.5 flex-wrap hidden sm:flex">
+                <span class="text-[10px] font-bold bg-[#FFC501FF] text-black px-2 py-0.5 rounded inline-block border-2 border-black uppercase tracking-wider">
+                    MÓDULO DE EGRESOS
+                </span>
+            </div>
+        </div>
+
         <div class="flex-1"></div>
 
-        <!-- Botón MÓDULOS / bandeja -->
         <button (click)="toggleBandeja()"
-                [class.!bg-[#e94125]]="showBandeja"
+                [class.!bg-black]="showBandeja"
                 [class.!text-white]="showBandeja"
-                class="flex items-center gap-2 px-5 py-2 bg-[#2563eb] dark:bg-slate-800 border-2 border-black font-black text-xs uppercase rounded-full shadow-[3px_3px_0px_0px_#000] hover:shadow-[1px_1px_0px_0px_#000] hover:translate-x-[2px] hover:translate-y-[2px] transition-all text-white dark:text-white">
-            <mat-icon class="!text-base text-black">apps</mat-icon>
+                class="flex items-center gap-2 px-5 py-2 bg-[#2563eb] border-[2px] border-black font-black text-xs uppercase rounded-xl shadow-[3px_3px_0px_0px_#000] hover:shadow-[1px_1px_0px_0px_#000] hover:translate-x-[2px] hover:translate-y-[2px] transition-all text-white">
+            <mat-icon class="!text-white">apps</mat-icon>
             <span class="hidden sm:inline">MÓDULOS</span>
-            <mat-icon class="!text-sm text-white transition-transform duration-200" [class.rotate-180]="showBandeja">expand_more</mat-icon>
+            <mat-icon class="!text-sm transition-transform duration-200" [class.rotate-180]="showBandeja">expand_more</mat-icon>
         </button>
 
+        <div class="w-px h-8 bg-black/20 dark:bg-white/20 mx-1"></div>
+
         <button (click)="openSalidasRecientes()"
-                class="flex items-center gap-2 px-5 py-2 bg-[#111A43] dark:bg-slate-800 border-2 border-black font-black text-xs uppercase rounded-full shadow-[3px_3px_0px_0px_#000] hover:shadow-[1px_1px_0px_0px_#000] hover:translate-x-[2px] hover:translate-y-[2px] transition-all text-white dark:text-white">
-            <mat-icon class="!text-base text-white">history</mat-icon>
+                class="flex items-center gap-2 px-5 py-2 bg-black dark:bg-slate-700 border-[2px] border-black font-black text-xs uppercase rounded-xl shadow-[3px_3px_0px_0px_rgba(0,0,0,0.5)] hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,0.5)] hover:translate-x-[2px] hover:translate-y-[2px] transition-all text-white">
+            <mat-icon class="!text-base">history</mat-icon>
             <span class="hidden sm:inline">Salidas Recientes</span>
         </button>
     </div>
 
-    <!-- ===== BANDEJA: backdrop ===== -->
-    <div *ngIf="showBandeja"
-         (click)="closeBandeja()"
-         class="fixed inset-0 z-20 bg-black/20">
-    </div>
+    <div *ngIf="showBandeja" (click)="closeBandeja()" class="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm transition-all duration-300"></div>
 
-    <!-- ===== BANDEJA: panel desplegable ===== -->
     <div *ngIf="showBandeja"
-         class="absolute top-[56px] left-2 right-2 md:left-auto md:right-4 md:w-auto z-30 bg-white dark:bg-[#111A43] border-2 border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] rounded-2xl p-3 animate-in slide-in-from-top-2 duration-150">
+         class="absolute top-[80px] left-2 right-2 md:left-auto md:right-6 md:w-auto z-[110] bg-white dark:bg-slate-800 border-[3px] border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] rounded-xl p-4 animate-in slide-in-from-top-2 duration-150">
 
-        <p class="text-[9px] font-black uppercase tracking-widest text-black dark:text-slate-400 mb-2 px-1">
-            Seleccionar módulo de salida
+        <p class="text-[10px] font-black uppercase tracking-widest text-black dark:text-white mb-3 px-1 border-b-2 border-black pb-1.5">
+            Seleccionar Módulo de Salida
         </p>
 
-        <!-- Siempre 5 columnas — una fila, sin scroll -->
-        <div class="flex gap-2">
-
-            <!-- Módulo 1: Envío a Otras Bases -->
-            <button (click)="openModule(1)"
-                    class="group relative flex flex-col items-center gap-1 p-2 rounded-xl border-2 border-black transition-all hover:scale-[1.04] active:scale-[0.97] flex-1 min-w-0"
-                    [style.background-color]="isTabOpen(1) ? '#ff1414' : 'transparent'"
-                    [style.box-shadow]="'3px 3px 0px 0px rgba(0,0,0,1)'">
-                <div *ngIf="isTabOpen(1)" class="absolute top-1 right-1 "></div>
-                <mat-icon svgIcon="heroicons_outline:building-office"
-                          class="!w-6 !h-6 !text-2xl text-black dark:text-white shrink-0"></mat-icon>
-                <p class="text-[9px] font-black uppercase leading-tight text-black dark:text-white text-center w-full truncate">ENVÍO A</p>
-                <p class="text-[9px] font-black uppercase leading-tight text-black dark:text-white text-center w-full truncate">OTRAS BASES</p>
+        <div class="flex gap-3 overflow-x-auto custom-scrollbar pb-2 pt-1 px-1">
+            <button (click)="openModule(1)" class="group relative flex flex-col items-center gap-1.5 p-3 rounded-xl border-[2px] border-black transition-all hover:-translate-y-1 w-[120px] shrink-0" [style.background-color]="isTabOpen(1) ? '#ff1414' : '#f8f9fc'" [style.color]="isTabOpen(1) ? 'white' : 'inherit'" [style.box-shadow]="'3px 3px 0px 0px rgba(0,0,0,1)'">
+                <mat-icon svgIcon="heroicons_outline:building-office" class="!w-8 !h-8 !text-3xl shrink-0" [class.text-white]="isTabOpen(1)" [class.text-black]="!isTabOpen(1)"></mat-icon>
+                <p class="text-[10px] font-black uppercase leading-tight text-center w-full" [class.text-white]="isTabOpen(1)" [class.text-black]="!isTabOpen(1)">ENVÍO A</p>
+                <p class="text-[9px] font-bold uppercase leading-tight text-center w-full truncate" [class.text-white]="isTabOpen(1)" [class.text-gray-700]="!isTabOpen(1)">OTRAS BASES</p>
             </button>
 
-            <!-- Módulo 2: Traspaso Otra Área -->
-            <button (click)="openModule(2)"
-                    class="group relative flex flex-col items-center gap-1 p-2 rounded-xl border-2 border-black transition-all hover:scale-[1.04] active:scale-[0.97] flex-1 min-w-0"
-                    [style.background-color]="isTabOpen(2) ? '#ff1414' : 'transparent'"
-                    [style.box-shadow]="'3px 3px 0px 0px rgba(0,0,0,1)'">
-                <div *ngIf="isTabOpen(2)" class="absolute top-1 right-1"></div>
-                <mat-icon svgIcon="heroicons_outline:arrow-path"
-                          class="!w-6 !h-6 !text-2xl text-black dark:text-white shrink-0"></mat-icon>
-                <p class="text-[9px] font-black uppercase leading-tight text-black dark:text-white text-center w-full truncate">TRASPASO</p>
-                <p class="text-[9px] font-black uppercase leading-tight text-black dark:text-white text-center w-full truncate">OTRA ÁREA</p>
+            <button (click)="openModule(2)" class="group relative flex flex-col items-center gap-1.5 p-3 rounded-xl border-[2px] border-black transition-all hover:-translate-y-1 w-[120px] shrink-0" [style.background-color]="isTabOpen(2) ? '#ff1414' : '#f8f9fc'" [style.color]="isTabOpen(2) ? 'white' : 'inherit'" [style.box-shadow]="'3px 3px 0px 0px rgba(0,0,0,1)'">
+                <mat-icon svgIcon="heroicons_outline:arrow-path" class="!w-8 !h-8 !text-3xl shrink-0" [class.text-white]="isTabOpen(2)" [class.text-black]="!isTabOpen(2)"></mat-icon>
+                <p class="text-[10px] font-black uppercase leading-tight text-center w-full" [class.text-white]="isTabOpen(2)" [class.text-black]="!isTabOpen(2)">TRASPASO</p>
+                <p class="text-[9px] font-bold uppercase leading-tight text-center w-full truncate" [class.text-white]="isTabOpen(2)" [class.text-gray-700]="!isTabOpen(2)">OTRA ÁREA</p>
             </button>
 
-            <!-- Módulo 3: Préstamo Tec./Otros -->
-            <button (click)="openModule(3)"
-                    class="group relative flex flex-col items-center gap-1 p-2 rounded-xl border-2 border-black transition-all hover:scale-[1.04] active:scale-[0.97] flex-1 min-w-0"
-                    [style.background-color]="isTabOpen(3) ? '#ff1414' : 'transparent'"
-                    [style.box-shadow]="'3px 3px 0px 0px rgba(0,0,0,1)'">
-                <div *ngIf="isTabOpen(3)" class="absolute top-1 right-1"></div>
-                <mat-icon svgIcon="heroicons_outline:building-storefront"
-                          class="!w-6 !h-6 !text-2xl text-black dark:text-white shrink-0"></mat-icon>
-                <p class="text-[9px] font-black uppercase leading-tight text-black dark:text-white text-center w-full truncate">PRÉSTAMO</p>
-                <p class="text-[9px] font-black uppercase leading-tight text-black dark:text-white text-center w-full truncate">TÉC./OTROS</p>
+            <button (click)="openModule(3)" class="group relative flex flex-col items-center gap-1.5 p-3 rounded-xl border-[2px] border-black transition-all hover:-translate-y-1 w-[120px] shrink-0" [style.background-color]="isTabOpen(3) ? '#ff1414' : '#f8f9fc'" [style.color]="isTabOpen(3) ? 'white' : 'inherit'" [style.box-shadow]="'3px 3px 0px 0px rgba(0,0,0,1)'">
+                <mat-icon svgIcon="heroicons_outline:building-storefront" class="!w-8 !h-8 !text-3xl shrink-0" [class.text-white]="isTabOpen(3)" [class.text-black]="!isTabOpen(3)"></mat-icon>
+                <p class="text-[10px] font-black uppercase leading-tight text-center w-full" [class.text-white]="isTabOpen(3)" [class.text-black]="!isTabOpen(3)">PRÉSTAMO</p>
+                <p class="text-[9px] font-bold uppercase leading-tight text-center w-full truncate" [class.text-white]="isTabOpen(3)" [class.text-gray-700]="!isTabOpen(3)">TÉC./OTROS</p>
             </button>
 
-            <!-- Módulo 4: Cuarentena -->
-            <button (click)="openModule(4)"
-                    class="group relative flex flex-col items-center gap-1 p-2 rounded-xl border-2 border-black transition-all hover:scale-[1.04] active:scale-[0.97] flex-1 min-w-0"
-                    [style.background-color]="isTabOpen(4) ? '#ff1414' : 'transparent'"
-                    [style.box-shadow]="'3px 3px 0px 0px rgba(0,0,0,1)'">
-                <div *ngIf="isTabOpen(4)" class="absolute top-1 right-1"></div>
-                <mat-icon svgIcon="heroicons_outline:exclamation-triangle"
-                          class="!w-6 !h-6 !text-2xl text-black dark:text-white shrink-0"></mat-icon>
-                <p class="text-[9px] font-black uppercase leading-tight text-black dark:text-white text-center w-full truncate">CUARENTENA</p>
-                <p class="text-[9px] font-black uppercase leading-tight text-black dark:text-white text-center w-full truncate">DE ACTIVO</p>
+            <button (click)="openModule(4)" class="group relative flex flex-col items-center gap-1.5 p-3 rounded-xl border-[2px] border-black transition-all hover:-translate-y-1 w-[120px] shrink-0" [style.background-color]="isTabOpen(4) ? '#ff1414' : '#f8f9fc'" [style.color]="isTabOpen(4) ? 'white' : 'inherit'" [style.box-shadow]="'3px 3px 0px 0px rgba(0,0,0,1)'">
+                <mat-icon svgIcon="heroicons_outline:exclamation-triangle" class="!w-8 !h-8 !text-3xl shrink-0" [class.text-white]="isTabOpen(4)" [class.text-black]="!isTabOpen(4)"></mat-icon>
+                <p class="text-[10px] font-black uppercase leading-tight text-center w-full" [class.text-white]="isTabOpen(4)" [class.text-black]="!isTabOpen(4)">CUARENTENA</p>
+                <p class="text-[9px] font-bold uppercase leading-tight text-center w-full truncate" [class.text-white]="isTabOpen(4)" [class.text-gray-700]="!isTabOpen(4)">DE ACTIVO</p>
             </button>
 
-            <!-- Módulo 5: Baja -->
-            <button (click)="openModule(5)"
-                    class="group relative flex flex-col items-center gap-1 p-2 rounded-xl border-2 border-black transition-all hover:scale-[1.04] active:scale-[0.97] flex-1 min-w-0"
-                    [style.background-color]="isTabOpen(5) ? '#ff1414' : 'transparent'"
-                    [style.box-shadow]="'3px 3px 0px 0px rgba(0,0,0,1)'">
-                <div *ngIf="isTabOpen(5)" class="absolute top-1 right-1"></div>
-                <mat-icon svgIcon="heroicons_outline:trash"
-                          class="!w-6 !h-6 !text-2xl text-black dark:text-white shrink-0"></mat-icon>
-                <p class="text-[9px] font-black uppercase leading-tight text-black dark:text-white text-center w-full truncate">BAJA</p>
-                <p class="text-[9px] font-black uppercase leading-tight text-black dark:text-white text-center w-full truncate">DE ACTIVO</p>
+            <button (click)="openModule(5)" class="group relative flex flex-col items-center gap-1.5 p-3 rounded-xl border-[2px] border-black transition-all hover:-translate-y-1 w-[120px] shrink-0" [style.background-color]="isTabOpen(5) ? '#ff1414' : '#f8f9fc'" [style.color]="isTabOpen(5) ? 'white' : 'inherit'" [style.box-shadow]="'3px 3px 0px 0px rgba(0,0,0,1)'">
+                <mat-icon svgIcon="heroicons_outline:trash" class="!w-8 !h-8 !text-3xl shrink-0" [class.text-white]="isTabOpen(5)" [class.text-black]="!isTabOpen(5)"></mat-icon>
+                <p class="text-[10px] font-black uppercase leading-tight text-center w-full" [class.text-white]="isTabOpen(5)" [class.text-black]="!isTabOpen(5)">BAJA</p>
+                <p class="text-[9px] font-bold uppercase leading-tight text-center w-full truncate" [class.text-white]="isTabOpen(5)" [class.text-gray-700]="!isTabOpen(5)">DE ACTIVO</p>
             </button>
-
         </div>
     </div>
 
-    <!-- ===== BARRA DE PESTAÑAS ===== -->
-    <div *ngIf="openTabs.length > 0"
-         class="flex items-center gap-2 px-4 py-2 border-b-2 border-black dark:border-slate-700 shrink-0 bg-white dark:bg-[#0F172AFF] overflow-x-auto relative z-10">
-
+    <div *ngIf="openTabs.length > 0" class="flex items-center gap-2 px-5 py-2.5 border-b-[3px] border-black bg-gray-100 dark:bg-slate-800 overflow-x-auto relative z-10 custom-scrollbar shadow-sm">
         <div *ngFor="let tab of openTabs; trackBy: trackByTabId"
              (click)="setActiveTab(tab.id)"
-             class="flex items-center gap-2 px-3 py-1.5 rounded-full border-2 border-black cursor-pointer transition-all whitespace-nowrap select-none shrink-0"
-             [style.background-color]="tab.id === activeTabId ? tab.color : 'transparent'"
+             class="flex items-center gap-2 px-3 py-1.5 rounded-lg border-[2px] border-black cursor-pointer transition-all whitespace-nowrap select-none shrink-0"
+             [style.background-color]="tab.id === activeTabId ? tab.color : 'white'"
              [style.box-shadow]="tab.id === activeTabId ? '2px 2px 0px 0px rgba(0,0,0,1)' : 'none'">
 
-            <mat-icon [svgIcon]="tab.svgIcon"
-                      class="!text-sm !w-4 !h-4 shrink-0"
-                      [style.color]="tab.id === activeTabId ? tab.textColor : 'inherit'">
-            </mat-icon>
-
-            <div class="flex gap-1 leading-none">
-                <span class="text-[10px] font-black uppercase"
-                      [style.color]="tab.id === activeTabId ? tab.textColor : 'inherit'">
-                    {{ tab.label }}
-                </span>
-                <span class="text-[10px] font-black uppercase opacity-70"
-                      [style.color]="tab.id === activeTabId ? tab.textColor : 'inherit'">
-                    {{ tab.sublabel }}
-                </span>
+            <mat-icon [svgIcon]="tab.svgIcon" class="!text-sm !w-4 !h-4 shrink-0" [style.color]="tab.id === activeTabId ? tab.textColor : 'black'"></mat-icon>
+            <div class="flex gap-1.5 leading-none items-center">
+                <span class="text-[11px] font-black uppercase" [style.color]="tab.id === activeTabId ? tab.textColor : 'black'">{{ tab.label }}</span>
+                <span class="text-[11px] font-black uppercase opacity-70" [style.color]="tab.id === activeTabId ? tab.textColor : 'black'">{{ tab.sublabel }}</span>
             </div>
-
-            <button (click)="closeTab(tab.id); $event.stopPropagation()"
-                    class="w-4 h-4 flex items-center justify-center rounded-full opacity-50 hover:opacity-100 hover:bg-black/20 transition-all shrink-0"
-                    [style.color]="tab.id === activeTabId ? tab.textColor : 'inherit'">
-                <mat-icon class="!text-xs !w-3 !h-3">close</mat-icon>
+            <button (click)="closeTab(tab.id); $event.stopPropagation()" class="w-5 h-5 ml-1 flex items-center justify-center rounded bg-black/10 hover:bg-red-500 hover:text-white transition-all shrink-0" [style.color]="tab.id === activeTabId ? tab.textColor : 'black'">
+                <mat-icon class="!text-[12px] !w-3 !h-3">close</mat-icon>
             </button>
         </div>
-
     </div>
 
-    <!-- ===== ÁREA PRINCIPAL ===== -->
-    <div class="flex-1 overflow-hidden relative">
+    <div class="flex-1 overflow-hidden relative bg-[#f8f9fc] dark:bg-[#0F172AFF] z-0">
 
-        <!-- Pestañas activas (todas en DOM, solo la activa visible) -->
         <div *ngFor="let tab of openTabs; trackBy: trackByTabId"
-             [style.display]="tab.id === activeTabId ? 'flex' : 'none'"
-             class="w-full h-full flex-col overflow-hidden">
-            <ng-container [ngComponentOutlet]="tab.component" [ngComponentOutletInjector]="tab.injector"></ng-container>
+             [class.hidden]="tab.id !== activeTabId"
+             class="w-full h-full flex flex-col overflow-hidden">
+            <ng-container *ngComponentOutlet="tab.component; injector: tab.injector"></ng-container>
         </div>
 
-        <!-- Placeholder cuando no hay pestañas abiertas -->
         <div *ngIf="openTabs.length === 0"
-             class="flex flex-col items-center justify-center h-full bg-[#f8f9fc] dark:bg-[#0F172AFF] relative">
-            <div class="absolute top-10 right-10 w-48 h-48 bg-[#e94125] rounded-full border-4 border-black opacity-5 pointer-events-none"></div>
-            <div class="absolute bottom-10 left-10 w-24 h-24 bg-[#111A43] rotate-12 border-4 border-black opacity-5 pointer-events-none"></div>
-            <div class="flex flex-col items-center text-center opacity-30 dark:opacity-20 select-none">
-                <mat-icon class="!text-[100px] !w-28 !h-28 text-black dark:text-white">output</mat-icon>
-                <p class="text-2xl font-black uppercase text-black dark:text-white mt-4 tracking-tight">
-                    Seleccione un módulo de salida
-                </p>
-                <p class="text-sm font-bold text-gray-500 dark:text-gray-400 mt-2">
-                    Pulse <strong>MÓDULOS</strong> en la barra superior para comenzar
-                </p>
+             class="flex items-start justify-end h-full relative overflow-hidden bg-black">
+            <img src="images/SALIDAS.png"
+                 alt=""
+                 class="absolute inset-0 w-full h-full object-cover pointer-events-none select-none"
+                 style="opacity: 1;" />
+            <div class="absolute inset-0 hidden dark:block bg-black/50 pointer-events-none z-[1]"></div>
+            <!-- Mensaje tooltip esquina superior derecha -->
+            <div class="relative z-10 mt-4 mr-4 select-none">
+                <div class="flex justify-end pr-6">
+                    <div class="w-3 h-3 bg-white dark:bg-slate-800 border-t-[2px] border-r-[2px] border-black rotate-[-45deg] -mb-[7px] relative z-10"></div>
+                </div>
+                <div class="bg-white dark:bg-slate-800 border-[2px] border-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] rounded-xl px-3 py-2.5 flex items-center gap-2.5 max-w-[230px]">
+                    <mat-icon class="!text-xl !w-5 !h-5 text-black dark:text-white flex-shrink-0">output</mat-icon>
+                    <div>
+                        <p class="text-[11px] font-black uppercase text-black dark:text-white leading-tight">Módulo de Salidas</p>
+                        <p class="text-[10px] font-bold text-gray-500 dark:text-gray-400 mt-0.5 leading-tight">
+                            Pulse <strong class="text-black dark:text-white">MÓDULOS</strong> para iniciar.
+                        </p>
+                    </div>
+                </div>
             </div>
         </div>
-
     </div>
 
 </div>
 
-<!-- ========== DIALOG: SALIDAS RECIENTES (ng-template) ========== -->
 <ng-template #salidasRecientesDialog>
-    <div class="flex flex-col w-full h-full bg-[#f8f9fc] dark:bg-[#0F172AFF] transition-colors duration-300 font-sans overflow-hidden relative"
-         cdkDrag cdkDragRootElement=".cdk-overlay-pane" cdkDragBoundary=".cdk-overlay-container">
+    <div class="bg-white dark:bg-slate-900 rounded-2xl border-[3px] border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] overflow-hidden flex flex-col font-sans h-full max-h-[90vh]">
 
-        <div class="fixed top-16 left-10 w-64 h-64 bg-[#111A43] rounded-full border-4 border-black opacity-5 pointer-events-none"></div>
-        <div class="fixed bottom-10 right-10 w-32 h-32 bg-[#e94125] rotate-45 border-4 border-black opacity-5 pointer-events-none"></div>
-
-        <div *ngIf="isLoading" class="spinner-overlay z-[100]">
-            <div class="neo-card-base-exit p-6 flex flex-col items-center gap-4 bg-white dark:bg-slate-800">
-                <mat-spinner diameter="50"></mat-spinner>
-                <span class="font-black text-black dark:text-white uppercase tracking-wider">Cargando datos...</span>
+        <div class="bg-black text-white px-5 py-3 border-b-[3px] border-black flex justify-between items-center shrink-0" cdkDrag cdkDragRootElement=".cdk-overlay-pane" cdkDragHandle>
+            <div class="flex items-center gap-3">
+                <mat-icon class="!text-2xl text-[#FFC501FF]">history</mat-icon>
+                <div>
+                    <h2 class="text-sm md:text-base font-black uppercase tracking-tight leading-none">Salidas Recientes</h2>
+                    <p class="text-[10px] font-bold mt-1 text-gray-400 uppercase tracking-wider leading-none">Historial de Egresos del Almacén</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-2">
+                <button (click)="loadRecentExits()" class="hover:bg-white hover:text-black rounded px-2 py-1 transition-colors flex items-center gap-1 text-[10px] font-black border-2 border-transparent hover:border-black uppercase">
+                    <mat-icon class="!text-sm">refresh</mat-icon> <span class="hidden sm:inline">Actualizar</span>
+                </button>
+                <button mat-dialog-close class="hover:bg-red-500 hover:text-white rounded px-1.5 py-0.5 transition-colors border-2 border-transparent hover:border-black" matTooltip="Cerrar">
+                    <mat-icon class="!text-sm">close</mat-icon>
+                </button>
             </div>
         </div>
 
-        <div class="flex-1 flex flex-col p-4 md:p-6 relative h-full overflow-hidden gap-4">
+        <div *ngIf="isLoading" class="absolute inset-0 bg-white/70 dark:bg-slate-900/70 z-[9999] flex flex-col items-center justify-center backdrop-blur-sm">
+            <mat-spinner diameter="40"></mat-spinner>
+            <span class="font-black text-black dark:text-white uppercase mt-4 text-xs">Cargando historial...</span>
+        </div>
 
-            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 shrink-0 relative z-10">
-                <div class="flex items-center gap-4">
-                    <button mat-dialog-close
-                            class="w-12 h-12 bg-white dark:bg-slate-800 border-2 border-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] active:shadow-none active:translate-x-1 active:translate-y-1 hover:bg-white hover:scale-105 transition-all flex items-center justify-center rounded-lg cursor-pointer"
-                            (mousedown)="$event.stopPropagation()">
-                        <mat-icon class="!text-2xl text-black dark:text-white">arrow_back</mat-icon>
-                    </button>
-                    <div>
-                        <h1 class="text-2xl md:text-3xl font-black text-black dark:text-white uppercase tracking-tight leading-none">
-                            Salidas Recientes
-                        </h1>
-                        <p class="text-xs font-bold bg-[#e94125] text-white px-2 py-0.5 rounded-sm border border-black mt-1 inline-block">
-                            HISTORIAL DE EGRESOS
-                        </p>
-                    </div>
-                </div>
-                <button (click)="loadRecentExits()"
-                        class="px-4 py-2 bg-slate-600 text-white font-bold text-sm border-2 border-black rounded-full shadow-[3px_3px_0px_0px_#000] hover:translate-y-[1px] hover:shadow-[2px_2px_0px_0px_#000] active:shadow-none transition-all uppercase flex items-center gap-2">
-                    <mat-icon class="text-white !h-5 !text-lg">refresh</mat-icon>
-                    Actualizar
-                </button>
-            </div>
+        <div *ngIf="!selectedEntry" class="flex flex-col flex-1 overflow-hidden p-3 bg-[#f8f9fc] dark:bg-slate-900">
+            <div class="flex-1 border-[3px] border-black rounded-xl overflow-hidden flex flex-col bg-white dark:bg-slate-800 shadow-[3px_3px_0px_0px_#000]">
 
-            <div class="neo-card-base-exit bg-white dark:bg-slate-800 overflow-hidden flex flex-col flex-1 relative z-10 border-2 border-black dark:border-black">
-
-                <div class="bg-[#0F172AFF] px-4 py-2 border-b-2 border-black flex items-center justify-between shrink-0 h-12">
-                    <div class="flex items-center gap-3">
-                        <mat-icon class="text-white !text-xl">history</mat-icon>
-                        <span class="font-black text-xs md:text-sm uppercase text-white">Registro de Egresos</span>
-                    </div>
-                    <span class="bg-white text-black px-2 py-0.5 rounded text-xs font-black border border-black shadow-[2px_2px_0px_0px_#000]">
-                        Total: {{ totalRecords }}
-                    </span>
-                </div>
-
-                <div class="overflow-auto flex-1 bg-[#f8f9fc] dark:bg-slate-900/50 custom-scrollbar-exit">
+                <div class="overflow-auto flex-1 custom-scrollbar">
                     <table mat-table [dataSource]="recentExits" class="w-full">
-
                         <ng-container matColumnDef="fecha">
-                            <th mat-header-cell *matHeaderCellDef class="header-neo text-sm py-3 px-4">FECHA</th>
-                            <td mat-cell *matCellDef="let element" class="cell-neo font-mono font-bold text-sm px-4 text-black dark:text-white">{{ element.fecha }}</td>
+                            <th mat-header-cell *matHeaderCellDef class="!bg-gray-100 dark:!bg-slate-900 !text-black dark:!text-white !font-black !text-[10px] !border-b-[3px] !border-black !p-3 uppercase w-24 sticky top-0 z-[20]">Fecha</th>
+                            <td mat-cell *matCellDef="let element" class="!p-3 !border-b !border-black/20 dark:!border-white/10 text-xs font-mono font-bold">{{ element.fecha }}</td>
                         </ng-container>
 
                         <ng-container matColumnDef="tipo">
-                            <th mat-header-cell *matHeaderCellDef class="header-neo text-sm py-3 px-4">TIPO</th>
-                            <td mat-cell *matCellDef="let element" class="cell-neo px-4">
-                                <span class="inline-block px-2 py-1 rounded text-[10px] sm:text-xs font-black border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,0.5)] bg-[#0F172AFF] text-white">
-                                    {{ element.tipo }}
-                                </span>
+                            <th mat-header-cell *matHeaderCellDef class="!bg-gray-100 dark:!bg-slate-900 !text-black dark:!text-white !font-black !text-[10px] !border-b-[3px] !border-black !p-3 uppercase sticky top-0 z-[20]">Tipo</th>
+                            <td mat-cell *matCellDef="let element" class="!p-3 !border-b !border-black/20 dark:!border-white/10">
+                                <span class="px-2 py-0.5 rounded text-[9px] font-black border-2 border-black bg-[#0F172AFF] text-white">{{ element.tipo }}</span>
                             </td>
                         </ng-container>
 
                         <ng-container matColumnDef="nroComprobante">
-                            <th mat-header-cell *matHeaderCellDef class="header-neo text-sm py-3 px-4">NRO. COMPROBANTE</th>
-                            <td mat-cell *matCellDef="let element" class="cell-neo px-4">
-                                <span class="font-mono text-sm font-black text-black dark:text-white tracking-wide">{{ element.nroComprobante }}</span>
-                            </td>
+                            <th mat-header-cell *matHeaderCellDef class="!bg-gray-100 dark:!bg-slate-900 !text-black dark:!text-white !font-black !text-[10px] !border-b-[3px] !border-black !p-3 uppercase sticky top-0 z-[20]">Comprobante</th>
+                            <td mat-cell *matCellDef="let element" class="!p-3 !border-b !border-black/20 dark:!border-white/10 text-xs font-black font-mono">{{ element.nroComprobante }}</td>
                         </ng-container>
 
                         <ng-container matColumnDef="estado">
-                            <th mat-header-cell *matHeaderCellDef class="header-neo text-sm py-3 px-4">ESTADO</th>
-                            <td mat-cell *matCellDef="let element" class="cell-neo px-4">
-                                <span class="inline-block px-2 py-1 rounded text-[10px] sm:text-xs font-black border border-black uppercase tracking-wider shadow-[2px_2px_0px_0px_rgba(0,0,0,0.5)]"
-                                      [ngClass]="getStatusClass(element.estado)">
-                                    {{ element.estado }}
-                                </span>
+                            <th mat-header-cell *matHeaderCellDef class="!bg-gray-100 dark:!bg-slate-900 !text-black dark:!text-white !font-black !text-[10px] !border-b-[3px] !border-black !p-3 uppercase text-center sticky top-0 z-[20]">Estado</th>
+                            <td mat-cell *matCellDef="let element" class="!p-3 !border-b !border-black/20 dark:!border-white/10 text-center">
+                                <span class="px-2 py-0.5 rounded text-[9px] font-black border-2 border-black uppercase" [ngClass]="getStatusClass(element.estado)">{{ element.estado }}</span>
                             </td>
                         </ng-container>
 
                         <ng-container matColumnDef="responsable">
-                            <th mat-header-cell *matHeaderCellDef class="header-neo text-sm py-3 px-4">RESPONSABLE</th>
-                            <td mat-cell *matCellDef="let element" class="cell-neo font-black text-xs sm:text-sm px-4 text-black dark:text-white">{{ element.responsable }}</td>
+                            <th mat-header-cell *matHeaderCellDef class="!bg-gray-100 dark:!bg-slate-900 !text-black dark:!text-white !font-black !text-[10px] !border-b-[3px] !border-black !p-3 uppercase sticky top-0 z-[20]">Responsable</th>
+                            <td mat-cell *matCellDef="let element" class="!p-3 !border-b !border-black/20 dark:!border-white/10 text-xs font-bold">{{ element.responsable }}</td>
                         </ng-container>
 
                         <ng-container matColumnDef="acciones">
-                            <th mat-header-cell *matHeaderCellDef class="header-neo text-right text-sm py-3 px-4">ACCIONES</th>
-                            <td mat-cell *matCellDef="let element" class="cell-neo text-right px-4">
-                                <div class="flex gap-2 justify-end">
-                                    <button (click)="verDetalle(element); $event.stopPropagation()"
-                                            matTooltip="Ver detalle"
-                                            class="w-8 h-8 flex items-center justify-center border-2 border-black bg-white dark:bg-slate-700 hover:bg-gray-100 dark:hover:bg-slate-600 hover:scale-110 rounded-lg shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] active:translate-y-[1px] active:shadow-none transition-all">
-                                        <mat-icon class="text-black dark:text-white !text-lg !w-5 !h-5 flex items-center justify-center">visibility</mat-icon>
-                                    </button>
-                                    <button (click)="editarSalida(element); $event.stopPropagation()"
-                                            matTooltip="Editar salida"
-                                            class="w-8 h-8 flex items-center justify-center border-2 border-black bg-[#F8B400FF] hover:bg-yellow-400 hover:scale-110 rounded-lg shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] active:translate-y-[1px] active:shadow-none transition-all">
-                                        <mat-icon class="text-black !text-lg !w-5 !h-5 flex items-center justify-center">edit</mat-icon>
-                                    </button>
-                                </div>
+                            <th mat-header-cell *matHeaderCellDef class="!bg-gray-100 dark:!bg-slate-900 !text-black dark:!text-white !font-black !text-[10px] !border-b-[3px] !border-black !p-3 uppercase text-center w-16 sticky top-0 z-[20]">Acc.</th>
+                            <td mat-cell *matCellDef="let element" class="!p-3 !border-b !border-black/20 dark:!border-white/10 text-center">
+                                <button (click)="$event.stopPropagation(); verDetalle(element)"
+                                        class="w-7 h-7 bg-white dark:bg-slate-700 border-2 border-black rounded shadow-[2px_2px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all flex items-center justify-center mx-auto" matTooltip="Ver detalle">
+                                    <mat-icon class="!text-sm text-black dark:text-white">visibility</mat-icon>
+                                </button>
                             </td>
                         </ng-container>
 
-                        <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
-                        <tr mat-row *matRowDef="let row; columns: displayedColumns;"
-                            class="hover:bg-white dark:hover:bg-slate-900 transition-all border-b-2 border-black dark:border-slate-700/50 h-14 cursor-pointer"
-                            (click)="verDetalle(row)"></tr>
+                        <tr mat-header-row *matHeaderRowDef="displayedColumns; sticky: true"></tr>
+                        <tr mat-row *matRowDef="let row; columns: displayedColumns;" class="hover:bg-yellow-50 dark:hover:bg-slate-800 transition-colors cursor-pointer" (click)="verDetalle(row)"></tr>
                     </table>
 
-                    <div *ngIf="recentExits.length === 0 && !isLoading" class="flex flex-col items-center justify-center h-full py-16 opacity-50">
-                        <mat-icon class="!text-6xl text-black dark:text-gray-500">outbox</mat-icon>
-                        <p class="text-sm font-black mt-2 uppercase text-black dark:text-gray-500">No hay salidas recientes</p>
+                    <div *ngIf="recentExits.length === 0 && !isLoading" class="flex flex-col items-center justify-center py-10 opacity-50">
+                        <mat-icon class="!text-5xl text-black dark:text-white">outbox</mat-icon>
+                        <p class="text-xs font-black mt-2 uppercase">No hay salidas recientes</p>
                     </div>
                 </div>
 
-                <mat-paginator
-                    [length]="totalRecords"
-                    [pageSize]="pageSize"
-                    [pageIndex]="pageIndex"
-                    [pageSizeOptions]="pageSizeOptions"
-                    (page)="onPageChange($event)"
-                    showFirstLastButtons
-                    class="border-t-2 border-black dark:border-slate-700 bg-white dark:bg-slate-800">
-                </mat-paginator>
+                <mat-paginator [length]="totalRecords" [pageSize]="pageSize" [pageIndex]="pageIndex" [pageSizeOptions]="pageSizeOptions" (page)="onPageChange($event)" class="border-t-[3px] border-black bg-gray-50 dark:bg-slate-800"></mat-paginator>
+            </div>
+        </div>
+
+        <div *ngIf="selectedEntry" class="flex flex-col flex-1 overflow-hidden p-3 bg-[#f8f9fc] dark:bg-slate-900">
+            <div class="flex justify-between items-center mb-3 px-1">
+                <button (click)="cerrarDetalle()" class="px-3 py-1.5 bg-white dark:bg-slate-800 text-black dark:text-white border-2 border-black rounded-lg shadow-[2px_2px_0px_0px_#000] text-[10px] font-black uppercase flex items-center gap-1 hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all">
+                    <mat-icon class="!text-sm">arrow_back</mat-icon> Volver a la lista
+                </button>
+                <span class="font-mono text-sm font-black border-b-2 border-black">{{ selectedEntry?.nroComprobante }}</span>
+            </div>
+
+            <div class="flex-1 overflow-y-auto custom-scrollbar flex flex-col gap-3">
+
+                <div class="bg-white dark:bg-slate-800 border-2 border-black rounded-xl shadow-[3px_3px_0px_0px_#000] overflow-hidden">
+                    <div class="bg-[#FFC501FF] px-3 py-1.5 border-b-2 border-black">
+                        <span class="text-[10px] font-black uppercase text-black tracking-wide">Información del Movimiento</span>
+                    </div>
+                    <div class="p-3 grid grid-cols-2 md:grid-cols-4 gap-3">
+                        <div>
+                            <label class="text-[9px] font-black uppercase text-gray-500 block mb-0.5">Fecha</label>
+                            <div class="font-bold text-xs">{{ selectedEntry?.fecha }}</div>
+                        </div>
+                        <div>
+                            <label class="text-[9px] font-black uppercase text-gray-500 block mb-0.5">Tipo</label>
+                            <div class="font-black text-xs">{{ selectedEntry?.tipo }}</div>
+                        </div>
+                        <div>
+                            <label class="text-[9px] font-black uppercase text-gray-500 block mb-0.5">Estado</label>
+                            <div class="font-black text-[10px] px-1.5 py-0.5 border-2 border-black rounded w-fit" [ngClass]="getStatusClass(selectedEntry?.estado || '')">{{ selectedEntry?.estado }}</div>
+                        </div>
+                        <div>
+                            <label class="text-[9px] font-black uppercase text-gray-500 block mb-0.5">Responsable</label>
+                            <div class="font-bold text-xs">{{ selectedEntry?.responsable || '-' }}</div>
+                        </div>
+                    </div>
+                </div>
+
             </div>
         </div>
     </div>

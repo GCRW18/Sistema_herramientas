@@ -1,743 +1,609 @@
-<div class="flex flex-col w-full h-full bg-[#f8f9fc] dark:bg-[#0F172AFF] font-sans overflow-hidden relative">
+<div class="flex flex-col w-full h-full bg-[#f8f9fc] dark:bg-[#0F172AFF] transition-colors duration-300 font-sans overflow-hidden relative">
 
-    <!-- DECORATIVOS -->
-    <div class="fixed top-20 right-10 w-64 h-64 bg-[#111A43] rounded-full border-4 border-black opacity-5 pointer-events-none"></div>
-    <div class="fixed bottom-10 left-10 w-32 h-32 bg-red-600 rotate-12 border-4 border-black opacity-5 pointer-events-none"></div>
-
-    <!-- Spinner overlay -->
     <div *ngIf="isSaving" class="spinner-overlay z-[100]">
-        <div class="neo-card-base p-6 flex flex-col items-center gap-4 bg-white dark:bg-slate-800">
-            <mat-spinner diameter="50"></mat-spinner>
+        <div class="border-[3px] border-black rounded-xl p-6 flex flex-col items-center gap-4 bg-white dark:bg-slate-800 shadow-[4px_4px_0px_0px_#000]">
+            <mat-spinner diameter="40"></mat-spinner>
             <span class="font-black text-black dark:text-white uppercase tracking-wider">
-                {{ currentView() === 'internal' ? 'Procesando Préstamo Interno...' : 'Procesando Préstamo Externo...' }}
+                {{ currentView() === 'internal' ? 'Procesando Préstamo...' : 'Procesando Externo...' }}
             </span>
         </div>
     </div>
 
-    <!-- Mensaje feedback -->
-    <div *ngIf="message()" class="fixed top-4 right-4 z-50 animate-fadeIn">
-        <div class="neo-card-base px-3 py-2 font-black uppercase tracking-wider border-2 border-black flex items-center gap-2 text-xs"
-             [ngClass]="{
-                 'bg-green-500 text-white': message()?.type === 'success',
-                 'bg-red-500 text-white': message()?.type === 'error',
-                 'bg-blue-500 text-white': message()?.type === 'info',
-                 'bg-amber-500 text-black': message()?.type === 'warning'
-             }">
-            <mat-icon class="!text-base">{{ message()?.type === 'success' ? 'check_circle' : message()?.type === 'error' ? 'error' : message()?.type === 'info' ? 'info' : 'warning' }}</mat-icon>
-            {{ message()?.text }}
-        </div>
-    </div>
-
-    <!-- ==================== VISTA PRÉSTAMO INTERNO ==================== -->
     @if (currentView() === 'internal') {
         <div class="flex flex-col h-full overflow-hidden animate-fadeIn">
 
-            <!-- MAIN CONTENT -->
-            <div class="flex-1 flex flex-col p-1.5 relative h-full overflow-hidden gap-1.5">
-
-                <!-- HEADER (igual al de Baja) -->
-                <div class="flex flex-row items-center justify-between gap-3 shrink-0 relative z-10">
-                    <div class="flex items-center gap-2 flex-wrap">
-                        <div class="font-black text-xs uppercase flex items-center gap-2">
-                            <mat-icon class="text-black dark:text-amber-400 !text-base">flight</mat-icon>
-                        </div>
-                        <h1 class="text-lg font-black text-black dark:text-white uppercase tracking-tight leading-none">
-                            Préstamo Interno
-                        </h1>
-                        <p class="text-[10px] font-bold bg-amber-400 text-black px-2 py-0.5 rounded-sm border border-black">
-                            TÉCNICOS BOA
-                        </p>
+            <div class="flex items-center justify-between gap-4 shrink-0 flex-wrap p-4 bg-white dark:bg-[#0F172AFF] border-b-[3px] border-black z-10 shadow-sm">
+                <div class="flex items-center gap-4">
+                    <div class="flex items-center justify-center w-10 h-10 bg-white dark:bg-[#0F172AFF] border-[3px] border-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] rounded-xl shrink-0">
+                        <mat-icon class="text-black dark:text-amber-400 !text-xl">engineering</mat-icon>
                     </div>
-                    <div class="flex items-center gap-2">
-                        <div class="flex items-center gap-1.5 bg-white dark:bg-slate-800 border-2 border-black px-2 py-1 rounded-lg shadow-[2px_2px_0px_0px_#000] shrink-0">
-                            <mat-icon class="text-black dark:text-white !text-sm">receipt</mat-icon>
-                            <span class="text-[9px] font-black uppercase text-gray-600 dark:text-gray-300">Nota:</span>
-                            <span class="text-sm font-black text-black dark:text-white font-mono">{{ nroNotaInterno() }}</span>
+                    <div>
+                        <h1 class="text-xl font-black text-black dark:text-white uppercase tracking-tighter leading-none">
+                            PRÉSTAMO INTERNO
+                        </h1>
+                        <div class="flex items-center gap-2 mt-0.5 flex-wrap">
+                            <p class="text-[10px] font-bold bg-amber-400 text-black px-2 py-0.5 inline-block border-2 border-black uppercase">
+                                TÉCNICOS BOA
+                            </p>
                         </div>
-                        <button (click)="goBack()"
-                                class="h-9 px-4 bg-amber-400 dark:bg-slate-800 text-black dark:text-white font-black text-xs border-2 border-black rounded-lg shadow-[3px_3px_0px_0px_#000] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all uppercase flex items-center gap-1.5">
-                            <mat-icon class="!text-sm text-black">arrow_back</mat-icon>
-                            Volver
-                        </button>
-                        <button (click)="switchView('external')"
-                                class="h-9 px-4 bg-[#111A43] text-white font-black text-xs border-2 border-black rounded-lg shadow-[3px_3px_0px_0px_#000] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all uppercase flex items-center gap-1.5">
-                            <mat-icon class="!text-sm text-white">swap_horiz</mat-icon>
-                            Terceros
-                        </button>
-                        <button (click)="procesar()" [disabled]="internalDataSource().length === 0"
-                                class="h-9 px-4 bg-red-600 text-white font-black text-xs border-2 border-black rounded-lg shadow-[3px_3px_0px_0px_#000] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all uppercase flex items-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed">
-                            <mat-icon class="!text-sm text-white">check_circle</mat-icon>
-                            Procesar
-                            <span *ngIf="internalDataSource().length > 0" class="bg-black/20 px-1.5 rounded font-black">{{ internalDataSource().length }}</span>
-                        </button>
                     </div>
                 </div>
 
-                <!-- BODY: 2 COLUMNAS -->
-                <div class="flex flex-row gap-1.5 flex-1 overflow-hidden min-h-0">
+                <div class="flex items-center gap-3">
+                    <button (click)="abrirModalDatosInterno()"
+                            class="h-9 px-4 bg-amber-400 dark:bg-amber-400 text-black  font-black text-xs border-[2px] border-black rounded-xl shadow-[3px_3px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[2px_2px_0px_0px_#000] active:shadow-none transition-all uppercase flex items-center gap-2">
+                        <mat-icon class="!text-black ">edit_document</mat-icon>
+                        <span class="hidden sm:inline">Datos Préstamo</span>
+                    </button>
 
-                    <!-- Col 1: Formulario -->
-                    <div class="w-[360px] xl:w-[380px] 2xl:w-[400px] shrink-0 flex flex-col overflow-hidden">
-                        <div class="neo-card-base bg-white dark:bg-slate-800 relative flex flex-col flex-1 overflow-hidden">
+                    <div class="w-px h-8 bg-black/20 dark:bg-white/20 mx-1"></div>
 
-                            <!-- Card header -->
-                            <div class="bg-[#0F172AFF] border-b-2 border-black px-2 py-1 flex items-center gap-2 shrink-0">
-                                <mat-icon class="text-amber-400 !text-sm shrink-0">assignment_ind</mat-icon>
-                                <div>
-                                    <p class="text-[8px] font-black uppercase text-white/70 leading-none">Configuración</p>
-                                    <p class="text-[10px] font-black text-white uppercase leading-tight">Datos del Préstamo</p>
-                                </div>
-                                <span class="ml-auto text-[8px] font-black bg-white text-black px-1.5 rounded border border-black">INTERNO</span>
+                    <button (click)="switchView('external')"
+                            class="h-9 px-4 bg-blue-600  text-white font-black text-xs border-[2px] border-black rounded-xl shadow-[3px_3px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[2px_2px_0px_0px_#000] active:shadow-none transition-all uppercase flex items-center gap-2">
+                        <mat-icon class="!text-white">swap_horiz</mat-icon>
+                        <span class="hidden sm:inline">A Terceros</span>
+                    </button>
+
+                    <button (click)="openHerramientasAPrestar()"
+                            class="h-9 px-4 bg-[#0F172AFF] text-white font-black text-xs border-[2px] border-black rounded-xl shadow-[3px_3px_0px_0px_rgba(0,0,0,0.5)] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,0.5)] active:shadow-none transition-all uppercase flex items-center gap-2">
+                        <mat-icon class="text-white">add_circle</mat-icon> Agregar Ítem
+                    </button>
+
+                    <button (click)="procesar()" [disabled]="isSaving || internalDataSource().length === 0"
+                            class="h-9 px-5 bg-green-600 text-white font-black text-xs border-[2px] border-black rounded-xl shadow-[3px_3px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[2px_2px_0px_0px_#000] active:shadow-none disabled:opacity-50 disabled:shadow-none disabled:translate-x-0 disabled:translate-y-0 disabled:cursor-not-allowed transition-all uppercase flex items-center gap-2">
+                        <mat-icon class="!text-sm text-black">check_circle</mat-icon>
+                        <span class="hidden sm:inline">Finalizar</span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="px-4 pt-3 shrink-0">
+                <div *ngIf="!isInternalDataValid()" class="bg-white dark:bg-gray-800 border-[2px] border-black p-2.5 rounded-lg flex items-center justify-between shadow-[3px_3px_0px_0px_#000] animate-pulse-border">
+                    <div class="flex items-center gap-2">
+                        <mat-icon class="text-[#FF1414FF] !text-xl hidden sm:block">warning</mat-icon>
+                        <div>
+                            <h3 class="font-black text-xs text-black dark:text-white uppercase leading-none">Faltan Datos del Préstamo</h3>
+                            <p class="text-[10px] font-bold text-gray-600 dark:text-gray-400 mt-0.5 hidden sm:block">Debe configurar el técnico responsable y la información del trabajo.</p>
+                        </div>
+                    </div>
+                    <button (click)="abrirModalDatosInterno()" class="px-4 py-1.5 bg-[#FF1414FF] text-white font-black text-xs border-[2px] border-black rounded-lg shadow-[2px_2px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all uppercase flex items-center gap-1.5">
+                        <mat-icon class="!text-black">edit</mat-icon> Configurar
+                    </button>
+                </div>
+
+                <div *ngIf="isInternalDataValid()" class="bg-gray-100 dark:bg-slate-800 border-[2px] border-black p-2.5 rounded-lg shadow-[3px_3px_0px_0px_#000] flex justify-between items-center relative overflow-hidden">
+                    <div class="absolute right-0 top-0 bottom-0 w-32 bg-gray-200 dark:bg-slate-700 transform skew-x-12 -mr-10 hidden sm:block"></div>
+                    <div class="flex flex-wrap gap-x-6 gap-y-2 relative z-10 w-full pr-10 sm:pr-12">
+                        <div class="flex flex-col">
+                            <p class="text-[9px] font-black uppercase text-gray-500 dark:text-gray-400">Técnico</p>
+                            <p class="font-black text-sm text-black dark:text-white">{{ internalForm.value.nombreCompleto }}</p>
+                        </div>
+                        <div class="flex flex-col hidden md:flex">
+                            <p class="text-[9px] font-black uppercase text-gray-500 dark:text-gray-400">Licencia / Cargo</p>
+                            <p class="font-black text-sm text-black dark:text-white">{{ internalForm.value.nroLicencia }} · {{ internalForm.value.cargo || 'S/C' }}</p>
+                        </div>
+                        <div class="flex flex-col">
+                            <p class="text-[9px] font-black uppercase text-gray-500 dark:text-gray-400">Aeronave / OT</p>
+                            <p class="font-black text-sm text-black dark:text-white">{{ internalForm.value.matriculaAeronave }} · {{ internalForm.value.ordenTrabajo || 'S/OT' }}</p>
+                        </div>
+                        <div class="flex flex-col hidden lg:flex">
+                            <p class="text-[9px] font-black uppercase text-gray-500 dark:text-gray-400">Fecha y Hora</p>
+                            <p class="font-black text-sm text-black dark:text-white">{{ internalForm.value.fecha }} {{ internalForm.value.hora }}</p>
+                        </div>
+                    </div>
+                    <button (click)="abrirModalDatosInterno()" class="absolute right-2 sm:right-3 top-1/2 -translate-y-1/2 z-10 w-8 h-8 flex items-center justify-center bg-white dark:bg-slate-700 border-[2px] border-black rounded-md shadow-[2px_2px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all" matTooltip="Modificar Datos">
+                        <mat-icon class="text-black dark:text-white !text-sm">edit</mat-icon>
+                    </button>
+                </div>
+            </div>
+
+            <div class="flex-1 flex flex-col p-4 overflow-hidden">
+                <div class="flex-1 flex flex-col border-[3px] border-black bg-white dark:bg-[#0F172AFF] rounded-2xl shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] overflow-hidden z-0">
+
+                    <div class="bg-[#0F172AFF] px-4 py-2.5 border-b-[3px] border-black flex items-center justify-between shrink-0 flex-wrap gap-2">
+                        <div class="flex items-center gap-3 border-r-[2px] border-white/20 pr-4">
+                            <mat-checkbox [checked]="isAllSelectedInternal()" [indeterminate]="isSomeSelectedInternal()" (change)="toggleAllSelectionInternal($event)" class="white-checkbox"></mat-checkbox>
+                            <h2 class="text-xs sm:text-sm font-black text-white uppercase tracking-wider flex items-center gap-2">
+                                <span class="hidden sm:inline">Seleccionar</span> Todo
+                            </h2>
+                        </div>
+                        <div class="flex items-center gap-2 sm:gap-4">
+                            <div class="flex items-center gap-2 bg-yellow-400 rounded-lg px-2 sm:px-3 py-1.5 border-2 border-black" *ngIf="getSelectedCountInternal() > 0">
+                                <div class="text-[9px] font-black uppercase text-black leading-none hidden sm:block">Seleccionados</div>
+                                <div class="text-xs sm:text-sm font-black text-black leading-none">{{ getSelectedCountInternal() }}</div>
                             </div>
-
-                            <!-- Campos compactos -->
-                            <div class="p-1.5 flex flex-col gap-0.5 flex-1 overflow-y-auto custom-scrollbar">
-                                <form [formGroup]="internalForm" class="flex flex-col gap-0.5">
-
-                                    <!-- Buscar Técnico -->
-                                    <div>
-                                        <label class="text-[8px] font-black uppercase text-black dark:text-gray-400 mb-0.5 block">Buscar Técnico</label>
-                                        <div class="relative">
-                                            <input type="text" formControlName="buscarTecnico"
-                                                   [matAutocomplete]="autoTecnico"
-                                                   placeholder="Nombre o Nro. Licencia..."
-                                                   class="w-full h-6 text-[11px] font-bold border-2 border-black dark:border-slate-600 rounded pl-5 pr-2 bg-white dark:bg-[#0F172AFF] text-black dark:text-white outline-none placeholder:text-gray-400">
-                                            <mat-icon class="absolute left-1 top-1/2 -translate-y-1/2 text-black !text-xs">search</mat-icon>
-                                        </div>
-                                        <mat-autocomplete #autoTecnico="matAutocomplete" [displayWith]="displayTecnico" (optionSelected)="selectTecnico($event.option.value)">
-                                            <mat-option *ngFor="let t of filteredTecnicos" [value]="t" class="!p-2 !border-b border-black/10">
-                                                <div class="flex flex-col">
-                                                    <span class="font-bold text-xs">{{ t.nombres }} {{ t.apPaterno }} {{ t.apMaterno }}</span>
-                                                    <span class="text-[10px] text-gray-500">{{ t.nroLicencia }} | {{ t.cargo }}</span>
-                                                </div>
-                                            </mat-option>
-                                        </mat-autocomplete>
-                                    </div>
-
-                                    <!-- Nombre + Licencia -->
-                                    <div class="grid grid-cols-3 gap-1">
-                                        <div class="col-span-2">
-                                            <label class="text-[8px] font-black uppercase text-black dark:text-gray-400 mb-0.5 block">Nombre *</label>
-                                            <input type="text" formControlName="nombreCompleto" readonly
-                                                   class="w-full h-6 text-[11px] font-bold border-2 border-black rounded px-2 bg-white dark:bg-[#0F172AFF] text-black dark:text-white outline-none cursor-not-allowed"
-                                                   [class.border-red-500]="hasErrorInternal('nombreCompleto', 'required')">
-                                        </div>
-                                        <div>
-                                            <label class="text-[8px] font-black uppercase text-black dark:text-gray-400 mb-0.5 block">Licencia</label>
-                                            <input type="text" formControlName="nroLicencia" readonly
-                                                   class="w-full h-6 text-[11px] font-black border-2 border-black rounded px-1.5 bg-gray-50 dark:bg-violet-900/30 text-black dark:text-violet-300 outline-none cursor-not-allowed font-mono">
-                                        </div>
-                                    </div>
-
-                                    <!-- Cargo -->
-                                    <div>
-                                        <label class="text-[8px] font-black uppercase text-black dark:text-gray-400 mb-0.5 block">Cargo</label>
-                                        <input type="text" formControlName="cargo" readonly
-                                               class="w-full h-6 text-[11px] font-bold border-2 border-gray-300 dark:border-slate-600 rounded px-2 bg-gray-50 dark:bg-slate-800 text-black dark:text-white outline-none cursor-not-allowed">
-                                    </div>
-
-                                    <!-- Fecha + Hora -->
-                                    <div class="grid grid-cols-2 gap-1">
-                                        <div>
-                                            <label class="text-[8px] font-black uppercase text-black dark:text-gray-400 mb-0.5 block">Fecha *</label>
-                                            <div class="relative">
-                                                <input type="date" formControlName="fecha"
-                                                       class="w-full h-6 text-[11px] font-bold border-2 border-black dark:border-slate-600 rounded pl-5 pr-1 bg-white dark:bg-[#0F172AFF] text-black dark:text-white outline-none"
-                                                       [class.border-red-500]="hasErrorInternal('fecha', 'required')">
-                                                <mat-icon class="absolute left-0.5 top-1/2 -translate-y-1/2 text-black !text-xs">calendar_today</mat-icon>
-                                            </div>
-                                        </div>
-                                        <div>
-                                            <label class="text-[8px] font-black uppercase text-black dark:text-gray-400 mb-0.5 block">Hora *</label>
-                                            <div class="relative">
-                                                <input type="time" formControlName="hora"
-                                                       class="w-full h-6 text-[11px] font-bold border-2 border-black dark:border-slate-600 rounded pl-5 pr-1 bg-white dark:bg-[#0F172AFF] text-black dark:text-white outline-none"
-                                                       [class.border-red-500]="hasErrorInternal('hora', 'required')">
-                                                <mat-icon class="absolute left-0.5 top-1/2 -translate-y-1/2 text-black !text-xs">schedule</mat-icon>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <!-- Aeronave + Orden Trabajo -->
-                                    <div class="grid grid-cols-2 gap-1">
-                                        <div>
-                                            <label class="text-[8px] font-black uppercase text-black dark:text-gray-400 mb-0.5 block">Aeronave</label>
-                                            <div class="relative">
-                                                <select formControlName="matriculaAeronave"
-                                                        class="w-full h-6 text-[11px] font-bold border-2 border-black dark:border-slate-600 rounded pl-5 pr-1 bg-white dark:bg-[#0F172AFF] text-black dark:text-white outline-none appearance-none cursor-pointer">
-                                                    <option value="N/A">-- Sel. --</option>
-                                                    <option *ngFor="let a of aeronaves" [value]="a.matricula">{{ a.matricula }}</option>
-                                                </select>
-                                                <mat-icon class="absolute left-1 top-1/2 -translate-y-1/2 text-black !text-xs pointer-events-none">flight</mat-icon>
-                                            </div>
-                                        </div>
-                                        <div>
-                                            <label class="text-[8px] font-black uppercase text-black dark:text-gray-400 mb-0.5 block">Orden Trabajo</label>
-                                            <input type="text" formControlName="ordenTrabajo"
-                                                   placeholder="OT-..."
-                                                   class="w-full h-6 text-[11px] font-bold border-2 border-black dark:border-slate-600 rounded px-2 bg-white dark:bg-[#0F172AFF] text-black dark:text-white outline-none placeholder:text-gray-400">
-                                        </div>
-                                    </div>
-
-                                    <!-- Destino / Área -->
-                                    <div>
-                                        <label class="text-[8px] font-black uppercase text-black dark:text-gray-400 mb-0.5 block">Destino / Área</label>
-                                        <div class="relative">
-                                            <select formControlName="destino"
-                                                    class="w-full h-6 text-[11px] font-bold border-2 border-black dark:border-slate-600 rounded pl-5 pr-1 bg-white dark:bg-[#0F172AFF] text-black dark:text-white outline-none appearance-none cursor-pointer">
-                                                <option value="">-- Seleccionar --</option>
-                                                <option *ngFor="let d of destinos" [value]="d">{{ d }}</option>
-                                            </select>
-                                            <mat-icon class="absolute left-1 top-1/2 -translate-y-1/2 text-black !text-xs pointer-events-none">place</mat-icon>
-                                        </div>
-                                    </div>
-
-                                    <!-- Trabajo Especial -->
-                                    <div class="flex items-center gap-2 p-1 bg-amber-50 dark:bg-amber-900/20 border border-amber-400 rounded">
-                                        <mat-checkbox formControlName="trabajoEspecial" color="primary" class="scale-75"></mat-checkbox>
-                                        <span class="text-[9px] font-black text-amber-800 dark:text-amber-300 uppercase">Trabajo Especial</span>
-                                    </div>
-
-                                    <!-- Observaciones -->
-                                    <div>
-                                        <label class="text-[8px] font-black uppercase text-black dark:text-gray-400 mb-0.5 block">Observaciones</label>
-                                        <textarea formControlName="observaciones" rows="1"
-                                                  placeholder="Observaciones adicionales..."
-                                                  class="w-full text-[11px] font-medium border-2 border-black dark:border-slate-600 rounded px-2 py-0.5 bg-white dark:bg-[#0F172AFF] text-black dark:text-white outline-none placeholder:text-gray-400 resize-none"></textarea>
-                                    </div>
-                                </form>
-
-                                <!-- Botón agregar -->
-                                <button (click)="openHerramientasAPrestar()"
-                                        class="w-full h-7 bg-amber-400 text-black text-[11px] font-black border-2 border-black rounded shadow-[2px_2px_0px_0px_#000] hover:shadow-none hover:translate-x-[1px] hover:translate-y-[1px] transition-all uppercase flex items-center justify-center gap-1 mt-0.5">
-                                    <mat-icon class="!text-xs">build</mat-icon>
-                                    Agregar Herramienta
-                                </button>
-
-                                <!-- Summary -->
-                                <div class="border-t border-dashed border-black dark:border-gray-700 pt-0.5 mt-0.5">
-                                    <div *ngIf="internalDataSource().length > 0" class="grid grid-cols-2 gap-1">
-                                        <div class="bg-gray-50 dark:bg-violet-900/20 border border-black rounded p-1 flex items-center gap-1">
-                                            <mat-icon class="text-black !text-xs !w-3 !h-3 shrink-0">inventory</mat-icon>
-                                            <div>
-                                                <p class="text-xs font-black text-black dark:text-violet-300 leading-none">{{ internalDataSource().length }}</p>
-                                                <p class="text-[7px] font-bold text-black uppercase">Items</p>
-                                            </div>
-                                        </div>
-                                        <div class="bg-gray-50 dark:bg-green-900/20 border border-black rounded p-1 flex items-center gap-1">
-                                            <mat-icon class="text-black !text-xs !w-3 !h-3 shrink-0">layers</mat-icon>
-                                            <div>
-                                                <p class="text-xs font-black text-black dark:text-green-300 leading-none">{{ getTotalItemsInterno() }}</p>
-                                                <p class="text-[7px] font-bold text-black uppercase">Unidades</p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div *ngIf="getFormErrorsInternal().length > 0"
-                                         class="bg-red-50 dark:bg-red-900/30 border border-red-400 rounded p-1 mt-0.5">
-                                        <ul class="space-y-0.5">
-                                            <li *ngFor="let error of getFormErrorsInternal()"
-                                                class="text-[8px] font-bold text-red-700 dark:text-red-400">• {{ error }}</li>
-                                        </ul>
-                                    </div>
-                                </div>
+                            <div class="flex items-center gap-2 bg-white/20 rounded-lg px-2 sm:px-3 py-1.5 border border-white/30">
+                                <div class="text-[9px] font-black uppercase text-white/80 leading-none hidden sm:block">Líneas Ítems</div>
+                                <div class="text-xs sm:text-sm font-black text-white leading-none">{{ internalDataSource().length }}</div>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Col 2: Tabla -->
-                    <div class="flex-1 flex flex-col overflow-hidden">
-                        <div class="neo-card-base bg-white dark:bg-slate-800 overflow-hidden flex flex-col flex-1 relative z-10 border-2 border-black dark:border-gray-600">
+                    <div class="overflow-y-auto flex-1 custom-scrollbar">
+                        <table mat-table [dataSource]="internalDataSource()" class="w-full min-w-[800px]">
+                            <ng-container matColumnDef="select">
+                                <th mat-header-cell *matHeaderCellDef class="hidden"></th>
+                                <td mat-cell *matCellDef="let element" class="!p-2 !border-b-2 !border-black dark:!border-slate-700 !w-10 text-center">
+                                    <mat-checkbox [checked]="element.selected" (change)="toggleSelectionInternal(element)" color="primary"></mat-checkbox>
+                                </td>
+                            </ng-container>
 
-                            <!-- Table header -->
-                            <div class="bg-[#0F172AFF] px-3 py-1.5 border-b-2 border-black flex items-center justify-between shrink-0 h-9">
-                                <span class="font-black text-xs uppercase text-white flex items-center gap-2">
-                                    <mat-icon class="text-amber-400 !text-base !w-4 !h-4">handyman</mat-icon>
-                                    Herramientas para Préstamo Interno
-                                </span>
-                                <span class="bg-white text-black px-2 py-0.5 rounded text-xs font-black border border-black shadow-[2px_2px_0px_0px_#000]">
-                                    {{ internalDataSource().length }} ítem(s)
-                                </span>
-                            </div>
+                            <ng-container matColumnDef="codigo">
+                                <th mat-header-cell *matHeaderCellDef class="!bg-gray-100 dark:!bg-slate-900 !text-black dark:!text-white !font-black !text-[10px] !border-b-[3px] !border-black !p-3 uppercase !w-32 z-[20]">Código</th>
+                                <td mat-cell *matCellDef="let element" class="!px-3 !py-2 !border-b-2 !border-black dark:!border-slate-700">
+                                    <span class="bg-[#0F172AFF] text-white font-mono font-bold px-1.5 py-0.5 rounded text-[10px] block shadow-[1px_1px_0px_0px_rgba(0,0,0,0.5)] w-fit">{{ element.codigo }}</span>
+                                </td>
+                            </ng-container>
 
-                            <!-- Empty State -->
-                            <div *ngIf="internalDataSource().length === 0"
-                                 class="flex flex-col items-center justify-center py-12 text-black dark:text-gray-300 flex-1">
-                                <div class="w-16 h-16 bg-white border-2 border-black rounded-full flex items-center justify-center mb-3 shadow-[3px_3px_0px_0px_#000]">
-                                    <mat-icon class="!text-4xl !w-8 !h-8 text-black">handyman</mat-icon>
-                                </div>
-                                <h3 class="text-base font-black uppercase tracking-tight text-black dark:text-white">Sin herramientas agregadas</h3>
-                                <p class="text-xs font-bold bg-yellow-300 px-3 py-1 mt-2 border-2 border-black -rotate-1 text-black">
-                                    Presione Agregar Herramienta
-                                </p>
-                                <button (click)="openHerramientasAPrestar()"
-                                        class="mt-4 h-9 px-4 bg-[#111A43] text-white font-black text-xs border-2 border-black rounded-lg shadow-[3px_3px_0px_0px_#000] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all uppercase flex items-center gap-1.5">
-                                    <mat-icon class="!text-sm text-white">add_circle</mat-icon>
-                                    Agregar Primera Herramienta
-                                </button>
-                            </div>
+                            <ng-container matColumnDef="pn">
+                                <th mat-header-cell *matHeaderCellDef class="!bg-gray-100 dark:!bg-slate-900 !text-black dark:!text-white !font-black !text-[10px] !border-b-[3px] !border-black !p-3 uppercase !w-24 z-[20]">P/N</th>
+                                <td mat-cell *matCellDef="let element" class="!px-3 !py-2 !border-b-2 !border-black dark:!border-slate-700 font-mono text-[11px] font-bold">{{ element.pn || '-' }}</td>
+                            </ng-container>
 
-                            <!-- Tabla -->
-                            <div *ngIf="internalDataSource().length > 0" class="overflow-auto flex-1 custom-scrollbar">
-                                <table class="w-full min-w-[900px]">
-                                    <thead class="sticky top-0 z-10">
-                                    <tr class="bg-slate-50 dark:bg-slate-900">
-                                        <th class="px-2 py-1.5 text-left text-[10px] font-black uppercase text-black dark:text-white border-b-2 border-black border-r border-black/10">Código</th>
-                                        <th class="px-2 py-1.5 text-left text-[10px] font-black uppercase text-black dark:text-white border-b-2 border-black border-r border-black/10">P/N</th>
-                                        <th class="px-2 py-1.5 text-left text-[10px] font-black uppercase text-black dark:text-white border-b-2 border-black border-r border-black/10">Descripción</th>
-                                        <th class="px-2 py-1.5 text-left text-[10px] font-black uppercase text-black dark:text-white border-b-2 border-black border-r border-black/10">S/N</th>
-                                        <th class="px-2 py-1.5 text-left text-[10px] font-black uppercase text-black dark:text-white border-b-2 border-black border-r border-black/10">Marca</th>
-                                        <th class="px-2 py-1.5 text-center text-[10px] font-black uppercase text-black dark:text-white border-b-2 border-black border-r border-black/10">F.Calib.</th>
-                                        <th class="px-2 py-1.5 text-center text-[10px] font-black uppercase text-black dark:text-white border-b-2 border-black border-r border-black/10">Cant.</th>
-                                        <th class="px-2 py-1.5 text-center text-[10px] font-black uppercase text-black dark:text-white border-b-2 border-black border-r border-black/10">Unidad</th>
-                                        <th class="px-2 py-1.5 text-center text-[10px] font-black uppercase text-black dark:text-white border-b-2 border-black border-r border-black/10">Estado</th>
-                                        <th class="px-2 py-1.5 text-center text-[10px] font-black uppercase text-black dark:text-white border-b-2 border-black">Acc.</th>
-                                    </tr>
-                                    </thead>
-                                    <tbody>
-                                    <tr *ngFor="let item of internalDataSource(); let i = index"
-                                        class="border-b border-gray-200 dark:border-gray-700 hover:bg-violet-50 dark:hover:bg-violet-900/10 transition-colors">
-                                        <td class="px-2 py-1 text-xs font-black text-black dark:text-white font-mono">{{ item.codigo }}</td>
-                                        <td class="px-2 py-1 text-xs font-bold text-blue-700 dark:text-blue-400 font-mono">{{ item.pn }}</td>
-                                        <td class="px-2 py-1 text-xs text-gray-800 dark:text-gray-200">{{ item.descripcion }}</td>
-                                        <td class="px-2 py-1 text-xs font-mono text-gray-700 dark:text-gray-300">{{ item.sn }}</td>
-                                        <td class="px-2 py-1 text-xs font-bold text-gray-800 dark:text-gray-200">{{ item.marca }}</td>
-                                        <td class="px-2 py-1 text-xs text-center text-gray-600 dark:text-gray-400">{{ item.fechaCalibracion }}</td>
-                                        <td class="px-2 py-1 text-center">
-                                            <span class="px-2 py-0.5 bg-amber-400 text-white text-xs font-black rounded-full border border-black">{{ item.cantidad }}</span>
-                                        </td>
-                                        <td class="px-2 py-1 text-center">
-                                            <span class="px-1.5 py-0.5 bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300 text-[10px] font-black rounded border border-amber-300">{{ item.unidad }}</span>
-                                        </td>
-                                        <td class="px-2 py-1 text-center">
-                                            <span class="px-1.5 py-0.5 bg-green-500 text-white text-[10px] font-black uppercase rounded border border-black">{{ item.estado }}</span>
-                                        </td>
-                                        <td class="px-2 py-1 text-center">
-                                            <button (click)="eliminarItemInterno(i)"
-                                                    class="w-6 h-6 bg-red-500 text-white border-2 border-black rounded shadow-[2px_2px_0px_0px_#000] hover:shadow-none hover:translate-x-[1px] hover:translate-y-[1px] flex items-center justify-center transition-all">
-                                                <mat-icon class="!text-xs !w-3.5 !h-3.5">delete</mat-icon>
-                                            </button>
-                                        </td>
-                                    </tr>
-                                    </tbody>
-                                </table>
-                            </div>
+                            <ng-container matColumnDef="descripcion">
+                                <th mat-header-cell *matHeaderCellDef class="!bg-gray-100 dark:!bg-slate-900 !text-black dark:!text-white !font-black !text-[10px] !border-b-[3px] !border-black !p-3 uppercase z-[20]">Descripción</th>
+                                <td mat-cell *matCellDef="let element" class="!px-3 !py-2 !border-b-2 !border-black dark:!border-slate-700">
+                                    <div class="font-black text-[11px] text-black dark:text-white leading-tight line-clamp-2">{{ element.descripcion }}</div>
+                                </td>
+                            </ng-container>
 
-                            <!-- Footer -->
-                            <div *ngIf="internalDataSource().length > 0"
-                                 class="bg-yellow-50 dark:bg-yellow-900/20 px-3 py-2 border-t-2 border-black flex items-center justify-between shrink-0">
-                                <span class="text-xs font-black text-yellow-800 dark:text-yellow-300">
-                                    {{ internalDataSource().length }} herramienta(s) · Total: <strong>{{ getTotalItemsInterno() }}</strong> unidades
-                                </span>
-                            </div>
-                        </div>
+                            <ng-container matColumnDef="sn">
+                                <th mat-header-cell *matHeaderCellDef class="!bg-gray-100 dark:!bg-slate-900 !text-black dark:!text-white !font-black !text-[10px] !border-b-[3px] !border-black !p-3 uppercase !w-24 z-[20]">S/N</th>
+                                <td mat-cell *matCellDef="let element" class="!px-3 !py-2 !border-b-2 !border-black dark:!border-slate-700 font-mono text-[11px] font-bold text-blue-600 dark:text-blue-400">{{ element.sn || '-' }}</td>
+                            </ng-container>
+
+                            <ng-container matColumnDef="marca">
+                                <th mat-header-cell *matHeaderCellDef class="!bg-gray-100 dark:!bg-slate-900 !text-black dark:!text-white !font-black !text-[10px] !border-b-[3px] !border-black !p-3 uppercase !w-20 z-[20]">Marca</th>
+                                <td mat-cell *matCellDef="let element" class="!px-3 !py-2 !border-b-2 !border-black dark:!border-slate-700 font-bold text-[10px] uppercase text-gray-700 dark:text-gray-300">{{ element.marca || '-' }}</td>
+                            </ng-container>
+
+                            <ng-container matColumnDef="cantidad">
+                                <th mat-header-cell *matHeaderCellDef class="!bg-gray-100 dark:!bg-slate-900 !text-black dark:!text-white !font-black !text-[10px] !border-b-[3px] !border-black !p-3 uppercase !w-16 text-center z-[20]">Cant.</th>
+                                <td mat-cell *matCellDef="let element" class="!px-3 !py-2 !border-b-2 !border-black dark:!border-slate-700 text-center">
+                                    <span class="bg-gray-100 dark:bg-slate-800 border-2 border-black text-black dark:text-white rounded px-2 py-0.5 font-black text-xs block w-fit mx-auto mb-0.5">{{ element.cantidad }}</span>
+                                    <span class="text-[8px] font-bold uppercase text-gray-500">{{ element.unidad }}</span>
+                                </td>
+                            </ng-container>
+
+                            <ng-container matColumnDef="estado">
+                                <th mat-header-cell *matHeaderCellDef class="!bg-gray-100 dark:!bg-slate-900 !text-black dark:!text-white !font-black !text-[10px] !border-b-[3px] !border-black !p-3 uppercase !w-28 text-center z-[20]">Estado</th>
+                                <td mat-cell *matCellDef="let element" class="!px-3 !py-2 !border-b-2 !border-black dark:!border-slate-700 text-center">
+                                    <span class="px-1.5 py-0.5 rounded text-[9px] font-bold border-2 border-black uppercase text-black dark:text-white bg-gray-50 dark:bg-slate-800">{{ element.estado }}</span>
+                                </td>
+                            </ng-container>
+
+                            <ng-container matColumnDef="acciones">
+                                <th mat-header-cell *matHeaderCellDef class="!bg-gray-100 dark:!bg-slate-900 !text-black dark:!text-white !font-black !text-[10px] !border-b-[3px] !border-black !p-3 uppercase text-center !w-16 z-[20]">Acc.</th>
+                                <td mat-cell *matCellDef="let element; let i = index" class="!px-3 !py-2 !border-b-2 !border-black dark:!border-slate-700 text-center">
+                                    <button (click)="eliminarItemInterno(i); $event.stopPropagation()" matTooltip="Quitar"
+                                            class="w-7 h-7 bg-red-500 text-white rounded border-2 border-black shadow-[2px_2px_0px_0px_#000] hover:shadow-none hover:translate-x-[1px] hover:translate-y-[1px] transition-all flex items-center justify-center mx-auto">
+                                        <mat-icon class="!text-sm">delete</mat-icon>
+                                    </button>
+                                </td>
+                            </ng-container>
+
+                            <tr mat-header-row *matHeaderRowDef="displayedInternalColumns; sticky: true"></tr>
+                            <tr mat-row *matRowDef="let row; columns: displayedInternalColumns;" [class.row-selected]="row.selected"
+                                class="hover:bg-gray-100 dark:hover:bg-slate-800/50 transition-colors cursor-pointer" (click)="toggleSelectionInternal(row)"></tr>
+                        </table>
+                    </div>
+
+                    <div *ngIf="internalDataSource().length === 0" class="flex flex-col items-center justify-center py-10 sm:py-20 bg-white dark:bg-slate-800">
+                        <mat-icon class="!text-5xl sm:!text-7xl text-gray-300 dark:text-gray-600 mb-2 sm:mb-4">handyman</mat-icon>
+                        <p class="text-base sm:text-lg font-black uppercase text-gray-400">Sin Herramientas</p>
+                        <p class="text-[10px] sm:text-xs font-bold text-gray-500 mt-1 text-center px-4">Presione "Agregar Ítem" en la parte superior para prestar herramientas.</p>
                     </div>
                 </div>
             </div>
         </div>
     }
 
-    <!-- ==================== VISTA PRÉSTAMO A TERCEROS ==================== -->
     @if (currentView() === 'external') {
         <div class="flex flex-col h-full overflow-hidden animate-fadeIn">
 
-            <!-- MAIN CONTENT -->
-            <div class="flex-1 flex flex-col p-1.5 relative h-full overflow-hidden gap-1.5">
-
-                <!-- HEADER (igual al de Baja) -->
-                <div class="flex flex-row items-center justify-between gap-3 shrink-0 relative z-10">
-                    <div class="flex items-center gap-2">
-                        <mat-icon class="text-amber-400 !text-base">flight</mat-icon>
-                        <h1 class="text-lg font-black text-black dark:text-white uppercase tracking-tight leading-none">
-                            Préstamo a Terceros
-                        </h1>
-                        <p class="text-[10px] font-bold bg-red-600 text-white px-2 py-0.5 rounded-sm border border-black">
-                            EMPRESAS EXTERNAS
-                        </p>
-                        <span *ngIf="importeTotal() > 0"
-                              class="text-[10px] font-bold bg-green-600 text-white px-2 py-0.5 rounded-sm border border-black flex items-center gap-0.5">
-                            ${{ importeTotal() | number:'1.2-2' }}
-                        </span>
+            <div class="flex items-center justify-between gap-4 shrink-0 flex-wrap p-4 bg-white dark:bg-[#0F172AFF] border-b-[3px] border-black z-10 shadow-sm">
+                <div class="flex items-center gap-4">
+                    <div class="flex items-center justify-center w-10 h-10 bg-white dark:bg-[#0F172AFF] border-[3px] border-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] rounded-xl shrink-0">
+                        <mat-icon class="text-black dark:text-amber-400 !text-xl">handshake</mat-icon>
                     </div>
-                    <div class="flex items-center gap-2">
-                        <div class="flex items-center gap-1.5 bg-white dark:bg-slate-800 border-2 border-black px-2 py-1 rounded-lg shadow-[2px_2px_0px_0px_#000] shrink-0">
-                            <mat-icon class="text-black dark:text-white !text-sm">receipt</mat-icon>
-                            <span class="text-[9px] font-black uppercase text-gray-600 dark:text-gray-300">Nota:</span>
-                            <span class="text-sm font-black text-black dark:text-white font-mono">{{ nroNotaExterno() }}</span>
+                    <div>
+                        <h1 class="text-xl font-black text-black dark:text-white uppercase tracking-tighter leading-none">
+                            PRÉSTAMO TERCEROS
+                        </h1>
+                        <div class="flex items-center gap-2 mt-0.5 flex-wrap">
+                            <p class="text-[10px] font-bold bg-amber-400 text-black px-2 py-0.5 inline-block border-2 border-black uppercase">
+                                EXTERNAS
+                            </p>
+                            <span *ngIf="importeTotal() > 0" class="text-[10px] font-bold bg-green-500 text-black px-2 py-0.5 rounded border-2 border-black flex items-center gap-0.5 uppercase hidden sm:flex">
+                                Importe: ${{ importeTotal() | number:'1.2-2' }}
+                            </span>
                         </div>
-                        <button (click)="switchView('internal')"
-                                class="h-9 px-4 bg-white dark:bg-slate-800 text-black dark:text-white font-black text-xs border-2 border-black rounded-lg shadow-[3px_3px_0px_0px_#000] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all uppercase flex items-center gap-1.5">
-                            <mat-icon class="!text-sm">arrow_back</mat-icon>
-                            Interno
-                        </button>
-                        <button (click)="procesarExterno()" [disabled]="externalDataSource().length === 0"
-                                class="h-9 px-4 bg-red-600 text-white font-black text-xs border-2 border-black rounded-lg shadow-[3px_3px_0px_0px_#000] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all uppercase flex items-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed">
-                            <mat-icon class="!text-sm">check_circle</mat-icon>
-                            Procesar
-                            <span *ngIf="externalDataSource().length > 0" class="bg-black/20 px-1.5 rounded font-black">{{ externalDataSource().length }}</span>
-                        </button>
                     </div>
                 </div>
 
-                <!-- BODY: 2 COLUMNAS -->
-                <div class="flex flex-row gap-1.5 flex-1 overflow-hidden min-h-0">
+                <div class="flex items-center gap-3">
+                    <button (click)="abrirModalDatosExterno()"
+                            class="h-9 px-4 bg-amber-400 text-black  font-black text-xs border-[2px] border-black rounded-xl shadow-[3px_3px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[2px_2px_0px_0px_#000] active:shadow-none transition-all uppercase flex items-center gap-2">
+                        <mat-icon class="!text-black ">edit_document</mat-icon>
+                        <span class="hidden sm:inline">Datos Empresa</span>
+                    </button>
 
-                    <!-- Col 1: Formularios -->
-                    <div class="w-[360px] xl:w-[380px] 2xl:w-[400px] shrink-0 flex flex-col overflow-hidden gap-1.5">
+                    <div class="w-px h-8 bg-black/20 dark:bg-white/20 mx-1"></div>
 
-                        <!-- Card Empresa -->
-                        <div class="neo-card-base bg-white dark:bg-slate-800 flex flex-col overflow-hidden shrink-0">
-                            <div class="bg-[#0F172AFF] border-b-2 border-black px-2 py-1 flex items-center gap-2 shrink-0">
-                                <mat-icon class="text-amber-400 !text-sm shrink-0">business</mat-icon>
-                                <div>
-                                    <p class="text-[8px] font-black uppercase text-white/70 leading-none">Configuración</p>
-                                    <p class="text-[10px] font-black text-white uppercase leading-tight">Datos de la Empresa</p>
-                                </div>
-                                <span class="ml-auto text-[8px] font-black bg-red-500 text-white px-1.5 rounded border border-black">EXTERNO</span>
-                            </div>
-                            <div class="p-1.5 flex flex-col gap-0.5 overflow-y-auto custom-scrollbar">
-                                <form [formGroup]="externalForm" class="flex flex-col gap-0.5">
+                    <button (click)="switchView('internal')"
+                            class="h-9 px-4 bg-blue-600 text-white font-black text-xs border-[2px] border-black rounded-xl shadow-[3px_3px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[2px_2px_0px_0px_#000] active:shadow-none transition-all uppercase flex items-center gap-2">
+                        <mat-icon class="!text-white">swap_horiz</mat-icon>
+                        <span class="hidden sm:inline">A Interno</span>
+                    </button>
 
-                                    <!-- Buscar Empresa -->
-                                    <div>
-                                        <label class="text-[8px] font-black uppercase text-black dark:text-gray-400 mb-0.5 block">Buscar Empresa</label>
-                                        <div class="relative">
-                                            <input type="text" formControlName="buscarEmpresa"
-                                                   [matAutocomplete]="autoEmpresa"
-                                                   placeholder="Nombre o tipo de empresa..."
-                                                   class="w-full h-6 text-[11px] font-bold border-2 border-black dark:border-slate-600 rounded pl-5 pr-2 bg-white dark:bg-[#0F172AFF] text-black dark:text-white outline-none placeholder:text-gray-400">
-                                            <mat-icon class="absolute left-1 top-1/2 -translate-y-1/2 text-black !text-xs">search</mat-icon>
-                                        </div>
-                                        <mat-autocomplete #autoEmpresa="matAutocomplete" [displayWith]="displayEmpresa" (optionSelected)="selectEmpresa($event.option.value)">
-                                            <mat-option *ngFor="let e of filteredEmpresas" [value]="e" class="!p-2 !border-b border-black/10">
-                                                <div class="flex flex-col">
-                                                    <span class="font-bold text-xs">{{ e.nombre }}</span>
-                                                    <span class="text-[10px] text-gray-500">{{ e.tipo }} | {{ e.contacto }}</span>
-                                                </div>
-                                            </mat-option>
-                                        </mat-autocomplete>
-                                    </div>
+                    <button (click)="abrirModalAgregarItemExterno()"
+                            class="h-9 px-4 bg-[#0F172AFF] text-white font-black text-xs border-[2px] border-black rounded-xl shadow-[3px_3px_0px_0px_rgba(0,0,0,0.5)] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,0.5)] active:shadow-none transition-all uppercase flex items-center gap-2">
+                        <mat-icon class="!text-white">add_circle</mat-icon> Agregar Ítem
+                    </button>
 
-                                    <!-- Nombre Empresa -->
-                                    <div>
-                                        <label class="text-[8px] font-black uppercase text-black dark:text-gray-400 mb-0.5 block">Nombre Empresa *</label>
-                                        <input type="text" formControlName="nombreEmpresa" readonly
-                                               class="w-full h-6 text-[11px] font-bold border-2 border-red-400 rounded px-2 bg-red-50 dark:bg-red-900/30 text-red-800 dark:text-red-300 outline-none cursor-not-allowed uppercase"
-                                               [class.border-red-500]="hasErrorExternal('nombreEmpresa', 'required')">
-                                    </div>
+                    <button (click)="procesarExterno()" [disabled]="isSaving || externalDataSource().length === 0"
+                            class="h-9 px-5 bg-green-600 text-white font-black text-xs border-[2px] border-black rounded-xl shadow-[3px_3px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[2px_2px_0px_0px_#000] active:shadow-none disabled:opacity-50 disabled:shadow-none disabled:translate-x-0 disabled:translate-y-0 disabled:cursor-not-allowed transition-all uppercase flex items-center gap-2">
+                        <mat-icon class="!text-sm text-black">check_circle</mat-icon>
+                        <span class="hidden sm:inline">Finalizar</span>
+                    </button>
+                </div>
+            </div>
 
-                                    <!-- NIT + Teléfono -->
-                                    <div class="grid grid-cols-2 gap-1">
-                                        <div>
-                                            <label class="text-[8px] font-black uppercase text-black dark:text-gray-400 mb-0.5 block">NIT</label>
-                                            <input type="text" formControlName="nit" readonly
-                                                   class="w-full h-6 text-[11px] font-bold border-2 border-gray-300 rounded px-2 bg-gray-50 dark:bg-slate-800 text-black dark:text-white outline-none cursor-not-allowed font-mono">
-                                        </div>
-                                        <div>
-                                            <label class="text-[8px] font-black uppercase text-black dark:text-gray-400 mb-0.5 block">Teléfono</label>
-                                            <input type="text" formControlName="telefono" readonly
-                                                   class="w-full h-6 text-[11px] font-bold border-2 border-gray-300 rounded px-2 bg-gray-50 dark:bg-slate-800 text-black dark:text-white outline-none cursor-not-allowed">
-                                        </div>
-                                    </div>
-
-                                    <!-- Contacto -->
-                                    <div>
-                                        <label class="text-[8px] font-black uppercase text-black dark:text-gray-400 mb-0.5 block">Contacto</label>
-                                        <input type="text" formControlName="contacto" readonly
-                                               class="w-full h-6 text-[11px] font-bold border-2 border-gray-300 rounded px-2 bg-gray-50 dark:bg-slate-800 text-black dark:text-white outline-none cursor-not-allowed">
-                                    </div>
-
-                                    <!-- Fecha + Hora -->
-                                    <div class="grid grid-cols-2 gap-1">
-                                        <div>
-                                            <label class="text-[8px] font-black uppercase text-black dark:text-gray-400 mb-0.5 block">Fecha *</label>
-                                            <div class="relative">
-                                                <input type="date" formControlName="fecha"
-                                                       class="w-full h-6 text-[11px] font-bold border-2 border-black rounded pl-5 pr-1 bg-white dark:bg-[#0F172AFF] text-black dark:text-white outline-none"
-                                                       [class.border-red-500]="hasErrorExternal('fecha', 'required')">
-                                                <mat-icon class="absolute left-0.5 top-1/2 -translate-y-1/2 text-black !text-xs">calendar_today</mat-icon>
-                                            </div>
-                                        </div>
-                                        <div>
-                                            <label class="text-[8px] font-black uppercase text-black dark:text-gray-400 mb-0.5 block">Hora *</label>
-                                            <div class="relative">
-                                                <input type="time" formControlName="hora"
-                                                       class="w-full h-6 text-[11px] font-bold border-2 border-black rounded pl-5 pr-1 bg-white dark:bg-[#0F172AFF] text-black dark:text-white outline-none"
-                                                       [class.border-red-500]="hasErrorExternal('hora', 'required')">
-                                                <mat-icon class="absolute left-0.5 top-1/2 -translate-y-1/2 text-black !text-xs">schedule</mat-icon>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <!-- Motivo Préstamo -->
-                                    <div>
-                                        <label class="text-[8px] font-black uppercase text-black dark:text-gray-400 mb-0.5 block">Motivo Préstamo *</label>
-                                        <div class="relative">
-                                            <select formControlName="motivoPrestamo"
-                                                    class="w-full h-6 text-[11px] font-bold border-2 border-black dark:border-slate-600 rounded pl-5 pr-1 bg-white dark:bg-[#0F172AFF] text-black dark:text-white outline-none appearance-none cursor-pointer"
-                                                    [class.border-red-500]="hasErrorExternal('motivoPrestamo', 'required')">
-                                                <option value="">-- Seleccionar --</option>
-                                                <option *ngFor="let m of tiposMotivoPrestamo" [value]="m.value">{{ m.label }}</option>
-                                            </select>
-                                            <mat-icon class="absolute left-1 top-1/2 -translate-y-1/2 text-black !text-xs pointer-events-none">help_outline</mat-icon>
-                                        </div>
-                                    </div>
-
-                                    <!-- Autorizado Por -->
-                                    <div>
-                                        <label class="text-[8px] font-black uppercase text-black dark:text-gray-400 mb-0.5 block">Autorizado Por</label>
-                                        <input type="text" formControlName="autorizado"
-                                               placeholder="Nombre del autorizador"
-                                               class="w-full h-6 text-[11px] font-bold border-2 border-black dark:border-slate-600 rounded px-2 bg-white dark:bg-[#0F172AFF] text-black dark:text-white outline-none placeholder:text-gray-400">
-                                    </div>
-
-                                    <!-- Observaciones -->
-                                    <div>
-                                        <label class="text-[8px] font-black uppercase text-black dark:text-gray-400 mb-0.5 block">Observaciones</label>
-                                        <textarea formControlName="observaciones" rows="1"
-                                                  placeholder="Observaciones adicionales..."
-                                                  class="w-full text-[11px] border-2 border-black dark:border-slate-600 rounded px-2 py-0.5 bg-white dark:bg-[#0F172AFF] text-black dark:text-white outline-none placeholder:text-gray-400 resize-none"></textarea>
-                                    </div>
-                                </form>
-                            </div>
+            <div class="px-4 pt-3 shrink-0">
+                <div *ngIf="!isExternalDataValid()" class="bg-white dark:bg-gray-800 border-[2px] border-black p-2.5 rounded-lg flex items-center justify-between shadow-[3px_3px_0px_0px_#000] animate-pulse-border">
+                    <div class="flex items-center gap-2">
+                        <mat-icon class="text-[#FF1414FF] !text-xl hidden sm:block">warning</mat-icon>
+                        <div>
+                            <h3 class="font-black text-xs text-black dark:text-white uppercase leading-none">Faltan Datos de la Empresa</h3>
+                            <p class="text-[10px] font-bold text-gray-600 dark:text-gray-400 mt-0.5 hidden sm:block">Debe configurar la empresa externa y los detalles del motivo para proceder.</p>
                         </div>
+                    </div>
+                    <button (click)="abrirModalDatosExterno()" class="px-4 py-1.5 bg-[#FF1414FF] text-white font-black text-xs border-[2px] border-black rounded-lg shadow-[2px_2px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all uppercase flex items-center gap-1.5">
+                        <mat-icon class="!text-black">edit</mat-icon> Configurar
+                    </button>
+                </div>
 
-                        <!-- Card Herramienta -->
-                        <div class="neo-card-base bg-white dark:bg-slate-800 flex flex-col flex-1 overflow-hidden">
-                            <div class="bg-[#0F172AFF] border-b-2 border-black px-2 py-1 flex items-center gap-2 shrink-0">
-                                <mat-icon class="text-amber-400 !text-sm shrink-0">handyman</mat-icon>
-                                <div>
-                                    <p class="text-[8px] font-black uppercase text-white/70 leading-none">Selección</p>
-                                    <p class="text-[10px] font-black text-white uppercase leading-tight">Herramienta a Prestar</p>
-                                </div>
-                                <span class="ml-auto text-[8px] font-bold text-gray-300">{{ coincidenciasExternal() }} encontradas</span>
+                <div *ngIf="isExternalDataValid()" class="bg-gray-100 dark:bg-slate-800 border-[2px] border-black p-2.5 rounded-lg shadow-[3px_3px_0px_0px_#000] flex justify-between items-center relative overflow-hidden">
+                    <div class="absolute right-0 top-0 bottom-0 w-32 bg-gray-200 dark:bg-slate-700 transform skew-x-12 -mr-10 hidden sm:block"></div>
+                    <div class="flex flex-wrap gap-x-6 gap-y-2 relative z-10 w-full pr-10 sm:pr-12">
+                        <div class="flex flex-col">
+                            <p class="text-[9px] font-black uppercase text-gray-500 dark:text-gray-400">Empresa / NIT</p>
+                            <p class="font-black text-sm text-black dark:text-white">{{ externalForm.value.nombreEmpresa }} <span class="text-xs text-gray-500 font-mono">({{ externalForm.value.nit || 'S/NIT' }})</span></p>
+                        </div>
+                        <div class="flex flex-col hidden md:flex">
+                            <p class="text-[9px] font-black uppercase text-gray-500 dark:text-gray-400">Contacto</p>
+                            <p class="font-black text-sm text-black dark:text-white">{{ externalForm.value.contacto || 'S/C' }}</p>
+                        </div>
+                        <div class="flex flex-col">
+                            <p class="text-[9px] font-black uppercase text-gray-500 dark:text-gray-400">Motivo / Aut.</p>
+                            <p class="font-black text-sm text-black dark:text-white">{{ externalForm.value.motivoPrestamo }} · {{ externalForm.value.autorizado || 'S/A' }}</p>
+                        </div>
+                        <div class="flex flex-col hidden lg:flex">
+                            <p class="text-[9px] font-black uppercase text-gray-500 dark:text-gray-400">Fecha y Hora</p>
+                            <p class="font-black text-sm text-black dark:text-white">{{ externalForm.value.fecha }} {{ externalForm.value.hora }}</p>
+                        </div>
+                    </div>
+                    <button (click)="abrirModalDatosExterno()" class="absolute right-2 sm:right-3 top-1/2 -translate-y-1/2 z-10 w-8 h-8 flex items-center justify-center bg-white dark:bg-slate-700 border-[2px] border-black rounded-md shadow-[2px_2px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all" matTooltip="Modificar Datos">
+                        <mat-icon class="text-black dark:text-white !text-sm">edit</mat-icon>
+                    </button>
+                </div>
+            </div>
+
+            <div class="flex-1 flex flex-col p-4 overflow-hidden">
+                <div class="flex-1 flex flex-col border-[3px] border-black bg-white dark:bg-[#0F172AFF] rounded-2xl shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] overflow-hidden z-0">
+
+                    <div class="bg-[#0F172AFF] px-4 py-2.5 border-b-[3px] border-black flex items-center justify-between shrink-0 flex-wrap gap-2">
+                        <div class="flex items-center gap-3 border-r-[2px] border-white/20 pr-4">
+                            <mat-checkbox [checked]="isAllSelectedExternal()" [indeterminate]="isSomeSelectedExternal()" (change)="toggleAllSelectionExternal($event)" class="white-checkbox"></mat-checkbox>
+                            <h2 class="text-xs sm:text-sm font-black text-white uppercase tracking-wider flex items-center gap-2">
+                                <span class="hidden sm:inline">Seleccionar</span> Todo
+                            </h2>
+                        </div>
+                        <div class="flex items-center gap-2 sm:gap-4">
+                            <div class="flex items-center gap-2 bg-yellow-400 rounded-lg px-2 sm:px-3 py-1.5 border-2 border-black" *ngIf="getSelectedCountExternal() > 0">
+                                <div class="text-[9px] font-black uppercase text-black leading-none hidden sm:block">Seleccionados</div>
+                                <div class="text-xs sm:text-sm font-black text-black leading-none">{{ getSelectedCountExternal() }}</div>
                             </div>
-                            <div class="p-1.5 flex flex-col gap-0.5 flex-1 overflow-y-auto custom-scrollbar">
-                                <form [formGroup]="externalToolForm" class="flex flex-col gap-0.5">
-
-                                    <!-- Buscar Herramienta -->
-                                    <div>
-                                        <label class="text-[8px] font-black uppercase text-black dark:text-gray-400 mb-0.5 block">Buscar Herramienta</label>
-                                        <div class="relative">
-                                            <input type="text" formControlName="buscar"
-                                                   [matAutocomplete]="autoHerramienta"
-                                                   (input)="onBuscarHerramientaExternal($any($event.target).value)"
-                                                   placeholder="Código, Nombre, P/N o Marca..."
-                                                   class="w-full h-6 text-[11px] font-bold border-2 border-black dark:border-slate-600 rounded pl-5 pr-2 bg-white dark:bg-[#0F172AFF] text-black dark:text-white outline-none placeholder:text-gray-400">
-                                            <mat-icon class="absolute left-1 top-1/2 -translate-y-1/2 text-black !text-xs">search</mat-icon>
-                                        </div>
-                                        <mat-autocomplete #autoHerramienta="matAutocomplete" [displayWith]="displayHerramienta" (optionSelected)="selectHerramientaExternal($event.option.value)">
-                                            <mat-option *ngFor="let h of filteredHerramientasExternal" [value]="h" class="!p-2 !border-b border-black/10">
-                                                <div class="flex flex-col">
-                                                    <span class="font-bold text-xs">{{ h.codigo }} - {{ h.nombre }}</span>
-                                                    <span class="text-[10px] text-gray-500">{{ h.marca }} | ${{ h.costoHora }}/hr</span>
-                                                </div>
-                                            </mat-option>
-                                        </mat-autocomplete>
-                                    </div>
-
-                                    <!-- Código + P/N + S/N -->
-                                    <div class="grid grid-cols-3 gap-1">
-                                        <div>
-                                            <label class="text-[8px] font-black uppercase text-black dark:text-gray-400 mb-0.5 block">Código</label>
-                                            <input type="text" formControlName="codigo" readonly
-                                                   class="w-full h-6 text-[11px] font-black border-2 border-red-400 rounded px-1.5 bg-red-50 dark:bg-red-900/30 text-red-800 dark:text-red-300 outline-none cursor-not-allowed font-mono">
-                                        </div>
-                                        <div>
-                                            <label class="text-[8px] font-black uppercase text-black dark:text-gray-400 mb-0.5 block">P/N</label>
-                                            <input type="text" formControlName="pn" readonly
-                                                   class="w-full h-6 text-[11px] font-bold border-2 border-gray-300 rounded px-1.5 bg-gray-50 dark:bg-slate-800 text-black dark:text-white outline-none cursor-not-allowed font-mono">
-                                        </div>
-                                        <div>
-                                            <label class="text-[8px] font-black uppercase text-black dark:text-gray-400 mb-0.5 block">S/N</label>
-                                            <input type="text" formControlName="sn" readonly
-                                                   class="w-full h-6 text-[11px] font-bold border-2 border-gray-300 rounded px-1.5 bg-gray-50 dark:bg-slate-800 text-black dark:text-white outline-none cursor-not-allowed font-mono">
-                                        </div>
-                                    </div>
-
-                                    <!-- Nombre + Marca -->
-                                    <div class="grid grid-cols-2 gap-1">
-                                        <div>
-                                            <label class="text-[8px] font-black uppercase text-black dark:text-gray-400 mb-0.5 block">Nombre</label>
-                                            <input type="text" formControlName="nombre" readonly
-                                                   class="w-full h-6 text-[11px] font-bold border-2 border-gray-300 rounded px-1.5 bg-gray-50 dark:bg-slate-800 text-black dark:text-white outline-none cursor-not-allowed">
-                                        </div>
-                                        <div>
-                                            <label class="text-[8px] font-black uppercase text-black dark:text-gray-400 mb-0.5 block">Marca</label>
-                                            <input type="text" formControlName="marca" readonly
-                                                   class="w-full h-6 text-[11px] font-bold border-2 border-gray-300 rounded px-1.5 bg-gray-50 dark:bg-slate-800 text-black dark:text-white outline-none cursor-not-allowed">
-                                        </div>
-                                    </div>
-
-                                    <!-- Costos -->
-                                    <div class="bg-red-50 dark:bg-red-900/20 border border-red-400 rounded p-1">
-                                        <div class="flex items-center gap-1 mb-0.5">
-                                            <mat-icon class="!text-xs text-red-600">attach_money</mat-icon>
-                                            <span class="text-[8px] font-black uppercase text-red-800 dark:text-red-300">Costos del Préstamo</span>
-                                        </div>
-                                        <div class="grid grid-cols-4 gap-1">
-                                            <div>
-                                                <label class="text-[7px] font-black uppercase text-gray-500">Cant.</label>
-                                                <input type="number" formControlName="cantidad" min="1"
-                                                       class="w-full h-6 text-[11px] font-black border-2 border-black rounded px-1 bg-white dark:bg-[#0F172AFF] text-black dark:text-white outline-none text-center">
-                                            </div>
-                                            <div>
-                                                <label class="text-[7px] font-black uppercase text-gray-500">C/Hr $</label>
-                                                <input type="number" formControlName="costoHora" step="0.01" readonly
-                                                       class="w-full h-6 text-[11px] font-black border-2 border-red-400 rounded px-1 bg-red-50 dark:bg-red-900/30 text-red-800 dark:text-red-300 outline-none cursor-not-allowed">
-                                            </div>
-                                            <div>
-                                                <label class="text-[7px] font-black uppercase text-gray-500">Horas</label>
-                                                <input type="number" formControlName="horas" min="1"
-                                                       class="w-full h-6 text-[11px] font-black border-2 border-black rounded px-1 bg-white dark:bg-[#0F172AFF] text-black dark:text-white outline-none text-center">
-                                            </div>
-                                            <div>
-                                                <label class="text-[7px] font-black uppercase text-gray-500">Total $</label>
-                                                <input type="text" [value]="precioTotalExternal() | number:'1.2-2'" readonly
-                                                       class="w-full h-6 text-[11px] font-black border-2 border-green-400 rounded px-1 bg-green-50 dark:bg-green-900/30 text-green-800 dark:text-green-300 outline-none cursor-not-allowed">
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <!-- Imagen -->
-                                    <div>
-                                        <label class="text-[8px] font-black uppercase text-black dark:text-gray-400 mb-0.5 block">Imagen de la Herramienta</label>
-                                        <div class="border border-dashed border-black rounded p-1.5 bg-gray-50 dark:bg-slate-900/50 flex flex-col items-center justify-center min-h-[60px] cursor-pointer hover:bg-gray-100 dark:hover:bg-slate-900 transition-colors"
-                                             (click)="fileInputExternal.click()">
-                                            <ng-container *ngIf="!selectedImageExternal()">
-                                                <mat-icon class="!text-xl text-gray-300 dark:text-gray-600">photo_camera</mat-icon>
-                                                <p class="text-[8px] font-bold text-gray-400">Clic para subir imagen</p>
-                                            </ng-container>
-                                            <img *ngIf="selectedImageExternal()" [src]="selectedImageExternal()"
-                                                 class="max-h-[60px] max-w-full object-contain rounded border border-black">
-                                        </div>
-                                        <input type="file" #fileInputExternal (change)="onImageSelectedExternal($event)" accept="image/*" class="hidden">
-                                    </div>
-                                </form>
-
-                                <!-- Botón agregar -->
-                                <button type="button" (click)="agregarHerramientaExternal()" [disabled]="!externalToolForm.get('codigo')?.value"
-                                        class="w-full h-7 bg-red-600 text-white text-[11px] font-black border-2 border-black rounded shadow-[2px_2px_0px_0px_#000] hover:shadow-none hover:translate-x-[1px] hover:translate-y-[1px] transition-all uppercase flex items-center justify-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed mt-0.5">
-                                    <mat-icon class="!text-xs">add</mat-icon>
-                                    Agregar a Lista
-                                </button>
-
-                                <!-- Summary -->
-                                <div class="border-t border-dashed border-black dark:border-gray-700 pt-0.5 mt-0.5">
-                                    <div *ngIf="externalDataSource().length > 0" class="grid grid-cols-2 gap-1">
-                                        <div class="bg-gray-50 dark:bg-red-900/20 border border-black rounded p-1 flex items-center gap-1">
-                                            <mat-icon class="text-black !text-xs !w-3 !h-3 shrink-0">inventory</mat-icon>
-                                            <div>
-                                                <p class="text-xs font-black text-black dark:text-red-300 leading-none">{{ externalDataSource().length }}</p>
-                                                <p class="text-[7px] font-bold text-black uppercase">Items</p>
-                                            </div>
-                                        </div>
-                                        <div class="bg-gray-50 dark:bg-green-900/20 border border-black rounded p-1 flex items-center gap-1">
-                                            <mat-icon class="text-black !text-xs !w-3 !h-3 shrink-0">attach_money</mat-icon>
-                                            <div>
-                                                <p class="text-xs font-black text-black dark:text-green-300 leading-none">${{ importeTotal() | number:'1.2-2' }}</p>
-                                                <p class="text-[7px] font-bold text-black uppercase">Importe</p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div *ngIf="getFormErrorsExternal().length > 0"
-                                         class="bg-red-50 dark:bg-red-900/30 border border-red-400 rounded p-1 mt-0.5">
-                                        <ul class="space-y-0.5">
-                                            <li *ngFor="let error of getFormErrorsExternal()"
-                                                class="text-[8px] font-bold text-red-700 dark:text-red-400">• {{ error }}</li>
-                                        </ul>
-                                    </div>
-                                </div>
+                            <div class="flex items-center gap-2 bg-white/20 rounded-lg px-2 sm:px-3 py-1.5 border border-white/30">
+                                <div class="text-[9px] font-black uppercase text-white/80 leading-none hidden sm:block">Líneas Ítems</div>
+                                <div class="text-xs sm:text-sm font-black text-white leading-none">{{ externalDataSource().length }}</div>
+                            </div>
+                            <div class="flex items-center gap-2 bg-green-500 rounded-lg px-2 sm:px-3 py-1.5 border-2 border-black" *ngIf="importeTotal() > 0">
+                                <div class="text-[9px] font-black uppercase text-black leading-none hidden sm:block">Total</div>
+                                <div class="text-xs sm:text-sm font-black text-black leading-none">${{ importeTotal() | number:'1.0-0' }}</div>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Col 2: Tabla -->
-                    <div class="flex-1 flex flex-col overflow-hidden">
-                        <div class="neo-card-base bg-white dark:bg-slate-800 overflow-hidden flex flex-col flex-1 relative z-10 border-2 border-black dark:border-gray-600">
+                    <div class="overflow-y-auto flex-1 custom-scrollbar">
+                        <table mat-table [dataSource]="externalDataSource()" class="w-full min-w-[800px]">
+                            <ng-container matColumnDef="select">
+                                <th mat-header-cell *matHeaderCellDef class="hidden"></th>
+                                <td mat-cell *matCellDef="let element" class="!p-2 !border-b-2 !border-black dark:!border-slate-700 !w-10 text-center">
+                                    <mat-checkbox [checked]="element.selected" (change)="toggleSelectionExternal(element)" color="primary"></mat-checkbox>
+                                </td>
+                            </ng-container>
 
-                            <!-- Table header -->
-                            <div class="bg-[#0F172AFF] px-3 py-1.5 border-b-2 border-black flex items-center justify-between shrink-0 h-9">
-                                <span class="font-black text-xs uppercase text-white flex items-center gap-2">
-                                    <mat-icon class="text-amber-400 !text-base !w-4 !h-4">list_alt</mat-icon>
-                                    Herramientas Seleccionadas
-                                </span>
-                                <span class="bg-white text-black px-2 py-0.5 rounded text-xs font-black border border-black shadow-[2px_2px_0px_0px_#000]">
-                                    {{ externalDataSource().length }} ítem(s)
-                                </span>
-                            </div>
+                            <ng-container matColumnDef="codigo">
+                                <th mat-header-cell *matHeaderCellDef class="!bg-gray-100 dark:!bg-slate-900 !text-black dark:!text-white !font-black !text-[10px] !border-b-[3px] !border-black !p-3 uppercase !w-32 z-[20]">Código</th>
+                                <td mat-cell *matCellDef="let element" class="!px-3 !py-2 !border-b-2 !border-black dark:!border-slate-700">
+                                    <span class="bg-[#0F172AFF] text-white font-mono font-bold px-1.5 py-0.5 rounded text-[10px] block shadow-[1px_1px_0px_0px_rgba(0,0,0,0.5)] w-fit">{{ element.codigo }}</span>
+                                </td>
+                            </ng-container>
 
-                            <!-- Empty State -->
-                            <div *ngIf="externalDataSource().length === 0"
-                                 class="flex flex-col items-center justify-center py-12 text-black dark:text-gray-300 flex-1">
-                                <div class="w-16 h-16 bg-white border-2 border-black rounded-full flex items-center justify-center mb-3 shadow-[3px_3px_0px_0px_#000]">
-                                    <mat-icon class="!text-4xl !w-8 !h-8 text-red-600">inventory_2</mat-icon>
-                                </div>
-                                <h3 class="text-base font-black uppercase tracking-tight text-black dark:text-white">Sin herramientas seleccionadas</h3>
-                                <p class="text-xs font-bold bg-yellow-300 px-3 py-1 mt-2 border-2 border-black -rotate-1 text-black">
-                                    Busque y agregue herramientas para el préstamo externo
-                                </p>
-                            </div>
+                            <ng-container matColumnDef="pn">
+                                <th mat-header-cell *matHeaderCellDef class="!bg-gray-100 dark:!bg-slate-900 !text-black dark:!text-white !font-black !text-[10px] !border-b-[3px] !border-black !p-3 uppercase !w-24 z-[20]">P/N</th>
+                                <td mat-cell *matCellDef="let element" class="!px-3 !py-2 !border-b-2 !border-black dark:!border-slate-700 font-mono text-[11px] font-bold">{{ element.pn || '-' }}</td>
+                            </ng-container>
 
-                            <!-- Tabla -->
-                            <div *ngIf="externalDataSource().length > 0" class="overflow-auto flex-1 custom-scrollbar">
-                                <table class="w-full min-w-[900px]">
-                                    <thead class="sticky top-0 z-10">
-                                    <tr class="bg-slate-50 dark:bg-slate-900">
-                                        <th class="px-2 py-1.5 text-left text-[10px] font-black uppercase text-black dark:text-white border-b-2 border-black border-r border-black/10">Código</th>
-                                        <th class="px-2 py-1.5 text-left text-[10px] font-black uppercase text-black dark:text-white border-b-2 border-black border-r border-black/10">P/N</th>
-                                        <th class="px-2 py-1.5 text-left text-[10px] font-black uppercase text-black dark:text-white border-b-2 border-black border-r border-black/10">Descripción</th>
-                                        <th class="px-2 py-1.5 text-left text-[10px] font-black uppercase text-black dark:text-white border-b-2 border-black border-r border-black/10">S/N</th>
-                                        <th class="px-2 py-1.5 text-left text-[10px] font-black uppercase text-black dark:text-white border-b-2 border-black border-r border-black/10">Marca</th>
-                                        <th class="px-2 py-1.5 text-center text-[10px] font-black uppercase text-black dark:text-white border-b-2 border-black border-r border-black/10">Cant.</th>
-                                        <th class="px-2 py-1.5 text-center text-[10px] font-black uppercase text-black dark:text-white border-b-2 border-black border-r border-black/10">Horas</th>
-                                        <th class="px-2 py-1.5 text-center text-[10px] font-black uppercase text-black dark:text-white border-b-2 border-black border-r border-black/10">Estado</th>
-                                        <th class="px-2 py-1.5 text-right text-[10px] font-black uppercase text-black dark:text-white border-b-2 border-black border-r border-black/10">Total $</th>
-                                        <th class="px-2 py-1.5 text-center text-[10px] font-black uppercase text-black dark:text-white border-b-2 border-black">Acc.</th>
-                                    </tr>
-                                    </thead>
-                                    <tbody>
-                                    <tr *ngFor="let item of externalDataSource(); let i = index"
-                                        class="border-b border-gray-200 dark:border-gray-700 hover:bg-red-50 dark:hover:bg-red-900/10 transition-colors">
-                                        <td class="px-2 py-1 text-xs font-black text-black dark:text-white font-mono">{{ item.codigo }}</td>
-                                        <td class="px-2 py-1 text-xs font-bold text-blue-700 dark:text-blue-400 font-mono">{{ item.pn }}</td>
-                                        <td class="px-2 py-1 text-xs text-gray-800 dark:text-gray-200">{{ item.descripcion }}</td>
-                                        <td class="px-2 py-1 text-xs font-mono text-gray-700 dark:text-gray-300">{{ item.sn }}</td>
-                                        <td class="px-2 py-1 text-xs font-bold text-gray-800 dark:text-gray-200">{{ item.marca }}</td>
-                                        <td class="px-2 py-1 text-center">
-                                            <span class="px-2 py-0.5 bg-red-500 text-white text-xs font-black rounded-full border border-black">{{ item.cantidad }}</span>
-                                        </td>
-                                        <td class="px-2 py-1 text-center text-xs font-black text-red-700 dark:text-red-400">{{ item.horas }}</td>
-                                        <td class="px-2 py-1 text-center">
-                                            <span class="px-1.5 py-0.5 bg-green-500 text-white text-[10px] font-black uppercase rounded border border-black">{{ item.estado }}</span>
-                                        </td>
-                                        <td class="px-2 py-1 text-right">
-                                            <span class="px-2 py-0.5 bg-green-500 text-white text-xs font-black rounded-full border border-black">${{ item.precioTotal | number:'1.2-2' }}</span>
-                                        </td>
-                                        <td class="px-2 py-1 text-center">
-                                            <button (click)="eliminarItemExterno(i)"
-                                                    class="w-6 h-6 bg-red-500 text-white border-2 border-black rounded shadow-[2px_2px_0px_0px_#000] hover:shadow-none hover:translate-x-[1px] hover:translate-y-[1px] flex items-center justify-center transition-all">
-                                                <mat-icon class="!text-xs !w-3.5 !h-3.5">delete</mat-icon>
-                                            </button>
-                                        </td>
-                                    </tr>
-                                    </tbody>
-                                </table>
-                            </div>
+                            <ng-container matColumnDef="descripcion">
+                                <th mat-header-cell *matHeaderCellDef class="!bg-gray-100 dark:!bg-slate-900 !text-black dark:!text-white !font-black !text-[10px] !border-b-[3px] !border-black !p-3 uppercase z-[20]">Descripción</th>
+                                <td mat-cell *matCellDef="let element" class="!px-3 !py-2 !border-b-2 !border-black dark:!border-slate-700">
+                                    <div class="font-black text-[11px] text-black dark:text-white leading-tight line-clamp-2">{{ element.descripcion }}</div>
+                                </td>
+                            </ng-container>
 
-                            <!-- Footer -->
-                            <div *ngIf="externalDataSource().length > 0"
-                                 class="bg-yellow-50 dark:bg-yellow-900/20 px-3 py-2 border-t-2 border-black flex items-center justify-between shrink-0">
-                                <span class="text-xs font-black text-yellow-800 dark:text-yellow-300">
-                                    {{ externalDataSource().length }} herramienta(s)
-                                </span>
-                                <span class="text-sm font-black text-green-700 dark:text-green-400">
-                                    Importe Total: <strong>${{ importeTotal() | number:'1.2-2' }}</strong>
-                                </span>
-                            </div>
-                        </div>
+                            <ng-container matColumnDef="sn">
+                                <th mat-header-cell *matHeaderCellDef class="!bg-gray-100 dark:!bg-slate-900 !text-black dark:!text-white !font-black !text-[10px] !border-b-[3px] !border-black !p-3 uppercase !w-24 z-[20]">S/N</th>
+                                <td mat-cell *matCellDef="let element" class="!px-3 !py-2 !border-b-2 !border-black dark:!border-slate-700 font-mono text-[11px] font-bold text-blue-600 dark:text-blue-400">{{ element.sn || '-' }}</td>
+                            </ng-container>
+
+                            <ng-container matColumnDef="cantidad">
+                                <th mat-header-cell *matHeaderCellDef class="!bg-gray-100 dark:!bg-slate-900 !text-black dark:!text-white !font-black !text-[10px] !border-b-[3px] !border-black !p-3 uppercase !w-16 text-center z-[20]">Cant.</th>
+                                <td mat-cell *matCellDef="let element" class="!px-3 !py-2 !border-b-2 !border-black dark:!border-slate-700 text-center">
+                                    <span class="bg-gray-100 dark:bg-slate-800 border-2 border-black text-black dark:text-white rounded px-2 py-0.5 font-black text-xs block w-fit mx-auto">{{ element.cantidad }}</span>
+                                </td>
+                            </ng-container>
+
+                            <ng-container matColumnDef="horas">
+                                <th mat-header-cell *matHeaderCellDef class="!bg-gray-100 dark:!bg-slate-900 !text-black dark:!text-white !font-black !text-[10px] !border-b-[3px] !border-black !p-3 uppercase !w-16 text-center z-[20]">Hrs.</th>
+                                <td mat-cell *matCellDef="let element" class="!px-3 !py-2 !border-b-2 !border-black dark:!border-slate-700 text-center font-black text-xs text-red-600 dark:text-red-400">
+                                    {{ element.horas }}
+                                </td>
+                            </ng-container>
+
+                            <ng-container matColumnDef="total">
+                                <th mat-header-cell *matHeaderCellDef class="!bg-gray-100 dark:!bg-slate-900 !text-black dark:!text-white !font-black !text-[10px] !border-b-[3px] !border-black !p-3 uppercase !w-24 text-right z-[20]">Total $</th>
+                                <td mat-cell *matCellDef="let element" class="!px-3 !py-2 !border-b-2 !border-black dark:!border-slate-700 text-right">
+                                    <span class="bg-green-500 text-white border-2 border-black px-2 py-0.5 rounded-full font-black text-[10px] shadow-[2px_2px_0px_0px_#000]">${{ element.precioTotal | number:'1.2-2' }}</span>
+                                </td>
+                            </ng-container>
+
+                            <ng-container matColumnDef="acciones">
+                                <th mat-header-cell *matHeaderCellDef class="!bg-gray-100 dark:!bg-slate-900 !text-black dark:!text-white !font-black !text-[10px] !border-b-[3px] !border-black !p-3 uppercase text-center !w-16 z-[20]">Acc.</th>
+                                <td mat-cell *matCellDef="let element; let i = index" class="!px-3 !py-2 !border-b-2 !border-black dark:!border-slate-700 text-center">
+                                    <button (click)="eliminarItemExterno(i); $event.stopPropagation()" matTooltip="Quitar"
+                                            class="w-7 h-7 bg-red-500 text-white rounded border-2 border-black shadow-[2px_2px_0px_0px_#000] hover:shadow-none hover:translate-x-[1px] hover:translate-y-[1px] transition-all flex items-center justify-center mx-auto">
+                                        <mat-icon class="!text-sm">delete</mat-icon>
+                                    </button>
+                                </td>
+                            </ng-container>
+
+                            <tr mat-header-row *matHeaderRowDef="displayedExternalColumns; sticky: true"></tr>
+                            <tr mat-row *matRowDef="let row; columns: displayedExternalColumns;" [class.row-selected]="row.selected"
+                                class="hover:bg-gray-100 dark:hover:bg-slate-800/50 transition-colors cursor-pointer" (click)="toggleSelectionExternal(row)"></tr>
+                        </table>
+                    </div>
+
+                    <div *ngIf="externalDataSource().length === 0" class="flex flex-col items-center justify-center py-10 sm:py-20 bg-white dark:bg-slate-800">
+                        <mat-icon class="!text-5xl sm:!text-7xl text-gray-300 dark:text-gray-600 mb-2 sm:mb-4">handshake</mat-icon>
+                        <p class="text-base sm:text-lg font-black uppercase text-gray-400">Sin Herramientas</p>
+                        <p class="text-[10px] sm:text-xs font-bold text-gray-500 mt-1 text-center px-4">Presione "Agregar Ítem" en la parte superior para prestar a terceros.</p>
                     </div>
                 </div>
             </div>
         </div>
     }
+
 </div>
+
+<ng-template #datosInternoModal>
+    <div class="bg-gray-100 dark:bg-slate-900 rounded-2xl border-[3px] border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] overflow-hidden flex flex-col w-full max-w-[650px] h-[90vh] md:h-auto md:max-h-[85vh]">
+
+        <div class="bg-[#0F172AFF] text-white px-4 py-2 border-b-[3px] border-black flex justify-between items-center shrink-0">
+            <h2 class="text-xs sm:text-sm font-black uppercase flex items-center gap-2">
+                <mat-icon class="text-amber-400 !text-lg sm:!text-xl">edit_document</mat-icon> <span class="hidden sm:inline">Datos Préstamo Interno</span><span class="sm:hidden">Préstamo Int.</span>
+            </h2>
+            <div class="flex items-center gap-2">
+                <button (click)="cerrarModalDatosInterno()" class="px-2 sm:px-3 py-1 bg-[#FF1414FF] text-white font-black text-[9px] sm:text-[10px] border-2 border-black rounded shadow-[2px_2px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all uppercase">
+                    <span class="hidden sm:inline">Cancelar</span><mat-icon class="sm:hidden !text-xs">close</mat-icon>
+                </button>
+                <button (click)="cerrarModalDatosInterno()" class="px-2 sm:px-3 py-1 bg-green-600 text-white font-black text-[9px] sm:text-[10px] border-2 border-black rounded shadow-[2px_2px_0px_0px_rgba(255,255,255,0.2)] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all uppercase flex items-center gap-1">
+                     <span class="hidden sm:inline">Aceptar</span><span class="sm:hidden">Ok</span>
+                </button>
+            </div>
+        </div>
+
+        <div class="flex flex-col flex-1 overflow-y-auto p-3 sm:p-4 bg-gray-200 dark:bg-slate-700 custom-scrollbar">
+            <form [formGroup]="internalForm" class="flex flex-col bg-gray-50 dark:bg-slate-800 border-[2px] border-black rounded-lg p-3 sm:p-4 shadow-[3px_3px_0px_0px_#000] gap-3 sm:gap-4">
+
+                <h3 class="text-[9px] sm:text-[10px] font-black uppercase text-black dark:text-white border-b-2 border-black pb-1 flex items-center gap-1">
+                    <mat-icon class="!text-xs sm:!text-sm text-black dark:text-white">engineering</mat-icon> Información de Préstamo
+                </h3>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
+                    <div class="relative">
+                        <label class="text-[8px] sm:text-[9px] font-black uppercase text-gray-700 dark:text-gray-400 block mb-0.5">Buscar Técnico *</label>
+                        <input type="text" formControlName="buscarTecnico" (blur)="hideTecnicoSuggestions()" placeholder="Nombre o licencia..." class="w-full h-8 text-[9px] sm:text-[10px] font-bold border-2 border-black rounded px-2 bg-white dark:bg-slate-900 text-black dark:text-white outline-none uppercase focus:shadow-[2px_2px_0px_0px_#000]" />
+                        <div *ngIf="showTecnicoSuggestions && filteredTecnicos.length > 0" class="absolute top-full left-0 right-0 z-50 mt-1 bg-white dark:bg-slate-800 border-2 border-black rounded shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] max-h-40 overflow-y-auto">
+                            <button type="button" *ngFor="let t of filteredTecnicos" (mousedown)="selectTecnico(t)" class="w-full text-left px-3 py-2 hover:bg-gray-100 dark:hover:bg-slate-700 border-b border-gray-200 dark:border-gray-700">
+                                <p class="text-[9px] sm:text-[10px] font-black text-black dark:text-white">{{ t.nombres }} {{ t.apPaterno }}</p>
+                                <p class="text-[7px] sm:text-[8px] text-gray-500">{{ t.nroLicencia }} | {{ t.cargo }}</p>
+                            </button>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="text-[8px] sm:text-[9px] font-black uppercase text-gray-700 dark:text-gray-400 block mb-0.5">Nombre Confirmado *</label>
+                        <input formControlName="nombreCompleto" type="text" readonly class="w-full h-8 text-[9px] sm:text-[10px] font-bold border-2 border-black rounded px-2 bg-gray-200 dark:bg-slate-700 text-black dark:text-white outline-none cursor-not-allowed uppercase" [class.border-red-500]="hasErrorInternal('nombreCompleto', 'required')" />
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3">
+                    <div>
+                        <label class="text-[8px] sm:text-[9px] font-black uppercase text-gray-700 dark:text-gray-400 block mb-0.5">Licencia *</label>
+                        <input formControlName="nroLicencia" type="text" readonly class="w-full h-8 text-[9px] sm:text-[10px] font-bold border-2 border-black rounded px-2 bg-gray-200 dark:bg-slate-700 text-black dark:text-white outline-none cursor-not-allowed uppercase">
+                    </div>
+                    <div class="grid grid-cols-2 sm:grid-cols-2 gap-2 sm:col-span-2">
+                        <div>
+                            <label class="text-[8px] sm:text-[9px] font-black uppercase text-gray-700 dark:text-gray-400 block mb-0.5">Fecha *</label>
+                            <input type="date" formControlName="fecha" class="w-full h-8 text-[9px] sm:text-[10px] font-bold border-2 border-black rounded px-1 bg-white dark:bg-slate-900 text-black dark:text-white outline-none focus:shadow-[2px_2px_0px_0px_#000]" [class.border-red-500]="hasErrorInternal('fecha', 'required')">
+                        </div>
+                        <div>
+                            <label class="text-[8px] sm:text-[9px] font-black uppercase text-gray-700 dark:text-gray-400 block mb-0.5">Hora *</label>
+                            <input type="time" formControlName="hora" class="w-full h-8 text-[9px] sm:text-[10px] font-bold border-2 border-black rounded px-1 bg-white dark:bg-slate-900 text-black dark:text-white outline-none focus:shadow-[2px_2px_0px_0px_#000]" [class.border-red-500]="hasErrorInternal('hora', 'required')">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3">
+                    <div>
+                        <label class="text-[8px] sm:text-[9px] font-black uppercase text-gray-700 dark:text-gray-400 block mb-0.5">Aeronave</label>
+                        <select formControlName="matriculaAeronave" class="w-full h-8 text-[9px] sm:text-[10px] font-bold border-2 border-black rounded px-1 bg-white dark:bg-slate-900 text-black dark:text-white outline-none focus:shadow-[2px_2px_0px_0px_#000]">
+                            <option value="N/A">-- Sel. --</option>
+                            <option *ngFor="let a of aeronaves" [value]="a.matricula">{{ a.matricula }}</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="text-[8px] sm:text-[9px] font-black uppercase text-gray-700 dark:text-gray-400 block mb-0.5">O.T.</label>
+                        <input type="text" formControlName="ordenTrabajo" placeholder="OT-..." class="w-full h-8 text-[9px] sm:text-[10px] font-bold border-2 border-black rounded px-2 bg-white dark:bg-slate-900 text-black dark:text-white outline-none uppercase focus:shadow-[2px_2px_0px_0px_#000]">
+                    </div>
+                    <div>
+                        <label class="text-[8px] sm:text-[9px] font-black uppercase text-gray-700 dark:text-gray-400 block mb-0.5">Destino/Área</label>
+                        <select formControlName="destino" class="w-full h-8 text-[9px] sm:text-[10px] font-bold border-2 border-black rounded px-1 bg-white dark:bg-slate-900 text-black dark:text-white outline-none focus:shadow-[2px_2px_0px_0px_#000]">
+                            <option value="">-- Sel. --</option>
+                            <option *ngFor="let d of destinos" [value]="d">{{ d }}</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="flex flex-col min-h-[50px] pb-4 sm:pb-0">
+                    <div class="flex justify-between items-center mb-1">
+                        <label class="text-[8px] sm:text-[9px] font-black uppercase text-gray-700 dark:text-gray-400">Observaciones Generales</label>
+                        <div class="flex items-center gap-1">
+                            <mat-checkbox formControlName="trabajoEspecial" class="scale-75"></mat-checkbox>
+                            <span class="text-[8px] sm:text-[9px] font-black text-black dark:text-white uppercase">Trabajo Especial</span>
+                        </div>
+                    </div>
+                    <textarea formControlName="observaciones" rows="3" placeholder="Notas adicionales..." class="w-full text-[9px] sm:text-[10px] font-bold border-2 border-black rounded p-2 bg-white dark:bg-slate-900 text-black dark:text-white outline-none focus:shadow-[2px_2px_0px_0px_#000] resize-none custom-scrollbar"></textarea>
+                </div>
+            </form>
+        </div>
+    </div>
+</ng-template>
+
+<ng-template #confirmInternoModal>
+    <div class="bg-white dark:bg-slate-800 rounded-2xl border-[3px] border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] overflow-hidden flex flex-col w-full max-w-xl">
+        <div class="bg-black text-white px-4 sm:px-5 py-3 border-b-[3px] border-black flex justify-between items-center shrink-0">
+            <h2 class="text-xs sm:text-sm font-black uppercase flex items-center gap-2">
+                <mat-icon class="text-white !text-lg sm:!text-xl">check_circle</mat-icon> Confirmar Préstamo Interno
+            </h2>
+            <button (click)="cerrarModalConfirmInterno()" class="hover:bg-white hover:text-black rounded px-1 py-0.5 transition-colors"><mat-icon class="!text-sm">close</mat-icon></button>
+        </div>
+        <div class="p-3 sm:p-4 flex flex-col gap-3 sm:gap-4">
+            <div class="bg-gray-100 dark:bg-slate-700 border-[2px] border-black rounded-lg p-3">
+                <h3 class="text-[9px] sm:text-[10px] font-black uppercase text-black dark:text-white border-b-2 border-black pb-1 mb-2">Datos Generales</h3>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[9px] sm:text-[10px]">
+                    <p class="text-black dark:text-white flex justify-between"><strong>Personal:</strong><span class="text-right truncate ml-2">{{ internalForm.value.nombreCompleto }}</span></p>
+                    <p class="text-black dark:text-white flex justify-between"><strong>Licencia:</strong><span>{{ internalForm.value.nroLicencia }}</span></p>
+                    <p class="text-black dark:text-white flex justify-between"><strong>Aeronave:</strong><span>{{ internalForm.value.matriculaAeronave }}</span></p>
+                    <p class="text-black dark:text-white flex justify-between"><strong>OT:</strong><span>{{ internalForm.value.ordenTrabajo || '---' }}</span></p>
+                </div>
+            </div>
+            <div class="grid grid-cols-2 gap-2 sm:gap-3">
+                <div class="bg-gray-200 dark:bg-slate-600 border-[2px] border-black rounded-lg p-2 sm:p-3 text-center">
+                    <p class="text-[8px] sm:text-[9px] font-bold text-black dark:text-white uppercase">Líneas Ítems</p>
+                    <p class="font-black text-xl sm:text-2xl text-black dark:text-white">{{ internalDataSource().length }}</p>
+                </div>
+                <div class="bg-gray-300 dark:bg-slate-500 border-[2px] border-black rounded-lg p-2 sm:p-3 text-center">
+                    <p class="text-[8px] sm:text-[9px] font-bold text-black dark:text-white uppercase">Unidades Totales</p>
+                    <p class="font-black text-xl sm:text-2xl text-black dark:text-white">{{ getTotalItemsInterno() }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="border-t-[3px] border-black p-3 bg-gray-200 dark:bg-slate-800 flex justify-end gap-2">
+            <button (click)="cerrarModalConfirmInterno()" class="px-3 sm:px-4 py-1.5 bg-white text-black font-black text-[9px] sm:text-[10px] border-2 border-black rounded shadow-[2px_2px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all uppercase">Revisar</button>
+            <button (click)="finalizarInterno()" class="px-3 sm:px-4 py-1.5 bg-black text-white font-black text-[9px] sm:text-[10px] border-2 border-black rounded shadow-[2px_2px_0px_0px_rgba(255,255,255,0.2)] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all uppercase flex items-center gap-1">
+                <mat-icon class="!text-[10px] sm:!text-xs text-white">send</mat-icon> <span class="hidden sm:inline">Confirmar e Imprimir</span><span class="sm:hidden">Confirmar</span>
+            </button>
+        </div>
+    </div>
+</ng-template>
+
+<ng-template #datosExternoModal>
+    <div class="bg-gray-100 dark:bg-slate-900 rounded-2xl border-[3px] border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] overflow-hidden flex flex-col w-full max-w-[650px] h-[90vh] md:h-auto md:max-h-[85vh]">
+        <div class="bg-[#0F172AFF] text-white px-4 py-2 border-b-[3px] border-black flex justify-between items-center shrink-0">
+            <h2 class="text-xs sm:text-sm font-black uppercase flex items-center gap-2">
+                <mat-icon class="text-amber-400 !text-lg sm:!text-xl">edit_document</mat-icon> <span class="hidden sm:inline">Datos Préstamo Externo</span><span class="sm:hidden">Préstamo Ext.</span>
+            </h2>
+            <div class="flex items-center gap-2">
+                <button (click)="cerrarModalDatosExterno()" class="px-2 sm:px-3 py-1 bg-[#FF1414FF] text-white font-black text-[9px] sm:text-[10px] border-2 border-black rounded shadow-[2px_2px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all uppercase"><span class="hidden sm:inline">Cancelar</span><mat-icon class="sm:hidden !text-xs">close</mat-icon></button>
+                <button (click)="cerrarModalDatosExterno()" class="px-2 sm:px-3 py-1 bg-green-600 text-white font-black text-[9px] sm:text-[10px] border-2 border-black rounded shadow-[2px_2px_0px_0px_rgba(255,255,255,0.2)] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all uppercase flex items-center gap-1"> <span class="hidden sm:inline">Aceptar</span><span class="sm:hidden">Ok</span></button>
+            </div>
+        </div>
+
+        <div class="flex flex-col flex-1 overflow-y-auto p-3 sm:p-4 bg-gray-200 dark:bg-slate-700 custom-scrollbar">
+            <form [formGroup]="externalForm" class="flex flex-col bg-gray-50 dark:bg-slate-800 border-[2px] border-black rounded-lg p-3 sm:p-4 shadow-[3px_3px_0px_0px_#000] gap-3 sm:gap-4 h-full">
+                <h3 class="text-[9px] sm:text-[10px] font-black uppercase text-black dark:text-white border-b-2 border-black pb-1 flex items-center gap-1">
+                    <mat-icon class="!text-xs sm:!text-sm text-black dark:text-white">business</mat-icon> Información de la Empresa
+                </h3>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-2 sm:gap-3">
+                    <div class="relative">
+                        <label class="text-[8px] sm:text-[9px] font-black uppercase text-gray-700 dark:text-gray-400 block mb-0.5">Buscar Empresa *</label>
+                        <input type="text" formControlName="buscarEmpresa" (blur)="hideEmpresasSuggestions()" placeholder="Nombre de empresa..." class="w-full h-8 text-[9px] sm:text-[10px] font-bold border-2 border-black rounded px-2 bg-white dark:bg-slate-900 text-black dark:text-white outline-none uppercase focus:shadow-[2px_2px_0px_0px_#000]" [class.border-red-500]="hasErrorExternal('empresaSeleccionada', 'required')" />
+                        <div *ngIf="showEmpresasSuggestions && filteredEmpresas.length > 0" class="absolute top-full left-0 right-0 z-50 mt-1 bg-white dark:bg-slate-800 border-2 border-black rounded shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] max-h-40 overflow-y-auto">
+                            <button type="button" *ngFor="let e of filteredEmpresas" (mousedown)="selectEmpresa(e)" class="w-full text-left px-3 py-2 hover:bg-gray-100 dark:hover:bg-slate-700 border-b border-gray-200 dark:border-gray-700">
+                                <p class="text-[9px] sm:text-[10px] font-black text-black dark:text-white">{{ e.nombre }}</p>
+                                <p class="text-[7px] sm:text-[8px] text-gray-500">NIT: {{ e.nit || 'S/N' }}</p>
+                            </button>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="text-[8px] sm:text-[9px] font-black uppercase text-gray-700 dark:text-gray-400 block mb-0.5">Empresa Confirmada *</label>
+                        <input formControlName="nombreEmpresa" type="text" readonly class="w-full h-8 text-[9px] sm:text-[10px] font-bold border-2 border-black rounded px-2 bg-gray-200 dark:bg-slate-700 text-black dark:text-white outline-none cursor-not-allowed uppercase" [class.border-red-500]="hasErrorExternal('nombreEmpresa', 'required')" />
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3">
+                    <div>
+                        <label class="text-[8px] sm:text-[9px] font-black uppercase text-gray-700 dark:text-gray-400 block mb-0.5">NIT</label>
+                        <input formControlName="nit" type="text" readonly class="w-full h-8 text-[9px] sm:text-[10px] font-bold border-2 border-black rounded px-2 bg-gray-200 dark:bg-slate-700 text-black dark:text-white outline-none cursor-not-allowed uppercase">
+                    </div>
+                    <div>
+                        <label class="text-[8px] sm:text-[9px] font-black uppercase text-gray-700 dark:text-gray-400 block mb-0.5">Contacto</label>
+                        <input formControlName="contacto" type="text" readonly class="w-full h-8 text-[9px] sm:text-[10px] font-bold border-2 border-black rounded px-2 bg-gray-200 dark:bg-slate-700 text-black dark:text-white outline-none cursor-not-allowed uppercase">
+                    </div>
+                    <div>
+                        <label class="text-[8px] sm:text-[9px] font-black uppercase text-gray-700 dark:text-gray-400 block mb-0.5">Autorizado Por</label>
+                        <input formControlName="autorizado" type="text" placeholder="Nombre..." class="w-full h-8 text-[9px] sm:text-[10px] font-bold border-2 border-black rounded px-2 bg-white dark:bg-slate-900 text-black dark:text-white outline-none focus:shadow-[2px_2px_0px_0px_#000]">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3">
+                    <div>
+                        <label class="text-[8px] sm:text-[9px] font-black uppercase text-gray-700 dark:text-gray-400 block mb-0.5">Motivo *</label>
+                        <select formControlName="motivoPrestamo" class="w-full h-8 text-[9px] sm:text-[10px] font-bold border-2 border-black rounded px-1 bg-white dark:bg-slate-900 text-black dark:text-white outline-none focus:shadow-[2px_2px_0px_0px_#000]" [class.border-red-500]="hasErrorExternal('motivoPrestamo', 'required')">
+                            <option value="">-- Sel. --</option>
+                            <option *ngFor="let m of tiposMotivoPrestamo" [value]="m.value">{{ m.label }}</option>
+                        </select>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2 sm:col-span-2">
+                        <div>
+                            <label class="text-[8px] sm:text-[9px] font-black uppercase text-gray-700 dark:text-gray-400 block mb-0.5">Fecha *</label>
+                            <input type="date" formControlName="fecha" class="w-full h-8 text-[9px] sm:text-[10px] font-bold border-2 border-black rounded px-1 bg-white dark:bg-slate-900 text-black dark:text-white outline-none focus:shadow-[2px_2px_0px_0px_#000]" [class.border-red-500]="hasErrorExternal('fecha', 'required')">
+                        </div>
+                        <div>
+                            <label class="text-[8px] sm:text-[9px] font-black uppercase text-gray-700 dark:text-gray-400 block mb-0.5">Hora *</label>
+                            <input type="time" formControlName="hora" class="w-full h-8 text-[9px] sm:text-[10px] font-bold border-2 border-black rounded px-1 bg-white dark:bg-slate-900 text-black dark:text-white outline-none focus:shadow-[2px_2px_0px_0px_#000]" [class.border-red-500]="hasErrorExternal('hora', 'required')">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex flex-col min-h-[50px] pb-4 sm:pb-0">
+                    <label class="text-[8px] sm:text-[9px] font-black uppercase text-gray-700 dark:text-gray-400 block mb-0.5">Observaciones</label>
+                    <textarea formControlName="observaciones" rows="3" placeholder="Notas adicionales..." class="w-full text-[9px] sm:text-[10px] font-bold border-2 border-black rounded p-2 bg-white dark:bg-slate-900 text-black dark:text-white outline-none focus:shadow-[2px_2px_0px_0px_#000] resize-none custom-scrollbar"></textarea>
+                </div>
+            </form>
+        </div>
+    </div>
+</ng-template>

@@ -1,207 +1,174 @@
-<div class="flex flex-col w-full h-full bg-[#f8f9fc] dark:bg-slate-900 transition-colors duration-300 font-sans overflow-hidden"
-     cdkDrag cdkDragRootElement=".cdk-overlay-pane" cdkDragBoundary=".cdk-overlay-container">
-
-    <!-- ══ HEADER BAR ══ -->
-    <div class="bg-white dark:bg-slate-800 border-b-2 border-black px-4 py-2 flex items-center justify-between shrink-0"
-         cdkDragHandle>
+<div class="bg-[#f8f9fc] dark:bg-slate-900 border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] overflow-hidden flex flex-col font-sans h-auto max-h-[95vh]">
+    <div class="bg-[#0F172AFF] text-white px-5 py-3  flex justify-between items-center shrink-0" cdkDrag cdkDragRootElement=".cdk-overlay-pane" cdkDragHandle>
         <div class="flex items-center gap-3">
-            <button (click)="cerrar()"
-                    class="w-8 h-8 bg-slate-100 dark:bg-slate-700 border-2 border-black rounded hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors flex items-center justify-center shrink-0"
-                    (mousedown)="$event.stopPropagation()">
-                <mat-icon class="!text-base text-black dark:text-white">arrow_back</mat-icon>
-            </button>
+            <div class="w-8 h-8 bg-white border-2 border-black rounded flex items-center justify-center shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+                <mat-icon class="text-black !text-base">handyman</mat-icon>
+            </div>
             <div>
-                <h1 class="text-sm font-black text-black dark:text-white uppercase tracking-tight leading-none">Catálogo Herramientas</h1>
-                <p class="text-[9px] text-black dark:text-gray-400 font-bold uppercase mt-0.5">Seleccione o registre una herramienta</p>
+                <h2 class="text-sm font-black uppercase tracking-tight leading-none">Registrar Herramienta</h2>
+                <p class="text-[10px] text-gray-300 font-bold uppercase mt-0.5">Ingreso al sistema</p>
             </div>
         </div>
-        <div class="flex items-center gap-2">
+
+        <div class="flex items-center gap-3">
             <button (click)="cerrar()"
-                    class="px-3 py-1.5 bg-gray-200 dark:bg-slate-700 text-black dark:text-white font-black text-xs border-2 border-black rounded hover:bg-gray-300 dark:hover:bg-slate-600 transition-colors uppercase flex items-center gap-1">
-                <mat-icon class="!text-sm !w-4 !h-4">close</mat-icon>
+                    class="px-4 py-1.5 bg-red-600 text-white font-black text-[10px] border-2 border-black rounded-lg shadow-[2px_2px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all uppercase">
                 Cancelar
             </button>
             <button (click)="procesar()"
-                    class="px-4 py-1.5 bg-yellow-400 text-black font-black text-xs border-2 border-black rounded shadow-[2px_2px_0px_0px_rgba(0,0,0,0.4)] hover:shadow-none hover:translate-x-[1px] hover:translate-y-[1px] transition-all uppercase flex items-center gap-1">
-                <mat-icon class="!text-sm !w-4 !h-4">add_circle</mat-icon>
-                Agregar
+                    class="px-4 py-1.5 bg-amber-400 text-black font-black text-[10px] border-2 border-black rounded-lg shadow-[2px_2px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all uppercase flex items-center gap-1.5">
+                <mat-icon class="!text-black">move_to_inbox</mat-icon> Añadir a Recepción
             </button>
         </div>
     </div>
 
-    <!-- ══ BODY ══ -->
-    <div class="flex-1 overflow-y-auto p-3 custom-scrollbar">
-        <form [formGroup]="ingresoForm">
-            <div class="grid grid-cols-1 lg:grid-cols-12 gap-3">
+    <div class="flex-1 overflow-y-auto p-5 custom-scrollbar">
+        <form [formGroup]="ingresoForm" class="grid grid-cols-1 lg:grid-cols-12 gap-6">
 
-                <!-- ── Columna Principal ── -->
-                <div class="lg:col-span-8">
-                    <div class="neo-card-base bg-white dark:bg-slate-800 overflow-hidden">
+            <div class="lg:col-span-5 flex flex-col gap-4">
 
-                        <!-- Header único -->
-                        <div class="flex items-center gap-1.5 px-3 py-2 bg-[#0F172AFF] border-b-2 border-black">
-                            <mat-icon class="text-amber-400 !text-sm">build_circle</mat-icon>
-                            <span class="font-black text-xs uppercase text-white">Datos de la Herramienta</span>
+                <div>
+                    <label class="text-[10px] font-black uppercase text-black dark:text-gray-300 mb-1 block">Fotografía Físico (Opcional)</label>
+                    <div class="border-2 border-dashed border-black dark:border-slate-500 rounded-xl bg-white dark:bg-slate-800 h-44 flex flex-col items-center justify-center relative overflow-hidden cursor-pointer hover:bg-white transition-colors group" (click)="fileInput.click()">
+
+                        <div *ngIf="selectedImage(); else noImageTemplate" class="w-full h-full p-2 relative">
+                            <img [src]="selectedImage()" class="w-full h-full object-contain rounded">
+                            <div class="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                <span class="text-white text-xs font-black uppercase bg-black/60 px-3 py-1 border-2 border-white rounded shadow-[2px_2px_0px_0px_#fff]">Cambiar Foto</span>
+                            </div>
                         </div>
 
-                        <div class="p-3 flex flex-col gap-3">
+                        <ng-template #noImageTemplate>
+                            <mat-icon class="!text-4xl text-black dark:text-gray-400 mb-1">add_photo_alternate</mat-icon>
+                            <span class="text-[10px] font-black uppercase text-black dark:text-gray-400">Click para subir foto</span>
+                        </ng-template>
 
-                            <!-- Búsqueda -->
-                            <div class="grid grid-cols-12 gap-2">
-                                <div class="col-span-9">
-                                    <label class="text-[9px] font-black uppercase text-black dark:text-gray-400 mb-0.5 block">
-                                        Buscar (Código, Nombre o P/N)
-                                        <span *ngIf="isSearching()" class="ml-1 text-amber-500">buscando...</span>
-                                    </label>
-                                    <div class="relative">
-                                        <input type="text"
-                                               formControlName="buscar"
-                                               [matAutocomplete]="autoCatalogo"
-                                               placeholder="Escriba para buscar..."
-                                               class="w-full h-8 text-xs font-bold border-2 border-black dark:border-slate-600 rounded pl-7 pr-2 bg-white dark:bg-slate-700 text-black dark:text-white focus:shadow-[2px_2px_0px_0px_#000] transition-shadow outline-none placeholder:text-gray-400">
-                                        <mat-icon class="absolute left-1.5 top-1/2 -translate-y-1/2 text-gray-500 !text-sm pointer-events-none">search</mat-icon>
-                                        <mat-autocomplete #autoCatalogo="matAutocomplete"
-                                                          [displayWith]="displayHerramienta"
-                                                          (optionSelected)="selectHerramienta($event.option.value)">
-                                            <mat-option *ngFor="let h of filteredHerramientas" [value]="h">
-                                                <div class="flex flex-col py-0.5">
-                                                    <span class="font-bold text-xs">{{ h.codigo }} — {{ h.nombre }}</span>
-                                                    <span class="text-[10px] text-gray-500">P/N: {{ h.pn }} | S/N: {{ h.sn }} | {{ h.estado }}</span>
-                                                </div>
-                                            </mat-option>
-                                            <mat-option *ngIf="filteredHerramientas.length === 0 && !isSearching() && ingresoForm.get('buscar')?.value?.length >= 2" disabled>
-                                                <span class="text-xs text-gray-400">Sin resultados</span>
-                                            </mat-option>
-                                        </mat-autocomplete>
-                                    </div>
-                                </div>
-                                <div class="col-span-3 flex flex-col justify-end">
-                                    <button type="button" (click)="crearItem()"
-                                            class="h-8 bg-green-600 text-white font-black text-xs border-2 border-black rounded shadow-[2px_2px_0px_0px_#000] hover:shadow-none hover:translate-x-[1px] hover:translate-y-[1px] transition-all flex items-center justify-center gap-1 uppercase">
-                                        <mat-icon class="!text-sm">add</mat-icon>
-                                        Nuevo
-                                    </button>
-                                </div>
+                        <input type="file" #fileInput (change)="onImageSelected($event)" accept="image/*" class="hidden">
+                    </div>
+                </div>
+
+                <div class="bg-amber-100 dark:bg-amber-900/30 border-2 border-black rounded-xl p-4 shadow-[3px_3px_0px_0px_#000] relative overflow-hidden mt-2">
+                    <mat-icon class="absolute -right-4 -bottom-4 !text-[80px] text-amber-200 dark:text-amber-800/40 opacity-60 pointer-events-none">sell</mat-icon>
+
+                    <span class="text-[9px] font-black text-black dark:text-amber-500 uppercase mb-2 border-b-2 border-black/10 pb-1 w-full block relative z-10">Vista Previa Etiqueta</span>
+
+                    <div class="relative z-10 flex flex-col gap-1.5">
+                        <p class="font-black text-lg text-black dark:text-white leading-none font-mono">
+                            {{ ingresoForm.get('codigo')?.value || 'BOA-H-' }}
+                        </p>
+
+                        <p class="text-xs font-bold text-gray-800 dark:text-gray-200 leading-tight line-clamp-2 min-h-[34px]">
+                            {{ ingresoForm.get('nombre')?.value || 'Nombre de la herramienta...' }}
+                        </p>
+
+                        <div class="flex flex-wrap gap-1.5 mt-1">
+                            <span class="px-2 py-0.5 bg-white dark:bg-slate-800 border-2 border-black rounded text-[9px] font-black uppercase text-black dark:text-white">
+                                P/N: {{ ingresoForm.get('pn')?.value || 'N/A' }}
+                            </span>
+                            <span class="px-2 py-0.5 bg-blue-100 dark:bg-blue-900 border-2 border-black rounded text-[9px] font-black uppercase text-blue-900 dark:text-blue-200" *ngIf="ingresoForm.get('sn')?.value">
+                                S/N: {{ ingresoForm.get('sn')?.value }}
+                            </span>
+                        </div>
+
+                        <div class="flex justify-between items-end mt-2 pt-2 border-t-2 border-black/10">
+                            <div>
+                                <span class="px-2 py-1 bg-[#0F172AFF] text-white border-2 border-black rounded-lg text-[10px] font-black shadow-[2px_2px_0px_0px_#000]">
+                                    {{ ingresoForm.get('cantidad')?.value || 0 }} {{ ingresoForm.get('um')?.value }}
+                                </span>
                             </div>
-
-                            <!-- Divisor: Identificación -->
-                            <div class="flex items-center gap-2">
-                                <span class="text-[9px] font-black uppercase text-black dark:text-gray-500 whitespace-nowrap">Identificación</span>
-                                <div class="flex-1 border-t border-dashed border-gray-300 dark:border-slate-600"></div>
+                            <div class="text-right" *ngIf="ingresoForm.get('estante')?.value || ingresoForm.get('nivelUbicacion')?.value">
+                                <p class="text-[9px] font-black uppercase text-blue-700 dark:text-blue-400 border-2 border-blue-400 bg-white dark:bg-slate-800 px-1.5 rounded">
+                                     {{ ingresoForm.get('estante')?.value }} / {{ ingresoForm.get('nivelUbicacion')?.value }}
+                                </p>
                             </div>
-
-                            <div class="grid grid-cols-12 gap-2">
-                                <div class="col-span-3">
-                                    <label class="text-[9px] font-black uppercase text-black dark:text-gray-400 mb-0.5 block">Código</label>
-                                    <input type="text" formControlName="codigo" readonly
-                                           class="w-full h-8 text-xs font-bold border-2 border-dashed border-gray-300 dark:border-slate-600 rounded px-2 bg-gray-50 dark:bg-slate-700 text-black dark:text-white cursor-not-allowed">
-                                </div>
-                                <div class="col-span-4">
-                                    <label class="text-[9px] font-black uppercase text-black dark:text-gray-400 mb-0.5 block">P/N (Part Number)</label>
-                                    <input type="text" formControlName="pn"
-                                           class="w-full h-8 text-xs font-bold border-2 border-black dark:border-slate-600 rounded px-2 bg-white dark:bg-slate-700 text-black dark:text-white focus:shadow-[2px_2px_0px_0px_#000] transition-shadow outline-none">
-                                </div>
-                                <div class="col-span-5">
-                                    <label class="text-[9px] font-black uppercase text-black dark:text-gray-400 mb-0.5 block">S/N (Serial Number)</label>
-                                    <input type="text" formControlName="sn"
-                                           class="w-full h-8 text-xs font-bold border-2 border-black dark:border-slate-600 rounded px-2 bg-white dark:bg-slate-700 text-black dark:text-white focus:shadow-[2px_2px_0px_0px_#000] transition-shadow outline-none">
-                                </div>
-                                <div class="col-span-4">
-                                    <label class="text-[9px] font-black uppercase text-black dark:text-gray-400 mb-0.5 block">Unidad Medida</label>
-                                    <input type="text" formControlName="um"
-                                           class="w-full h-8 text-xs font-bold border-2 border-black dark:border-slate-600 rounded px-2 bg-white dark:bg-slate-700 text-black dark:text-white focus:shadow-[2px_2px_0px_0px_#000] transition-shadow outline-none">
-                                </div>
-                                <div class="col-span-4">
-                                    <label class="text-[9px] font-black uppercase text-black dark:text-gray-400 mb-0.5 block">Estado</label>
-                                    <input type="text" formControlName="estado"
-                                           class="w-full h-8 text-xs font-bold border-2 border-black dark:border-slate-600 rounded px-2 bg-white dark:bg-slate-700 text-green-600 dark:text-green-400 focus:shadow-[2px_2px_0px_0px_#000] transition-shadow outline-none">
-                                </div>
-                                <div class="col-span-4">
-                                    <label class="text-[9px] font-black uppercase text-black dark:text-gray-400 mb-0.5 block">Coincidencias</label>
-                                    <input type="text" [value]="coincidencias()" readonly
-                                           class="w-full h-8 text-center text-xs font-black border-2 border-dashed border-gray-300 dark:border-slate-600 rounded px-2 bg-gray-50 dark:bg-slate-700 text-black dark:text-white cursor-not-allowed">
-                                </div>
-                            </div>
-
-                            <!-- Divisor: Descripción -->
-                            <div class="flex items-center gap-2">
-                                <span class="text-[9px] font-black uppercase text-black dark:text-gray-500 whitespace-nowrap">Descripción</span>
-                                <div class="flex-1 border-t border-dashed border-gray-300 dark:border-slate-600"></div>
-                            </div>
-
-                            <div class="grid grid-cols-2 gap-2">
-                                <div>
-                                    <label class="text-[9px] font-black uppercase text-black dark:text-gray-400 mb-0.5 block">Nombre / Descripción</label>
-                                    <input type="text" formControlName="nombre"
-                                           class="w-full h-8 text-xs font-bold border-2 border-black dark:border-slate-600 rounded px-2 bg-white dark:bg-slate-700 text-black dark:text-white focus:shadow-[2px_2px_0px_0px_#000] transition-shadow outline-none">
-                                </div>
-                                <div>
-                                    <label class="text-[9px] font-black uppercase text-black dark:text-gray-400 mb-0.5 block">Ubicación</label>
-                                    <input type="text" formControlName="ubicacion"
-                                           class="w-full h-8 text-xs font-bold border-2 border-black dark:border-slate-600 rounded px-2 bg-white dark:bg-slate-700 text-black dark:text-white focus:shadow-[2px_2px_0px_0px_#000] transition-shadow outline-none">
-                                </div>
-                            </div>
-
-                            <!-- Divisor: Ingreso -->
-                            <div class="flex items-center gap-2">
-                                <span class="text-[9px] font-black uppercase text-black dark:text-gray-500 whitespace-nowrap">Datos de Ingreso</span>
-                                <div class="flex-1 border-t border-dashed border-gray-300 dark:border-slate-600"></div>
-                            </div>
-
-                            <div class="grid grid-cols-2 gap-2">
-                                <div>
-                                    <label class="text-[9px] font-black uppercase text-black dark:text-gray-400 mb-0.5 block">Cantidad</label>
-                                    <input type="number" formControlName="cantidad" min="1"
-                                           class="w-full h-8 text-center text-xs font-black border-2 border-black dark:border-slate-600 rounded px-2 bg-white dark:bg-slate-700 text-black dark:text-white focus:shadow-[2px_2px_0px_0px_#000] transition-shadow outline-none">
-                                </div>
-                                <div>
-                                    <label class="text-[9px] font-black uppercase text-black dark:text-gray-400 mb-0.5 block">Documento (PO, FAC, REC)</label>
-                                    <input type="text" formControlName="documento"
-                                           class="w-full h-8 text-xs font-bold border-2 border-black dark:border-slate-600 rounded px-2 bg-white dark:bg-slate-700 text-black dark:text-white focus:shadow-[2px_2px_0px_0px_#000] transition-shadow outline-none">
-                                </div>
-                                <div class="col-span-2">
-                                    <label class="text-[9px] font-black uppercase text-black dark:text-gray-400 mb-0.5 block">Observaciones</label>
-                                    <textarea formControlName="observaciones" rows="2"
-                                              class="w-full text-xs font-medium border-2 border-gray-300 dark:border-slate-600 rounded px-2 py-1.5 bg-white dark:bg-slate-700 text-black dark:text-white focus:shadow-[2px_2px_0px_0px_#ccc] transition-shadow outline-none resize-none"></textarea>
-                                </div>
-                            </div>
-
                         </div>
                     </div>
                 </div>
 
-                <!-- ── Columna Imagen ── -->
-                <div class="lg:col-span-4">
-                    <div class="neo-card-base bg-white dark:bg-slate-800 overflow-hidden flex flex-col">
-                        <div class="flex items-center gap-1.5 px-3 py-2 bg-[#0F172AFF] border-b-2 border-black shrink-0">
-                            <mat-icon class="text-amber-400 !text-sm">image</mat-icon>
-                            <span class="font-black text-xs uppercase text-white">Imagen</span>
-                        </div>
+            </div>
 
-                        <div class="flex-1 flex flex-col min-h-[180px]">
-                            <div *ngIf="selectedImage(); else noImageTemplate"
-                                 class="flex-1 p-2 flex items-center justify-center bg-white dark:bg-gray-900 overflow-hidden">
-                                <img [src]="selectedImage()" alt="Herramienta" class="w-full h-full object-contain max-h-[220px]">
+            <div class="lg:col-span-7 flex flex-col gap-4">
+
+                <div class="bg-white dark:bg-slate-800 border-2 border-black rounded-xl p-4 shadow-[3px_3px_0px_0px_#000]">
+                    <div class="grid grid-cols-12 gap-3">
+                        <div class="col-span-12 sm:col-span-6">
+                            <label class="text-[10px] font-black uppercase text-black dark:text-gray-300 mb-1 block">Código BOA *</label>
+                            <div class="relative flex">
+                                <input type="text" formControlName="codigo"
+                                       class="w-full h-10 text-sm font-black uppercase bg-white dark:bg-slate-900 border-2 border-black dark:border-slate-600 rounded-lg px-3 focus:shadow-[2px_2px_0px_0px_#000] outline-none transition-all"
+                                       [class.border-red-500]="hasError('codigo','required')">
+                                <button type="button" (click)="generarCodigoBoa()" class="absolute right-1 top-1 w-8 h-8 bg-amber-400 border-2 border-black rounded flex items-center justify-center shadow-[1px_1px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all" matTooltip="Auto-generar">
+                                    <mat-icon class="!text-sm text-black">auto_awesome</mat-icon>
+                                </button>
                             </div>
-
-                            <ng-template #noImageTemplate>
-                                <div class="flex-1 flex flex-col items-center justify-center text-gray-400 m-3 border-2 border-dashed border-gray-300 dark:border-slate-600 rounded bg-gray-50 dark:bg-slate-700/50 min-h-[150px]">
-                                    <mat-icon class="!text-4xl opacity-20">image</mat-icon>
-                                    <p class="text-[9px] font-bold uppercase opacity-50 mt-1">Sin imagen</p>
-                                </div>
-                            </ng-template>
                         </div>
 
-                        <div class="px-3 py-2 border-t-2 border-black bg-slate-50 dark:bg-slate-700 shrink-0">
-                            <button type="button" (click)="fileInput.click()"
-                                    class="w-full h-8 bg-[#0F172AFF] text-white font-black text-xs border-2 border-black rounded shadow-[2px_2px_0px_0px_#000] hover:shadow-none hover:translate-x-[1px] hover:translate-y-[1px] transition-all uppercase flex items-center justify-center gap-1.5">
-                                <mat-icon class="!text-sm !w-4 !h-4">{{ selectedImage() ? 'refresh' : 'upload' }}</mat-icon>
-                                {{ selectedImage() ? 'Cambiar imagen' : 'Subir imagen' }}
-                            </button>
+                        <div class="col-span-12 sm:col-span-6">
+                            <label class="text-[10px] font-black uppercase text-black dark:text-gray-300 mb-1 block">P/N (Part Number) *</label>
+                            <input type="text" formControlName="pn" placeholder="Ej: 10M123"
+                                   class="w-full h-10 text-sm font-bold uppercase bg-white dark:bg-slate-900 border-2 border-black dark:border-slate-600 rounded-lg px-3 focus:shadow-[2px_2px_0px_0px_#000] outline-none transition-all"
+                                   [class.border-red-500]="hasError('pn','required')">
                         </div>
 
-                        <input type="file" #fileInput (change)="onImageSelected($event)" accept="image/*" class="hidden">
+                        <div class="col-span-12 sm:col-span-8">
+                            <label class="text-[10px] font-black uppercase text-black dark:text-gray-300 mb-1 block">Nombre / Descripción *</label>
+                            <input type="text" formControlName="nombre" placeholder="Descripción detallada"
+                                   class="w-full h-10 text-sm font-bold bg-white dark:bg-slate-900 border-2 border-black dark:border-slate-600 rounded-lg px-3 focus:shadow-[2px_2px_0px_0px_#000] outline-none transition-all"
+                                   [class.border-red-500]="hasError('nombre','required')">
+                        </div>
+
+                        <div class="col-span-12 sm:col-span-4">
+                            <label class="text-[10px] font-black uppercase text-black dark:text-gray-300 mb-1 block">S/N (Serial)</label>
+                            <input type="text" formControlName="sn" placeholder="Opcional"
+                                   class="w-full h-10 text-sm font-bold uppercase bg-white dark:bg-slate-900 border-2 border-black dark:border-slate-600 rounded-lg px-3 focus:shadow-[2px_2px_0px_0px_#000] outline-none transition-all">
+                        </div>
                     </div>
+                </div>
+
+                <div class="grid grid-cols-12 gap-3">
+                    <div class="col-span-12 sm:col-span-4">
+                        <label class="text-[10px] font-black uppercase text-black dark:text-gray-300 mb-1 block">Marca *</label>
+                        <input type="text" formControlName="marca" placeholder="Ej: FLUKE"
+                               class="w-full h-10 text-sm font-bold uppercase bg-white dark:bg-slate-800 border-2 border-black dark:border-slate-600 rounded-lg px-3 focus:shadow-[2px_2px_0px_0px_#000] outline-none transition-all"
+                               [class.border-red-500]="hasError('marca','required')">
+                    </div>
+                    <div class="col-span-12 sm:col-span-4">
+                        <label class="text-[10px] font-black uppercase text-black dark:text-gray-300 mb-1 block">Cantidad *</label>
+                        <input type="number" formControlName="cantidad" min="1"
+                               class="w-full h-10 text-sm font-black text-center bg-white dark:bg-slate-800 border-2 border-black dark:border-slate-600 rounded-lg px-3 focus:shadow-[2px_2px_0px_0px_#000] outline-none transition-all"
+                               [class.border-red-500]="hasError('cantidad','required')">
+                    </div>
+                    <div class="col-span-12 sm:col-span-4">
+                        <label class="text-[10px] font-black uppercase text-black dark:text-gray-300 mb-1 block">Unidad *</label>
+                        <select formControlName="um" class="w-full h-10 text-sm font-bold bg-white dark:bg-slate-800 border-2 border-black dark:border-slate-600 rounded-lg px-2 focus:shadow-[2px_2px_0px_0px_#000] outline-none transition-all">
+                            <option *ngFor="let u of unidadesMedida" [value]="u.value">{{ u.label }}</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-12 gap-3 bg-blue-50 dark:bg-blue-900/10 p-3 rounded-xl border-2 border-blue-300 dark:border-blue-600">
+                    <div class="col-span-12 sm:col-span-4">
+                        <label class="text-[10px] font-black uppercase text-blue-800 dark:text-blue-300 mb-1 block">Estado *</label>
+                        <select formControlName="estado" class="w-full h-10 text-sm font-bold bg-white dark:bg-slate-800 border-2 border-blue-400 rounded-lg px-2 focus:shadow-[2px_2px_0px_0px_#3b82f6] outline-none transition-all">
+                            <option *ngFor="let e of estados" [value]="e.value">{{ e.label }}</option>
+                        </select>
+                    </div>
+                    <div class="col-span-12 sm:col-span-4">
+                        <label class="text-[10px] font-black uppercase text-blue-800 dark:text-blue-300 mb-1 block">Estante</label>
+                        <input type="text" formControlName="estante" placeholder="Ej: A-1"
+                               class="w-full h-10 text-sm font-bold uppercase bg-white dark:bg-slate-800 border-2 border-blue-400 rounded-lg px-3 focus:shadow-[2px_2px_0px_0px_#3b82f6] outline-none transition-all">
+                    </div>
+                    <div class="col-span-12 sm:col-span-4">
+                        <label class="text-[10px] font-black uppercase text-blue-800 dark:text-blue-300 mb-1 block">Nivel / Lugar</label>
+                        <input type="text" formControlName="nivelUbicacion" placeholder="Ej: Nivel 2"
+                               class="w-full h-10 text-sm font-bold uppercase bg-white dark:bg-slate-800 border-2 border-blue-400 rounded-lg px-3 focus:shadow-[2px_2px_0px_0px_#3b82f6] outline-none transition-all">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="text-[10px] font-black uppercase text-black dark:text-gray-300 mb-1 block">Observaciones Específicas</label>
+                    <textarea formControlName="observaciones" rows="2" placeholder="Detalle si la herramienta tiene algún daño, falta accesorio, etc..."
+                              class="w-full text-sm font-bold border-2 border-black dark:border-slate-600 rounded-xl p-3 bg-white dark:bg-slate-800 text-black dark:text-white outline-none focus:shadow-[2px_2px_0px_0px_#000] transition-shadow resize-none custom-scrollbar"></textarea>
                 </div>
 
             </div>

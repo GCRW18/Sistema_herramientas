@@ -20,6 +20,7 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
 import { DragDropModule } from '@angular/cdk/drag-drop';
 import { Subject, takeUntil, finalize, debounceTime } from 'rxjs';
 import { MovementService } from '../../../../core/services/movement.service';
+import { CalibrationService } from '../../../../core/services/calibration.service';
 
 // Tipos de movimiento basados en el Excel
 type TipoMovimiento = 'TODOS' | 'ENTRADA' | 'SALIDA';
@@ -215,6 +216,7 @@ export class ConsultaMovimientosComponent implements OnInit, OnDestroy {
     private router = inject(Router);
     private snackBar = inject(MatSnackBar);
     private movementService = inject(MovementService);
+    private calibrationService = inject(CalibrationService);
 
     private _unsubscribeAll = new Subject<void>();
 
@@ -225,6 +227,14 @@ export class ConsultaMovimientosComponent implements OnInit, OnDestroy {
     isLoading = false;
     isSearching = false;
     hasSearched = false;
+
+    // Auditoría por herramienta (90 días)
+    auditToolCode = '';
+    auditToolId: number | null = null;
+    auditResults: any[] = [];
+    isAuditing = false;
+    hasAudited = false;
+    showAuditPanel = false;
 
     // Opciones de filtros
     gestionOptions: number[] = [];
@@ -380,6 +390,78 @@ export class ConsultaMovimientosComponent implements OnInit, OnDestroy {
                 this.showMessage(`Se cargaron ${this.allMovimientos.length} movimiento(s) de prueba`, 'info');
             }
         });
+    }
+
+    // =========================================================================
+    // AUDITORÍA POR HERRAMIENTA (90 días)
+    // =========================================================================
+
+    toggleAuditPanel(): void {
+        this.showAuditPanel = !this.showAuditPanel;
+        if (!this.showAuditPanel) {
+            this.auditResults = [];
+            this.hasAudited = false;
+            this.auditToolCode = '';
+            this.auditToolId = null;
+        }
+    }
+
+    buscarAuditoriaHerramienta(): void {
+        const code = this.auditToolCode.trim();
+        if (!code) {
+            this.showMessage('Ingrese el código de la herramienta', 'warning');
+            return;
+        }
+        this.isAuditing = true;
+        this.hasAudited = false;
+        this.auditResults = [];
+        this.auditToolId = null;
+
+        // Primero resolver el código a tool_id
+        this.calibrationService.scanToolForCalibration(code).pipe(
+            takeUntil(this._unsubscribeAll)
+        ).subscribe({
+            next: (tool) => {
+                if (!tool?.id_tool) {
+                    this.isAuditing = false;
+                    this.showMessage('Herramienta no encontrada: ' + code, 'error');
+                    return;
+                }
+                this.auditToolId = tool.id_tool;
+                // Ahora obtener historial
+                this.movementService.getToolAuditHistory(tool.id_tool, 90).pipe(
+                    takeUntil(this._unsubscribeAll),
+                    finalize(() => { this.isAuditing = false; this.hasAudited = true; })
+                ).subscribe({
+                    next: (items) => {
+                        this.auditResults = items;
+                        if (items.length === 0) {
+                            this.showMessage('Sin movimientos en los últimos 90 días', 'info');
+                        } else {
+                            this.showMessage(`${items.length} evento(s) en los últimos 90 días`, 'success');
+                        }
+                    },
+                    error: () => {
+                        this.auditResults = [];
+                        this.showMessage('Error al cargar el historial', 'error');
+                    }
+                });
+            },
+            error: () => {
+                this.isAuditing = false;
+                this.showMessage('Error al buscar la herramienta', 'error');
+            }
+        });
+    }
+
+    getAuditColorClass(color: string): string {
+        const map: Record<string, string> = {
+            blue:  'bg-blue-100 text-blue-800 border-blue-300',
+            amber: 'bg-amber-100 text-amber-800 border-amber-300',
+            green: 'bg-green-100 text-green-800 border-green-300',
+            red:   'bg-red-100 text-red-800 border-red-300'
+        };
+        return map[color] || 'bg-gray-100 text-gray-800 border-gray-300';
     }
 
     private mapToMovimiento(item: any): MovimientoItem {

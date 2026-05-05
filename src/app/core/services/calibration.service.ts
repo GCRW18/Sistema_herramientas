@@ -6,7 +6,6 @@ import {
     MaintenanceRecord,
     CalibrationDashboard,
     CalibrationLaboratory,
-    CalibrationFilters,
     ScanToolResult,
     CalibrationBatch,
     CalibrationBatchItem,
@@ -27,15 +26,23 @@ export class CalibrationService {
     private _dashboard: ReplaySubject<CalibrationDashboard | null> = new ReplaySubject<CalibrationDashboard | null>(1);
 
     // -----------------------------------------------------------------------------------------------------
-    // @ Helpers
+    // @ Helpers (CORREGIDOS PARA PXP)
     // -----------------------------------------------------------------------------------------------------
 
     private _normalizeResponse(response: any): any[] {
         if (!response) return [];
-        if (response?.ROOT?.datos && Array.isArray(response.ROOT.datos)) return response.ROOT.datos;
-        if (response?.datos && Array.isArray(response.datos)) return response.datos;
+
+        // PXP puede devolver datos: "" cuando no hay registros, o un objeto en lugar de array si es 1 solo.
+        const extract = (data: any) => {
+            if (!data || data === '') return [];
+            return Array.isArray(data) ? data : [data];
+        };
+
+        if (response?.ROOT?.datos !== undefined) return extract(response.ROOT.datos);
+        if (response?.datos !== undefined) return extract(response.datos);
+        if (response?.data !== undefined) return extract(response.data);
         if (Array.isArray(response)) return response;
-        if (response?.data && Array.isArray(response.data)) return response.data;
+
         return [];
     }
 
@@ -124,7 +131,6 @@ export class CalibrationService {
         );
     }
 
-    // NUEVO MÉTODO PARA ANULAR ENVÍO
     cancelCalibration(id: string, reason: string): Observable<CalibrationRecord> {
         return from(this._api.post('herramientas/calibrations/anularEnvio', {
             id_calibration: id,
@@ -160,8 +166,8 @@ export class CalibrationService {
         tool_id: number; calibration_type?: string; work_type?: string; supplier_id?: number;
         supplier_name?: string; base?: string; base_id?: number; request_date?: string;
         send_date?: string; expected_return_date?: string; service_order?: string; cost?: number;
-        currency?: string; notes?: string; delivered_by_name?: string; requested_by_name?: string;
-        provider_contact?: string;
+        currency?: string; notes?: string; observations?: string;
+        delivered_by_name?: string; requested_by_name?: string; provider_contact?: string;
     }): Observable<any> {
         return from(this._api.post('herramientas/calibrations/sendToCalibration', params)).pipe(
             switchMap((response: any) => {
@@ -186,10 +192,42 @@ export class CalibrationService {
         );
     }
 
+    getCertificateFile(id_calibration: number): Observable<string | null> {
+        return from(this._api.post('herramientas/calibrations/getCertificateFile', { id_calibration })).pipe(
+            switchMap((response: any) => {
+                const item = this._normalizeResponse(response)?.[0];
+                return of((item?.certificate_file as string) ?? null);
+            }),
+            catchError(() => of(null))
+        );
+    }
+
     searchToolsAutocomplete(term: string): Observable<any[]> {
         return from(this._api.post('herramientas/tools/searchToolsAutocomplete', { search_term: term, start: 0, limit: 3 })).pipe(
             map((resp: any) => this._normalizeResponse(resp)),
             catchError(() => of([]))
+        );
+    }
+
+    getToolImages(idTool: number): Observable<string[]> {
+        const escaped = String(idTool).replace(/[^\d]/g, '');
+        return from(this._api.postRaw('herramientas/tools/listarTools', {
+            start: 0, limit: 1, sort: 'id_tool', dir: 'asc',
+            filtro_adicional: `id_tool = ${escaped}`,
+        })).pipe(
+            map((resp: any) => {
+                const row = this._normalizeResponse(resp)?.[0];
+                const raw = row?.images;
+                if (!raw) return [];
+                if (Array.isArray(raw)) return raw.filter(Boolean);
+                const s = String(raw).trim();
+                if (!s || s === '{}' || s === 'NULL') return [];
+                return s.replace(/^\{|\}$/g, '')
+                    .split(',')
+                    .map(x => x.trim().replace(/^"|"$/g, ''))
+                    .filter(Boolean);
+            }),
+            catchError(() => of([] as string[]))
         );
     }
 
@@ -286,7 +324,7 @@ export class CalibrationService {
                 const alerts = this._normalizeResponse(response);
                 return of(alerts as PxpCalibrationAlert[]);
             }),
-            catchError((error: any) => { console.error('Error en getCalibrationAlertsPxp:', error); return of(this._normalizeResponse(error) as PxpCalibrationAlert[]); })
+            catchError((error: any) => { console.error('Error en getCalibrationAlertsPxp:', error); return of([] as PxpCalibrationAlert[]); })
         );
     }
 
@@ -306,6 +344,32 @@ export class CalibrationService {
         return from(this._api.post('herramientas/calibrations/registerJackService', params)).pipe(
             switchMap((response: any) => of(this._normalizeSingleResponse(response) ?? response)),
             catchError((error) => { console.error('Error en registerJackService:', error); throw error; })
+        );
+    }
+
+    // -----------------------------------------------------------------------------------------------------
+    // @ Transcripción histórica
+    // -----------------------------------------------------------------------------------------------------
+
+    createHistoricalCalibration(params: {
+        tool_id: number;
+        certificate_number: string;
+        calibration_date: string;
+        next_calibration_date?: string;
+        supplier_id?: number;
+        supplier_name?: string;
+        result: 'approved' | 'conditional' | 'rejected';
+        observations?: string;
+        received_by_name?: string;
+        send_date?: string;
+        is_historical: true;
+    }): Observable<any> {
+        return from(this._api.post('herramientas/calibrations/createHistoricalRecord', params)).pipe(
+            switchMap((response: any) => {
+                if (this._isPxpError(response)) throw new Error(this._extractErrorMessage(response, 'Error al crear transcripción histórica'));
+                return of(this._normalizeSingleResponse(response) ?? response);
+            }),
+            catchError((error) => { console.error('Error en createHistoricalCalibration:', error); throw error; })
         );
     }
 
@@ -568,9 +632,6 @@ export class CalibrationService {
     // @ GENERACIÓN DE PDFs - CORREGIDO
     // =====================================================================================================
 
-    /**
-     * Genera PDF de Nota de Envío a Calibración.
-     */
     generarPdfEnvioCalibracion(id_calibration: number): Observable<{ pdf_base64: string; nombre_archivo: string }> {
         const calibrationId = Number(id_calibration);
         if (isNaN(calibrationId) || calibrationId <= 0) {
@@ -626,9 +687,6 @@ export class CalibrationService {
         );
     }
 
-    /**
-     * Genera PDF de Certificado de Retorno de Calibración.
-     */
     generarPdfRetornoCalibracion(id_calibration: number): Observable<{ pdf_base64: string; nombre_archivo: string }> {
         const calibrationId = Number(id_calibration);
         if (isNaN(calibrationId) || calibrationId <= 0) {
@@ -684,9 +742,6 @@ export class CalibrationService {
         );
     }
 
-    /**
-     * Abre un documento (PDF o HTML) en nueva pestaña a partir de base64.
-     */
     abrirPdf(pdfBase64: string, filename: string = 'documento.pdf'): void {
         if (!pdfBase64) {
             console.error('No se recibió contenido PDF/HTML');
@@ -700,7 +755,6 @@ export class CalibrationService {
             }
             const byteArray = new Uint8Array(byteNumbers);
 
-            // Detectar tipo de documento según la extensión proporcionada
             const isHtml = filename.toLowerCase().endsWith('.html');
             const mimeType = isHtml ? 'text/html' : 'application/pdf';
 
@@ -713,9 +767,6 @@ export class CalibrationService {
         }
     }
 
-    /**
-     * Genera y abre PDF de Nota de Envío directamente.
-     */
     generarYVerPdfEnvio(id_calibration: number): void {
         this.generarPdfEnvioCalibracion(id_calibration).subscribe({
             next: (result) => {
@@ -731,9 +782,6 @@ export class CalibrationService {
         });
     }
 
-    /**
-     * Genera y abre PDF de Certificado de Retorno directamente.
-     */
     generarYVerPdfRetorno(id_calibration: number): void {
         this.generarPdfRetornoCalibracion(id_calibration).subscribe({
             next: (result) => {

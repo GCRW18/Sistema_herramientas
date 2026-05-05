@@ -130,8 +130,8 @@ export class InventoryComponent implements OnDestroy {
     private readonly MODULE_DEFS: ModuleDef[] = [
         {
             type: 1, label: 'ALMACÉN Y', sublabel: 'UBICACIONES',
-            color: '#FF6A00', textColor: '#fff',
-            svgIcon: 'heroicons_outline:building-storefront',
+            color: '#1a3edc', textColor: '#fff',
+            svgIcon: 'heroicons_outline:building-office',
             loader: async () => (await import('./gestion-ubicaciones/gestion-ubicaciones.component')).GestionUbicacionesComponent
         },
         {
@@ -175,6 +175,12 @@ export class InventoryComponent implements OnDestroy {
             color: '#7113CF', textColor: '#fff',
             svgIcon: 'heroicons_outline:chart-bar',
             loader: async () => (await import('./reportes/reportes-inventario.component')).ReportesInventarioComponent
+        },
+        {
+            type: 9, label: 'REGISTRAR', sublabel: 'HERRAMIENTA',
+            color: '#0F172A', textColor: '#FFC501',
+            svgIcon: 'heroicons_outline:wrench-screwdriver',
+            loader: async () => (await import('./registrar-herramienta/registrar-herramienta.component')).RegistrarHerramientaComponent
         },
     ];
 

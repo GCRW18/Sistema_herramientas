@@ -1,5 +1,5 @@
 import { Injectable, inject } from '@angular/core';
-import { from, Observable, of, ReplaySubject, switchMap, tap } from 'rxjs';
+import { catchError, forkJoin, from, Observable, of, ReplaySubject, switchMap, tap } from 'rxjs';
 import { Movement, MovementVoucher, CreateMovement } from '../models';
 import { ErpApiService } from '../api/api.service';
 
@@ -347,12 +347,10 @@ export class MovementService {
         };
 
         return from(this._api.post(endpoint, params)).pipe(
-            switchMap((response: any) => {
-                return of({
-                    data: response?.datos || response?.data || [],
-                    total: response?.total || 0
-                });
-            })
+            switchMap((response: any) => of({
+                data: response?.datos || response?.data || [],
+                total: response?.total || 0
+            }))
         );
     }
 
@@ -537,7 +535,8 @@ export class MovementService {
             limit: 100
         })).pipe(
             switchMap((response: any) => {
-                const mapped = (response?.datos || response?.data || response?.datos || []).map((b: any) => ({
+                const rows = response?.ROOT?.datos || response?.datos || response?.data || (Array.isArray(response) ? response : []);
+                const mapped = rows.map((b: any) => ({
                     ...b,
                     id: b.id ?? b.id_base,
                     nombre: b.nombre ?? b.name,
@@ -587,12 +586,15 @@ export class MovementService {
             start: 0,
             limit: 100
         })).pipe(
-            switchMap((response: any) => of((response?.datos || response?.data || []).map((w: any) => ({
-                ...w,
-                id: w.id ?? w.id_warehouse,
-                nombre: w.nombre ?? w.name,
-                codigo: w.codigo ?? w.code
-            }))))
+            switchMap((response: any) => {
+                const rows = response?.ROOT?.datos || response?.datos || response?.data || (Array.isArray(response) ? response : []);
+                return of(rows.map((w: any) => ({
+                    ...w,
+                    id: w.id ?? w.id_warehouse,
+                    nombre: w.nombre ?? w.name,
+                    codigo: w.codigo ?? w.code
+                })));
+            })
         );
     }
 
@@ -600,10 +602,9 @@ export class MovementService {
      * Get funcionarios list (personal que puede recibir/entregar herramientas)
      */
     getFuncionarios(search?: string): Observable<any[]> {
-        const params: any = { start: 0, limit: 8, sort: 'full_name', dir: 'asc' };
-        if (search && search.trim().length >= 2) {
-            const s = search.trim().replace(/'/g, "''");
-            params.filtro_adicional = `(LOWER(full_name) LIKE LOWER('%${s}%') OR LOWER(license_number) LIKE LOWER('%${s}%'))`;
+        const params: any = { start: 0, limit: 30, sort: 'full_name', dir: 'asc' };
+        if (search && search.trim().length >= 1) {
+            params.search_term = search.trim();
         }
         return from(this._api.post('herramientas/employees/listarEmployees', params)).pipe(
             switchMap((response: any) => of((response?.datos || response?.data || []).map((f: any) => ({
@@ -1116,6 +1117,92 @@ export class MovementService {
                     throw new Error(response.mensaje || 'Error al registrar el envío');
                 }
                 return of((response?.datos || response?.data)?.[0] || response?.datos || response?.data || {});
+            })
+        );
+    }
+
+    /**
+     * Obtiene el historial completo de movimientos de una herramienta en los últimos N días.
+     * Combina ítems de movimiento, calibraciones y mantenimientos en un timeline unificado.
+     * Usa: getToolAuditHistory (movimientos), getCalibrationsByTool (calibraciones), getMaintenancesByTool (mantenimientos).
+     * @param toolId ID numérico de la herramienta
+     * @param days Número de días hacia atrás (defecto 90, máx 365)
+     */
+    getToolAuditHistory(toolId: number, days = 90): Observable<any[]> {
+        const cutoff = new Date();
+        cutoff.setDate(cutoff.getDate() - days);
+
+        const movItems$ = from(this._api.post('herramientas/movements/getToolAuditHistory', {
+            tool_id: toolId, days, start: 0, limit: 200
+        })).pipe(
+            switchMap((r: any) => of((r?.datos || r?.data || []).map((item: any) => ({
+                fecha: item.fecha_reg || '',
+                tipo: 'MOVIMIENTO',
+                subtipo: item.condition_on_movement || '-',
+                comprobante: item.movement_id ? `MOV-${item.movement_id}` : '-',
+                herramienta: item.code || '-',
+                descripcion: item.description || '-',
+                cantidad: item.quantity ?? 0,
+                condicion: item.condition_on_movement || item.tool_status_snapshot || '-',
+                responsable: item.usr_reg || '-',
+                notas: item.notes || '',
+                color: 'blue',
+                source: 'movement_item'
+            })))),
+            catchError(() => of([]))
+        );
+
+        const calibrations$ = from(this._api.post('herramientas/calibrations/getCalibrationsByTool', {
+            tool_id: toolId, days, start: 0, limit: 50
+        })).pipe(
+            switchMap((r: any) => of((r?.datos || r?.data || []).map((cal: any) => ({
+                fecha: cal.send_date || cal.fecha_reg || '',
+                tipo: 'CALIBRACIÓN',
+                subtipo: cal.work_type === 'calibration_repair' ? 'CAL/REP' : (cal.work_type === 'repair' ? 'REPARACIÓN' : 'CALIBRACIÓN'),
+                comprobante: cal.record_number || '-',
+                herramienta: cal.tool_code || '-',
+                descripcion: cal.tool_name || '-',
+                cantidad: 1,
+                condicion: cal.status || '-',
+                responsable: cal.requested_by_name || cal.usr_reg || '-',
+                notas: cal.notes || '',
+                color: cal.work_type === 'calibration_repair' ? 'red' : 'amber',
+                source: 'calibration'
+            })))),
+            catchError(() => of([]))
+        );
+
+        const maintenances$ = from(this._api.post('herramientas/maintenances/getMaintenancesByTool', {
+            tool_id: toolId, days, start: 0, limit: 50
+        })).pipe(
+            switchMap((r: any) => of((r?.datos || r?.data || []).map((m: any) => ({
+                fecha: m.send_date || m.fecha_reg || '',
+                tipo: 'MANTENIMIENTO',
+                subtipo: m.type || 'SERVICIO',
+                comprobante: m.record_number || '-',
+                herramienta: m.tool_code || '-',
+                descripcion: m.tool_name || '-',
+                cantidad: 1,
+                condicion: m.status || '-',
+                responsable: m.requested_by_name || m.usr_reg || '-',
+                notas: m.description || m.notes || '',
+                color: 'green',
+                source: 'maintenance'
+            })))),
+            catchError(() => of([]))
+        );
+
+        return forkJoin([movItems$, calibrations$, maintenances$]).pipe(
+            switchMap(([movs, cals, maints]: [any[], any[], any[]]) => {
+                const all = [...movs, ...cals, ...maints]
+                    .filter(item => {
+                        if (!item.fecha) return true;
+                        try { return new Date(item.fecha) >= cutoff; } catch { return true; }
+                    })
+                    .sort((a, b) => {
+                        try { return new Date(b.fecha).getTime() - new Date(a.fecha).getTime(); } catch { return 0; }
+                    });
+                return of(all);
             })
         );
     }

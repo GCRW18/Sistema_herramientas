@@ -28,6 +28,7 @@ interface HerramientaOption {
     unidad: string;
     estado: string;
     descripcion?: string;
+    imagen?: string;
 }
 
 interface DialogData {
@@ -35,96 +36,25 @@ interface DialogData {
     item?: any;
     baseDestino?: string;
     tipoEnvio?: string;
+    prioridad?: string;
 }
 
 @Component({
     selector: 'app-herramienta-a-enviar',
     standalone: true,
     imports: [
-        CommonModule,
-        MatIconModule,
-        MatButtonModule,
-        MatInputModule,
-        MatFormFieldModule,
-        MatSelectModule,
-        MatDialogModule,
-        FormsModule,
-        ReactiveFormsModule,
-        DragDropModule,
-        MatAutocompleteModule,
-        MatTooltipModule,
-        MatSnackBarModule,
-        MatProgressSpinnerModule
+        CommonModule, MatIconModule, MatButtonModule, MatInputModule, MatFormFieldModule,
+        MatSelectModule, MatDialogModule, FormsModule, ReactiveFormsModule, DragDropModule,
+        MatAutocompleteModule, MatTooltipModule, MatSnackBarModule, MatProgressSpinnerModule
     ],
     templateUrl: './herramienta-a-enviar.component.html',
     styles: [`
-        :host {
-            display: block;
-            height: 100%;
-            --neo-border: 2px solid black;
-            --neo-shadow: 4px 4px 0px 0px rgba(0,0,0,1);
-        }
-
-        .neo-card-base {
-            border: var(--neo-border) !important;
-            box-shadow: var(--neo-shadow) !important;
-            border-radius: 12px !important;
-            background-color: white;
-        }
-
-        :host-context(.dark) .neo-card-base {
-            background-color: #1e293b !important;
-        }
-
-        .custom-scrollbar::-webkit-scrollbar {
-            width: 6px;
-            height: 6px;
-        }
-
-        .custom-scrollbar::-webkit-scrollbar-track {
-            background: transparent;
-        }
-
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-            background: #000;
-            border-radius: 3px;
-        }
-
-        :host-context(.dark) .custom-scrollbar::-webkit-scrollbar-thumb {
-            background: #cbd5e1;
-        }
-
-        input:read-only {
-            background-color: #f3f4f6;
-            border-color: #9ca3af;
-            cursor: not-allowed;
-        }
-
-        :host-context(.dark) input:read-only {
-            background-color: #1f2937;
-            border-color: #4b5563;
-            color: #9ca3af;
-        }
-
-        :host-context(.dark) select option {
-            background-color: #0F172A;
-            color: white;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(-5px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        .animate-fadeIn {
-            animation: fadeIn 0.2s ease-out forwards;
-        }
-
-        button:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-            pointer-events: none;
-        }
+        :host { display: block; width: 100%; height: 100%; }
+        .custom-scrollbar::-webkit-scrollbar { width: 5px; height: 5px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; border-radius: 0; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #000; border-radius: 0; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #333; }
+        :host-context(.dark) .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; }
     `]
 })
 export class HerramientaAEnviarComponent implements OnInit, OnDestroy {
@@ -136,23 +66,23 @@ export class HerramientaAEnviarComponent implements OnInit, OnDestroy {
 
     private _unsubscribeAll = new Subject<void>();
 
-    // Formulario
     enviarForm!: FormGroup;
 
-    // Signals
     selectedImage = signal<string | null>(null);
+    imagenOriginal = signal<string | null>(null);
     coincidencias = signal<number>(0);
     isEditMode = computed(() => this.data?.mode === 'edit');
+    isSearching = signal<boolean>(false);
     isLoading = false;
 
-    // Prioridades de envío
+    private _selectedToolId: number | null = null;
+
     prioridades = [
         { value: 'NORMAL', label: 'Normal', icon: 'schedule' },
         { value: 'URGENTE', label: 'Urgente', icon: 'priority_high' },
-        { value: 'AOG', label: 'AOG - Aircraft On Ground', icon: 'warning' }
+        { value: 'AOG', label: 'AOG', icon: 'warning' }
     ];
 
-    // Motivos de envío
     motivosEnvio = [
         { value: 'APOYO_OPERACIONAL', label: 'Apoyo Operacional' },
         { value: 'MANTENIMIENTO_PROGRAMADO', label: 'Mantenimiento Programado' },
@@ -162,10 +92,9 @@ export class HerramientaAEnviarComponent implements OnInit, OnDestroy {
         { value: 'CALIBRACION_EXTERNA', label: 'Calibración Externa' },
         { value: 'REPARACION', label: 'Reparación' },
         { value: 'PRESTAMO_TEMPORAL', label: 'Préstamo Temporal' },
-        { value: 'DEVOLUCION', label: 'Devolución a Base Origen' }
+        { value: 'DEVOLUCION', label: 'Devolución a Base' }
     ];
 
-    // Estados de herramientas
     estados = [
         { value: 'SERVICEABLE', label: 'Serviceable' },
         { value: 'EN_CALIBRACION', label: 'En Calibración' },
@@ -173,7 +102,6 @@ export class HerramientaAEnviarComponent implements OnInit, OnDestroy {
         { value: 'NUEVO', label: 'Nuevo' }
     ];
 
-    // Unidades de medida
     unidades = [
         { value: 'PZA', label: 'Pieza' },
         { value: 'EA', label: 'Each (c/u)' },
@@ -205,36 +133,38 @@ export class HerramientaAEnviarComponent implements OnInit, OnDestroy {
 
     private initForm(): void {
         this.enviarForm = this.fb.group({
-            buscar: [''],
-            codigo: ['', Validators.required],
-            nombre: ['', Validators.required],
+            buscar: ['BOA-H-'], // Predeterminado
+            codigo: [''],
+            nombre: [''],
             pn: [''],
             sn: [''],
             marca: [''],
-            ubicacion: [{ value: '', disabled: true }],
-            existencia: [{ value: 0, disabled: true }],
-            fechaCalibracion: [{ value: '', disabled: true }],
-            unidad: ['PZA'],
-            estado: ['SERVICEABLE'],
+            existencia: [0],
+            ubicacion: [''],
+            fechaCalibracion: [''],
+            unidad: ['PZA', Validators.required],
+            estado: ['SERVICEABLE', Validators.required],
             cantidad: [1, [Validators.required, Validators.min(1)]],
-            prioridad: ['NORMAL'],
-            motivo: ['APOYO_OPERACIONAL'],
+            prioridad: [this.data?.prioridad || 'NORMAL', Validators.required],
+            motivo: ['APOYO_OPERACIONAL', Validators.required],
             observacion: ['']
         });
 
-        // Validar cantidad vs existencia
-        this.enviarForm.get('cantidad')?.valueChanges
-            .pipe(takeUntil(this._unsubscribeAll))
-            .subscribe(() => {
-                this.validateCantidad();
-            });
+        this.enviarForm.get('buscar')?.valueChanges.pipe(takeUntil(this._unsubscribeAll)).subscribe(val => {
+            if (!val || !val.startsWith('BOA-H-')) {
+                this.enviarForm.patchValue({ buscar: 'BOA-H-' }, { emitEvent: false });
+            }
+        });
+
+        this.enviarForm.get('cantidad')?.valueChanges.pipe(takeUntil(this._unsubscribeAll)).subscribe(() => {
+            this.validateCantidad();
+        });
     }
 
     private cargarHerramientas(): void {
         this.isLoading = true;
         this.movementService.getHerramientasDisponibles().pipe(
-            takeUntil(this._unsubscribeAll),
-            finalize(() => this.isLoading = false)
+            takeUntil(this._unsubscribeAll), finalize(() => this.isLoading = false)
         ).subscribe({
             next: (tools) => {
                 this.herramientas = tools.map((t: any) => ({
@@ -249,52 +179,77 @@ export class HerramientaAEnviarComponent implements OnInit, OnDestroy {
                     fechaCalibracion: t.next_calibration_date ?? '',
                     unidad:          t.unit_of_measure ?? 'PZA',
                     estado:          t.status ?? 'DISPONIBLE',
-                    descripcion:     t.description ?? t.descripcion ?? ''
+                    descripcion:     t.description ?? t.descripcion ?? '',
+                    imagen:          t.image_url || null
                 }));
-                this.filteredHerramientas = [...this.herramientas];
-                this.coincidencias.set(this.herramientas.length);
+                this.filteredHerramientas = [];
             },
-            error: () => {
-                this.showMessage('Error al cargar herramientas', 'error');
-            }
+            error: () => this.showMessage('Error al cargar herramientas', 'error')
         });
     }
 
     private setupSearchListener(): void {
-        this.enviarForm.get('buscar')?.valueChanges
-            .pipe(
-                takeUntil(this._unsubscribeAll),
-                debounceTime(300),
-                distinctUntilChanged()
-            )
-            .subscribe(value => {
-                this.onBuscarChange(value);
-            });
+        this.enviarForm.get('buscar')?.valueChanges.pipe(
+            takeUntil(this._unsubscribeAll), debounceTime(300), distinctUntilChanged()
+        ).subscribe(value => {
+            this.onBuscarChange(value);
+        });
     }
 
     onBuscarChange(value: string): void {
-        if (!value || value.trim() === '') {
-            this.filteredHerramientas = [...this.herramientas];
-            this.coincidencias.set(this.herramientas.length);
+        if (!value || value.length <= 6) {
+            this.filteredHerramientas = [];
+            this.coincidencias.set(0);
             return;
         }
 
+        this.isSearching.set(true);
         const searchTerm = value.toLowerCase().trim();
         this.filteredHerramientas = this.herramientas.filter(h =>
             h.codigo.toLowerCase().includes(searchTerm) ||
             h.nombre.toLowerCase().includes(searchTerm) ||
-            h.pn.toLowerCase().includes(searchTerm) ||
-            h.marca.toLowerCase().includes(searchTerm) ||
-            (h.sn && h.sn.toLowerCase().includes(searchTerm))
+            h.pn.toLowerCase().includes(searchTerm)
         );
-
         this.coincidencias.set(this.filteredHerramientas.length);
+        this.isSearching.set(false);
     }
 
+    displayHerramienta = (h: any): string => h ? (h.codigo || '') : 'BOA-H-';
+
     limpiarBusqueda(): void {
-        this.enviarForm.patchValue({ buscar: '' });
-        this.filteredHerramientas = [...this.herramientas];
-        this.coincidencias.set(this.herramientas.length);
+        this.enviarForm.reset({
+            buscar: 'BOA-H-', codigo: '', nombre: '', pn: '', sn: '', marca: '',
+            existencia: 0, ubicacion: '', fechaCalibracion: '', unidad: 'PZA',
+            estado: 'SERVICEABLE', cantidad: 1, prioridad: this.data?.prioridad || 'NORMAL',
+            motivo: 'APOYO_OPERACIONAL', observacion: ''
+        });
+        this._selectedToolId = null;
+        this.filteredHerramientas = [];
+        this.coincidencias.set(0);
+        this.imagenOriginal.set(null);
+        this.selectedImage.set(null);
+    }
+
+    selectHerramienta(herramienta: HerramientaOption): void {
+        this._selectedToolId = herramienta.toolId;
+        this.enviarForm.patchValue({
+            buscar: `${herramienta.codigo} - ${herramienta.nombre}`,
+            codigo: herramienta.codigo,
+            nombre: herramienta.nombre,
+            pn: herramienta.pn,
+            sn: herramienta.sn,
+            marca: herramienta.marca,
+            ubicacion: herramienta.ubicacion,
+            existencia: herramienta.existencia,
+            fechaCalibracion: herramienta.fechaCalibracion,
+            unidad: this.unidades.some(u => u.value === herramienta.unidad) ? herramienta.unidad : 'PZA',
+            estado: this.estados.some(e => e.value === herramienta.estado) ? herramienta.estado : 'SERVICEABLE',
+            cantidad: 1
+        });
+        this.imagenOriginal.set(herramienta.imagen || null);
+        this.coincidencias.set(1);
+        this.filteredHerramientas = [];
+        this.validateCantidad();
     }
 
     private validateCantidad(): void {
@@ -305,36 +260,15 @@ export class HerramientaAEnviarComponent implements OnInit, OnDestroy {
             this.enviarForm.get('cantidad')?.setErrors({ excedeStock: true });
         } else if (cantidad < 1) {
             this.enviarForm.get('cantidad')?.setErrors({ min: true });
+        } else {
+            this.enviarForm.get('cantidad')?.setErrors(null);
         }
     }
 
-    private _selectedToolId: number | null = null;
-
-    selectHerramienta(herramienta: HerramientaOption): void {
-        this._selectedToolId = herramienta.toolId;
-        this.enviarForm.patchValue({
-            codigo: herramienta.codigo,
-            nombre: herramienta.nombre,
-            pn: herramienta.pn,
-            sn: herramienta.sn,
-            marca: herramienta.marca,
-            ubicacion: herramienta.ubicacion,
-            existencia: herramienta.existencia,
-            fechaCalibracion: herramienta.fechaCalibracion,
-            unidad: herramienta.unidad,
-            estado: herramienta.estado,
-            cantidad: 1
-        });
-
-        this.coincidencias.set(1);
-        this.enviarForm.patchValue({ buscar: '' });
-        this.filteredHerramientas = [...this.herramientas];
-
-        this.showMessage(`Herramienta ${herramienta.codigo} seleccionada`, 'success');
-    }
-
     loadEditData(item: any): void {
+        this._selectedToolId = item.toolId;
         this.enviarForm.patchValue({
+            buscar: `${item.codigo} - ${item.descripcion || item.nombre}`,
             codigo: item.codigo,
             nombre: item.descripcion || item.nombre,
             pn: item.partNumber || item.pn,
@@ -343,102 +277,34 @@ export class HerramientaAEnviarComponent implements OnInit, OnDestroy {
             ubicacion: item.ubicacion || '',
             existencia: item.existencia || 0,
             fechaCalibracion: item.fechaCalibracion || '',
-            unidad: item.unidad || 'PZA',
+            unidad: item.um || item.unidad || 'PZA',
             estado: item.estado || 'SERVICEABLE',
             cantidad: item.cantidad || 1,
             prioridad: item.prioridad || 'NORMAL',
             motivo: item.motivo || 'APOYO_OPERACIONAL',
             observacion: item.observaciones || ''
         });
-
-        if (item.imagen) {
-            this.selectedImage.set(item.imagen);
-        }
+        if (item.imagenOriginal) this.imagenOriginal.set(item.imagenOriginal);
+        if (item.imagen) this.selectedImage.set(item.imagen);
     }
 
     onImageSelected(event: Event): void {
         const file = (event.target as HTMLInputElement).files?.[0];
         if (!file) return;
-
-        // Validar tamaño (max 5MB)
-        if (file.size > 5 * 1024 * 1024) {
-            this.showMessage('La imagen no debe superar 5MB', 'error');
-            return;
-        }
-
-        // Validar tipo
-        if (!file.type.match('image/(jpeg|png|jpg|webp)')) {
-            this.showMessage('Formato no válido. Use PNG, JPG o WEBP', 'error');
-            return;
-        }
-
         const reader = new FileReader();
-        reader.onload = () => {
-            this.selectedImage.set(reader.result as string);
-            this.showMessage('Imagen cargada exitosamente', 'success');
-
-            // Resetear el input file
-            (event.target as HTMLInputElement).value = '';
-        };
-
-        reader.onerror = () => {
-            this.showMessage('Error al cargar la imagen', 'error');
-        };
-
+        reader.onload = () => { this.selectedImage.set(reader.result as string); };
         reader.readAsDataURL(file);
     }
 
-    removeImage(): void {
-        this.selectedImage.set(null);
-        this.showMessage('Imagen removida', 'info');
-    }
-
-    validarCantidad(): boolean {
-        const cantidad = this.enviarForm.get('cantidad')?.value || 0;
-        const existencia = this.enviarForm.get('existencia')?.value || 0;
-
-        if (existencia === 0) return true; // Si no hay existencia definida, no validamos
-        return cantidad <= existencia;
-    }
-
-    getValidationMessage(): string {
-        if (!this.enviarForm.get('codigo')?.value) return 'Seleccione una herramienta';
-        if (!this.enviarForm.get('cantidad')?.value) return 'Ingrese la cantidad a enviar';
-        if (this.enviarForm.get('cantidad')?.errors?.['excedeStock'])
-            return `La cantidad excede el stock disponible (${this.enviarForm.get('existencia')?.value})`;
-        if (this.enviarForm.invalid) return 'Complete los campos requeridos';
-        return 'Completo - Listo para enviar';
-    }
-
     procesar(): void {
-        // Validar formulario
-        if (this.enviarForm.invalid) {
-            this.enviarForm.markAllAsTouched();
-
-            if (!this.enviarForm.get('codigo')?.value) {
-                this.showMessage('Seleccione una herramienta', 'error');
-            } else if (!this.enviarForm.get('cantidad')?.value) {
-                this.showMessage('Ingrese la cantidad a enviar', 'error');
-            } else {
-                this.showMessage('Complete todos los campos requeridos', 'error');
-            }
-            return;
-        }
-
-        // Validar cantidad vs stock
-        if (!this.validarCantidad()) {
-            this.showMessage('La cantidad excede el stock disponible', 'error');
-            return;
-        }
+        this.enviarForm.markAllAsTouched();
+        if (!this._selectedToolId) { this.enviarForm.get('buscar')?.markAsTouched(); return; }
+        if (this.enviarForm.invalid) return;
 
         const formValue = this.enviarForm.getRawValue();
-
         const data = {
-            // ID de BD (clave para el SP)
             toolId:          this._selectedToolId,
             id_tool:         this._selectedToolId,
-
-            // Datos de la herramienta
             codigo:          formValue.codigo,
             nombre:          formValue.nombre,
             descripcion:     formValue.nombre,
@@ -449,53 +315,34 @@ export class HerramientaAEnviarComponent implements OnInit, OnDestroy {
             marca:           formValue.marca,
             ubicacion:       formValue.ubicacion,
             existencia:      formValue.existencia,
-            fechaCalibracion: formValue.fechaCalibracion,
-
-            // Datos del envío
             cantidad:        formValue.cantidad,
             unidad:          formValue.unidad,
             unit_of_measure: formValue.unidad,
             estadoFisico:    formValue.estado,
             prioridad:       formValue.prioridad,
             motivo:          formValue.motivo,
-            observacion:     formValue.observacion
+            observacion:     formValue.observacion,
+            imagenOriginal:  this.imagenOriginal(),
+            imagen:          this.selectedImage()
         };
 
-        const action = this.isEditMode() ? 'editar' : 'agregar';
-
-        this.dialogRef?.close({
-            action,
-            data,
-            success: true
-        });
-
-        this.showMessage(
-            `Herramienta ${formValue.codigo} ${this.isEditMode() ? 'actualizada' : 'agregada'} exitosamente`,
-            'success'
-        );
+        this.dialogRef?.close({ action: this.isEditMode() ? 'editar' : 'agregar', data, success: true });
     }
 
-    cerrar(): void {
-        if (this.enviarForm.dirty && !this.isEditMode()) {
-            if (!confirm('Hay cambios sin guardar. ¿Desea salir?')) {
-                return;
-            }
-        }
-        this.dialogRef?.close();
-    }
+    cerrar(): void { this.dialogRef?.close(); }
 
-    // Helpers para validación visual
     hasError(field: string, error: string): boolean {
-        const control = this.enviarForm.get(field);
-        return control ? control.hasError(error) && control.touched : false;
+        const control = this.enviarForm.get(field); return control ? control.hasError(error) && control.touched : false;
+    }
+
+    validarCantidadState(): boolean {
+        const cantidad = this.enviarForm.get('cantidad')?.value || 0;
+        const existencia = this.enviarForm.get('existencia')?.value || 0;
+        if (existencia === 0) return true;
+        return cantidad > 0 && cantidad <= existencia;
     }
 
     private showMessage(message: string, type: 'success' | 'error' | 'warning' | 'info'): void {
-        this.snackBar.open(message, 'OK', {
-            duration: 3000,
-            panelClass: [`snackbar-${type}`],
-            horizontalPosition: 'center',
-            verticalPosition: 'bottom'
-        });
+        this.snackBar.open(message, 'OK', { duration: 3000, panelClass: [`snackbar-${type}`] });
     }
 }

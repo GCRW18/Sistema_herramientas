@@ -1,0 +1,82 @@
+<div class="bg-[#f8f9fc] dark:bg-slate-900 border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] overflow-hidden flex flex-col font-sans h-auto max-h-[95vh]">
+
+    <!-- HEADER -->
+    <div class="bg-[#0F172AFF] text-white px-5 py-3 flex justify-between items-center shrink-0"
+         cdkDrag cdkDragRootElement=".cdk-overlay-pane" cdkDragHandle>
+        <div class="flex items-center gap-3">
+            <div class="w-8 h-8 bg-white border-2 border-black rounded flex items-center justify-center shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+                <mat-icon class="text-black !text-base">shelves</mat-icon>
+            </div>
+            <div>
+                <h2 class="text-sm font-black uppercase tracking-tight leading-none">{{ titulo }}</h2>
+                <p class="text-[10px] text-gray-300 font-bold uppercase mt-0.5">{{ subtitulo }}</p>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-3">
+            <button (click)="dialogRef.close(null)"
+                    class="px-4 py-1.5 bg-red-600 text-white font-black text-[10px] border-2 border-black rounded-lg shadow-[2px_2px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all uppercase">
+                Cancelar
+            </button>
+            <button (click)="save()"
+                    class="px-4 py-1.5 bg-amber-400 text-black font-black text-[10px] border-2 border-black rounded-lg shadow-[2px_2px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all uppercase flex items-center gap-1.5">
+                <mat-icon class="!text-black">save</mat-icon> Guardar Estante
+            </button>
+        </div>
+    </div>
+
+    <!-- BODY -->
+    <div class="flex-1 overflow-y-auto p-5 custom-scrollbar" style="width:700px; max-width:95vw">
+        <form [formGroup]="form" class="flex flex-col gap-4">
+
+            <!-- Warehouse context -->
+            <div class="bg-amber-100 dark:bg-amber-900/30 border-2 border-black rounded-xl p-3 shadow-[3px_3px_0px_0px_#000] relative overflow-hidden">
+                <mat-icon class="absolute -right-3 -bottom-3 !text-[60px] text-amber-200 dark:text-amber-800/40 opacity-60 pointer-events-none">warehouse</mat-icon>
+                <div class="relative z-10">
+                    <p class="text-[9px] font-black text-black dark:text-amber-500 uppercase">Almacén destino</p>
+                    <p class="font-mono text-base font-black text-black dark:text-white">{{ warehouse.codigo }}</p>
+                    <p class="text-xs font-bold text-gray-800 dark:text-gray-200">{{ warehouse.nombre }}</p>
+                </div>
+            </div>
+
+            <!-- Identification -->
+            <div class="bg-white dark:bg-slate-800 border-2 border-black rounded-xl p-4 shadow-[3px_3px_0px_0px_#000]">
+                <p class="text-[10px] font-black uppercase text-gray-500 mb-2 border-b-2 border-black/10 pb-1">
+                    <mat-icon class="!text-sm align-middle">info</mat-icon> Identificación
+                </p>
+
+                <div class="grid grid-cols-12 gap-3">
+                    <div class="col-span-12 sm:col-span-7">
+                        <label class="text-[10px] font-black uppercase text-black dark:text-gray-300 mb-1 block">Código *</label>
+                        <input type="text" formControlName="codigo"
+                               class="w-full h-10 text-sm font-black uppercase bg-white dark:bg-slate-900 border-2 border-black dark:border-slate-600 rounded-lg px-3 focus:shadow-[2px_2px_0px_0px_#000] outline-none transition-all"
+                               [class.border-red-500]="hasError('codigo','required')">
+                    </div>
+
+                    <div class="col-span-12 sm:col-span-5 flex items-end">
+                        <label class="flex items-center gap-2 cursor-pointer h-10 px-3 border-2 border-black rounded-lg w-full shadow-[2px_2px_0px_0px_#000]"
+                               [ngClass]="form.value.activo ? 'bg-green-100 dark:bg-green-900/30' : 'bg-gray-100 dark:bg-slate-700'">
+                            <input type="checkbox" formControlName="activo"
+                                   class="w-4 h-4 border-2 border-black rounded accent-amber-400">
+                            <span class="text-[10px] font-black uppercase">{{ form.value.activo ? 'Estante activo' : 'Estante inactivo' }}</span>
+                        </label>
+                    </div>
+
+                    <div class="col-span-12">
+                        <label class="text-[10px] font-black uppercase text-black dark:text-gray-300 mb-1 block">Nombre *</label>
+                        <input type="text" formControlName="nombre" placeholder="Ej. Estante de Tornillería"
+                               class="w-full h-10 text-sm font-bold bg-white dark:bg-slate-900 border-2 border-black dark:border-slate-600 rounded-lg px-3 focus:shadow-[2px_2px_0px_0px_#000] outline-none transition-all"
+                               [class.border-red-500]="hasError('nombre','required')">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Description -->
+            <div>
+                <label class="text-[10px] font-black uppercase text-black dark:text-gray-300 mb-1 block">Descripción</label>
+                <textarea formControlName="descripcion" rows="3" placeholder="Qué se almacena, particularidades..."
+                          class="w-full text-sm font-bold border-2 border-black dark:border-slate-600 rounded-xl p-3 bg-white dark:bg-slate-800 text-black dark:text-white outline-none focus:shadow-[2px_2px_0px_0px_#000] transition-shadow resize-none custom-scrollbar"></textarea>
+            </div>
+        </form>
+    </div>
+</div>

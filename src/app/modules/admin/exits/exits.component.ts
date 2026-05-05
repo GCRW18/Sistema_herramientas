@@ -44,6 +44,7 @@ interface ExitRecord {
     responsable: string;
     nroComprobante?: string;
     items?: number;
+    raw?: any;
 }
 
 @Component({
@@ -63,72 +64,26 @@ interface ExitRecord {
         DragDropModule
     ],
     templateUrl: './exits.component.html',
-
     styles: [`
         :host {
             display: block;
             height: 100%;
         }
 
-        /* ===== TABLE STYLES ===== */
-        .header-neo {
-            background-color: white !important;
-            color: #111A43 !important;
-            font-weight: 900 !important;
-            font-size: 14px !important;
-            border-bottom: 3px solid black !important;
-            padding: 20px !important;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-        }
-
-        .cell-neo {
-            padding: 18px 20px !important;
-            border-bottom: 1px solid #000000 !important;
-            font-size: 14px !important;
-            color: black;
-        }
-
-        :host-context(.dark) .header-neo {
-            background-color: #111A43 !important;
-            color: white !important;
-        }
-
-        :host-context(.dark) .cell-neo {
-            color: white;
-            border-bottom-color: #333;
-        }
-
-        .neo-card-base-exit {
-            border: 2px solid black !important;
-            box-shadow: 4px 4px 0px 0px rgba(0,0,0,1) !important;
-            border-radius: 8px !important;
-            background-color: white;
-        }
-
-        :host-context(.dark) .neo-card-base-exit {
-            background-color: #1e293b !important;
-        }
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; border-radius: 3px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #000; border-radius: 3px; }
+        :host-context(.dark) .custom-scrollbar::-webkit-scrollbar-thumb { background: #fff; }
 
         .spinner-overlay {
-            position: fixed;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(255,255,255,0.8);
-            backdrop-filter: blur(4px);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 100;
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(255,255,255,0.8); backdrop-filter: blur(4px);
+            display: flex; align-items: center; justify-content: center; z-index: 9999;
         }
+        :host-context(.dark) .spinner-overlay { background: rgba(0,0,0,0.7); }
 
-        :host-context(.dark) .spinner-overlay {
-            background: rgba(0,0,0,0.7);
-        }
-
-        .custom-scrollbar-exit::-webkit-scrollbar { width: 6px; height: 6px; }
-        .custom-scrollbar-exit::-webkit-scrollbar-track { background: transparent; }
-        .custom-scrollbar-exit::-webkit-scrollbar-thumb { background: #000; border-radius: 3px; }
-        :host-context(.dark) .custom-scrollbar-exit::-webkit-scrollbar-thumb { background: #cbd5e1; }
+        .row-selected { background-color: #fef3c7 !important; }
+        :host-context(.dark) .row-selected { background-color: rgba(251, 191, 36, 0.2) !important; }
     `]
 })
 export class ExitsComponent implements OnInit, OnDestroy {
@@ -144,6 +99,8 @@ export class ExitsComponent implements OnInit, OnDestroy {
     @ViewChild(MatPaginator) paginator!: MatPaginator;
     @ViewChild('salidasRecientesDialog') salidasRecientesDialog!: TemplateRef<any>;
 
+    selectedEntry: ExitRecord | null = null;
+
     // ── Tab system ───────────────────────────────────────────────────────────
     openTabs: OpenTab[] = [];
     activeTabId: number | null = null;
@@ -153,31 +110,31 @@ export class ExitsComponent implements OnInit, OnDestroy {
     private readonly MODULE_DEFS: ModuleDef[] = [
         {
             type: 1, label: 'ENVÍO A', sublabel: 'OTRAS BASES',
-            color: '#ca0505', textColor: '#ffffff',
+            color: '#ff1414', textColor: '#ffffff',
             svgIcon: 'heroicons_outline:building-office',
             loader: async () => (await import('./envio-otras-bases/envio-otras-bases.component')).EnvioOtrasBasesComponent
         },
         {
             type: 2, label: 'TRASPASO', sublabel: 'OTRA ÁREA',
-            color: '#ca0505', textColor: '#ffffff',
+            color: '#ff1414', textColor: '#ffffff',
             svgIcon: 'heroicons_outline:arrow-path',
             loader: async () => (await import('./traspaso-otra-area/traspaso-otra-area.component')).TraspasoOtraAreaComponent
         },
         {
             type: 3, label: 'PRÉSTAMO', sublabel: 'TÉC./OTROS',
-            color: '#ca0505', textColor: '#ffffff',
+            color: '#ff1414', textColor: '#ffffff',
             svgIcon: 'heroicons_outline:building-storefront',
             loader: async () => (await import('./prestamo-terceros/prestamo-terceros.component')).PrestamoTercerosComponent
         },
         {
             type: 4, label: 'CUARENTENA', sublabel: 'DE ACTIVO',
-            color: '#ca0505', textColor: '#ffffff',
+            color: '#ff1414', textColor: '#ffffff',
             svgIcon: 'heroicons_outline:exclamation-triangle',
             loader: async () => (await import('./poner-cuarentena/poner-cuarentena.component')).PonerCuarentenaComponent
         },
         {
             type: 5, label: 'BAJA', sublabel: 'DE ACTIVO',
-            color: '#ca0505', textColor: '#ffffff',
+            color: '#ff1414', textColor: '#ffffff',
             svgIcon: 'heroicons_outline:trash',
             loader: async () => (await import('./baja/baja.component')).BajaComponent
         },
@@ -275,16 +232,17 @@ export class ExitsComponent implements OnInit, OnDestroy {
 
     trackByTabId: TrackByFunction<OpenTab> = (_index, tab) => tab.id;
 
-    // ── Salidas recientes (sigue como dialog) ────────────────────────────────
+    // ── Salidas recientes (Dialogo Compacto Neo-Brutalista) ──────────────────
 
     openSalidasRecientes(): void {
+        this.selectedEntry = null;
         this.loadRecentExits();
         this.dialog.open(this.salidasRecientesDialog, {
-            width: '1100px',
+            width: '900px', // Modal reducido
             maxWidth: '95vw',
-            height: '85vh',
+            height: 'auto',
             maxHeight: '90vh',
-            panelClass: 'neo-dialog-salidas',
+            panelClass: 'neo-dialog-transparent',
             hasBackdrop: true,
             disableClose: false,
             autoFocus: false
@@ -308,11 +266,12 @@ export class ExitsComponent implements OnInit, OnDestroy {
                     this.recentExits = response.data.map((item: any) => ({
                         id: item.id || item.id_movement,
                         fecha: this.formatDate(item.date || item.fecha),
-                        tipo: this.mapExitType(item.exitReason || item.tipo),
+                        tipo: this.mapExitType(item.exitReason || item.exit_reason || item.tipo),
                         estado: this.mapStatus(item.status || item.estado),
-                        responsable: item.requestedBy?.fullName || item.responsable || 'N/A',
-                        nroComprobante: item.movementNumber || item.nroComprobante || '-',
-                        items: item.items?.length || 0
+                        responsable: item.requestedBy?.fullName || item.requested_by_name || item.responsable || 'N/A',
+                        nroComprobante: item.movementNumber || item.movement_number || item.nroComprobante || '-',
+                        items: item.items?.length || 0,
+                        raw: item
                     }));
                     this.totalRecords = response.total || this.recentExits.length;
                 } else {
@@ -340,16 +299,21 @@ export class ExitsComponent implements OnInit, OnDestroy {
         this.loadRecentExits();
     }
 
-    verDetalle(exit: ExitRecord): void  { this.showMessage(`Ver detalle: ${exit.nroComprobante}`, 'info'); }
-    editarSalida(exit: ExitRecord): void { this.showMessage(`Editar: ${exit.nroComprobante}`, 'info'); }
+    verDetalle(exit: ExitRecord): void  {
+        this.selectedEntry = exit;
+    }
+
+    cerrarDetalle(): void {
+        this.selectedEntry = null;
+    }
 
     getStatusClass(estado: string): string {
         switch (estado) {
-            case 'COMPLETADO': return 'bg-[#177f0f] text-black';
-            case 'PENDIENTE':  return 'bg-[#F8B400FF] text-black';
-            case 'REVISIÓN':   return 'bg-[#203F77FF] text-white';
-            case 'CANCELADO':  return 'bg-red-800 text-white';
-            default:           return 'bg-gray-100 text-gray-800';
+            case 'COMPLETADO': return 'bg-green-100 text-green-800 border-green-400';
+            case 'PENDIENTE':  return 'bg-yellow-100 text-yellow-800 border-yellow-400';
+            case 'REVISIÓN':   return 'bg-blue-100 text-blue-800 border-blue-400';
+            case 'CANCELADO':  return 'bg-red-100 text-red-800 border-red-400';
+            default:           return 'bg-gray-100 text-gray-800 border-gray-400';
         }
     }
 

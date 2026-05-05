@@ -1,0 +1,170 @@
+<div class="bg-[#f8f9fc] dark:bg-slate-900 border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] overflow-hidden flex flex-col font-sans h-auto max-h-[95vh]">
+
+    <!-- HEADER -->
+    <div class="bg-[#0F172AFF] text-white px-5 py-3 flex justify-between items-center shrink-0"
+         cdkDrag cdkDragRootElement=".cdk-overlay-pane" cdkDragHandle>
+        <div class="flex items-center gap-3">
+            <div class="w-8 h-8 bg-white border-2 border-black rounded flex items-center justify-center shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+                <mat-icon class="text-black !text-base">warehouse</mat-icon>
+            </div>
+            <div>
+                <h2 class="text-sm font-black uppercase tracking-tight leading-none">{{ titulo }}</h2>
+                <p class="text-[10px] text-gray-300 font-bold uppercase mt-0.5">{{ subtitulo }}</p>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-3">
+            <button (click)="dialogRef.close(false)"
+                    class="px-4 py-1.5 bg-[#FF1414FF] text-white font-black text-[10px] border-2 border-black rounded-lg shadow-[2px_2px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all uppercase">
+                {{ readOnly ? 'Cerrar' : 'Cancelar' }}
+            </button>
+            <button *ngIf="!readOnly" (click)="save()"
+                    class="px-4 py-1.5 bg-amber-400 text-black font-black text-[10px] border-2 border-black rounded-lg shadow-[2px_2px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all uppercase flex items-center gap-1.5">
+                <mat-icon class="!text-black">save</mat-icon> Guardar Almacén
+            </button>
+        </div>
+    </div>
+
+    <!-- BODY -->
+    <div class="flex-1 overflow-y-auto p-5 custom-scrollbar">
+        <form [formGroup]="form" class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+            <!-- LEFT: Preview -->
+            <div class="lg:col-span-5 flex flex-col gap-4">
+
+                <div class="bg-white dark:bg-gray-600 border-2 border-black rounded-xl p-4 shadow-[3px_3px_0px_0px_#000] relative overflow-hidden">
+                    <span class="text-[9px] font-black text-black dark:text-gray-400 uppercase mb-2 border-b-2 border-black/10 pb-1 w-full block relative z-10">Vista Previa Almacén</span>
+
+                    <div class="relative z-10 flex flex-col gap-1.5">
+                        <p class="font-black text-lg text-black dark:text-white leading-none font-mono">
+                            {{ form.get('codigo')?.value || 'ALM-XXX-00' }}
+                        </p>
+
+                        <p class="text-xs font-bold text-gray-800 dark:text-gray-200 leading-tight line-clamp-2 min-h-[34px]">
+                            {{ form.get('nombre')?.value || 'Nombre del almacén...' }}
+                        </p>
+
+                        <div class="flex flex-wrap gap-1.5 mt-1">
+                            <span class="px-2 py-0.5 bg-white dark:bg-slate-800 border-2 border-black rounded text-[9px] font-black uppercase text-black dark:text-white" *ngIf="form.get('ciudad')?.value">
+                                {{ form.get('ciudad')?.value }}
+                            </span>
+                            <span class="px-2 py-0.5 bg-blue-900 border-2 border-black rounded text-[9px] font-black uppercase text-white">
+                                {{ form.get('tipo')?.value }}
+                            </span>
+                        </div>
+
+                        <div class="flex justify-between items-end mt-2 pt-2 border-t-2 border-black/10">
+                            <div>
+                                <span class="px-2 py-1 border-2 border-black rounded-lg text-[10px] font-black shadow-[2px_2px_0px_0px_#000]"
+                                      [ngClass]="form.get('estado')?.value === 'ACTIVO' ? 'bg-green-600 text-white' : 'bg-[#FF1414FF] text-white'">
+                                    {{ form.get('estado')?.value }}
+                                </span>
+                            </div>
+                            <div class="text-right" *ngIf="nombreOficinaPreview">
+                                <p class="text-[8px] font-bold uppercase text-gray-600 dark:text-gray-400">Oficina</p>
+                                <p class="text-[10px] font-black uppercase text-blue-700 dark:text-blue-400 border-2 border-blue-400 bg-white dark:bg-slate-800 px-1.5 rounded">
+                                    {{ nombreOficinaPreview }}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Estado toggle -->
+                <div class="border-2 border-black rounded-xl p-3 shadow-[3px_3px_0px_0px_#000] flex items-center justify-between"
+                     [ngClass]="form.get('estado')?.value === 'ACTIVO' ? 'bg-white dark:bg-green-900/30' : 'bg-white dark:bg-red-900/30'">
+                    <div class="flex items-center gap-2">
+                        <mat-icon class="!text-base" [ngClass]="form.get('estado')?.value === 'ACTIVO' ? 'text-green-700' : 'text-red-700'">
+                            {{ form.get('estado')?.value === 'ACTIVO' ? 'check_circle' : 'cancel' }}
+                        </mat-icon>
+                        <span class="text-xs font-black uppercase">{{ form.get('estado')?.value }}</span>
+                    </div>
+                    <button *ngIf="!readOnly" type="button" (click)="toggleEstado()"
+                            class="px-3 py-1 text-[10px] font-black uppercase border-2 border-black rounded-lg shadow-[2px_2px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all"
+                            [ngClass]="form.get('estado')?.value === 'ACTIVO' ? 'bg-[#FF1414FF] text-white' : 'bg-green-600 text-white'">
+                        Cambiar
+                    </button>
+                </div>
+
+                <!-- Descripción -->
+                <div>
+                    <label class="text-[10px] font-black uppercase text-black dark:text-gray-300 mb-1 block">Descripción / Observaciones</label>
+                    <textarea formControlName="descripcion" rows="3" placeholder="Notas sobre el almacén..."
+                              class="w-full text-sm font-bold border-2 border-black dark:border-slate-600 rounded-xl p-3 bg-white dark:bg-slate-800 text-black dark:text-white outline-none focus:shadow-[2px_2px_0px_0px_#000] transition-shadow resize-none custom-scrollbar"></textarea>
+                </div>
+            </div>
+
+            <!-- RIGHT: Fields -->
+            <div class="lg:col-span-7 flex flex-col gap-4">
+                <div class="bg-white dark:bg-slate-700 border-2 border-black rounded-xl p-4 shadow-[3px_3px_0px_0px_#000]">
+                    <p class="text-[10px] font-black uppercase text-gray-500 dark:text-white mb-2 border-b-2 border-black/10 pb-1">
+                        <mat-icon class="!text-sm align-middle">info</mat-icon> Identificación
+                    </p>
+
+                    <div class="grid grid-cols-12 gap-3">
+                        <!-- BASE AERONÁUTICA -->
+                        <div class="col-span-12">
+                            <label class="text-[10px] font-black uppercase text-black dark:text-white mb-1 block text-blue-600">Base Asignada *</label>
+                            <select formControlName="id_base"
+                                    class="w-full h-10 text-sm font-bold bg-blue-50 dark:bg-slate-900 border-2 border-blue-400 dark:border-blue-600 rounded-lg px-2 focus:shadow-[2px_2px_0px_0px_#3b82f6] outline-none transition-all"
+                                    [class.border-red-500]="hasError('id_base','required')">
+                                <option [ngValue]="null">-- Seleccione una Base --</option>
+                                <option *ngFor="let base of basesAeronauticas()" [value]="base.id_base">
+                                    {{ base.name }} ({{ base.code }})
+                                </option>
+                            </select>
+                        </div>
+
+                        <!-- OFICINA (combo FK a orga.toficina) -->
+                        <div class="col-span-12">
+                            <label class="text-[10px] font-black uppercase text-black dark:text-white mb-1 block text-blue-600">Oficina *</label>
+                            <select formControlName="id_oficina"
+                                    class="w-full h-10 text-sm font-bold bg-blue-50 dark:bg-slate-900 border-2 border-blue-400 dark:border-blue-600 rounded-lg px-2 focus:shadow-[2px_2px_0px_0px_#3b82f6] outline-none transition-all"
+                                    [class.border-red-500]="hasError('id_oficina','required')">
+                                <option [ngValue]="null">-- Seleccione una Oficina --</option>
+                                <option *ngFor="let o of oficinas()" [value]="o.id_oficina">
+                                    {{ o.nombre_oficina }}
+                                </option>
+                            </select>
+                            <p *ngIf="hasError('id_oficina','required')" class="text-red-500 text-[10px] font-bold mt-0.5">Seleccione una oficina</p>
+                        </div>
+
+                        <div class="col-span-12 sm:col-span-5">
+                            <label class="text-[10px] font-black uppercase text-black dark:text-white mb-1 block">Código *</label>
+                            <input type="text" formControlName="codigo" placeholder="ALM-CBBA-01"
+                                   class="w-full h-10 text-sm font-black uppercase bg-white dark:bg-slate-900 border-2 border-black dark:border-slate-600 rounded-lg px-3 focus:shadow-[2px_2px_0px_0px_#000] outline-none transition-all"
+                                   [class.border-red-500]="hasError('codigo','required')">
+                        </div>
+
+                        <div class="col-span-6 sm:col-span-4">
+                            <label class="text-[10px] font-black uppercase text-black dark:text-white mb-1 block">Tipo *</label>
+                            <select formControlName="tipo"
+                                    class="w-full h-10 text-sm font-bold bg-white dark:bg-slate-900 border-2 border-black dark:border-slate-600 rounded-lg px-2 focus:shadow-[2px_2px_0px_0px_#000] outline-none transition-all">
+                                <option *ngFor="let t of tipos" [value]="t">{{ t }}</option>
+                            </select>
+                        </div>
+
+                        <div class="col-span-6 sm:col-span-3">
+                            <label class="text-[10px] font-black uppercase text-black dark:text-white mb-1 block">Ciudad *</label>
+                            <select formControlName="ciudad"
+                                    class="w-full h-10 text-sm font-bold bg-white dark:bg-slate-900 border-2 border-black dark:border-slate-600 rounded-lg px-2 focus:shadow-[2px_2px_0px_0px_#000] outline-none transition-all"
+                                    [class.border-red-500]="hasError('ciudad','required')">
+                                <option value="">--</option>
+                                <option *ngFor="let c of ciudades()" [value]="c.nombre">
+                                    {{ c.nombre }}
+                                </option>
+                            </select>
+                        </div>
+
+                        <div class="col-span-12">
+                            <label class="text-[10px] font-black uppercase text-black dark:text-white mb-1 block">Nombre del almacén *</label>
+                            <input type="text" formControlName="nombre" placeholder="Almacén Central"
+                                   class="w-full h-10 text-sm font-bold bg-white dark:bg-slate-900 border-2 border-black dark:border-slate-600 rounded-lg px-3 focus:shadow-[2px_2px_0px_0px_#000] outline-none transition-all"
+                                   [class.border-red-500]="hasError('nombre','required')">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>

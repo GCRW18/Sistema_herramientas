@@ -70,8 +70,9 @@ export type CalibrationType =
  * Tipo de trabajo solicitado
  */
 export type WorkRequestType =
-    | 'calibration'  // Calibración
-    | 'repair';      // Reparación
+    | 'calibration'        // Calibración
+    | 'repair'             // Reparación
+    | 'calibration_repair'; // Calibración y Reparación combinada
 
 /**
  * Estado físico de la herramienta después de calibración
@@ -419,6 +420,9 @@ export interface ScanToolResult {
     annual_service_interval: number | null;
     // Advertencia de estado
     scan_warning: string | null;
+    // Ubicación actual (si el backend la devuelve)
+    base_name?:      string | null;
+    warehouse_name?: string | null;
 }
 
 // CalibrationBatch y CalibrationBatchItem se definen en calibration-batch.types.ts

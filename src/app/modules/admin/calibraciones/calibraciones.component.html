@@ -1,26 +1,34 @@
 <div class="relative flex flex-col w-full h-full bg-white dark:bg-[#0F172AFF] transition-colors duration-300 font-sans overflow-hidden">
 
-    <div class="flex items-center gap-3 px-5 py-3 border-b-[3px] border-black dark:border-slate-700 shrink-0 bg-white dark:bg-[#0F172AFF] relative z-30">
-        <h1 class="text-3xl md:text-4xl font-black text-black dark:text-white uppercase tracking-tighter leading-none">
-            CALIBRACIONES
-        </h1>
-        <span class="text-[10px] font-black bg-[#1A3EDC] text-white px-3 py-1 rounded border-[2px] border-black uppercase tracking-wider hidden sm:inline shadow-[1px_1px_0px_0px_#000]">
-            MÓDULO DE CALIBRACIÓN
-        </span>
+    <div class="flex items-center gap-4 px-6 py-4 border-b-[3px] border-black shrink-0 bg-white dark:bg-slate-900 relative z-[110]">
+
+        <div class="flex items-center gap-3">
+            <h1 class="text-2xl md:text-3xl font-black text-black dark:text-white uppercase tracking-tighter leading-none">
+                CALIBRACIONES
+            </h1>
+            <div class="flex items-center gap-2 mt-0.5 flex-wrap hidden sm:flex">
+                <span class="text-[10px] font-bold bg-amber-400 text-black px-2 py-0.5 rounded inline-block border-2 border-black uppercase tracking-wider">
+                    MÓDULO DE CALIBRACIÓN
+                </span>
+            </div>
+        </div>
+
         <div class="flex-1"></div>
 
         <button (click)="toggleBandeja()"
-                [class.!bg-[#1A3EDC]]="showBandeja"
+                [class.!bg-black]="showBandeja"
                 [class.!text-white]="showBandeja"
-                class="flex items-center gap-2 px-5 py-2 bg-white dark:bg-slate-800 border-[3px] border-black font-black text-xs uppercase rounded-full shadow-[3px_3px_0px_0px_#000] hover:shadow-[1px_1px_0px_0px_#000] hover:translate-x-[2px] hover:translate-y-[2px] transition-all text-black dark:text-white">
+                class="flex items-center gap-2 px-5 py-2 bg-[#2563eb] border-[2px] border-black font-black text-xs uppercase rounded-xl shadow-[3px_3px_0px_0px_#000] hover:shadow-[1px_1px_0px_0px_#000] hover:translate-x-[2px] hover:translate-y-[2px] transition-all text-white">
             <mat-icon class="!text-base">apps</mat-icon>
             <span class="hidden sm:inline">MÓDULOS</span>
             <mat-icon class="!text-sm transition-transform duration-200" [class.rotate-180]="showBandeja">expand_more</mat-icon>
         </button>
 
+        <div class="w-px h-8 bg-black/20 dark:bg-white/20 mx-1"></div>
+
         <div *ngIf="alertCount > 0" class="relative">
             <button (click)="openModule(5)"
-                    class="flex items-center gap-2 px-5 py-2 bg-[#e94125] text-white border-[3px] border-black font-black text-xs uppercase rounded-full shadow-[3px_3px_0px_0px_#000] hover:shadow-[1px_1px_0px_0px_#000] hover:translate-x-[2px] hover:translate-y-[2px] transition-all">
+                    class="flex items-center gap-2 px-5 py-2 bg-[#e94125] text-white border-[2px] border-black font-black text-xs uppercase rounded-xl shadow-[3px_3px_0px_0px_#000] hover:shadow-[1px_1px_0px_0px_#000] hover:translate-x-[2px] hover:translate-y-[2px] transition-all">
                 <mat-icon class="!text-white">notifications_active</mat-icon>
                 <span class="hidden lg:inline">ALERTAS</span>
                 <span class="bg-white text-[#e94125] text-[9px] font-black px-1.5 py-0.5 rounded border border-black min-w-[18px] text-center shadow-[1px_1px_0px_0px_#000]">{{ alertCount }}</span>
@@ -28,58 +36,48 @@
         </div>
 
         <button (click)="openCalibracionesRecientes()"
-                class="flex items-center gap-2 px-5 py-2 bg-white dark:bg-slate-800 border-[3px] border-black font-black text-xs uppercase rounded-full shadow-[3px_3px_0px_0px_#000] hover:shadow-[1px_1px_0px_0px_#000] hover:translate-x-[2px] hover:translate-y-[2px] transition-all text-black dark:text-white">
+                class="flex items-center gap-2 px-5 py-2 bg-black dark:bg-slate-700 border-[2px] border-black font-black text-xs uppercase rounded-xl shadow-[3px_3px_0px_0px_rgba(0,0,0,0.5)] hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,0.5)] hover:translate-x-[2px] hover:translate-y-[2px] transition-all text-white">
             <mat-icon class="!text-base">history</mat-icon>
             <span class="hidden sm:inline">Registros Recientes</span>
         </button>
     </div>
 
-    <div *ngIf="showBandeja"
-         (click)="closeBandeja()"
-         class="fixed inset-0 z-20 bg-black/40 backdrop-blur-sm">
-    </div>
+    <div *ngIf="showBandeja" (click)="closeBandeja()" class="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm transition-all duration-300"></div>
 
     <div *ngIf="showBandeja"
-         class="absolute top-[65px] left-2 right-2 md:left-auto md:right-4 md:w-[420px] z-30 bg-white dark:bg-[#0F172AFF] border-[3px] border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] rounded-2xl p-4 animate-in slide-in-from-top-2 duration-150">
+         class="absolute top-[80px] left-2 right-2 md:left-auto md:right-6 md:w-auto z-[110] bg-white dark:bg-slate-800 border-[3px] border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] rounded-xl p-4 animate-in slide-in-from-top-2 duration-150">
 
-        <p class="text-[10px] font-black uppercase tracking-widest text-gray-500 dark:text-slate-400 mb-3 px-1">
-            Módulos del Sistema
+        <p class="text-[10px] font-black uppercase tracking-widest text-black dark:text-white mb-3 px-1 border-b-2 border-black pb-1.5">
+            Seleccionar Módulo de Calibración
         </p>
 
-        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+        <div class="flex gap-3 overflow-x-auto custom-scrollbar pb-2 pt-1 px-1">
             <button *ngFor="let def of MODULE_DEFS"
                     (click)="openModule(def.type)"
-                    class="group relative flex flex-col items-center justify-center gap-1.5 p-2 rounded-xl border-[2px] border-black transition-transform hover:-translate-y-1 h-[85px]"
-                    [style.background-color]="isTabOpen(def.type) ? def.color : 'transparent'"
+                    class="group relative flex flex-col items-center gap-1.5 p-3 rounded-xl border-[2px] border-black transition-all hover:-translate-y-1 w-[120px] shrink-0"
+                    [style.background-color]="isTabOpen(def.type) ? def.color : '#f8f9fc'"
                     [style.box-shadow]="'3px 3px 0px 0px rgba(0,0,0,1)'">
                 <mat-icon [svgIcon]="def.svgIcon"
-                          class="!w-6 !h-6 !text-2xl text-black dark:text-white shrink-0"
-                          [style.color]="isTabOpen(def.type) ? def.textColor : 'inherit'"></mat-icon>
-                <div class="flex flex-col items-center leading-[1.1] w-full px-1">
-                    <p class="text-[8px] font-black uppercase text-center w-full truncate"
-                       [style.color]="isTabOpen(def.type) ? def.textColor : 'inherit'">{{ def.label }}</p>
-                    <p class="text-[8px] font-black uppercase text-center w-full truncate"
-                       [style.color]="isTabOpen(def.type) ? def.textColor : 'inherit'">{{ def.sublabel }}</p>
+                          class="!w-8 !h-8 !text-3xl text-black shrink-0"
+                          [style.color]="isTabOpen(def.type) ? def.textColor : 'black'"></mat-icon>
+                <div class="flex flex-col items-center leading-[1.1] w-full">
+                    <p class="text-[10px] font-black uppercase leading-tight text-black text-center w-full"
+                       [style.color]="isTabOpen(def.type) ? def.textColor : 'black'">{{ def.label }}</p>
+                    <p class="text-[9px] font-bold uppercase leading-tight text-gray-700 text-center w-full truncate"
+                       [style.color]="isTabOpen(def.type) ? def.textColor : ''">{{ def.sublabel }}</p>
                 </div>
             </button>
         </div>
 
-        <div *ngIf="alertCount > 0" class="mt-3 pt-3 border-t-[2px] border-black dark:border-slate-700">
-            <button (click)="openModule(5)"
-                    class="w-full flex items-center justify-center gap-2 py-2.5 bg-[#e94125] text-white font-black text-xs border-[2px] border-black rounded-xl shadow-[3px_3px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[1px_1px_0px_0px_#000] transition-all">
-                <mat-icon class="!text-white">notifications_active</mat-icon>
-                ABRIR CENTRO DE CONTROL ({{ alertCount }})
-            </button>
-        </div>
     </div>
 
     <div *ngIf="openTabs.length > 0"
-         class="flex items-center gap-3 px-4 py-2 border-b-[3px] border-black dark:border-slate-700 shrink-0 bg-white dark:bg-[#0F172AFF] overflow-x-auto relative z-10 custom-scrollbar-cal">
+         class="flex items-center gap-2 px-5 py-2.5 border-b-[3px] border-black bg-gray-100 dark:bg-slate-800 overflow-x-auto relative z-10 custom-scrollbar-cal shadow-sm">
 
         <div *ngFor="let tab of openTabs; trackBy: trackByTabId"
              (click)="setActiveTab(tab.id)"
-             class="flex items-center gap-2 px-3 py-2 rounded-xl border-[2px] border-black cursor-pointer transition-all whitespace-nowrap select-none shrink-0"
-             [style.background-color]="tab.id === activeTabId ? tab.color : 'transparent'"
+             class="flex items-center gap-2 px-3 py-1.5 rounded-lg border-[2px] border-black cursor-pointer transition-all whitespace-nowrap select-none shrink-0"
+             [style.background-color]="tab.id === activeTabId ? tab.color : 'white'"
              [style.box-shadow]="tab.id === activeTabId ? '2px 2px 0px 0px rgba(0,0,0,1)' : 'none'">
 
             <mat-icon [svgIcon]="tab.svgIcon"
@@ -117,17 +115,26 @@
         </div>
 
         <div *ngIf="openTabs.length === 0"
-             class="flex flex-col items-center justify-center h-full bg-[#f8f9fc] dark:bg-[#0F172AFF] relative">
-            <div class="absolute top-10 right-10 w-48 h-48 bg-[#1A3EDC] rounded-full border-[4px] border-black opacity-5 pointer-events-none"></div>
-            <div class="absolute bottom-10 left-10 w-24 h-24 bg-[#FF6A00] rotate-12 border-[4px] border-black opacity-5 pointer-events-none"></div>
-            <div class="flex flex-col items-center text-center opacity-40 dark:opacity-20 select-none">
-                <mat-icon class="!text-[100px] !w-28 !h-28 text-black dark:text-white">science</mat-icon>
-                <p class="text-2xl font-black uppercase text-black dark:text-white mt-4 tracking-tight">
-                    Sistema en Reposo
-                </p>
-                <p class="text-xs font-bold text-gray-600 dark:text-gray-400 mt-2">
-                    Pulse <strong class="text-black dark:text-white">MÓDULOS</strong> en la parte superior para iniciar.
-                </p>
+             class="flex items-start justify-end h-full relative overflow-hidden bg-black">
+            <img src="images/CALIBRACION.png"
+                 alt=""
+                 class="absolute inset-0 w-full h-full object-cover pointer-events-none select-none"
+                 style="opacity: 1;" />
+            <div class="absolute inset-0 hidden dark:block bg-black/50 pointer-events-none z-[1]"></div>
+            <!-- Mensaje tooltip esquina superior derecha -->
+            <div class="relative z-10 mt-4 mr-4 select-none">
+                <div class="flex justify-end pr-6">
+                    <div class="w-3 h-3 bg-white dark:bg-slate-800 border-t-[2px] border-r-[2px] border-black rotate-[-45deg] -mb-[7px] relative z-10"></div>
+                </div>
+                <div class="bg-white dark:bg-slate-800 border-[2px] border-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] rounded-xl px-3 py-2.5 flex items-center gap-2.5 max-w-[230px]">
+                    <mat-icon class="!text-xl !w-5 !h-5 text-black dark:text-white flex-shrink-0">science</mat-icon>
+                    <div>
+                        <p class="text-[11px] font-black uppercase text-black dark:text-white leading-tight">Calibraciones</p>
+                        <p class="text-[10px] font-bold text-gray-500 dark:text-gray-400 mt-0.5 leading-tight">
+                            Pulse <strong class="text-black dark:text-white">MÓDULOS</strong> para iniciar.
+                        </p>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -136,155 +143,122 @@
 </div>
 
 <ng-template #calibracionesRecientesDialog>
-    <div class="flex flex-col w-full h-full bg-[#f8f9fc] dark:bg-[#0F172AFF] transition-colors duration-300 font-sans overflow-hidden relative"
-         cdkDrag cdkDragRootElement=".cdk-overlay-pane" cdkDragBoundary=".cdk-overlay-container">
+    <div class="bg-white dark:bg-slate-900 rounded-2xl border-[3px] border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] overflow-hidden flex flex-col font-sans h-full max-h-[90vh]">
 
-        <div class="fixed top-16 left-10 w-64 h-64 bg-[#111A43] rounded-full border-[4px] border-black opacity-5 pointer-events-none"></div>
-        <div class="fixed bottom-10 right-10 w-32 h-32 bg-[#1A3EDC] rotate-45 border-[4px] border-black opacity-5 pointer-events-none"></div>
-
-        <div *ngIf="isLoading" class="absolute inset-0 z-[100] bg-white/80 dark:bg-[#0F172AFF]/80 backdrop-blur-sm flex flex-col items-center justify-center">
-            <div class="w-16 h-16 border-[4px] border-black border-t-amber-400 rounded-full animate-spin-slow mb-4 shadow-[4px_4px_0px_0px_#000]"></div>
-            <span class="font-black text-xs uppercase tracking-widest text-black dark:text-white bg-amber-400 px-4 py-1.5 border-[3px] border-black shadow-[4px_4px_0px_0px_#000]">Cargando Historial...</span>
-        </div>
-
-        <div class="flex-1 flex flex-col p-4 md:p-6 relative h-full overflow-hidden gap-4">
-
-            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 shrink-0 relative z-10 bg-white dark:bg-[#0F172AFF] border-[3px] border-black p-3 rounded-2xl shadow-[4px_4px_0px_0px_#000]">
-                <div class="flex items-center gap-3">
-                    <button mat-dialog-close
-                            class="w-10 h-10 bg-white dark:bg-slate-800 border-[2px] border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] active:shadow-none active:translate-y-[1px] hover:bg-gray-100 transition-all flex items-center justify-center rounded-xl cursor-pointer"
-                            (mousedown)="$event.stopPropagation()">
-                        <mat-icon class="!text-xl text-black dark:text-white">close</mat-icon>
-                    </button>
-                    <div class="flex flex-col">
-                        <h1 class="text-xl md:text-2xl font-black text-black dark:text-white uppercase tracking-tighter leading-none">
-                            Registros Recientes
-                        </h1>
-                        <span class="text-[9px] font-black bg-[#1A3EDC] text-white px-2 py-0.5 rounded border-[2px] border-black shadow-[1px_1px_0px_0px_#000] w-fit mt-1 uppercase tracking-widest">
-                            HISTORIAL DE CALIBRACIONES
-                        </span>
-                    </div>
+        <div class="bg-black text-white px-5 py-3 border-b-[3px] border-black flex justify-between items-center shrink-0" cdkDrag cdkDragRootElement=".cdk-overlay-pane" cdkDragHandle>
+            <div class="flex items-center gap-3">
+                <mat-icon class="!text-2xl text-amber-400">history</mat-icon>
+                <div>
+                    <h2 class="text-sm md:text-base font-black uppercase tracking-tight leading-none">Registros Recientes</h2>
+                    <p class="text-[10px] font-bold mt-1 text-gray-400 uppercase tracking-wider leading-none">Historial de Calibraciones del Almacén</p>
                 </div>
-                <button (click)="loadRecentCalibrations()" [disabled]="isLoading"
-                        class="px-4 py-2 bg-[#1A3EDC] text-white font-black text-xs border-[2px] border-black rounded-xl shadow-[3px_3px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[1px_1px_0px_0px_#000] active:shadow-none transition-all uppercase flex items-center gap-2">
-                    <mat-icon class="!text-base">refresh</mat-icon> Actualizar
+            </div>
+            <div class="flex items-center gap-2">
+                <button (click)="loadRecentCalibrations()" class="hover:bg-white hover:text-black rounded px-2 py-1 transition-colors flex items-center gap-1 text-[10px] font-black border-2 border-transparent hover:border-black uppercase">
+                    <mat-icon class="!text-sm">refresh</mat-icon> <span class="hidden sm:inline">Actualizar</span>
+                </button>
+                <button mat-dialog-close class="hover:bg-red-500 hover:text-white rounded px-1.5 py-0.5 transition-colors border-2 border-transparent hover:border-black" matTooltip="Cerrar">
+                    <mat-icon class="!text-sm">close</mat-icon>
                 </button>
             </div>
+        </div>
 
-            <div class="flex-1 flex flex-col bg-white dark:bg-[#0F172AFF] border-[3px] border-black rounded-2xl shadow-[4px_4px_0px_0px_#000] overflow-hidden relative z-10">
+        <div *ngIf="isLoading" class="absolute inset-0 bg-white/70 dark:bg-slate-900/70 z-[9999] flex flex-col items-center justify-center backdrop-blur-sm">
+            <mat-spinner diameter="40"></mat-spinner>
+            <span class="font-black text-black dark:text-white uppercase mt-4 text-xs">Cargando historial...</span>
+        </div>
 
-                <div class="bg-[#0F172AFF] px-4 py-2 border-b-[3px] border-black flex items-center justify-between shrink-0">
-                    <div class="flex items-center gap-2">
-                        <mat-icon class="text-white !text-lg">history</mat-icon>
-                        <span class="font-black text-xs uppercase text-white tracking-widest">Historial Global</span>
-                    </div>
-                    <span class="bg-white text-black px-2 py-0.5 rounded-lg text-[10px] font-black border-[2px] border-black shadow-[2px_2px_0px_0px_#000] uppercase">
-                        Total: {{ totalRecords }}
-                    </span>
-                </div>
+        <div *ngIf="!selectedEntry" class="flex flex-col flex-1 overflow-hidden p-3 bg-[#f8f9fc] dark:bg-slate-900">
+            <div class="flex-1 border-[3px] border-black rounded-xl overflow-hidden flex flex-col bg-white dark:bg-slate-800 shadow-[3px_3px_0px_0px_#000]">
 
-                <div class="overflow-y-auto flex-1 custom-scrollbar-cal">
-                    <table class="w-full">
-                        <thead class="sticky top-0 z-10 bg-gray-100 dark:bg-[#1e293b] border-b-[2px] border-black shadow-sm">
-                        <tr>
-                            <th class="text-left px-4 py-3 font-black text-[10px] uppercase text-black dark:text-white w-28">FECHA</th>
-                            <th class="text-left px-4 py-3 font-black text-[10px] uppercase text-black dark:text-white w-36">TIPO</th>
-                            <th class="text-left px-4 py-3 font-black text-[10px] uppercase text-black dark:text-white w-40">NRO. REGISTRO</th>
-                            <th class="text-center px-4 py-3 font-black text-[10px] uppercase text-black dark:text-white w-32">ESTADO</th>
-                            <th class="text-left px-4 py-3 font-black text-[10px] uppercase text-black dark:text-white">RESPONSABLE</th>
-                            <th class="text-right px-4 py-3 font-black text-[10px] uppercase text-black dark:text-white w-28">ACCIONES</th>
-                        </tr>
-                        </thead>
-                        <tbody class="bg-white dark:bg-[#0F172AFF]">
-                        <tr *ngFor="let record of recentCalibrations; let last = last"
-                            (click)="verDetalle(record)"
-                            [class.border-b-[2px]]="!last"
-                            class="border-gray-200 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors cursor-pointer h-12">
+                <div class="overflow-auto flex-1 custom-scrollbar-cal">
+                    <table mat-table [dataSource]="recentCalibrations" class="w-full">
 
-                            <td class="px-4 py-2">
-                                <span class="font-mono font-black text-xs text-black dark:text-white">{{ record.fecha }}</span>
+                        <ng-container matColumnDef="fecha">
+                            <th mat-header-cell *matHeaderCellDef class="!bg-gray-100 dark:!bg-slate-900 !text-black dark:!text-white !font-black !text-[10px] !border-b-[3px] !border-black !p-3 uppercase w-24 sticky top-0 z-[20]">Fecha</th>
+                            <td mat-cell *matCellDef="let element" class="!p-3 !border-b !border-black/20 dark:!border-white/10 text-xs font-mono font-bold">{{ element.fecha }}</td>
+                        </ng-container>
+
+                        <ng-container matColumnDef="tipo">
+                            <th mat-header-cell *matHeaderCellDef class="!bg-gray-100 dark:!bg-slate-900 !text-black dark:!text-white !font-black !text-[10px] !border-b-[3px] !border-black !p-3 uppercase sticky top-0 z-[20]">Tipo</th>
+                            <td mat-cell *matCellDef="let element" class="!p-3 !border-b !border-black/20 dark:!border-white/10">
+                                <span class="px-2 py-0.5 rounded text-[9px] font-black border-2 border-black bg-[#0F172AFF] text-white">{{ element.tipo }}</span>
                             </td>
+                        </ng-container>
 
-                            <td class="px-4 py-2">
-                                    <span class="inline-block px-1.5 py-0.5 rounded text-[9px] font-black border-[2px] border-black shadow-[1px_1px_0px_0px_#000] bg-[#0F172AFF] text-white uppercase">
-                                        {{ record.tipo }}
-                                    </span>
-                            </td>
+                        <ng-container matColumnDef="nroComprobante">
+                            <th mat-header-cell *matHeaderCellDef class="!bg-gray-100 dark:!bg-slate-900 !text-black dark:!text-white !font-black !text-[10px] !border-b-[3px] !border-black !p-3 uppercase sticky top-0 z-[20]">Nro. Registro</th>
+                            <td mat-cell *matCellDef="let element" class="!p-3 !border-b !border-black/20 dark:!border-white/10 text-xs font-black font-mono">{{ element.nroComprobante }}</td>
+                        </ng-container>
 
-                            <td class="px-4 py-2">
-                                <span class="font-mono text-sm font-black text-black dark:text-white tracking-wider">{{ record.nroComprobante }}</span>
+                        <ng-container matColumnDef="estado">
+                            <th mat-header-cell *matHeaderCellDef class="!bg-gray-100 dark:!bg-slate-900 !text-black dark:!text-white !font-black !text-[10px] !border-b-[3px] !border-black !p-3 uppercase text-center sticky top-0 z-[20]">Estado</th>
+                            <td mat-cell *matCellDef="let element" class="!p-3 !border-b !border-black/20 dark:!border-white/10 text-center">
+                                <span class="px-2 py-0.5 rounded text-[9px] font-black border-2 border-black uppercase" [ngClass]="getStatusClass(element.estado)">{{ element.estado }}</span>
                             </td>
+                        </ng-container>
 
-                            <td class="px-4 py-2 text-center">
-                                    <span class="inline-block px-1.5 py-0.5 rounded text-[9px] font-black border-[2px] border-black uppercase shadow-[1px_1px_0px_0px_#000]"
-                                          [ngClass]="getStatusClass(record.estado)">
-                                        {{ record.estado }}
-                                    </span>
-                            </td>
+                        <ng-container matColumnDef="responsable">
+                            <th mat-header-cell *matHeaderCellDef class="!bg-gray-100 dark:!bg-slate-900 !text-black dark:!text-white !font-black !text-[10px] !border-b-[3px] !border-black !p-3 uppercase sticky top-0 z-[20]">Responsable</th>
+                            <td mat-cell *matCellDef="let element" class="!p-3 !border-b !border-black/20 dark:!border-white/10 text-xs font-bold">{{ element.responsable }}</td>
+                        </ng-container>
 
-                            <td class="px-4 py-2">
-                                <span class="font-bold text-xs text-black dark:text-white truncate block max-w-[200px]">{{ record.responsable }}</span>
+                        <ng-container matColumnDef="acciones">
+                            <th mat-header-cell *matHeaderCellDef class="!bg-gray-100 dark:!bg-slate-900 !text-black dark:!text-white !font-black !text-[10px] !border-b-[3px] !border-black !p-3 uppercase text-center w-16 sticky top-0 z-[20]">Acc.</th>
+                            <td mat-cell *matCellDef="let element" class="!p-3 !border-b !border-black/20 dark:!border-white/10 text-center">
+                                <button (click)="$event.stopPropagation(); verDetalle(element)"
+                                        class="w-7 h-7 bg-white dark:bg-slate-700 border-2 border-black rounded shadow-[2px_2px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all flex items-center justify-center mx-auto" matTooltip="Ver detalle">
+                                    <mat-icon class="!text-sm text-black dark:text-white">visibility</mat-icon>
+                                </button>
                             </td>
+                        </ng-container>
 
-                            <td class="px-4 py-2">
-                                <div class="flex gap-2 justify-end">
-                                    <button (click)="verDetalle(record); $event.stopPropagation()"
-                                            matTooltip="Ver Detalle"
-                                            class="w-7 h-7 flex items-center justify-center border-[2px] border-black bg-white hover:bg-gray-200 rounded shadow-[2px_2px_0px_0px_#000] active:translate-y-[1px] active:shadow-none transition-all">
-                                        <mat-icon class="!text-[16px] text-black">visibility</mat-icon>
-                                    </button>
-                                    <button (click)="editarRegistro(record); $event.stopPropagation()"
-                                            matTooltip="Editar"
-                                            class="w-7 h-7 flex items-center justify-center border-[2px] border-black bg-amber-400 hover:bg-amber-500 rounded shadow-[2px_2px_0px_0px_#000] active:translate-y-[1px] active:shadow-none transition-all">
-                                        <mat-icon class="!text-[16px] text-black">edit</mat-icon>
-                                    </button>
-                                </div>
-                            </td>
-                        </tr>
-
-                        <tr *ngIf="recentCalibrations.length === 0 && !isLoading">
-                            <td colspan="6" class="p-10 text-center bg-white dark:bg-[#0F172AFF]">
-                                <div class="w-16 h-16 mx-auto rounded-full border-[3px] border-dashed border-gray-300 flex items-center justify-center mb-2">
-                                    <mat-icon class="!text-3xl text-gray-300">history</mat-icon>
-                                </div>
-                                <p class="text-black dark:text-white font-black uppercase text-xs">No hay registros de calibración</p>
-                            </td>
-                        </tr>
-                        </tbody>
+                        <tr mat-header-row *matHeaderRowDef="displayedColumns; sticky: true"></tr>
+                        <tr mat-row *matRowDef="let row; columns: displayedColumns;" class="hover:bg-yellow-50 dark:hover:bg-slate-800 transition-colors cursor-pointer" (click)="verDetalle(row)"></tr>
                     </table>
+
+                    <div *ngIf="recentCalibrations.length === 0 && !isLoading" class="flex flex-col items-center justify-center py-10 opacity-50">
+                        <mat-icon class="!text-5xl text-black dark:text-white">science</mat-icon>
+                        <p class="text-xs font-black mt-2 uppercase">No hay registros de calibración</p>
+                    </div>
                 </div>
 
-                <div class="px-4 py-2 bg-gray-100 dark:bg-[#1e293b] border-t-[3px] border-black flex items-center justify-between shrink-0 flex-wrap gap-3">
+                <mat-paginator [length]="totalRecords" [pageSize]="pageSize" [pageIndex]="pageIndex" [pageSizeOptions]="pageSizeOptions" (page)="onPageChange($event)" class="border-t-[3px] border-black bg-gray-50 dark:bg-slate-800"></mat-paginator>
+            </div>
+        </div>
 
-                    <div class="flex items-center gap-3">
-                        <span class="text-[10px] font-black uppercase text-gray-600 dark:text-gray-400 hidden sm:block">
-                            Mostrando {{ startIndex }} - {{ endIndex }} de {{ totalRecords }}
-                        </span>
+        <div *ngIf="selectedEntry" class="flex flex-col flex-1 overflow-hidden p-3 bg-[#f8f9fc] dark:bg-slate-900">
+            <div class="flex justify-between items-center mb-3 px-1">
+                <button (click)="cerrarDetalle()" class="px-3 py-1.5 bg-white dark:bg-slate-800 text-black dark:text-white border-2 border-black rounded-lg shadow-[2px_2px_0px_0px_#000] text-[10px] font-black uppercase flex items-center gap-1 hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all">
+                    <mat-icon class="!text-sm">arrow_back</mat-icon> Volver a la lista
+                </button>
+                <span class="font-mono text-sm font-black border-b-2 border-black">{{ selectedEntry?.nroComprobante }}</span>
+            </div>
 
-                        <select [(ngModel)]="pageSize" (change)="onPageSizeChange()"
-                                class="h-7 px-2 bg-white dark:bg-[#0F172AFF] text-black dark:text-white border-[2px] border-black rounded font-black text-[10px] focus:outline-none focus:shadow-[2px_2px_0px_0px_#000]">
-                            <option *ngFor="let s of pageSizeOptions" [value]="s">{{ s }} filas</option>
-                        </select>
+            <div class="flex-1 overflow-y-auto custom-scrollbar-cal flex flex-col gap-3">
+                <div class="bg-white dark:bg-slate-800 border-2 border-black rounded-xl shadow-[3px_3px_0px_0px_#000] overflow-hidden">
+                    <div class="bg-amber-400 px-3 py-1.5 border-b-2 border-black">
+                        <span class="text-[10px] font-black uppercase text-black tracking-wide">Información del Registro</span>
                     </div>
-
-                    <div class="flex items-center gap-2">
-                        <button (click)="prevPage()" [disabled]="pageIndex === 0"
-                                class="w-7 h-7 flex items-center justify-center bg-white dark:bg-slate-700 text-black dark:text-white border-[2px] border-black rounded shadow-[2px_2px_0px_0px_#000] active:translate-y-[1px] active:shadow-none transition-all disabled:opacity-40">
-                            <mat-icon class="!text-[16px]">chevron_left</mat-icon>
-                        </button>
-
-                        <span class="font-black text-[10px] text-black dark:text-white uppercase px-2">
-                            Pág. {{ totalPages === 0 ? 0 : pageIndex + 1 }} / {{ totalPages }}
-                        </span>
-
-                        <button (click)="nextPage()" [disabled]="pageIndex >= totalPages - 1"
-                                class="w-7 h-7 flex items-center justify-center bg-white dark:bg-slate-700 text-black dark:text-white border-[2px] border-black rounded shadow-[2px_2px_0px_0px_#000] active:translate-y-[1px] active:shadow-none transition-all disabled:opacity-40">
-                            <mat-icon class="!text-[16px]">chevron_right</mat-icon>
-                        </button>
+                    <div class="p-3 grid grid-cols-2 md:grid-cols-4 gap-3">
+                        <div>
+                            <label class="text-[9px] font-black uppercase text-gray-500 block mb-0.5">Fecha</label>
+                            <div class="font-bold text-xs">{{ selectedEntry?.fecha }}</div>
+                        </div>
+                        <div>
+                            <label class="text-[9px] font-black uppercase text-gray-500 block mb-0.5">Tipo</label>
+                            <div class="font-black text-xs">{{ selectedEntry?.tipo }}</div>
+                        </div>
+                        <div>
+                            <label class="text-[9px] font-black uppercase text-gray-500 block mb-0.5">Estado</label>
+                            <div class="font-black text-[10px] px-1.5 py-0.5 border-2 border-black rounded w-fit" [ngClass]="getStatusClass(selectedEntry?.estado || '')">{{ selectedEntry?.estado }}</div>
+                        </div>
+                        <div>
+                            <label class="text-[9px] font-black uppercase text-gray-500 block mb-0.5">Responsable</label>
+                            <div class="font-bold text-xs">{{ selectedEntry?.responsable || '-' }}</div>
+                        </div>
                     </div>
-
                 </div>
-
             </div>
         </div>
     </div>

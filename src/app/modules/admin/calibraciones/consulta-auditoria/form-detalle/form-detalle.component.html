@@ -153,12 +153,20 @@
             <mat-icon class="!text-sm !w-4 !h-4">close</mat-icon>
             Cerrar
         </button>
+        <button *ngIf="row.tipo_registro === 'calibracion' && row.certificate_number"
+                (click)="imprimirCertificado()"
+                [disabled]="isPrinting()"
+                matTooltip="Imprimir certificado de calibración"
+                class="px-4 py-1.5 bg-amber-400 text-black font-black text-xs border-2 border-black rounded hover:bg-amber-500 transition-colors uppercase flex items-center gap-1">
+            <mat-icon class="!text-sm !w-4 !h-4">verified</mat-icon>
+            Certificado
+        </button>
         <button (click)="imprimirDetalle()"
                 [disabled]="isPrinting()"
                 class="px-4 py-1.5 bg-indigo-600 text-white font-black text-xs border-2 border-black rounded hover:bg-indigo-500 transition-colors uppercase flex items-center gap-1">
             <mat-spinner *ngIf="isPrinting()" diameter="14" class="inline-block"></mat-spinner>
             <mat-icon *ngIf="!isPrinting()" class="!text-sm !w-4 !h-4">print</mat-icon>
-            {{ isPrinting() ? 'Procesando...' : 'Imprimir' }}
+            {{ isPrinting() ? 'Procesando...' : 'Imprimir Nota' }}
         </button>
     </div>
 </div>
