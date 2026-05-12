@@ -1,79 +1,294 @@
-<div class="bg-[#f8f9fc] dark:bg-slate-900 border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] overflow-hidden flex flex-col font-sans"
-     style="width:560px; max-width:95vw">
+<div class="bg-stone-100 dark:bg-slate-900 border-2 border-black overflow-hidden flex flex-col"
+     style="width:600px; max-width:95vw; max-height:90vh; box-shadow: 6px 6px 0 #000">
 
-    <div class="bg-[#0F172AFF] text-white px-5 py-3 flex justify-between items-center shrink-0"
-         cdkDrag cdkDragRootElement=".cdk-overlay-pane" cdkDragHandle>
+    <!-- ══ HEADER ══ -->
+    <div class="bg-[#0F172A] px-5 py-3.5 flex items-center justify-between flex-wrap gap-3 shrink-0 select-none"
+         cdkDrag cdkDragRootElement=".cdk-overlay-pane" cdkDragHandle style="cursor:grab">
+
         <div class="flex items-center gap-3">
-            <div class="w-8 h-8 bg-white border-2 border-black rounded flex items-center justify-center shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
-                <mat-icon class="text-black !text-base">swap_horiz</mat-icon>
+            <div class="w-9 h-9 rounded bg-amber-400 border-2 border-black flex items-center justify-center shadow-[2px_2px_0_#fbbf24]">
+                <mat-icon class="!text-lg text-black">swap_horiz</mat-icon>
             </div>
             <div>
-                <h2 class="text-sm font-black uppercase tracking-tight leading-none">Mover Herramientas</h2>
-                <p class="text-[10px] text-white font-bold uppercase mt-0.5">{{ count }} herramienta{{ count === 1 ? '' : 's' }} seleccionada{{ count === 1 ? '' : 's' }}</p>
+                <p class="text-[9px] text-slate-400 font-bold uppercase tracking-[0.18em] leading-none mb-0.5">Sistema Herramientas</p>
+                <h2 class="text-sm text-white font-black uppercase tracking-tight leading-none">Mover Herramienta</h2>
+            </div>
+        </div>
+
+        <!-- Step progress tracker (oculto en móvil) -->
+        <div class="hidden sm:flex items-center gap-1.5 bg-white/5 border border-white/10 rounded-full px-3 py-1.5">
+            <div class="w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-black border-2 transition-all duration-300"
+                 [class]="selectedAlmacen() ? 'bg-amber-400 border-amber-400 text-black' : 'bg-transparent border-white/30 text-white/40'">
+                {{ selectedAlmacen() ? '✓' : '1' }}
+            </div>
+            <div class="w-5 h-px transition-all duration-300"
+                 [class]="selectedAlmacen() ? 'bg-amber-400' : 'bg-white/20'"></div>
+            <div class="w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-black border-2 transition-all duration-300"
+                 [class]="selectedRack() ? 'bg-amber-400 border-amber-400 text-black' : 'bg-transparent border-white/30 text-white/40'">
+                {{ selectedRack() ? '✓' : '2' }}
+            </div>
+            <div class="w-5 h-px transition-all duration-300"
+                 [class]="selectedRack() ? 'bg-amber-400' : 'bg-white/20'"></div>
+            <div class="w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-black border-2 transition-all duration-300"
+                 [class]="form.get('levelId')?.value ? 'bg-amber-400 border-amber-400 text-black' : 'bg-transparent border-white/30 text-white/40'">
+                {{ form.get('levelId')?.value ? '✓' : '3' }}
             </div>
         </div>
     </div>
 
-    <div class="p-5 flex flex-col gap-4">
-
-        <!-- ORIGEN -->
-        <div class="bg-blue-500 dark:bg-slate-800 border-2 border-black rounded-xl p-3 flex items-center gap-2">
-            <mat-icon class="!text-base text-white dark:text-gray-300">my_location</mat-icon>
-            <span class="text-[11px] text-white font-black uppercase">Origen actual:</span>
-            <span class="px-2 py-0.5 bg-white dark:bg-slate-900 border-2 border-black rounded font-mono text-[10px] font-black">{{ currentRackCode }}</span>
+    <!-- ══ FLUJO ORIGEN → DESTINO ══ -->
+    <div class="border-b-2 border-black bg-white dark:bg-slate-800 px-5 py-3 flex items-stretch gap-3 shrink-0">
+        <!-- Origen -->
+        <div class="flex-1 flex items-center gap-2.5 bg-slate-50 dark:bg-slate-700/50 border-2 border-slate-200 dark:border-slate-600 rounded-xl px-3 py-2.5">
+            <div class="w-7 h-7 rounded-lg bg-slate-100 dark:bg-slate-600 border-2 border-slate-300 dark:border-slate-500 flex items-center justify-center shrink-0">
+                <mat-icon class="!text-sm text-slate-400">my_location</mat-icon>
+            </div>
+            <div>
+                <p class="text-[8px] text-slate-400 font-black uppercase tracking-widest leading-none mb-0.5">Origen</p>
+                <p class="text-xs font-black text-slate-700 dark:text-slate-200 font-mono">{{ currentRackCode }}</p>
+            </div>
         </div>
 
-        <!-- DESTINO -->
-        <form [formGroup]="form" class="flex flex-col gap-3">
+        <div class="flex items-center shrink-0 px-1">
+            <mat-icon class="!text-xl text-stone-300 dark:text-slate-600">east</mat-icon>
+        </div>
 
-            <p class="text-[10px] font-black uppercase text-black dark:text-gray-300 flex items-center gap-1">
-                <mat-icon class="!text-sm text-green-500">place</mat-icon> Destino
-            </p>
-
+        <!-- Destino -->
+        <div class="flex-1 flex items-center gap-2.5 border-2 rounded-xl px-3 py-2.5 transition-all duration-300"
+             [class]="form.get('levelId')?.value
+                 ? 'border-green-400 bg-green-50 dark:bg-green-900/20 dark:border-green-600'
+                 : selectedAlmacen()
+                     ? 'border-amber-300 bg-amber-50 dark:bg-amber-900/20 dark:border-amber-600'
+                     : 'border-dashed border-stone-300 dark:border-slate-600 bg-stone-50 dark:bg-slate-800'">
+            <div class="w-7 h-7 rounded-lg border-2 flex items-center justify-center shrink-0 transition-all duration-300"
+                 [class]="form.get('levelId')?.value
+                     ? 'bg-green-100 dark:bg-green-900/30 border-green-400 dark:border-green-600'
+                     : 'bg-stone-100 dark:bg-slate-700 border-stone-300 dark:border-slate-600'">
+                <mat-icon class="!text-sm transition-colors duration-300"
+                          [class]="form.get('levelId')?.value ? 'text-green-500' : 'text-stone-300 dark:text-slate-500'">place</mat-icon>
+            </div>
             <div>
-                <label class="text-[10px] font-black uppercase text-black dark:text-gray-300 mb-1 block">Almacén *</label>
-                <select formControlName="warehouseId"
-                        class="w-full h-10 text-sm font-bold bg-white dark:bg-slate-800 border-2 border-black rounded-lg px-2 focus:shadow-[2px_2px_0px_0px_#000] outline-none transition-all">
-                    <option [ngValue]="null">— Seleccionar almacén —</option>
-                    <option *ngFor="let a of almacenes" [ngValue]="a.id">{{ a.codigo }} · {{ a.nombre }}</option>
-                </select>
+                <p class="text-[8px] font-black uppercase tracking-widest leading-none mb-0.5 transition-colors duration-300"
+                   [class]="form.get('levelId')?.value ? 'text-green-500' : 'text-stone-400 dark:text-slate-500'">Destino</p>
+                <p class="text-xs font-black font-mono transition-all duration-300"
+                   [class]="form.get('levelId')?.value ? 'text-green-700 dark:text-green-400' : 'text-stone-400 dark:text-slate-500'">
+                    <ng-container *ngIf="levelSeleccionado(); else destinoPlaceholder">
+                        {{ rackActual()?.codigo }} · {{ levelSeleccionado()?.codigo }}
+                    </ng-container>
+                    <ng-template #destinoPlaceholder>
+                        <span *ngIf="!selectedAlmacen()" class="italic font-normal">por definir…</span>
+                        <span *ngIf="selectedAlmacen() && !selectedRack()" class="italic font-normal text-amber-500">elige estante…</span>
+                        <span *ngIf="selectedRack() && !form.get('levelId')?.value" class="italic font-normal text-amber-500">elige nivel…</span>
+                    </ng-template>
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══ CUERPO DE PASOS ══ -->
+    <div class="overflow-y-auto flex-1">
+        <form [formGroup]="form" class="flex flex-col">
+
+            <!-- ─── PASO 1: ALMACÉN ─── -->
+            <div class="px-5 py-4 border-b border-stone-200 dark:border-slate-700">
+                <div class="flex items-center gap-2 mb-3">
+                    <span class="w-5 h-5 rounded border-2 flex items-center justify-center text-[9px] font-black shrink-0 transition-all duration-300"
+                          [class]="selectedAlmacen()
+                              ? 'border-black bg-black text-white'
+                              : 'border-stone-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-stone-400 dark:text-slate-500'">
+                        {{ selectedAlmacen() ? '✓' : '1' }}
+                    </span>
+                    <span class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400">Almacén</span>
+                    <div class="flex-1 h-px bg-stone-200 dark:bg-slate-700"></div>
+                    <button *ngIf="selectedAlmacen() && !showAlmacenGrid()" type="button"
+                            (click)="toggleAlmacenGrid()"
+                            class="flex items-center gap-0.5 text-[9px] font-black uppercase text-stone-500 dark:text-slate-400 hover:text-black dark:hover:text-white transition-colors">
+                        <mat-icon class="!text-xs">edit</mat-icon> cambiar
+                    </button>
+                    <button *ngIf="showAlmacenGrid()" type="button"
+                            (click)="toggleAlmacenGrid()"
+                            class="flex items-center gap-0.5 text-[9px] font-black uppercase text-stone-400 dark:text-slate-500 hover:text-stone-600 dark:hover:text-slate-300 transition-colors">
+                        <mat-icon class="!text-xs">close</mat-icon> cerrar
+                    </button>
+                </div>
+
+                <!-- Chip seleccionado -->
+                <div *ngIf="selectedAlmacen() && !showAlmacenGrid()"
+                     class="step-in flex items-center gap-2.5 bg-white dark:bg-slate-800 border-2 border-black rounded-xl px-3 py-2.5 shadow-[3px_3px_0_#000]">
+                    <mat-icon class="!text-base text-black dark:text-white shrink-0">warehouse</mat-icon>
+                    <div class="flex-1 min-w-0">
+                        <p class="text-[9px] text-stone-400 dark:text-slate-400 font-bold uppercase tracking-widest leading-none mb-0.5">{{ almacenActual()?.tipo }}</p>
+                        <p class="text-xs font-black text-black dark:text-white truncate">{{ almacenActual()?.codigo }} · {{ almacenActual()?.nombre }}</p>
+                    </div>
+                    <mat-icon class="!text-sm text-black dark:text-white shrink-0">check_circle</mat-icon>
+                </div>
+
+                <!-- Grid de almacenes -->
+                <div *ngIf="!selectedAlmacen() || showAlmacenGrid()"
+                     class="step-in grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <button *ngFor="let a of almacenes" type="button"
+                            (click)="selectAlmacen(a.id)"
+                            class="flex items-center gap-2.5 border-2 rounded-xl p-3 text-left transition-all duration-150 group"
+                            [class]="selectedAlmacen() === a.id
+                                ? 'border-black bg-white dark:bg-slate-700 shadow-[3px_3px_0_#000] -translate-y-px'
+                                : 'border-stone-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:border-black hover:shadow-[2px_2px_0_#000] hover:-translate-y-px'">
+                        <div class="w-8 h-8 rounded-lg border-2 flex items-center justify-center shrink-0 transition-all duration-150"
+                             [class]="selectedAlmacen() === a.id
+                                 ? 'border-black dark:border-slate-400 bg-stone-100 dark:bg-slate-600'
+                                 : 'border-stone-200 dark:border-slate-600 bg-stone-50 dark:bg-slate-700'">
+                            <mat-icon class="!text-sm text-stone-500 dark:text-slate-400">warehouse</mat-icon>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <p class="text-[10px] font-black uppercase text-black dark:text-white">{{ a.codigo }}</p>
+                            <p class="text-[8px] text-stone-500 dark:text-slate-400 truncate">{{ a.nombre }}</p>
+                            <p class="text-[8px] text-stone-400 dark:text-slate-500">{{ a.ciudad }}</p>
+                        </div>
+                        <mat-icon *ngIf="selectedAlmacen() === a.id" class="!text-sm text-black dark:text-white shrink-0">check</mat-icon>
+                    </button>
+                </div>
             </div>
 
-            <div>
-                <label class="text-[10px] font-black uppercase text-black dark:text-gray-300 mb-1 block">Estante *</label>
-                <select formControlName="rackId" [disabled]="!racks().length"
-                        class="w-full h-10 text-sm font-bold bg-white dark:bg-slate-800 border-2 border-black rounded-lg px-2 focus:shadow-[2px_2px_0px_0px_#000] outline-none transition-all disabled:opacity-60">
-                    <option [ngValue]="null">— Seleccionar estante —</option>
-                    <option *ngFor="let r of racks()" [ngValue]="r.id">{{ r.codigo }} · {{ r.nombre }}</option>
-                </select>
-            </div>
+            <!-- ─── PASOS 2 y 3 LADO A LADO ─── -->
+            <ng-container *ngIf="selectedAlmacen()">
+                <div class="step-in flex flex-col sm:flex-row divide-y divide-stone-200 dark:divide-slate-700 sm:divide-y-0 sm:divide-x">
 
-            <div>
-                <label class="text-[10px] font-black uppercase text-black dark:text-gray-300 mb-1 block">Nivel *</label>
-                <select formControlName="levelId" [disabled]="!niveles().length"
-                        class="w-full h-10 text-sm font-bold bg-white dark:bg-slate-800 border-2 border-black rounded-lg px-2 focus:shadow-[2px_2px_0px_0px_#000] outline-none transition-all disabled:opacity-60">
-                    <option [ngValue]="null">— Seleccionar nivel —</option>
-                    <option *ngFor="let l of niveles()" [ngValue]="l.id" [disabled]="l.id === currentLevelId">
-                        N{{ l.numero }} · {{ l.codigo }} · {{ l.nombre }}
-                        <ng-container *ngIf="l.id === currentLevelId"> (origen)</ng-container>
-                    </option>
-                </select>
-            </div>
+                    <!-- ─── PASO 2: ESTANTE ─── -->
+                    <div class="flex-1 px-4 py-4">
+                        <div class="flex items-center gap-2 mb-3">
+                            <span class="w-5 h-5 rounded border-2 flex items-center justify-center text-[9px] font-black shrink-0 transition-all duration-300"
+                                  [class]="selectedRack()
+                                      ? 'border-black bg-black text-white'
+                                      : 'border-stone-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-stone-400 dark:text-slate-500'">
+                                {{ selectedRack() ? '✓' : '2' }}
+                            </span>
+                            <span class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400">Estante</span>
+                            <span *ngIf="loadingRacks()" class="text-[8px] text-stone-400 dark:text-slate-500 italic animate-pulse ml-auto">cargando…</span>
+                        </div>
 
-            <div *ngIf="isCurrentLevel()" class="bg-red-100 border-2 border-[#FF1414FF] rounded-lg p-2 text-[11px] font-bold text-red-800">
-                El nivel destino no puede ser el mismo que el origen.
-            </div>
+                        <!-- Skeleton carga -->
+                        <div *ngIf="loadingRacks()" class="grid grid-cols-2 gap-2">
+                            <div *ngFor="let _ of [1,2,3,4]"
+                                 class="h-16 rounded-xl border-2 border-stone-200 dark:border-slate-700 bg-stone-100 dark:bg-slate-700 animate-pulse"></div>
+                        </div>
+
+                        <!-- Cards de estantes -->
+                        <div *ngIf="!loadingRacks() && racks().length" class="grid grid-cols-2 gap-2">
+                            <button *ngFor="let r of racks()" type="button"
+                                    (click)="selectRack(r.id)"
+                                    class="flex flex-col items-center border-2 rounded-xl p-2.5 text-center transition-all duration-150 group"
+                                    [class]="selectedRack() === r.id
+                                        ? 'border-black bg-white dark:bg-slate-700 shadow-[3px_3px_0_#000] -translate-y-px'
+                                        : 'border-stone-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:border-stone-400 dark:hover:border-slate-500 hover:shadow-[2px_2px_0_#ccc] hover:-translate-y-px'">
+                                <mat-icon class="!text-xl mb-1 text-stone-400 dark:text-slate-500 group-hover:text-stone-600 dark:group-hover:text-slate-300 transition-colors duration-150">view_column</mat-icon>
+                                <p class="text-[10px] font-black text-black dark:text-white uppercase tracking-tight leading-none">{{ r.codigo }}</p>
+                                <p class="text-[8px] text-stone-400 dark:text-slate-500 mt-0.5 w-full truncate text-center">{{ r.nombre }}</p>
+                            </button>
+                        </div>
+
+                        <p *ngIf="!loadingRacks() && !racks().length"
+                           class="text-[9px] text-stone-400 dark:text-slate-500 italic text-center py-4">Sin estantes disponibles.</p>
+                    </div>
+
+                    <!-- ─── PASO 3: NIVEL ─── -->
+                    <div class="flex-1 px-4 py-4">
+                        <div class="flex items-center gap-2 mb-3">
+                            <span class="w-5 h-5 rounded border-2 flex items-center justify-center text-[9px] font-black shrink-0 transition-all duration-300"
+                                  [class]="form.get('levelId')?.value
+                                      ? 'border-black bg-black text-white'
+                                      : 'border-stone-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-stone-400 dark:text-slate-500'">
+                                {{ form.get('levelId')?.value ? '✓' : '3' }}
+                            </span>
+                            <span class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400">Nivel de destino</span>
+                        </div>
+
+                        <!-- Placeholder cuando no hay estante -->
+                        <div *ngIf="!selectedRack()"
+                             class="flex flex-col items-center justify-center py-6 gap-1.5 opacity-40">
+                            <mat-icon class="!text-2xl text-stone-400 dark:text-slate-500">layers</mat-icon>
+                            <p class="text-[9px] text-stone-400 dark:text-slate-500 font-bold uppercase tracking-widest">Elige un estante</p>
+                        </div>
+
+                        <!-- Dropdown de niveles -->
+                        <div *ngIf="selectedRack()" class="relative">
+                            <!-- Trigger -->
+                            <button type="button"
+                                    (click)="toggleNivelDropdown()"
+                                    class="w-full flex items-center justify-between border-2 rounded-xl px-3 py-2.5 transition-all duration-150"
+                                    [class]="showNivelDropdown()
+                                        ? 'border-black dark:border-slate-400 shadow-[3px_3px_0_#000] bg-white dark:bg-slate-800'
+                                        : form.get('levelId')?.value
+                                            ? 'border-black dark:border-slate-400 shadow-[2px_2px_0_#000] bg-white dark:bg-slate-800'
+                                            : 'border-stone-300 dark:border-slate-600 hover:border-stone-400 dark:hover:border-slate-500 bg-white dark:bg-slate-800'">
+                                <div class="flex items-center gap-2 min-w-0">
+                                    <mat-icon class="!text-sm text-stone-400 dark:text-slate-500 shrink-0">layers</mat-icon>
+                                    <span *ngIf="!levelSeleccionado()" class="text-[10px] text-stone-400 dark:text-slate-500 italic">— Seleccionar nivel —</span>
+                                    <span *ngIf="levelSeleccionado()" class="text-[10px] font-black text-black dark:text-white truncate">
+                                        N{{ levelSeleccionado()?.numero }} · {{ levelSeleccionado()?.codigo }}
+                                    </span>
+                                </div>
+                                <mat-icon class="!text-sm text-stone-400 dark:text-slate-500 shrink-0 transition-transform duration-200"
+                                          [class]="showNivelDropdown() ? 'rotate-180' : ''">expand_more</mat-icon>
+                            </button>
+
+                            <!-- Lista expandible -->
+                            <div *ngIf="showNivelDropdown()"
+                                 class="step-in mt-1 border-2 border-black dark:border-slate-600 rounded-xl bg-white dark:bg-slate-800 overflow-hidden shadow-[3px_3px_0_#000] divide-y divide-stone-100 dark:divide-slate-700">
+                                <button *ngFor="let l of niveles()" type="button"
+                                        (click)="selectLevel(l.id)"
+                                        [disabled]="l.id === currentLevelId"
+                                        class="w-full flex items-center gap-3 px-3 py-2.5 text-left transition-colors duration-100"
+                                        [class]="l.id === currentLevelId
+                                            ? 'bg-stone-50 dark:bg-slate-700/50 cursor-not-allowed opacity-40'
+                                            : form.get('levelId')?.value === l.id
+                                                ? 'bg-stone-100 dark:bg-slate-700'
+                                                : 'hover:bg-stone-50 dark:hover:bg-slate-700/50'">
+                                    <div class="w-6 h-6 rounded border-2 flex items-center justify-center shrink-0 transition-all duration-100"
+                                         [class]="form.get('levelId')?.value === l.id
+                                             ? 'border-black bg-black'
+                                             : 'border-stone-200 dark:border-slate-600 bg-white dark:bg-slate-700'">
+                                        <mat-icon *ngIf="form.get('levelId')?.value === l.id" class="!text-xs text-white">check</mat-icon>
+                                    </div>
+                                    <div class="flex-1 min-w-0">
+                                        <p class="text-[10px] font-black text-black dark:text-white">
+                                            N{{ l.numero }} · {{ l.codigo }}
+                                        </p>
+                                        <p class="text-[8px] text-stone-400 dark:text-slate-500 truncate">{{ l.nombre }}</p>
+                                    </div>
+                                    <span *ngIf="l.id === currentLevelId"
+                                          class="text-[8px] font-bold uppercase text-stone-400 dark:text-slate-500 bg-stone-100 dark:bg-slate-700 border border-stone-200 dark:border-slate-600 rounded px-1.5 py-0.5 shrink-0">origen</span>
+                                </button>
+                            </div>
+
+                            <!-- Warning mismo nivel -->
+                            <div *ngIf="isCurrentLevel()"
+                                 class="mt-2 flex items-center gap-2 bg-red-50 dark:bg-red-900/20 border-2 border-red-300 dark:border-red-800 rounded-xl px-3 py-2">
+                                <mat-icon class="!text-sm text-red-400 shrink-0">warning</mat-icon>
+                                <p class="text-[9px] font-bold text-red-600 dark:text-red-400">El destino no puede ser el mismo origen.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </ng-container>
+
         </form>
     </div>
 
-    <div class="bg-gray-200 dark:bg-slate-800 border-t-2 border-black px-5 py-3 flex justify-end gap-2 shrink-0">
-        <button (click)="cerrar()"
-                class="px-4 py-1.5 bg-[#FF1414FF] text-white font-black text-[10px] border-2 border-black rounded-lg shadow-[2px_2px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all uppercase">
+    <!-- ══ FOOTER ══ -->
+    <div class="border-t-2 border-black bg-stone-200 dark:bg-slate-800 px-5 py-3 flex justify-between items-center shrink-0">
+        <button (click)="cerrar()" type="button"
+                class="px-4 py-2 bg-[#FF1414] text-white font-black text-[10px] border-2 border-black rounded-xl shadow-[2px_2px_0_#000] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all uppercase">
             Cancelar
         </button>
-        <button (click)="confirmar()" [disabled]="form.invalid || isCurrentLevel()"
-                class="px-4 py-1.5 bg-amber-400 text-black font-black text-[10px] border-2 border-black rounded-lg shadow-[2px_2px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all uppercase flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:shadow-[2px_2px_0px_0px_#000] disabled:hover:translate-x-0 disabled:hover:translate-y-0">
-            <mat-icon class="!text-sm">check</mat-icon> Mover {{ count }}
+
+        <button (click)="confirmar()" type="button"
+                [disabled]="form.invalid || isCurrentLevel()"
+                class="flex items-center gap-2 px-5 py-2 font-black text-[10px] border-2 border-black rounded-xl transition-all uppercase"
+                [class]="form.invalid || isCurrentLevel()
+                    ? 'bg-stone-300 dark:bg-slate-700 text-stone-400 dark:text-slate-500 cursor-not-allowed shadow-none'
+                    : 'bg-amber-400 text-black shadow-[3px_3px_0_#000] hover:shadow-none hover:translate-x-[3px] hover:translate-y-[3px]'">
+            <mat-icon class="!text-sm">swap_horiz</mat-icon>
+            Mover {{ count }} herramienta{{ count !== 1 ? 's' : '' }}
         </button>
     </div>
 </div>

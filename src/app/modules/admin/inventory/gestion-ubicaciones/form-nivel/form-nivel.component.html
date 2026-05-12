@@ -1,124 +1,178 @@
-<div class="bg-[#f8f9fc] dark:bg-slate-900 border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] overflow-hidden flex flex-col font-sans h-auto max-h-[95vh]">
+<div class="bg-stone-100 dark:bg-slate-900 border-2 border-black overflow-hidden flex flex-col"
+     style="width:560px; max-width:95vw; max-height:90vh; box-shadow: 6px 6px 0 #000">
 
-    <!-- HEADER -->
-    <div class="bg-[#0F172AFF] text-white px-5 py-3 flex justify-between items-center shrink-0"
-         cdkDrag cdkDragRootElement=".cdk-overlay-pane" cdkDragHandle>
-        <div class="flex items-center gap-3">
-            <div class="w-8 h-8 bg-white border-2 border-black rounded flex items-center justify-center shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
-                <mat-icon class="text-black !text-base">layers</mat-icon>
-            </div>
-            <div>
-                <h2 class="text-sm font-black uppercase tracking-tight leading-none">{{ titulo }}</h2>
-                <p class="text-[10px] text-gray-300 font-bold uppercase mt-0.5">{{ subtitulo }}</p>
-            </div>
+    <!-- ══ HEADER ══ -->
+    <div class="bg-[#0F172A] px-5 py-3.5 flex items-center gap-3 shrink-0 select-none"
+         cdkDrag cdkDragRootElement=".cdk-overlay-pane" cdkDragHandle style="cursor:grab">
+        <div class="w-9 h-9 rounded bg-amber-400 border-2 border-black flex items-center justify-center shadow-[2px_2px_0_#fbbf24] shrink-0">
+            <mat-icon class="!text-lg text-black">layers</mat-icon>
         </div>
-
-        <div class="flex items-center gap-3">
-            <button (click)="dialogRef.close(null)"
-                    class="px-4 py-1.5 bg-[#FF1414FF] text-white font-black text-[10px] border-2 border-black rounded-lg shadow-[2px_2px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all uppercase">
-                Cancelar
-            </button>
-            <button (click)="save()"
-                    class="px-4 py-1.5 bg-amber-400 text-black font-black text-[10px] border-2 border-black rounded-lg shadow-[2px_2px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all uppercase flex items-center gap-1.5">
-                <mat-icon class="!text-black">save</mat-icon> Guardar
-            </button>
+        <div>
+            <p class="text-[9px] text-slate-400 font-bold uppercase tracking-[0.18em] leading-none mb-0.5">Gestión de Ubicaciones</p>
+            <h2 class="text-sm text-white font-black uppercase tracking-tight leading-none">{{ titulo }}</h2>
         </div>
     </div>
 
-    <!-- BODY -->
-    <div class="flex-1 overflow-y-auto p-5 custom-scrollbar" style="width:560px; max-width:95vw">
+    <!-- ══ CONTEXTO DEL ESTANTE ══ -->
+    <div class="border-b-2 border-black bg-white dark:bg-slate-800 px-5 py-3 flex items-center gap-3 shrink-0">
+        <div class="w-9 h-9 rounded-xl border-2 border-stone-200 dark:border-slate-700 bg-stone-50 dark:bg-slate-700 flex items-center justify-center shrink-0">
+            <mat-icon class="!text-base text-stone-400 dark:text-slate-400">shelves</mat-icon>
+        </div>
+        <div class="flex-1 min-w-0">
+            <p class="text-[8px] text-stone-400 dark:text-slate-400 font-black uppercase tracking-widest leading-none mb-0.5">Estante</p>
+            <p class="text-xs font-black text-black dark:text-white truncate">{{ rack.codigo }} · {{ rack.nombre }}</p>
+        </div>
+        <span class="text-[8px] font-black uppercase px-2 py-1 border-2 border-stone-200 dark:border-slate-700 rounded-lg text-stone-400 dark:text-slate-400 shrink-0">
+            {{ rack.niveles.length }} nivel{{ rack.niveles.length !== 1 ? 'es' : '' }}
+        </span>
+    </div>
+
+    <!-- ══ CUERPO DEL FORM ══ -->
+    <div class="flex-1 overflow-y-auto px-5 py-5 flex flex-col gap-4">
         <form [formGroup]="form" class="flex flex-col gap-4">
 
-            <!-- Rack context -->
-            <div class="bg-blue-700 dark:bg-blue-900/30 border-2 border-black rounded-xl p-3 shadow-[3px_3px_0px_0px_#000] relative overflow-hidden">
-                <mat-icon class="absolute -right-3 -bottom-3 !text-[60px] text-amber-200 dark:text-amber-800/40 opacity-60 pointer-events-none">shelves</mat-icon>
-                <div class="relative z-10">
-                    <p class="text-[9px] font-black text-white dark:text-white uppercase">Estante</p>
-                    <p class="font-mono text-base font-black text-white dark:text-white">{{ rack.codigo }}</p>
-                    <p class="text-xs font-bold text-gray-300 dark:text-gray-200">{{ rack.nombre }}</p>
-                </div>
-            </div>
-
             <!-- Toggle: Nivel Suelo -->
-            <div class="border-2 rounded-xl p-3 shadow-[3px_3px_0px_0px_#000] flex items-center justify-between"
-                 [ngClass]="form.get('isFloor')?.value
-                     ? 'bg-amber-50 dark:bg-amber-900/20 border-amber-500'
-                     : 'bg-white dark:bg-slate-800 border-black'">
-                <div class="flex items-center gap-2">
-                    <mat-icon class="!text-base" [ngClass]="form.get('isFloor')?.value ? 'text-amber-600' : 'text-gray-400'">
-                        {{ form.get('isFloor')?.value ? 'foundation' : 'layers' }}
-                    </mat-icon>
-                    <div>
-                        <p class="text-[10px] font-black uppercase"
-                           [ngClass]="form.get('isFloor')?.value ? 'text-amber-700 dark:text-amber-400' : 'text-black dark:text-white'">
-                            {{ form.get('isFloor')?.value ? 'Nivel Suelo' : 'Nivel numerado' }}
-                        </p>
-                        <p class="text-[9px] font-bold text-gray-500 dark:text-gray-400">
-                            {{ form.get('isFloor')?.value
-                                ? 'Posición de suelo — herramientas almacenadas en el piso'
-                                : 'Nivel con número asignado en el estante' }}
-                        </p>
+            <div class="border-2 rounded-xl p-3.5 transition-all duration-200"
+                 [class]="form.get('isFloor')?.value
+                     ? 'bg-white dark:bg-slate-800 border-black shadow-[3px_3px_0_#000]'
+                     : 'bg-white dark:bg-slate-800 border-stone-200 dark:border-slate-700'">
+                <div class="flex items-center justify-between gap-3">
+                    <div class="flex items-center gap-2.5 min-w-0">
+                        <div class="w-8 h-8 rounded-lg border-2 flex items-center justify-center shrink-0 transition-all duration-200"
+                             [class]="form.get('isFloor')?.value
+                                 ? 'border-black dark:border-slate-400 bg-stone-100 dark:bg-slate-700'
+                                 : 'border-stone-200 dark:border-slate-700 bg-stone-50 dark:bg-slate-700'">
+                            <mat-icon class="!text-sm text-stone-500 dark:text-slate-400">
+                                {{ form.get('isFloor')?.value ? 'foundation' : 'layers' }}
+                            </mat-icon>
+                        </div>
+                        <div class="min-w-0">
+                            <p class="text-[10px] font-black uppercase text-black dark:text-white">
+                                {{ form.get('isFloor')?.value ? 'Nivel Suelo' : 'Nivel numerado' }}
+                            </p>
+                            <p class="text-[8px] text-stone-400 dark:text-slate-400 truncate">
+                                {{ form.get('isFloor')?.value
+                                    ? 'Herramientas almacenadas en el piso'
+                                    : 'Nivel con número asignado en el estante' }}
+                            </p>
+                        </div>
                     </div>
+
+                    <!-- Toggle visible -->
+                    <button *ngIf="(mode === 'new' && !yaExisteSuelo) || mode === 'edit'"
+                            type="button"
+                            (click)="form.patchValue({isFloor: !form.get('isFloor')?.value})"
+                            class="flex items-center gap-2 px-3 py-1.5 border-2 rounded-xl font-black text-[9px] uppercase transition-all duration-150 shrink-0"
+                            [class]="form.get('isFloor')?.value
+                                ? 'border-black bg-white dark:bg-slate-700 shadow-[2px_2px_0_#000] text-black dark:text-white'
+                                : 'border-stone-300 dark:border-slate-600 bg-stone-50 dark:bg-slate-700 text-stone-400 dark:text-slate-400 hover:border-stone-400 dark:hover:border-slate-500'">
+                        <div class="w-7 h-3.5 rounded-full border-2 relative transition-all duration-200 shrink-0"
+                             [class]="form.get('isFloor')?.value ? 'border-black bg-black dark:border-slate-400 dark:bg-slate-400' : 'border-stone-300 dark:border-slate-600 bg-stone-200 dark:bg-slate-600'">
+                            <div class="absolute top-px w-2 h-2 rounded-full bg-white transition-all duration-200"
+                                 [class]="form.get('isFloor')?.value ? 'left-3' : 'left-px'"></div>
+                        </div>
+                        Es Suelo
+                    </button>
+
+                    <!-- Advertencia ya existe suelo -->
+                    <span *ngIf="mode === 'new' && yaExisteSuelo"
+                          class="text-[8px] font-black uppercase text-red-400 bg-red-50 dark:bg-red-900/20 border-2 border-red-200 dark:border-red-800 rounded-lg px-2 py-1 shrink-0">
+                        Ya existe nivel suelo
+                    </span>
                 </div>
-                <!-- Ocultar toggle si ya existe nivel suelo (solo en new) -->
-                <label *ngIf="mode === 'new' && !yaExisteSuelo || mode === 'edit'"
-                       class="flex items-center gap-2 cursor-pointer">
-                    <input type="checkbox" formControlName="isFloor"
-                           class="w-4 h-4 border-2 border-black rounded accent-amber-500">
-                    <span class="text-[10px] font-black uppercase text-gray-600 dark:text-gray-300">Es Suelo</span>
-                </label>
-                <span *ngIf="mode === 'new' && yaExisteSuelo"
-                      class="text-[9px] font-bold text-red-500 uppercase">Ya existe nivel suelo</span>
             </div>
 
-            <!-- Identification (oculto si es suelo) -->
-            <div *ngIf="!form.get('isFloor')?.value"
-                 class="bg-white dark:bg-slate-800 border-2 border-black rounded-xl p-4 shadow-[3px_3px_0px_0px_#000]">
-                <p class="text-[10px] font-black uppercase text-black mb-2 border-b-2 border-black/10 pb-1">
-                    <mat-icon class="!text-sm align-middle text-black">tag</mat-icon> Identificación
-                </p>
+            <!-- Campos de identificación (ocultos si es suelo) -->
+            <ng-container *ngIf="!form.get('isFloor')?.value">
 
-                <div class="grid grid-cols-12 gap-3">
-                    <div class="col-span-4">
-                        <label class="text-[10px] font-black uppercase text-black dark:text-gray-300 mb-1 block">N° Nivel *</label>
+                <!-- N° Nivel + Código -->
+                <div class="flex flex-col sm:flex-row gap-3">
+                    <div class="sm:w-28 shrink-0">
+                        <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1.5 block">
+                            N° Nivel *
+                        </label>
                         <input type="number" min="0" formControlName="numero"
-                               class="w-full h-10 text-sm font-black text-center bg-white dark:bg-slate-900 border-2 border-black dark:border-slate-600 rounded-lg px-3 focus:shadow-[2px_2px_0px_0px_#000] outline-none transition-all"
-                               [class.border-red-500]="hasError('numero','required') || hasError('numero','min')">
+                               class="w-full h-10 text-sm font-black text-center bg-white dark:bg-slate-800 dark:text-white border-2 rounded-xl px-2 outline-none transition-all duration-150"
+                               [class]="hasError('numero','required') || hasError('numero','min')
+                                   ? 'border-red-400 focus:shadow-[2px_2px_0_#f87171]'
+                                   : 'border-stone-300 dark:border-slate-600 hover:border-stone-400 dark:hover:border-slate-500 focus:border-black dark:focus:border-slate-400 focus:shadow-[3px_3px_0_#000]'">
+                        <p *ngIf="hasError('numero','required') || hasError('numero','min')"
+                           class="text-[8px] font-bold text-red-500 mt-1">Requerido (≥ 0).</p>
                     </div>
 
-                    <div class="col-span-8">
-                        <label class="text-[10px] font-black uppercase text-black dark:text-gray-300 mb-1 block">Código *</label>
+                    <div class="flex-1">
+                        <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1.5 block">
+                            Código *
+                        </label>
                         <input type="text" formControlName="codigo"
-                               class="w-full h-10 text-sm font-black uppercase bg-white dark:bg-slate-900 border-2 border-black dark:border-slate-600 rounded-lg px-3 focus:shadow-[2px_2px_0px_0px_#000] outline-none transition-all"
-                               [class.border-red-500]="hasError('codigo','required')">
-                    </div>
-
-                    <div class="col-span-12">
-                        <label class="text-[10px] font-black uppercase text-black dark:text-gray-300 mb-1 block">Nombre *</label>
-                        <input type="text" formControlName="nombre" placeholder="Ej. Nivel 1, Tornillería..."
-                               class="w-full h-10 text-sm font-bold bg-white dark:bg-slate-900 border-2 border-black dark:border-slate-600 rounded-lg px-3 focus:shadow-[2px_2px_0px_0px_#000] outline-none transition-all"
-                               [class.border-red-500]="hasError('nombre','required')">
+                               class="w-full h-10 text-sm font-black uppercase bg-white dark:bg-slate-800 dark:text-white border-2 rounded-xl px-3 outline-none transition-all duration-150 tracking-wider"
+                               [class]="hasError('codigo','required')
+                                   ? 'border-red-400 focus:shadow-[2px_2px_0_#f87171]'
+                                   : 'border-stone-300 dark:border-slate-600 hover:border-stone-400 dark:hover:border-slate-500 focus:border-black dark:focus:border-slate-400 focus:shadow-[3px_3px_0_#000]'">
+                        <p *ngIf="hasError('codigo','required')"
+                           class="text-[8px] font-bold text-red-500 mt-1">Campo requerido.</p>
                     </div>
                 </div>
-            </div>
 
-            <!-- Estado activo -->
-            <div class="col-span-12">
-                <label class="flex items-center gap-2 cursor-pointer h-10 px-3 border-2 border-black rounded-lg shadow-[2px_2px_0px_0px_#000]"
-                       [ngClass]="form.value.activo ? 'bg-green-500 dark:bg-green-500' : 'bg-[#FF1414FF] dark:bg-[#FF1414FF]'">
-                    <input type="checkbox" formControlName="activo"
-                           class="w-4 h-4 border-2 border-black rounded accent-white">
-                    <span class="text-[10px] text-white font-black uppercase">{{ form.value.activo ? 'Nivel activo' : 'Nivel inactivo' }}</span>
-                </label>
-            </div>
+                <!-- Nombre -->
+                <div>
+                    <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1.5 block">
+                        Nombre *
+                    </label>
+                    <input type="text" formControlName="nombre" placeholder="Ej. Nivel 1, Tornillería..."
+                           class="w-full h-10 text-sm font-bold bg-white dark:bg-slate-800 dark:text-white border-2 rounded-xl px-3 outline-none transition-all duration-150 placeholder:text-stone-300 dark:placeholder:text-slate-600"
+                           [class]="hasError('nombre','required')
+                               ? 'border-red-400 focus:shadow-[2px_2px_0_#f87171]'
+                               : 'border-stone-300 dark:border-slate-600 hover:border-stone-400 dark:hover:border-slate-500 focus:border-black dark:focus:border-slate-400 focus:shadow-[3px_3px_0_#000]'">
+                    <p *ngIf="hasError('nombre','required')"
+                       class="text-[8px] font-bold text-red-500 mt-1">Campo requerido.</p>
+                </div>
 
-            <!-- Description -->
+            </ng-container>
+
+            <!-- Toggle activo -->
             <div>
-                <label class="text-[10px] font-black uppercase text-black dark:text-gray-300 mb-1 block">Descripción</label>
+                <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1.5 block">
+                    Estado
+                </label>
+                <button type="button"
+                        (click)="form.patchValue({activo: !form.value.activo})"
+                        class="flex items-center gap-2 h-10 px-3 border-2 rounded-xl font-black text-[10px] uppercase transition-all duration-150"
+                        [class]="form.value.activo
+                            ? 'border-black bg-white dark:bg-slate-700 shadow-[2px_2px_0_#000] text-black dark:text-white'
+                            : 'border-stone-300 dark:border-slate-600 bg-stone-50 dark:bg-slate-800 text-stone-400 dark:text-slate-500'">
+                    <div class="w-8 h-4 rounded-full border-2 relative transition-all duration-200 shrink-0"
+                         [class]="form.value.activo ? 'border-black bg-black dark:border-slate-400 dark:bg-slate-400' : 'border-stone-300 dark:border-slate-600 bg-stone-200 dark:bg-slate-600'">
+                        <div class="absolute top-px w-2.5 h-2.5 rounded-full bg-white transition-all duration-200"
+                             [class]="form.value.activo ? 'left-4' : 'left-px'"></div>
+                    </div>
+                    {{ form.value.activo ? 'Nivel activo' : 'Nivel inactivo' }}
+                </button>
+            </div>
+
+            <!-- Descripción -->
+            <div>
+                <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1.5 block">
+                    Descripción <span class="font-normal normal-case">(opcional)</span>
+                </label>
                 <textarea formControlName="descripcion" rows="3"
                           [placeholder]="form.get('isFloor')?.value ? 'Observaciones sobre el área de suelo...' : 'Qué se guarda en este nivel...'"
-                          class="w-full text-sm font-bold border-2 border-black dark:border-slate-600 rounded-xl p-3 bg-white dark:bg-slate-800 text-black dark:text-white outline-none focus:shadow-[2px_2px_0px_0px_#000] transition-shadow resize-none custom-scrollbar"></textarea>
+                          class="w-full text-sm font-normal bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-xl px-3 py-2.5 outline-none transition-all duration-150 resize-none placeholder:text-stone-300 dark:placeholder:text-slate-600 hover:border-stone-400 dark:hover:border-slate-500 focus:border-black dark:focus:border-slate-400 focus:shadow-[3px_3px_0_#000]"></textarea>
             </div>
+
         </form>
+    </div>
+
+    <!-- ══ FOOTER ══ -->
+    <div class="border-t-2 border-black bg-stone-200 dark:bg-slate-800 px-5 py-3 flex justify-between items-center shrink-0">
+        <button type="button" (click)="dialogRef.close(null)"
+                class="px-4 py-2 bg-[#FF1414] text-white font-black text-[10px] border-2 border-black rounded-xl shadow-[2px_2px_0_#000] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all uppercase">
+            Cancelar
+        </button>
+        <button type="button" (click)="save()"
+                class="flex items-center gap-2 px-5 py-2 bg-amber-400 text-black font-black text-[10px] border-2 border-black rounded-xl shadow-[3px_3px_0_#000] hover:shadow-none hover:translate-x-[3px] hover:translate-y-[3px] transition-all uppercase">
+            <mat-icon class="!text-sm">save</mat-icon>
+            Guardar Nivel
+        </button>
     </div>
 </div>

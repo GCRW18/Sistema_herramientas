@@ -1,9 +1,127 @@
 <div class="bg-[#f8f9fc] dark:bg-slate-900 border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] overflow-hidden flex flex-col font-sans w-full h-full rounded-2xl">
 
     <!-- ======================================================= -->
+    <!-- VISTA BUSCADOR GLOBAL DE HERRAMIENTAS -->
+    <!-- ======================================================= -->
+    <ng-container *ngIf="buscarVisible()">
+
+        <div class="bg-[#0F172AFF] text-white px-5 py-3 flex justify-between items-center shrink-0 flex-wrap gap-3 border-b-2 border-black">
+            <div class="flex items-center gap-3 min-w-0">
+                <button (click)="cerrarBusqueda()" matTooltip="Cerrar búsqueda"
+                        class="w-9 h-9 flex items-center justify-center bg-[#FF1414FF] border-2 border-black rounded shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all shrink-0">
+                    <mat-icon class="text-white !text-base">arrow_back</mat-icon>
+                </button>
+                <div class="min-w-0">
+                    <h2 class="text-sm font-black uppercase tracking-tight leading-none flex items-center gap-2">
+                        <mat-icon class="!text-base text-amber-400">manage_search</mat-icon>
+                        BUSCADOR DE HERRAMIENTAS
+                    </h2>
+                    <p class="text-[10px] text-gray-300 font-bold uppercase mt-0.5 truncate">{{ almacen.codigo }} · {{ almacen.nombre }}</p>
+                </div>
+            </div>
+            <div class="relative w-80">
+                <input type="text" [formControl]="busquedaControl"
+                       placeholder="Buscar por código, nombre, P/N, S/N, estante..."
+                       class="w-full h-9 pl-8 pr-3 bg-white dark:bg-slate-800 text-black dark:text-white border-2 border-black rounded-lg font-bold text-[11px] focus:outline-none focus:shadow-[2px_2px_0px_0px_#000] transition-all">
+                <mat-icon class="absolute left-2 top-2 text-black dark:text-white !text-base">search</mat-icon>
+            </div>
+        </div>
+
+        <!-- Loading -->
+        <div *ngIf="loadingBusqueda()" class="flex-1 flex items-center justify-center">
+            <div class="flex flex-col items-center gap-4">
+                <div class="w-12 h-12 border-4 border-amber-400 border-t-transparent rounded-full" style="animation: spin 0.8s linear infinite"></div>
+                <p class="text-sm font-black uppercase text-gray-500">Cargando herramientas y calibraciones...</p>
+            </div>
+        </div>
+
+        <!-- Resultados -->
+        <div *ngIf="!loadingBusqueda()" class="flex-1 overflow-auto custom-scrollbar p-4 bg-[#f8f9fc] dark:bg-slate-900">
+
+            <!-- Barra de stats -->
+            <div class="flex items-center justify-between mb-3 flex-wrap gap-2">
+                <span class="text-xs font-black uppercase text-gray-500">
+                    {{ herramientasBusqueda.length }} herramienta(s)
+                    <ng-container *ngIf="busquedaControl.value"> · filtrando por "<span class="text-black dark:text-white">{{ busquedaControl.value }}</span>"</ng-container>
+                </span>
+                <span *ngIf="calibEnCurso.size > 0"
+                      class="text-[10px] font-black uppercase px-2.5 py-1 bg-orange-100 dark:bg-orange-900/20 border-2 border-orange-500 rounded-lg text-orange-700 dark:text-orange-300 flex items-center gap-1">
+                    <mat-icon class="!text-[12px] !w-3 !h-3">science</mat-icon>
+                    {{ calibEnCurso.size }} en calibración en este almacén
+                </span>
+            </div>
+
+            <!-- Lista de herramientas -->
+            <div class="flex flex-col gap-2">
+                <div *ngFor="let t of herramientasBusqueda"
+                     (click)="irAlEstante(t)"
+                     class="group bg-white dark:bg-slate-800 border-2 border-black rounded-xl p-3 shadow-[2px_2px_0px_0px_#000] hover:-translate-y-[1px] hover:shadow-[3px_3px_0px_0px_#000] cursor-pointer transition-all flex items-center gap-3"
+                     [class.border-orange-400]="isEnCalibracion(t)">
+
+                    <!-- Indicador de nivel -->
+                    <div class="w-10 h-10 shrink-0 bg-[#0F172AFF] text-amber-400 border-2 border-black rounded-lg flex items-center justify-center font-black text-xs shadow-[2px_2px_0px_0px_#000]">
+                        <ng-container *ngIf="t.levelNumero !== null && t.levelNumero !== undefined; else floorBuscar">
+                            N{{ t.levelNumero }}
+                        </ng-container>
+                        <ng-template #floorBuscar>
+                            <mat-icon class="!text-[18px]">foundation</mat-icon>
+                        </ng-template>
+                    </div>
+
+                    <!-- Info herramienta -->
+                    <div class="flex-1 min-w-0">
+                        <div class="flex items-center gap-2 flex-wrap mb-0.5">
+                            <span class="font-mono text-[9px] font-black px-1.5 py-0.5 bg-gray-200 dark:bg-slate-700 border border-black rounded text-black dark:text-white shrink-0">
+                                {{ t.codigo }}
+                            </span>
+                            <span [ngClass]="[estadoBadge(t.estado).bg, estadoBadge(t.estado).tx]"
+                                  class="px-1.5 py-0.5 text-[8px] font-black uppercase border border-black rounded shrink-0">
+                                {{ t.estado }}
+                            </span>
+                            <span *ngIf="isEnCalibracion(t)"
+                                  class="px-1.5 py-0.5 text-[8px] font-black uppercase border-2 border-orange-500 rounded bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300 shrink-0 flex items-center gap-1">
+                                <mat-icon class="!text-[10px] !w-2.5 !h-2.5">science</mat-icon>
+                                EN CALIBRACIÓN
+                            </span>
+                        </div>
+                        <p class="font-black text-[12px] text-black dark:text-white truncate">{{ t.nombre }}</p>
+                        <p class="text-[10px] font-bold text-gray-500 truncate mt-0.5">
+                            PN: <span class="text-gray-700 dark:text-gray-300">{{ t.pn }}</span>
+                            <span *ngIf="t.sn"> · SN: <span class="text-gray-700 dark:text-gray-300">{{ t.sn }}</span></span>
+                            <span *ngIf="t.marca"> · <span class="text-gray-700 dark:text-gray-300">{{ t.marca }}</span></span>
+                        </p>
+                    </div>
+
+                    <!-- Ubicación + navegación -->
+                    <div class="shrink-0 text-right border-l-2 border-gray-200 dark:border-slate-700 pl-3 min-w-[80px]">
+                        <p class="font-mono text-[10px] font-black text-black dark:text-white">{{ t.rackCodigo }}</p>
+                        <p class="text-[9px] font-bold text-gray-500 uppercase">{{ t.levelCodigo }}</p>
+                        <p class="text-[9px] font-black text-amber-600 dark:text-amber-400 mt-1 flex items-center gap-0.5 justify-end group-hover:underline">
+                            <mat-icon class="!text-[10px] !w-2.5 !h-2.5">open_in_new</mat-icon>
+                            Ir al estante
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Estado vacío -->
+            <div *ngIf="!herramientasBusqueda.length"
+                 class="text-center py-16 bg-white dark:bg-slate-800 border-2 border-dashed border-gray-400 dark:border-gray-600 rounded-xl mt-4">
+                <mat-icon class="!text-6xl text-gray-300">search_off</mat-icon>
+                <p class="text-sm font-black uppercase text-gray-500 mt-4">
+                    {{ todasHerramientas.length === 0 ? 'No hay herramientas en este almacén' : 'No se encontraron resultados' }}
+                </p>
+                <p *ngIf="busquedaControl.value" class="text-xs font-bold text-gray-400 mt-2">
+                    Intenta con otro término de búsqueda
+                </p>
+            </div>
+        </div>
+    </ng-container>
+
+    <!-- ======================================================= -->
     <!-- VISTA 1: TABLA GENERAL DE ESTANTES (MAESTRO) -->
     <!-- ======================================================= -->
-    <ng-container *ngIf="vistaActiva() === 'tabla'">
+    <ng-container *ngIf="!buscarVisible() && vistaActiva() === 'tabla'">
         <div class="bg-[#0F172AFF] text-white px-5 py-3 flex justify-between items-center shrink-0 flex-wrap gap-3 border-b-2 border-black">
             <div class="flex items-center gap-3 min-w-0">
                 <button (click)="cerrar()" matTooltip="Volver a almacenes"
@@ -25,14 +143,18 @@
                 </div>
             </div>
 
-            <div class="flex items-center gap-3">
-                <div class="relative w-64">
+            <div class="flex items-center flex-wrap gap-2">
+                <div class="relative flex-1 min-w-[140px] max-w-xs">
                     <input type="text" [formControl]="searchControl" placeholder="Buscar estante..."
                            class="w-full h-9 pl-8 pr-3 bg-white dark:bg-slate-800 text-black dark:text-white border-2 border-black rounded-lg font-bold text-[11px] focus:outline-none focus:shadow-[2px_2px_0px_0px_#000] transition-all">
                     <mat-icon class="absolute left-2 top-2 text-black dark:text-white !text-base">search</mat-icon>
                 </div>
+                <button (click)="abrirBusqueda()"
+                        class="shrink-0 px-4 py-2 bg-blue-600 text-white font-black text-[10px] border-2 border-black rounded-lg shadow-[2px_2px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all uppercase flex items-center gap-1.5">
+                    <mat-icon class="!text-base text-white">search</mat-icon> Buscar
+                </button>
                 <button (click)="nuevoEstante()"
-                        class="px-4 py-2 bg-amber-400 text-black font-black text-[10px] border-2 border-black rounded-lg shadow-[2px_2px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all uppercase flex items-center gap-1.5">
+                        class="shrink-0 px-4 py-2 bg-amber-400 text-black font-black text-[10px] border-2 border-black rounded-lg shadow-[2px_2px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all uppercase flex items-center gap-1.5">
                     <mat-icon class="!text-black !text-base">add</mat-icon> Nuevo Estante
                 </button>
             </div>
@@ -40,7 +162,8 @@
 
         <div class="flex-1 overflow-auto custom-scrollbar bg-[#f8f9fc] dark:bg-slate-900 p-4">
             <div class="bg-white dark:bg-slate-800 border-2 border-black shadow-[4px_4px_0px_0px_#000] rounded-xl overflow-hidden">
-                <table class="w-full text-[11px]">
+                <div class="overflow-x-auto">
+                <table class="w-full min-w-[640px] text-[11px]">
                     <thead class="bg-gray-200 dark:bg-slate-700 text-black dark:text-white border-b-2 border-black">
                     <tr class="text-left font-black uppercase tracking-wider">
                         <th class="px-4 py-3 w-40">Cód. Estante</th>
@@ -104,6 +227,7 @@
                     </tr>
                     </tbody>
                 </table>
+                </div>
             </div>
         </div>
     </ng-container>
@@ -111,7 +235,7 @@
     <!-- ======================================================= -->
     <!-- VISTA 2: DETALLE DEL ESTANTE -->
     <!-- ======================================================= -->
-    <ng-container *ngIf="vistaActiva() === 'detalle' && estanteActivo as r">
+    <ng-container *ngIf="!buscarVisible() && vistaActiva() === 'detalle' && estanteActivo as r">
 
         <div class="bg-[#0F172AFF] text-white px-5 py-3 flex justify-between items-center shrink-0 flex-wrap gap-3">
             <div class="flex items-center gap-3 min-w-0">

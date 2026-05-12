@@ -96,7 +96,7 @@ export class GestionUbicacionesService {
             .pipe(
                 map((r: any) => (r?.datos || r?.data || [])
                     .map((o: BackendOficina) => ({
-                        id_oficina:     o.id_oficina,
+                        id_oficina:     Number(o.id_oficina),
                         nombre_oficina: o.nombre_oficina,
                     } as Oficina))
                 )
@@ -210,8 +210,33 @@ export class GestionUbicacionesService {
         return from(this._api.post('herramientas/leveltools/listarLevelTools', params)).pipe(
             map((r: any) => {
                 let rawData = r?.datos || r?.data || [];
-                rawData = rawData.filter((x: BackendLevelTool) => x.warehouse_id === warehouseId);
+                rawData = rawData.filter((x: BackendLevelTool) => Number(x.warehouse_id) === warehouseId);
                 return rawData.map((x: BackendLevelTool) => this.toLevelTool(x));
+            })
+        );
+    }
+
+    findToolByCode(codigo: string): Observable<LevelTool | null> {
+        const safe = codigo.replace(/'/g, "''");
+        const params = {
+            start: 0, limit: 2,
+            filtro_adicional: `tl.code = '${safe}' and tl.level_id is not null`,
+        };
+        return from(this._api.post('herramientas/leveltools/listarLevelTools', params)).pipe(
+            map((r: any) => {
+                const raw: BackendLevelTool[] = r?.datos || r?.data || [];
+                return raw.length ? this.toLevelTool(raw[0]) : null;
+            })
+        );
+    }
+
+    findToolByCodeAny(codigo: string): Observable<LevelTool | null> {
+        const safe = codigo.replace(/'/g, "''");
+        const params = { start: 0, limit: 2, filtro_adicional: `tl.code = '${safe}'` };
+        return from(this._api.post('herramientas/leveltools/listarLevelTools', params)).pipe(
+            map((r: any) => {
+                const raw: BackendLevelTool[] = r?.datos || r?.data || [];
+                return raw.length ? this.toLevelTool(raw[0]) : null;
             })
         );
     }
@@ -239,14 +264,14 @@ export class GestionUbicacionesService {
 
     private toWarehouse(b: BackendWarehouse): Warehouse {
         const tipo  = (b.warehouse_type as AlmacenTipo) || 'Principal';
-        const estado: AlmacenEstado = b.active ? 'ACTIVO' : 'INACTIVO';
+        const estado: AlmacenEstado = this._parseBool(b.active) ? 'ACTIVO' : 'INACTIVO';
         return {
-            id:            b.id_warehouse,
-            id_base:       b.id_base,
+            id:            Number(b.id_warehouse),
+            id_base:       Number(b.id_base),
             codigo:        b.code,
             nombre:        b.name,
             ciudad:        b.city || '',
-            id_oficina:    b.id_oficina ?? null,
+            id_oficina:    b.id_oficina != null ? Number(b.id_oficina) : null,
             nombreOficina: b.nombre_oficina || '',
             tipo,
             estado,
@@ -273,7 +298,7 @@ export class GestionUbicacionesService {
     private toRack(b: BackendRack): Rack {
         return {
             id:          b.id_rack,
-            warehouseId: b.warehouse_id,
+            warehouseId: Number(b.warehouse_id),
             codigo:      b.code,
             nombre:      b.name,
             descripcion: b.description,

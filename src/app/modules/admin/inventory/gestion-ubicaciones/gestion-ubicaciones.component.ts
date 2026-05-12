@@ -135,7 +135,8 @@ export class GestionUbicacionesComponent implements OnInit, OnDestroy {
     async nuevoAlmacen() {
         const { FormAlmacenComponent } = await import('./form-almacen/form-almacen.component');
         const ref = this.dialog.open(FormAlmacenComponent, {
-            width: '850px', maxWidth: '95vw',
+            width: '720px', maxWidth: '95vw',
+            panelClass: 'no-padding-dialog',
             data: { mode: 'new' }
         });
         ref.afterClosed().subscribe(ok => { if (ok) this.recargar('Almacén creado'); });
@@ -145,7 +146,8 @@ export class GestionUbicacionesComponent implements OnInit, OnDestroy {
         ev.stopPropagation();
         const { FormAlmacenComponent } = await import('./form-almacen/form-almacen.component');
         const ref = this.dialog.open(FormAlmacenComponent, {
-            width: '850px', maxWidth: '95vw',
+            width: '720px', maxWidth: '95vw',
+            panelClass: 'no-padding-dialog',
             data: { mode: 'edit', almacen: a }
         });
         ref.afterClosed().subscribe(ok => { if (ok) this.recargar('Almacén actualizado'); });
@@ -154,7 +156,8 @@ export class GestionUbicacionesComponent implements OnInit, OnDestroy {
     async verAlmacen(a: Warehouse) {
         const { FormAlmacenComponent } = await import('./form-almacen/form-almacen.component');
         this.dialog.open(FormAlmacenComponent, {
-            width: '850px', maxWidth: '95vw',
+            width: '720px', maxWidth: '95vw',
+            panelClass: 'no-padding-dialog',
             data: { mode: 'view', almacen: a }
         });
     }

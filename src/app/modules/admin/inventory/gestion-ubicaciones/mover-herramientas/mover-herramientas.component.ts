@@ -12,11 +12,12 @@ import { Warehouse, Rack, Level } from '../interfaces';
 import { GestionUbicacionesService } from '../gestion-ubicaciones.service';
 
 interface DialogData {
-    count:           number;
-    almacenes:       Warehouse[];
-    racksByAlmacen:  Record<number, Rack[]>;
-    currentLevelId:  number;
-    currentRackCode: string;
+    count:             number;
+    almacenes:         Warehouse[];
+    racksByAlmacen:    Record<number, Rack[]>;
+    currentLevelId:    number;
+    currentRackCode:   string;
+    currentAlmacenId?: number;
 }
 
 export interface MoverResult {
@@ -41,6 +42,11 @@ export interface MoverResult {
     templateUrl: './mover-herramientas.component.html',
     styles: [`
         :host { display: block; }
+        @keyframes stepIn {
+            from { opacity: 0; transform: translateY(-8px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+        .step-in { animation: stepIn 0.2s ease-out forwards; }
     `]
 })
 export class MoverHerramientasComponent implements OnInit {
@@ -55,7 +61,9 @@ export class MoverHerramientasComponent implements OnInit {
     racksByAlm     = signal<Record<number, Rack[]>>({ ...(this.data.racksByAlmacen ?? {}) });
     currentLevelId = this.data.currentLevelId;
     currentRackCode = this.data.currentRackCode;
-    loadingRacks   = signal(false);
+    loadingRacks      = signal(false);
+    showAlmacenGrid   = signal(false);
+    showNivelDropdown = signal(false);
 
     selectedAlmacen = signal<number | null>(null);
     selectedRack    = signal<number | null>(null);
@@ -72,14 +80,26 @@ export class MoverHerramientasComponent implements OnInit {
         return r?.niveles ?? [];
     });
 
+    almacenActual = computed(() =>
+        this.almacenes.find(a => a.id === this.selectedAlmacen()) ?? null
+    );
+
+    rackActual = computed(() =>
+        this.racks().find(r => r.id === this.selectedRack()) ?? null
+    );
+
     form!: FormGroup;
 
     ngOnInit() {
         this.form = this.fb.group({
-            warehouseId: [null, Validators.required],
+            warehouseId: [this.data.currentAlmacenId ?? null, Validators.required],
             rackId:      [null, Validators.required],
             levelId:     [null, Validators.required],
         });
+
+        if (this.data.currentAlmacenId != null) {
+            this.selectedAlmacen.set(this.data.currentAlmacenId);
+        }
 
         this.form.get('warehouseId')!.valueChanges.subscribe(v => {
             this.selectedAlmacen.set(v);
@@ -105,11 +125,39 @@ export class MoverHerramientasComponent implements OnInit {
                 });
             }
         });
+
         this.form.get('rackId')!.valueChanges.subscribe(v => {
             this.selectedRack.set(v);
             this.form.patchValue({ levelId: null }, { emitEvent: false });
+            this.showNivelDropdown.set(false);
         });
     }
+
+    selectAlmacen(id: number) {
+        this.form.patchValue({ warehouseId: id });
+        this.showAlmacenGrid.set(false);
+    }
+
+    selectRack(id: number) {
+        this.form.patchValue({ rackId: id });
+    }
+
+    selectLevel(id: number) {
+        if (id === this.currentLevelId) return;
+        this.form.patchValue({ levelId: id });
+        this.showNivelDropdown.set(false);
+    }
+
+    toggleAlmacenGrid() {
+        this.showAlmacenGrid.update(v => !v);
+    }
+
+    toggleNivelDropdown() {
+        this.showNivelDropdown.update(v => !v);
+    }
+
+    levelSeleccionado = () =>
+        this.niveles().find(l => l.id === this.form.get('levelId')?.value) ?? null;
 
     isCurrentLevel(): boolean {
         return this.form.value.levelId === this.currentLevelId;

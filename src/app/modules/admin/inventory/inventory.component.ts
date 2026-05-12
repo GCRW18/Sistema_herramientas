@@ -2,7 +2,7 @@ import { Component, OnDestroy, inject, ViewChild, TemplateRef, Type, Injector, T
 import { CommonModule, NgComponentOutlet } from '@angular/common';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
-import { MatDialog, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
+import { MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatTooltipModule } from '@angular/material/tooltip';
@@ -113,7 +113,6 @@ interface ModuleDef {
     `]
 })
 export class InventoryComponent implements OnDestroy {
-    private dialog   = inject(MatDialog);
     private snackBar = inject(MatSnackBar);
     private injector = inject(Injector);
 
@@ -135,40 +134,16 @@ export class InventoryComponent implements OnDestroy {
             loader: async () => (await import('./gestion-ubicaciones/gestion-ubicaciones.component')).GestionUbicacionesComponent
         },
         {
-            type: 2, label: 'CREAR', sublabel: 'MATERIAL',
-            color: '#FFC501', textColor: '#000',
-            svgIcon: 'heroicons_outline:plus-circle',
-            loader: async () => (await import('./crear-material/crear-material.component')).CrearMaterialComponent
-        },
-        {
-            type: 3, label: 'ENTRADA', sublabel: 'MATERIAL',
-            color: '#1AAA1F', textColor: '#fff',
-            svgIcon: 'heroicons_outline:arrow-down-tray',
-            loader: async () => (await import('./entrada-material/entrada-material.component')).EntradaMaterialComponent
-        },
-        {
-            type: 4, label: 'SALIDA', sublabel: 'MATERIAL',
-            color: '#e94125', textColor: '#fff',
-            svgIcon: 'heroicons_outline:arrow-up-tray',
-            loader: async () => (await import('./salida-material/salida-material.component')).SalidaMaterialComponent
-        },
-        {
-            type: 5, label: 'HISTORIAL', sublabel: 'ESTADOS',
-            color: '#0891b2', textColor: '#fff',
-            svgIcon: 'heroicons_outline:clock',
-            loader: async () => (await import('./historial-estados/historial-estados.component')).HistorialEstadosComponent
-        },
-        {
-            type: 6, label: 'MIGRACIÓN', sublabel: 'EXCEL',
-            color: '#16a34a', textColor: '#fff',
-            svgIcon: 'heroicons_outline:cloud-arrow-up',
-            loader: async () => (await import('./migracion-excel/migracion-excel.component')).MigracionExcelComponent
+            type: 2, label: 'MISCELÁNEOS', sublabel: '',
+            color: '#D97706', textColor: '#fff',
+            svgIcon: 'heroicons_outline:cube-transparent',
+            loader: async () => (await import('./inventario-miscelaneos/inventario-miscelaneos.component')).InventarioMiscelaneosComponent
         },
         {
             type: 7, label: 'GESTIÓN', sublabel: 'KITS',
             color: '#1A3EDC', textColor: '#fff',
             svgIcon: 'heroicons_outline:cube',
-            loader: async () => (await import('./lista-kits/lista-kits.component')).ListaKitsComponent
+            loader: async () => (await import('./gestionar-kit/lista-kits.component')).ListaKitsComponent
         },
         {
             type: 8, label: 'REPORTES', sublabel: '',
@@ -181,6 +156,12 @@ export class InventoryComponent implements OnDestroy {
             color: '#0F172A', textColor: '#FFC501',
             svgIcon: 'heroicons_outline:wrench-screwdriver',
             loader: async () => (await import('./registrar-herramienta/registrar-herramienta.component')).RegistrarHerramientaComponent
+        },
+        {
+            type: 10, label: 'CONSULTAR', sublabel: 'INVENTARIO',
+            color: '#1a3edc', textColor: '#fff',
+            svgIcon: 'heroicons_outline:magnifying-glass',
+            loader: async () => (await import('./consultar-inventario/consultar-inventario.component')).ConsultarInventarioComponent
         },
     ];
 
@@ -252,20 +233,8 @@ export class InventoryComponent implements OnDestroy {
 
     trackByTabId: TrackByFunction<OpenTab> = (_index, tab) => tab.id;
 
-    // ── Consultar Inventario (dialog desde header) ────────────────────────────
-
-    async openConsultarInventario(): Promise<void> {
-        const { ConsultarInventarioComponent } = await import('./consultar-inventario/consultar-inventario.component');
-        this.dialog.open(ConsultarInventarioComponent, {
-            width: '1200px',
-            maxWidth: '95vw',
-            height: 'auto',
-            maxHeight: '90vh',
-            panelClass: 'neo-dialog',
-            hasBackdrop: true,
-            disableClose: false,
-            autoFocus: false
-        });
+    openConsultarInventario(): void {
+        this.openModule(10);
     }
 
     ngOnDestroy(): void {

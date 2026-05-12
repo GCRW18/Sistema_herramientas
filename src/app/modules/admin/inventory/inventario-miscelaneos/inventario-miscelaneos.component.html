@@ -1,0 +1,400 @@
+<div class="flex flex-col w-full h-full bg-[#f8f9fc] dark:bg-[#0F172AFF] transition-colors duration-300 font-sans overflow-hidden">
+
+    <div class="fixed top-20 right-10 w-40 h-40 bg-[#D97706] rounded-full border-[3px] border-black opacity-5 pointer-events-none"></div>
+    <div class="fixed bottom-10 left-10 w-24 h-24 bg-[#FFC501FF] rotate-12 border-[3px] border-black opacity-5 pointer-events-none"></div>
+
+    <div class="flex-1 flex flex-col p-4 gap-3 overflow-hidden relative z-10">
+
+        <!-- ══ HEADER ══ -->
+        <div class="flex items-center justify-between gap-4 shrink-0 flex-wrap">
+
+            <div class="flex items-center gap-4">
+                <div class="flex items-center justify-center w-10 h-10 bg-white dark:bg-[#0F172AFF] border-[3px] border-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] rounded-xl shrink-0">
+                    <mat-icon class="text-black dark:text-[#FFC501FF] !text-base">category</mat-icon>
+                </div>
+                <div>
+                    <h1 class="text-xl font-black text-black dark:text-white uppercase tracking-tighter leading-none">
+                        INVENTARIO MISCELÁNEOS
+                    </h1>
+                    <p class="text-[10px] font-bold bg-[#FFC501FF] text-black px-2 py-0.5 inline-block border-2 border-black rounded uppercase tracking-wider mt-0.5">
+                        Catálogo · Entradas · Salidas
+                    </p>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-3 flex-wrap">
+
+                <!-- Búsqueda -->
+                <div class="relative">
+                    <input type="text" [formControl]="searchControl"
+                           placeholder="Buscar código, descripción..."
+                           class="w-56 h-9 pl-9 pr-3 bg-white dark:bg-[#0F172AFF] text-black dark:text-white
+                                  border-[2px] border-black rounded-lg font-black text-xs uppercase
+                                  focus:outline-none focus:shadow-[3px_3px_0px_0px_#000] focus:-translate-y-[1px] transition-all
+                                  placeholder:font-bold placeholder:normal-case">
+                    <mat-icon class="absolute left-2.5 top-2 text-black dark:text-white !text-sm">search</mat-icon>
+                </div>
+
+                <!-- Filtro tipo (solo catálogo) -->
+                <select *ngIf="activeTab() === 'catalogo'"
+                        [formControl]="filterTipoCtrl"
+                        class="h-9 px-3 bg-white dark:bg-[#0F172AFF] text-black dark:text-white
+                               border-[2px] border-black rounded-lg font-black text-xs uppercase
+                               focus:outline-none focus:shadow-[3px_3px_0px_0px_#000] transition-all cursor-pointer">
+                    <option value="">Todos los tipos</option>
+                    <option *ngFor="let t of tiposItem" [value]="t">{{ t }}</option>
+                </select>
+
+                <!-- Botón de acción (cambia por tab) -->
+                <button *ngIf="activeTab() === 'catalogo'" (click)="nuevoCatalogo()"
+                        class="px-5 py-2 bg-[#FFC501FF] text-black font-black text-xs border-[2px] border-black rounded-xl
+                               shadow-[3px_3px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none
+                               transition-all uppercase flex items-center gap-2">
+                    <mat-icon class="!text-sm">add_circle</mat-icon>
+                    <span class="hidden sm:inline">Nuevo Ítem</span>
+                </button>
+
+                <button *ngIf="activeTab() === 'entradas'" (click)="nuevaEntrada()"
+                        class="px-5 py-2 bg-[#1AAA1F] text-white font-black text-xs border-[2px] border-black rounded-xl
+                               shadow-[3px_3px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none
+                               transition-all uppercase flex items-center gap-2">
+                    <mat-icon class="!text-sm">arrow_downward</mat-icon>
+                    <span class="hidden sm:inline">Nueva Entrada</span>
+                </button>
+
+                <button *ngIf="activeTab() === 'salidas'" (click)="nuevaSalida()"
+                        class="px-5 py-2 bg-orange-500 text-white font-black text-xs border-[2px] border-black rounded-xl
+                               shadow-[3px_3px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none
+                               transition-all uppercase flex items-center gap-2">
+                    <mat-icon class="!text-sm">arrow_upward</mat-icon>
+                    <span class="hidden sm:inline">Nueva Salida</span>
+                </button>
+
+            </div>
+        </div>
+
+        <!-- ══ CARD PRINCIPAL ══ -->
+        <div class="flex-1 flex flex-col overflow-hidden border-[3px] border-black bg-white dark:bg-[#0F172AFF] rounded-2xl shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+
+            <!-- Cabecera oscura: tabs + stats -->
+            <div class="px-4 py-2.5 bg-[#0F172AFF] border-b-[3px] border-black flex items-center justify-between shrink-0 flex-wrap gap-2">
+
+                <!-- Tabs -->
+                <div class="flex items-center gap-1.5">
+                    <button (click)="setTab('catalogo')"
+                            class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border-[2px] border-black font-black text-[10px] uppercase transition-all"
+                            [ngClass]="activeTab() === 'catalogo'
+                                ? 'bg-[#FFC501FF] text-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]'
+                                : 'bg-white/10 text-white hover:bg-white/20'">
+                        <mat-icon class="!text-xs">list_alt</mat-icon>
+                        CATÁLOGO ({{ filteredMateriales.length }})
+                    </button>
+                    <button (click)="setTab('entradas')"
+                            class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border-[2px] border-black font-black text-[10px] uppercase transition-all"
+                            [ngClass]="activeTab() === 'entradas'
+                                ? 'bg-[#1AAA1F] text-white shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]'
+                                : 'bg-white/10 text-white/70 hover:bg-white/20'">
+                        <mat-icon class="!text-xs">arrow_downward</mat-icon>
+                        ENTRADAS ({{ filteredEntradas.length }})
+                    </button>
+                    <button (click)="setTab('salidas')"
+                            class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border-[2px] border-black font-black text-[10px] uppercase transition-all"
+                            [ngClass]="activeTab() === 'salidas'
+                                ? 'bg-orange-500 text-white shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]'
+                                : 'bg-white/10 text-white/70 hover:bg-white/20'">
+                        <mat-icon class="!text-xs">arrow_upward</mat-icon>
+                        SALIDAS ({{ filteredSalidas.length }})
+                    </button>
+                </div>
+
+                <!-- Stats -->
+                <div class="flex items-center gap-2">
+                    <div class="flex items-center gap-2 bg-white/20 rounded-lg px-3 py-1.5 border border-black">
+                        <div class="w-5 h-5 bg-[#FFC501FF] border border-black rounded flex items-center justify-center">
+                            <mat-icon class="!text-xs text-black">category</mat-icon>
+                        </div>
+                        <div>
+                            <div class="text-[8px] font-black uppercase text-white leading-none">Ítems</div>
+                            <div class="text-sm font-black text-white leading-none">{{ materiales.length }}</div>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2 bg-green-600/30 rounded-lg px-3 py-1.5 border border-black">
+                        <div class="w-5 h-5 bg-green-600 border border-black rounded flex items-center justify-center">
+                            <mat-icon class="!text-xs text-black">arrow_downward</mat-icon>
+                        </div>
+                        <div>
+                            <div class="text-[8px] font-black uppercase text-white leading-none">Entradas</div>
+                            <div class="text-sm font-black text-white leading-none">{{ entradas.length }}</div>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2 bg-orange-500/30 rounded-lg px-3 py-1.5 border border-black">
+                        <div class="w-5 h-5 bg-orange-500 border border-black rounded flex items-center justify-center">
+                            <mat-icon class="!text-xs text-black">arrow_upward</mat-icon>
+                        </div>
+                        <div>
+                            <div class="text-[8px] font-black uppercase text-white leading-none">Salidas</div>
+                            <div class="text-sm font-black text-white leading-none">{{ salidas.length }}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ══ TABLA CATÁLOGO ══ -->
+            <div *ngIf="activeTab() === 'catalogo'" class="flex-1 overflow-auto custom-scrollbar-misc">
+                <table class="w-full">
+                    <thead class="bg-gray-100 dark:bg-slate-800 border-b-[2px] border-black sticky top-0 z-10">
+                    <tr class="text-left text-[10px] font-black uppercase tracking-wider text-black dark:text-white">
+                        <th class="px-4 py-3">Código BOA-M</th>
+                        <th class="px-4 py-3">Descripción / P·N</th>
+                        <th class="px-4 py-3">Tipo</th>
+                        <th class="px-4 py-3">Marca / Compra</th>
+                        <th class="px-4 py-3 text-center">Stock</th>
+                        <th class="px-4 py-3">Ubicación</th>
+                        <th class="px-4 py-3 text-center">Estado</th>
+                        <th class="px-4 py-3 text-center">Acciones</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr *ngFor="let m of filteredMateriales"
+                        (click)="verCatalogo(m)"
+                        class="border-b border-gray-200 dark:border-slate-700 hover:bg-amber-50 dark:hover:bg-slate-800 cursor-pointer transition-all">
+
+                        <td class="px-4 py-3">
+                            <span class="font-mono font-black text-amber-700 dark:text-amber-400 text-[10px] bg-amber-50 dark:bg-amber-900/30 px-1.5 py-0.5 rounded border border-amber-200 tracking-wide uppercase">
+                                {{ m.codigoBoaM }}
+                            </span>
+                        </td>
+
+                        <td class="px-4 py-3">
+                            <div class="font-bold text-sm text-black dark:text-white max-w-[180px] truncate">{{ m.producto }}</div>
+                            <div class="text-[10px] text-gray-400 font-mono">{{ m.pn }}</div>
+                        </td>
+
+                        <td class="px-4 py-3">
+                            <span class="inline-block px-1.5 py-px border-2 border-black rounded text-[9px] font-black uppercase"
+                                  [ngClass]="getTipoColor(m.tipoItem)">
+                                {{ m.tipoItem || 'N/A' }}
+                            </span>
+                        </td>
+
+                        <td class="px-4 py-3">
+                            <div class="text-xs font-bold text-gray-800 dark:text-gray-200 leading-tight">{{ m.marca }}</div>
+                            <div class="text-[9px] text-gray-400 font-mono leading-tight">{{ m.tipoCompra }}</div>
+                        </td>
+
+                        <td class="px-4 py-3 text-center">
+                            <span class="text-lg font-black leading-none"
+                                  [class.text-emerald-600]="m.stock > m.stockMin"
+                                  [class.text-red-600]="m.stock <= m.stockMin && m.stockMin > 0"
+                                  [class.text-gray-700]="m.stockMin === 0">
+                                {{ m.stock }}
+                            </span>
+                            <span class="text-[9px] text-gray-400 font-bold block">{{ m.unidad }}</span>
+                            <div class="w-12 h-1.5 bg-gray-200 rounded-full border border-black overflow-hidden mx-auto mt-0.5">
+                                <div class="h-full transition-all" [ngClass]="getStockColor(m)" [style.width.%]="getStockPct(m)"></div>
+                            </div>
+                        </td>
+
+                        <td class="px-4 py-3">
+                            <span class="font-mono text-[10px] text-gray-600 dark:text-gray-400 font-bold">{{ m.ubicacion || '—' }}</span>
+                        </td>
+
+                        <td class="px-4 py-3 text-center">
+                            <span class="px-2 py-0.5 text-[9px] font-black uppercase border-2 border-black rounded"
+                                  [ngClass]="m.activo ? 'bg-green-600 text-white' : 'bg-red-500 text-white'">
+                                {{ m.activo ? 'ACTIVO' : 'INACTIVO' }}
+                            </span>
+                        </td>
+
+                        <td class="px-4 py-3" (click)="$event.stopPropagation()">
+                            <div class="flex gap-1.5 justify-center">
+                                <button (click)="editarCatalogo(m)" matTooltip="Editar"
+                                        class="w-7 h-7 flex items-center justify-center bg-[#FFC501FF] border-2 border-black rounded-lg shadow-[2px_2px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all">
+                                    <mat-icon class="!text-sm text-black">edit</mat-icon>
+                                </button>
+                                <button (click)="verCatalogo(m)" matTooltip="Ver detalle"
+                                        class="w-7 h-7 flex items-center justify-center bg-blue-950 border-2 border-black rounded-lg shadow-[2px_2px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all">
+                                    <mat-icon class="!text-sm text-white">visibility</mat-icon>
+                                </button>
+                                <button (click)="eliminarCatalogo(m)" matTooltip="Eliminar"
+                                        class="w-7 h-7 flex items-center justify-center bg-red-100 border-2 border-black rounded-lg shadow-[2px_2px_0px_0px_#000] hover:bg-red-500 hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all">
+                                    <mat-icon class="!text-sm text-red-700">delete</mat-icon>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+
+                    <tr *ngIf="!filteredMateriales.length">
+                        <td colspan="8" class="px-4 py-12 text-center">
+                            <mat-icon class="!text-5xl text-gray-300 dark:text-gray-600">inventory_2</mat-icon>
+                            <p class="text-xs font-bold uppercase text-gray-500 mt-2">Sin ítems registrados</p>
+                            <button (click)="nuevoCatalogo()"
+                                    class="mt-3 px-4 py-1.5 bg-[#FFC501FF] text-black border-2 border-black rounded-lg font-black text-xs uppercase shadow-[2px_2px_0px_0px_#000] hover:translate-y-[1px] hover:shadow-none transition-all">
+                                Registrar primer ítem
+                            </button>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- ══ TABLA ENTRADAS ══ -->
+            <div *ngIf="activeTab() === 'entradas'" class="flex-1 overflow-auto custom-scrollbar-misc">
+                <table class="w-full">
+                    <thead class="bg-gray-100 dark:bg-slate-800 border-b-[2px] border-black sticky top-0 z-10">
+                    <tr class="text-left text-[10px] font-black uppercase tracking-wider text-black dark:text-white">
+                        <th class="px-4 py-3">Nro. Nota</th>
+                        <th class="px-4 py-3">Fecha / Hora</th>
+                        <th class="px-4 py-3">Código / Producto</th>
+                        <th class="px-4 py-3 text-center">Cant. / Unidad</th>
+                        <th class="px-4 py-3">Recibido por</th>
+                        <th class="px-4 py-3">Marca / P·N</th>
+                        <th class="px-4 py-3 text-center">Acciones</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr *ngFor="let e of filteredEntradas"
+                        (click)="verEntrada(e)"
+                        class="border-b border-gray-200 dark:border-slate-700 hover:bg-green-50 dark:hover:bg-slate-800 cursor-pointer transition-all">
+
+                        <td class="px-4 py-3">
+                            <span class="font-mono font-black text-green-700 dark:text-green-400 text-[10px] bg-green-50 dark:bg-green-900/30 px-1.5 py-0.5 rounded border border-green-200 tracking-wide">
+                                {{ e.nroNota || '—' }}
+                            </span>
+                        </td>
+
+                        <td class="px-4 py-3">
+                            <div class="text-xs font-black text-black dark:text-white">{{ e.fecha }}</div>
+                            <div class="text-[10px] text-gray-400">{{ e.hora }}</div>
+                        </td>
+
+                        <td class="px-4 py-3">
+                            <div class="text-[10px] font-mono font-bold text-gray-500">{{ e.codigoNombre }}</div>
+                            <div class="text-sm font-bold text-black dark:text-white max-w-[180px] truncate">{{ e.producto }}</div>
+                        </td>
+
+                        <td class="px-4 py-3 text-center">
+                            <span class="text-lg font-black text-green-700 dark:text-green-400 leading-none">{{ e.cantidad }}</span>
+                            <span class="text-[10px] text-gray-400 font-bold block">{{ e.unidad }}</span>
+                        </td>
+
+                        <td class="px-4 py-3">
+                            <div class="flex items-center gap-1.5">
+                                <mat-icon class="!text-xs text-gray-400">person</mat-icon>
+                                <span class="text-xs font-bold text-black dark:text-white">{{ e.recibidoPor }}</span>
+                            </div>
+                        </td>
+
+                        <td class="px-4 py-3">
+                            <div class="text-xs font-bold text-gray-700 dark:text-gray-300">{{ e.marca || '—' }}</div>
+                            <div class="text-[10px] text-gray-400 font-mono">{{ e.pn || '—' }}</div>
+                        </td>
+
+                        <td class="px-4 py-3" (click)="$event.stopPropagation()">
+                            <div class="flex gap-1.5 justify-center">
+                                <button (click)="verEntrada(e)" matTooltip="Ver detalle"
+                                        class="w-7 h-7 flex items-center justify-center bg-blue-950 border-2 border-black rounded-lg shadow-[2px_2px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all">
+                                    <mat-icon class="!text-sm text-white">visibility</mat-icon>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+
+                    <tr *ngIf="!filteredEntradas.length">
+                        <td colspan="7" class="px-4 py-12 text-center">
+                            <mat-icon class="!text-5xl text-gray-300 dark:text-gray-600">move_to_inbox</mat-icon>
+                            <p class="text-xs font-bold uppercase text-gray-500 mt-2">Sin entradas registradas</p>
+                            <button (click)="nuevaEntrada()"
+                                    class="mt-3 px-4 py-1.5 bg-[#1AAA1F] text-white border-2 border-black rounded-lg font-black text-xs uppercase shadow-[2px_2px_0px_0px_#000] hover:translate-y-[1px] hover:shadow-none transition-all">
+                                Registrar primera entrada
+                            </button>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- ══ TABLA SALIDAS ══ -->
+            <div *ngIf="activeTab() === 'salidas'" class="flex-1 overflow-auto custom-scrollbar-misc">
+                <table class="w-full">
+                    <thead class="bg-gray-100 dark:bg-slate-800 border-b-[2px] border-black sticky top-0 z-10">
+                    <tr class="text-left text-[10px] font-black uppercase tracking-wider text-black dark:text-white">
+                        <th class="px-4 py-3">Nro. Nota</th>
+                        <th class="px-4 py-3">Fecha / Hora</th>
+                        <th class="px-4 py-3">Código / Producto</th>
+                        <th class="px-4 py-3 text-center">Cant. / Unidad</th>
+                        <th class="px-4 py-3">Solicitante</th>
+                        <th class="px-4 py-3">Área</th>
+                        <th class="px-4 py-3">Despachado por</th>
+                        <th class="px-4 py-3 text-center">Acciones</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr *ngFor="let s of filteredSalidas"
+                        (click)="verSalida(s)"
+                        class="border-b border-gray-200 dark:border-slate-700 hover:bg-orange-50 dark:hover:bg-slate-800 cursor-pointer transition-all">
+
+                        <td class="px-4 py-3">
+                            <span class="font-mono font-black text-orange-700 dark:text-orange-400 text-[10px] bg-orange-50 dark:bg-orange-900/30 px-1.5 py-0.5 rounded border border-orange-200 tracking-wide">
+                                {{ s.nroNota || '—' }}
+                            </span>
+                        </td>
+
+                        <td class="px-4 py-3">
+                            <div class="text-xs font-black text-black dark:text-white">{{ s.fecha }}</div>
+                            <div class="text-[10px] text-gray-400">{{ s.hora }}</div>
+                        </td>
+
+                        <td class="px-4 py-3">
+                            <div class="text-[10px] font-mono font-bold text-gray-500">{{ s.codigoNombre }}</div>
+                            <div class="text-sm font-bold text-black dark:text-white max-w-[180px] truncate">{{ s.producto }}</div>
+                        </td>
+
+                        <td class="px-4 py-3 text-center">
+                            <span class="text-lg font-black text-orange-600 dark:text-orange-400 leading-none">{{ s.cantidad }}</span>
+                            <span class="text-[10px] text-gray-400 font-bold block">{{ s.unidad }}</span>
+                        </td>
+
+                        <td class="px-4 py-3">
+                            <div class="text-xs font-bold text-black dark:text-white">{{ s.apellidoPaterno }} {{ s.apellidoMaterno }}</div>
+                            <div class="text-[10px] text-gray-400">{{ s.nombre }}</div>
+                        </td>
+
+                        <td class="px-4 py-3">
+                            <span class="text-xs font-bold text-black dark:text-white">{{ s.area }}</span>
+                        </td>
+
+                        <td class="px-4 py-3">
+                            <div class="flex items-center gap-1.5">
+                                <mat-icon class="!text-xs text-gray-400">person_outline</mat-icon>
+                                <span class="text-xs font-bold text-black dark:text-white">{{ s.despachadoPor }}</span>
+                            </div>
+                        </td>
+
+                        <td class="px-4 py-3" (click)="$event.stopPropagation()">
+                            <div class="flex gap-1.5 justify-center">
+                                <button (click)="verSalida(s)" matTooltip="Ver detalle"
+                                        class="w-7 h-7 flex items-center justify-center bg-blue-950 border-2 border-black rounded-lg shadow-[2px_2px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all">
+                                    <mat-icon class="!text-sm text-white">visibility</mat-icon>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+
+                    <tr *ngIf="!filteredSalidas.length">
+                        <td colspan="8" class="px-4 py-12 text-center">
+                            <mat-icon class="!text-5xl text-gray-300 dark:text-gray-600">outbox</mat-icon>
+                            <p class="text-xs font-bold uppercase text-gray-500 mt-2">Sin salidas registradas</p>
+                            <button (click)="nuevaSalida()"
+                                    class="mt-3 px-4 py-1.5 bg-orange-500 text-white border-2 border-black rounded-lg font-black text-xs uppercase shadow-[2px_2px_0px_0px_#000] hover:translate-y-[1px] hover:shadow-none transition-all">
+                                Registrar primera salida
+                            </button>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+
+        </div>
+    </div>
+</div>

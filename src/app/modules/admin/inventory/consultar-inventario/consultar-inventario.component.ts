@@ -176,7 +176,7 @@ export class ConsultarInventarioComponent implements OnInit {
         this.loadInventory();
     }
 
-    private loadInventory(): void {
+    loadInventory(): void {
         this.isLoading.set(true);
 
         forkJoin({

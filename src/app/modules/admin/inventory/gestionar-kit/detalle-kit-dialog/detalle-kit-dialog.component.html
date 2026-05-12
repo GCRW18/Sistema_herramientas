@@ -1,0 +1,141 @@
+<div class="bg-stone-100 dark:bg-slate-900 border-2 border-black overflow-hidden flex flex-col"
+     style="width:720px; max-width:95vw; box-shadow: 6px 6px 0 #000">
+
+    <!-- Header (drag handle) -->
+    <div class="bg-[#0F172A] px-5 py-3.5 flex items-center justify-between shrink-0 select-none"
+         cdkDrag cdkDragRootElement=".cdk-overlay-pane" cdkDragHandle style="cursor:grab">
+        <div class="flex items-center gap-3">
+            <div class="w-9 h-9 rounded bg-amber-400 border-2 border-black flex items-center justify-center shadow-[2px_2px_0_#fbbf24] shrink-0">
+                <mat-icon class="!text-lg text-black">inventory_2</mat-icon>
+            </div>
+            <div>
+                <p class="text-[9px] text-slate-400 font-bold uppercase tracking-[0.18em] leading-none mb-0.5">Gestión de Kits</p>
+                <h2 class="text-sm text-white font-black uppercase tracking-tight leading-none">Ficha Técnica</h2>
+            </div>
+        </div>
+        <button (click)="cerrar(); $event.stopPropagation()"
+                class="w-8 h-8 flex items-center justify-center border-2 border-slate-600 bg-slate-800 hover:bg-red-500 hover:border-red-500 text-slate-400 hover:text-white rounded transition-all">
+            <mat-icon class="!text-base">close</mat-icon>
+        </button>
+    </div>
+
+    <!-- Barra de contexto -->
+    <div class="border-b-2 border-black bg-white dark:bg-slate-800 px-5 py-3 flex items-center gap-3 shrink-0">
+        <div class="w-9 h-9 rounded-xl border-2 border-stone-200 dark:border-slate-700 bg-stone-50 dark:bg-slate-700 flex items-center justify-center shrink-0">
+            <mat-icon class="!text-base text-stone-400 dark:text-slate-400">label</mat-icon>
+        </div>
+        <div class="flex-1 min-w-0">
+            <p class="text-[8px] text-stone-400 dark:text-slate-400 font-black uppercase tracking-widest leading-none mb-0.5">Designación del Kit</p>
+            <p class="text-xs font-black text-black dark:text-white truncate">{{ kit.nombre || 'Sin nombre' }}</p>
+        </div>
+        <span class="text-[8px] font-black uppercase px-2 py-1 border-2 border-amber-400 bg-amber-50 dark:bg-amber-900/20 rounded-lg text-amber-700 dark:text-amber-400 shrink-0">
+            #{{ kit.id || '—' }}
+        </span>
+    </div>
+
+    <!-- Cuerpo -->
+    <div class="flex-1 overflow-y-auto px-5 py-5 flex flex-col gap-4">
+
+        <!-- Stats: ubicación + último movimiento -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div class="bg-white dark:bg-slate-800 border-2 border-stone-200 dark:border-slate-700 rounded-xl px-4 py-3">
+                <p class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1.5 block">Ubicación</p>
+                <div class="flex items-center gap-2">
+                    <mat-icon class="!text-sm text-stone-400 dark:text-slate-500">place</mat-icon>
+                    <span class="text-xs font-black text-black dark:text-white">{{ kit.ubicacion || 'Sin asignar' }}</span>
+                </div>
+            </div>
+            <div class="bg-white dark:bg-slate-800 border-2 border-stone-200 dark:border-slate-700 rounded-xl px-4 py-3">
+                <p class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1.5 block">Último Movimiento</p>
+                <div class="flex items-center gap-2">
+                    <mat-icon class="!text-sm text-stone-400 dark:text-slate-500">schedule</mat-icon>
+                    <span class="text-xs font-black text-black dark:text-white">{{ kit.ultimaActualizacion | date:'mediumDate' }}</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Observaciones -->
+        <div *ngIf="kit.descripcion" class="bg-white dark:bg-slate-800 border-2 border-stone-200 dark:border-slate-700 rounded-xl px-4 py-3">
+            <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1.5 block">
+                Observaciones / Specs
+            </label>
+            <p class="text-sm font-bold text-black dark:text-white leading-relaxed">{{ kit.descripcion }}</p>
+        </div>
+
+        <!-- Tabla de items -->
+        <div class="border-2 border-black bg-white dark:bg-slate-800 rounded-xl overflow-hidden shadow-[3px_3px_0_#000]">
+
+            <!-- Sub-header tabla -->
+            <div class="bg-[#0F172A] px-4 py-2.5 flex items-center gap-2">
+                <mat-icon class="!text-sm text-amber-400">build</mat-icon>
+                <span class="text-[9px] font-black uppercase tracking-widest text-white">Component List</span>
+                <span class="ml-auto text-[8px] font-black uppercase px-2 py-0.5 border border-slate-600 rounded text-slate-400">
+                    {{ kit.items?.length || 0 }} items
+                </span>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="w-full text-left">
+                    <thead class="bg-stone-50 dark:bg-slate-900 border-b-2 border-stone-200 dark:border-slate-700">
+                    <tr>
+                        <th class="px-4 py-2.5 text-[8px] font-black uppercase tracking-widest text-stone-400 dark:text-slate-500 text-center w-12">#</th>
+                        <th class="px-4 py-2.5 text-[8px] font-black uppercase tracking-widest text-stone-400 dark:text-slate-500">Descripción</th>
+                        <th class="px-4 py-2.5 text-[8px] font-black uppercase tracking-widest text-stone-400 dark:text-slate-500 text-center">Código</th>
+                        <th class="px-4 py-2.5 text-[8px] font-black uppercase tracking-widest text-stone-400 dark:text-slate-500 text-center">Estado</th>
+                    </tr>
+                    </thead>
+                    <tbody class="divide-y divide-stone-100 dark:divide-slate-700 text-xs">
+                    <tr *ngFor="let item of kit.items; let i = index"
+                        class="hover:bg-stone-50 dark:hover:bg-slate-700/50 transition-colors">
+                        <td class="px-4 py-3 text-center">
+                            <div class="w-7 h-7 mx-auto bg-[#0F172A] text-white font-black rounded-lg border-2 border-black flex items-center justify-center text-[10px]">
+                                {{ i + 1 }}
+                            </div>
+                        </td>
+                        <td class="px-4 py-3 font-bold text-black dark:text-white uppercase">{{ item.descripcion }}</td>
+                        <td class="px-4 py-3 text-center">
+                            <span class="inline-block bg-stone-100 dark:bg-slate-700 px-2 py-0.5 rounded-lg border-2 border-stone-300 dark:border-slate-600 font-mono font-bold text-[11px] text-black dark:text-white">
+                                {{ item.codigoBoamm || item.codigo }}
+                            </span>
+                        </td>
+                        <td class="px-4 py-3 text-center">
+                            <span class="inline-flex items-center justify-center w-3 h-3 rounded-full bg-green-500 border-2 border-black shadow-[1px_1px_0_#000]"
+                                  title="Disponible"></span>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Empty state -->
+            <div *ngIf="!kit.items?.length" class="px-4 py-10 text-center">
+                <div class="w-14 h-14 mx-auto bg-stone-100 dark:bg-slate-700 border-2 border-stone-300 dark:border-slate-600 rounded-xl flex items-center justify-center mb-3">
+                    <mat-icon class="!text-3xl text-stone-400 dark:text-slate-500">inventory</mat-icon>
+                </div>
+                <p class="text-xs font-black uppercase text-stone-400 dark:text-slate-500">Sin componentes registrados</p>
+            </div>
+
+        </div>
+
+    </div>
+
+    <!-- Footer -->
+    <div class="border-t-2 border-black bg-stone-200 dark:bg-slate-800 px-5 py-3 flex justify-between items-center shrink-0">
+        <div class="flex items-center gap-2">
+            <mat-icon class="!text-sm text-stone-400 dark:text-slate-500">lock</mat-icon>
+            <span class="text-[8px] font-black uppercase tracking-widest text-stone-400 dark:text-slate-500">Solo Lectura</span>
+        </div>
+        <div class="flex items-center gap-3">
+            <button type="button" (click)="cerrar()"
+                    class="px-4 py-2 bg-white dark:bg-slate-700 text-black dark:text-white font-black text-[10px] border-2 border-black rounded-xl shadow-[2px_2px_0_#000] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all uppercase">
+                Cerrar
+            </button>
+            <button type="button" (click)="imprimir()"
+                    class="flex items-center gap-2 px-5 py-2 bg-amber-400 text-black font-black text-[10px] border-2 border-black rounded-xl shadow-[3px_3px_0_#000] hover:shadow-none hover:translate-x-[3px] hover:translate-y-[3px] transition-all uppercase">
+                <mat-icon class="!text-sm">print</mat-icon>
+                Imprimir
+            </button>
+        </div>
+    </div>
+
+</div>

@@ -203,7 +203,7 @@ export class CalibrationService {
     }
 
     searchToolsAutocomplete(term: string): Observable<any[]> {
-        return from(this._api.post('herramientas/tools/searchToolsAutocomplete', { search_term: term, start: 0, limit: 3 })).pipe(
+        return from(this._api.post('herramientas/tools/searchToolsAutocomplete', { search_term: term, start: 0, limit: 10 })).pipe(
             map((resp: any) => this._normalizeResponse(resp)),
             catchError(() => of([]))
         );

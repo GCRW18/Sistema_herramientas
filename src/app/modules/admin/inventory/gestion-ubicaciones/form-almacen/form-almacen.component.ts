@@ -45,8 +45,12 @@ export class FormAlmacenComponent implements OnInit {
     basesAeronauticas = signal<any[]>([]);
     ciudades          = signal<Ciudad[]>([]);
     oficinas          = signal<Oficina[]>([]);
+    ofiDropOpen       = signal(false);
+    baseDropOpen      = signal(false);
+    ciudadDropOpen    = signal(false);
+    tipoDropOpen      = signal(false);
 
-    tipos = ['Principal', 'Secundario', 'Técnico', 'Herramientas'];
+    tipos = ['Principal', 'Secundario'];
 
     form: FormGroup = this.fb.group({
         id_base:     [null, Validators.required],
@@ -60,6 +64,9 @@ export class FormAlmacenComponent implements OnInit {
     });
 
     ngOnInit(): void {
+        if (this.mode === 'view' && this.data?.almacen?.id_oficina != null && this.data.almacen.nombreOficina) {
+            this.oficinas.set([{ id_oficina: this.data.almacen.id_oficina as number, nombre_oficina: this.data.almacen.nombreOficina }]);
+        }
         this.cargarCatalogos();
         this.inicializarFormulario();
     }
@@ -114,10 +121,17 @@ export class FormAlmacenComponent implements OnInit {
 
     get readOnly(): boolean { return this.mode === 'view'; }
 
+    get nombreBasePreview(): string {
+        const id = this.form.get('id_base')?.value;
+        if (id == null || id === '') return '';
+        const b = this.basesAeronauticas().find(b => Number(b.id_base) === Number(id));
+        return b ? `${b.name} (${b.code})` : '';
+    }
+
     get nombreOficinaPreview(): string {
         const id = this.form.get('id_oficina')?.value;
-        if (!id) return '';
-        return this.oficinas().find(o => o.id_oficina === Number(id))?.nombre_oficina ?? '';
+        if (id == null || id === '') return '';
+        return this.oficinas().find(o => Number(o.id_oficina) === Number(id))?.nombre_oficina ?? '';
     }
 
     hasError(field: string, error: string): boolean {

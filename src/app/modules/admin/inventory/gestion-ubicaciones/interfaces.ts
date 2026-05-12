@@ -1,4 +1,4 @@
-export type AlmacenTipo   = 'Principal' | 'Secundario' | 'Técnico' | 'Herramientas';
+export type AlmacenTipo   = 'Principal' | 'Secundario';
 export type AlmacenEstado = 'ACTIVO' | 'INACTIVO';
 
 export interface Ciudad {

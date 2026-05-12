@@ -1,12 +1,9 @@
-import { Component, ViewEncapsulation, inject } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, FormArray, Validators, ReactiveFormsModule } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
 import { MatDialogRef, MatDialogModule } from '@angular/material/dialog';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatInputModule } from '@angular/material/input';
 import { DragDropModule } from '@angular/cdk/drag-drop';
-import { MatButtonModule } from '@angular/material/button';
 
 @Component({
     selector: 'app-gestionar-kit',
@@ -15,104 +12,40 @@ import { MatButtonModule } from '@angular/material/button';
         CommonModule,
         ReactiveFormsModule,
         MatIconModule,
-        MatFormFieldModule,
-        MatInputModule,
         DragDropModule,
-        MatButtonModule,
         MatDialogModule
     ],
-    encapsulation: ViewEncapsulation.None,
     templateUrl: './gestionar-kit.component.html',
     styles: [`
-        /* Variables y Reset */
-        app-gestionar-kit {
+        :host {
             display: flex;
             flex-direction: column;
-            height: 100%;
         }
 
-        /* --- CLASES UTILITARIAS NEO --- */
-        .neo-card-base {
-            border: 3px solid black !important;
-            box-shadow: 4px 4px 0px 0px rgba(0,0,0,1) !important;
-            border-radius: 12px !important;
-            transition: all 0.2s ease;
+        /* Custom Scrollbar adaptada para modo claro y oscuro */
+        .neo-scrollbar::-webkit-scrollbar {
+            width: 8px;
+        }
+        .neo-scrollbar::-webkit-scrollbar-track {
+            background: #e7e5e4;
+            border-left: 2px solid #000;
+        }
+        .neo-scrollbar::-webkit-scrollbar-thumb {
+            background: #0F172A;
+            border: 2px solid #000;
+            border-radius: 4px;
+        }
+        .neo-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #000;
         }
 
-        .neo-input-label {
-            font-weight: 900;
-            text-transform: uppercase;
-            font-size: 0.75rem;
-            letter-spacing: 0.05em;
-            margin-bottom: 0.25rem;
-            display: block;
+        /* Dark mode overrides para la barra de desplazamiento */
+        :host-context(.dark) .neo-scrollbar::-webkit-scrollbar-track {
+            background: #1e293b;
         }
-
-        /* --- MATERIAL OVERRIDES (INPUTS) --- */
-
-        /* 1. CONTENEDOR DEL INPUT (Caja) */
-        :host ::ng-deep .mat-mdc-text-field-wrapper {
-            background-color: white !important; /* LIGHT MODE: Fondo Blanco */
-            border: 2px solid black !important;
-            border-radius: 8px !important;
-            padding: 0 12px !important;
-            height: 48px;
-            box-shadow: 3px 3px 0px 0px rgba(0,0,0,0.1);
-            transition: all 0.2s;
-        }
-
-        /* DARK MODE: Fondo Oscuro para que se lea el texto blanco */
-        :host-context(.dark) ::ng-deep .mat-mdc-text-field-wrapper {
-            background-color: #1e293b !important; /* Slate-800 */
-            border-color: rgba(255,255,255,0.5) !important; /* Borde gris claro */
-            box-shadow: none !important;
-        }
-
-        /* 2. TEXTO DENTRO DEL INPUT */
-        :host ::ng-deep .mat-mdc-input-element {
-            font-weight: 700 !important;
-            color: black !important; /* LIGHT MODE: Texto Negro */
-        }
-
-        /* DARK MODE: Texto Blanco */
-        :host-context(.dark) ::ng-deep .mat-mdc-input-element {
-            color: white !important;
-            caret-color: #FFE500 !important; /* Cursor Amarillo */
-        }
-
-        /* Placeholder en Dark Mode */
-        :host-context(.dark) ::ng-deep .mat-mdc-input-element::placeholder {
-            color: rgba(255, 255, 255, 0.4) !important;
-        }
-
-        /* 3. FOCUS STATES */
-        :host ::ng-deep .mat-mdc-form-field.mat-focused .mat-mdc-text-field-wrapper {
-            background-color: white !important;
-            border-color: black !important;
-            box-shadow: 3px 3px 0px 0px #FFE500 !important;
-            transform: translate(-1px, -1px);
-        }
-
-        /* DARK MODE FOCUS: Mantener fondo oscuro, borde brillante */
-        :host-context(.dark) ::ng-deep .mat-mdc-form-field.mat-focused .mat-mdc-text-field-wrapper {
-            background-color: #0f172a !important; /* Slate-900 (Más oscuro al focus) */
-            border-color: #FFE500 !important; /* Borde amarillo */
-            box-shadow: 0px 0px 10px rgba(255, 229, 0, 0.2) !important;
-        }
-
-        /* --- TABLE INPUTS (Más compactos) --- */
-        .table-input .mat-mdc-text-field-wrapper {
-            height: 40px !important;
-            min-height: 40px !important;
-            padding: 0 8px !important;
-            box-shadow: none !important;
-        }
-
-        /* Limpieza de Material */
-        .mat-mdc-form-field-subscript-wrapper,
-        .mat-mdc-form-field-focus-overlay,
-        .mat-mdc-notched-outline {
-            display: none !important;
+        :host-context(.dark) .neo-scrollbar::-webkit-scrollbar-thumb {
+            background: #fbbf24;
+            border-color: #000;
         }
     `]
 })
@@ -130,7 +63,9 @@ export class GestionarKitComponent {
         });
     }
 
-    get items() { return this.kitForm.get('items') as FormArray; }
+    get items(): FormArray {
+        return this.kitForm.get('items') as FormArray;
+    }
 
     createItem(): FormGroup {
         return this.fb.group({
@@ -140,8 +75,21 @@ export class GestionarKitComponent {
         });
     }
 
-    agregarItem() { this.items.push(this.createItem()); }
-    eliminarItem(i: number) { this.items.removeAt(i); }
-    cerrar() { this.dialogRef.close(); }
-    onSubmit() { if (this.kitForm.valid) this.dialogRef.close(this.kitForm.value); }
+    agregarItem(): void {
+        this.items.push(this.createItem());
+    }
+
+    eliminarItem(i: number): void {
+        this.items.removeAt(i);
+    }
+
+    cerrar(): void {
+        this.dialogRef.close();
+    }
+
+    onSubmit(): void {
+        if (this.kitForm.valid) {
+            this.dialogRef.close(this.kitForm.value);
+        }
+    }
 }

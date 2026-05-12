@@ -55,47 +55,11 @@
 
             <button (click)="openModule(2)"
                     class="group relative flex flex-col items-center gap-1.5 p-3 rounded-xl border-[2px] border-black transition-all hover:-translate-y-1 w-[120px] shrink-0"
-                    [style.background-color]="isTabOpen(2) ? '#FFC501' : '#f8f9fc'"
+                    [style.background-color]="isTabOpen(2) ? '#D97706' : '#f8f9fc'"
                     [style.box-shadow]="'3px 3px 0px 0px rgba(0,0,0,1)'">
-                <mat-icon svgIcon="heroicons_outline:plus-circle" class="!w-8 !h-8 !text-3xl shrink-0" [class.text-white]="isTabOpen(2)" [class.text-black]="!isTabOpen(2)"></mat-icon>
-                <p class="text-[10px] font-black uppercase leading-tight text-center w-full" [class.text-white]="isTabOpen(2)" [class.text-black]="!isTabOpen(2)">CREAR</p>
-                <p class="text-[9px] font-bold uppercase leading-tight text-center w-full truncate" [class.text-white]="isTabOpen(2)" [class.text-gray-700]="!isTabOpen(2)">MATERIAL</p>
-            </button>
-
-            <button (click)="openModule(3)"
-                    class="group relative flex flex-col items-center gap-1.5 p-3 rounded-xl border-[2px] border-black transition-all hover:-translate-y-1 w-[120px] shrink-0"
-                    [style.background-color]="isTabOpen(3) ? '#1AAA1F' : '#f8f9fc'"
-                    [style.box-shadow]="'3px 3px 0px 0px rgba(0,0,0,1)'">
-                <mat-icon svgIcon="heroicons_outline:arrow-down-tray" class="!w-8 !h-8 !text-3xl shrink-0" [class.text-white]="isTabOpen(3)" [class.text-black]="!isTabOpen(3)"></mat-icon>
-                <p class="text-[10px] font-black uppercase leading-tight text-center w-full" [class.text-white]="isTabOpen(3)" [class.text-black]="!isTabOpen(3)">ENTRADA</p>
-                <p class="text-[9px] font-bold uppercase leading-tight text-center w-full truncate" [class.text-white]="isTabOpen(3)" [class.text-gray-700]="!isTabOpen(3)">MATERIAL</p>
-            </button>
-
-            <button (click)="openModule(4)"
-                    class="group relative flex flex-col items-center gap-1.5 p-3 rounded-xl border-[2px] border-black transition-all hover:-translate-y-1 w-[120px] shrink-0"
-                    [style.background-color]="isTabOpen(4) ? '#e94125' : '#f8f9fc'"
-                    [style.box-shadow]="'3px 3px 0px 0px rgba(0,0,0,1)'">
-                <mat-icon svgIcon="heroicons_outline:arrow-up-tray" class="!w-8 !h-8 !text-3xl shrink-0" [class.text-white]="isTabOpen(4)" [class.text-black]="!isTabOpen(4)"></mat-icon>
-                <p class="text-[10px] font-black uppercase leading-tight text-center w-full" [class.text-white]="isTabOpen(4)" [class.text-black]="!isTabOpen(4)">SALIDA</p>
-                <p class="text-[9px] font-bold uppercase leading-tight text-center w-full truncate" [class.text-white]="isTabOpen(4)" [class.text-gray-700]="!isTabOpen(4)">MATERIAL</p>
-            </button>
-
-            <button (click)="openModule(5)"
-                    class="group relative flex flex-col items-center gap-1.5 p-3 rounded-xl border-[2px] border-black transition-all hover:-translate-y-1 w-[120px] shrink-0"
-                    [style.background-color]="isTabOpen(5) ? '#0891b2' : '#f8f9fc'"
-                    [style.box-shadow]="'3px 3px 0px 0px rgba(0,0,0,1)'">
-                <mat-icon svgIcon="heroicons_outline:clock" class="!w-8 !h-8 !text-3xl shrink-0" [class.text-white]="isTabOpen(5)" [class.text-black]="!isTabOpen(5)"></mat-icon>
-                <p class="text-[10px] font-black uppercase leading-tight text-center w-full" [class.text-white]="isTabOpen(5)" [class.text-black]="!isTabOpen(5)">HISTORIAL</p>
-                <p class="text-[9px] font-bold uppercase leading-tight text-center w-full truncate" [class.text-white]="isTabOpen(5)" [class.text-gray-700]="!isTabOpen(5)">ESTADOS</p>
-            </button>
-
-            <button (click)="openModule(6)"
-                    class="group relative flex flex-col items-center gap-1.5 p-3 rounded-xl border-[2px] border-black transition-all hover:-translate-y-1 w-[120px] shrink-0"
-                    [style.background-color]="isTabOpen(6) ? '#16a34a' : '#f8f9fc'"
-                    [style.box-shadow]="'3px 3px 0px 0px rgba(0,0,0,1)'">
-                <mat-icon svgIcon="heroicons_outline:cloud-arrow-up" class="!w-8 !h-8 !text-3xl shrink-0" [class.text-white]="isTabOpen(6)" [class.text-black]="!isTabOpen(6)"></mat-icon>
-                <p class="text-[10px] font-black uppercase leading-tight text-center w-full" [class.text-white]="isTabOpen(6)" [class.text-black]="!isTabOpen(6)">MIGRACIÓN</p>
-                <p class="text-[9px] font-bold uppercase leading-tight text-center w-full truncate" [class.text-white]="isTabOpen(6)" [class.text-gray-700]="!isTabOpen(6)">EXCEL</p>
+                <mat-icon svgIcon="heroicons_outline:cube-transparent" class="!w-8 !h-8 !text-3xl shrink-0" [class.text-white]="isTabOpen(2)" [class.text-black]="!isTabOpen(2)"></mat-icon>
+                <p class="text-[10px] font-black uppercase leading-tight text-center w-full" [class.text-white]="isTabOpen(2)" [class.text-black]="!isTabOpen(2)">MISCELÁNEOS</p>
+                <p class="text-[9px] font-bold uppercase leading-tight text-center w-full truncate" [class.text-white]="isTabOpen(2)" [class.text-gray-700]="!isTabOpen(2)">Cat · E/S</p>
             </button>
 
             <button (click)="openModule(7)"
@@ -114,6 +78,15 @@
                 <mat-icon svgIcon="heroicons_outline:chart-bar" class="!w-8 !h-8 !text-3xl shrink-0" [class.text-white]="isTabOpen(8)" [class.text-black]="!isTabOpen(8)"></mat-icon>
                 <p class="text-[10px] font-black uppercase leading-tight text-center w-full" [class.text-white]="isTabOpen(8)" [class.text-black]="!isTabOpen(8)">REPORTES</p>
                 <p class="text-[9px] font-bold uppercase leading-tight text-center w-full truncate text-gray-700">&nbsp;</p>
+            </button>
+
+            <button (click)="openModule(10)"
+                    class="group relative flex flex-col items-center gap-1.5 p-3 rounded-xl border-[2px] border-black transition-all hover:-translate-y-1 w-[120px] shrink-0"
+                    [style.background-color]="isTabOpen(10) ? '#0f766e' : '#f8f9fc'"
+                    [style.box-shadow]="'3px 3px 0px 0px rgba(0,0,0,1)'">
+                <mat-icon svgIcon="heroicons_outline:magnifying-glass" class="!w-8 !h-8 !text-3xl shrink-0" [class.text-white]="isTabOpen(10)" [class.text-black]="!isTabOpen(10)"></mat-icon>
+                <p class="text-[10px] font-black uppercase leading-tight text-center w-full" [class.text-white]="isTabOpen(10)" [class.text-black]="!isTabOpen(10)">CONSULTAR</p>
+                <p class="text-[9px] font-bold uppercase leading-tight text-center w-full truncate" [class.text-white]="isTabOpen(10)" [class.text-gray-700]="!isTabOpen(10)">INVENTARIO</p>
             </button>
 
         </div>

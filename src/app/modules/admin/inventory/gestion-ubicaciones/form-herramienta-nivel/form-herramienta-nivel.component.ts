@@ -1,12 +1,16 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { MatDialogRef, MatDialogModule, MAT_DIALOG_DATA } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { DragDropModule } from '@angular/cdk/drag-drop';
+import { Subject, of } from 'rxjs';
+import { debounceTime, distinctUntilChanged, finalize, switchMap, takeUntil } from 'rxjs/operators';
 
 import { Level, LevelTool, Rack, ToolEstado } from '../interfaces';
+import { CalibrationService } from 'app/core/services/calibration.service';
 
 type Mode = 'new' | 'edit';
 
@@ -27,6 +31,7 @@ interface DialogData {
         MatDialogModule,
         MatIconModule,
         MatTooltipModule,
+        MatProgressSpinnerModule,
         DragDropModule,
     ],
     templateUrl: './form-herramienta-nivel.component.html',
@@ -38,11 +43,14 @@ interface DialogData {
         .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #e55a00; }
     `]
 })
-export class FormHerramientaNivelComponent implements OnInit {
+export class FormHerramientaNivelComponent implements OnInit, OnDestroy {
 
-    public dialogRef = inject(MatDialogRef<FormHerramientaNivelComponent>);
-    private fb       = inject(FormBuilder);
-    private data     = inject<DialogData>(MAT_DIALOG_DATA);
+    public dialogRef  = inject(MatDialogRef<FormHerramientaNivelComponent>);
+    private fb        = inject(FormBuilder);
+    private data      = inject<DialogData>(MAT_DIALOG_DATA);
+    private calibSvc  = inject(CalibrationService);
+    private _destroy$ = new Subject<void>();
+    private _search$  = new Subject<string>();
 
     mode: Mode = this.data.mode;
     rack:  Rack  = this.data.rack;
@@ -51,17 +59,23 @@ export class FormHerramientaNivelComponent implements OnInit {
     form!: FormGroup;
     selectedImage = signal<string | null>(null);
 
+    /* ════════ Buscador header (mismo patrón que form-envio) ════════ */
+    buscarValue       = 'BOA-H-';
+    toolSuggestions:  any[] = [];
+    showToolDropdown  = false;
+    toolSearchLoading = false;
+
     unidadesMedida = [
-        { value: 'UNIDAD', label: 'UNIDAD' }, { value: 'PAR', label: 'PAR' },
-        { value: 'JUEGO',  label: 'JUEGO'  }, { value: 'KIT', label: 'KIT' },
+        { value: 'UNIDAD', label: 'UNIDAD' }, { value: 'PAR',   label: 'PAR'   },
+        { value: 'JUEGO',  label: 'JUEGO'  }, { value: 'KIT',   label: 'KIT'   },
         { value: 'LITRO',  label: 'LITRO'  }, { value: 'METRO', label: 'METRO' },
-        { value: 'CAJA',   label: 'CAJA'   }, { value: 'KG', label: 'KG' },
+        { value: 'CAJA',   label: 'CAJA'   }, { value: 'KG',    label: 'KG'    },
     ];
 
     estados: { value: ToolEstado; label: string }[] = [
-        { value: 'NUEVO',           label: 'NUEVO' },
+        { value: 'NUEVO',           label: 'NUEVO'           },
         { value: 'REACONDICIONADO', label: 'REACONDICIONADO' },
-        { value: 'USADO',           label: 'USADO' },
+        { value: 'USADO',           label: 'USADO'           },
     ];
 
     ngOnInit(): void {
@@ -69,25 +83,74 @@ export class FormHerramientaNivelComponent implements OnInit {
         if (t?.imagenBase64) this.selectedImage.set(t.imagenBase64);
 
         this.form = this.fb.group({
-            codigo:        [t?.codigo  ?? 'BOA-H-', [Validators.required, Validators.maxLength(40)]],
-            pn:            [t?.pn      ?? '',       [Validators.required, Validators.maxLength(60)]],
-            sn:            [t?.sn      ?? ''],
-            nombre:        [t?.nombre  ?? '',       [Validators.required, Validators.maxLength(150)]],
-            marca:         [t?.marca   ?? '',       Validators.maxLength(60)],
-            estado:        [t?.estado  ?? 'NUEVO',  Validators.required],
-            um:            [t?.um      ?? 'UNIDAD', Validators.required],
-            cantidad:      [t?.cantidad ?? 1,       [Validators.required, Validators.min(1)]],
+            codigo:        [t?.codigo        ?? 'BOA-H-', [Validators.required, Validators.maxLength(40)]],
+            pn:            [t?.pn            ?? '',        [Validators.required, Validators.maxLength(60)]],
+            sn:            [t?.sn            ?? ''],
+            nombre:        [t?.nombre        ?? '',        [Validators.required, Validators.maxLength(150)]],
+            marca:         [t?.marca         ?? '',        Validators.maxLength(60)],
+            estado:        [t?.estado        ?? 'NUEVO',   Validators.required],
+            um:            [t?.um            ?? 'UNIDAD',  Validators.required],
+            cantidad:      [t?.cantidad      ?? 1,         [Validators.required, Validators.min(1)]],
             observaciones: [t?.observaciones ?? ''],
+        });
+
+        this._setupSearch();
+    }
+
+    ngOnDestroy(): void {
+        this._destroy$.next();
+        this._destroy$.complete();
+    }
+
+    /* ════════ Buscador ════════ */
+
+    private _setupSearch(): void {
+        this._search$.pipe(
+            debounceTime(300),
+            distinctUntilChanged(),
+            switchMap(term => {
+                const q = term.replace(/^BOA-H-/i, '').trim();
+                if (q.length < 1) {
+                    this.showToolDropdown = false;
+                    return of([]);
+                }
+                this.toolSearchLoading = true;
+                return this.calibSvc.searchToolsAutocomplete(term).pipe(
+                    finalize(() => this.toolSearchLoading = false)
+                );
+            }),
+            takeUntil(this._destroy$)
+        ).subscribe(results => {
+            this.toolSuggestions  = results || [];
+            this.showToolDropdown = this.toolSuggestions.length > 0;
         });
     }
 
-    get titulo(): string {
-        return this.mode === 'new' ? 'Agregar Herramienta al Nivel' : 'Editar Herramienta';
+    onBuscarInput(value: string): void {
+        this._search$.next(value.trim());
     }
 
-    generarCodigoBoa(): void {
-        const rnd = Math.floor(1000 + Math.random() * 9000);
-        this.form.patchValue({ codigo: `BOA-H-${rnd}` });
+    seleccionarHerramienta(tool: any): void {
+        const codigo = tool.code ?? tool.tool_code ?? 'BOA-H-';
+        this.buscarValue      = codigo;
+        this.showToolDropdown = false;
+        this.form.patchValue({
+            codigo: codigo,
+            pn:     tool.part_number   ?? tool.model       ?? tool.pn ?? '',
+            sn:     tool.serial_number ?? tool.sn          ?? '',
+            nombre: tool.name          ?? tool.tool_name   ?? '',
+            marca:  tool.brand         ?? tool.marca       ?? '',
+        });
+    }
+
+    hideBuscarDropdown(): void {
+        setTimeout(() => this.showToolDropdown = false, 180);
+    }
+
+    /* ════════ Form ════════ */
+
+    get titulo(): string {
+        return this.mode === 'new' ? 'Agregar Herramienta al Nivel' : 'Editar Herramienta';
     }
 
     onImageSelected(event: Event): void {
@@ -108,27 +171,25 @@ export class FormHerramientaNivelComponent implements OnInit {
             this.form.markAllAsTouched();
             return;
         }
-
         const v = this.form.getRawValue();
         const out: LevelTool = {
-            id:           this.data.tool?.id ?? 0,
-            levelId:      this.level.id,
-            rackId:       this.rack.id,
-            rackCodigo:   this.rack.codigo,
-            levelNumero:  this.level.numero,
-            levelCodigo:  this.level.codigo,
-            codigo:       v.codigo.trim(),
-            pn:           v.pn.trim(),
-            sn:           v.sn?.trim() || undefined,
-            nombre:       v.nombre.trim(),
-            marca:        v.marca?.trim() || undefined,
-            estado:       v.estado,
-            cantidad:     Number(v.cantidad),
-            um:           v.um,
-            imagenBase64: this.selectedImage() ?? undefined,
+            id:            this.data.tool?.id ?? 0,
+            levelId:       this.level.id,
+            rackId:        this.rack.id,
+            rackCodigo:    this.rack.codigo,
+            levelNumero:   this.level.numero,
+            levelCodigo:   this.level.codigo,
+            codigo:        v.codigo.trim(),
+            pn:            v.pn.trim(),
+            sn:            v.sn?.trim()            || undefined,
+            nombre:        v.nombre.trim(),
+            marca:         v.marca?.trim()         || undefined,
+            estado:        v.estado,
+            cantidad:      Number(v.cantidad),
+            um:            v.um,
+            imagenBase64:  this.selectedImage()    ?? undefined,
             observaciones: v.observaciones?.trim() || undefined,
         };
-
         this.dialogRef.close(out);
     }
 

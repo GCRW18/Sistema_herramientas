@@ -1,82 +1,114 @@
-<div class="bg-[#f8f9fc] dark:bg-slate-900 border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] overflow-hidden flex flex-col font-sans h-auto max-h-[95vh]">
+<div class="bg-stone-100 dark:bg-slate-900 border-2 border-black overflow-hidden flex flex-col"
+     style="width:560px; max-width:95vw; max-height:90vh; box-shadow: 6px 6px 0 #000">
 
-    <!-- HEADER -->
-    <div class="bg-[#0F172AFF] text-white px-5 py-3 flex justify-between items-center shrink-0"
-         cdkDrag cdkDragRootElement=".cdk-overlay-pane" cdkDragHandle>
-        <div class="flex items-center gap-3">
-            <div class="w-8 h-8 bg-white border-2 border-black rounded flex items-center justify-center shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
-                <mat-icon class="text-black !text-base">shelves</mat-icon>
-            </div>
-            <div>
-                <h2 class="text-sm font-black uppercase tracking-tight leading-none">{{ titulo }}</h2>
-                <p class="text-[10px] text-gray-300 font-bold uppercase mt-0.5">{{ subtitulo }}</p>
-            </div>
+    <!-- ══ HEADER ══ -->
+    <div class="bg-[#0F172A] px-5 py-3.5 flex items-center gap-3 shrink-0 select-none"
+         cdkDrag cdkDragRootElement=".cdk-overlay-pane" cdkDragHandle style="cursor:grab">
+        <div class="w-9 h-9 rounded bg-amber-400 border-2 border-black flex items-center justify-center shadow-[2px_2px_0_#fbbf24] shrink-0">
+            <mat-icon class="!text-lg text-black">shelves</mat-icon>
         </div>
-
-        <div class="flex items-center gap-3">
-            <button (click)="dialogRef.close(null)"
-                    class="px-4 py-1.5 bg-red-600 text-white font-black text-[10px] border-2 border-black rounded-lg shadow-[2px_2px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all uppercase">
-                Cancelar
-            </button>
-            <button (click)="save()"
-                    class="px-4 py-1.5 bg-amber-400 text-black font-black text-[10px] border-2 border-black rounded-lg shadow-[2px_2px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all uppercase flex items-center gap-1.5">
-                <mat-icon class="!text-black">save</mat-icon> Guardar Estante
-            </button>
+        <div>
+            <p class="text-[9px] text-slate-400 font-bold uppercase tracking-[0.18em] leading-none mb-0.5">Gestión de Ubicaciones</p>
+            <h2 class="text-sm text-white font-black uppercase tracking-tight leading-none">{{ titulo }}</h2>
         </div>
     </div>
 
-    <!-- BODY -->
-    <div class="flex-1 overflow-y-auto p-5 custom-scrollbar" style="width:700px; max-width:95vw">
+    <!-- ══ CONTEXTO DEL ALMACÉN ══ -->
+    <div class="border-b-2 border-black bg-white dark:bg-slate-800 px-5 py-3 flex items-center gap-3 shrink-0">
+        <div class="w-9 h-9 rounded-xl border-2 border-stone-200 dark:border-slate-700 bg-stone-50 dark:bg-slate-700 flex items-center justify-center shrink-0">
+            <mat-icon class="!text-base text-stone-400 dark:text-slate-400">warehouse</mat-icon>
+        </div>
+        <div class="flex-1 min-w-0">
+            <p class="text-[8px] text-stone-400 dark:text-slate-400 font-black uppercase tracking-widest leading-none mb-0.5">Almacén</p>
+            <p class="text-xs font-black text-black dark:text-white truncate">{{ warehouse.codigo }} · {{ warehouse.nombre }}</p>
+        </div>
+        <span class="text-[8px] font-black uppercase px-2 py-1 border-2 border-stone-200 dark:border-slate-700 rounded-lg text-stone-400 dark:text-slate-400 shrink-0">
+            {{ warehouse.tipo }}
+        </span>
+    </div>
+
+    <!-- ══ CUERPO DEL FORM ══ -->
+    <div class="flex-1 overflow-y-auto px-5 py-5 flex flex-col gap-4">
         <form [formGroup]="form" class="flex flex-col gap-4">
 
-            <!-- Warehouse context -->
-            <div class="bg-amber-100 dark:bg-amber-900/30 border-2 border-black rounded-xl p-3 shadow-[3px_3px_0px_0px_#000] relative overflow-hidden">
-                <mat-icon class="absolute -right-3 -bottom-3 !text-[60px] text-amber-200 dark:text-amber-800/40 opacity-60 pointer-events-none">warehouse</mat-icon>
-                <div class="relative z-10">
-                    <p class="text-[9px] font-black text-black dark:text-amber-500 uppercase">Almacén destino</p>
-                    <p class="font-mono text-base font-black text-black dark:text-white">{{ warehouse.codigo }}</p>
-                    <p class="text-xs font-bold text-gray-800 dark:text-gray-200">{{ warehouse.nombre }}</p>
+            <!-- Código + Toggle activo -->
+            <div class="flex flex-col sm:flex-row gap-3 sm:items-end">
+                <!-- Código -->
+                <div class="flex-1">
+                    <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1.5 block">
+                        Código *
+                    </label>
+                    <input type="text" formControlName="codigo"
+                           class="w-full h-10 text-sm font-black uppercase bg-white dark:bg-slate-800 dark:text-white border-2 rounded-xl px-3 outline-none transition-all duration-150 tracking-wider"
+                           [class]="hasError('codigo','required')
+                               ? 'border-red-400 focus:shadow-[2px_2px_0_#f87171]'
+                               : 'border-stone-300 dark:border-slate-600 hover:border-stone-400 dark:hover:border-slate-500 focus:border-black dark:focus:border-slate-400 focus:shadow-[3px_3px_0_#000]'">
+                    <p *ngIf="hasError('codigo','required')"
+                       class="text-[8px] font-bold text-red-500 mt-1">Campo requerido.</p>
+                    <p *ngIf="hasError('codigo','maxlength')"
+                       class="text-[8px] font-bold text-red-500 mt-1">Máximo 40 caracteres.</p>
+                </div>
+
+                <!-- Toggle activo -->
+                <div>
+                    <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1.5 block">
+                        Estado
+                    </label>
+                    <button type="button"
+                            (click)="form.patchValue({activo: !form.value.activo})"
+                            class="flex items-center gap-2 h-10 px-3 border-2 rounded-xl font-black text-[10px] uppercase transition-all duration-150 w-full sm:w-auto"
+                            [class]="form.value.activo
+                                ? 'border-black bg-white dark:bg-slate-700 shadow-[2px_2px_0_#000] text-black dark:text-white'
+                                : 'border-stone-300 dark:border-slate-600 bg-stone-50 dark:bg-slate-800 text-stone-400 dark:text-slate-500'">
+                        <div class="w-8 h-4 rounded-full border-2 relative transition-all duration-200 shrink-0"
+                             [class]="form.value.activo ? 'border-black bg-black dark:border-slate-400 dark:bg-slate-400' : 'border-stone-300 dark:border-slate-600 bg-stone-200 dark:bg-slate-600'">
+                            <div class="absolute top-px w-2.5 h-2.5 rounded-full bg-white transition-all duration-200"
+                                 [class]="form.value.activo ? 'left-4' : 'left-px'"></div>
+                        </div>
+                        {{ form.value.activo ? 'Activo' : 'Inactivo' }}
+                    </button>
                 </div>
             </div>
 
-            <!-- Identification -->
-            <div class="bg-white dark:bg-slate-800 border-2 border-black rounded-xl p-4 shadow-[3px_3px_0px_0px_#000]">
-                <p class="text-[10px] font-black uppercase text-gray-500 mb-2 border-b-2 border-black/10 pb-1">
-                    <mat-icon class="!text-sm align-middle">info</mat-icon> Identificación
-                </p>
-
-                <div class="grid grid-cols-12 gap-3">
-                    <div class="col-span-12 sm:col-span-7">
-                        <label class="text-[10px] font-black uppercase text-black dark:text-gray-300 mb-1 block">Código *</label>
-                        <input type="text" formControlName="codigo"
-                               class="w-full h-10 text-sm font-black uppercase bg-white dark:bg-slate-900 border-2 border-black dark:border-slate-600 rounded-lg px-3 focus:shadow-[2px_2px_0px_0px_#000] outline-none transition-all"
-                               [class.border-red-500]="hasError('codigo','required')">
-                    </div>
-
-                    <div class="col-span-12 sm:col-span-5 flex items-end">
-                        <label class="flex items-center gap-2 cursor-pointer h-10 px-3 border-2 border-black rounded-lg w-full shadow-[2px_2px_0px_0px_#000]"
-                               [ngClass]="form.value.activo ? 'bg-green-100 dark:bg-green-900/30' : 'bg-gray-100 dark:bg-slate-700'">
-                            <input type="checkbox" formControlName="activo"
-                                   class="w-4 h-4 border-2 border-black rounded accent-amber-400">
-                            <span class="text-[10px] font-black uppercase">{{ form.value.activo ? 'Estante activo' : 'Estante inactivo' }}</span>
-                        </label>
-                    </div>
-
-                    <div class="col-span-12">
-                        <label class="text-[10px] font-black uppercase text-black dark:text-gray-300 mb-1 block">Nombre *</label>
-                        <input type="text" formControlName="nombre" placeholder="Ej. Estante de Tornillería"
-                               class="w-full h-10 text-sm font-bold bg-white dark:bg-slate-900 border-2 border-black dark:border-slate-600 rounded-lg px-3 focus:shadow-[2px_2px_0px_0px_#000] outline-none transition-all"
-                               [class.border-red-500]="hasError('nombre','required')">
-                    </div>
-                </div>
-            </div>
-
-            <!-- Description -->
+            <!-- Nombre -->
             <div>
-                <label class="text-[10px] font-black uppercase text-black dark:text-gray-300 mb-1 block">Descripción</label>
-                <textarea formControlName="descripcion" rows="3" placeholder="Qué se almacena, particularidades..."
-                          class="w-full text-sm font-bold border-2 border-black dark:border-slate-600 rounded-xl p-3 bg-white dark:bg-slate-800 text-black dark:text-white outline-none focus:shadow-[2px_2px_0px_0px_#000] transition-shadow resize-none custom-scrollbar"></textarea>
+                <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1.5 block">
+                    Nombre *
+                </label>
+                <input type="text" formControlName="nombre" placeholder="Ej. Estante de Tornillería"
+                       class="w-full h-10 text-sm font-bold bg-white dark:bg-slate-800 dark:text-white border-2 rounded-xl px-3 outline-none transition-all duration-150 placeholder:text-stone-300 dark:placeholder:text-slate-600"
+                       [class]="hasError('nombre','required')
+                           ? 'border-red-400 focus:shadow-[2px_2px_0_#f87171]'
+                           : 'border-stone-300 dark:border-slate-600 hover:border-stone-400 dark:hover:border-slate-500 focus:border-black dark:focus:border-slate-400 focus:shadow-[3px_3px_0_#000]'">
+                <p *ngIf="hasError('nombre','required')"
+                   class="text-[8px] font-bold text-red-500 mt-1">Campo requerido.</p>
+                <p *ngIf="hasError('nombre','maxlength')"
+                   class="text-[8px] font-bold text-red-500 mt-1">Máximo 120 caracteres.</p>
             </div>
+
+            <!-- Descripción -->
+            <div>
+                <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1.5 block">
+                    Descripción <span class="font-normal normal-case">(opcional)</span>
+                </label>
+                <textarea formControlName="descripcion" rows="3"
+                          placeholder="Qué se almacena, particularidades..."
+                          class="w-full text-sm font-normal bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-xl px-3 py-2.5 outline-none transition-all duration-150 resize-none placeholder:text-stone-300 dark:placeholder:text-slate-600 hover:border-stone-400 dark:hover:border-slate-500 focus:border-black dark:focus:border-slate-400 focus:shadow-[3px_3px_0_#000]"></textarea>
+            </div>
+
         </form>
+    </div>
+
+    <!-- ══ FOOTER ══ -->
+    <div class="border-t-2 border-black bg-stone-200 dark:bg-slate-800 px-5 py-3 flex justify-between items-center shrink-0">
+        <button type="button" (click)="dialogRef.close(null)"
+                class="px-4 py-2 bg-[#FF1414] text-white font-black text-[10px] border-2 border-black rounded-xl shadow-[2px_2px_0_#000] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all uppercase">
+            Cancelar
+        </button>
+        <button type="button" (click)="save()"
+                class="flex items-center gap-2 px-5 py-2 bg-amber-400 text-black font-black text-[10px] border-2 border-black rounded-xl shadow-[3px_3px_0_#000] hover:shadow-none hover:translate-x-[3px] hover:translate-y-[3px] transition-all uppercase">
+            <mat-icon class="!text-sm">save</mat-icon>
+            Guardar Estante
+        </button>
     </div>
 </div>

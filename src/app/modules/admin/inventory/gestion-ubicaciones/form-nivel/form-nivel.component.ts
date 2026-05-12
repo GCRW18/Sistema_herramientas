@@ -17,10 +17,6 @@ type Mode = 'new' | 'edit';
     templateUrl: './form-nivel.component.html',
     styles: [`
         :host { display: block; }
-        .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
-        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; border-radius: 3px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #FF6A00; border-radius: 3px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #e55a00; }
     `]
 })
 export class FormNivelComponent {
