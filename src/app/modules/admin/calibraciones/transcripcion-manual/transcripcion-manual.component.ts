@@ -5,17 +5,17 @@ import { MatDialog, MatDialogModule, MatDialogRef } from '@angular/material/dial
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatTableModule } from '@angular/material/table';
-import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { DragDropModule } from '@angular/cdk/drag-drop';
+import { Router } from '@angular/router';
 import { Subject } from 'rxjs';
 import { takeUntil, finalize, debounceTime, distinctUntilChanged, switchMap, startWith } from 'rxjs/operators';
 import { CalibrationService } from '../../../../core/services/calibration.service';
 
 interface ToolSuggestion { tool_id: number; tool_code: string; tool_name: string; is_calibratable?: boolean; }
-interface TranscriptionRecord { id: string | number; fecha: string; codigo: string; nombre: string; certificado: string; resultado: string; laboratorio: string; }
+interface TranscriptionRecord { id: string | number; tool_id: string | number; fecha: string; codigo: string; nombre: string; certificado: string; resultado: string; laboratorio: string; }
 
 @Component({
     selector: 'app-transcripcion-manual',
@@ -23,16 +23,28 @@ interface TranscriptionRecord { id: string | number; fecha: string; codigo: stri
     imports: [
         CommonModule, FormsModule, ReactiveFormsModule,
         MatDialogModule, MatButtonModule, MatIconModule,
-        MatTableModule, MatPaginatorModule, MatProgressSpinnerModule,
+        MatTableModule, MatProgressSpinnerModule,
         MatSnackBarModule, MatTooltipModule, DragDropModule
     ],
-    templateUrl: './transcripcion-manual.component.html'
+    templateUrl: './transcripcion-manual.component.html',
+    styles: [`
+        :host { display: block; height: 100%; }
+        .custom-scrollbar::-webkit-scrollbar { width: 5px; height: 5px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #000; border-radius: 0; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #333; }
+        :host-context(.dark) .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; }
+        .line-clamp-2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+        input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(0); }
+        :host-context(.dark) input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(1); }
+    `]
 })
 export class TranscripcionManualComponent implements OnInit, OnDestroy {
 
     private calibrationService = inject(CalibrationService);
     private dialog             = inject(MatDialog);
     private snackBar           = inject(MatSnackBar);
+    private router             = inject(Router);
 
     private _destroy$      = new Subject<void>();
     private _toolSearch$   = new Subject<string>();
@@ -46,9 +58,19 @@ export class TranscripcionManualComponent implements OnInit, OnDestroy {
     filteredTranscriptions: TranscriptionRecord[] = [];
 
     isLoading = false;
-    totalRecords = 0;
-    pageSize = 10;
+    pageSize  = 10;
     pageIndex = 0;
+
+    get totalRecords(): number { return this.filteredTranscriptions.length; }
+    get totalPages():   number { return Math.ceil(this.totalRecords / this.pageSize) || 1; }
+    get startIndex():   number { return this.totalRecords === 0 ? 0 : this.pageIndex * this.pageSize + 1; }
+    get endIndex():     number { return Math.min((this.pageIndex + 1) * this.pageSize, this.totalRecords); }
+    get paginatedTranscriptions(): TranscriptionRecord[] {
+        const s = this.pageIndex * this.pageSize;
+        return this.filteredTranscriptions.slice(s, s + this.pageSize);
+    }
+    nextPage(): void { if (this.pageIndex < this.totalPages - 1) this.pageIndex++; }
+    prevPage(): void { if (this.pageIndex > 0) this.pageIndex--; }
 
     // ── Estado del Modal Formulario ───────────────────────────────────────────
     isProcessing  = signal(false);
@@ -97,6 +119,7 @@ export class TranscripcionManualComponent implements OnInit, OnDestroy {
             next: (records: any[]) => {
                 this.transcriptions = records.map(r => ({
                     id: r.id_calibration ?? r.id ?? 0,
+                    tool_id: r.tool_id ?? r.id_tool ?? 0,
                     fecha: r.calibration_date ?? r.date ?? '—',
                     codigo: r.tool_code ?? r.code ?? '—',
                     nombre: r.tool_name ?? r.name ?? '—',
@@ -104,7 +127,6 @@ export class TranscripcionManualComponent implements OnInit, OnDestroy {
                     resultado: r.result ?? r.status ?? '—',
                     laboratorio: r.supplier_name ?? r.laboratory_name ?? '—'
                 }));
-                this.totalRecords = this.transcriptions.length;
                 this.applyFilters();
             },
             error: (err) => {
@@ -123,6 +145,7 @@ export class TranscripcionManualComponent implements OnInit, OnDestroy {
     }
 
     applyFilters(): void {
+        this.pageIndex = 0;
         let list = [...this.transcriptions];
         const q = this.searchControl.value?.toLowerCase().trim() ?? '';
 
@@ -135,38 +158,46 @@ export class TranscripcionManualComponent implements OnInit, OnDestroy {
             );
         }
 
-        const startIndex = this.pageIndex * this.pageSize;
-        this.filteredTranscriptions = list.slice(startIndex, startIndex + this.pageSize);
-        this.totalRecords = list.length;
+        this.filteredTranscriptions = list;
     }
 
-    onPageChange(event: PageEvent): void {
-        this.pageIndex = event.pageIndex;
-        this.pageSize = event.pageSize;
-        this.applyFilters();
+    getResultLabel(estado: string): string {
+        switch (estado.toLowerCase()) {
+            case 'approved':    return 'APROBADO';
+            case 'conditional': return 'CONDICIONAL';
+            case 'rejected':    return 'RECHAZADO';
+            case 'sent':        return 'ENVIADO';
+            case 'returned':    return 'RETORNADO';
+            case 'in_process':  return 'EN PROCESO';
+            default:            return estado.toUpperCase();
+        }
     }
 
     getResultClass(estado: string): string {
         switch (estado.toLowerCase()) {
             case 'approved':
-            case 'aprobado': return 'bg-green-100 text-green-800 border-green-400';
+            case 'aprobado':    return 'bg-green-600 text-white border-black';
             case 'conditional':
-            case 'condicional':  return 'bg-yellow-100 text-yellow-800 border-yellow-400';
+            case 'condicional': return 'bg-amber-500 text-white border-black';
+            case 'sent':
+            case 'enviado':     return 'bg-blue-700 text-white border-black';
             case 'rejected':
-            case 'rechazado':  return 'bg-red-100 text-red-800 border-red-400';
-            default: return 'bg-gray-100 text-gray-800 border-gray-400';
+            case 'rechazado':
+            case 'cancelled':
+            case 'cancelado':   return 'bg-red-600 text-white border-black';
+            default:            return 'bg-gray-500 text-white border-black';
         }
     }
+
 
     // ── Control del Modal ─────────────────────────────────────────────────────
     openFormDialog(): void {
         this.resetForm();
         this.activeDialogRef = this.dialog.open(this.formDialogTemplate, {
-            width: '850px', // Ajustado al tamaño de tu nuevo diseño base
+            width: '660px',
             maxWidth: '95vw',
-            height: 'auto',
-            maxHeight: '95vh',
-            panelClass: 'neo-dialog-transparent',
+            height: '88vh',
+            panelClass: 'no-padding-dialog',
             hasBackdrop: true,
             disableClose: true,
             autoFocus: false
@@ -334,6 +365,17 @@ export class TranscripcionManualComponent implements OnInit, OnDestroy {
     }
 
     cancelConfirm(): void { this.showConfirm.set(false); }
+
+    // ── Historial de Herramienta ──────────────────────────────────────────────
+    openHistorial(record: TranscriptionRecord): void {
+        const url = this.router.serializeUrl(
+            this.router.createUrlTree(
+                ['/calibraciones/historial', record.tool_id],
+                { queryParams: { code: record.codigo, name: record.nombre } }
+            )
+        );
+        window.open(url, '_blank');
+    }
 
     private showMessage(message: string, type: 'success' | 'error' | 'warning'): void {
         this.snackBar.open(message, 'Cerrar', {

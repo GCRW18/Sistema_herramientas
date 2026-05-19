@@ -22,30 +22,30 @@ export class WarehouseService {
     // ============================================
 
     getWarehouses(): Observable<Warehouse[]> {
-        console.log(' Obteniendo lista de almacenes...');
-
         return from(
             PxpClient.doRequest({
                 url: 'herramientas/warehouses/listWarehouses',
-                params: {
-                    start: 0,
-                    limit: 1000
-                }
+                params: { start: 0, limit: 1000 }
             })
         ).pipe(
-            map((response: any) => {
-                console.log(' Respuesta getWarehouses:', response);
-
-                if (response?.data) {
-                    return response.data;
-                }
-                if (response?.data) {
-                    return response.data;
-                }
-                return [];
-            }),
+            map((response: any) => response?.datos || response?.data || []),
             catchError((error) => {
-                console.error(' Error en getWarehouses:', error);
+                console.error('Error en getWarehouses:', error);
+                return throwError(() => error);
+            })
+        );
+    }
+
+    getAllLocations(): Observable<Location[]> {
+        return from(
+            PxpClient.doRequest({
+                url: 'herramientas/locations/listLocations',
+                params: { start: 0, limit: 5000 }
+            })
+        ).pipe(
+            map((response: any) => response?.datos || response?.data || []),
+            catchError((error) => {
+                console.error('Error en getAllLocations:', error);
                 return throwError(() => error);
             })
         );

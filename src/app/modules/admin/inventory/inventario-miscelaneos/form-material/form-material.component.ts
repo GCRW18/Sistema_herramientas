@@ -8,6 +8,8 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { DragDropModule } from '@angular/cdk/drag-drop';
 
 import { Material, DialogMode } from '../interfaces';
+import { GestionUbicacionesService } from '../../gestion-ubicaciones/gestion-ubicaciones.service';
+import { Warehouse, Rack, Level } from '../../gestion-ubicaciones/interfaces';
 
 @Component({
     selector: 'app-form-material',
@@ -37,9 +39,22 @@ export class FormMaterialComponent implements OnInit {
 
     mode: DialogMode = this.data?.mode ?? 'new';
 
-    tiposItem   = ['CONSUMIBLE', 'REPUESTO', 'MATERIAL', 'QUIMICO', 'ELECTRICO'];
+    private ubicSvc = inject(GestionUbicacionesService);
+
+    tiposItem   = ['CONSUMIBLE', 'MATERIAL'];
     tiposCompra = ['COMPRA DIRECTA', 'LICITACIÓN', 'DONACIÓN', 'TRANSFERENCIA'];
     unidades    = ['UND', 'LT', 'KG', 'MTS', 'GAL', 'CAJA', 'ROLLO', 'JUEGO'];
+
+    // ── Picker de ubicación ───────────────────────────
+    pickerOpen    = false;
+    pickerLoading = false;
+    pickerTop     = 0;
+    pickerLeft    = 0;
+    warehouses:   Warehouse[] = [];
+    racks:        Rack[]      = [];
+    levels:       Level[]     = [];
+    selWarehouse: Warehouse | null = null;
+    selRack:      Rack | null      = null;
 
     form: FormGroup = this.fb.group({
         codigoBoaM: ['', [Validators.required, Validators.maxLength(40)]],
@@ -86,6 +101,54 @@ export class FormMaterialComponent implements OnInit {
     hasError(field: string, error: string): boolean {
         const c = this.form.get(field);
         return !!c && c.hasError(error) && c.touched;
+    }
+
+    openPicker(event: MouseEvent): void {
+        if (this.readOnly) return;
+        const btn  = event.currentTarget as HTMLElement;
+        const rect = btn.getBoundingClientRect();
+        const panelW = 420;
+        let left = rect.left;
+        if (left + panelW > window.innerWidth - 8) left = window.innerWidth - panelW - 8;
+        this.pickerTop  = rect.bottom + 6;
+        this.pickerLeft = Math.max(8, left);
+        this.pickerOpen    = true;
+        this.pickerLoading = true;
+        this.racks         = [];
+        this.levels        = [];
+        this.selWarehouse  = null;
+        this.selRack       = null;
+        this.ubicSvc.getWarehouses().subscribe({
+            next:  ws => { this.warehouses = ws.filter(w => w.estado === 'ACTIVO'); this.pickerLoading = false; },
+            error: () => { this.pickerLoading = false; }
+        });
+    }
+
+    selectWarehouse(w: Warehouse): void {
+        this.selWarehouse = w;
+        this.selRack      = null;
+        this.levels       = [];
+        this.ubicSvc.getRacks(w.id).subscribe(rs => { this.racks = rs.filter(r => r.activo); });
+    }
+
+    selectRack(r: Rack): void {
+        this.selRack = r;
+        this.levels  = [];
+        this.ubicSvc.getLevels(r.id).subscribe(ls => { this.levels = ls.filter(l => l.activo && !l.isFloor); });
+    }
+
+    selectLevel(l: Level): void {
+        const etiqueta = `${this.selWarehouse!.nombre} › ${this.selRack!.nombre} › ${l.nombre}`;
+        this.form.patchValue({ ubicacion: etiqueta });
+        this.pickerOpen = false;
+    }
+
+    clearUbicacion(): void {
+        this.form.patchValue({ ubicacion: '' });
+        this.selWarehouse = null;
+        this.selRack      = null;
+        this.racks        = [];
+        this.levels       = [];
     }
 
     save(): void {

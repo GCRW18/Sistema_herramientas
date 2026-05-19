@@ -1,180 +1,341 @@
-<div class="bg-stone-100 dark:bg-slate-900 border-2 border-black overflow-hidden flex flex-col w-[95vw] max-w-[780px] max-h-[88vh]"
+<div class="bg-stone-100 dark:bg-slate-900 border-2 border-black overflow-hidden flex flex-col w-full max-h-[88vh]"
      style="box-shadow: 6px 6px 0 #000">
 
-    <!-- Header (drag handle) -->
-    <div class="bg-[#0F172A] px-4 sm:px-5 py-3 flex items-center gap-3 shrink-0 select-none"
+    <!-- ═══ HEADER (drag handle) ═══ -->
+    <div class="bg-[#0F172A] px-5 py-3 flex items-center gap-3 shrink-0 select-none"
          cdkDrag cdkDragRootElement=".cdk-overlay-pane" cdkDragHandle style="cursor:grab">
         <div class="w-9 h-9 rounded bg-amber-400 border-2 border-black flex items-center justify-center shadow-[2px_2px_0_#fbbf24] shrink-0">
             <mat-icon class="!text-lg text-black">inventory_2</mat-icon>
         </div>
         <div>
             <p class="text-[9px] text-slate-400 font-bold uppercase tracking-[0.18em] leading-none mb-0.5">Configuración de Activos</p>
-            <h2 class="text-sm text-white font-black uppercase tracking-tight leading-none">Gestionar Kit</h2>
+            <h2 class="text-sm text-white font-black uppercase tracking-tight leading-none">
+                {{ modoEdicion ? 'Editar Kit' : 'Nuevo Kit' }}
+            </h2>
+        </div>
+        <!-- Mini resumen en el header -->
+        <div class="ml-auto flex items-center gap-2">
+            <span class="text-[9px] font-black uppercase px-2 py-0.5 border border-slate-600 rounded text-slate-400">
+                {{ items.length }} herramienta{{ items.length !== 1 ? 's' : '' }}
+            </span>
         </div>
     </div>
 
-    <!-- Cuerpo -->
-    <div class="flex-1 overflow-y-auto px-4 py-3 neo-scrollbar">
-        <form [formGroup]="kitForm" class="grid grid-cols-1 md:grid-cols-12 gap-3">
+    <!-- ═══ CUERPO: 2 paneles ═══ -->
+    <form [formGroup]="kitForm" class="flex-1 flex flex-col md:flex-row overflow-hidden min-h-0">
 
-            <!-- ═══ COLUMNA IZQUIERDA: preview + descripción ═══
-                 En mobile aparece después de los campos (order-2) -->
-            <div class="order-2 md:order-1 md:col-span-5 flex flex-col gap-3">
+        <!-- ─── PANEL IZQUIERDO: campos ─── -->
+        <div class="w-full md:w-[290px] md:shrink-0 flex flex-col gap-2.5 overflow-y-auto px-3 py-3 border-b-2 md:border-b-0 md:border-r-2 border-black neo-scrollbar bg-stone-100 dark:bg-slate-900 max-h-[42vh] md:max-h-none">
 
-                <!-- Vista previa — colapsada en mobile, visible en md+ -->
-                <div class="hidden md:block bg-white dark:bg-slate-800 border-2 border-stone-200 dark:border-slate-700 rounded-xl p-3">
-                    <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-3 block">
-                        Vista Previa
-                    </label>
-                    <div class="flex flex-col gap-1.5">
-                        <p class="font-black text-base text-black dark:text-white leading-none uppercase truncate">
-                            {{ kitForm.get('nombreKit')?.value || 'NOMBRE DEL KIT...' }}
-                        </p>
-                        <p class="text-xs font-bold text-stone-400 dark:text-slate-400 flex items-center gap-1">
-                            <mat-icon class="!text-xs">place</mat-icon>
-                            {{ kitForm.get('ubicacion')?.value || 'Sin ubicación' }}
-                        </p>
-                        <p class="text-[10px] font-bold text-stone-400 dark:text-slate-400 line-clamp-2 min-h-[24px] border-t border-dashed border-stone-200 dark:border-slate-600 pt-1.5 mt-1">
-                            {{ kitForm.get('descripcionKit')?.value || 'Sin descripción...' }}
-                        </p>
-                        <div class="flex items-center gap-2 pt-1.5 border-t-2 border-stone-100 dark:border-slate-700">
-                            <span class="px-2 py-0.5 border-2 border-black rounded text-[9px] font-black text-white"
-                                  [ngClass]="items.length > 0 ? 'bg-green-600' : 'bg-stone-400'">
-                                {{ items.length }} ITEMS
-                            </span>
-                            <span class="px-2 py-0.5 border-2 border-black rounded text-[9px] font-black bg-[#0F172A] text-white">
-                                ACTIVO
-                            </span>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Descripción -->
+            <!-- Nombre + Categoría -->
+            <div class="flex flex-col gap-1.5">
                 <div>
-                    <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1.5 block">
-                        Descripción / Notas
+                    <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1 block">
+                        Nombre del Kit *
                     </label>
-                    <textarea formControlName="descripcionKit" rows="3"
-                              placeholder="Detalles operativos del kit..."
-                              class="w-full md:rows-6 text-sm font-normal bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-xl px-3 py-2.5 outline-none transition-all duration-150 resize-none placeholder:text-stone-300 dark:placeholder:text-slate-600 hover:border-stone-400 dark:hover:border-slate-500 focus:border-black dark:focus:border-slate-400 focus:shadow-[3px_3px_0_#000]"
-                              style="min-height: 100px;"></textarea>
+                    <input type="text" formControlName="nombreKit" placeholder="EJ: KIT MANTENIMIENTO A"
+                           class="w-full h-9 text-sm font-bold bg-white dark:bg-slate-800 dark:text-white border-2 rounded-xl px-3 outline-none transition-all placeholder:text-stone-300 placeholder:font-normal placeholder:normal-case dark:placeholder:text-slate-600 uppercase"
+                           [ngClass]="kitForm.get('nombreKit')?.invalid && kitForm.get('nombreKit')?.touched
+                               ? 'border-red-400 focus:shadow-[2px_2px_0_#f87171]'
+                               : 'border-stone-300 dark:border-slate-600 hover:border-stone-400 focus:border-black focus:shadow-[3px_3px_0_#000]'">
+                    <p *ngIf="kitForm.get('nombreKit')?.invalid && kitForm.get('nombreKit')?.touched"
+                       class="text-[8px] font-bold text-red-500 mt-0.5">Campo requerido.</p>
                 </div>
 
+                <div>
+                    <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1 block">
+                        Categoría *
+                    </label>
+                    <select formControlName="categoria"
+                            class="w-full h-9 text-xs font-black bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-xl px-2 outline-none transition-all uppercase cursor-pointer hover:border-stone-400 focus:border-black focus:shadow-[3px_3px_0_#000]">
+                        <option *ngFor="let c of categorias" [value]="c">{{ c }}</option>
+                    </select>
+                </div>
             </div>
 
-            <!-- ═══ COLUMNA DERECHA: campos + herramientas ═══
-                 En mobile aparece primero (order-1) -->
-            <div class="order-1 md:order-2 md:col-span-7 flex flex-col gap-3">
+            <!-- Divisor -->
+            <div class="border-t-2 border-dashed border-stone-300 dark:border-slate-700"></div>
 
-                <!-- Identificación -->
-                <div class="bg-white dark:bg-slate-800 border-2 border-stone-200 dark:border-slate-700 rounded-xl p-3">
-                    <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-2 flex items-center gap-1.5">
-                        <mat-icon class="!text-xs">info</mat-icon> Identificación
-                    </label>
+            <!-- Estado -->
+            <div>
+                <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1 block">
+                    Estado *
+                </label>
+                <select formControlName="estado"
+                        class="w-full h-9 text-xs font-black bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-xl px-2 outline-none transition-all uppercase cursor-pointer hover:border-stone-400 focus:border-black focus:shadow-[3px_3px_0_#000]">
+                    <option *ngFor="let e of estados" [value]="e">{{ e }}</option>
+                </select>
+            </div>
 
-                    <div class="flex flex-col sm:flex-row gap-3">
-                        <!-- Nombre -->
-                        <div class="flex-1 min-w-0">
-                            <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1.5 block">
-                                Nombre del Kit *
-                            </label>
-                            <input type="text" formControlName="nombreKit" placeholder="EJ: KIT MANTENIMIENTO A"
-                                   class="w-full h-10 text-sm font-bold bg-white dark:bg-slate-800 dark:text-white border-2 rounded-xl px-3 outline-none transition-all duration-150 placeholder:text-stone-300 placeholder:font-normal placeholder:normal-case dark:placeholder:text-slate-600 uppercase"
-                                   [ngClass]="kitForm.get('nombreKit')?.invalid && kitForm.get('nombreKit')?.touched
-                                       ? 'border-red-400 focus:shadow-[2px_2px_0_#f87171]'
-                                       : 'border-stone-300 dark:border-slate-600 hover:border-stone-400 dark:hover:border-slate-500 focus:border-black dark:focus:border-slate-400 focus:shadow-[3px_3px_0_#000]'">
-                            <p *ngIf="kitForm.get('nombreKit')?.invalid && kitForm.get('nombreKit')?.touched"
-                               class="text-[8px] font-bold text-red-500 mt-1">Campo requerido.</p>
+            <!-- Responsable (autocomplete funcionarios) -->
+            <div class="relative">
+                <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1 flex items-center justify-between">
+                    <span class="flex items-center gap-1">
+                        <mat-icon class="!text-[10px]">how_to_reg</mat-icon> Responsable
+                    </span>
+                    <span *ngIf="responsableLoading"
+                          class="w-3 h-3 border-2 border-black border-t-transparent rounded-full animate-spin"></span>
+                </label>
+                <input type="text" formControlName="responsable"
+                       placeholder="Buscar funcionario..."
+                       autocomplete="off"
+                       (input)="onReqInput($event)"
+                       (focus)="showResponsableSuggestions = responsableSuggestions.length > 0"
+                       (blur)="ocultarFuncionarios()"
+                       class="w-full h-9 text-sm font-bold bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-xl px-3 outline-none transition-all placeholder:text-stone-300 placeholder:font-normal dark:placeholder:text-slate-600 hover:border-stone-400 focus:border-black focus:shadow-[3px_3px_0_#000]">
+                <div *ngIf="showResponsableSuggestions"
+                     class="absolute z-50 top-full left-0 right-0 mt-1 bg-white dark:bg-slate-800 border-2 border-black rounded-xl shadow-[3px_3px_0_#000] overflow-hidden max-h-40 overflow-y-auto">
+                    <button *ngFor="let f of responsableSuggestions" type="button"
+                            (mousedown)="seleccionarFuncionario(f)"
+                            class="w-full text-left px-3 py-2 hover:bg-amber-50 dark:hover:bg-slate-700 border-b-2 border-stone-100 dark:border-slate-700 last:border-0 transition-colors">
+                        <p class="text-[11px] font-black text-black dark:text-white leading-none mb-0.5 truncate">
+                            {{ f.nombre ?? f.full_name }}
+                        </p>
+                        <p class="text-[9px] font-bold text-stone-400 dark:text-slate-400">
+                            {{ f.cargo }} · {{ f.area }}
+                        </p>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Divisor -->
+            <div class="border-t-2 border-dashed border-stone-300 dark:border-slate-700"></div>
+
+            <!-- Ubicación (picker jerárquico) -->
+            <div>
+                <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1 block">
+                    Ubicación
+                </label>
+                <div class="flex gap-1.5">
+                    <div class="flex-1 flex items-center h-9 bg-white dark:bg-slate-900 border-2 border-stone-300 dark:border-slate-600 rounded-xl px-2.5 gap-1.5 min-w-0">
+                        <mat-icon class="!text-sm text-amber-500 shrink-0">shelves</mat-icon>
+                        <span class="text-xs font-bold truncate"
+                              [ngClass]="kitForm.get('ubicacion')?.value ? 'text-black dark:text-white' : 'text-stone-300 dark:text-slate-500'">
+                            {{ kitForm.get('ubicacion')?.value || 'Sin asignar' }}
+                        </span>
+                    </div>
+                    <button type="button" (click)="openPicker($event)"
+                            class="h-9 px-2.5 bg-amber-400 text-black border-2 border-black rounded-xl font-black text-[9px] uppercase shadow-[2px_2px_0_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all flex items-center gap-1 shrink-0">
+                        <mat-icon class="!text-sm !text-black">account_tree</mat-icon>
+                    </button>
+                    <button *ngIf="kitForm.get('ubicacion')?.value" type="button" (click)="clearUbicacion()"
+                            class="h-9 w-9 flex items-center justify-center bg-red-100 border-2 border-black rounded-xl shadow-[2px_2px_0_#000] hover:bg-red-400 hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all shrink-0">
+                        <mat-icon class="!text-sm text-red-700">close</mat-icon>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Picker backdrop -->
+            <div *ngIf="pickerOpen" class="fixed inset-0 z-[9998]" (click)="pickerOpen = false"></div>
+
+            <!-- Panel picker flotante -->
+            <div *ngIf="pickerOpen"
+                 [style.top.px]="pickerTop"
+                 [style.left.px]="pickerLeft"
+                 class="fixed z-[9999] w-[420px] border-2 border-black rounded-xl overflow-hidden bg-white dark:bg-slate-900"
+                 style="box-shadow: 5px 5px 0 #000">
+                <div class="bg-[#0F172A] px-3 py-2 flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                        <mat-icon class="!text-xs text-amber-400">account_tree</mat-icon>
+                        <span class="text-[10px] font-black text-white uppercase tracking-wider">Seleccionar ubicación</span>
+                    </div>
+                    <button type="button" (click)="pickerOpen = false"
+                            class="w-6 h-6 flex items-center justify-center rounded border border-white/20 text-white hover:bg-white/20 transition-colors">
+                        <mat-icon class="!text-xs">close</mat-icon>
+                    </button>
+                </div>
+                <div *ngIf="pickerLoading" class="px-4 py-6 text-center text-xs font-bold text-stone-400 uppercase">Cargando almacenes...</div>
+                <div *ngIf="!pickerLoading" class="grid grid-cols-3 divide-x-[2px] divide-black" style="height:200px">
+                    <div class="overflow-y-auto">
+                        <div class="px-2 py-1.5 bg-stone-50 dark:bg-slate-800 border-b-2 border-black sticky top-0">
+                            <span class="text-[8px] font-black uppercase text-stone-500 tracking-wider">Almacén</span>
                         </div>
-                        <!-- Ubicación -->
-                        <div class="w-full sm:w-28">
-                            <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1.5 block">
-                                Ubicación
-                            </label>
-                            <input type="text" formControlName="ubicacion" placeholder="EST-B3"
-                                   class="w-full h-10 text-sm font-bold bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-xl px-3 outline-none transition-all duration-150 placeholder:text-stone-300 placeholder:font-normal placeholder:normal-case dark:placeholder:text-slate-600 uppercase hover:border-stone-400 dark:hover:border-slate-500 focus:border-black dark:focus:border-slate-400 focus:shadow-[3px_3px_0_#000]">
+                        <div *ngFor="let w of warehouses" (click)="selectWarehouse(w)"
+                             class="px-3 py-2 cursor-pointer text-xs font-bold border-b border-stone-100 dark:border-slate-700 transition-colors truncate"
+                             [ngClass]="selWarehouse?.id === w.id ? 'bg-amber-400 text-black' : 'hover:bg-amber-50 dark:hover:bg-slate-700 text-black dark:text-white'">
+                            {{ w.nombre }}
                         </div>
+                        <div *ngIf="!warehouses.length" class="px-3 py-4 text-[10px] text-stone-400 text-center">Sin datos</div>
+                    </div>
+                    <div class="overflow-y-auto">
+                        <div class="px-2 py-1.5 bg-stone-50 dark:bg-slate-800 border-b-2 border-black sticky top-0">
+                            <span class="text-[8px] font-black uppercase text-stone-500 tracking-wider">Estante</span>
+                        </div>
+                        <div *ngFor="let r of racks" (click)="selectRack(r)"
+                             class="px-3 py-2 cursor-pointer text-xs font-bold border-b border-stone-100 dark:border-slate-700 transition-colors truncate"
+                             [ngClass]="selRack?.id === r.id ? 'bg-amber-400 text-black' : 'hover:bg-amber-50 dark:hover:bg-slate-700 text-black dark:text-white'">
+                            {{ r.nombre }}
+                        </div>
+                        <div *ngIf="selWarehouse && !racks.length" class="px-3 py-4 text-[10px] text-stone-400 text-center">Sin estantes</div>
+                        <div *ngIf="!selWarehouse" class="px-3 py-4 text-[10px] text-stone-300 text-center italic">← elige almacén</div>
+                    </div>
+                    <div class="overflow-y-auto">
+                        <div class="px-2 py-1.5 bg-stone-50 dark:bg-slate-800 border-b-2 border-black sticky top-0">
+                            <span class="text-[8px] font-black uppercase text-stone-500 tracking-wider">Nivel</span>
+                        </div>
+                        <div *ngFor="let l of levels" (click)="selectLevel(l)"
+                             class="px-3 py-2 cursor-pointer text-xs font-bold border-b border-stone-100 dark:border-slate-700 transition-colors truncate text-black dark:text-white hover:bg-amber-400 hover:text-black">
+                            {{ l.nombre }}
+                        </div>
+                        <div *ngIf="selRack && !levels.length" class="px-3 py-4 text-[10px] text-stone-400 text-center">Sin niveles</div>
+                        <div *ngIf="!selRack" class="px-3 py-4 text-[10px] text-stone-300 text-center italic">← elige estante</div>
                     </div>
                 </div>
+            </div>
 
-                <!-- Herramientas del Kit -->
-                <div class="border-2 border-black bg-white dark:bg-slate-800 rounded-xl overflow-hidden shadow-[3px_3px_0_#000] flex flex-col min-h-[160px] max-h-[240px] sm:max-h-[280px]">
+            <!-- Divisor -->
+            <div class="border-t-2 border-dashed border-stone-300 dark:border-slate-700"></div>
 
-                    <!-- Sub-header -->
-                    <div class="bg-[#0F172A] px-4 py-2.5 flex items-center justify-between shrink-0">
-                        <div class="flex items-center gap-2">
-                            <mat-icon class="!text-sm text-amber-400">build</mat-icon>
-                            <span class="text-[9px] font-black uppercase tracking-widest text-white">Herramientas ({{ items.length }})</span>
-                        </div>
-                        <button type="button" (click)="agregarItem()"
-                                class="flex items-center gap-1.5 px-3 py-1.5 bg-amber-400 text-black font-black text-[10px] border-2 border-black rounded-lg shadow-[2px_2px_0_#000] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all uppercase">
-                            <mat-icon class="!text-sm">add_circle</mat-icon>
-                            <span class="hidden sm:inline">Agregar</span>
+            <!-- Descripción -->
+            <div>
+                <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1 block">
+                    Descripción / Notas
+                </label>
+                <textarea formControlName="descripcionKit" rows="4"
+                          placeholder="Detalles operativos del kit..."
+                          class="w-full text-sm font-normal bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-xl px-3 py-2 outline-none transition-all resize-none placeholder:text-stone-300 dark:placeholder:text-slate-600 hover:border-stone-400 focus:border-black focus:shadow-[3px_3px_0_#000]"
+                          style="min-height: 80px;"></textarea>
+            </div>
+
+        </div>
+
+        <!-- ─── PANEL DERECHO: caja de herramientas ─── -->
+        <div class="flex-1 flex flex-col overflow-hidden min-h-[280px] md:min-h-0">
+
+            <!-- Header toolbox -->
+            <div class="bg-[#0F172A] px-4 py-2.5 flex items-center justify-between shrink-0">
+                <div class="flex items-center gap-2">
+                    <mat-icon class="!text-sm text-amber-400">build_circle</mat-icon>
+                    <span class="text-[9px] font-black uppercase tracking-widest text-white">
+                        Herramientas del Kit
+                    </span>
+                    <span class="px-2 py-0.5 bg-amber-400 text-black text-[9px] font-black border border-black rounded">
+                        {{ items.length }}
+                    </span>
+                </div>
+                <button type="button" (click)="agregarItemVacio()"
+                        class="flex items-center gap-1 px-2 py-1 bg-slate-700 text-slate-300 font-black text-[9px] border border-slate-500 rounded-lg hover:bg-slate-600 transition-all uppercase">
+                    <mat-icon class="!text-xs">add</mat-icon> Manual
+                </button>
+            </div>
+
+            <!-- Buscador -->
+            <div class="px-3 py-2.5 bg-white dark:bg-slate-800 border-b-2 border-stone-200 dark:border-slate-700 shrink-0">
+                <div class="relative">
+                    <mat-icon class="absolute left-3 top-2 !text-sm text-stone-400 dark:text-slate-500">search</mat-icon>
+                    <input type="text"
+                           [value]="toolSearchValue"
+                           (input)="onToolInput($event)"
+                           (blur)="ocultarTools()"
+                           placeholder="Buscar herramienta por código o nombre..."
+                           autocomplete="off"
+                           class="w-full h-9 pl-8 pr-8 text-xs font-bold bg-stone-50 dark:bg-slate-700 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-xl outline-none transition-all placeholder:text-stone-300 placeholder:font-normal dark:placeholder:text-slate-500 hover:border-stone-400 focus:border-black focus:bg-white focus:shadow-[3px_3px_0_#000]">
+                    <span *ngIf="toolSearchLoading"
+                          class="absolute right-3 top-2.5 w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin"></span>
+
+                    <!-- Dropdown sugerencias -->
+                    <div *ngIf="showToolDropdown"
+                         class="absolute z-50 top-full left-0 right-0 mt-1 bg-white dark:bg-slate-800 border-2 border-black rounded-xl shadow-[3px_3px_0_#000] overflow-hidden max-h-48 overflow-y-auto">
+                        <button *ngFor="let tool of toolSuggestions" type="button"
+                                (mousedown)="seleccionarHerramienta(tool)"
+                                class="w-full text-left px-3 py-2.5 hover:bg-amber-50 dark:hover:bg-slate-700 border-b-2 border-stone-100 dark:border-slate-700 last:border-0 transition-colors flex items-center gap-3">
+                            <mat-icon class="!text-sm text-amber-500 shrink-0">build</mat-icon>
+                            <div class="min-w-0">
+                                <div class="flex items-center gap-2">
+                                    <span class="text-[11px] font-black text-black dark:text-white font-mono">
+                                        {{ tool.code ?? tool.tool_code }}
+                                    </span>
+                                    <span *ngIf="tool.sent_to_calibration === true || tool.sent_to_calibration === 't'"
+                                          class="text-[8px] font-black px-1.5 py-0.5 bg-amber-100 text-amber-700 border border-amber-400 rounded uppercase">
+                                        Calib.
+                                    </span>
+                                </div>
+                                <p class="text-[10px] font-bold text-stone-400 dark:text-slate-400 truncate uppercase">
+                                    {{ tool.name ?? tool.tool_name }}
+                                </p>
+                            </div>
                         </button>
                     </div>
+                </div>
+            </div>
 
-                    <!-- Lista items -->
-                    <div class="flex-1 overflow-y-auto p-2 bg-stone-50 dark:bg-slate-900 neo-scrollbar">
-                        <div formArrayName="items" class="flex flex-col gap-1.5">
+            <!-- Caja de herramientas (grid de cards) -->
+            <div class="flex-1 overflow-y-auto p-3 neo-scrollbar bg-stone-50 dark:bg-slate-900/50">
 
-                            <!-- Fila de item: 1 fila en sm+, 2 filas en mobile -->
-                            <div *ngFor="let item of items.controls; let i = index"
-                                 [formGroupName]="i"
-                                 class="flex flex-col sm:flex-row sm:items-center gap-2 bg-white dark:bg-slate-800 border-2 border-stone-200 dark:border-slate-700 rounded-xl p-2 hover:border-stone-400 dark:hover:border-slate-500 transition-all duration-150">
+                <!-- Grid de items -->
+                <div formArrayName="items">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
 
-                                <!-- Fila 1 (mobile) / inline (desktop): número + descripción -->
-                                <div class="flex items-center gap-2 flex-1 min-w-0">
-                                    <div class="w-7 h-7 bg-[#0F172A] text-white font-black text-[10px] border-2 border-black rounded-lg flex items-center justify-center shrink-0">
-                                        {{ i + 1 }}
-                                    </div>
-                                    <input formControlName="descripcion"
-                                           class="flex-1 min-w-0 h-8 px-2 bg-stone-50 dark:bg-slate-700 dark:text-white border-2 border-stone-200 dark:border-slate-600 focus:border-black focus:bg-white dark:focus:bg-slate-600 font-bold text-xs uppercase outline-none placeholder:text-stone-300 placeholder:normal-case dark:placeholder:text-slate-500 rounded-lg transition-all"
-                                           placeholder="Descripción">
-                                </div>
+                        <div *ngFor="let item of items.controls; let i = index"
+                             [formGroupName]="i"
+                             class="item-enter relative group bg-white dark:bg-slate-800 border-2 border-stone-300 dark:border-slate-600 rounded-xl p-3
+                                    shadow-[2px_2px_0_#000] hover:-translate-y-0.5 hover:shadow-[3px_4px_0_#000] transition-all duration-150">
 
-                                <!-- Fila 2 (mobile, pl alineado al input) / inline (desktop): código + ubicación + delete -->
-                                <div class="flex items-center gap-2 pl-9 sm:pl-0">
-                                    <input formControlName="codigo"
-                                           class="flex-1 sm:flex-none sm:w-24 h-8 px-2 bg-stone-50 dark:bg-slate-700 dark:text-white border-2 border-stone-200 dark:border-slate-600 focus:border-black focus:bg-white dark:focus:bg-slate-600 font-mono text-xs uppercase outline-none placeholder:text-stone-300 text-center dark:placeholder:text-slate-500 rounded-lg transition-all"
-                                           placeholder="CÓDIGO">
-                                    <input formControlName="ubicacion"
-                                           class="flex-1 sm:flex-none sm:w-16 h-8 px-2 bg-stone-50 dark:bg-slate-700 dark:text-white border-2 border-stone-200 dark:border-slate-600 focus:border-black focus:bg-white dark:focus:bg-slate-600 font-bold text-xs uppercase outline-none placeholder:text-stone-300 text-center dark:placeholder:text-slate-500 rounded-lg transition-all"
-                                           placeholder="UBK.">
-                                    <button type="button" (click)="eliminarItem(i)"
-                                            class="w-7 h-7 flex items-center justify-center bg-white dark:bg-slate-700 text-stone-400 dark:text-slate-400 border-2 border-stone-200 dark:border-slate-600 hover:bg-red-500 hover:text-white hover:border-red-500 rounded-lg transition-all shrink-0 ml-auto sm:ml-0">
-                                        <mat-icon class="!text-sm">delete</mat-icon>
-                                    </button>
-                                </div>
+                            <!-- Número badge -->
+                            <div class="absolute -top-2.5 -left-2.5 w-6 h-6 bg-[#0F172A] text-white text-[9px] font-black border-2 border-black rounded-full flex items-center justify-center shadow-[1px_1px_0_#000] z-10">
+                                {{ i + 1 }}
                             </div>
 
-                            <!-- Empty state -->
-                            <div *ngIf="items.length === 0"
-                                 class="flex flex-col items-center justify-center py-8 sm:py-10 border-2 border-dashed border-stone-200 dark:border-slate-700 rounded-xl">
-                                <div class="w-12 h-12 bg-stone-100 dark:bg-slate-700 border-2 border-stone-200 dark:border-slate-600 rounded-xl flex items-center justify-center mb-2">
-                                    <mat-icon class="!text-2xl text-stone-400 dark:text-slate-500">inventory</mat-icon>
-                                </div>
-                                <p class="text-[10px] font-black uppercase text-stone-400 dark:text-slate-500">Kit vacío</p>
+                            <!-- Botón eliminar (aparece en hover) -->
+                            <button type="button" (click)="eliminarItem(i)"
+                                    class="absolute -top-2.5 -right-2.5 w-6 h-6 bg-red-500 text-white border-2 border-black rounded-full
+                                           flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all shadow-[1px_1px_0_#000] z-10">
+                                <mat-icon class="!text-[11px]">close</mat-icon>
+                            </button>
+
+                            <!-- Contenido editable -->
+                            <div class="flex flex-col gap-1.5 mt-1">
+                                <!-- Código -->
+                                <input formControlName="codigo"
+                                       class="w-full font-mono text-xs font-black uppercase text-black dark:text-white bg-transparent border-0 border-b-2 border-stone-200 dark:border-slate-600 focus:border-black dark:focus:border-amber-400 outline-none pb-0.5 transition-colors"
+                                       placeholder="CÓDIGO">
+                                <!-- Descripción -->
+                                <input formControlName="descripcion"
+                                       class="w-full text-[10px] font-bold text-stone-500 dark:text-slate-400 bg-transparent border-0 outline-none uppercase focus:text-black dark:focus:text-white transition-colors"
+                                       placeholder="Descripción">
                             </div>
 
+                            <!-- Ícono decorativo -->
+                            <mat-icon class="absolute bottom-2 right-2 !text-xl text-stone-100 dark:text-slate-700 pointer-events-none">
+                                build
+                            </mat-icon>
                         </div>
+
                     </div>
                 </div>
 
-            </div>
-        </form>
-    </div>
+                <!-- Empty state -->
+                <div *ngIf="items.length === 0"
+                     class="flex flex-col items-center justify-center h-full min-h-[180px] border-2 border-dashed border-stone-200 dark:border-slate-700 rounded-xl">
+                    <div class="w-14 h-14 bg-stone-100 dark:bg-slate-800 border-2 border-stone-200 dark:border-slate-600 rounded-2xl flex items-center justify-center mb-3 shadow-[2px_2px_0_#d6d3d1]">
+                        <mat-icon class="!text-3xl text-stone-300 dark:text-slate-600">handyman</mat-icon>
+                    </div>
+                    <p class="text-[11px] font-black uppercase text-stone-300 dark:text-slate-600">Kit vacío</p>
+                    <p class="text-[9px] font-bold text-stone-300 dark:text-slate-700 mt-0.5">Busca herramientas arriba para agregarlas</p>
+                </div>
 
-    <!-- Footer -->
+            </div>
+        </div>
+
+    </form>
+
+    <!-- ═══ FOOTER ═══ -->
     <div class="border-t-2 border-black bg-stone-200 dark:bg-slate-800 px-4 py-2.5 flex flex-col-reverse sm:flex-row justify-between items-stretch sm:items-center gap-2 shrink-0">
         <button type="button" (click)="cerrar()"
                 class="w-full sm:w-auto text-center px-4 py-2 bg-white dark:bg-slate-700 text-black dark:text-white font-black text-[10px] border-2 border-black rounded-xl shadow-[2px_2px_0_#000] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all uppercase">
             Cancelar
         </button>
-        <button type="button" (click)="onSubmit()" [disabled]="!kitForm.valid"
-                class="w-full sm:w-auto justify-center flex items-center gap-2 px-5 py-2 bg-amber-400 text-black font-black text-[10px] border-2 border-black rounded-xl shadow-[3px_3px_0_#000] hover:shadow-none hover:translate-x-[3px] hover:translate-y-[3px] transition-all uppercase disabled:opacity-40 disabled:cursor-not-allowed disabled:pointer-events-none">
-            <mat-icon class="!text-sm">save</mat-icon>
-            Guardar Kit
-        </button>
+        <div class="flex items-center gap-3 w-full sm:w-auto justify-end">
+            <span *ngIf="items.length > 0"
+                  class="text-[9px] font-black text-stone-500 dark:text-slate-400 uppercase">
+                {{ items.length }} herramienta{{ items.length !== 1 ? 's' : '' }} en el kit
+            </span>
+            <button type="button" (click)="onSubmit()" [disabled]="!kitForm.valid"
+                    class="flex items-center gap-2 px-5 py-2 bg-amber-400 text-black font-black text-[10px] border-2 border-black rounded-xl shadow-[3px_3px_0_#000] hover:shadow-none hover:translate-x-[3px] hover:translate-y-[3px] transition-all uppercase disabled:opacity-40 disabled:cursor-not-allowed disabled:pointer-events-none">
+                <mat-icon class="!text-sm">save</mat-icon>
+                {{ modoEdicion ? 'Actualizar Kit' : 'Guardar Kit' }}
+            </button>
+        </div>
     </div>
 
 </div>

@@ -10,51 +10,43 @@
         <div class="flex items-center justify-between gap-4 shrink-0 flex-wrap">
 
             <div class="flex items-center gap-4">
-                <div class="flex items-center justify-center w-10 h-10 bg-white dark:bg-[#0F172AFF] border-[3px] border-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] rounded-xl shrink-0">
-                    <mat-icon class="text-black dark:text-green-500 !text-base">assignment_return</mat-icon>
+                <div class="flex items-center justify-center w-10 h-10 bg-white dark:bg-slate-800 border-[3px] border-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] rounded-xl shrink-0">
+                    <mat-icon class="text-black dark:text-amber-400 !text-base">assignment_return</mat-icon>
                 </div>
                 <div>
                     <h1 class="text-xl font-black text-black dark:text-white uppercase tracking-tighter leading-none">
                         BANDEJA DE RETORNOS
                     </h1>
                     <div class="flex items-center gap-2 mt-0.5 flex-wrap">
-                        <p class="text-[10px] font-bold bg-green-500 text-white px-2 py-0.5 inline-block border-2 border-black rounded uppercase tracking-wider shadow-sm">
+                        <p class="text-[10px] font-bold bg-amber-400 text-black px-2 py-0.5 inline-block border-2 border-black rounded uppercase tracking-wider shadow-sm">
                             MGH-109 · REGISTRO DE INGRESOS
                         </p>
                         <span *ngIf="getRetrasadasCount() > 0"
-                              class="text-[10px] font-black px-2 py-0.5 border-[2px] border-black bg-red-500 text-white rounded uppercase tracking-wider flex items-center gap-1 animate-pulse shadow-sm">
-                            <mat-icon class="!text-[10px] !w-3 !h-3">warning</mat-icon>
+                              class="text-[10px] font-black px-2 py-0.5 border-[2px] border-black bg-[#FF1414FF] text-white rounded uppercase tracking-wider flex items-center gap-1 animate-pulse shadow-sm">
                             {{ getRetrasadasCount() }} retrasada{{ getRetrasadasCount() !== 1 ? 's' : '' }}
                         </span>
                     </div>
                 </div>
             </div>
 
+            <!-- Búsqueda por nota de envío -->
             <div class="flex items-center gap-3 flex-wrap">
-                <div class="relative">
+                <div class="relative flex-1 min-w-[200px] max-w-xs">
                     <input type="text"
                            [formControl]="searchControl"
-                           placeholder="Buscar por código o nota..."
-                           class="w-64 h-9 pl-9 pr-3 bg-white dark:bg-[#0F172AFF] text-black dark:text-white
-                                  border-[2px] border-black rounded-lg font-black text-xs uppercase
-                                  focus:outline-none focus:shadow-[3px_3px_0px_0px_#000] focus:-translate-y-[1px] transition-all placeholder:font-bold placeholder:normal-case">
+                           placeholder="Buscar por código o N° nota..."
+                           class="w-full h-9 pl-9 pr-3 bg-white dark:bg-slate-800 text-black dark:text-white
+                                  border-[2px] border-black dark:border-slate-500 rounded-lg font-black text-xs uppercase
+                                  focus:outline-none focus:shadow-[3px_3px_0px_0px_#000] dark:focus:shadow-[3px_3px_0px_0px_#FFC501] focus:-translate-y-[1px] transition-all placeholder:font-bold placeholder:normal-case dark:placeholder:text-slate-500">
                     <mat-icon class="absolute left-2.5 top-2 text-black dark:text-white !text-sm">search</mat-icon>
                 </div>
 
                 <select [formControl]="filterEstado"
-                        class="h-9 px-3 pr-8 bg-white dark:bg-[#0F172AFF] text-black dark:text-white
-                               border-[2px] border-black rounded-lg font-black text-xs uppercase
-                               focus:outline-none focus:shadow-[3px_3px_0px_0px_#000] focus:-translate-y-[1px] transition-all cursor-pointer appearance-none">
+                        class="h-9 px-3 pr-8 bg-white dark:bg-slate-800 text-black dark:text-white
+                               border-[2px] border-black dark:border-slate-500 rounded-lg font-black text-xs uppercase
+                               focus:outline-none focus:shadow-[3px_3px_0px_0px_#000] dark:focus:shadow-[3px_3px_0px_0px_#FFC501] focus:-translate-y-[1px] transition-all cursor-pointer appearance-none shrink-0">
                     <option *ngFor="let e of estadosFiltro" [value]="e.value">{{ e.label }}</option>
                 </select>
-
-                <button (click)="abrirModalRegistroRetornoGlobal()"
-                        class="px-5 py-2 bg-green-500 text-white font-black text-xs
-                               border-[2px] border-black rounded-xl
-                               shadow-[3px_3px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px]
-                               hover:shadow-none transition-all uppercase flex items-center gap-2">
-                    <mat-icon class="!text-sm text-white">check_circle</mat-icon> <span class="hidden sm:inline">CONFIRMAR RETORNO</span>
-                </button>
             </div>
         </div>
 
@@ -62,9 +54,9 @@
         <div class="flex-1 flex flex-col overflow-hidden border-[3px] border-black bg-white dark:bg-[#0F172AFF] rounded-2xl shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
 
             <!-- Sub Header -->
-            <div class="px-4 py-2.5 bg-[#0F172AFF] dark:bg-black border-b-[3px] border-black flex items-center justify-between shrink-0 flex-wrap gap-2">
+            <div class="px-4 py-2.5 bg-[#0F172AFF]  border-b-[3px] border-black flex items-center justify-between shrink-0 flex-wrap gap-2">
                 <h2 class="text-sm font-black text-white uppercase tracking-wider flex items-center gap-2">
-                    <mat-icon class="!text-base text-green-500">pending_actions</mat-icon>
+                    <mat-icon class="!text-base text-white">pending_actions</mat-icon>
                     HERRAMIENTAS EN LABORATORIO ({{ filteredCalibraciones.length }})
                 </h2>
 
@@ -80,10 +72,10 @@
                     </div>
 
                     <div class="flex items-center gap-2 rounded-lg px-3 py-1.5 border shadow-[1px_1px_0px_0px_#000]"
-                         [ngClass]="getRetrasadasCount() > 0 ? 'bg-red-500 border-black' : 'bg-white/20 border-white/30'">
+                         [ngClass]="getRetrasadasCount() > 0 ? 'bg-[#FF1414FF] border-black' : 'bg-white/20 border-white/30'">
                         <div class="w-5 h-5 rounded flex items-center justify-center border border-black/50"
                              [ngClass]="getRetrasadasCount() > 0 ? 'bg-white' : 'bg-gray-500 border-none'">
-                            <mat-icon class="!text-xs" [ngClass]="getRetrasadasCount() > 0 ? 'text-red-500' : 'text-white'">schedule</mat-icon>
+                            <mat-icon class="!text-xs" [ngClass]="getRetrasadasCount() > 0 ? 'text-black' : 'text-white'">schedule</mat-icon>
                         </div>
                         <div>
                             <div class="text-[8px] font-black uppercase leading-none"
@@ -95,10 +87,10 @@
                     <button (click)="loadCalibraciones()"
                             [disabled]="isLoading()"
                             matTooltip="Recargar lista"
-                            class="w-8 h-8 flex items-center justify-center rounded-lg border-2 border-black
-                                   bg-[#FFC501FF] hover:bg-amber-400 hover:translate-y-[1px] hover:shadow-none shadow-[2px_2px_0px_0px_#000]
+                            class="w-8 h-8 flex items-center justify-center rounded-lg border-2 border-white/30
+                                   bg-[#0F172AFF] hover:hover:bg-white/20 hover:translate-y-[1px] hover:shadow-none shadow-[2px_2px_0px_0px_#000]
                                    text-black transition-all disabled:opacity-40">
-                        <mat-icon class="!text-base">refresh</mat-icon>
+                        <mat-icon class="!text-base text-[#FFC501FF]">refresh</mat-icon>
                     </button>
                 </div>
             </div>
@@ -107,7 +99,7 @@
             <div *ngIf="isLoading()" class="flex-1 flex items-center justify-center bg-white dark:bg-[#0F172AFF]">
                 <div class="flex flex-col items-center gap-3">
                     <mat-spinner diameter="36"></mat-spinner>
-                    <p class="text-xs font-bold uppercase animate-pulse text-gray-500 dark:text-gray-400">
+                    <p class="text-xs font-bold uppercase animate-pulse text-gray-600 dark:text-slate-300">
                         Cargando bandeja...
                     </p>
                 </div>
@@ -115,17 +107,18 @@
 
             <!-- Tabla Data -->
             <div *ngIf="!isLoading()" class="overflow-y-auto flex-1 custom-scrollbar">
-                <table class="w-full">
+                <div class="overflow-x-auto">
+                <table class="w-full min-w-[800px]">
                     <thead class="sticky top-0 z-10">
-                    <tr class="border-b-[3px] border-black bg-gray-200 dark:bg-slate-800">
-                        <th class="text-left px-3 py-3 font-black text-[11px] uppercase text-black dark:text-white w-32 tracking-widest">CÓDIGO</th>
-                        <th class="text-left px-3 py-3 font-black text-[11px] uppercase text-black dark:text-white tracking-widest">HERRAMIENTA</th>
-                        <th class="text-left px-3 py-3 font-black text-[11px] uppercase text-black dark:text-white w-40 tracking-widest">EMPRESA</th>
-                        <th class="text-left px-3 py-3 font-black text-[11px] uppercase text-black dark:text-white w-32 tracking-widest">N° NOTA</th>
-                        <th class="text-left px-3 py-3 font-black text-[11px] uppercase text-black dark:text-white w-28 tracking-widest">ENVÍO</th>
-                        <th class="text-left px-3 py-3 font-black text-[11px] uppercase text-black dark:text-white w-28 tracking-widest">ESTIMADO</th>
-                        <th class="text-center px-3 py-3 font-black text-[11px] uppercase text-black dark:text-white w-28 tracking-widest">ESTADO</th>
-                        <th class="text-center px-3 py-3 font-black text-[11px] uppercase text-black dark:text-white w-36 tracking-widest">ACCIONES</th>
+                    <tr class="border-b-[3px] border-black bg-stone-200 dark:bg-[#020617]">
+                        <th class="text-left px-3 py-3 font-black text-[11px] uppercase text-black dark:text-amber-400 w-28 tracking-widest">CÓDIGO</th>
+                        <th class="text-left px-3 py-3 font-black text-[11px] uppercase text-black dark:text-amber-400 tracking-widest">HERRAMIENTA</th>
+                        <th class="text-left px-3 py-3 font-black text-[11px] uppercase text-black dark:text-amber-400 w-36 tracking-widest">EMPRESA</th>
+                        <th class="text-left px-3 py-3 font-black text-[11px] uppercase text-black dark:text-amber-400 w-32 tracking-widest">N° NOTA</th>
+                        <th class="text-left px-3 py-3 font-black text-[11px] uppercase text-black dark:text-amber-400 w-24 tracking-widest">ENVÍO</th>
+                        <th class="text-left px-3 py-3 font-black text-[11px] uppercase text-black dark:text-amber-400 w-24 tracking-widest">ESTIMADO</th>
+                        <th class="text-center px-3 py-3 font-black text-[11px] uppercase text-black dark:text-amber-400 w-24 tracking-widest">ESTADO</th>
+                        <th class="text-center px-3 py-3 font-black text-[11px] uppercase text-black dark:text-amber-400 w-44 tracking-widest">ACCIONES</th>
                     </tr>
                     </thead>
                     <tbody class="bg-white dark:bg-[#0F172AFF]">
@@ -142,16 +135,9 @@
 
                         <!-- Codigo -->
                         <td class="px-3 py-3">
-                            <div class="flex flex-col leading-tight items-start">
-                                <span class="font-black text-sm font-mono text-black dark:text-white">
-                                    {{ cal.tool_code }}
-                                </span>
-                                <span *ngIf="cal.is_jack"
-                                      class="inline-block px-1.5 py-0.5 bg-purple-200 border-2 border-purple-900
-                                             text-purple-900 rounded text-[9px] font-black uppercase w-fit mt-1 shadow-[1px_1px_0px_0px_#000]">
-                                    GATA
-                                </span>
-                            </div>
+                            <span class="font-black text-sm font-mono text-black dark:text-white">
+                                {{ cal.tool_code }}
+                            </span>
                         </td>
 
                         <!-- Nombre -->
@@ -170,7 +156,7 @@
 
                         <!-- Numero Nota -->
                         <td class="px-3 py-3">
-                            <span class="font-mono font-black text-black dark:text-white text-[11px]
+                            <span class="font-mono font-black text-black text-[11px]
                                          bg-[#FFC501FF] px-2 py-1 rounded-md border-2 border-black shadow-[2px_2px_0px_0px_#000]">
                                 {{ cal.record_number }}
                             </span>
@@ -178,8 +164,8 @@
 
                         <!-- Fecha Envio -->
                         <td class="px-3 py-3">
-                            <span class="font-mono font-bold text-black dark:text-white text-[11px] bg-gray-200 dark:bg-slate-700 border-2 border-black px-1.5 py-0.5 rounded">
-                                {{ cal.send_date }}
+                            <span class="font-mono font-bold text-black dark:text-white text-[11px] bg-white dark:bg-slate-700 border-2 border-black dark:border-slate-400 px-1.5 py-0.5 rounded">
+                                {{ formatDateDisplay(cal.send_date) }}
                             </span>
                         </td>
 
@@ -187,8 +173,8 @@
                         <td class="px-3 py-3">
                             <div class="flex flex-col leading-tight items-start">
                                 <span class="font-mono font-black text-[11px] px-1.5 py-0.5 rounded border-2"
-                                      [ngClass]="isRetrasado(cal) ? 'bg-red-500 text-white border-black shadow-[2px_2px_0px_0px_#000]' : 'bg-gray-200 dark:bg-slate-700 text-black dark:text-white border-black'">
-                                    {{ cal.expected_return_date || '—' }}
+                                      [ngClass]="isRetrasado(cal) ? 'bg-red-500 text-white border-black shadow-[2px_2px_0px_0px_#000]' : 'bg-gray-200 dark:bg-slate-600 text-black dark:text-white border-black dark:border-slate-400'">
+                                    {{ formatDateDisplay(cal.expected_return_date) }}
                                 </span>
                                 <span *ngIf="isRetrasado(cal)"
                                       class="text-[9px] font-black text-red-600 flex items-center gap-0.5 mt-1">
@@ -201,58 +187,50 @@
                         <!-- Estado -->
                         <td class="px-3 py-3 text-center">
                             <span *ngIf="cal.status === 'sent' || cal.status === 'in_process'"
-                                  class="inline-block px-2 py-1 border-[2px] border-black bg-blue-400 text-black rounded text-[10px] font-black uppercase shadow-[2px_2px_0px_0px_#000]">
+                                  class="inline-block px-2 py-1 border-[2px] border-black bg-blue-800 dark:bg-blue-500 text-white rounded text-[10px] font-black uppercase shadow-[2px_2px_0px_0px_#000]">
                                 EN LAB
                             </span>
                             <span *ngIf="cal.status === 'returned' || cal.status === 'completed'"
-                                  class="inline-block px-2 py-1 border-[2px] border-black bg-green-400 text-black rounded text-[10px] font-black uppercase shadow-[2px_2px_0px_0px_#000]">
+                                  class="inline-block px-2 py-1 border-[2px] border-black bg-green-600 dark:bg-green-500 text-black dark:text-white rounded text-[10px] font-black uppercase shadow-[2px_2px_0px_0px_#000]">
                                 COMPLETADO
                             </span>
                         </td>
 
                         <!-- Acciones -->
                         <td class="px-3 py-3">
-                            <div class="flex gap-2 justify-center flex-wrap mx-auto">
+                            <div class="flex gap-2 justify-center items-center">
 
-                                <!-- Registrar Retorno (Solo si esta en Lab) -->
+                                <!-- Confirmar Retorno (solo EN LAB) -->
                                 <button *ngIf="cal.status === 'sent' || cal.status === 'in_process'"
-                                        (click)="abrirModalRegistroRetorno(cal)"
-                                        matTooltip="Registrar Retorno"
+                                        (click)="abrirConfirmarRetorno(cal)"
+                                        matTooltip="Confirmar Retorno"
+                                        class="h-7 px-2.5 flex items-center justify-center gap-1 border-2 border-black
+                                               bg-green-600 hover:bg-green-400 rounded-lg shadow-[2px_2px_0px_0px_#000]
+                                               active:translate-y-[1px] active:shadow-none transition-all">
+                                    <mat-icon class=" text-black dark:text-black !text-sm">check_circle</mat-icon>
+                                    <span class="text-black font-black text-[10px] uppercase hidden sm:inline">Retorno</span>
+                                </button>
+
+                                <!-- Visualizar Nota de Envío (siempre) -->
+                                <button (click)="printNota(cal)"
+                                        matTooltip="Visualizar Nota de Envío"
+                                        class="w-8 h-8 flex items-center justify-center border-2 border-black
+                                               bg-white dark:bg-slate-700 hover:bg-gray-100 dark:hover:bg-slate-600
+                                               rounded-lg shadow-[2px_2px_0px_0px_#000]
+                                               active:translate-y-[1px] active:shadow-none transition-all">
+                                    <mat-icon class="text-indigo-600 dark:text-indigo-400 !text-base">description</mat-icon>
+                                </button>
+
+                                <!-- Certificado de Retorno (solo si retornó) -->
+                                <button *ngIf="cal.status === 'returned' || cal.status === 'completed'"
+                                        (click)="visualizarRetorno(cal)"
+                                        matTooltip="Imprimir Certificado de Retorno"
                                         class="w-8 h-8 flex items-center justify-center border-2 border-black
                                                bg-green-500 hover:bg-green-400 rounded-lg shadow-[2px_2px_0px_0px_#000]
                                                active:translate-y-[1px] active:shadow-none transition-all">
-                                    <mat-icon class="text-white !text-base">check</mat-icon>
+                                    <mat-icon class="text-white !text-base">workspace_premium</mat-icon>
                                 </button>
 
-                                <!-- Visualizar Certificado Retorno (Solo si ya retornó) -->
-                                <button *ngIf="cal.status === 'returned' || cal.status === 'completed'"
-                                        (click)="visualizarRetorno(cal)"
-                                        matTooltip="Ver certificado"
-                                        class="w-8 h-8 flex items-center justify-center border-2 border-black
-                                               bg-blue-500 hover:bg-blue-400 rounded-lg shadow-[2px_2px_0px_0px_#000]
-                                               active:translate-y-[1px] active:shadow-none transition-all">
-                                    <mat-icon class="text-white !text-base">visibility</mat-icon>
-                                </button>
-
-                                <!-- Subir PDF Externo (Solo si ya retornó) -->
-                                <button *ngIf="cal.status === 'returned' || cal.status === 'completed'"
-                                        (click)="triggerFileInput(cal)"
-                                        matTooltip="Adjuntar PDF externo"
-                                        class="w-8 h-8 flex items-center justify-center border-2 border-black
-                                               bg-purple-500 hover:bg-purple-400 rounded-lg shadow-[2px_2px_0px_0px_#000]
-                                               active:translate-y-[1px] active:shadow-none transition-all">
-                                    <mat-icon class="text-white !text-base">upload_file</mat-icon>
-                                </button>
-
-                                <!-- Imprimir Nota de Envío Original (Siempre disponible) -->
-                                <button (click)="printNota(cal)"
-                                        matTooltip="Imprimir Nota de Envío"
-                                        class="w-8 h-8 flex items-center justify-center border-2 border-black
-                                               bg-white dark:bg-slate-700 hover:bg-gray-200 dark:hover:bg-slate-600
-                                               rounded-lg shadow-[2px_2px_0px_0px_#000]
-                                               active:translate-y-[1px] active:shadow-none transition-all">
-                                    <mat-icon class="text-indigo-600 dark:text-indigo-400 !text-base">print</mat-icon>
-                                </button>
                             </div>
                         </td>
                     </tr>
@@ -260,8 +238,8 @@
                     <!-- Vacio -->
                     <tr *ngIf="filteredCalibraciones.length === 0">
                         <td colspan="8" class="p-16 text-center bg-white dark:bg-[#0F172AFF]">
-                            <mat-icon class="!text-6xl text-gray-300 dark:text-gray-600 mb-4">inventory_2</mat-icon>
-                            <p class="text-black dark:text-white font-black uppercase tracking-wider text-sm">
+                            <mat-icon class="!text-6xl text-gray-300 dark:text-slate-600 mb-4">inventory_2</mat-icon>
+                            <p class="text-black dark:text-slate-200 font-black uppercase tracking-wider text-sm">
                                 {{ searchControl.value || filterEstado.value
                                 ? 'No se encontraron registros con ese criterio'
                                 : 'No hay herramientas en laboratorio' }}
@@ -270,11 +248,9 @@
                     </tr>
                     </tbody>
                 </table>
+                </div>
             </div>
         </div>
 
     </div>
-
-    <!-- Input oculto para subida de PDF -->
-    <input type="file" id="fileUploadInput" accept="application/pdf" class="hidden" (change)="onFileSelected($event)">
 </div>

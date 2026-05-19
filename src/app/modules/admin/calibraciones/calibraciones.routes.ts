@@ -5,5 +5,9 @@ export default [
     {
         path: '',
         component: CalibracionesComponent
+    },
+    {
+        path: 'historial/:toolId',
+        loadComponent: () => import('./historial-herramienta/historial-herramienta.component').then(m => m.HistorialHerramientaComponent)
     }
 ] as Routes;

@@ -3,11 +3,12 @@ import { CommonModule } from '@angular/common';
 import { MatIconModule } from '@angular/material/icon';
 import { MAT_DIALOG_DATA, MatDialogRef, MatDialogModule } from '@angular/material/dialog';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { DragDropModule } from '@angular/cdk/drag-drop';
 
 @Component({
     selector: 'app-detalle-envio',
     standalone: true,
-    imports: [CommonModule, MatIconModule, MatDialogModule, MatTooltipModule],
+    imports: [CommonModule, MatIconModule, MatDialogModule, MatTooltipModule, DragDropModule],
     templateUrl: './detalle-envio.component.html',
     styles: [`
         .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
@@ -45,11 +46,11 @@ export class DetalleEnvioComponent {
 
     getStatusChipClass(s: string): string {
         const classes: Record<string, string> = {
-            'sent': 'bg-blue-100 text-blue-800 border-blue-200',
-            'in_process': 'bg-amber-100 text-amber-800 border-amber-200',
-            'returned': 'bg-green-100 text-green-800 border-green-200',
-            'cancelled': 'bg-red-100 text-red-800 border-red-200'
+            'sent':       'bg-blue-400 text-black',
+            'in_process': 'bg-amber-400 text-black',
+            'returned':   'bg-green-400 text-black',
+            'cancelled':  'bg-[#FF1414] text-white'
         };
-        return classes[s] ?? 'bg-gray-100 text-gray-700 border-gray-200';
+        return classes[s] ?? 'bg-stone-200 text-stone-700';
     }
 }

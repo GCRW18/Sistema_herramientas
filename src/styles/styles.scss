@@ -204,34 +204,35 @@
 // Neo-Brutal Dialog Styles
 .neo-dialog {
     .mat-mdc-dialog-container {
-        --mdc-dialog-container-shape: 16px;
-        border: 3px solid black !important;
-        box-shadow: 8px 8px 0px 0px rgba(0, 0, 0, 1) !important;
-        background: white !important;
+        --mdc-dialog-container-shape: 0px;
+        border: none !important;
+        box-shadow: none !important;
+        background: transparent !important;
         padding: 0 !important;
 
         .mdc-dialog__surface {
-            background-color: white !important;
-            border-radius: 16px;
-            padding: 0;
+            background-color: transparent !important;
+            border-radius: 0 !important;
+            padding: 0 !important;
+            box-shadow: none !important;
         }
     }
 
-    // Overlay backdrop
     .cdk-overlay-backdrop {
         background-color: rgba(0, 0, 0, 0.5);
     }
 }
 
-// Dark mode neo-dialog styles
 .dark .neo-dialog {
     .mat-mdc-dialog-container {
-        border-color: white !important;
-        background: #0f1633 !important;
-        box-shadow: 8px 8px 0px 0px rgba(255, 255, 255, 0.3) !important;
+        border: none !important;
+        background: transparent !important;
+        box-shadow: none !important;
 
         .mdc-dialog__surface {
-            background-color: #0f1633 !important;
+            background-color: transparent !important;
+            padding: 0 !important;
+            box-shadow: none !important;
         }
     }
 
@@ -308,9 +309,12 @@
 .no-padding-dialog {
     .mat-mdc-dialog-container {
         padding: 0 !important;
+        background: transparent !important;
 
         .mdc-dialog__surface {
             padding: 0 !important;
+            background: transparent !important;
+            box-shadow: none !important;
         }
     }
 }

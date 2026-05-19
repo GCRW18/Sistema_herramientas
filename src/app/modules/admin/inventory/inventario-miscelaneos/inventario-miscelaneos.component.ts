@@ -46,7 +46,28 @@ export class InventarioMiscelaneosComponent implements OnInit, OnDestroy {
     salidas:            Salida[]   = [];
     filteredSalidas:    Salida[]   = [];
 
-    tiposItem = ['CONSUMIBLE', 'REPUESTO', 'MATERIAL', 'QUIMICO', 'ELECTRICO'];
+    tiposItem = ['CONSUMIBLE', 'MATERIAL'];
+
+    // ── Vista Stock por ubicación ──────────────────────
+    get stockPorUbicacion(): { ubicacion: string; items: Material[] }[] {
+        const map = new Map<string, Material[]>();
+        for (const m of this.materiales.filter(m => m.activo)) {
+            const loc = m.ubicacion?.trim() || 'Sin ubicación';
+            if (!map.has(loc)) map.set(loc, []);
+            map.get(loc)!.push(m);
+        }
+        return Array.from(map.entries())
+            .map(([ubicacion, items]) => ({ ubicacion, items }))
+            .sort((a, b) => {
+                if (a.ubicacion === 'Sin ubicación') return 1;
+                if (b.ubicacion === 'Sin ubicación') return -1;
+                return a.ubicacion.localeCompare(b.ubicacion);
+            });
+    }
+
+    countBajoStockEnUbicacion(items: Material[]): number {
+        return items.filter(m => m.stockMin > 0 && m.stock <= m.stockMin).length;
+    }
 
     // ── Lifecycle ─────────────────────────────────────
     ngOnInit(): void {
@@ -123,7 +144,7 @@ export class InventarioMiscelaneosComponent implements OnInit, OnDestroy {
     // ── Catálogo ──────────────────────────────────────
     async nuevoCatalogo(): Promise<void> {
         const { FormMaterialComponent } = await import('./form-material/form-material.component');
-        this.dialog.open(FormMaterialComponent, { width: '860px', maxWidth: '95vw', data: { mode: 'new' } })
+        this.dialog.open(FormMaterialComponent, { maxWidth: '95vw', panelClass: 'no-padding-dialog', data: { mode: 'new' } })
             .afterClosed().subscribe((r: Material | undefined) => {
                 if (r) {
                     this.materiales.push({ ...r, id: Date.now(), activo: true });
@@ -135,7 +156,7 @@ export class InventarioMiscelaneosComponent implements OnInit, OnDestroy {
 
     async editarCatalogo(m: Material): Promise<void> {
         const { FormMaterialComponent } = await import('./form-material/form-material.component');
-        this.dialog.open(FormMaterialComponent, { width: '860px', maxWidth: '95vw', data: { mode: 'edit', material: m } })
+        this.dialog.open(FormMaterialComponent, { maxWidth: '95vw', panelClass: 'no-padding-dialog', data: { mode: 'edit', material: m } })
             .afterClosed().subscribe((r: Material | undefined) => {
                 if (r) {
                     const idx = this.materiales.findIndex(x => x.id === m.id);
@@ -148,7 +169,7 @@ export class InventarioMiscelaneosComponent implements OnInit, OnDestroy {
 
     async verCatalogo(m: Material): Promise<void> {
         const { FormMaterialComponent } = await import('./form-material/form-material.component');
-        this.dialog.open(FormMaterialComponent, { width: '860px', maxWidth: '95vw', data: { mode: 'view', material: m } });
+        this.dialog.open(FormMaterialComponent, { maxWidth: '95vw', panelClass: 'no-padding-dialog', data: { mode: 'view', material: m } });
     }
 
     eliminarCatalogo(m: Material): void {
@@ -161,7 +182,7 @@ export class InventarioMiscelaneosComponent implements OnInit, OnDestroy {
     // ── Entradas ──────────────────────────────────────
     async nuevaEntrada(): Promise<void> {
         const { FormEntradaComponent } = await import('./form-entrada/form-entrada.component');
-        this.dialog.open(FormEntradaComponent, { width: '860px', maxWidth: '95vw', data: { mode: 'new' } })
+        this.dialog.open(FormEntradaComponent, { maxWidth: '95vw', panelClass: 'no-padding-dialog', data: { mode: 'new' } })
             .afterClosed().subscribe((r: Entrada | undefined) => {
                 if (r) {
                     this.entradas.unshift({ ...r, id: Date.now() });
@@ -173,13 +194,13 @@ export class InventarioMiscelaneosComponent implements OnInit, OnDestroy {
 
     async verEntrada(e: Entrada): Promise<void> {
         const { FormEntradaComponent } = await import('./form-entrada/form-entrada.component');
-        this.dialog.open(FormEntradaComponent, { width: '860px', maxWidth: '95vw', data: { mode: 'view', entrada: e } });
+        this.dialog.open(FormEntradaComponent, { maxWidth: '95vw', panelClass: 'no-padding-dialog', data: { mode: 'view', entrada: e } });
     }
 
     // ── Salidas ───────────────────────────────────────
     async nuevaSalida(): Promise<void> {
         const { FormSalidaComponent } = await import('./form-salida/form-salida.component');
-        this.dialog.open(FormSalidaComponent, { width: '900px', maxWidth: '95vw', data: { mode: 'new' } })
+        this.dialog.open(FormSalidaComponent, { maxWidth: '95vw', panelClass: 'no-padding-dialog', data: { mode: 'new' } })
             .afterClosed().subscribe((r: Salida | undefined) => {
                 if (r) {
                     this.salidas.unshift({ ...r, id: Date.now() });
@@ -191,6 +212,6 @@ export class InventarioMiscelaneosComponent implements OnInit, OnDestroy {
 
     async verSalida(s: Salida): Promise<void> {
         const { FormSalidaComponent } = await import('./form-salida/form-salida.component');
-        this.dialog.open(FormSalidaComponent, { width: '900px', maxWidth: '95vw', data: { mode: 'view', salida: s } });
+        this.dialog.open(FormSalidaComponent, { maxWidth: '95vw', panelClass: 'no-padding-dialog', data: { mode: 'view', salida: s } });
     }
 }

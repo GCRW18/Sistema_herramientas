@@ -7,8 +7,6 @@ import { MatDialog, MatDialogModule, MatDialogRef } from '@angular/material/dial
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatTooltipModule } from '@angular/material/tooltip';
-import { MatTableModule } from '@angular/material/table';
-import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 import { DomSanitizer } from '@angular/platform-browser';
 import { DragDropModule } from '@angular/cdk/drag-drop';
 import { takeUntil, finalize } from 'rxjs/operators';
@@ -61,8 +59,6 @@ interface CalibrationRecord {
         MatSnackBarModule,
         MatProgressSpinnerModule,
         MatTooltipModule,
-        MatTableModule,
-        MatPaginatorModule,
         DragDropModule
     ],
     templateUrl: './calibraciones.component.html',
@@ -83,6 +79,16 @@ interface CalibrationRecord {
         }
         .animate-spin-slow {
             animation: spin-slow 3s linear infinite;
+        }
+
+        @keyframes icon-pop {
+            0%   { transform: scale(1)    rotate(0deg); }
+            35%  { transform: scale(1.4)  rotate(-14deg); }
+            65%  { transform: scale(1.15) rotate(7deg); }
+            100% { transform: scale(1)    rotate(0deg); }
+        }
+        .header-btn:hover .header-btn-icon {
+            animation: icon-pop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
         }
     `]
 })
@@ -154,15 +160,19 @@ export class CalibracionesComponent implements OnInit, OnDestroy, AfterViewInit 
     alertCount = 0;
     isLoading  = false;
 
-    displayedColumns = ['fecha', 'tipo', 'nroComprobante', 'estado', 'responsable', 'acciones'];
     selectedEntry: CalibrationRecord | null = null;
 
     // ── Paginación ────────────────────────────────────────────────────────────
-    totalRecords    = 0;
-    pageSize        = 10;
-    pageIndex       = 0;
-    pageSizeOptions = [5, 10, 25, 50];
+    totalRecords        = 0;
+    pageSize            = 10;
+    pageIndex           = 0;
     recentCalibrations: CalibrationRecord[] = [];
+
+    get totalPagesRecents(): number { return Math.ceil(this.totalRecords / this.pageSize) || 1; }
+    get recentsStart():      number { return this.totalRecords === 0 ? 0 : this.pageIndex * this.pageSize + 1; }
+    get recentsEnd():        number { return Math.min((this.pageIndex + 1) * this.pageSize, this.totalRecords); }
+    nextRecentsPage(): void { if (this.pageIndex < this.totalPagesRecents - 1) { this.pageIndex++; this.loadRecentCalibrations(); } }
+    prevRecentsPage(): void { if (this.pageIndex > 0) { this.pageIndex--; this.loadRecentCalibrations(); } }
 
     constructor() {
         this.registerIcons();
@@ -331,12 +341,6 @@ export class CalibracionesComponent implements OnInit, OnDestroy, AfterViewInit 
         });
     }
 
-    onPageChange(event: PageEvent): void {
-        this.pageIndex = event.pageIndex;
-        this.pageSize  = event.pageSize;
-        this.loadRecentCalibrations();
-    }
-
     // ── Helpers ───────────────────────────────────────────────────────────────
     private formatDate(date: string): string {
         if (!date) return '-';
@@ -356,11 +360,11 @@ export class CalibracionesComponent implements OnInit, OnDestroy, AfterViewInit 
 
     getStatusClass(estado: string): string {
         switch (estado) {
-            case 'COMPLETADO': case 'RETORNADO': return 'bg-green-500 text-white';
-            case 'PENDIENTE': return 'bg-yellow-400 text-black';
-            case 'EN LABORATORIO': case 'ENVIADO': return 'bg-indigo-500 text-white';
-            case 'RECHAZADO': case 'CANCELADO': return 'bg-red-500 text-white';
-            default: return 'bg-gray-200 text-black';
+            case 'COMPLETADO': case 'RETORNADO': return 'bg-green-600 text-white border-black';
+            case 'PENDIENTE':                    return 'bg-amber-500 text-black border-black';
+            case 'EN LABORATORIO': case 'ENVIADO': return 'bg-blue-700 text-white border-black';
+            case 'RECHAZADO': case 'CANCELADO':  return 'bg-red-600 text-white border-black';
+            default:                             return 'bg-gray-500 text-white border-black';
         }
     }
 

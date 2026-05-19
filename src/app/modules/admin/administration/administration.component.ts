@@ -102,6 +102,16 @@ interface AdminRecord {
         .custom-scrollbar-admin::-webkit-scrollbar-track { background: transparent; }
         .custom-scrollbar-admin::-webkit-scrollbar-thumb { background: #000; border-radius: 3px; }
         :host-context(.dark) .custom-scrollbar-admin::-webkit-scrollbar-thumb { background: #cbd5e1; }
+
+        @keyframes icon-pop {
+            0%   { transform: scale(1)    rotate(0deg); }
+            35%  { transform: scale(1.4)  rotate(-14deg); }
+            65%  { transform: scale(1.15) rotate(7deg); }
+            100% { transform: scale(1)    rotate(0deg); }
+        }
+        .header-btn:hover .header-btn-icon {
+            animation: icon-pop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
     `]
 })
 export class AdministrationComponent implements OnDestroy {

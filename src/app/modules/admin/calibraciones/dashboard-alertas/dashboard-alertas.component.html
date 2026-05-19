@@ -1,101 +1,132 @@
 <div class="flex flex-col w-full h-full bg-[#f8f9fc] dark:bg-[#0F172AFF] transition-colors duration-300 font-sans overflow-hidden">
 
     <div class="fixed top-20 right-10 w-40 h-40 bg-[#0F172AFF] rounded-full border-[3px] border-black opacity-5 pointer-events-none"></div>
-    <div class="fixed bottom-10 left-10 w-24 h-24 bg-[#e94125] rotate-12 border-[3px] border-black opacity-5 pointer-events-none"></div>
+    <div class="fixed bottom-10 left-10 w-24 h-24 bg-[#FFC501FF] rotate-12 border-[3px] border-black opacity-5 pointer-events-none"></div>
 
     <div class="flex-1 flex flex-col p-4 gap-3 overflow-hidden relative z-10">
 
+        <!-- ── Header ── -->
         <div class="flex items-center justify-between gap-4 shrink-0 flex-wrap">
 
             <div class="flex items-center gap-4">
-                <div class="flex items-center justify-center w-10 h-10 bg-white border-[3px] border-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] rounded-xl shrink-0">
-                    <mat-icon class="text-black !text-xl">notifications_active</mat-icon>
+                <div class="flex items-center justify-center w-10 h-10 bg-white dark:bg-slate-800 border-[3px] border-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] rounded-xl shrink-0">
+                    <mat-icon class="text-black dark:text-[#FFC501FF] !text-base">notifications_active</mat-icon>
                 </div>
                 <div>
                     <h1 class="text-xl font-black text-black dark:text-white uppercase tracking-tighter leading-none">
                         ALERTAS DE VENCIMIENTO
                     </h1>
                     <div class="flex items-center gap-2 mt-0.5 flex-wrap">
-                        <p class="text-[10px] font-bold bg-amber-400 text-black px-2 py-0.5 inline-block border border-black uppercase">
+                        <p class="text-[10px] font-bold bg-[#FFC501FF] text-black px-2 py-0.5 inline-block border-2 border-black rounded uppercase tracking-wider">
                             MGH-109 · Centro de Control
                         </p>
-                        <span *ngIf="countUrgency('EXPIRED') > 0"
-                              class="text-[10px] font-bold px-2 py-0.5 border-[2px] border-red-400 bg-red-50 dark:bg-red-900/30 text-red-700 rounded-lg animate-pulse-fast">
-                            ⚠ {{ countUrgency('EXPIRED') }} vencida{{ countUrgency('EXPIRED') !== 1 ? 's' : '' }}
+                        <span *ngIf="countRange('expired') > 0"
+                              class="text-[10px] font-black px-2 py-0.5 border-[2px] border-black bg-red-500 text-white rounded uppercase tracking-wider flex items-center gap-1 animate-pulse">
+                            <mat-icon class="!text-[10px] text-white !w-3 !h-3">warning</mat-icon>
+                            {{ countRange('expired') }} vencida{{ countRange('expired') !== 1 ? 's' : '' }}
                         </span>
                     </div>
                 </div>
             </div>
 
             <div class="flex items-center gap-3 flex-wrap">
+
+                <!-- Filtro por rango de días -->
                 <div class="relative">
-                    <select [(ngModel)]="selectedUrgency" (change)="applyUrgencyFilter()"
-                            class="w-56 h-9 pl-3 pr-8 bg-white dark:bg-[#0F172AFF] text-black dark:text-white border-[2px] border-black rounded-xl font-bold text-sm focus:outline-none focus:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-all uppercase appearance-none cursor-pointer">
+                    <select [(ngModel)]="selectedRange" (change)="applyRangeFilter()"
+                            class="w-56 h-9 pl-3 pr-8 bg-white dark:bg-slate-800 text-black dark:text-white border-[2px] border-black dark:border-slate-500 rounded-xl font-black text-xs focus:outline-none focus:shadow-[3px_3px_0px_0px_#000] dark:focus:shadow-[3px_3px_0px_0px_#FFC501] transition-all uppercase appearance-none cursor-pointer">
                         <option value="all">TODAS LAS ALERTAS</option>
-                        <option value="EXPIRED">VENCIDAS</option>
-                        <option value="CRITICAL_7D">CRÍTICAS (7 DÍAS)</option>
-                        <option value="URGENT_15D">URGENTES (15 DÍAS)</option>
-                        <option value="UPCOMING_30D">PRÓXIMAS (30 DÍAS)</option>
-                        <option value="IN_LAB">EN LABORATORIO</option>
+                        <option value="expired">VENCIDAS</option>
+                        <option value="4d">PRÓXIMAS 4 DÍAS</option>
+                        <option value="7d">PRÓXIMAS 7 DÍAS</option>
+                        <option value="15d">PRÓXIMAS 15 DÍAS</option>
+                        <option value="30d">PRÓXIMAS 30 DÍAS</option>
+                        <option value="90d">PRÓXIMAS 90 DÍAS</option>
+                        <option value="in_lab">EN LABORATORIO</option>
                     </select>
                     <mat-icon class="absolute right-2 top-1/2 -translate-y-1/2 !text-base pointer-events-none text-gray-500">expand_more</mat-icon>
                 </div>
+
+                <!-- Botón imprimir -->
+                <button (click)="printAlerts()"
+                        [disabled]="filteredAlerts.length === 0"
+                        matTooltip="Imprimir lista filtrada ({{ filteredAlerts.length }} registros)"
+                        class="h-9 px-4 flex items-center gap-2 bg-white dark:bg-slate-800 text-black dark:text-white border-[2px] border-black rounded-xl font-black text-xs uppercase shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] active:translate-y-[1px] active:shadow-none transition-all disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-slate-700">
+                    <mat-icon class="!text-base">print</mat-icon>
+                    <span class="hidden sm:inline">IMPRIMIR</span>
+                </button>
             </div>
         </div>
 
+        <!-- ── Tabla principal ── -->
         <div class="flex-1 flex flex-col overflow-hidden border-[3px] border-black bg-white dark:bg-[#0F172AFF] rounded-2xl shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
 
+            <!-- Barra KPIs -->
             <div class="px-4 py-2.5 bg-[#0F172AFF] border-b-[3px] border-black flex items-center justify-between shrink-0 flex-wrap gap-2">
-                <h2 class="text-sm font-black text-white uppercase tracking-wider flex items-center gap-2 hidden md:flex">
-                    <mat-icon class="!text-base text-[#e94125]">notifications_active</mat-icon>
+                <h2 class="text-sm font-black text-white uppercase tracking-wider hidden md:flex items-center gap-2">
+                    <mat-icon class="!text-base text-[#FFC501FF]">notifications_active</mat-icon>
                     REGISTRO DE ALERTAS ({{ filteredAlerts.length }})
                 </h2>
 
                 <div class="flex items-center gap-2 flex-wrap">
 
+                    <!-- KPI Vencidas -->
                     <div class="flex items-center gap-2 rounded-lg px-3 py-1 border"
-                         [ngClass]="countUrgency('EXPIRED') > 0 ? 'bg-red-500/30 border-red-400' : 'bg-white/20 border-white/30'">
-                        <div class="w-5 h-5 rounded flex items-center justify-center" [ngClass]="countUrgency('EXPIRED') > 0 ? 'bg-red-500' : 'bg-gray-500'">
+                         [ngClass]="countRange('expired') > 0 ? 'bg-red-500/30 border-red-400' : 'bg-white/20 border-white/30'">
+                        <div class="w-5 h-5 rounded flex items-center justify-center"
+                             [ngClass]="countRange('expired') > 0 ? 'bg-red-500' : 'bg-gray-500'">
                             <mat-icon class="!text-[14px] text-white">error</mat-icon>
                         </div>
                         <div class="flex gap-1.5 items-end">
-                            <div class="text-[8px] font-black uppercase mb-0.5" [ngClass]="countUrgency('EXPIRED') > 0 ? 'text-red-200' : 'text-white/80'">Vencidas</div>
-                            <div class="text-sm font-black leading-none" [ngClass]="countUrgency('EXPIRED') > 0 ? 'text-red-200' : 'text-white'">{{ countUrgency('EXPIRED') }}</div>
+                            <div class="text-[8px] font-black uppercase mb-0.5"
+                                 [ngClass]="countRange('expired') > 0 ? 'text-red-200' : 'text-white/80'">Vencidas</div>
+                            <div class="text-sm font-black leading-none"
+                                 [ngClass]="countRange('expired') > 0 ? 'text-red-200' : 'text-white'">{{ countRange('expired') }}</div>
                         </div>
                     </div>
 
+                    <!-- KPI 4 días -->
                     <div class="flex items-center gap-2 rounded-lg px-3 py-1 border"
-                         [ngClass]="countUrgency('CRITICAL_7D') > 0 ? 'bg-orange-500/30 border-orange-400' : 'bg-white/20 border-white/30'">
-                        <div class="w-5 h-5 rounded flex items-center justify-center" [ngClass]="countUrgency('CRITICAL_7D') > 0 ? 'bg-orange-500' : 'bg-gray-500'">
+                         [ngClass]="countRange('4d') > 0 ? 'bg-orange-500/30 border-orange-400' : 'bg-white/20 border-white/30'">
+                        <div class="w-5 h-5 rounded flex items-center justify-center"
+                             [ngClass]="countRange('4d') > 0 ? 'bg-orange-500' : 'bg-gray-500'">
                             <mat-icon class="!text-[14px] text-white">warning</mat-icon>
                         </div>
                         <div class="flex gap-1.5 items-end hidden lg:flex">
-                            <div class="text-[8px] font-black uppercase mb-0.5" [ngClass]="countUrgency('CRITICAL_7D') > 0 ? 'text-orange-200' : 'text-white/80'">Críticas</div>
-                            <div class="text-sm font-black leading-none" [ngClass]="countUrgency('CRITICAL_7D') > 0 ? 'text-orange-200' : 'text-white'">{{ countUrgency('CRITICAL_7D') }}</div>
+                            <div class="text-[8px] font-black uppercase mb-0.5"
+                                 [ngClass]="countRange('4d') > 0 ? 'text-orange-200' : 'text-white/80'">4 Días</div>
+                            <div class="text-sm font-black leading-none"
+                                 [ngClass]="countRange('4d') > 0 ? 'text-orange-200' : 'text-white'">{{ countRange('4d') }}</div>
                         </div>
                     </div>
 
+                    <!-- KPI 30 días -->
                     <div class="flex items-center gap-2 rounded-lg px-3 py-1 border"
-                         [ngClass]="countUrgency('URGENT_15D') > 0 ? 'bg-yellow-400/30 border-yellow-400' : 'bg-white/20 border-white/30'">
-                        <div class="w-5 h-5 rounded flex items-center justify-center" [ngClass]="countUrgency('URGENT_15D') > 0 ? 'bg-yellow-400' : 'bg-gray-500'">
+                         [ngClass]="countRange('30d') > 0 ? 'bg-yellow-400/30 border-yellow-400' : 'bg-white/20 border-white/30'">
+                        <div class="w-5 h-5 rounded flex items-center justify-center"
+                             [ngClass]="countRange('30d') > 0 ? 'bg-yellow-400' : 'bg-gray-500'">
                             <mat-icon class="!text-[14px] text-black">timer</mat-icon>
                         </div>
                         <div class="flex gap-1.5 items-end hidden xl:flex">
-                            <div class="text-[8px] font-black uppercase mb-0.5" [ngClass]="countUrgency('URGENT_15D') > 0 ? 'text-yellow-200' : 'text-white/80'">Urgentes</div>
-                            <div class="text-sm font-black leading-none" [ngClass]="countUrgency('URGENT_15D') > 0 ? 'text-yellow-200' : 'text-white'">{{ countUrgency('URGENT_15D') }}</div>
+                            <div class="text-[8px] font-black uppercase mb-0.5"
+                                 [ngClass]="countRange('30d') > 0 ? 'text-yellow-200' : 'text-white/80'">30 Días</div>
+                            <div class="text-sm font-black leading-none"
+                                 [ngClass]="countRange('30d') > 0 ? 'text-yellow-200' : 'text-white'">{{ countRange('30d') }}</div>
                         </div>
                     </div>
 
+                    <!-- KPI 90 días -->
                     <div class="flex items-center gap-2 rounded-lg px-3 py-1 border bg-blue-500/30 border-blue-400">
                         <div class="w-5 h-5 rounded flex items-center justify-center bg-blue-500">
                             <mat-icon class="!text-[14px] text-white">schedule</mat-icon>
                         </div>
                         <div class="flex gap-1.5 items-end hidden xl:flex">
-                            <div class="text-[8px] font-black uppercase mb-0.5 text-blue-200">Próximas</div>
-                            <div class="text-sm font-black leading-none text-white">{{ countUrgency('UPCOMING_30D') }}</div>
+                            <div class="text-[8px] font-black uppercase mb-0.5 text-blue-200">90 Días</div>
+                            <div class="text-sm font-black leading-none text-white">{{ countRange('90d') }}</div>
                         </div>
                     </div>
 
+                    <!-- Refresh -->
                     <button (click)="loadAlerts()"
                             [disabled]="isLoading"
                             matTooltip="Recargar alertas"
@@ -105,68 +136,93 @@
                 </div>
             </div>
 
+            <!-- Loading -->
             <div *ngIf="isLoading" class="flex-1 flex items-center justify-center bg-white dark:bg-[#0F172AFF]">
                 <div class="flex flex-col items-center gap-3">
                     <mat-spinner diameter="36"></mat-spinner>
-                    <p class="text-xs font-bold uppercase animate-pulse text-gray-500 dark:text-gray-400">
+                    <p class="text-xs font-bold uppercase animate-pulse text-gray-600 dark:text-slate-300">
                         Cargando alertas...
                     </p>
                 </div>
             </div>
 
-            <div *ngIf="!isLoading" class="overflow-y-auto flex-1 custom-scrollbar bg-white dark:bg-[#0F172AFF]">
-                <table class="w-full text-left">
+            <!-- Tabla -->
+            <div *ngIf="!isLoading" class="overflow-auto flex-1 custom-scrollbar bg-white dark:bg-[#0F172AFF]">
+                <table class="w-full text-left min-w-[900px]">
                     <thead class="sticky top-0 z-10">
-                    <tr class="border-b-[2px] border-black bg-gray-100 dark:bg-[#0F172AFF]">
-                        <th class="px-3 py-2 font-black text-xs uppercase text-black dark:text-white w-28 text-center">URGENCIA</th>
-                        <th class="px-3 py-2 font-black text-xs uppercase text-black dark:text-white w-32">CÓDIGO</th>
-                        <th class="px-3 py-2 font-black text-xs uppercase text-black dark:text-white">HERRAMIENTA / ALMACÉN</th>
-                        <th class="px-3 py-2 font-black text-xs uppercase text-black dark:text-white w-32">S/N</th>
-                        <th class="px-3 py-2 font-black text-xs uppercase text-black dark:text-white w-28 text-center">VENCE</th>
-                        <th class="px-3 py-2 font-black text-xs uppercase text-black dark:text-white w-24 text-center">DÍAS</th>
+                    <tr class="border-b-[2px] border-black bg-stone-200 dark:bg-[#020617]">
+                        <th class="px-3 py-2 font-black text-xs uppercase text-black dark:text-amber-400 w-28 text-center">URGENCIA</th>
+                        <th class="px-3 py-2 font-black text-xs uppercase text-black dark:text-amber-400 w-36">CÓDIGO / P/N</th>
+                        <th class="px-3 py-2 font-black text-xs uppercase text-black dark:text-amber-400">HERRAMIENTA</th>
+                        <th class="px-3 py-2 font-black text-xs uppercase text-black dark:text-amber-400 w-32">S/N</th>
+                        <th class="px-3 py-2 font-black text-xs uppercase text-black dark:text-amber-400 w-44">ALMACÉN / UBICACIÓN</th>
+                        <th class="px-3 py-2 font-black text-xs uppercase text-black dark:text-amber-400 w-28 text-center">VENCE</th>
+                        <th class="px-3 py-2 font-black text-xs uppercase text-black dark:text-amber-400 w-24 text-center">DÍAS</th>
                     </tr>
                     </thead>
                     <tbody>
                     <tr *ngFor="let el of paginatedAlerts; let last = last"
                         [class.border-b]="!last"
-                        class="border-gray-200 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors h-[60px]">
+                        class="border-gray-200 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors h-[52px]">
 
+                        <!-- Urgencia -->
                         <td class="px-3 py-2 text-center">
-                                <span class="inline-block px-2 py-0.5 border-[2px] border-black rounded-lg text-[10px] font-black uppercase shadow-[1px_1px_0px_0px_#000]"
-                                      [ngClass]="getUrgencyClass(el.urgency)">
-                                    {{ getUrgencyLabel(el.urgency) }}
-                                </span>
+                            <span class="inline-block px-2 py-0.5 border-[2px] border-black rounded-lg text-[10px] font-black uppercase shadow-[1px_1px_0px_0px_#000]"
+                                  [ngClass]="getUrgencyClass(el.urgency)">
+                                {{ getUrgencyLabel(el.urgency) }}
+                            </span>
                         </td>
+
+                        <!-- Código + P/N -->
                         <td class="px-3 py-2">
-                            <div class="flex items-center gap-1.5">
-                                <span class="font-black text-sm font-mono text-black dark:text-white">{{ el.tool_code }}</span>
-                                <span *ngIf="el.is_jack" class="inline-block px-1.5 py-0.5 bg-amber-100 border border-amber-300 text-amber-700 rounded-lg text-[9px] font-black uppercase w-fit">
-                                        GATA
-                                    </span>
-                            </div>
+                            <span class="font-black text-sm font-mono text-black dark:text-white block leading-tight">{{ el.tool_code }}</span>
+                            <span class="text-[10px] font-mono font-bold text-gray-400 dark:text-gray-500 block leading-tight mt-0.5"
+                                  [matTooltip]="'P/N: ' + el.part_number">
+                                {{ el.part_number !== '—' ? el.part_number : '' }}
+                            </span>
                         </td>
-                        <td class="px-3 py-2 leading-tight">
-                            <span class="font-bold text-sm text-gray-900 dark:text-white line-clamp-2 max-w-[500px]">{{ el.tool_name }}</span>
-                            <span class="text-[10px] font-bold text-gray-500 uppercase truncate block mt-0.5">{{ el.warehouse }}</span>
+
+                        <!-- Herramienta -->
+                        <td class="px-3 py-2">
+                            <span class="font-bold text-sm text-gray-900 dark:text-white line-clamp-2 max-w-[420px] block">{{ el.tool_name }}</span>
                         </td>
+
+                        <!-- S/N -->
                         <td class="px-3 py-2">
                             <span class="font-mono text-xs font-bold text-gray-600 dark:text-gray-400 block truncate">{{ el.serial_number || '—' }}</span>
                         </td>
-                        <td class="px-3 py-2 text-center">
-                            <span class="font-mono font-black text-gray-700 dark:text-gray-300 text-xs bg-gray-100 dark:bg-slate-800 px-2 py-0.5 rounded-lg border border-gray-200 dark:border-slate-600">{{ el.calibration_expiry }}</span>
+
+                        <!-- Almacén + Ubicación -->
+                        <td class="px-3 py-2">
+                            <span class="text-xs font-bold text-gray-800 dark:text-gray-200 block truncate leading-tight">{{ el.warehouse }}</span>
+                            <span class="text-[10px] font-mono font-bold leading-tight mt-0.5 flex items-center gap-1"
+                                  [ngClass]="el.ubicacion !== '—' ? 'text-indigo-600 dark:text-indigo-400' : 'text-gray-400 dark:text-gray-600'">
+                                <mat-icon *ngIf="el.ubicacion !== '—'" class="!text-[11px]">location_on</mat-icon>
+                                {{ el.ubicacion }}
+                            </span>
                         </td>
+
+                        <!-- Vence -->
                         <td class="px-3 py-2 text-center">
-                                <span class="font-black text-xs uppercase flex items-center justify-center gap-1" [ngClass]="getDaysColor(el.days_remaining)">
-                                    <mat-icon *ngIf="el.days_remaining <= 0" class="!text-[14px]">warning</mat-icon>
-                                    {{ el.days_remaining <= 0 ? 'VENCIDO' : el.days_remaining + 'd' }}
-                                </span>
+                            <span class="font-mono font-black text-gray-700 dark:text-gray-300 text-xs bg-gray-100 dark:bg-slate-800 px-2 py-0.5 rounded-lg border border-gray-200 dark:border-slate-600">
+                                {{ el.calibration_expiry }}
+                            </span>
+                        </td>
+
+                        <!-- Días -->
+                        <td class="px-3 py-2 text-center">
+                            <span class="font-black text-xs uppercase flex items-center justify-center gap-1"
+                                  [ngClass]="getDaysColor(el.days_remaining)">
+                                <mat-icon *ngIf="el.days_remaining <= 0" class="!text-[14px]">warning</mat-icon>
+                                {{ el.days_remaining <= 0 ? 'VENCIDO' : el.days_remaining + 'd' }}
+                            </span>
                         </td>
                     </tr>
 
                     <tr *ngIf="paginatedAlerts.length === 0">
-                        <td colspan="6" class="p-10 text-center bg-white dark:bg-[#0F172AFF]">
-                            <mat-icon class="!text-5xl text-gray-300 dark:text-gray-600 mb-2 block mx-auto">check_circle</mat-icon>
-                            <p class="text-gray-500 dark:text-gray-400 font-bold">
+                        <td colspan="7" class="p-10 text-center bg-white dark:bg-[#0F172AFF]">
+                            <mat-icon class="!text-5xl text-gray-300 dark:text-slate-600 mb-2 block mx-auto">check_circle</mat-icon>
+                            <p class="text-gray-500 dark:text-slate-300 font-bold">
                                 No hay alertas registradas bajo el criterio actual.
                             </p>
                         </td>
@@ -175,9 +231,13 @@
                 </table>
             </div>
 
-            <div *ngIf="!isLoading" class="px-4 py-2 bg-gray-100 dark:bg-[#0F172AFF] border-t-[3px] border-black flex items-center justify-between shrink-0">
-                <span class="text-[10px] font-black uppercase text-gray-600 dark:text-gray-400 tracking-wider">
-                    Mostrando <span class="text-black dark:text-white">{{ totalRecords > 0 ? startIndex + ' - ' + endIndex : '0' }}</span> de <span class="text-black dark:text-white">{{ totalRecords }}</span>
+            <!-- Paginación -->
+            <div *ngIf="!isLoading" class="px-4 py-2 bg-stone-200 dark:bg-[#020617] border-t-[3px] border-black flex items-center justify-between shrink-0">
+                <span class="text-[10px] font-black uppercase text-gray-600 dark:text-slate-300 tracking-wider">
+                    Mostrando
+                    <span class="text-black dark:text-white">{{ totalRecords > 0 ? startIndex + ' - ' + endIndex : '0' }}</span>
+                    de
+                    <span class="text-black dark:text-white">{{ totalRecords }}</span>
                 </span>
 
                 <div class="flex items-center gap-3">

@@ -50,25 +50,20 @@ export interface LaboratorioSimple {
     ],
     templateUrl: './consulta-auditoria.component.html',
     styles: [`
+        :host { display: block; height: 100%; }
+
         .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
-        .custom-scrollbar::-webkit-scrollbar-track { background: #e2e8f0; border-radius: 3px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #0F172AFF; border-radius: 3px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #1e293b; }
-        .dark .custom-scrollbar::-webkit-scrollbar-track { background: #1e293b; }
-        .dark .custom-scrollbar::-webkit-scrollbar-thumb { background: #fbbf24; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; border-radius: 3px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #000; border-radius: 3px; }
+        :host-context(.dark) .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; }
+
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+        .animate-pulse { animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
 
         .transition-all {
             transition-property: all;
             transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
             transition-duration: 150ms;
-        }
-
-        @keyframes pulse-fast {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.6; }
-        }
-        .animate-pulse-fast {
-            animation: pulse-fast 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
         }
     `]
 })
@@ -93,6 +88,23 @@ export class ConsultaAuditoriaComponent implements OnInit, OnDestroy {
     filterDateFrom = '';
     filterDateTo = '';
     is90DaysActive = false;
+
+    // Paginación
+    pageSize  = 10;
+    pageIndex = 0;
+
+    get totalRecords(): number { return this.rows().length; }
+    get totalPages():   number { return Math.ceil(this.totalRecords / this.pageSize) || 1; }
+    get startIndex():   number { return this.totalRecords === 0 ? 0 : this.pageIndex * this.pageSize + 1; }
+    get endIndex():     number { return Math.min((this.pageIndex + 1) * this.pageSize, this.totalRecords); }
+
+    get paginatedRows(): AuditRow[] {
+        const s = this.pageIndex * this.pageSize;
+        return this.rows().slice(s, s + this.pageSize);
+    }
+
+    nextPage(): void { if (this.pageIndex < this.totalPages - 1) this.pageIndex++; }
+    prevPage(): void { if (this.pageIndex > 0) this.pageIndex--; }
 
     // Stats para los chips de cabecera
     statCerrados = 0;
@@ -162,6 +174,7 @@ export class ConsultaAuditoriaComponent implements OnInit, OnDestroy {
     }
 
     async applyFilters(): Promise<void> {
+        this.pageIndex = 0;
         this.isLoading.set(true);
 
         const params: any = { limit: 250 };
@@ -241,13 +254,14 @@ export class ConsultaAuditoriaComponent implements OnInit, OnDestroy {
 
     getStatusClass(status: string): string {
         const map: Record<string, string> = {
-            'completed': 'bg-green-100 text-green-800 border-green-300 dark:bg-green-900/50 dark:text-green-300 dark:border-green-700',
-            'returned':  'bg-green-100 text-green-800 border-green-300 dark:bg-green-900/50 dark:text-green-300 dark:border-green-700',
-            'sent':      'bg-blue-100 text-blue-800 border-blue-300 dark:bg-blue-900/50 dark:text-blue-300 dark:border-blue-700',
-            'in_process':'bg-amber-100 text-amber-800 border-amber-300 dark:bg-amber-900/50 dark:text-amber-300 dark:border-amber-700',
-            'rejected':  'bg-red-100 text-red-800 border-red-300 dark:bg-red-900/50 dark:text-red-300 dark:border-red-700'
+            'completed':  'bg-green-600 text-black border-black',
+            'returned':   'bg-green-600 text-black border-black',
+            'sent':       'bg-blue-700 text-gray-100 border-black',
+            'in_process': 'bg-amber-500 text-black border-black',
+            'rejected':   'bg-red-600 text-gray-100 border-black',
+            'cancelled':  'bg-red-600 text-gray-100 border-black',
         };
-        return map[status] || 'bg-gray-100 text-gray-700 border-gray-300';
+        return map[status] || 'bg-gray-100 text-gray-700 border-gray-500';
     }
 
     getStatusLabel = (s: string) => ({
@@ -270,7 +284,7 @@ export class ConsultaAuditoriaComponent implements OnInit, OnDestroy {
         if (row.tipo_registro === 'calibracion') {
             this.calibrationService.generarYVerPdfEnvio(row.id);
         } else {
-            this.snackBar.open('Módulo de impresión MNT en desarrollo', 'OK', { panelClass: ['snackbar-warning'] });
+            this.maintenanceService.generarYVerPdfEnvioMantenimiento(row.id);
         }
         setTimeout(() => this.isLoading.set(false), 1000);
     }

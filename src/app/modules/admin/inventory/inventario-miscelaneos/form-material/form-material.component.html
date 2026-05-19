@@ -1,205 +1,313 @@
-<div class="bg-[#f8f9fc] dark:bg-slate-900 border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] overflow-hidden flex flex-col font-sans h-auto max-h-[95vh]">
+<div class="bg-stone-100 dark:bg-slate-900 border-2 border-black overflow-hidden flex flex-col"
+     style="width:860px; max-width:95vw; max-height:88vh; box-shadow: 6px 6px 0 #000">
 
     <!-- HEADER -->
-    <div class="bg-[#0F172AFF] text-white px-5 py-3 flex justify-between items-center shrink-0"
-         cdkDrag cdkDragRootElement=".cdk-overlay-pane" cdkDragHandle>
-        <div class="flex items-center gap-3">
-            <div class="w-8 h-8 bg-amber-400 border-2 border-black rounded flex items-center justify-center shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
-                <mat-icon class="text-black !text-base">inventory_2</mat-icon>
-            </div>
-            <div>
-                <h2 class="text-sm font-black uppercase tracking-tight leading-none">{{ titulo }}</h2>
-                <p class="text-[10px] text-gray-300 font-bold uppercase mt-0.5">{{ subtitulo }}</p>
-            </div>
+    <div class="bg-[#0F172A] px-4 py-2.5 flex items-center gap-3 shrink-0 select-none"
+         cdkDrag cdkDragRootElement=".cdk-overlay-pane" cdkDragHandle style="cursor:grab">
+        <div class="w-8 h-8 rounded bg-amber-400 border-2 border-black flex items-center justify-center shadow-[2px_2px_0_#fbbf24] shrink-0">
+            <mat-icon class="!text-base text-black">inventory_2</mat-icon>
         </div>
-        <div class="flex items-center gap-2">
-            <button (click)="dialogRef.close(undefined)"
-                    class="px-4 py-1.5 bg-[#FF1414FF] text-white font-black text-[10px] border-2 border-black rounded-lg shadow-[2px_2px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all uppercase">
+        <div>
+            <p class="text-[9px] text-slate-400 font-bold uppercase tracking-[0.18em] leading-none mb-0.5">{{ subtitulo }}</p>
+            <h2 class="text-sm text-white font-black uppercase tracking-tight leading-none">{{ titulo }}</h2>
+        </div>
+        <div class="ml-auto flex items-center gap-2 shrink-0">
+            <button type="button" (click)="dialogRef.close(undefined)"
+                    class="px-3 py-1.5 bg-[#FF1414] text-white font-black text-[10px] border-2 border-black rounded-lg shadow-[2px_2px_0_#000] hover:shadow-none hover:translate-x-[1px] hover:translate-y-[1px] transition-all uppercase">
                 {{ readOnly ? 'Cerrar' : 'Cancelar' }}
             </button>
-            <button *ngIf="!readOnly" (click)="save()"
-                    class="px-4 py-1.5 bg-amber-400 text-black font-black text-[10px] border-2 border-black rounded-lg shadow-[2px_2px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all uppercase flex items-center gap-1.5">
-                <mat-icon class="!text-black !text-sm">save</mat-icon> Guardar Ítem
+            <button *ngIf="!readOnly" type="button" (click)="save()"
+                    class="flex items-center gap-1.5 px-3 py-1.5 bg-amber-400 text-black font-black text-[10px] border-2 border-black rounded-lg shadow-[2px_2px_0_#000] hover:shadow-none hover:translate-x-[1px] hover:translate-y-[1px] transition-all uppercase">
+                <mat-icon class="!text-black">save</mat-icon>
+                Guardar Ítem
             </button>
         </div>
     </div>
 
     <!-- BODY -->
-    <div class="flex-1 overflow-y-auto p-5 custom-scrollbar">
-        <form [formGroup]="form" class="grid grid-cols-1 lg:grid-cols-12 gap-5">
+    <div class="flex-1 overflow-y-auto px-4 py-4 custom-scrollbar">
+        <form [formGroup]="form" class="grid grid-cols-1 lg:grid-cols-12 gap-4">
 
-            <!-- LEFT: Preview + estado + observación -->
-            <div class="lg:col-span-5 flex flex-col gap-4">
+            <!-- LEFT: Preview + Stock levels + Estado + Observación -->
+            <div class="lg:col-span-4 flex flex-col gap-4">
 
-                <!-- Preview card -->
-                <div class="bg-white dark:bg-slate-700 border-2 border-black rounded-xl p-4 shadow-[3px_3px_0px_0px_#000]">
-                    <span class="text-[9px] font-black text-gray-500 uppercase mb-3 border-b-2 border-black/10 pb-1 w-full block">Vista Previa</span>
+                <!-- Vista previa -->
+                <div class="flex-1 bg-white dark:bg-slate-800 border-2 border-black rounded-xl p-3 shadow-[3px_3px_0_#000]">
+                    <span class="text-[8px] font-black text-stone-400 dark:text-slate-400 uppercase tracking-[0.18em] mb-3 border-b-2 border-black/10 pb-1.5 w-full block">
+                        Vista Previa
+                    </span>
                     <div class="flex flex-col gap-2">
-                        <p class="font-black text-base text-black dark:text-white leading-none font-mono">
+                        <p class="font-black text-base text-black dark:text-white leading-none font-mono tracking-tight">
                             {{ form.get('codigoBoaM')?.value || 'BOA-M-XXX' }}
                         </p>
-                        <p class="text-xs font-bold text-gray-700 dark:text-gray-200 leading-tight min-h-[32px]">
+                        <p class="text-[11px] font-bold text-stone-600 dark:text-stone-300 leading-tight line-clamp-2">
                             {{ form.get('producto')?.value || 'Descripción del ítem...' }}
                         </p>
-                        <div class="flex flex-wrap gap-1.5 mt-1">
-                            <span class="px-2 py-0.5 bg-amber-100 border-2 border-black rounded text-[9px] font-black uppercase text-black">
+                        <div class="flex flex-wrap gap-1">
+                            <span class="px-2 py-0.5 bg-stone-100 dark:bg-slate-700 border-2 border-black rounded text-[9px] font-black uppercase text-black dark:text-white">
                                 {{ form.get('tipoItem')?.value }}
                             </span>
                             <span *ngIf="form.get('marca')?.value"
-                                  class="px-2 py-0.5 bg-gray-100 border-2 border-black rounded text-[9px] font-black uppercase text-black">
+                                  class="px-2 py-0.5 bg-stone-800 dark:bg-slate-600 border-2 border-black rounded text-[9px] font-black uppercase text-white truncate max-w-full">
                                 {{ form.get('marca')?.value }}
                             </span>
                         </div>
-                        <div class="flex gap-3 mt-2 pt-2 border-t-2 border-black/10">
+                        <div class="grid grid-cols-3 gap-1.5 mt-1 pt-2 border-t-2 border-black/10">
                             <div>
-                                <p class="text-[9px] font-bold text-gray-500 uppercase">Stock</p>
-                                <p class="text-lg font-black text-black dark:text-white">{{ form.get('stock')?.value }}</p>
+                                <p class="text-[7px] font-bold text-stone-400 dark:text-slate-400 uppercase mb-0.5">Stock</p>
+                                <p class="text-base font-black text-black dark:text-white leading-none">{{ form.get('stock')?.value }}</p>
                             </div>
                             <div>
-                                <p class="text-[9px] font-bold text-gray-500 uppercase">Unidad</p>
-                                <p class="text-sm font-black text-black dark:text-white">{{ form.get('unidad')?.value }}</p>
+                                <p class="text-[7px] font-bold text-stone-400 dark:text-slate-400 uppercase mb-0.5">Unidad</p>
+                                <p class="text-xs font-black text-black dark:text-white leading-none">{{ form.get('unidad')?.value }}</p>
                             </div>
-                            <div class="ml-auto">
-                                <span class="px-2 py-1 border-2 border-black rounded-lg text-[10px] font-black shadow-[2px_2px_0px_0px_#000]"
-                                      [ngClass]="form.get('activo')?.value ? 'bg-green-600 text-white' : 'bg-red-600 text-white'">
+                            <div>
+                                <p class="text-[7px] font-bold text-stone-400 dark:text-slate-400 uppercase mb-0.5">Estado</p>
+                                <span class="px-1.5 py-0.5 border-2 border-black rounded text-[8px] font-black inline-block"
+                                      [ngClass]="form.get('activo')?.value ? 'bg-emerald-500 text-white' : 'bg-stone-700 text-white'">
                                     {{ form.get('activo')?.value ? 'ACTIVO' : 'INACTIVO' }}
                                 </span>
                             </div>
                         </div>
                     </div>
-                </div>
 
-                <!-- Stock limits -->
-                <div class="bg-white dark:bg-slate-700 border-2 border-black rounded-xl p-4 shadow-[3px_3px_0px_0px_#000]">
-                    <p class="text-[9px] font-black text-gray-500 uppercase mb-3 border-b-2 border-black/10 pb-1">
-                        <mat-icon class="!text-sm align-middle">show_chart</mat-icon> Niveles de Stock
-                    </p>
-                    <div class="grid grid-cols-3 gap-3">
-                        <div>
-                            <label class="text-[9px] font-black uppercase text-black dark:text-white mb-1 block">Actual *</label>
-                            <input type="number" formControlName="stock" min="0"
-                                   class="w-full h-9 text-sm font-black text-center bg-white dark:bg-slate-900 border-2 border-black dark:border-slate-600 rounded-lg px-2 focus:shadow-[2px_2px_0px_0px_#000] outline-none transition-all">
-                        </div>
-                        <div>
-                            <label class="text-[9px] font-black uppercase text-amber-600 mb-1 block">Mín</label>
-                            <input type="number" formControlName="stockMin" min="0"
-                                   class="w-full h-9 text-sm font-black text-center bg-white dark:bg-slate-900 border-2 border-amber-400 rounded-lg px-2 focus:shadow-[2px_2px_0px_0px_#D97706] outline-none transition-all">
-                        </div>
-                        <div>
-                            <label class="text-[9px] font-black uppercase text-green-700 mb-1 block">Máx</label>
-                            <input type="number" formControlName="stockMax" min="0"
-                                   class="w-full h-9 text-sm font-black text-center bg-white dark:bg-slate-900 border-2 border-green-500 rounded-lg px-2 focus:shadow-[2px_2px_0px_0px_#16a34a] outline-none transition-all">
+                    <!-- Niveles de stock (dentro del mismo card) -->
+                    <div class="mt-3 pt-3 border-t-2 border-black/10">
+                        <p class="text-[8px] font-black text-stone-400 dark:text-slate-400 uppercase tracking-[0.18em] mb-2">Niveles de Stock</p>
+                        <div class="grid grid-cols-3 gap-2">
+                            <div>
+                                <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1.5 block">Actual *</label>
+                                <input type="number" formControlName="stock" min="0"
+                                       class="w-full h-9 text-sm font-black text-center bg-white dark:bg-slate-900 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-xl px-2 outline-none transition-all duration-150 hover:border-stone-400 dark:hover:border-slate-500 focus:border-black dark:focus:border-slate-400 focus:shadow-[3px_3px_0_#000]">
+                            </div>
+                            <div>
+                                <label class="text-[8px] font-black uppercase tracking-[0.18em] text-amber-600 mb-1.5 block">Mín</label>
+                                <input type="number" formControlName="stockMin" min="0"
+                                       class="w-full h-9 text-sm font-black text-center bg-white dark:bg-slate-900 dark:text-white border-2 border-amber-400 rounded-xl px-2 outline-none transition-all duration-150 focus:shadow-[3px_3px_0_#D97706]">
+                            </div>
+                            <div>
+                                <label class="text-[8px] font-black uppercase tracking-[0.18em] text-emerald-600 mb-1.5 block">Máx</label>
+                                <input type="number" formControlName="stockMax" min="0"
+                                       class="w-full h-9 text-sm font-black text-center bg-white dark:bg-slate-900 dark:text-white border-2 border-emerald-500 rounded-xl px-2 outline-none transition-all duration-150 focus:shadow-[3px_3px_0_#10b981]">
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Estado toggle -->
-                <div class="border-2 border-black rounded-xl p-3 shadow-[3px_3px_0px_0px_#000] flex items-center justify-between"
-                     [ngClass]="form.get('activo')?.value ? 'bg-white dark:bg-green-900/20' : 'bg-white dark:bg-red-900/20'">
-                    <div class="flex items-center gap-2">
-                        <mat-icon class="!text-base" [ngClass]="form.get('activo')?.value ? 'text-green-600' : 'text-red-600'">
-                            {{ form.get('activo')?.value ? 'check_circle' : 'cancel' }}
-                        </mat-icon>
-                        <span class="text-xs font-black uppercase">{{ form.get('activo')?.value ? 'Activo' : 'Inactivo' }}</span>
-                    </div>
-                    <button *ngIf="!readOnly" type="button"
-                            (click)="form.patchValue({ activo: !form.get('activo')?.value })"
-                            class="px-3 py-1 text-[10px] font-black uppercase border-2 border-black rounded-lg shadow-[2px_2px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all"
-                            [ngClass]="form.get('activo')?.value ? 'bg-red-600 text-white' : 'bg-green-600 text-white'">
-                        Cambiar
-                    </button>
-                </div>
-
-                <!-- Observación -->
-                <div>
-                    <label class="text-[10px] font-black uppercase text-black dark:text-gray-300 mb-1 block">Observación</label>
-                    <textarea formControlName="observacion" rows="3" placeholder="Notas adicionales..."
-                              class="w-full text-sm font-bold border-2 border-black dark:border-slate-600 rounded-xl p-3 bg-white dark:bg-slate-800 text-black dark:text-white outline-none focus:shadow-[2px_2px_0px_0px_#000] transition-shadow resize-none custom-scrollbar"></textarea>
-                </div>
             </div>
 
-            <!-- RIGHT: fields -->
-            <div class="lg:col-span-7 flex flex-col gap-4">
-
-                <!-- Identificación -->
-                <div class="bg-white dark:bg-slate-700 border-2 border-black rounded-xl p-4 shadow-[3px_3px_0px_0px_#000]">
-                    <p class="text-[9px] font-black text-gray-500 uppercase mb-3 border-b-2 border-black/10 pb-1">
-                        <mat-icon class="!text-sm align-middle">label</mat-icon> Identificación
-                    </p>
+            <!-- MIDDLE: Identificación -->
+            <div class="lg:col-span-4 flex flex-col">
+                <div class="flex-1 bg-white dark:bg-slate-800 border-2 border-black rounded-xl p-3 shadow-[3px_3px_0_#000]">
+                    <span class="text-[8px] font-black text-stone-400 dark:text-slate-400 uppercase tracking-[0.18em] mb-3 border-b-2 border-black/10 pb-1.5 w-full block">
+                        Identificación
+                    </span>
                     <div class="grid grid-cols-12 gap-3">
-                        <div class="col-span-12 sm:col-span-5">
-                            <label class="text-[10px] font-black uppercase text-black dark:text-white mb-1 block">Código BOA-M *</label>
+                        <div class="col-span-12">
+                            <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1.5 block">Código BOA-M *</label>
                             <input type="text" formControlName="codigoBoaM" placeholder="BOA-M-001"
-                                   class="w-full h-10 text-sm font-black uppercase bg-white dark:bg-slate-900 border-2 border-black dark:border-slate-600 rounded-lg px-3 focus:shadow-[2px_2px_0px_0px_#000] outline-none transition-all"
-                                   [class.border-red-500]="hasError('codigoBoaM','required')">
-                            <p *ngIf="hasError('codigoBoaM','required')" class="text-red-500 text-[10px] font-bold mt-0.5">Requerido</p>
+                                   class="w-full h-10 text-sm font-black uppercase bg-white dark:bg-slate-900 dark:text-white border-2 rounded-xl px-3 outline-none transition-all duration-150"
+                                   [class]="hasError('codigoBoaM','required')
+                                       ? 'border-red-400 focus:shadow-[2px_2px_0_#f87171]'
+                                       : 'border-stone-300 dark:border-slate-600 hover:border-stone-400 dark:hover:border-slate-500 focus:border-black dark:focus:border-slate-400 focus:shadow-[3px_3px_0_#000]'">
+                            <p *ngIf="hasError('codigoBoaM','required')" class="text-[8px] font-bold text-red-500 mt-1">Requerido.</p>
                         </div>
-                        <div class="col-span-6 sm:col-span-4">
-                            <label class="text-[10px] font-black uppercase text-black dark:text-white mb-1 block">Tipo Ítem *</label>
+                        <div class="col-span-6">
+                            <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1.5 block">Tipo Ítem *</label>
                             <select formControlName="tipoItem"
-                                    class="w-full h-10 text-sm font-bold bg-white dark:bg-slate-900 border-2 border-black dark:border-slate-600 rounded-lg px-2 focus:shadow-[2px_2px_0px_0px_#000] outline-none transition-all">
+                                    class="w-full h-10 text-sm font-bold bg-white dark:bg-slate-900 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-xl px-3 outline-none transition-all duration-150 cursor-pointer appearance-none hover:border-stone-400 dark:hover:border-slate-500 focus:border-black dark:focus:border-slate-400 focus:shadow-[3px_3px_0_#000]">
                                 <option *ngFor="let t of tiposItem" [value]="t">{{ t }}</option>
                             </select>
                         </div>
-                        <div class="col-span-6 sm:col-span-3">
-                            <label class="text-[10px] font-black uppercase text-black dark:text-white mb-1 block">Unidad *</label>
+                        <div class="col-span-6">
+                            <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1.5 block">Unidad *</label>
                             <select formControlName="unidad"
-                                    class="w-full h-10 text-sm font-bold bg-white dark:bg-slate-900 border-2 border-black dark:border-slate-600 rounded-lg px-2 focus:shadow-[2px_2px_0px_0px_#000] outline-none transition-all">
+                                    class="w-full h-10 text-sm font-bold bg-white dark:bg-slate-900 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-xl px-3 outline-none transition-all duration-150 cursor-pointer appearance-none hover:border-stone-400 dark:hover:border-slate-500 focus:border-black dark:focus:border-slate-400 focus:shadow-[3px_3px_0_#000]">
                                 <option *ngFor="let u of unidades" [value]="u">{{ u }}</option>
                             </select>
                         </div>
                         <div class="col-span-12">
-                            <label class="text-[10px] font-black uppercase text-black dark:text-white mb-1 block">Descripción / Producto *</label>
+                            <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1.5 block">Descripción / Producto *</label>
                             <input type="text" formControlName="producto" placeholder="Nombre completo del ítem"
-                                   class="w-full h-10 text-sm font-bold bg-white dark:bg-slate-900 border-2 border-black dark:border-slate-600 rounded-lg px-3 focus:shadow-[2px_2px_0px_0px_#000] outline-none transition-all"
-                                   [class.border-red-500]="hasError('producto','required')">
-                            <p *ngIf="hasError('producto','required')" class="text-red-500 text-[10px] font-bold mt-0.5">Requerido</p>
+                                   class="w-full h-10 text-sm font-bold bg-white dark:bg-slate-900 dark:text-white border-2 rounded-xl px-3 outline-none transition-all duration-150 placeholder:text-stone-300 dark:placeholder:text-slate-600"
+                                   [class]="hasError('producto','required')
+                                       ? 'border-red-400 focus:shadow-[2px_2px_0_#f87171]'
+                                       : 'border-stone-300 dark:border-slate-600 hover:border-stone-400 dark:hover:border-slate-500 focus:border-black dark:focus:border-slate-400 focus:shadow-[3px_3px_0_#000]'">
+                            <p *ngIf="hasError('producto','required')" class="text-[8px] font-bold text-red-500 mt-1">Requerido.</p>
                         </div>
                         <div class="col-span-6">
-                            <label class="text-[10px] font-black uppercase text-black dark:text-white mb-1 block">P/N</label>
+                            <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1.5 block">P/N</label>
                             <input type="text" formControlName="pn" placeholder="Part Number"
-                                   class="w-full h-10 text-sm font-bold bg-white dark:bg-slate-900 border-2 border-black dark:border-slate-600 rounded-lg px-3 focus:shadow-[2px_2px_0px_0px_#000] outline-none transition-all">
+                                   class="w-full h-10 text-sm font-bold bg-white dark:bg-slate-900 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-xl px-3 outline-none transition-all duration-150 placeholder:text-stone-300 dark:placeholder:text-slate-600 hover:border-stone-400 dark:hover:border-slate-500 focus:border-black dark:focus:border-slate-400 focus:shadow-[3px_3px_0_#000]">
                         </div>
                         <div class="col-span-6">
-                            <label class="text-[10px] font-black uppercase text-black dark:text-white mb-1 block">Marca</label>
+                            <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1.5 block">Marca</label>
                             <input type="text" formControlName="marca" placeholder="Fabricante"
-                                   class="w-full h-10 text-sm font-bold bg-white dark:bg-slate-900 border-2 border-black dark:border-slate-600 rounded-lg px-3 focus:shadow-[2px_2px_0px_0px_#000] outline-none transition-all">
+                                   class="w-full h-10 text-sm font-bold bg-white dark:bg-slate-900 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-xl px-3 outline-none transition-all duration-150 placeholder:text-stone-300 dark:placeholder:text-slate-600 hover:border-stone-400 dark:hover:border-slate-500 focus:border-black dark:focus:border-slate-400 focus:shadow-[3px_3px_0_#000]">
                         </div>
                         <div class="col-span-12">
-                            <label class="text-[10px] font-black uppercase text-black dark:text-white mb-1 block">Tipo de Compra *</label>
+                            <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1.5 block">Tipo de Compra *</label>
                             <select formControlName="tipoCompra"
-                                    class="w-full h-10 text-sm font-bold bg-white dark:bg-slate-900 border-2 border-black dark:border-slate-600 rounded-lg px-2 focus:shadow-[2px_2px_0px_0px_#000] outline-none transition-all">
+                                    class="w-full h-10 text-sm font-bold bg-white dark:bg-slate-900 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-xl px-3 outline-none transition-all duration-150 cursor-pointer appearance-none hover:border-stone-400 dark:hover:border-slate-500 focus:border-black dark:focus:border-slate-400 focus:shadow-[3px_3px_0_#000]">
                                 <option *ngFor="let tc of tiposCompra" [value]="tc">{{ tc }}</option>
                             </select>
                         </div>
                     </div>
                 </div>
+            </div>
 
-                <!-- Ubicación y registro -->
-                <div class="bg-white dark:bg-slate-700 border-2 border-black rounded-xl p-4 shadow-[3px_3px_0px_0px_#000]">
-                    <p class="text-[9px] font-black text-gray-500 uppercase mb-3 border-b-2 border-black/10 pb-1">
-                        <mat-icon class="!text-sm align-middle">place</mat-icon> Ubicación y Registro
-                    </p>
+            <!-- RIGHT: Ubicación y Registro -->
+            <div class="lg:col-span-4 flex flex-col">
+                <div class="flex-1 bg-white dark:bg-slate-800 border-2 border-black rounded-xl p-3 shadow-[3px_3px_0_#000]">
+                    <span class="text-[8px] font-black text-stone-400 dark:text-slate-400 uppercase tracking-[0.18em] mb-3 border-b-2 border-black/10 pb-1.5 w-full block">
+                        Ubicación y Registro
+                    </span>
                     <div class="grid grid-cols-12 gap-3">
+                        <!-- Picker de ubicación -->
                         <div class="col-span-12">
-                            <label class="text-[10px] font-black uppercase text-black dark:text-white mb-1 block">Ubicación</label>
-                            <input type="text" formControlName="ubicacion" placeholder="Ej: Estante A — Nivel 2"
-                                   class="w-full h-10 text-sm font-bold bg-white dark:bg-slate-900 border-2 border-black dark:border-slate-600 rounded-lg px-3 focus:shadow-[2px_2px_0px_0px_#000] outline-none transition-all">
+                            <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1.5 block">Ubicación</label>
+
+                            <!-- Campo display + botones -->
+                            <div class="flex gap-2">
+                                <div class="flex-1 flex items-center h-10 bg-white dark:bg-slate-900 border-2 border-stone-300 dark:border-slate-600 rounded-xl px-3 gap-2 min-w-0">
+                                    <mat-icon class="!text-sm text-amber-500 shrink-0">shelves</mat-icon>
+                                    <span class="text-sm font-bold truncate"
+                                          [ngClass]="form.get('ubicacion')?.value ? 'text-black dark:text-white' : 'text-stone-300 dark:text-slate-500'">
+                                        {{ form.get('ubicacion')?.value || 'Sin asignar' }}
+                                    </span>
+                                </div>
+                                <button *ngIf="!readOnly" type="button" (click)="openPicker($event)"
+                                        class="h-10 px-3 bg-amber-400 text-black border-2 border-black rounded-xl font-black text-[10px] uppercase shadow-[2px_2px_0_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all flex items-center gap-1.5 shrink-0">
+                                    <mat-icon class="!text-sm !text-black">account_tree</mat-icon>
+                                    Seleccionar
+                                </button>
+                                <button *ngIf="!readOnly && form.get('ubicacion')?.value" type="button" (click)="clearUbicacion()"
+                                        class="h-10 w-10 flex items-center justify-center bg-red-100 border-2 border-black rounded-xl shadow-[2px_2px_0_#000] hover:bg-red-400 hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all shrink-0">
+                                    <mat-icon class="!text-sm text-red-700">close</mat-icon>
+                                </button>
+                            </div>
+
+                            <!-- Backdrop: cierra al hacer clic fuera -->
+                            <div *ngIf="pickerOpen"
+                                 class="fixed inset-0 z-[9998]"
+                                 (click)="pickerOpen = false"></div>
+
+                            <!-- Panel picker flotante (fixed → escapa del overflow) -->
+                            <div *ngIf="pickerOpen"
+                                 [style.top.px]="pickerTop"
+                                 [style.left.px]="pickerLeft"
+                                 class="fixed z-[9999] w-[420px] border-[2px] border-black rounded-xl overflow-hidden bg-white dark:bg-slate-900"
+                                 style="box-shadow: 5px 5px 0 #000">
+
+                                <!-- Cabecera picker -->
+                                <div class="bg-[#0F172A] px-3 py-2 flex items-center justify-between">
+                                    <div class="flex items-center gap-2">
+                                        <mat-icon class="!text-xs text-amber-400">account_tree</mat-icon>
+                                        <span class="text-[10px] font-black text-white uppercase tracking-wider">Seleccionar ubicación</span>
+                                    </div>
+                                    <button type="button" (click)="pickerOpen = false"
+                                            class="w-6 h-6 flex items-center justify-center rounded border border-white/20 text-white hover:bg-white/20 transition-colors">
+                                        <mat-icon class="!text-xs">close</mat-icon>
+                                    </button>
+                                </div>
+
+                                <!-- Loading -->
+                                <div *ngIf="pickerLoading" class="px-4 py-6 text-center text-xs font-bold text-gray-400 uppercase">
+                                    Cargando almacenes...
+                                </div>
+
+                                <!-- 3 columnas: Almacén | Estante | Nivel -->
+                                <div *ngIf="!pickerLoading" class="grid grid-cols-3 divide-x-[2px] divide-black" style="height: 200px;">
+
+                                    <!-- Almacenes -->
+                                    <div class="overflow-y-auto">
+                                        <div class="px-2 py-1.5 bg-stone-50 dark:bg-slate-800 border-b-[2px] border-black sticky top-0">
+                                            <span class="text-[8px] font-black uppercase text-stone-500 tracking-wider">Almacén</span>
+                                        </div>
+                                        <div *ngFor="let w of warehouses"
+                                             (click)="selectWarehouse(w)"
+                                             class="px-3 py-2 cursor-pointer text-xs font-bold border-b border-gray-100 dark:border-slate-700 transition-colors truncate"
+                                             [ngClass]="selWarehouse?.id === w.id
+                                                 ? 'bg-amber-400 text-black'
+                                                 : 'hover:bg-amber-50 dark:hover:bg-slate-700 text-black dark:text-white'">
+                                            {{ w.nombre }}
+                                        </div>
+                                        <div *ngIf="!warehouses.length" class="px-3 py-4 text-[10px] text-gray-400 text-center">Sin datos</div>
+                                    </div>
+
+                                    <!-- Estantes -->
+                                    <div class="overflow-y-auto">
+                                        <div class="px-2 py-1.5 bg-stone-50 dark:bg-slate-800 border-b-[2px] border-black sticky top-0">
+                                            <span class="text-[8px] font-black uppercase text-stone-500 tracking-wider">Estante</span>
+                                        </div>
+                                        <div *ngFor="let r of racks"
+                                             (click)="selectRack(r)"
+                                             class="px-3 py-2 cursor-pointer text-xs font-bold border-b border-gray-100 dark:border-slate-700 transition-colors truncate"
+                                             [ngClass]="selRack?.id === r.id
+                                                 ? 'bg-amber-400 text-black'
+                                                 : 'hover:bg-amber-50 dark:hover:bg-slate-700 text-black dark:text-white'">
+                                            {{ r.nombre }}
+                                        </div>
+                                        <div *ngIf="selWarehouse && !racks.length" class="px-3 py-4 text-[10px] text-gray-400 text-center">Sin estantes</div>
+                                        <div *ngIf="!selWarehouse" class="px-3 py-4 text-[10px] text-gray-300 text-center italic">← elige almacén</div>
+                                    </div>
+
+                                    <!-- Niveles -->
+                                    <div class="overflow-y-auto">
+                                        <div class="px-2 py-1.5 bg-stone-50 dark:bg-slate-800 border-b-[2px] border-black sticky top-0">
+                                            <span class="text-[8px] font-black uppercase text-stone-500 tracking-wider">Nivel</span>
+                                        </div>
+                                        <div *ngFor="let l of levels"
+                                             (click)="selectLevel(l)"
+                                             class="px-3 py-2 cursor-pointer text-xs font-bold border-b border-gray-100 dark:border-slate-700 transition-colors truncate text-black dark:text-white hover:bg-amber-400 hover:text-black">
+                                            {{ l.nombre }}
+                                        </div>
+                                        <div *ngIf="selRack && !levels.length" class="px-3 py-4 text-[10px] text-gray-400 text-center">Sin niveles</div>
+                                        <div *ngIf="!selRack" class="px-3 py-4 text-[10px] text-gray-300 text-center italic">← elige estante</div>
+                                    </div>
+
+                                </div>
+                            </div>
                         </div>
                         <div class="col-span-12">
-                            <label class="text-[10px] font-black uppercase text-black dark:text-white mb-1 block">Recibido Por</label>
+                            <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1.5 block">Recibido Por</label>
                             <input type="text" formControlName="recibidoPor" placeholder="Nombre del responsable"
-                                   class="w-full h-10 text-sm font-bold bg-white dark:bg-slate-900 border-2 border-black dark:border-slate-600 rounded-lg px-3 focus:shadow-[2px_2px_0px_0px_#000] outline-none transition-all">
+                                   class="w-full h-10 text-sm font-bold bg-white dark:bg-slate-900 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-xl px-3 outline-none transition-all duration-150 placeholder:text-stone-300 dark:placeholder:text-slate-600 hover:border-stone-400 dark:hover:border-slate-500 focus:border-black dark:focus:border-slate-400 focus:shadow-[3px_3px_0_#000]">
                         </div>
                         <div class="col-span-6">
-                            <label class="text-[10px] font-black uppercase text-black dark:text-white mb-1 block">Fecha</label>
+                            <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1.5 block">Fecha</label>
                             <input type="date" formControlName="fecha"
-                                   class="w-full h-10 text-sm font-bold bg-white dark:bg-slate-900 border-2 border-black dark:border-slate-600 rounded-lg px-3 focus:shadow-[2px_2px_0px_0px_#000] outline-none transition-all">
+                                   class="w-full h-10 text-sm font-bold bg-white dark:bg-slate-900 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-xl px-3 outline-none transition-all duration-150 hover:border-stone-400 dark:hover:border-slate-500 focus:border-black dark:focus:border-slate-400 focus:shadow-[3px_3px_0_#000]">
                         </div>
                         <div class="col-span-6">
-                            <label class="text-[10px] font-black uppercase text-black dark:text-white mb-1 block">Hora</label>
+                            <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1.5 block">Hora</label>
                             <input type="time" formControlName="hora"
-                                   class="w-full h-10 text-sm font-bold bg-white dark:bg-slate-900 border-2 border-black dark:border-slate-600 rounded-lg px-3 focus:shadow-[2px_2px_0px_0px_#000] outline-none transition-all">
+                                   class="w-full h-10 text-sm font-bold bg-white dark:bg-slate-900 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-xl px-3 outline-none transition-all duration-150 hover:border-stone-400 dark:hover:border-slate-500 focus:border-black dark:focus:border-slate-400 focus:shadow-[3px_3px_0_#000]">
+                        </div>
+                        <div class="col-span-6">
+                            <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1.5 block">Estado</label>
+                            <button *ngIf="!readOnly" type="button"
+                                    (click)="form.patchValue({ activo: !form.get('activo')?.value })"
+                                    class="flex items-center gap-2 h-10 px-3 border-2 rounded-xl font-black text-[10px] uppercase transition-all duration-150"
+                                    [class]="form.get('activo')?.value
+                                        ? 'border-black bg-white dark:bg-slate-700 shadow-[2px_2px_0_#000] text-black dark:text-white'
+                                        : 'border-stone-300 dark:border-slate-600 bg-stone-50 dark:bg-slate-800 text-stone-400 dark:text-slate-500'">
+                                <div class="w-8 h-4 rounded-full border-2 relative transition-all duration-200 shrink-0"
+                                     [class]="form.get('activo')?.value ? 'border-black bg-black dark:border-slate-400 dark:bg-slate-400' : 'border-stone-300 dark:border-slate-600 bg-stone-200 dark:bg-slate-600'">
+                                    <div class="absolute top-px w-2.5 h-2.5 rounded-full bg-white transition-all duration-200"
+                                         [class]="form.get('activo')?.value ? 'left-4' : 'left-px'"></div>
+                                </div>
+                                {{ form.get('activo')?.value ? 'Activo' : 'Inactivo' }}
+                            </button>
+                            <div *ngIf="readOnly"
+                                 class="flex items-center gap-2 h-10 px-3 border-2 rounded-xl font-black text-[10px] uppercase border-stone-200 dark:border-slate-700 bg-stone-50 dark:bg-slate-800 text-stone-400 dark:text-slate-500">
+                                {{ form.get('activo')?.value ? 'Activo' : 'Inactivo' }}
+                            </div>
+                        </div>
+                        <div class="col-span-12">
+                            <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1.5 block">Observación</label>
+                            <textarea formControlName="observacion" rows="3" placeholder="Notas adicionales..."
+                                      class="w-full text-sm font-normal bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-xl px-3 py-2.5 outline-none transition-all duration-150 resize-none placeholder:text-stone-300 dark:placeholder:text-slate-600 hover:border-stone-400 dark:hover:border-slate-500 focus:border-black dark:focus:border-slate-400 focus:shadow-[3px_3px_0_#000] custom-scrollbar"></textarea>
                         </div>
                     </div>
                 </div>
@@ -207,4 +315,6 @@
             </div>
         </form>
     </div>
+
+
 </div>

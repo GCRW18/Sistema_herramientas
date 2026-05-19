@@ -71,7 +71,7 @@ export class CategoryService {
             dir: 'asc'
         })).pipe(
             switchMap((response: any) => {
-                const categories = response?.data || [];
+                const categories = response?.datos || response?.data || [];
                 this._categories.next(categories);
                 return of(categories);
             })
@@ -88,7 +88,7 @@ export class CategoryService {
             id_category: id
         })).pipe(
             switchMap((response: any) => {
-                return of(response?.data?.[0] || null);
+                return of(response?.datos?.[0] || response?.data?.[0] || null);
             })
         );
     }
@@ -148,7 +148,7 @@ export class CategoryService {
             dir: 'asc'
         })).pipe(
             switchMap((response: any) => {
-                const categories = response?.data || [];
+                const categories = response?.datos || response?.data || [];
 
                 // Transform to tree nodes
                 const treeNodes: CategoryNode[] = categories.map((cat: any) => ({
@@ -182,7 +182,7 @@ export class CategoryService {
             dir: 'asc'
         })).pipe(
             switchMap((response: any) => {
-                const children = response?.data || [];
+                const children = response?.datos || response?.data || [];
 
                 const childrenNodes: CategoryNode[] = children.map((cat: any) => ({
                     id_category: cat.id_category,
@@ -218,7 +218,7 @@ export class CategoryService {
             dir: 'asc'
         })).pipe(
             switchMap((response: any) => {
-                const categories = response?.data || [];
+                const categories = response?.datos || response?.data || [];
 
                 const treeNodes: CategoryNode[] = categories.map((cat: any) => ({
                     id_category: cat.id_category,
@@ -295,7 +295,7 @@ export class CategoryService {
         return from(this._api.post('herramientas/tools/listTools', params)).pipe(
             switchMap((response: any) => {
                 return of({
-                    tools: response?.data || [],
+                    tools: response?.datos || response?.data || [],
                     total: response?.total || 0
                 });
             })
@@ -309,7 +309,7 @@ export class CategoryService {
     initializeFixedCategories(): Observable<Category[]> {
         return from(this._api.post('herramientas/categories/initializeFixed', {})).pipe(
             switchMap((response: any) => {
-                return of(response?.data || []);
+                return of(response?.datos || response?.data || []);
             })
         );
     }
@@ -349,7 +349,7 @@ export class CategoryService {
 
         return from(this._api.post('herramientas/categories/listCategories', params)).pipe(
             switchMap((response: any) => {
-                const subcategories = response?.data || [];
+                const subcategories = response?.datos || response?.data || [];
                 this._subcategories.next(subcategories);
                 return of(subcategories);
             })
@@ -393,7 +393,7 @@ export class CategoryService {
             limit: 1000
         })).pipe(
             switchMap((response: any) => {
-                const categories = response?.data || [];
+                const categories = response?.datos || response?.data || [];
 
                 const stats = {
                     total: categories.length,

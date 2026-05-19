@@ -3,11 +3,12 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
 import { MAT_DIALOG_DATA, MatDialogRef, MatDialogModule } from '@angular/material/dialog';
+import { DragDropModule } from '@angular/cdk/drag-drop';
 
 @Component({
     selector: 'app-anular-envio',
     standalone: true,
-    imports: [CommonModule, FormsModule, MatIconModule, MatDialogModule],
+    imports: [CommonModule, FormsModule, MatIconModule, MatDialogModule, DragDropModule],
     templateUrl: './anular-envio.component.html'
 })
 export class AnularEnvioComponent {

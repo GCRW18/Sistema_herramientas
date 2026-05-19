@@ -38,7 +38,7 @@ export class ToolService {
     getTools(filters?: ToolFilters): Observable<Tool[]> {
         const params: any = {
             start: 0,
-            limit: 50,
+            limit: 1000,
             sort: 'name',
             dir: 'asc'
         };

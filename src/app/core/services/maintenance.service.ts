@@ -1,6 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { from, Observable, of, BehaviorSubject, switchMap, catchError } from 'rxjs';
 import { Maintenance, MaintenanceFormData, MaintenanceCompletionData } from '../models/maintenance.types';
+import { MaintenanceBatchPayload, MaintenanceBatchResult } from '../models/maintenance-batch.types';
 import { ErpApiService } from '../api/api.service';
 
 @Injectable({
@@ -50,6 +51,8 @@ export class MaintenanceService {
                     updatedAt: item.updated_at ? new Date(item.updated_at) : undefined,
                     // campos extra que usa consulta-auditoria
                     record_number: item.record_number,
+                    tool_code: item.tool_code || '',
+                    tool_name: item.tool_name || '',
                     tool_serial: item.tool_serial,
                     provider: item.provider ?? item.supplier_name,
                     send_date: item.send_date,
@@ -226,7 +229,11 @@ export class MaintenanceService {
         return from(this._api.post('herramientas/maintenances/listarMaintenancesActivos', {
             start: 0, limit: 100, sort: 'send_date', dir: 'desc'
         })).pipe(
-            switchMap((response: any) => of(response?.datos || []))
+            switchMap((response: any) => {
+                const raw = response?.ROOT?.datos ?? response?.datos ?? [];
+                return of(Array.isArray(raw) ? raw : (raw && raw !== '' ? [raw] : []));
+            }),
+            catchError(() => of([]))
         );
     }
 
@@ -251,8 +258,13 @@ export class MaintenanceService {
     }): Observable<any> {
         return from(this._api.post('herramientas/maintenances/enviarMantenimiento', params)).pipe(
             switchMap((response: any) => {
-                if (response?.error) throw new Error(response?.mensaje || 'Error al enviar a mantenimiento');
-                return of(response?.datos?.[0] || response?.datos || response);
+                const hasError = response?.ROOT?.error === true || response?.error === true;
+                if (hasError) {
+                    const msg = response?.ROOT?.detalle?.mensaje || response?.mensaje || 'Error al enviar a mantenimiento';
+                    throw new Error(msg);
+                }
+                const datos = response?.ROOT?.datos || response?.datos;
+                return of(datos?.[0] ?? datos ?? response);
             })
         );
     }
@@ -282,6 +294,37 @@ export class MaintenanceService {
                 if (response?.error) throw new Error(response?.mensaje || 'Error al retornar mantenimiento');
                 return of(response?.datos?.[0] || response?.datos || response);
             })
+        );
+    }
+
+    // ── Lotes de Mantenimiento ───────────────────────────────────────────────
+
+    /**
+     * Envía un lote de herramientas a mantenimiento – HE_MAINT_BATCH_SEND
+     * Genera correlativo LM-NNNN/YYYY y crea un registro por herramienta
+     */
+    createMaintenanceBatchPxp(payload: MaintenanceBatchPayload): Observable<MaintenanceBatchResult> {
+        const { items, ...rest } = payload;
+        const body = { ...rest, items_json: JSON.stringify(items) };
+        return from(this._api.post('herramientas/maintenances/enviarLoteMantenimiento', body)).pipe(
+            switchMap((response: any) => {
+                if (response?.error) throw new Error(response?.mensaje || 'Error al procesar el lote');
+                const datos = response?.datos?.[0] ?? response?.datos ?? response;
+                return of(datos as MaintenanceBatchResult);
+            }),
+            catchError((err) => { throw err; })
+        );
+    }
+
+    /**
+     * Busca reportes de discrepancia – HE_DISC_REP_SEL
+     */
+    searchDiscrepancyReportsPxp(term: string): Observable<any[]> {
+        return from(this._api.post('herramientas/maintenances/buscarReportesDiscrepancia', {
+            term, start: 0, limit: 20
+        })).pipe(
+            switchMap((response: any) => of(response?.datos || [])),
+            catchError(() => of([]))
         );
     }
 
@@ -315,19 +358,15 @@ export class MaintenanceService {
             id_maintenance: id_maintenance
         })).pipe(
             switchMap((response: any) => {
-                if (response?.error) {
-                    throw new Error(response?.mensaje || 'Error al generar PDF');
-                }
-                const data = response?.datos || response;
+                const hasError = response?.ROOT?.error === true || response?.error === true;
+                if (hasError) throw new Error(response?.ROOT?.detalle?.mensaje || response?.mensaje || 'Error al generar PDF');
+                const data = response?.ROOT?.datos ?? response?.datos ?? response;
                 return of({
-                    pdf_base64: data?.pdf_base64,
-                    nombre_archivo: data?.nombre_archivo || `nota_mantenimiento_${id_maintenance}.pdf`
+                    pdf_base64: data?.pdf_base64 as string,
+                    nombre_archivo: data?.nombre_archivo || `nota_mantenimiento_${id_maintenance}.html`
                 });
             }),
-            catchError((error) => {
-                console.error('Error en generarPdfEnvioMantenimiento:', error);
-                throw error;
-            })
+            catchError((error) => { throw error; })
         );
     }
 
@@ -341,19 +380,15 @@ export class MaintenanceService {
             id_maintenance: id_maintenance
         })).pipe(
             switchMap((response: any) => {
-                if (response?.error) {
-                    throw new Error(response?.mensaje || 'Error al generar PDF');
-                }
-                const data = response?.datos || response;
+                const hasError = response?.ROOT?.error === true || response?.error === true;
+                if (hasError) throw new Error(response?.ROOT?.detalle?.mensaje || response?.mensaje || 'Error al generar PDF');
+                const data = response?.ROOT?.datos ?? response?.datos ?? response;
                 return of({
-                    pdf_base64: data?.pdf_base64,
-                    nombre_archivo: data?.nombre_archivo || `retorno_mantenimiento_${id_maintenance}.pdf`
+                    pdf_base64: data?.pdf_base64 as string,
+                    nombre_archivo: data?.nombre_archivo || `certificado_mantenimiento_${id_maintenance}.html`
                 });
             }),
-            catchError((error) => {
-                console.error('Error en generarPdfRetornoMantenimiento:', error);
-                throw error;
-            })
+            catchError((error) => { throw error; })
         );
     }
 

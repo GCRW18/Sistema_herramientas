@@ -7,10 +7,10 @@ import { MatIconModule }                                                        
 import { MatProgressSpinnerModule }                                                  from '@angular/material/progress-spinner';
 import { MatSnackBar, MatSnackBarModule }                                            from '@angular/material/snack-bar';
 import { MatTooltipModule }                                                          from '@angular/material/tooltip';
+import { CdkDrag, CdkDragHandle }                                                    from '@angular/cdk/drag-drop';
 import { Subject, lastValueFrom, of }                                                from 'rxjs';
 import { takeUntil, finalize, debounceTime, distinctUntilChanged, switchMap }        from 'rxjs/operators';
 
-// Servicios del Core
 import { CalibrationService } from '../../../../../core/services/calibration.service';
 import { MovementService }    from '../../../../../core/services/movement.service';
 import { ScanToolResult }     from '../../../../../core/models';
@@ -20,13 +20,22 @@ interface Warehouse   { id: number; name: string; code: string; }
 interface BaseOpt     { id: number; name: string; code: string; }
 
 interface MultiToolItem {
-    tool:            ScanToolResult & { location?: string; shelf?: string; nivel?: string; tool_code?: string; tool_name?: string };
-    status:          'pending' | 'sending' | 'done' | 'error';
-    nota?:           string;
-    error?:          string;
-    images?:         string[] | null;
-    imagesLoaded?:   boolean;
-    id_calibration?: number;
+    tool:               ScanToolResult & { location?: string; shelf?: string; nivel?: string; tool_code?: string; tool_name?: string };
+    status:             'pending' | 'sending' | 'done' | 'error';
+    // Parámetros por herramienta
+    supplierId:         number | null;
+    supplierName:       string;
+    workType:           string;
+    expectedReturnDate: string;
+    notes:              string;
+    repairDescription:  string;
+    discrepancyReport:  string;
+    // Resultado
+    nota?:              string;
+    error?:             string;
+    images?:            string[] | null;
+    imagesLoaded?:      boolean;
+    id_calibration?:    number;
 }
 
 @Component({
@@ -36,6 +45,7 @@ interface MultiToolItem {
         CommonModule, FormsModule,
         MatDialogModule, MatButtonModule, MatIconModule,
         MatProgressSpinnerModule, MatSnackBarModule, MatTooltipModule,
+        CdkDrag, CdkDragHandle,
     ],
     templateUrl: './form-envio.component.html',
     styles: [`
@@ -53,60 +63,54 @@ export class FormEnvioComponent implements OnInit, OnDestroy {
     private snackBar           = inject(MatSnackBar);
     private cdr                = inject(ChangeDetectorRef);
 
-    private _destroy$          = new Subject<void>();
-    private _toolSearch$       = new Subject<string>();
-    private _reqSearch$        = new Subject<string>();
-    private _delSearch$        = new Subject<string>();
+    private _destroy$    = new Subject<void>();
+    private _toolSearch$ = new Subject<string>();
+    private _reqSearch$  = new Subject<string>();
 
     @ViewChild('scanInput') scanInputRef!: ElementRef<HTMLInputElement>;
 
-    // Configuración
-    laboratories:    any[]         = [];
-    selectedLabId:   number | null = null;
-    selectedLabName  = '';
-    almacen          = '';
-    base             = '';
-    baseId: number | null = null;
-    workType         = 'calibration';
-    repairDescription = '';
-    sendNotes        = '';
+    // Campos compartidos por toda la nota
+    almacen            = '';
+    base               = '';
+    baseId:            number | null = null;
+    sendDate           = '';
+    requestedByName    = '';
 
-    warehouses: Warehouse[] = [];
-    bases:      BaseOpt[]   = [];
+    laboratories:   any[]         = [];
+    warehouses:     Warehouse[]   = [];
+    bases:          BaseOpt[]     = [];
 
-    viewingPhoto      = signal<{ code: string; name: string; url: string } | null>(null);
+    requestedByFuncionarios:  Funcionario[] = [];
+    requestedByLoading        = false;
+    showRequestedByDropdown   = false;
+
+    barcodeValue      = 'BOA-H-';
+    isScanning        = signal(false);
+    toolSuggestions:  any[] = [];
+    showToolDropdown  = false;
+    toolSearchLoading = false;
+
+    toolList:      MultiToolItem[] = [];
+    isProcessing   = signal(false);
+    processedCount = 0;
+
+    viewingPhoto   = signal<{ code: string; name: string; url: string } | null>(null);
     photoLoadingIndex = signal<number | null>(null);
 
-    workTypeOptions = [
+    readonly workTypeOptions = [
         { value: 'calibration',        label: 'CALIBRACIÓN' },
         { value: 'repair',             label: 'REPARACIÓN'  },
         { value: 'calibration_repair', label: 'CAL/REP'     },
     ];
 
-    requestedByName            = '';
-    deliveredByName            = '';
-    requestedByFuncionarios:  Funcionario[] = [];
-    deliveredByFuncionarios:  Funcionario[] = [];
-    requestedByLoading         = false;
-    deliveredByLoading         = false;
-    showRequestedByDropdown    = false;
-    showDeliveredByDropdown    = false;
-
-    barcodeValue   = 'BOA-H-';
-    isScanning     = signal(false);
-    toolSuggestions: any[]  = [];
-    showToolDropdown         = false;
-    toolSearchLoading        = false;
-
-    toolList: MultiToolItem[] = [];
-
-    isProcessing   = signal(false);
-    processedCount = 0;
-
-    readonly fechaEnvioDisplay   = this._fmt(new Date());
-    readonly fechaRetornoDisplay = this._fmt(this._addDays(new Date(), 7));
+    private readonly _workTypeMap: Record<string, string> = {
+        'calibration':        'CALIBRACIÓN',
+        'repair':             'REPARACIÓN',
+        'calibration_repair': 'CALIBRACIÓN Y REPARACIÓN',
+    };
 
     ngOnInit(): void {
+        this.sendDate = this._toIso(new Date());
         this.loadLaboratorios();
         this.loadWarehouses();
         this.loadBases();
@@ -121,9 +125,7 @@ export class FormEnvioComponent implements OnInit, OnDestroy {
 
     loadLaboratorios(): void {
         this.calibrationService.getActiveLaboratoriesPxp().pipe(takeUntil(this._destroy$)).subscribe({
-            next: (labs) => {
-                this.laboratories = (labs || []).filter((l: any) => l.estado_reg !== 'inactivo');
-            },
+            next: (labs) => { this.laboratories = (labs || []).filter((l: any) => l.estado_reg !== 'inactivo'); },
             error: () => this.showMsg('Error al cargar laboratorios', 'error'),
         });
     }
@@ -132,10 +134,15 @@ export class FormEnvioComponent implements OnInit, OnDestroy {
         this.movementService.getWarehouses().pipe(takeUntil(this._destroy$)).subscribe({
             next: (rows: any[]) => {
                 this.warehouses = (rows || []).map(w => ({
-                    id: w.id_warehouse || w.id,
-                    name: w.nombre || w.name,
-                    code: w.codigo || w.code || 'ALM'
+                    id:   w.id_warehouse || w.id,
+                    name: w.nombre       || w.name,
+                    code: w.codigo       || w.code || 'ALM'
                 }));
+                const def = this.warehouses.find(w => w.code === 'ALM-CBB');
+                if (def) {
+                    this.almacen = def.name;
+                    this._autoSelectBase(def.code);
+                }
             },
             error: () => this.showMsg('Error al cargar almacenes', 'error')
         });
@@ -145,18 +152,29 @@ export class FormEnvioComponent implements OnInit, OnDestroy {
         this.movementService.getBases().pipe(takeUntil(this._destroy$)).subscribe({
             next: (rows: any[]) => {
                 this.bases = (rows || []).map(b => ({
-                    id: b.id_base || b.id,
-                    name: b.nombre || b.codigo,
-                    code: b.codigo || 'BASE'
+                    id:   b.id_base || b.id,
+                    name: b.nombre  || b.codigo,
+                    code: b.codigo  || 'BASE'
                 }));
+                const wh = this.warehouses.find(w => w.name === this.almacen);
+                if (wh) this._autoSelectBase(wh.code);
             },
             error: () => this.showMsg('Error al cargar bases', 'error')
         });
     }
 
-    onLabChange(labId: number): void {
-        const lab = this.laboratories.find(l => l.id_laboratory === labId);
-        this.selectedLabName = lab?.name ?? '';
+    onWarehouseChange(warehouseName: string): void {
+        const wh = this.warehouses.find(w => w.name === warehouseName);
+        if (wh) this._autoSelectBase(wh.code);
+    }
+
+    private _autoSelectBase(warehouseCode: string): void {
+        const baseCode = warehouseCode.split('-').pop() ?? '';
+        const matched  = this.bases.find(b => b.code === baseCode);
+        if (matched) {
+            this.base   = matched.code;
+            this.baseId = matched.id;
+        }
     }
 
     onBaseChange(code: string): void {
@@ -164,15 +182,17 @@ export class FormEnvioComponent implements OnInit, OnDestroy {
         this.baseId = found?.id ?? null;
     }
 
+    onItemLabChange(item: MultiToolItem, labId: number): void {
+        const lab = this.laboratories.find(l => l.id_laboratory === labId);
+        item.supplierName = lab?.name ?? '';
+    }
+
     private _setupToolSearch(): void {
         this._toolSearch$.pipe(
             debounceTime(350),
             distinctUntilChanged(),
             switchMap(term => {
-                if (term.length < 2) {
-                    this.showToolDropdown = false;
-                    return of([]);
-                }
+                if (term.length < 2) { this.showToolDropdown = false; return of([]); }
                 this.toolSearchLoading = true;
                 return this.calibrationService.searchToolsAutocomplete(term).pipe(
                     finalize(() => this.toolSearchLoading = false)
@@ -196,30 +216,12 @@ export class FormEnvioComponent implements OnInit, OnDestroy {
             takeUntil(this._destroy$)
         ).subscribe(res => {
             this.requestedByFuncionarios = (res || []).map((f: any) => ({
-                id: f.id_funcionario || f.id,
+                id:     f.id_funcionario || f.id,
                 nombre: f.nombre_completo || f.nombre,
-                cargo: f.cargo || '',
-                area: f.area || ''
+                cargo:  f.cargo || '',
+                area:   f.area  || ''
             }));
             this.showRequestedByDropdown = this.requestedByFuncionarios.length > 0;
-        });
-
-        this._delSearch$.pipe(
-            debounceTime(400),
-            distinctUntilChanged(),
-            switchMap(t => {
-                this.deliveredByLoading = true;
-                return this.movementService.getFuncionarios(t).pipe(finalize(() => this.deliveredByLoading = false));
-            }),
-            takeUntil(this._destroy$)
-        ).subscribe(res => {
-            this.deliveredByFuncionarios = (res || []).map((f: any) => ({
-                id: f.id_funcionario || f.id,
-                nombre: f.nombre_completo || f.nombre,
-                cargo: f.cargo || '',
-                area: f.area || ''
-            }));
-            this.showDeliveredByDropdown = this.deliveredByFuncionarios.length > 0;
         });
     }
 
@@ -234,13 +236,8 @@ export class FormEnvioComponent implements OnInit, OnDestroy {
     hideToolDropdown(): void { setTimeout(() => this.showToolDropdown = false, 180); }
 
     onReqInput(v: string): void { if (v.length >= 2) this._reqSearch$.next(v); else this.showRequestedByDropdown = false; }
-    onDelInput(v: string): void { if (v.length >= 2) this._delSearch$.next(v); else this.showDeliveredByDropdown = false; }
-
     selectReq(f: Funcionario): void { this.requestedByName = f.nombre; this.showRequestedByDropdown = false; }
-    selectDel(f: Funcionario): void { this.deliveredByName = f.nombre; this.showDeliveredByDropdown = false; }
-
     hideReqDropdown(): void { setTimeout(() => this.showRequestedByDropdown = false, 200); }
-    hideDelDropdown(): void { setTimeout(() => this.showDeliveredByDropdown = false, 200); }
 
     scanAndAdd(): void {
         const barcode = this.barcodeValue.trim();
@@ -250,8 +247,25 @@ export class FormEnvioComponent implements OnInit, OnDestroy {
             finalize(() => this.isScanning.set(false))
         ).subscribe(result => {
             if (result && !this.toolList.some(t => t.tool.id_tool === result.id_tool)) {
-                this.toolList.push({ tool: result, status: 'pending' });
-                this.barcodeValue = 'BOA-H-';
+                // Copia parámetros del último tool como default
+                const last = this.toolList[this.toolList.length - 1];
+                const defaultReturnDate = (() => {
+                    const d = new Date(); d.setDate(d.getDate() + 7); return this._toIso(d);
+                })();
+                this.toolList.push({
+                    tool:               result,
+                    status:             'pending',
+                    supplierId:         last?.supplierId         ?? null,
+                    supplierName:       last?.supplierName       ?? '',
+                    workType:           last?.workType           ?? 'calibration',
+                    expectedReturnDate: last?.expectedReturnDate ?? defaultReturnDate,
+                    notes:              '',
+                    repairDescription:  '',
+                    discrepancyReport:  '',
+                });
+                this.barcodeValue     = 'BOA-H-';
+                this.toolSuggestions  = [];
+                this.showToolDropdown = false;
                 this.cdr.detectChanges();
                 this.scanInputRef.nativeElement.focus();
             }
@@ -269,7 +283,7 @@ export class FormEnvioComponent implements OnInit, OnDestroy {
         this.calibrationService.getToolImages(item.tool.id_tool).pipe(
             finalize(() => this.photoLoadingIndex.set(null))
         ).subscribe(urls => {
-            item.images = urls;
+            item.images       = urls;
             item.imagesLoaded = true;
             if (urls.length) this.viewingPhoto.set({ code: item.tool.code, name: item.tool.name || '', url: urls[0] });
         });
@@ -278,24 +292,19 @@ export class FormEnvioComponent implements OnInit, OnDestroy {
     closePhoto(): void { this.viewingPhoto.set(null); }
 
     canSubmit(): boolean {
-        return this.toolList.some(t => t.status !== 'done') && !!this.selectedLabId && !!this.almacen && !!this.base;
+        if (!this.almacen || !this.base) return false;
+        const pending = this.toolList.filter(t => t.status !== 'done');
+        if (pending.length === 0) return false;
+        return pending.every(t => !!t.supplierId);
     }
-
-    private readonly _workTypeMap: Record<string, string> = {
-        'calibration':        'CALIBRACIÓN',
-        'repair':             'REPARACIÓN',
-        'calibration_repair': 'CALIBRACIÓN Y REPARACIÓN',
-    };
 
     async submitAll(): Promise<void> {
         if (!this.canSubmit()) return;
         this.isProcessing.set(true);
         this.processedCount = 0;
 
-        // Fallback con año actual; se sobreescribe con el número real del servidor.
         let notaCompartida = `EC-${new Date().getFullYear()}/S-N`;
         try {
-            // getNextRecordNumber() ya normaliza la respuesta y devuelve un string directo.
             const respNota = await lastValueFrom(this.calibrationService.getNextRecordNumber('EC'));
             if (typeof respNota === 'string' && respNota) notaCompartida = respNota;
 
@@ -306,25 +315,24 @@ export class FormEnvioComponent implements OnInit, OnDestroy {
 
                 const payload = {
                     tool_id:              item.tool.id_tool,
-                    work_type:            this._workTypeMap[this.workType] ?? this.workType,
-                    supplier_id:          this.selectedLabId,
-                    supplier_name:        this.selectedLabName,
-                    send_date:            new Date().toISOString().split('T')[0],
-                    expected_return_date: new Date(Date.now() + 7 * 864e5).toISOString().split('T')[0],
+                    work_type:            this._workTypeMap[item.workType] ?? item.workType,
+                    supplier_id:          item.supplierId,
+                    supplier_name:        item.supplierName,
+                    send_date:            this.sendDate,
+                    expected_return_date: item.expectedReturnDate,
                     almacen:              this.almacen,
                     base:                 this.base,
                     base_id:              this.baseId ?? 0,
-                    notes:                this.sendNotes,
+                    notes:                item.notes,
                     record_number:        notaCompartida,
                     requested_by_name:    this.requestedByName,
-                    delivered_by_name:    this.deliveredByName,
-                    observations:         this.workType === 'calibration_repair' ? this.repairDescription : '',
+                    observations:         item.workType === 'calibration_repair' ? item.repairDescription : '',
+                    discrepancy_report:   item.workType === 'calibration_repair' ? item.discrepancyReport : '',
                 };
 
                 try {
                     const res: any = await lastValueFrom(this.calibrationService.sendToCalibrationPxp(payload));
                     const hasError = res?.error === true || res?.ROOT?.error === true;
-
                     if (!hasError) {
                         item.status         = 'done';
                         item.nota           = notaCompartida;
@@ -333,7 +341,7 @@ export class FormEnvioComponent implements OnInit, OnDestroy {
                         item.status = 'error';
                         item.error  = res?.ROOT?.detalle?.mensaje || res?.detalle?.mensaje || 'Error en servidor';
                     }
-                } catch (e) {
+                } catch {
                     item.status = 'error';
                     item.error  = 'Error de conexión';
                 }
@@ -343,12 +351,11 @@ export class FormEnvioComponent implements OnInit, OnDestroy {
 
             if (this.toolList.every(t => t.status === 'done')) {
                 this.showMsg('Envíos registrados — imprimiendo nota de envío…', 'success');
-                // Imprimir la nota del primer item procesado (todos comparten el mismo record_number).
                 const firstId = this.toolList.find(t => t.id_calibration)?.id_calibration;
                 if (firstId) this.calibrationService.generarYVerPdfEnvio(firstId);
                 setTimeout(() => this.dialogRef.close(true), 1800);
             }
-        } catch (err) {
+        } catch {
             this.showMsg('Error durante el proceso de envío', 'error');
         } finally {
             this.isProcessing.set(false);
@@ -356,9 +363,10 @@ export class FormEnvioComponent implements OnInit, OnDestroy {
         }
     }
 
-    getDoneCount(): number { return this.toolList.filter(t => t.status === 'done').length; }
+    getDoneCount(): number  { return this.toolList.filter(t => t.status === 'done').length; }
     getErrorCount(): number { return this.toolList.filter(t => t.status === 'error').length; }
-    private _fmt(d: Date): string { return d.toLocaleDateString('es-BO'); }
-    private _addDays(d: Date, n: number): Date { d.setDate(d.getDate() + n); return d; }
+    getPendingWithoutLab(): number { return this.toolList.filter(t => t.status === 'pending' && !t.supplierId).length; }
+
+    private _toIso(d: Date): string { return d.toISOString().split('T')[0]; }
     showMsg(m: string, t: any) { this.snackBar.open(m, 'OK', { duration: 3000, panelClass: [`snackbar-${t}`] }); }
 }

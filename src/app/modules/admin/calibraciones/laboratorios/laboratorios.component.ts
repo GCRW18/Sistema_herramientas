@@ -208,11 +208,10 @@ export class LaboratoriosComponent implements OnInit, OnDestroy {
         try {
             const { FormLaboratorioComponent } = await import('./form-laboratorio/form-laboratorio.component');
             const ref = this.dialog.open(FormLaboratorioComponent, {
-                width: '900px',
+                width: '580px',
                 maxWidth: '95vw',
-                height: 'auto',
-                maxHeight: '90vh',
-                panelClass: 'neo-dialog',
+                height: '88vh',
+                panelClass: 'no-padding-dialog',
                 disableClose: false,
                 data: { mode: 'new' }
             });
@@ -232,11 +231,10 @@ export class LaboratoriosComponent implements OnInit, OnDestroy {
         try {
             const { FormLaboratorioComponent } = await import('./form-laboratorio/form-laboratorio.component');
             const ref = this.dialog.open(FormLaboratorioComponent, {
-                width: '900px',
+                width: '580px',
                 maxWidth: '95vw',
-                height: 'auto',
-                maxHeight: '90vh',
-                panelClass: 'neo-dialog',
+                height: '88vh',
+                panelClass: 'no-padding-dialog',
                 disableClose: false,
                 data: { mode: 'edit', laboratory: lab }
             });
@@ -256,11 +254,10 @@ export class LaboratoriosComponent implements OnInit, OnDestroy {
         try {
             const { FormLaboratorioComponent } = await import('./form-laboratorio/form-laboratorio.component');
             const ref = this.dialog.open(FormLaboratorioComponent, {
-                width: '900px',
+                width: '580px',
                 maxWidth: '95vw',
-                height: 'auto',
-                maxHeight: '90vh',
-                panelClass: 'neo-dialog',
+                height: '88vh',
+                panelClass: 'no-padding-dialog',
                 disableClose: false,
                 data: { mode: 'view', laboratory: lab }
             });

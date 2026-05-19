@@ -318,14 +318,16 @@ export class ListaKitsComponent implements OnInit {
             if (result) {
                 const nuevoKit: Kit = {
                     id: this.kits.length + 1,
-                    nombre: result.nombreKit,
-                    descripcion: result.descripcionKit,
-                    cantidadItems: result.items?.length ?? 0,
+                    nombre:              result.nombreKit,
+                    descripcion:         result.descripcionKit,
+                    cantidadItems:       result.items?.length ?? 0,
                     ultimaActualizacion: new Date(),
-                    items: result.items,
-                    categoria: 'GENERAL',
-                    estado: 'COMPLETO',
-                    cantidadUsos: 0
+                    items:               result.items,
+                    categoria:           result.categoria   ?? 'GENERAL',
+                    estado:              result.estado      ?? 'COMPLETO',
+                    responsable:         result.responsable || undefined,
+                    ubicacion:           result.ubicacion   || undefined,
+                    cantidadUsos:        0
                 };
                 this.kits = [nuevoKit, ...this.kits];
             }

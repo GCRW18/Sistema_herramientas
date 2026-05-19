@@ -84,6 +84,16 @@ interface ExitRecord {
 
         .row-selected { background-color: #fef3c7 !important; }
         :host-context(.dark) .row-selected { background-color: rgba(251, 191, 36, 0.2) !important; }
+
+        @keyframes icon-pop {
+            0%   { transform: scale(1)    rotate(0deg); }
+            35%  { transform: scale(1.4)  rotate(-14deg); }
+            65%  { transform: scale(1.15) rotate(7deg); }
+            100% { transform: scale(1)    rotate(0deg); }
+        }
+        .header-btn:hover .header-btn-icon {
+            animation: icon-pop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
     `]
 })
 export class ExitsComponent implements OnInit, OnDestroy {

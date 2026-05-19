@@ -7,6 +7,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { DragDropModule } from '@angular/cdk/drag-drop';
 import { Subject, lastValueFrom } from 'rxjs';
 import { takeUntil, finalize, debounceTime, distinctUntilChanged, switchMap } from 'rxjs/operators';
 import { CalibrationService } from '../../../../../core/services/calibration.service';
@@ -21,16 +22,15 @@ interface Funcionario { id: number; nombre: string; cargo: string; area: string;
         CommonModule, FormsModule,
         MatDialogModule, MatButtonModule, MatIconModule,
         MatProgressSpinnerModule, MatSnackBarModule, MatTooltipModule,
+        DragDropModule,
     ],
     templateUrl: './form-retorno.component.html',
     styles: [`
-        .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+        :host { display: block; height: 100%; }
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #000; border-radius: 3px; }
         :host-context(.dark) .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; }
-
-        .animate-pulse { animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
-        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
     `]
 })
 export class FormRetornoComponent implements OnInit, OnDestroy {
@@ -43,14 +43,12 @@ export class FormRetornoComponent implements OnInit, OnDestroy {
 
     public dialogData = inject(MAT_DIALOG_DATA, { optional: true }) as any;
 
-    private _destroy$ = new Subject<void>();
+    private _destroy$          = new Subject<void>();
     private _receivedBySearch$ = new Subject<string>();
 
     isProcessing = signal(false);
     laboratories: any[] = [];
-    activeCalibration: any = null;
 
-    searchCode = '';
     certificateNumber = '';
     fechaCalStr = '';
     empresaIdOverride: number | null = null;
@@ -64,13 +62,20 @@ export class FormRetornoComponent implements OnInit, OnDestroy {
     receivedByLoading = false;
     showReceivedByDropdown = false;
 
-    showCertError = signal(false);
-    duplicateError = signal('');
+    showCertError    = signal(false);
+    duplicateError   = signal('');
     showFechaWarning = signal(false);
 
     readonly todayStr = new Date().toISOString().split('T')[0];
 
-    get calibration(): any | undefined { return this.activeCalibration; }
+    get calibration(): any | undefined { return this.dialogData?.calibration || null; }
+
+    formatDateDisplay(isoStr: string | null | undefined): string {
+        if (!isoStr) return '—';
+        const parts = isoStr.split('T')[0].split('-');
+        if (parts.length !== 3) return isoStr;
+        return `${parts[2]}/${parts[1]}/${parts[0]}`;
+    }
 
     get fechaVencimientoDisplay(): string {
         if (!this.fechaCalStr) return '';
@@ -82,7 +87,6 @@ export class FormRetornoComponent implements OnInit, OnDestroy {
     }
 
     ngOnInit(): void {
-        this.activeCalibration = this.dialogData?.calibration || null;
         this.fechaCalStr = this.todayStr;
         this.loadLaboratorios();
         this.setupFuncionarioSearch();
@@ -91,35 +95,6 @@ export class FormRetornoComponent implements OnInit, OnDestroy {
     ngOnDestroy(): void {
         this._destroy$.next();
         this._destroy$.complete();
-    }
-
-    buscarEnvioPendiente(): void {
-        const term = this.searchCode?.trim().toLowerCase();
-        if (!term) return;
-
-        this.isProcessing.set(true);
-        this.calibrationService.getCalibrations({ status: 'sent', limit: 200 }).pipe(
-            takeUntil(this._destroy$),
-            finalize(() => this.isProcessing.set(false))
-        ).subscribe({
-            next: (records) => {
-                const found = records.find((r: any) =>
-                    (r.status === 'sent' || r.status === 'in_process') &&
-                    (r.record_number?.toLowerCase() === term ||
-                        r.tool_code?.toLowerCase() === term ||
-                        (r.code && r.code.toLowerCase() === term))
-                );
-
-                if (found) {
-                    this.activeCalibration = found;
-                    this.searchCode = '';
-                    this.cdr.detectChanges();
-                } else {
-                    this.showMessage('No se encontró un envío pendiente con ese código/nota', 'warning');
-                }
-            },
-            error: () => this.showMessage('Error al buscar la herramienta', 'error')
-        });
     }
 
     private setupFuncionarioSearch(): void {
@@ -207,15 +182,15 @@ export class FormRetornoComponent implements OnInit, OnDestroy {
         this.isProcessing.set(true);
 
         const params: any = {
-            id_calibration: cal.id_calibration,
-            tool_id: cal.tool_id,
-            result: 'approved',
-            actual_return_date: this.todayStr,
-            certificate_number: this.certificateNumber.trim(),
-            calibration_date: this.fechaCalStr,
+            id_calibration:       cal.id_calibration,
+            tool_id:              cal.tool_id,
+            result:               'approved',
+            actual_return_date:   this.todayStr,
+            certificate_number:   this.certificateNumber.trim(),
+            calibration_date:     this.fechaCalStr,
             next_calibration_date: this.fechaVencimientoDisplay,
-            observations: this.observations || '',
-            received_by_name: this.receivedByName.trim(),
+            observations:         this.observations || '',
+            received_by_name:     this.receivedByName.trim(),
         };
 
         if (this.empresaIdOverride) params.supplier_id = this.empresaIdOverride;
@@ -223,7 +198,6 @@ export class FormRetornoComponent implements OnInit, OnDestroy {
 
         try {
             const res: any = await lastValueFrom(this.calibrationService.processCalibrationReturnPxp(params));
-
             const isError = res?.error === true || res?.ROOT?.error === true;
 
             if (!isError) {
@@ -276,7 +250,6 @@ export class FormRetornoComponent implements OnInit, OnDestroy {
         reader.onload = () => {
             this.selectedFile = file;
             const result = reader.result as string;
-            // Strip "data:...;base64," prefix — the comma breaks pxp key#value serialization
             this.selectedFileBase64 = result.includes(',') ? result.split(',')[1] : result;
             this.cdr.detectChanges();
         };

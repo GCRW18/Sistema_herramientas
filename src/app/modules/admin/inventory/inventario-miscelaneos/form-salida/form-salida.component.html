@@ -1,228 +1,245 @@
-<div class="bg-[#f8f9fc] dark:bg-slate-900 border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] overflow-hidden flex flex-col font-sans h-auto max-h-[95vh]">
+<div class="bg-stone-100 dark:bg-slate-900 border-2 border-black overflow-hidden flex flex-col w-full"
+     style="max-width: min(700px, 95vw); box-shadow: 6px 6px 0 #000">
 
     <!-- HEADER -->
-    <div class="bg-[#0F172AFF] text-white px-5 py-3 flex justify-between items-center shrink-0"
-         cdkDrag cdkDragRootElement=".cdk-overlay-pane" cdkDragHandle>
-        <div class="flex items-center gap-3">
-            <div class="w-8 h-8 bg-orange-500 border-2 border-black rounded flex items-center justify-center shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
-                <mat-icon class="text-white !text-base">output</mat-icon>
-            </div>
-            <div>
-                <h2 class="text-sm font-black uppercase tracking-tight leading-none">{{ titulo }}</h2>
-                <p class="text-[10px] text-gray-300 font-bold uppercase mt-0.5">{{ subtitulo }}</p>
-            </div>
+    <div class="bg-[#0F172A] px-4 py-3 flex items-center gap-3 shrink-0 select-none"
+         cdkDrag cdkDragRootElement=".cdk-overlay-pane" cdkDragHandle style="cursor:grab">
+        <div class="w-8 h-8 rounded bg-amber-400 border-2 border-black flex items-center justify-center shadow-[2px_2px_0_#fbbf24] shrink-0">
+            <mat-icon class="!text-base text-black">output</mat-icon>
         </div>
-        <div class="flex items-center gap-2">
-            <button (click)="dialogRef.close(undefined)"
-                    class="px-4 py-1.5 bg-[#FF1414FF] text-white font-black text-[10px] border-2 border-black rounded-lg shadow-[2px_2px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all uppercase">
-                {{ readOnly ? 'Cerrar' : 'Cancelar' }}
-            </button>
-            <button *ngIf="!readOnly" (click)="save()"
-                    class="px-4 py-1.5 bg-orange-500 text-white font-black text-[10px] border-2 border-black rounded-lg shadow-[2px_2px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all uppercase flex items-center gap-1.5">
-                <mat-icon class="!text-white !text-sm">save</mat-icon> Registrar Salida
-            </button>
+        <div>
+            <p class="text-[9px] text-slate-400 font-bold uppercase tracking-[0.18em] leading-none mb-0.5">{{ subtitulo }}</p>
+            <h2 class="text-sm text-white font-black uppercase tracking-tight leading-none">{{ titulo }}</h2>
         </div>
     </div>
 
     <!-- BODY -->
-    <div class="flex-1 overflow-y-auto p-5 custom-scrollbar">
-        <form [formGroup]="form" class="grid grid-cols-1 lg:grid-cols-12 gap-5">
+    <div class="px-3 py-3">
+        <form [formGroup]="form" class="grid grid-cols-1 md:grid-cols-12 gap-3">
 
-            <!-- LEFT: Resumen + OT + aeronave -->
-            <div class="lg:col-span-5 flex flex-col gap-4">
+            <!-- CARD IZQUIERDA: Solicitante -->
+            <div class="md:col-span-5 bg-white dark:bg-slate-800 border-2 border-black rounded-xl shadow-[3px_3px_0_#000] p-3 flex flex-col gap-2.5">
 
-                <!-- Resumen card -->
-                <div class="bg-white dark:bg-slate-700 border-2 border-black rounded-xl p-4 shadow-[3px_3px_0px_0px_#000]">
-                    <span class="text-[9px] font-black text-gray-500 uppercase mb-3 border-b-2 border-black/10 pb-1 w-full block">Resumen de Salida</span>
-                    <div class="flex flex-col gap-2">
-                        <div class="flex items-center justify-between">
-                            <span class="text-[10px] font-bold text-gray-500 uppercase">Nro. Nota</span>
-                            <span class="font-black text-sm text-black dark:text-white">
-                                {{ form.get('nroNota')?.value || '—' }}
-                            </span>
-                        </div>
-                        <div class="flex items-center justify-between">
-                            <span class="text-[10px] font-bold text-gray-500 uppercase">Fecha</span>
-                            <span class="text-sm font-bold text-black dark:text-white">
-                                {{ form.get('fecha')?.value || '—' }}
-                            </span>
-                        </div>
-                        <div class="flex items-center justify-between">
-                            <span class="text-[10px] font-bold text-gray-500 uppercase">Solicitante</span>
-                            <span class="text-xs font-bold text-black dark:text-white truncate max-w-[140px]">
-                                {{ (form.get('nombre')?.value || '') + ' ' + (form.get('apellidoPaterno')?.value || '') || '—' }}
-                            </span>
-                        </div>
-                        <div class="flex items-center justify-between">
-                            <span class="text-[10px] font-bold text-gray-500 uppercase">Área</span>
-                            <span class="text-xs font-bold text-orange-600">
-                                {{ form.get('area')?.value || '—' }}
-                            </span>
-                        </div>
-                        <div class="flex items-center justify-between mt-2 pt-2 border-t-2 border-black/10">
-                            <span class="text-[10px] font-bold text-gray-500 uppercase">Cantidad</span>
-                            <span class="text-2xl font-black text-orange-500">
-                                {{ form.get('cantidad')?.value }} <span class="text-sm">{{ form.get('unidad')?.value }}</span>
-                            </span>
+                <span class="text-[8px] font-black text-stone-400 dark:text-slate-400 uppercase tracking-[0.18em] border-b-2 border-black/10 pb-1.5 block">
+                    Solicitante
+                </span>
+
+                <!-- Área -->
+                <div>
+                    <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1.5 block">Área *</label>
+                    <div class="relative">
+                        <select formControlName="area"
+                                class="w-full h-9 text-sm font-bold bg-white dark:bg-slate-900 dark:text-white border-2 rounded-xl px-3 pr-8 outline-none transition-all duration-150 cursor-pointer appearance-none"
+                                [class]="hasError('area','required')
+                                    ? 'border-red-400 focus:shadow-[2px_2px_0_#f87171]'
+                                    : 'border-stone-300 dark:border-slate-600 hover:border-stone-400 dark:hover:border-slate-500 focus:border-black dark:focus:border-slate-400 focus:shadow-[3px_3px_0_#000]'">
+                            <option value="">— Seleccionar área —</option>
+                            <option *ngFor="let a of areas" [value]="a">{{ a }}</option>
+                        </select>
+                        <mat-icon class="absolute right-2.5 top-1/2 -translate-y-1/2 !text-sm text-stone-400 pointer-events-none">expand_more</mat-icon>
+                    </div>
+                    <p *ngIf="hasError('area','required')" class="text-[8px] font-bold text-red-500 mt-1">Requerido.</p>
+                </div>
+
+                <!-- Funcionario solicitante -->
+                <div class="relative">
+                    <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1.5 flex items-center justify-between">
+                        <span class="flex items-center gap-1">
+                            <mat-icon class="!text-[12px] text-amber-500">how_to_reg</mat-icon>
+                            Funcionario *
+                        </span>
+                        <mat-spinner *ngIf="funcionarioLoading" diameter="14"></mat-spinner>
+                    </label>
+                    <input type="text"
+                           [(ngModel)]="funcionarioName"
+                           [ngModelOptions]="{standalone:true}"
+                           [disabled]="readOnly"
+                           (input)="onFuncionarioInput($any($event.target).value)"
+                           (blur)="hideFuncionarioDropdown()"
+                           placeholder="Buscar funcionario..."
+                           autocomplete="off"
+                           class="w-full h-9 text-sm font-bold bg-white dark:bg-slate-900 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-xl px-3 outline-none transition-all duration-150 placeholder:text-stone-300 dark:placeholder:text-slate-600 hover:border-stone-400 dark:hover:border-slate-500 focus:border-black dark:focus:border-slate-400 focus:shadow-[3px_3px_0_#000]">
+                    <div *ngIf="showFuncionarioDropdown"
+                         class="absolute z-50 w-full mt-1 border-2 border-black dark:border-slate-500 rounded-xl bg-white dark:bg-slate-800 overflow-hidden shadow-[3px_3px_0_#000] divide-y divide-stone-100 dark:divide-slate-600">
+                        <div *ngFor="let f of funcionarios"
+                             (mousedown)="selectFuncionario(f)"
+                             class="px-3 py-2.5 hover:bg-amber-50 dark:hover:bg-slate-700 cursor-pointer transition-colors">
+                            <div class="text-xs font-black text-black dark:text-white uppercase leading-tight">{{ f.nombre }}</div>
+                            <div class="text-[9px] font-bold text-stone-400 uppercase tracking-tighter">{{ f.cargo }}</div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Orden de trabajo y aeronave -->
-                <div class="bg-white dark:bg-slate-700 border-2 border-black rounded-xl p-4 shadow-[3px_3px_0px_0px_#000]">
-                    <p class="text-[9px] font-black text-gray-500 uppercase mb-3 border-b-2 border-black/10 pb-1">
-                        <mat-icon class="!text-sm align-middle">build</mat-icon> Orden y Aeronave
-                    </p>
-                    <div class="flex flex-col gap-3">
-                        <div>
-                            <label class="text-[10px] font-black uppercase text-black dark:text-white mb-1 block">Orden de Trabajo</label>
-                            <input type="text" formControlName="ordenTrabajo" placeholder="OT-00000"
-                                   class="w-full h-10 text-sm font-bold bg-white dark:bg-slate-900 border-2 border-black dark:border-slate-600 rounded-lg px-3 focus:shadow-[2px_2px_0px_0px_#000] outline-none transition-all">
-                        </div>
-                        <div>
-                            <label class="text-[10px] font-black uppercase text-black dark:text-white mb-1 block">Buscador Aeronave</label>
-                            <input type="text" formControlName="buscadorAeronave" placeholder="Matrícula / Tail"
-                                   class="w-full h-10 text-sm font-bold bg-white dark:bg-slate-900 border-2 border-black dark:border-slate-600 rounded-lg px-3 focus:shadow-[2px_2px_0px_0px_#000] outline-none transition-all">
-                        </div>
-                        <div>
-                            <label class="text-[10px] font-black uppercase text-black dark:text-white mb-1 block">Buscador Autorizado</label>
-                            <input type="text" formControlName="buscadorAutorizado" placeholder="Autorizado por"
-                                   class="w-full h-10 text-sm font-bold bg-white dark:bg-slate-900 border-2 border-black dark:border-slate-600 rounded-lg px-3 focus:shadow-[2px_2px_0px_0px_#000] outline-none transition-all">
-                        </div>
-                        <div>
-                            <label class="text-[10px] font-black uppercase text-black dark:text-white mb-1 block">Stock Actual (referencia)</label>
-                            <input type="text" formControlName="stock" placeholder="Stock antes de salida"
-                                   class="w-full h-10 text-sm font-bold bg-white dark:bg-slate-900 border-2 border-black dark:border-slate-600 rounded-lg px-3 focus:shadow-[2px_2px_0px_0px_#000] outline-none transition-all">
-                        </div>
+                <!-- Nro. Licencia + Nro -->
+                <div class="grid grid-cols-2 gap-2">
+                    <div>
+                        <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1.5 block">Nro. Licencia</label>
+                        <input type="text" formControlName="nroLicencia" placeholder="Lic-001"
+                               class="w-full h-9 text-sm font-bold bg-white dark:bg-slate-900 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-xl px-3 outline-none transition-all duration-150 placeholder:text-stone-300 dark:placeholder:text-slate-600 hover:border-stone-400 dark:hover:border-slate-500 focus:border-black dark:focus:border-slate-400 focus:shadow-[3px_3px_0_#000]">
+                    </div>
+                    <div>
+                        <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1.5 block">Nro.</label>
+                        <input type="text" formControlName="nro" placeholder="001"
+                               class="w-full h-9 text-sm font-bold bg-white dark:bg-slate-900 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-xl px-3 outline-none transition-all duration-150 placeholder:text-stone-300 dark:placeholder:text-slate-600 hover:border-stone-400 dark:hover:border-slate-500 focus:border-black dark:focus:border-slate-400 focus:shadow-[3px_3px_0_#000]">
                     </div>
                 </div>
 
                 <!-- Observaciones -->
-                <div>
-                    <label class="text-[10px] font-black uppercase text-black dark:text-gray-300 mb-1 block">Observaciones</label>
-                    <textarea formControlName="observaciones" rows="3" placeholder="Notas adicionales..."
-                              class="w-full text-sm font-bold border-2 border-black dark:border-slate-600 rounded-xl p-3 bg-white dark:bg-slate-800 text-black dark:text-white outline-none focus:shadow-[2px_2px_0px_0px_#000] transition-shadow resize-none custom-scrollbar"></textarea>
+                <div class="border-t-2 border-black/10 pt-2">
+                    <span class="text-[8px] font-black text-stone-400 dark:text-slate-400 uppercase tracking-[0.18em] mb-2 block">Observaciones</span>
+                    <textarea formControlName="observaciones" rows="2" placeholder="Notas adicionales..."
+                              class="w-full text-sm font-normal bg-stone-50 dark:bg-slate-900 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-xl px-3 py-2.5 outline-none transition-all duration-150 resize-none placeholder:text-stone-300 dark:placeholder:text-slate-600 hover:border-stone-400 dark:hover:border-slate-500 focus:border-black dark:focus:border-slate-400 focus:shadow-[3px_3px_0_#000]"></textarea>
                 </div>
+
             </div>
 
-            <!-- RIGHT -->
-            <div class="lg:col-span-7 flex flex-col gap-4">
+            <!-- CARD DERECHA: Despacho -->
+            <div class="md:col-span-7 bg-white dark:bg-slate-800 border-2 border-black rounded-xl shadow-[3px_3px_0_#000] p-3 flex flex-col gap-2.5">
 
-                <!-- Encabezado nota -->
-                <div class="bg-white dark:bg-slate-700 border-2 border-black rounded-xl p-4 shadow-[3px_3px_0px_0px_#000]">
-                    <p class="text-[9px] font-black text-gray-500 uppercase mb-3 border-b-2 border-black/10 pb-1">
-                        <mat-icon class="!text-sm align-middle">assignment</mat-icon> Datos de la Nota
-                    </p>
-                    <div class="grid grid-cols-12 gap-3">
-                        <div class="col-span-12 sm:col-span-5">
-                            <label class="text-[10px] font-black uppercase text-black dark:text-white mb-1 block">Nro. Nota *</label>
-                            <input type="text" formControlName="nroNota" placeholder="NOTA-001"
-                                   class="w-full h-10 text-sm font-black uppercase bg-white dark:bg-slate-900 border-2 border-black dark:border-slate-600 rounded-lg px-3 focus:shadow-[2px_2px_0px_0px_#000] outline-none transition-all"
-                                   [class.border-red-500]="hasError('nroNota','required')">
-                            <p *ngIf="hasError('nroNota','required')" class="text-red-500 text-[10px] font-bold mt-0.5">Requerido</p>
-                        </div>
-                        <div class="col-span-6 sm:col-span-4">
-                            <label class="text-[10px] font-black uppercase text-black dark:text-white mb-1 block">Fecha *</label>
-                            <input type="date" formControlName="fecha"
-                                   class="w-full h-10 text-sm font-bold bg-white dark:bg-slate-900 border-2 border-black dark:border-slate-600 rounded-lg px-3 focus:shadow-[2px_2px_0px_0px_#000] outline-none transition-all">
-                        </div>
-                        <div class="col-span-6 sm:col-span-3">
-                            <label class="text-[10px] font-black uppercase text-black dark:text-white mb-1 block">Hora</label>
-                            <input type="time" formControlName="hora"
-                                   class="w-full h-10 text-sm font-bold bg-white dark:bg-slate-900 border-2 border-black dark:border-slate-600 rounded-lg px-3 focus:shadow-[2px_2px_0px_0px_#000] outline-none transition-all">
-                        </div>
-                        <div class="col-span-12">
-                            <label class="text-[10px] font-black uppercase text-black dark:text-white mb-1 block">Despachado Por *</label>
-                            <input type="text" formControlName="despachadoPor" placeholder="Nombre del despachante"
-                                   class="w-full h-10 text-sm font-bold bg-white dark:bg-slate-900 border-2 border-black dark:border-slate-600 rounded-lg px-3 focus:shadow-[2px_2px_0px_0px_#000] outline-none transition-all"
-                                   [class.border-red-500]="hasError('despachadoPor','required')">
-                            <p *ngIf="hasError('despachadoPor','required')" class="text-red-500 text-[10px] font-bold mt-0.5">Requerido</p>
+                <span class="text-[8px] font-black text-stone-400 dark:text-slate-400 uppercase tracking-[0.18em] border-b-2 border-black/10 pb-1.5 block">
+                    Despacho
+                </span>
+
+                <!-- Nro. Nota + Fecha + Hora -->
+                <div class="grid grid-cols-12 gap-2">
+                    <div class="col-span-12 sm:col-span-4">
+                        <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1.5 block">Nro. Nota *</label>
+                        <input type="text" formControlName="nroNota" placeholder="NOTA-001"
+                               class="w-full h-9 text-sm font-black uppercase bg-white dark:bg-slate-900 dark:text-white border-2 rounded-xl px-3 outline-none transition-all duration-150"
+                               [class]="hasError('nroNota','required')
+                                   ? 'border-red-400 focus:shadow-[2px_2px_0_#f87171]'
+                                   : 'border-stone-300 dark:border-slate-600 hover:border-stone-400 dark:hover:border-slate-500 focus:border-black dark:focus:border-slate-400 focus:shadow-[3px_3px_0_#000]'">
+                        <p *ngIf="hasError('nroNota','required')" class="text-[8px] font-bold text-red-500 mt-1">Requerido.</p>
+                    </div>
+                    <div class="col-span-6 sm:col-span-4">
+                        <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1.5 block">Fecha *</label>
+                        <input type="date" formControlName="fecha"
+                               class="w-full h-9 text-sm font-bold bg-white dark:bg-slate-900 dark:text-white border-2 rounded-xl px-3 outline-none transition-all duration-150"
+                               [class]="hasError('fecha','required')
+                                   ? 'border-red-400 focus:shadow-[2px_2px_0_#f87171]'
+                                   : 'border-stone-300 dark:border-slate-600 hover:border-stone-400 dark:hover:border-slate-500 focus:border-black dark:focus:border-slate-400 focus:shadow-[3px_3px_0_#000]'">
+                    </div>
+                    <div class="col-span-6 sm:col-span-4">
+                        <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1.5 block">Hora</label>
+                        <input type="time" formControlName="hora"
+                               class="w-full h-9 text-sm font-bold bg-white dark:bg-slate-900 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-xl px-3 outline-none transition-all duration-150 hover:border-stone-400 dark:hover:border-slate-500 focus:border-black dark:focus:border-slate-400 focus:shadow-[3px_3px_0_#000]">
+                    </div>
+                </div>
+
+                <!-- Despachado Por (funcionario) -->
+                <div class="relative">
+                    <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1.5 flex items-center justify-between">
+                        <span class="flex items-center gap-1">
+                            <mat-icon class="!text-[12px] text-amber-500">local_shipping</mat-icon>
+                            Despachado Por *
+                        </span>
+                        <mat-spinner *ngIf="despachadoPorLoading" diameter="14"></mat-spinner>
+                    </label>
+                    <input type="text"
+                           [(ngModel)]="despachadoPorName"
+                           [ngModelOptions]="{standalone:true}"
+                           [disabled]="readOnly"
+                           (input)="onDespachadoInput($any($event.target).value)"
+                           (blur)="hideDespachadoDropdown()"
+                           placeholder="Buscar funcionario despachante..."
+                           autocomplete="off"
+                           class="w-full h-9 text-sm font-bold bg-white dark:bg-slate-900 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-xl px-3 outline-none transition-all duration-150 placeholder:text-stone-300 dark:placeholder:text-slate-600 hover:border-stone-400 dark:hover:border-slate-500 focus:border-black dark:focus:border-slate-400 focus:shadow-[3px_3px_0_#000]">
+                    <div *ngIf="showDespachadoPorDropdown"
+                         class="absolute z-50 w-full mt-1 border-2 border-black dark:border-slate-500 rounded-xl bg-white dark:bg-slate-800 overflow-hidden shadow-[3px_3px_0_#000] divide-y divide-stone-100 dark:divide-slate-600">
+                        <div *ngFor="let f of despachadoPorFuncionarios"
+                             (mousedown)="selectDespachado(f)"
+                             class="px-3 py-2.5 hover:bg-amber-50 dark:hover:bg-slate-700 cursor-pointer transition-colors">
+                            <div class="text-xs font-black text-black dark:text-white uppercase leading-tight">{{ f.nombre }}</div>
+                            <div class="text-[9px] font-bold text-stone-400 uppercase tracking-tighter">{{ f.cargo }}</div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Datos del solicitante -->
-                <div class="bg-white dark:bg-slate-700 border-2 border-black rounded-xl p-4 shadow-[3px_3px_0px_0px_#000]">
-                    <p class="text-[9px] font-black text-gray-500 uppercase mb-3 border-b-2 border-black/10 pb-1">
-                        <mat-icon class="!text-sm align-middle">person</mat-icon> Solicitante
-                    </p>
-                    <div class="grid grid-cols-12 gap-3">
-                        <div class="col-span-6 sm:col-span-4">
-                            <label class="text-[10px] font-black uppercase text-black dark:text-white mb-1 block">Nro. Licencia</label>
-                            <input type="text" formControlName="nroLicencia" placeholder="Lic-001"
-                                   class="w-full h-10 text-sm font-bold bg-white dark:bg-slate-900 border-2 border-black dark:border-slate-600 rounded-lg px-3 focus:shadow-[2px_2px_0px_0px_#000] outline-none transition-all">
-                        </div>
-                        <div class="col-span-6 sm:col-span-4">
-                            <label class="text-[10px] font-black uppercase text-black dark:text-white mb-1 block">Nro.</label>
-                            <input type="text" formControlName="nro" placeholder="001"
-                                   class="w-full h-10 text-sm font-bold bg-white dark:bg-slate-900 border-2 border-black dark:border-slate-600 rounded-lg px-3 focus:shadow-[2px_2px_0px_0px_#000] outline-none transition-all">
-                        </div>
-                        <div class="col-span-12 sm:col-span-4">
-                            <label class="text-[10px] font-black uppercase text-black dark:text-white mb-1 block">Área *</label>
-                            <input type="text" formControlName="area" placeholder="MANTENIMIENTO"
-                                   class="w-full h-10 text-sm font-bold bg-white dark:bg-slate-900 border-2 border-black dark:border-slate-600 rounded-lg px-3 focus:shadow-[2px_2px_0px_0px_#000] outline-none transition-all"
-                                   [class.border-red-500]="hasError('area','required')">
-                            <p *ngIf="hasError('area','required')" class="text-red-500 text-[10px] font-bold mt-0.5">Requerido</p>
-                        </div>
-                        <div class="col-span-12 sm:col-span-4">
-                            <label class="text-[10px] font-black uppercase text-black dark:text-white mb-1 block">Nombre *</label>
-                            <input type="text" formControlName="nombre" placeholder="Nombre"
-                                   class="w-full h-10 text-sm font-bold bg-white dark:bg-slate-900 border-2 border-black dark:border-slate-600 rounded-lg px-3 focus:shadow-[2px_2px_0px_0px_#000] outline-none transition-all"
-                                   [class.border-red-500]="hasError('nombre','required')">
-                            <p *ngIf="hasError('nombre','required')" class="text-red-500 text-[10px] font-bold mt-0.5">Requerido</p>
-                        </div>
-                        <div class="col-span-12 sm:col-span-4">
-                            <label class="text-[10px] font-black uppercase text-black dark:text-white mb-1 block">Ap. Paterno *</label>
-                            <input type="text" formControlName="apellidoPaterno" placeholder="Apellido Paterno"
-                                   class="w-full h-10 text-sm font-bold bg-white dark:bg-slate-900 border-2 border-black dark:border-slate-600 rounded-lg px-3 focus:shadow-[2px_2px_0px_0px_#000] outline-none transition-all"
-                                   [class.border-red-500]="hasError('apellidoPaterno','required')">
-                            <p *ngIf="hasError('apellidoPaterno','required')" class="text-red-500 text-[10px] font-bold mt-0.5">Requerido</p>
-                        </div>
-                        <div class="col-span-12 sm:col-span-4">
-                            <label class="text-[10px] font-black uppercase text-black dark:text-white mb-1 block">Ap. Materno</label>
-                            <input type="text" formControlName="apellidoMaterno" placeholder="Apellido Materno"
-                                   class="w-full h-10 text-sm font-bold bg-white dark:bg-slate-900 border-2 border-black dark:border-slate-600 rounded-lg px-3 focus:shadow-[2px_2px_0px_0px_#000] outline-none transition-all">
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Material despacho -->
-                <div class="bg-white dark:bg-slate-700 border-2 border-black rounded-xl p-4 shadow-[3px_3px_0px_0px_#000]">
-                    <p class="text-[9px] font-black text-gray-500 uppercase mb-3 border-b-2 border-black/10 pb-1">
-                        <mat-icon class="!text-sm align-middle">inventory_2</mat-icon> Material Despachado
-                    </p>
-                    <div class="grid grid-cols-12 gap-3">
+                <!-- Material Despachado -->
+                <div class="border-t-2 border-black/10 pt-2">
+                    <span class="text-[8px] font-black text-stone-400 dark:text-slate-400 uppercase tracking-[0.18em] mb-2 block">Material Despachado</span>
+                    <div class="grid grid-cols-12 gap-2">
                         <div class="col-span-12 sm:col-span-5">
-                            <label class="text-[10px] font-black uppercase text-black dark:text-white mb-1 block">Código / Nombre *</label>
+                            <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1.5 block">Código BOA-M *</label>
                             <input type="text" formControlName="codigoNombre" placeholder="BOA-M-001"
-                                   class="w-full h-10 text-sm font-black uppercase bg-white dark:bg-slate-900 border-2 border-black dark:border-slate-600 rounded-lg px-3 focus:shadow-[2px_2px_0px_0px_#000] outline-none transition-all"
-                                   [class.border-red-500]="hasError('codigoNombre','required')">
-                            <p *ngIf="hasError('codigoNombre','required')" class="text-red-500 text-[10px] font-bold mt-0.5">Requerido</p>
+                                   class="w-full h-9 text-sm font-black uppercase bg-white dark:bg-slate-900 dark:text-white border-2 rounded-xl px-3 outline-none transition-all duration-150"
+                                   [class]="hasError('codigoNombre','required')
+                                       ? 'border-red-400 focus:shadow-[2px_2px_0_#f87171]'
+                                       : 'border-stone-300 dark:border-slate-600 hover:border-stone-400 dark:hover:border-slate-500 focus:border-black dark:focus:border-slate-400 focus:shadow-[3px_3px_0_#000]'">
+                            <p *ngIf="hasError('codigoNombre','required')" class="text-[8px] font-bold text-red-500 mt-1">Requerido.</p>
                         </div>
                         <div class="col-span-6 sm:col-span-4">
-                            <label class="text-[10px] font-black uppercase text-black dark:text-white mb-1 block">Cantidad *</label>
+                            <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1.5 block">Cantidad *</label>
                             <input type="number" formControlName="cantidad" min="1"
-                                   class="w-full h-10 text-sm font-black text-center bg-white dark:bg-slate-900 border-2 border-black dark:border-slate-600 rounded-lg px-3 focus:shadow-[2px_2px_0px_0px_#000] outline-none transition-all"
-                                   [class.border-red-500]="hasError('cantidad','required') || hasError('cantidad','min')">
+                                   class="w-full h-9 text-sm font-black text-center bg-white dark:bg-slate-900 dark:text-white border-2 rounded-xl px-3 outline-none transition-all duration-150"
+                                   [class]="hasError('cantidad','required') || hasError('cantidad','min')
+                                       ? 'border-red-400 focus:shadow-[2px_2px_0_#f87171]'
+                                       : 'border-stone-300 dark:border-slate-600 hover:border-stone-400 dark:hover:border-slate-500 focus:border-black dark:focus:border-slate-400 focus:shadow-[3px_3px_0_#000]'">
+                            <p *ngIf="hasError('cantidad','min')" class="text-[8px] font-bold text-red-500 mt-1">Mín. 1.</p>
                         </div>
                         <div class="col-span-6 sm:col-span-3">
-                            <label class="text-[10px] font-black uppercase text-black dark:text-white mb-1 block">Unidad *</label>
-                            <select formControlName="unidad"
-                                    class="w-full h-10 text-sm font-bold bg-white dark:bg-slate-900 border-2 border-black dark:border-slate-600 rounded-lg px-2 focus:shadow-[2px_2px_0px_0px_#000] outline-none transition-all">
-                                <option *ngFor="let u of unidades" [value]="u">{{ u }}</option>
-                            </select>
+                            <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1.5 block">Unidad *</label>
+                            <div class="relative">
+                                <select formControlName="unidad"
+                                        class="w-full h-9 text-sm font-bold bg-white dark:bg-slate-900 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-xl px-3 pr-7 outline-none transition-all duration-150 cursor-pointer appearance-none hover:border-stone-400 dark:hover:border-slate-500 focus:border-black dark:focus:border-slate-400 focus:shadow-[3px_3px_0_#000]">
+                                    <option *ngFor="let u of unidades" [value]="u">{{ u }}</option>
+                                </select>
+                                <mat-icon class="absolute right-2 top-1/2 -translate-y-1/2 !text-sm text-stone-400 pointer-events-none">expand_more</mat-icon>
+                            </div>
                         </div>
                         <div class="col-span-12">
-                            <label class="text-[10px] font-black uppercase text-black dark:text-white mb-1 block">Descripción del Producto *</label>
+                            <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1.5 block">Descripción del Material *</label>
                             <input type="text" formControlName="producto" placeholder="Nombre completo del material"
-                                   class="w-full h-10 text-sm font-bold bg-white dark:bg-slate-900 border-2 border-black dark:border-slate-600 rounded-lg px-3 focus:shadow-[2px_2px_0px_0px_#000] outline-none transition-all"
-                                   [class.border-red-500]="hasError('producto','required')">
-                            <p *ngIf="hasError('producto','required')" class="text-red-500 text-[10px] font-bold mt-0.5">Requerido</p>
+                                   class="w-full h-9 text-sm font-bold bg-white dark:bg-slate-900 dark:text-white border-2 rounded-xl px-3 outline-none transition-all duration-150 placeholder:text-stone-300 dark:placeholder:text-slate-600"
+                                   [class]="hasError('producto','required')
+                                       ? 'border-red-400 focus:shadow-[2px_2px_0_#f87171]'
+                                       : 'border-stone-300 dark:border-slate-600 hover:border-stone-400 dark:hover:border-slate-500 focus:border-black dark:focus:border-slate-400 focus:shadow-[3px_3px_0_#000]'">
+                            <p *ngIf="hasError('producto','required')" class="text-[8px] font-bold text-red-500 mt-1">Requerido.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Datos Adicionales -->
+                <div class="border-t-2 border-black/10 pt-2">
+                    <span class="text-[8px] font-black text-stone-400 dark:text-slate-400 uppercase tracking-[0.18em] mb-2 block">Datos Adicionales</span>
+                    <div class="grid grid-cols-12 gap-2">
+                        <div class="col-span-12 sm:col-span-6">
+                            <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1.5 block">Orden de Trabajo</label>
+                            <input type="text" formControlName="ordenTrabajo" placeholder="OT-00000"
+                                   class="w-full h-9 text-sm font-bold bg-white dark:bg-slate-900 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-xl px-3 outline-none transition-all duration-150 placeholder:text-stone-300 dark:placeholder:text-slate-600 hover:border-stone-400 dark:hover:border-slate-500 focus:border-black dark:focus:border-slate-400 focus:shadow-[3px_3px_0_#000]">
+                        </div>
+                        <div class="col-span-12 sm:col-span-6">
+                            <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1.5 block">Stock Actual (referencia)</label>
+                            <input type="text" formControlName="stock" placeholder="Stock antes de salida"
+                                   class="w-full h-9 text-sm font-bold bg-white dark:bg-slate-900 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-xl px-3 outline-none transition-all duration-150 placeholder:text-stone-300 dark:placeholder:text-slate-600 hover:border-stone-400 dark:hover:border-slate-500 focus:border-black dark:focus:border-slate-400 focus:shadow-[3px_3px_0_#000]">
+                        </div>
+                        <div class="col-span-12 sm:col-span-6">
+                            <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1.5 block">Aeronave</label>
+                            <input type="text" formControlName="buscadorAeronave" placeholder="Matrícula / Tail"
+                                   class="w-full h-9 text-sm font-bold bg-white dark:bg-slate-900 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-xl px-3 outline-none transition-all duration-150 placeholder:text-stone-300 dark:placeholder:text-slate-600 hover:border-stone-400 dark:hover:border-slate-500 focus:border-black dark:focus:border-slate-400 focus:shadow-[3px_3px_0_#000]">
+                        </div>
+                        <div class="col-span-12 sm:col-span-6">
+                            <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1.5 block">Autorizado Por</label>
+                            <input type="text" formControlName="buscadorAutorizado" placeholder="Nombre del autorizante"
+                                   class="w-full h-9 text-sm font-bold bg-white dark:bg-slate-900 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-xl px-3 outline-none transition-all duration-150 placeholder:text-stone-300 dark:placeholder:text-slate-600 hover:border-stone-400 dark:hover:border-slate-500 focus:border-black dark:focus:border-slate-400 focus:shadow-[3px_3px_0_#000]">
                         </div>
                     </div>
                 </div>
 
             </div>
         </form>
+    </div>
+
+    <!-- FOOTER -->
+    <div class="border-t-2 border-black bg-stone-200 dark:bg-slate-800 px-4 py-3 flex justify-between items-center shrink-0">
+        <button type="button" (click)="dialogRef.close(undefined)"
+                class="px-4 py-2 bg-[#FF1414] text-white font-black text-[10px] border-2 border-black rounded-xl shadow-[2px_2px_0_#000] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all uppercase">
+            {{ readOnly ? 'Cerrar' : 'Cancelar' }}
+        </button>
+        <button *ngIf="!readOnly" type="button" (click)="save()"
+                class="flex items-center gap-2 px-5 py-2 bg-amber-400 text-black font-black text-[10px] border-2 border-black rounded-xl shadow-[3px_3px_0_#000] hover:shadow-none hover:translate-x-[3px] hover:translate-y-[3px] transition-all uppercase">
+            <mat-icon class="!text-sm !text-black">save</mat-icon>
+            Registrar Salida
+        </button>
     </div>
 </div>

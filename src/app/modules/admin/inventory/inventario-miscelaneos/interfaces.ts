@@ -58,5 +58,15 @@ export interface Salida {
     buscadorAutorizado?: string;
 }
 
-export type TabMisc    = 'catalogo' | 'entradas' | 'salidas';
+export type TabMisc    = 'catalogo' | 'entradas' | 'salidas' | 'stock';
 export type DialogMode = 'new' | 'edit' | 'view';
+
+export interface UbicacionRef {
+    almacenId:   number;
+    almacenNombre: string;
+    estandeId:   number;
+    estanteNombre: string;
+    nivelId:     number;
+    nivelNombre: string;
+    etiqueta:    string; // "Central > EST-01 > N-02"
+}

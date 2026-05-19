@@ -8,17 +8,17 @@ import { MatProgressSpinnerModule }                      from '@angular/material
 import { MatTooltipModule }                              from '@angular/material/tooltip';
 import { MatMenuModule }                                 from '@angular/material/menu';
 import { FormControl, ReactiveFormsModule }              from '@angular/forms';
-import { Subject }                                       from 'rxjs';
-import { debounceTime, takeUntil, finalize }              from 'rxjs/operators';
+import { Subject, from, of }                             from 'rxjs';
+import { debounceTime, takeUntil, finalize, catchError } from 'rxjs/operators';
 import { CalibrationService }                            from '../../../../core/services/calibration.service';
+import { ErpApiService }                                 from 'app/core/api/api.service';
 
-// ─────────────────────────────────────────────
-//  Interface de display
-// ─────────────────────────────────────────────
 interface CalibrationDisplay {
     id_calibration:       number;
     tool_code:            string;
     tool_name:            string;
+    part_number:          string;
+    ubicacion:            string;
     supplier_name:        string;
     record_number:        string;
     send_date:            string;
@@ -30,11 +30,9 @@ interface CalibrationDisplay {
     is_jack:              boolean;
     has_certificate_file: boolean;
     certificate_number:   string | null;
+    observations:         string | null;
 }
 
-// ─────────────────────────────────────────────
-//  Component
-// ─────────────────────────────────────────────
 @Component({
     selector: 'app-envio-calibracion',
     standalone: true,
@@ -52,27 +50,13 @@ interface CalibrationDisplay {
     styles: [`
         :host { display: block; height: 100%; }
 
-        .custom-scrollbar::-webkit-scrollbar {
-            width: 6px;
-            height: 6px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-track {
-            background: transparent;
-            border-radius: 3px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-            background: #000;
-            border-radius: 3px;
-        }
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; border-radius: 3px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #000; border-radius: 3px; }
         :host-context(.dark) .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; }
 
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
-        }
-        .animate-pulse {
-            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-        }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+        .animate-pulse { animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
 
         .line-clamp-2 {
             display: -webkit-box;
@@ -86,43 +70,54 @@ interface CalibrationDisplay {
             transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
             transition-duration: 150ms;
         }
-
-        .row-selected { background-color: #fef3c7 !important; border-left: 4px solid #fbbf24 !important; }
-        :host-context(.dark) .row-selected { background-color: rgba(251, 191, 36, 0.1) !important; border-left: 4px solid #fbbf24 !important; }
     `]
 })
 export class EnvioCalibracionComponent implements OnInit, OnDestroy {
 
-    // ── DI ──────────────────────────────────────
     private router             = inject(Router);
     private dialog             = inject(MatDialog);
     private snackBar           = inject(MatSnackBar);
     private calibrationService = inject(CalibrationService);
+    private _api               = inject(ErpApiService);
     private _destroy$          = new Subject<void>();
 
-    // ── Form Controls ───────────────────────────
     searchControl = new FormControl('');
     filterEstado  = new FormControl('');
 
-    // ── State ────────────────────────────────────
     isLoading             = signal(false);
     calibraciones:         CalibrationDisplay[] = [];
     filteredCalibraciones: CalibrationDisplay[] = [];
 
+    // Cache de ubicaciones cargado una vez al inicio
+    private locationMap = new Map<string, { pn: string; ubicacion: string }>();
+
     estadosFiltro = [
         { value: '',           label: 'Todos los estados' },
         { value: 'sent',       label: 'Enviados'         },
-        { value: 'in_process', label: 'En Proceso'       },
         { value: 'returned',   label: 'Completados'      },
         { value: 'cancelled',  label: 'Anulados'         },
     ];
 
-    private isCompleted(s: string): boolean {
-        return s === 'returned' || s === 'completed';
+    // ── Paginación ────────────────────────────────
+    pageSize  = 10;
+    pageIndex = 0;
+
+    get totalRecords(): number { return this.filteredCalibraciones.length; }
+    get totalPages():   number { return Math.ceil(this.totalRecords / this.pageSize) || 1; }
+    get startIndex():   number { return this.totalRecords === 0 ? 0 : this.pageIndex * this.pageSize + 1; }
+    get endIndex():     number { return Math.min((this.pageIndex + 1) * this.pageSize, this.totalRecords); }
+
+    get paginatedCalibraciones(): CalibrationDisplay[] {
+        const s = this.pageIndex * this.pageSize;
+        return this.filteredCalibraciones.slice(s, s + this.pageSize);
     }
+
+    nextPage(): void { if (this.pageIndex < this.totalPages - 1) this.pageIndex++; }
+    prevPage(): void { if (this.pageIndex > 0) this.pageIndex--; }
 
     // ── Lifecycle ────────────────────────────────
     ngOnInit(): void {
+        this.loadLocationMap();
         this.setupFilters();
         this.loadCalibraciones();
     }
@@ -132,58 +127,74 @@ export class EnvioCalibracionComponent implements OnInit, OnDestroy {
         this._destroy$.complete();
     }
 
-    // Refresca al volver el foco a la pestaña (por si retornó en otra pestaña)
     @HostListener('window:focus')
     onWindowFocus(): void {
-        if (!this.isLoading()) {
-            this.loadCalibraciones();
-        }
+        if (!this.isLoading()) this.loadCalibraciones();
     }
 
-    // ── Data Loading ──────────────────────────────
+    // ── Carga mapa de ubicaciones (una vez) ──────
+    loadLocationMap(): void {
+        from(this._api.post('herramientas/leveltools/listarLevelTools', { start: 0, limit: 5000 })).pipe(
+            takeUntil(this._destroy$),
+            catchError(() => of({ datos: [] }))
+        ).subscribe((res: any) => {
+            const raw: any[] = res?.datos || res?.data || [];
+            this.locationMap.clear();
+            for (const t of raw) {
+                const key = (t.code || '').trim().toUpperCase();
+                if (!key) continue;
+                const rack  = t.rack_code  || '';
+                const level = t.level_code || '';
+                this.locationMap.set(key, {
+                    pn:       t.part_number || '—',
+                    ubicacion: rack && level ? `${rack} - ${level}` : rack || level || '—',
+                });
+            }
+            // Re-enriquecer si ya se cargaron calibraciones
+            if (this.calibraciones.length) this._enrichAndApply();
+        });
+    }
 
-    /**
-     * Carga calibraciones desde el servidor.
-     * El filtro de status se envía al backend para que la SP lo aplique correctamente.
-     * El filtro de texto se aplica localmente en applyFilters() sobre los datos ya cargados.
-     */
+    // ── Carga calibraciones ──────────────────────
     loadCalibraciones(): void {
         this.isLoading.set(true);
+        this.pageIndex = 0;
 
         const estado = this.filterEstado.value;
         const params: any = {
             limit: 200,
             filtro: "(cls.internal_notes IS NULL OR cls.internal_notes != '[TRANSCRIPCIÓN HISTÓRICA]')",
         };
-
-        // FIX: pasar el status al backend en todos los casos excepto '' (todos).
-        // 'returned' cubre también 'completed' — el backend devuelve ambos y
-        // applyFilters() los filtra en cliente con isCompleted().
-        if (estado) {
-            params.status = estado;
-        }
+        if (estado) params.status = estado;
 
         this.calibrationService.getCalibrations(params).pipe(
             takeUntil(this._destroy$),
             finalize(() => this.isLoading.set(false)),
         ).subscribe({
             next: (records: any[]) => {
-                this.calibraciones = records.map(r => ({
-                    id_calibration:       r.id_calibration ?? r.id ?? 0,
-                    tool_code:            r.tool_code       ?? r.code          ?? '—',
-                    tool_name:            r.tool_name       ?? r.name          ?? '—',
-                    supplier_name:        r.supplier_name   ?? r.laboratory_name ?? '—',
-                    record_number:        r.record_number   ?? '—',
-                    send_date:            r.send_date       ?? '—',
-                    expected_return_date: r.expected_return_date ?? null,
-                    work_type:            r.work_type       ?? 'CALIBRACIÓN',
-                    base:                 r.base            ?? '—',
-                    almacen:              r.almacen         ?? '—',
-                    status:               r.status          ?? 'sent',
-                    is_jack:              r.is_jack         ?? false,
-                    has_certificate_file: !!(r.has_certificate_file || r.certificate_file),
-                    certificate_number:   r.certificate_number ?? null,
-                }));
+                this.calibraciones = records.map(r => {
+                    const code = (r.tool_code ?? r.code ?? '').trim().toUpperCase();
+                    const loc  = this.locationMap.get(code);
+                    return {
+                        id_calibration:       r.id_calibration       ?? r.id ?? 0,
+                        tool_code:            r.tool_code             ?? r.code          ?? '—',
+                        tool_name:            r.tool_name             ?? r.name          ?? '—',
+                        part_number:          loc?.pn                 ?? '—',
+                        ubicacion:            loc?.ubicacion          ?? '—',
+                        supplier_name:        r.supplier_name         ?? r.laboratory_name ?? '—',
+                        record_number:        r.record_number         ?? '—',
+                        send_date:            r.send_date             ?? '—',
+                        expected_return_date: r.expected_return_date  ?? null,
+                        work_type:            r.work_type             ?? 'CALIBRACIÓN',
+                        base:                 r.base                  ?? '—',
+                        almacen:              r.almacen ?? r.warehouse_name ?? r.warehouse ?? '—',
+                        status:               r.status                ?? 'sent',
+                        is_jack:              r.is_jack               ?? false,
+                        has_certificate_file: !!(r.has_certificate_file || r.certificate_file),
+                        certificate_number:   r.certificate_number    ?? null,
+                        observations:         r.observations ?? r.notes ?? r.observaciones ?? null,
+                    };
+                });
                 this.applyFilters();
             },
             error: (err) => {
@@ -193,45 +204,30 @@ export class EnvioCalibracionComponent implements OnInit, OnDestroy {
         });
     }
 
-    /**
-     * Configura los observables de filtros.
-     *
-     * - filterEstado: dispara una recarga desde el servidor (server-side).
-     *   El status se manda como parámetro al backend para que la SP lo aplique.
-     *
-     * - searchControl: filtra localmente sobre los datos ya cargados (client-side).
-     *   No genera llamadas de red, responde instantáneamente.
-     */
+    private _enrichAndApply(): void {
+        this.calibraciones = this.calibraciones.map(c => {
+            const loc = this.locationMap.get(c.tool_code.trim().toUpperCase());
+            return { ...c, part_number: loc?.pn ?? '—', ubicacion: loc?.ubicacion ?? '—' };
+        });
+        this.applyFilters();
+    }
+
     setupFilters(): void {
-        // Filtro de texto → client-side, no genera llamadas de red
         this.searchControl.valueChanges.pipe(
             debounceTime(300),
             takeUntil(this._destroy$),
         ).subscribe(() => this.applyFilters());
 
-        // Filtro de estado → server-side, recarga datos desde el backend
-        // Sin startWith: la carga inicial la hace ngOnInit explícitamente para
-        // evitar dos peticiones concurrentes al mismo endpoint (PXP descarta la
-        // segunda con token ya consumido → { error: true, message: null }).
         this.filterEstado.valueChanges.pipe(
             debounceTime(400),
             takeUntil(this._destroy$),
         ).subscribe(() => this.loadCalibraciones());
     }
 
-    /**
-     * Aplica filtros locales sobre los datos ya cargados.
-     *
-     * Solo aplica:
-     * 1. Búsqueda de texto (código, nombre, nota, proveedor, base).
-     * 2. Caso especial 'returned': cubre dos valores del backend ('returned' y 'completed').
-     *    El backend los devuelve mezclados cuando se filtra por status='returned',
-     *    aquí nos aseguramos de mostrar solo los que isCompleted() reconoce.
-     */
     applyFilters(): void {
+        this.pageIndex = 0;
         let list = [...this.calibraciones];
 
-        // 1. Filtro de texto (client-side)
         const q = this.searchControl.value?.toLowerCase().trim() ?? '';
         if (q) {
             list = list.filter(c =>
@@ -239,12 +235,12 @@ export class EnvioCalibracionComponent implements OnInit, OnDestroy {
                 c.tool_name.toLowerCase().includes(q)     ||
                 c.record_number.toLowerCase().includes(q) ||
                 c.supplier_name.toLowerCase().includes(q) ||
-                c.base.toLowerCase().includes(q),
+                c.base.toLowerCase().includes(q)          ||
+                c.part_number.toLowerCase().includes(q)   ||
+                c.ubicacion.toLowerCase().includes(q),
             );
         }
 
-        // 2. Caso especial: 'returned' engloba 'returned' y 'completed' del backend.
-        //    Para el resto de estados el backend ya filtra correctamente.
         const estado = this.filterEstado.value;
         if (estado === 'returned') {
             list = list.filter(c => this.isCompleted(c.status));
@@ -253,98 +249,174 @@ export class EnvioCalibracionComponent implements OnInit, OnDestroy {
         this.filteredCalibraciones = list;
     }
 
+    private isCompleted(s: string): boolean { return s === 'returned' || s === 'completed'; }
+
     // ── KPI Getters ───────────────────────────────
-    getEnLabCount(): number {
-        return this.calibraciones.filter(c => c.status === 'sent' || c.status === 'in_process').length;
-    }
-
-    getRetrasadasCount(): number {
-        return this.calibraciones.filter(c => this.isRetrasado(c)).length;
-    }
-
-    getATiempoCount(): number {
-        return Math.max(0, this.getEnLabCount() - this.getRetrasadasCount());
-    }
-
-    getCountByStatus(status: string): number {
-        return this.calibraciones.filter(c => c.status === status).length;
-    }
+    getEnLabCount(): number      { return this.calibraciones.filter(c => c.status === 'sent' || c.status === 'in_process').length; }
+    getRetrasadasCount(): number { return this.calibraciones.filter(c => this.isRetrasado(c)).length; }
+    getATiempoCount(): number    { return Math.max(0, this.getEnLabCount() - this.getRetrasadasCount()); }
 
     // ── Row Helpers ───────────────────────────────
     isRetrasado(cal: CalibrationDisplay): boolean {
         if (!cal.expected_return_date || this.isCompleted(cal.status) || cal.status === 'cancelled') return false;
         try {
-            const expectedDate = new Date(cal.expected_return_date);
-            const today = new Date();
+            const expected = new Date(cal.expected_return_date);
+            const today    = new Date();
             today.setHours(0, 0, 0, 0);
-            return expectedDate < today;
-        } catch {
-            return false;
-        }
+            return expected < today;
+        } catch { return false; }
     }
 
     getDiasRetrasado(cal: CalibrationDisplay): number {
         if (!cal.expected_return_date) return 0;
         try {
-            const expectedDate = new Date(cal.expected_return_date);
-            const today = new Date();
+            const expected = new Date(cal.expected_return_date);
+            const today    = new Date();
             today.setHours(0, 0, 0, 0);
-            return Math.floor(
-                (today.getTime() - expectedDate.getTime()) / 86_400_000
-            );
-        } catch {
-            return 0;
-        }
+            return Math.floor((today.getTime() - expected.getTime()) / 86_400_000);
+        } catch { return 0; }
     }
 
     getWorkTypeLabel(w: string): string {
         if (w === 'CALIBRACIÓN Y REPARACIÓN') return 'CAL + REP.';
-        if (w === 'CALIBRACIÓN') return 'CALIB.';
-        if (w === 'REPARACIÓN') return 'REPAR.';
+        if (w === 'CALIBRACIÓN')              return 'CALIB.';
+        if (w === 'REPARACIÓN')               return 'REPAR.';
         return w || '—';
     }
 
     getStatusLabel(s: string): string {
         const labels: Record<string, string> = {
-            'sent': 'ENVIADO',
-            'in_process': 'EN PROCESO',
-            'returned': 'COMPLETADO',
-            'completed': 'COMPLETADO',
-            'cancelled': 'ANULADO'
+            sent: 'ENVIADO', in_process: 'EN PROCESO',
+            returned: 'COMPLETADO', completed: 'COMPLETADO', cancelled: 'ANULADO'
         };
         return labels[s] ?? s.toUpperCase();
     }
 
     getStatusChipClass(s: string): string {
         const classes: Record<string, string> = {
-            'sent': 'bg-blue-100 text-blue-800 border-blue-500',
-            'in_process': 'bg-amber-100 text-amber-800 border-amber-500',
-            'returned': 'bg-green-100 text-green-800 border-green-500',
-            'completed': 'bg-green-100 text-green-800 border-green-500',
-            'cancelled': 'bg-red-100 text-red-800 border-red-500'
+            sent:       'bg-blue-700 text-gray-100 border-black',
+            returned:   'bg-green-600 text-black border-black',
+            completed:  'bg-green-600 text-black border-black',
+            cancelled:  'bg-red-600 text-gray-100 border-black'
         };
         return classes[s] ?? 'bg-gray-100 text-gray-700 border-gray-500';
     }
 
-    // ── Actions ──────────────────────────────────
+    // ── Imprimir herramientas no retornadas ───────
+    printNoRetornadas(): void {
+        const pendientes = this.calibraciones.filter(c => c.status === 'sent' || c.status === 'in_process');
+        if (!pendientes.length) {
+            this.showMsg('No hay herramientas pendientes de retorno', 'info');
+            return;
+        }
+        const now = new Date().toLocaleDateString('es-BO', {
+            day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit'
+        });
 
-    // NUEVO ENVÍO (individual o múltiple)
+        const rows = pendientes.map((c, i) => `
+            <tr class="${this.isRetrasado(c) ? 'row-delayed' : ''}">
+                <td class="text-center">${i + 1}</td>
+                <td class="mono">${c.tool_code}</td>
+                <td class="mono small">${c.part_number !== '—' ? c.part_number : ''}</td>
+                <td>${c.tool_name}</td>
+                <td class="small">${c.ubicacion !== '—' ? c.ubicacion : ''}</td>
+                <td>${c.supplier_name}</td>
+                <td class="mono">${c.record_number}</td>
+                <td class="mono">${c.send_date}</td>
+                <td class="mono ${this.isRetrasado(c) ? 'text-delayed' : ''}">
+                    ${c.expected_return_date || '—'}${this.isRetrasado(c) ? ` <strong>(+${this.getDiasRetrasado(c)}d)</strong>` : ''}
+                </td>
+                <td>${c.base}</td>
+            </tr>
+        `).join('');
+
+        const html = `<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Herramientas Pendientes de Retorno</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family: Arial, sans-serif; font-size: 9px; color: #000; padding: 16px; }
+  .header { border: 3px solid #000; padding: 10px 14px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: flex-start; }
+  .header h1 { font-size: 15px; font-weight: 900; text-transform: uppercase; }
+  .header p  { font-size: 8px; color: #555; margin-top: 2px; }
+  .header-right { text-align: right; }
+  .header-right .label { font-size: 7px; font-weight: 700; text-transform: uppercase; color: #888; }
+  .header-right .value { font-size: 10px; font-weight: 900; }
+  .filter-bar { background: #000; color: #fff; padding: 5px 10px; font-size: 8px; font-weight: 900; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px; display: flex; justify-content: space-between; }
+  table { width: 100%; border-collapse: collapse; }
+  thead tr { background: #000; color: #fff; }
+  thead th { padding: 5px 6px; font-size: 8px; font-weight: 900; text-transform: uppercase; text-align: left; }
+  tbody tr { border-bottom: 1px solid #ddd; }
+  tbody tr:nth-child(even) { background: #f9f9f9; }
+  tbody tr.row-delayed { background: #fff0f0 !important; }
+  td { padding: 4px 6px; font-size: 8.5px; vertical-align: middle; }
+  td.text-center { text-align: center; }
+  td.mono { font-family: monospace; }
+  td.small { font-size: 7.5px; }
+  .text-delayed { color: #dc2626; font-weight: 900; }
+  .footer { margin-top: 12px; font-size: 7px; color: #888; text-align: right; border-top: 1px solid #ddd; padding-top: 5px; }
+  @media print { body { padding: 8px; } @page { margin: 12mm; size: landscape; } }
+</style>
+</head>
+<body>
+<div class="header">
+  <div>
+    <h1>Herramientas Pendientes de Retorno</h1>
+    <p>Sistema de Gestión de Herramientas · MGH-109 · Envío a Calibración</p>
+  </div>
+  <div class="header-right">
+    <div class="label">Total pendientes</div>
+    <div class="value">${pendientes.length}</div>
+    <div class="label" style="margin-top:4px">Generado</div>
+    <div class="value" style="font-size:8px">${now}</div>
+  </div>
+</div>
+<div class="filter-bar">
+  <span>Herramientas enviadas y NO retornadas al ${now}</span>
+  <span>Retrasadas: ${pendientes.filter(c => this.isRetrasado(c)).length}</span>
+</div>
+<table>
+  <thead>
+    <tr>
+      <th style="width:24px">#</th>
+      <th style="width:80px">Código</th>
+      <th style="width:85px">P/N</th>
+      <th>Herramienta</th>
+      <th style="width:80px">Ubicación</th>
+      <th style="width:100px">Empresa</th>
+      <th style="width:80px">N° Nota</th>
+      <th style="width:70px">Envío</th>
+      <th style="width:90px">Ret. Estimado</th>
+      <th style="width:50px">Base</th>
+    </tr>
+  </thead>
+  <tbody>${rows}</tbody>
+</table>
+<div class="footer">Documento generado el ${now} · Sistema Herramientas</div>
+</body>
+</html>`;
+
+        const win = window.open('', '_blank', 'width=1100,height=750');
+        if (win) {
+            win.document.write(html);
+            win.document.close();
+            setTimeout(() => win.print(), 500);
+        }
+    }
+
+    // ── Actions ──────────────────────────────────
     async nuevoEnvio(): Promise<void> {
         try {
             const { FormEnvioComponent } = await import('./form-envio/form-envio.component');
             const ref = this.dialog.open(FormEnvioComponent, {
-                width:        '980px',
-                maxWidth:     '98vw',
-                height:       'auto',
-                maxHeight:    '92vh',
-                disableClose: false,
-                panelClass:   'neo-dialog-transparent'
+                width: '900px', maxWidth: '98vw', height: '88vh',
+                panelClass: 'no-padding-dialog',
+                disableClose: false
             });
             ref.afterClosed().subscribe(ok => {
-                if (ok) {
-                    this.loadCalibraciones();
-                    this.showMsg('Envío registrado exitosamente', 'success');
-                }
+                if (ok) { this.loadCalibraciones(); this.showMsg('Envío registrado exitosamente', 'success'); }
             });
         } catch (error) {
             console.error('Error loading form component:', error);
@@ -352,14 +424,12 @@ export class EnvioCalibracionComponent implements OnInit, OnDestroy {
         }
     }
 
-    // 2. VER DETALLES
     async verDetalles(cal: CalibrationDisplay): Promise<void> {
         try {
             const { DetalleEnvioComponent } = await import('./detalle-envio/detalle-envio.component');
             this.dialog.open(DetalleEnvioComponent, {
-                width: '600px',
-                maxWidth: '95vw',
-                panelClass: 'neo-dialog-transparent',
+                width: '600px', maxWidth: '95vw',
+                panelClass: 'no-padding-dialog',
                 data: { calibracion: cal }
             });
         } catch (error) {
@@ -368,29 +438,21 @@ export class EnvioCalibracionComponent implements OnInit, OnDestroy {
         }
     }
 
-    // 3. ANULAR ENVÍO
     async anularEnvio(cal: CalibrationDisplay): Promise<void> {
         try {
             const { AnularEnvioComponent } = await import('./anular-envio/anular-envio.component');
             const ref = this.dialog.open(AnularEnvioComponent, {
-                width: '500px',
-                panelClass: 'neo-dialog-transparent',
-                disableClose: true,
-                data: { calibracion: cal }
+                width: '500px', panelClass: 'no-padding-dialog',
+                disableClose: true, data: { calibracion: cal }
             });
-
             ref.afterClosed().subscribe(reason => {
                 if (!reason) return;
-
                 this.isLoading.set(true);
                 this.calibrationService.cancelCalibration(cal.id_calibration.toString(), reason).subscribe({
-                    next: () => {
-                        this.showMsg(`Envío ${cal.record_number} anulado exitosamente`, 'success');
-                        this.loadCalibraciones();
-                    },
+                    next: () => { this.showMsg(`Envío ${cal.record_number} anulado`, 'success'); this.loadCalibraciones(); },
                     error: (err) => {
                         console.error('Error anulando:', err);
-                        this.showMsg(err.message || 'Error al intentar anular el envío', 'error');
+                        this.showMsg(err.message || 'Error al anular el envío', 'error');
                         this.isLoading.set(false);
                     }
                 });
@@ -401,76 +463,34 @@ export class EnvioCalibracionComponent implements OnInit, OnDestroy {
         }
     }
 
-    /**
-     * Imprime la Nota de Envío a Calibración usando el PDF generado por el backend
-     */
     printNota(cal: CalibrationDisplay): void {
-        if (!cal.id_calibration) {
-            this.showMsg('No se puede imprimir: ID de calibración no válido', 'error');
-            return;
-        }
+        if (!cal.id_calibration) { this.showMsg('ID de calibración no válido', 'error'); return; }
         this.isLoading.set(true);
         this.calibrationService.generarYVerPdfEnvio(cal.id_calibration);
-        setTimeout(() => { this.isLoading.set(false); }, 1500);
+        setTimeout(() => this.isLoading.set(false), 1500);
     }
 
-    /**
-     * Imprime el Certificado de Retorno de Calibración
-     */
-    printCertificado(cal: CalibrationDisplay): void {
-        if (!cal.id_calibration) {
-            this.showMsg('No se puede imprimir: ID de calibración no válido', 'error');
-            return;
-        }
-        this.isLoading.set(true);
-        this.calibrationService.generarYVerPdfRetorno(cal.id_calibration);
-        setTimeout(() => { this.isLoading.set(false); }, 1500);
-    }
-
-    /**
-     * Abre el visor integrado de PDF — Nota de Envío a Calibración.
-     */
-    async verEnvio(cal: CalibrationDisplay): Promise<void> {
+    verEnvio(cal: CalibrationDisplay): void {
         if (!cal.id_calibration) { this.showMsg('ID de calibración no válido', 'error'); return; }
-        try {
-            const { PdfViewerDialogComponent } = await import('./pdf-viewer-dialog/pdf-viewer-dialog.component');
-            this.dialog.open(PdfViewerDialogComponent, {
-                width:      '880px',
-                maxWidth:   '95vw',
-                height:     '90vh',
-                panelClass: 'neo-dialog-transparent',
-                data: { tipo: 'envio', id_calibration: cal.id_calibration, record_number: cal.record_number }
-            });
-        } catch (error) {
-            console.error('Error loading PdfViewerDialogComponent:', error);
-            this.showMsg('Error al abrir el visor PDF', 'error');
-        }
+        this.isLoading.set(true);
+        this.calibrationService.generarYVerPdfEnvio(cal.id_calibration);
+        setTimeout(() => this.isLoading.set(false), 1500);
     }
 
-    /**
-     * Descarga el certificado PDF adjunto en el retorno y lo abre en una pestaña nueva.
-     * Se hace on-demand para no incluir el blob (varios MB) en la respuesta del listado.
-     */
     verRetorno(cal: CalibrationDisplay): void {
-        if (!cal.has_certificate_file) {
-            this.showMsg('No se adjuntó un certificado en este retorno', 'warning');
-            return;
-        }
+        if (!cal.has_certificate_file) { this.showMsg('No se adjuntó un certificado en este retorno', 'warning'); return; }
         this.isLoading.set(true);
         this.calibrationService.getCertificateFile(cal.id_calibration).subscribe({
             next: (dataUrl) => {
                 this.isLoading.set(false);
-                if (!dataUrl) {
-                    this.showMsg('No se encontró el certificado adjunto', 'warning');
-                    return;
-                }
+                if (!dataUrl) { this.showMsg('No se encontró el certificado adjunto', 'warning'); return; }
                 try {
                     const base64 = dataUrl.includes(',') ? dataUrl.split(',')[1] : dataUrl;
-                    const bytes = atob(base64);
-                    const arr = new Uint8Array(bytes.length);
+                    const bytes  = atob(base64);
+                    const arr    = new Uint8Array(bytes.length);
                     for (let i = 0; i < bytes.length; i++) arr[i] = bytes.charCodeAt(i);
                     const blob = new Blob([arr], { type: 'application/pdf' });
-                    const url = window.URL.createObjectURL(blob);
+                    const url  = window.URL.createObjectURL(blob);
                     window.open(url, '_blank');
                     setTimeout(() => window.URL.revokeObjectURL(url), 300);
                 } catch (e) {
@@ -478,31 +498,16 @@ export class EnvioCalibracionComponent implements OnInit, OnDestroy {
                     this.showMsg('No se pudo abrir el certificado adjunto', 'error');
                 }
             },
-            error: () => {
-                this.isLoading.set(false);
-                this.showMsg('Error al obtener el certificado adjunto', 'error');
-            }
+            error: () => { this.isLoading.set(false); this.showMsg('Error al obtener el certificado', 'error'); }
         });
     }
 
-    /**
-     * Descarga el PDF de Nota de Envío
-     */
     descargarNotaPdf(cal: CalibrationDisplay): void {
         if (!cal.id_calibration) { this.showMsg('ID de calibración no válido', 'error'); return; }
         this.isLoading.set(true);
         this.calibrationService.generarPdfEnvioCalibracion(cal.id_calibration).subscribe({
             next: (result) => {
-                const byteCharacters = atob(result.pdf_base64);
-                const byteNumbers = new Array(byteCharacters.length);
-                for (let i = 0; i < byteCharacters.length; i++) byteNumbers[i] = byteCharacters.charCodeAt(i);
-                const byteArray = new Uint8Array(byteNumbers);
-                const isHtml = result.nombre_archivo.toLowerCase().endsWith('.html');
-                const blob = new Blob([byteArray], { type: isHtml ? 'text/html' : 'application/pdf' });
-                const url = window.URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url; a.download = result.nombre_archivo.replace(/[/\\]/g, '-'); a.click();
-                window.URL.revokeObjectURL(url);
+                this._downloadBlob(result.pdf_base64, result.nombre_archivo);
                 this.isLoading.set(false);
                 this.showMsg('Documento descargado correctamente', 'success');
             },
@@ -519,16 +524,7 @@ export class EnvioCalibracionComponent implements OnInit, OnDestroy {
         this.isLoading.set(true);
         this.calibrationService.generarPdfRetornoCalibracion(cal.id_calibration).subscribe({
             next: (result) => {
-                const byteCharacters = atob(result.pdf_base64);
-                const byteNumbers = new Array(byteCharacters.length);
-                for (let i = 0; i < byteCharacters.length; i++) byteNumbers[i] = byteCharacters.charCodeAt(i);
-                const byteArray = new Uint8Array(byteNumbers);
-                const isHtml = result.nombre_archivo.toLowerCase().endsWith('.html');
-                const blob = new Blob([byteArray], { type: isHtml ? 'text/html' : 'application/pdf' });
-                const url = window.URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url; a.download = result.nombre_archivo.replace(/[/\\]/g, '-'); a.click();
-                window.URL.revokeObjectURL(url);
+                this._downloadBlob(result.pdf_base64, result.nombre_archivo);
                 this.isLoading.set(false);
                 this.showMsg('Documento descargado correctamente', 'success');
             },
@@ -540,17 +536,25 @@ export class EnvioCalibracionComponent implements OnInit, OnDestroy {
         });
     }
 
-    volver(): void {
-        this.router.navigate(['/administration']);
+    private _downloadBlob(base64: string, filename: string): void {
+        const bytes  = atob(base64);
+        const arr    = new Uint8Array(bytes.length);
+        for (let i = 0; i < bytes.length; i++) arr[i] = bytes.charCodeAt(i);
+        const isHtml = filename.toLowerCase().endsWith('.html');
+        const blob   = new Blob([arr], { type: isHtml ? 'text/html' : 'application/pdf' });
+        const url    = window.URL.createObjectURL(blob);
+        const a      = document.createElement('a');
+        a.href = url; a.download = filename.replace(/[/\\]/g, '-'); a.click();
+        window.URL.revokeObjectURL(url);
     }
 
-    // ── Snackbar Helper ──────────────────────────
+    volver(): void { this.router.navigate(['/administration']); }
+
     private showMsg(message: string, type: 'success' | 'error' | 'warning' | 'info'): void {
         this.snackBar.open(message, 'Cerrar', {
-            duration:           type === 'error' ? 5000 : 3000,
-            horizontalPosition: 'end',
-            verticalPosition:   'top',
-            panelClass:         [`snackbar-${type}`],
+            duration: type === 'error' ? 5000 : 3000,
+            horizontalPosition: 'end', verticalPosition: 'top',
+            panelClass: [`snackbar-${type}`],
         });
     }
 }

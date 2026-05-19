@@ -7,6 +7,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { DragDropModule } from '@angular/cdk/drag-drop';
 import { Subject } from 'rxjs';
 import { takeUntil, finalize } from 'rxjs/operators';
 import { CalibrationService } from '../../../../../core/services/calibration.service';
@@ -42,6 +43,7 @@ export type DialogMode = 'new' | 'edit' | 'view';
         CommonModule, FormsModule,
         MatDialogModule, MatButtonModule, MatIconModule,
         MatProgressSpinnerModule, MatSnackBarModule, MatTooltipModule,
+        DragDropModule,
     ],
     templateUrl: './form-laboratorio.component.html',
 })

@@ -17,14 +17,13 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { DragDropModule } from '@angular/cdk/drag-drop';
 import { forkJoin } from 'rxjs';
 import { ToolService } from 'app/core/services/tool.service';
-import { CategoryService } from 'app/core/services/category.service';
+import { WarehouseService } from 'app/core/services/warehouse.service';
 
 interface InventoryItem {
     id: number;
     codigo: string;
     partNumber: string;
     descripcion: string;
-    categoria: string;
     ubicacion: string;
     stockActual: number;
     stockMinimo: number;
@@ -107,12 +106,11 @@ export class ConsultarInventarioComponent implements OnInit {
     private dialog = inject(MatDialog);
     private router = inject(Router);
     private toolService = inject(ToolService);
-    private categoryService = inject(CategoryService);
+    private warehouseService = inject(WarehouseService);
     public dialogRef = inject(MatDialogRef<ConsultarInventarioComponent>, { optional: true });
 
     // Signals
     searchTerm = signal('');
-    selectedCategoria = signal<string>('todas');
     selectedEstado = signal<string>('todos');
     selectedUbicacion = signal<string>('todas');
     viewMode = signal<'grid' | 'list' | 'table'>('grid');
@@ -125,7 +123,6 @@ export class ConsultarInventarioComponent implements OnInit {
     // Data cargada desde el backend
     inventoryData = signal<InventoryItem[]>([]);
 
-    categorias: string[] = [];
     ubicaciones: string[] = [];
     estados = ['DISPONIBLE', 'BAJO STOCK', 'SIN STOCK', 'EN CALIBRACION', 'EN PRESTAMO', 'CUARENTENA'];
 
@@ -133,7 +130,6 @@ export class ConsultarInventarioComponent implements OnInit {
     filteredData = computed(() => {
         let data = this.inventoryData();
         const term = this.searchTerm().toLowerCase();
-        const categoria = this.selectedCategoria();
         const estado = this.selectedEstado();
         const ubicacion = this.selectedUbicacion();
 
@@ -143,9 +139,6 @@ export class ConsultarInventarioComponent implements OnInit {
                 item.descripcion.toLowerCase().includes(term) ||
                 item.partNumber.toLowerCase().includes(term)
             );
-        }
-        if (categoria !== 'todas') {
-            data = data.filter(item => item.categoria === categoria);
         }
         if (estado !== 'todos') {
             data = data.filter(item => item.estado === estado);
@@ -180,23 +173,26 @@ export class ConsultarInventarioComponent implements OnInit {
         this.isLoading.set(true);
 
         forkJoin({
-            tools: this.toolService.getTools(),
-            categories: this.categoryService.getCategories()
+            tools:      this.toolService.getTools(),
+            warehouses: this.warehouseService.getWarehouses(),
+            locations:  this.warehouseService.getAllLocations()
         }).subscribe({
-            next: ({ tools, categories }) => {
-                // Construir mapa category_id → nombre
-                const categoryMap: Record<number, string> = {};
-                for (const cat of categories as any[]) {
-                    categoryMap[cat.id_category] = cat.name;
+            next: ({ tools, warehouses, locations }) => {
+                const warehouseMap: Record<number, string> = {};
+                for (const w of warehouses as any[]) {
+                    warehouseMap[w.id_warehouse] = w.name;
                 }
 
-                const items = (tools as any[]).map(t => this.mapToolToInventoryItem(t, categoryMap));
+                const locationMap: Record<number, string> = {};
+                for (const l of locations as any[]) {
+                    locationMap[l.id_location] = l.name;
+                }
+
+                const items = (tools as any[]).map(t =>
+                    this.mapToolToInventoryItem(t, warehouseMap, locationMap)
+                );
                 this.inventoryData.set(items);
-
-                // Poblar listas de filtros dinámicamente desde los datos reales
-                this.categorias = [...new Set(items.map(i => i.categoria))].sort();
                 this.ubicaciones = [...new Set(items.map(i => i.ubicacion))].sort();
-
                 this.isLoading.set(false);
             },
             error: () => {
@@ -205,19 +201,43 @@ export class ConsultarInventarioComponent implements OnInit {
         });
     }
 
-    private mapToolToInventoryItem(tool: any, categoryMap: Record<number, string>): InventoryItem {
-        const categoria = categoryMap[tool.category_id]
-            || (tool.category_id ? `Categoría ${tool.category_id}` : 'Sin categoría');
-        const ubicacion = tool.warehouse_id ? `Almacén ${tool.warehouse_id}` : 'Sin ubicación';
+    private mapToolToInventoryItem(
+        tool: any,
+        warehouseMap: Record<number, string> = {},
+        locationMap: Record<number, string> = {}
+    ): InventoryItem {
+        // Construir ubicación: Almacén + Ubicación > fallback a notes > fallback genérico
+        let ubicacion = 'Sin ubicación';
+        const warehouseName = tool.warehouse_id ? warehouseMap[tool.warehouse_id] : null;
+        const locationName  = tool.location_id  ? locationMap[tool.location_id]   : null;
 
-        // Estado basado en el status del backend
+        if (warehouseName && locationName) {
+            ubicacion = `${warehouseName} / ${locationName}`;
+        } else if (warehouseName) {
+            ubicacion = warehouseName;
+        } else if (locationName) {
+            ubicacion = locationName;
+        } else if (tool.notes) {
+            const match = tool.notes.match(/Ubicacion:\s*(.+)/i);
+            if (match) ubicacion = match[1].trim();
+        }
+
+        // Estado basado en el status del backend (valores reales en inglés minúscula)
         const statusMap: Record<string, InventoryItem['estado']> = {
-            'DISPONIBLE':  'DISPONIBLE',
-            'CALIBRACION': 'EN CALIBRACION',
-            'PRESTADO':    'EN PRESTAMO',
-            'TRANSFERIDO': 'EN PRESTAMO',
-            'CUARENTENA':  'CUARENTENA',
-            'BAJA':        'CUARENTENA'
+            'available':      'DISPONIBLE',
+            'calibration':    'EN CALIBRACION',
+            'loaned':         'EN PRESTAMO',
+            'transferred':    'EN PRESTAMO',
+            'quarantine':     'CUARENTENA',
+            'decommissioned': 'CUARENTENA',
+            'maintenance':    'CUARENTENA',
+            // compatibilidad con valores en español
+            'DISPONIBLE':     'DISPONIBLE',
+            'CALIBRACION':    'EN CALIBRACION',
+            'PRESTADO':       'EN PRESTAMO',
+            'TRANSFERIDO':    'EN PRESTAMO',
+            'CUARENTENA':     'CUARENTENA',
+            'BAJA':           'CUARENTENA'
         };
         let estado: InventoryItem['estado'] = statusMap[tool.status] || 'DISPONIBLE';
         if (estado === 'DISPONIBLE' && (tool.quantity_in_stock ?? 0) <= 0) {
@@ -238,7 +258,6 @@ export class ConsultarInventarioComponent implements OnInit {
             codigo: tool.code || '',
             partNumber: tool.part_number || tool.model || '',
             descripcion: tool.name || '',
-            categoria,
             ubicacion,
             stockActual: tool.quantity_in_stock ?? 0,
             stockMinimo: 0,
@@ -339,7 +358,6 @@ export class ConsultarInventarioComponent implements OnInit {
 
     limpiarFiltros(): void {
         this.searchTerm.set('');
-        this.selectedCategoria.set('todas');
         this.selectedEstado.set('todos');
         this.selectedUbicacion.set('todas');
     }

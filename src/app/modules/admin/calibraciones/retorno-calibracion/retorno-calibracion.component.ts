@@ -10,9 +10,6 @@ import { Subject, combineLatest }                        from 'rxjs';
 import { debounceTime, startWith, takeUntil, finalize }  from 'rxjs/operators';
 import { CalibrationService }                            from '../../../../core/services/calibration.service';
 
-/**
- * Interface de visualización mapeada a la respuesta del servidor
- */
 interface CalibrationDisplay {
     id_calibration:       number;
     tool_id:              number;
@@ -28,7 +25,6 @@ interface CalibrationDisplay {
     base:                 string;
     almacen:              string;
     status:               string;
-    is_jack:              boolean;
 }
 
 @Component({
@@ -59,29 +55,23 @@ interface CalibrationDisplay {
 })
 export class RetornoCalibracionComponent implements OnInit, OnDestroy {
 
-    // ── Inyecciones de Dependencia ──────────────────────────
     private dialog             = inject(MatDialog);
     private snackBar           = inject(MatSnackBar);
     private calibrationService = inject(CalibrationService);
     private _destroy$          = new Subject<void>();
 
-    // ── Controles Reactivos ────────────────────────────────
     searchControl = new FormControl('');
     filterEstado  = new FormControl('sent');
 
-    // ── Estado de la UI ────────────────────────────────────
     isLoading             = signal(false);
     calibraciones:         CalibrationDisplay[] = [];
     filteredCalibraciones: CalibrationDisplay[] = [];
-    selectedCalForUpload:  CalibrationDisplay | null = null;
 
     estadosFiltro = [
         { value: '',         label: 'TODOS' },
         { value: 'sent',     label: 'EN LABORATORIO' },
         { value: 'returned', label: 'COMPLETADOS' },
     ];
-
-    // ── Ciclo de Vida ──────────────────────────────────────
 
     ngOnInit(): void {
         this.loadCalibraciones();
@@ -92,8 +82,6 @@ export class RetornoCalibracionComponent implements OnInit, OnDestroy {
         this._destroy$.next();
         this._destroy$.complete();
     }
-
-    // ── Carga y Filtrado de Datos ──────────────────────────
 
     loadCalibraciones(): void {
         this.isLoading.set(true);
@@ -117,7 +105,6 @@ export class RetornoCalibracionComponent implements OnInit, OnDestroy {
                     base:                 r.base ?? '—',
                     almacen:              r.almacen ?? '—',
                     status:               r.status ?? 'sent',
-                    is_jack:              r.is_jack ?? r.tool_is_jack ?? false,
                 }));
                 this.applyFilters();
             },
@@ -165,8 +152,6 @@ export class RetornoCalibracionComponent implements OnInit, OnDestroy {
         this.filteredCalibraciones = list;
     }
 
-    // ── Getters de Resumen (KPIs) ──────────────────────────
-
     getEnLabCount(): number {
         return this.calibraciones.filter(c => c.status === 'sent' || c.status === 'in_process').length;
     }
@@ -201,18 +186,16 @@ export class RetornoCalibracionComponent implements OnInit, OnDestroy {
         } catch { return 0; }
     }
 
-    // ── Acciones de Interfaz ───────────────────────────────
-
-    async abrirModalRegistroRetornoGlobal(): Promise<void> {
+    async abrirConfirmarRetorno(cal: CalibrationDisplay): Promise<void> {
         try {
             const { FormRetornoComponent } = await import('./form-retorno/form-retorno.component');
             const ref = this.dialog.open(FormRetornoComponent, {
-                width: '980px',
-                maxWidth: '98vw',
-                maxHeight: '95vh',
-                panelClass: 'neo-dialog-transparent',
+                width: '680px',
+                maxWidth: '96vw',
+                height: '82vh',
+                panelClass: 'no-padding-dialog',
                 disableClose: true,
-                data: { calibration: null }
+                data: { calibration: cal }
             });
             ref.afterClosed().subscribe(success => {
                 if (success) this.loadCalibraciones();
@@ -222,23 +205,11 @@ export class RetornoCalibracionComponent implements OnInit, OnDestroy {
         }
     }
 
-    async abrirModalRegistroRetorno(cal: CalibrationDisplay): Promise<void> {
-        try {
-            const { FormRetornoComponent } = await import('./form-retorno/form-retorno.component');
-            const ref = this.dialog.open(FormRetornoComponent, {
-                width: '980px',
-                maxWidth: '98vw',
-                maxHeight: '95vh',
-                panelClass: 'neo-dialog-transparent',
-                disableClose: true,
-                data: { calibration: cal }
-            });
-            ref.afterClosed().subscribe(success => {
-                if (success) this.loadCalibraciones();
-            });
-        } catch (e) {
-            this.showMsg('Error al abrir el formulario de retorno', 'error');
-        }
+    formatDateDisplay(isoStr: string | null | undefined): string {
+        if (!isoStr || isoStr === '—') return '—';
+        const parts = isoStr.split('T')[0].split('-');
+        if (parts.length !== 3) return isoStr;
+        return `${parts[2]}/${parts[1]}/${parts[0]}`;
     }
 
     printNota(cal: CalibrationDisplay): void {
@@ -269,32 +240,6 @@ export class RetornoCalibracionComponent implements OnInit, OnDestroy {
             },
             error: () => this.showMsg('Certificado no disponible o error de generación', 'error')
         });
-    }
-
-    triggerFileInput(cal: CalibrationDisplay): void {
-        this.selectedCalForUpload = cal;
-        const fileInput = document.getElementById('fileUploadInput') as HTMLInputElement;
-        if (fileInput) fileInput.click();
-    }
-
-    onFileSelected(event: Event): void {
-        const input = event.target as HTMLInputElement;
-        if (input.files && input.files.length > 0) {
-            const file = input.files[0];
-
-            if (file.type !== 'application/pdf') {
-                this.showMsg('Solo se permiten documentos PDF', 'warning');
-                return;
-            }
-            if (file.size > 5 * 1024 * 1024) {
-                this.showMsg('El archivo supera el límite de 5MB', 'error');
-                return;
-            }
-
-            this.showMsg(`Archivo "${file.name}" seleccionado correctamente`, 'info');
-            this.selectedCalForUpload = null;
-            input.value = '';
-        }
     }
 
     private showMsg(message: string, type: 'success' | 'error' | 'warning' | 'info'): void {
