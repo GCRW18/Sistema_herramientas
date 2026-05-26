@@ -27,11 +27,28 @@ export class DetalleKitDialogComponent {
         @Inject(MAT_DIALOG_DATA) public kit: any
     ) {}
 
-    cerrar() {
-        this.dialogRef.close();
+    get categoriaClass(): string {
+        const m: Record<string, string> = {
+            'MANTENIMIENTO': 'bg-[#0F172A]',
+            'LUBRICACION':   'bg-green-600',
+            'FRENOS':        'bg-red-600',
+            'CALIBRACION':   'bg-purple-600',
+            'GENERAL':       'bg-gray-600'
+        };
+        return m[this.kit?.categoria ?? ''] ?? 'bg-gray-600';
     }
 
-    imprimir() {
-        window.print();
+    get estadoClass(): string {
+        const m: Record<string, string> = {
+            'COMPLETO':       'bg-green-100 text-green-800 border-green-700',
+            'INCOMPLETO':     'bg-yellow-100 text-yellow-800 border-yellow-700',
+            'EN USO':         'bg-blue-100 text-blue-800 border-blue-700',
+            'EN CALIBRACIÓN': 'bg-purple-100 text-purple-800 border-purple-700',
+            'BAJA':           'bg-gray-100 text-gray-600 border-gray-400'
+        };
+        return m[this.kit?.estado ?? ''] ?? 'bg-gray-100 text-gray-600 border-gray-400';
     }
+
+    cerrar(): void  { this.dialogRef.close(); }
+    imprimir(): void { window.print(); }
 }

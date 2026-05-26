@@ -144,7 +144,7 @@ export class AuthService {
                         id: response.data.id_usuario,
                         name: response.data.nombre_usuario,
                         email: response.user,
-                        avatar: `${protocol}://erp.boa.bo/uploaded_files/sis_parametros/Archivo/${response.data.logo}`,
+                        avatar: response.data.logo ? `${protocol}://erp.boa.bo/uploaded_files/sis_parametros/Archivo/${response.data.logo}` : null,
                         status: "online"
                     };
                     this._userService.user = user;

@@ -12,20 +12,12 @@ export const defaultNavigation: ErpNavigationItem[] = [
         link    : '/dashboard'
     },
     {
-        id      : 'entradas',
-        title   : 'ENTRADAS',
-        subtitle: 'Registro de ingresos de herramientas',
+        id      : 'movimientos',
+        title   : 'MOVIMIENTOS',
+        subtitle: 'Envíos, entradas, salidas e inter-bases',
         type    : 'basic',
-        icon    : 'heroicons_outline:arrow-up-tray', // Using an arrow-up-tray icon
-        link    : '/entradas'
-    },
-    {
-        id      : 'salidas',
-        title   : 'SALIDAS',
-        subtitle: 'Control de salidas y entregas de herramientas',
-        type    : 'basic',
-        icon    : 'heroicons_outline:arrow-down-tray', // Using an arrow-down-tray icon
-        link    : '/salidas'
+        icon    : 'heroicons_outline:arrows-right-left',
+        link    : '/movimientos'
     },
     {
         id      : 'calibraciones',

@@ -60,13 +60,12 @@ export const appRoutes: Route[] = [
             // DASHBOARD - Panel principal
             {path: 'dashboard', loadComponent: () => import('app/modules/admin/dashboard/dashboard.component').then(m => m.DashboardComponent)},
 
-            // BAJAS - Gestión de bajas de herramientas
+            // MOVIMIENTOS - Shell unificado (Inter-Bases · Entradas · Salidas)
+            {path: 'movimientos', loadChildren: () => import('app/modules/admin/movimientos/movimientos.routes')},
 
-            // ENTRADAS - Gestión de entradas de herramientas
-            {path: 'entradas', loadChildren: () => import('app/modules/admin/entries/entries.routes')},
-
-            // SALIDAS - Gestión de salidas de herramientas
-            {path: 'salidas', loadChildren: () => import('app/modules/admin/exits/exits.routes')},
+            // Redirects de compatibilidad
+            {path: 'entradas', redirectTo: 'movimientos', pathMatch: 'full'},
+            {path: 'salidas',  redirectTo: 'movimientos', pathMatch: 'full'},
 
             // CALIBRACIONES - Gestión de calibraciones, dashboard-alertas, laboratorios y gatas
             {path: 'calibraciones', loadChildren: () => import('app/modules/admin/calibraciones/calibraciones.routes')},

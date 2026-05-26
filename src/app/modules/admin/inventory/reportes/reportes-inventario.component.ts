@@ -1,8 +1,10 @@
-import { Component, inject } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatDialogRef, MatDialogModule } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { ReportesService, DashboardStats, FiltrosReporte } from './reportes.service';
+import { REPORTE_CONFIGS } from './reporte-visor-dialog.component';
 
 /* ── Interfaces ─────────────────────────────────────────────────────────── */
 
@@ -27,6 +29,16 @@ export interface ResumenInventario {
 }
 
 /* ─────────────────────────────────────────────────────────────────────────── */
+
+/** Mapeo de IDs locales → IDs de REPORTE_CONFIGS para loaders de Excel */
+const ID_MAP: Record<string, string> = {
+    'inv-maestro':    'inv-1', 'inv-estado':      'inv-2',
+    'inv-cuarentena': 'inv-4', 'inv-historial':   'inv-5',
+    'mov-entradas':   'mov-1', 'mov-salidas':      'mov-2', 'mov-traspasos': 'mov-3',
+    'cal-listado':    'cal-1', 'cal-proximas':     'cal-2', 'cal-vencidas':  'cal-3',
+    'pre-activos':    'pre-1', 'pre-deudores':     'pre-2', 'pre-reparacion':'pre-4',
+    'kit-listado':    'kit-1', 'kit-incompletos':  'kit-2', 'kit-en-uso':    'kit-3',
+};
 
 @Component({
     selector: 'app-reportes-inventario',
@@ -210,8 +222,11 @@ export interface ResumenInventario {
         :host-context(.dark) .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; }
     `]
 })
-export class ReportesInventarioComponent {
-    public dialogRef = inject(MatDialogRef<ReportesInventarioComponent>, { optional: true });
+export class ReportesInventarioComponent implements OnInit {
+    public dialogRef     = inject(MatDialogRef<ReportesInventarioComponent>, { optional: true });
+    private reportesSvc  = inject(ReportesService);
+
+    loadingResumen = false;
 
     resumen: ResumenInventario = {
         totalHerramientas: 0,
@@ -356,11 +371,41 @@ export class ReportesInventarioComponent {
         }
     ];
 
+    ngOnInit(): void {
+        this.loadingResumen = true;
+        this.reportesSvc.getDashboardStats().subscribe({
+            next: (s: DashboardStats) => {
+                this.resumen = {
+                    totalHerramientas: s.total_herramientas       ?? 0,
+                    disponibles:       s.herramientas_disponibles  ?? 0,
+                    enUso:             s.herramientas_prestadas     ?? 0,
+                    enCalibracion:     s.enviadas_calibracion       ?? 0,
+                    bajas:             s.bajas_mes                  ?? 0,
+                    kitsActivos:       s.kits_activos               ?? 0,
+                };
+                this.loadingResumen = false;
+            },
+            error: () => { this.loadingResumen = false; }
+        });
+    }
+
     exportar(id: string, formato: 'EXCEL' | 'PDF'): void {
-        console.log(`Exportando [${formato}]:`, id);
+        if (formato === 'PDF') {
+            this.reportesSvc.exportarPDF(id, {});
+            return;
+        }
+        // EXCEL: obtener datos via REPORTE_CONFIGS y exportar CSV
+        const configId = ID_MAP[id];
+        const config   = configId ? REPORTE_CONFIGS[configId] : null;
+        if (!config) { console.warn('Sin config Excel para:', id); return; }
+        config.loader(this.reportesSvc, {} as FiltrosReporte).subscribe((data: any[]) => {
+            const cols = config.columnas.map((c: any) => ({ key: c.key, header: c.header }));
+            this.reportesSvc.exportarExcel(data, cols, id.replace(/-/g, '_'));
+        });
     }
 
     exportarTodo(): void {
-        console.log('Exportando todos los reportes');
+        // Exportar resumen general de herramientas
+        this.reportesSvc.exportarPDF('inv-maestro', {});
     }
 }

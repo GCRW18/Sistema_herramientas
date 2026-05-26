@@ -9,9 +9,12 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { CdkDrag, CdkDragHandle } from '@angular/cdk/drag-drop';
 import { Subject, of } from 'rxjs';
-import { takeUntil, finalize, catchError, debounceTime, distinctUntilChanged, switchMap } from 'rxjs/operators';
+import { takeUntil, finalize, catchError, debounceTime, distinctUntilChanged, switchMap, map } from 'rxjs/operators';
 import { CalibrationService } from '../../../../../core/services/calibration.service';
 import { MaintenanceService } from '../../../../../core/services/maintenance.service';
+import { MovementService } from '../../../../../core/services/movement.service';
+
+interface Funcionario { id: number; nombre: string; cargo: string; }
 
 interface MaintenanceData {
     id_maintenance: number;
@@ -55,8 +58,10 @@ export class FormServicioComponent implements OnInit, OnDestroy {
     private maintenanceService = inject(MaintenanceService);
     public dialogRef = inject(MatDialogRef<FormServicioComponent>);
     private snackBar = inject(MatSnackBar);
+    private movementService = inject(MovementService);
     private _destroy$ = new Subject<void>();
     private _toolSearch$ = new Subject<string>();
+    private _receivedBySearch$ = new Subject<string>();
 
     constructor(@Inject(MAT_DIALOG_DATA) public data: { mode: Mode; maintenance?: MaintenanceData }) {
         const today = this.getTodayStr();
@@ -122,6 +127,12 @@ export class FormServicioComponent implements OnInit, OnDestroy {
     proximoMantenimientoPeriodo: 'semiannual' | 'annual' = 'semiannual';
     showDescError = false;
 
+    // Funcionario recibido por
+    receivedByName               = '';
+    receivedByFuncionarios: Funcionario[] = [];
+    receivedByLoading            = false;
+    showReceivedByDropdown       = false;
+
     get currentUser(): string {
         try {
             const auth = JSON.parse(localStorage.getItem('aut') || '{}');
@@ -169,6 +180,7 @@ export class FormServicioComponent implements OnInit, OnDestroy {
     ngOnInit(): void {
         this.loadProviders();
         this._setupToolSearch();
+        this._setupReceivedBySearch();
     }
 
     ngOnDestroy(): void {
@@ -218,6 +230,45 @@ export class FormServicioComponent implements OnInit, OnDestroy {
     }
 
     hideToolDropdown(): void { setTimeout(() => this.showToolDropdown = false, 180); }
+
+    // ── Funcionario recibido por ───────────────────────────
+    private _setupReceivedBySearch(): void {
+        this._receivedBySearch$.pipe(
+            debounceTime(200), distinctUntilChanged(),
+            switchMap(t => {
+                if (t.length < 2) { this.showReceivedByDropdown = false; return of([]); }
+                this.receivedByLoading = true;
+                const q = t.toLowerCase();
+                return this.movementService.getPersonal().pipe(
+                    map(lista => lista
+                        .filter(f => [f.nombreCompleto, f.nombre, f.apellido_paterno, f.apellido_materno]
+                            .filter(Boolean).join(' ').toLowerCase().includes(q))
+                        .slice(0, 10)
+                        .map((f: any) => ({ id: f.id_employee || f.id, nombre: f.nombreCompleto || f.nombre, cargo: f.cargo || '' }))
+                    ),
+                    finalize(() => this.receivedByLoading = false),
+                    catchError(() => of([]))
+                );
+            }),
+            takeUntil(this._destroy$)
+        ).subscribe(res => {
+            this.receivedByFuncionarios = res || [];
+            this.showReceivedByDropdown = this.receivedByFuncionarios.length > 0;
+        });
+    }
+
+    onReceivedByInput(v: string): void {
+        this.receivedByName = v;
+        if (v.length >= 2) this._receivedBySearch$.next(v);
+        else this.showReceivedByDropdown = false;
+    }
+
+    selectReceivedBy(f: Funcionario): void {
+        this.receivedByName = f.nombre;
+        this.showReceivedByDropdown = false;
+    }
+
+    hideReceivedByDropdown(): void { setTimeout(() => this.showReceivedByDropdown = false, 200); }
 
     scanTool(): void {
         const barcode = this.barcodeValue.trim();
@@ -417,7 +468,7 @@ export class FormServicioComponent implements OnInit, OnDestroy {
             recommendations:     this.pruebaFuncionamiento
                 ? 'Prueba de funcionamiento: REALIZADA - OK'
                 : 'Prueba de funcionamiento: NO REALIZADA',
-            received_by_name:    this.currentUser,
+            received_by_name:    this.receivedByName.trim() || this.currentUser,
             next_maintenance_period: this.tipoMantenimientoRealizado === 'preventive'
                 ? this.proximoMantenimientoPeriodo
                 : null,
@@ -493,7 +544,7 @@ export class FormServicioComponent implements OnInit, OnDestroy {
             sendDate:    mnt.send_date,
             returnDate:  this.mode === 'retorno' ? this.actualReturnDateStr : ((mnt as any).actual_return_date ?? ''),
             solution:    this.mode === 'retorno' ? this.descripcionTrabajo : ((mnt as any).solution ?? ''),
-            receivedBy:  this.mode === 'retorno' ? this.currentUser : ((mnt as any).received_by_name ?? ''),
+            receivedBy:  this.mode === 'retorno' ? (this.receivedByName || this.currentUser) : ((mnt as any).received_by_name ?? ''),
         });
         this._abrirHtmlSync(html);
     }

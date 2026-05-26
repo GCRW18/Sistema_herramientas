@@ -1,4 +1,4 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatDialogModule, MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
@@ -6,10 +6,13 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { DragDropModule } from '@angular/cdk/drag-drop';
+import { Subject, of, forkJoin } from 'rxjs';
+import { debounceTime, distinctUntilChanged, switchMap, catchError, finalize, map, takeUntil } from 'rxjs/operators';
 
 import { Material, DialogMode } from '../interfaces';
 import { GestionUbicacionesService } from '../../gestion-ubicaciones/gestion-ubicaciones.service';
 import { Warehouse, Rack, Level } from '../../gestion-ubicaciones/interfaces';
+import { MovementService } from '../../../../../core/services/movement.service';
 
 @Component({
     selector: 'app-form-material',
@@ -29,32 +32,47 @@ import { Warehouse, Rack, Level } from '../../gestion-ubicaciones/interfaces';
         .custom-scrollbar::-webkit-scrollbar { width: 6px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #D97706; border-radius: 3px; }
+        .neo-scrollbar::-webkit-scrollbar { width: 6px; }
+        .neo-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .neo-scrollbar::-webkit-scrollbar-thumb { background: #0F172A; border: 1px solid #000; border-radius: 3px; }
     `]
 })
-export class FormMaterialComponent implements OnInit {
-    dialogRef = inject(MatDialogRef<FormMaterialComponent>);
-    private fb       = inject(FormBuilder);
-    private snackBar = inject(MatSnackBar);
-    private data     = inject<{ mode: DialogMode; material?: Material }>(MAT_DIALOG_DATA);
+export class FormMaterialComponent implements OnInit, OnDestroy {
+    dialogRef      = inject(MatDialogRef<FormMaterialComponent>);
+    private fb             = inject(FormBuilder);
+    private snackBar       = inject(MatSnackBar);
+    private data           = inject<{ mode: DialogMode; material?: Material }>(MAT_DIALOG_DATA);
+    private ubicSvc        = inject(GestionUbicacionesService);
+    private movementService= inject(MovementService);
 
     mode: DialogMode = this.data?.mode ?? 'new';
 
-    private ubicSvc = inject(GestionUbicacionesService);
+    private _destroy$   = new Subject<void>();
+    private _reqSearch$ = new Subject<string>();
 
-    tiposItem   = ['CONSUMIBLE', 'MATERIAL'];
+    tiposItem   = ['CONSUMIBLE', 'MATERIAL', 'REPUESTO', 'QUIMICO', 'ELECTRICO'];
     tiposCompra = ['COMPRA DIRECTA', 'LICITACIÓN', 'DONACIÓN', 'TRANSFERENCIA'];
     unidades    = ['UND', 'LT', 'KG', 'MTS', 'GAL', 'CAJA', 'ROLLO', 'JUEGO'];
 
-    // ── Picker de ubicación ───────────────────────────
-    pickerOpen    = false;
-    pickerLoading = false;
-    pickerTop     = 0;
-    pickerLeft    = 0;
+    // ── Picker de ubicación (inline paso a paso) ───────────────
+    pickerExpanded    = false;
+    showAlmacenGrid   = false;
+    showNivelDropdown = false;
+    loadingWarehouses = false;
+    loadingRacks      = false;
     warehouses:   Warehouse[] = [];
-    racks:        Rack[]      = [];
-    levels:       Level[]     = [];
+    racksFull:    Rack[]      = [];
     selWarehouse: Warehouse | null = null;
     selRack:      Rack | null      = null;
+    selectedLevelId: number | null = null;
+
+    get racks():  Rack[]  { return this.racksFull; }
+    get levels(): Level[] { return (this.selRack as any)?.niveles ?? []; }
+
+    // ── Funcionario autocomplete ───────────────────────────────
+    funcionarioSuggestions: any[] = [];
+    funcionarioLoading            = false;
+    showFuncionarioSuggestions    = false;
 
     form: FormGroup = this.fb.group({
         codigoBoaM: ['', [Validators.required, Validators.maxLength(40)]],
@@ -77,13 +95,159 @@ export class FormMaterialComponent implements OnInit {
 
     ngOnInit(): void {
         if (this.data?.material) {
-            this.form.patchValue(this.data.material);
+            const mat = this.data.material;
+            // Asegurar que el valor actual de la BD esté en la lista de opciones
+            // Esto previene que el native <select> resetee al primer valor si el valor guardado
+            // no está en la lista predefinida (ej: valor con espacios, nuevo tipo, etc.)
+            if (mat.unidad    && !this.unidades.includes(mat.unidad))       this.unidades    = [mat.unidad,    ...this.unidades];
+            if (mat.tipoItem  && !this.tiposItem.includes(mat.tipoItem))    this.tiposItem   = [mat.tipoItem,  ...this.tiposItem];
+            if (mat.tipoCompra && !this.tiposCompra.includes(mat.tipoCompra)) this.tiposCompra = [mat.tipoCompra, ...this.tiposCompra];
+            this.form.patchValue(mat);
+        }
+        // usr_reg, fecha_reg are set by the pxp-framework — the API has no parameter to update them
+        this.form.get('recibidoPor')?.disable();
+        this.form.get('fecha')?.disable();
+        this.form.get('hora')?.disable();
+        // El código es inmutable una vez creado (identificador único del ítem)
+        if (this.mode === 'edit') {
+            this.form.get('codigoBoaM')?.disable();
         }
         if (this.readOnly) {
             this.form.disable();
         }
+        this._setupFuncionarioSearch();
     }
 
+    ngOnDestroy(): void {
+        this._destroy$.next();
+        this._destroy$.complete();
+    }
+
+    // ── Funcionarios ───────────────────────────────────────────
+    private _setupFuncionarioSearch(): void {
+        this._reqSearch$.pipe(
+            debounceTime(200),
+            distinctUntilChanged(),
+            switchMap(term => {
+                if (term.length < 2) {
+                    this.funcionarioSuggestions     = [];
+                    this.showFuncionarioSuggestions = false;
+                    return of([]);
+                }
+                this.funcionarioLoading = true;
+                const q = term.toLowerCase();
+                return this.movementService.getPersonal().pipe(
+                    map(lista => lista.filter(f => {
+                        const texto = [
+                            f.nombreCompleto,
+                            f.nombre,
+                            f.apellido_paterno,
+                            f.apellido_materno,
+                        ].filter(Boolean).join(' ').toLowerCase();
+                        return texto.includes(q);
+                    }).slice(0, 10)),
+                    finalize(() => this.funcionarioLoading = false),
+                    catchError(() => of([]))
+                );
+            }),
+            takeUntil(this._destroy$)
+        ).subscribe(lista => {
+            this.funcionarioSuggestions     = lista;
+            this.showFuncionarioSuggestions = lista.length > 0;
+        });
+    }
+
+    onFuncionarioInput(event: Event): void {
+        this._reqSearch$.next((event.target as HTMLInputElement).value);
+    }
+
+    seleccionarFuncionario(f: any): void {
+        this.form.get('recibidoPor')?.setValue(f.nombreCompleto ?? f.nombre ?? f.full_name ?? '');
+        this.showFuncionarioSuggestions = false;
+        this.funcionarioSuggestions    = [];
+    }
+
+    ocultarFuncionarios(): void {
+        setTimeout(() => this.showFuncionarioSuggestions = false, 150);
+    }
+
+    // ── Picker de ubicación ────────────────────────────────────
+    togglePicker(): void {
+        this.pickerExpanded = !this.pickerExpanded;
+        if (this.pickerExpanded && !this.warehouses.length) {
+            this.loadingWarehouses = true;
+            this.ubicSvc.getWarehouses().pipe(
+                finalize(() => this.loadingWarehouses = false),
+                takeUntil(this._destroy$)
+            ).subscribe(ws => {
+                this.warehouses = ws.filter(w => w.estado === 'ACTIVO');
+                if (!this.selWarehouse) {
+                    const cbba = this.warehouses.find(w =>
+                        w.ciudad?.toLowerCase().includes('cochabamba') ||
+                        w.nombre?.toLowerCase().includes('cochabamba')
+                    );
+                    if (cbba) this.selectWarehouse(cbba);
+                }
+            });
+        }
+    }
+
+    toggleAlmacenGrid():   void { this.showAlmacenGrid   = !this.showAlmacenGrid; }
+    toggleNivelDropdown(): void { this.showNivelDropdown = !this.showNivelDropdown; }
+
+    levelSeleccionado(): Level | null {
+        return this.levels.find(l => l.id === this.selectedLevelId) ?? null;
+    }
+
+    selectWarehouse(w: Warehouse): void {
+        if (this.selWarehouse?.id === w.id) { this.showAlmacenGrid = false; return; }
+        this.selWarehouse    = w;
+        this.selRack         = null;
+        this.selectedLevelId = null;
+        this.racksFull       = [];
+        this.showAlmacenGrid    = false;
+        this.showNivelDropdown  = false;
+        this.loadingRacks       = true;
+        this.ubicSvc.getRacks(w.id).pipe(
+            switchMap(rs => {
+                const activos = rs.filter(r => r.activo);
+                if (!activos.length) return of([] as Rack[]);
+                return forkJoin(activos.map(r =>
+                    this.ubicSvc.getLevels(r.id).pipe(
+                        map(ls => ({ ...r, niveles: ls.filter(l => l.activo && !l.isFloor) })),
+                        catchError(() => of({ ...r, niveles: [] as Level[] }))
+                    )
+                ));
+            }),
+            finalize(() => this.loadingRacks = false),
+            takeUntil(this._destroy$)
+        ).subscribe(rs => { this.racksFull = rs as Rack[]; });
+    }
+
+    selectRack(r: Rack): void {
+        this.selRack         = r;
+        this.selectedLevelId = null;
+        this.showNivelDropdown = false;
+    }
+
+    selectLevel(l: Level): void {
+        this.selectedLevelId = l.id;
+        const etiqueta = `${this.selWarehouse!.nombre} › ${this.selRack!.nombre} › ${l.nombre}`;
+        this.form.patchValue({ ubicacion: etiqueta });
+        this.showNivelDropdown = false;
+        this.pickerExpanded    = false;
+    }
+
+    clearUbicacion(): void {
+        this.form.patchValue({ ubicacion: '' });
+        this.selWarehouse    = null;
+        this.selRack         = null;
+        this.racksFull       = [];
+        this.selectedLevelId = null;
+        this.pickerExpanded  = false;
+    }
+
+    // ── Getters / helpers ──────────────────────────────────────
     get titulo(): string {
         return this.mode === 'new'  ? 'Nuevo Ítem de Catálogo'
              : this.mode === 'edit' ? 'Editar Ítem'
@@ -103,54 +267,6 @@ export class FormMaterialComponent implements OnInit {
         return !!c && c.hasError(error) && c.touched;
     }
 
-    openPicker(event: MouseEvent): void {
-        if (this.readOnly) return;
-        const btn  = event.currentTarget as HTMLElement;
-        const rect = btn.getBoundingClientRect();
-        const panelW = 420;
-        let left = rect.left;
-        if (left + panelW > window.innerWidth - 8) left = window.innerWidth - panelW - 8;
-        this.pickerTop  = rect.bottom + 6;
-        this.pickerLeft = Math.max(8, left);
-        this.pickerOpen    = true;
-        this.pickerLoading = true;
-        this.racks         = [];
-        this.levels        = [];
-        this.selWarehouse  = null;
-        this.selRack       = null;
-        this.ubicSvc.getWarehouses().subscribe({
-            next:  ws => { this.warehouses = ws.filter(w => w.estado === 'ACTIVO'); this.pickerLoading = false; },
-            error: () => { this.pickerLoading = false; }
-        });
-    }
-
-    selectWarehouse(w: Warehouse): void {
-        this.selWarehouse = w;
-        this.selRack      = null;
-        this.levels       = [];
-        this.ubicSvc.getRacks(w.id).subscribe(rs => { this.racks = rs.filter(r => r.activo); });
-    }
-
-    selectRack(r: Rack): void {
-        this.selRack = r;
-        this.levels  = [];
-        this.ubicSvc.getLevels(r.id).subscribe(ls => { this.levels = ls.filter(l => l.activo && !l.isFloor); });
-    }
-
-    selectLevel(l: Level): void {
-        const etiqueta = `${this.selWarehouse!.nombre} › ${this.selRack!.nombre} › ${l.nombre}`;
-        this.form.patchValue({ ubicacion: etiqueta });
-        this.pickerOpen = false;
-    }
-
-    clearUbicacion(): void {
-        this.form.patchValue({ ubicacion: '' });
-        this.selWarehouse = null;
-        this.selRack      = null;
-        this.racks        = [];
-        this.levels       = [];
-    }
-
     save(): void {
         if (this.form.invalid) {
             this.form.markAllAsTouched();
@@ -162,15 +278,15 @@ export class FormMaterialComponent implements OnInit {
             ...(this.data.material ?? {}),
             codigoBoaM:  v.codigoBoaM.trim().toUpperCase(),
             producto:    v.producto.trim(),
-            tipoItem:    v.tipoItem,
-            tipoCompra:  v.tipoCompra,
-            marca:       v.marca?.trim() || '',
-            pn:          v.pn?.trim()    || '',
-            unidad:      v.unidad,
-            stock:       Number(v.stock),
-            stockMin:    Number(v.stockMin),
-            stockMax:    Number(v.stockMax),
-            ubicacion:   v.ubicacion?.trim() || '',
+            tipoItem:    v.tipoItem   || 'CONSUMIBLE',
+            tipoCompra:  v.tipoCompra || 'COMPRA DIRECTA',
+            marca:       v.marca?.trim()      || '',
+            pn:          v.pn?.trim()         || '',
+            unidad:      v.unidad?.trim()       || 'UND',
+            stock:       Number(v.stock)      || 0,
+            stockMin:    Number(v.stockMin)   || 0,
+            stockMax:    Number(v.stockMax)   || 0,
+            ubicacion:   v.ubicacion?.trim()  || '',
             activo:      v.activo,
             recibidoPor: v.recibidoPor?.trim() || '',
             fecha:       v.fecha,

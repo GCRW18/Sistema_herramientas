@@ -124,6 +124,20 @@ export class ToolService {
     }
 
     /**
+     * Guarda (crea o actualiza) una herramienta con payload snake_case directo.
+     * Si payload incluye id_tool → actualiza; si no → crea.
+     */
+    saveTool(payload: Record<string, any>): Observable<any> {
+        return from(this._api.post('herramientas/tools/insertTool', payload)).pipe(
+            switchMap((response: any) => {
+                const root = response?.ROOT ?? response;
+                if (root?.error === true) throw new Error(root?.detalle?.mensaje ?? root?.mensaje ?? 'Error al guardar herramienta');
+                return of(root?.datos ?? root);
+            })
+        );
+    }
+
+    /**
      * Update tool
      */
     updateTool(id: string, tool: Partial<Tool>): Observable<Tool> {

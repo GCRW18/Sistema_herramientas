@@ -1,199 +1,329 @@
-import { Component, OnInit, inject, signal, computed } from '@angular/core';
+import {
+    Component, OnInit, inject, signal, computed, effect, ViewEncapsulation
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router, RouterModule, NavigationEnd } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
 import { MatTooltipModule } from '@angular/material/tooltip';
-import { filter } from 'rxjs/operators';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { ReportesService, DashboardStats } from './reportes.service';
+import { REPORTE_CONFIGS, ColDef } from './reporte-visor-dialog.component';
 
-/* ── Interfaces del Sistema de Herramientas BOA ─────────────────────────── */
-
-export interface ReporteItem {
-    id:          string;
-    codigo:      string;           // Ej: R-CAL-01
-    nombre:      string;
-    descripcion: string;
-    tipo:        'PDF' | 'EXCEL' | 'AMBOS';
-    activo:      boolean;
-    preview?:    boolean;
-    frecuencia?: number;           // veces generado (para ordenamiento)
+/* ── Opciones de sub-reporte por tab ───────────────────────────────────────── */
+export interface SubReporteOpt {
+    id:     string;
+    codigo: string;
+    label:  string;
 }
 
-export interface CategoriaReporte {
-    id:          string;
-    codigo:      string;           // CAL, SAL, ING, INV
-    nombre:      string;
-    descripcion: string;
-    icono:       string;           // nombre del mat-icon
-    bgHeader:    string;           // clase Tailwind para el encabezado de la card
-    bgBadge:     string;           // clase para el badge de código
-    reportes:    ReporteItem[];
-}
+const TAB_OPTS: Record<string, SubReporteOpt[]> = {
+    inventario: [
+        { id: 'inv-1', codigo: 'MGH-108',  label: 'Inventario maestro'      },
+        { id: 'inv-2', codigo: 'R-INV-02', label: 'Por estado / condición'  },
+        { id: 'inv-4', codigo: 'MGH-112',  label: 'Cuarentena / Observadas' },
+        { id: 'inv-5', codigo: 'MGH-105',  label: 'Fabricación local'       },
+    ],
+    movimientos: [
+        { id: 'mov-1', codigo: 'MGH-114',  label: 'Entradas al almacén'   },
+        { id: 'mov-2', codigo: 'R-MOV-02', label: 'Salidas del almacén'   },
+        { id: 'mov-3', codigo: 'MGH-110',  label: 'Traspasos entre bases' },
+    ],
+    calibracion: [
+        { id: 'cal-1', codigo: 'MGH-102',  label: 'Sujetas a calibración'       },
+        { id: 'cal-2', codigo: 'MGH-104',  label: 'Próximas a vencer (≤60 d)'   },
+        { id: 'cal-3', codigo: 'R-CAL-03', label: 'Calibración vencida'         },
+        { id: 'cal-4', codigo: 'MGH-111',  label: 'Actualmente en calibración'  },
+    ],
+    prestamos: [
+        { id: 'pre-1', codigo: 'R-PRE-01', label: 'Préstamos activos'      },
+        { id: 'pre-2', codigo: 'MGH-106',  label: 'Deudores'               },
+        { id: 'pre-4', codigo: 'R-PRE-04', label: 'Historial de préstamos' },
+    ],
+    kits: [
+        { id: 'kit-1', codigo: 'R-KIT-01', label: 'Todos los kits'      },
+        { id: 'kit-2', codigo: 'R-KIT-02', label: 'Kits incompletos'    },
+        { id: 'kit-3', codigo: 'R-KIT-03', label: 'En uso / Prestados'  },
+    ],
+    miscelaneos: [
+        { id: 'mis-1', codigo: 'MGH-120',  label: 'Inventario de consumibles' },
+        { id: 'mis-2', codigo: 'R-MIS-02', label: 'Bajo stock mínimo'         },
+        { id: 'mis-3', codigo: 'MGH-118',  label: 'Entradas de materiales'    },
+        { id: 'mis-4', codigo: 'MGH-121',  label: 'Salidas de materiales'     },
+    ],
+};
 
-export type FormatoReporte = 'PDF' | 'EXCEL';
+interface KpiCard {
+    label: string;
+    value: number | string;
+    icon:  string;
+    color: string;
+    bg:    string;
+}
 
 /* ─────────────────────────────────────────────────────────────────────────── */
 
 @Component({
-    selector: 'app-reports',
-    standalone: true,
+    selector:      'app-reports',
+    standalone:    true,
+    encapsulation: ViewEncapsulation.None,
     imports: [
-        CommonModule,
-        RouterModule,
-        FormsModule,
-        MatIconModule,
-        MatTooltipModule
+        CommonModule, FormsModule,
+        MatIconModule, MatTooltipModule,
+        MatProgressSpinnerModule, MatSnackBarModule,
     ],
     templateUrl: './reports.component.html',
     styles: [`
         :host { display: block; height: 100%; }
-        :host-context(.dark) { color-scheme: dark; }
         .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #000; border-radius: 3px; }
         :host-context(.dark) .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; }
-        .animate-fade-in  { animation: fadeIn  0.15s ease-out forwards; }
-        .animate-pop-up   { animation: popUp   0.25s cubic-bezier(0.175,0.885,0.32,1.275) forwards; }
-        @keyframes fadeIn { from{opacity:0} to{opacity:1} }
-        @keyframes popUp  { from{opacity:0;transform:scale(0.93) translateY(12px)} to{opacity:1;transform:scale(1) translateY(0)} }
+        .spin { animation: spin 0.9s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
     `]
 })
 export class ReportsComponent implements OnInit {
-    private router = inject(Router);
 
-    showCards        = signal(true);
-    searchTerm       = signal('');
-    selectedCategory = signal<CategoriaReporte | null>(null);
+    private snackBar    = inject(MatSnackBar);
+    private reportesSvc = inject(ReportesService);
 
-    /* ── Estadísticas globales ─ */
-    get totalReportes(): number {
-        return this.allCategorias.reduce((a, c) => a + c.reportes.length, 0);
-    }
-    get reportesActivos(): number {
-        return this.allCategorias.reduce((a, c) => a + c.reportes.filter(r => r.activo).length, 0);
-    }
-    get reportesPdf(): number {
-        return this.allCategorias.reduce((a, c) =>
-            a + c.reportes.filter(r => r.tipo === 'PDF' || r.tipo === 'AMBOS').length, 0);
-    }
-    get reportesExcel(): number {
-        return this.allCategorias.reduce((a, c) =>
-            a + c.reportes.filter(r => r.tipo === 'EXCEL' || r.tipo === 'AMBOS').length, 0);
-    }
+    /* ── KPI stats ── */
+    stats        = signal<Partial<DashboardStats>>({});
+    loadingStats = signal(false);
 
-    /* ── Catálogo de reportes ─── */
-    allCategorias: CategoriaReporte[] = [
-        {
-            id: 'inventario', codigo: 'INV', nombre: 'INVENTARIO',
-            descripcion: 'Inventario maestro de herramientas, equipos y bancos de prueba. Estados, condiciones y ubicaciones por almacén.',
-            icono: 'inventory_2', bgHeader: 'bg-amber-600', bgBadge: 'bg-white text-amber-700',
-            reportes: [
-                { id: 'inv-1', codigo: 'R-INV-01', nombre: 'Inventario maestro de herramientas y equipos',     descripcion: 'Listado completo con código, P/N, S/N, estado, ubicación y condición',        tipo: 'EXCEL', activo: true,  frecuencia: 400 },
-                { id: 'inv-2', codigo: 'R-INV-02', nombre: 'Herramientas por estado y condición',              descripcion: 'Agrupado por NUEVO · USADO · EN REPARACIÓN · BAJA',                          tipo: 'AMBOS', activo: true,  frecuencia: 180, preview: true },
-                { id: 'inv-3', codigo: 'R-INV-03', nombre: 'Herramientas por almacén y ubicación',             descripcion: 'Distribución por almacén, estante y nivel de cada base',                      tipo: 'EXCEL', activo: true,  frecuencia: 120 },
-                { id: 'inv-4', codigo: 'R-INV-04', nombre: 'Herramientas en cuarentena u observadas',          descripcion: 'Items dañados, retenidos o con baja registrada',                              tipo: 'PDF',   activo: true,  frecuencia: 45  },
-                { id: 'inv-5', codigo: 'R-INV-05', nombre: 'Herramientas de fabricación local',                descripcion: 'Items fabricados internamente en talleres BOA',                               tipo: 'AMBOS', activo: true,  frecuencia: 30  },
-                { id: 'inv-6', codigo: 'R-INV-06', nombre: 'Historial de cambios de estado',                   descripcion: 'Auditoría completa de transiciones con responsable, motivo y documento',      tipo: 'AMBOS', activo: true,  frecuencia: 95, preview: true }
-            ]
-        },
-        {
-            id: 'movimientos', codigo: 'MOV', nombre: 'MOVIMIENTOS',
-            descripcion: 'Entradas, salidas, traspasos entre bases y ajustes de stock. Trazabilidad completa de cada movimiento.',
-            icono: 'swap_horiz', bgHeader: 'bg-blue-700', bgBadge: 'bg-white text-blue-700',
-            reportes: [
-                { id: 'mov-1', codigo: 'R-MOV-01', nombre: 'Registro de entradas al almacén',                  descripcion: 'Recepciones con N° nota, fecha, responsable, P/N y factura',                  tipo: 'AMBOS', activo: true,  frecuencia: 180, preview: true },
-                { id: 'mov-2', codigo: 'R-MOV-02', nombre: 'Registro de salidas del almacén',                  descripcion: 'Despachos con licencia, área, orden de trabajo y aeronave',                   tipo: 'AMBOS', activo: true,  frecuencia: 320, preview: true },
-                { id: 'mov-3', codigo: 'R-MOV-03', nombre: 'Traspasos entre almacenes y bases',                descripcion: 'Movimientos internos entre bases aeronáuticas y almacenes',                    tipo: 'AMBOS', activo: true,  frecuencia: 60  },
-                { id: 'mov-4', codigo: 'R-MOV-04', nombre: 'Ajustes de stock',                                 descripcion: 'Aumentos, reducciones, correcciones y mermas con motivo registrado',           tipo: 'EXCEL', activo: true,  frecuencia: 40  },
-                { id: 'mov-5', codigo: 'R-MOV-05', nombre: 'Historial completo de movimientos',                descripcion: 'Vista unificada de todos los movimientos: INVENTARIO y KITS',                  tipo: 'EXCEL', activo: true,  frecuencia: 75  }
-            ]
-        },
-        {
-            id: 'calibracion', codigo: 'CAL', nombre: 'CALIBRACIÓN',
-            descripcion: 'Control y seguimiento de herramientas y equipos sujetos a calibración periódica. Vencimientos y certificados.',
-            icono: 'tune', bgHeader: 'bg-[#0F172AFF]', bgBadge: 'bg-[#FFC501FF] text-black',
-            reportes: [
-                { id: 'cal-1', codigo: 'R-CAL-01', nombre: 'Herramientas sujetas a calibración',               descripcion: 'Inventario con frecuencia en meses, proveedor y N° certificado',               tipo: 'EXCEL', activo: true,  frecuencia: 150 },
-                { id: 'cal-2', codigo: 'R-CAL-02', nombre: 'Herramientas próximas a vencer',                   descripcion: 'Vencimientos en los próximos 30 días con alerta de prioridad',                tipo: 'AMBOS', activo: true,  frecuencia: 210, preview: true },
-                { id: 'cal-3', codigo: 'R-CAL-03', nombre: 'Herramientas con calibración vencida',             descripcion: 'Equipos fuera de plazo que requieren acción inmediata',                       tipo: 'PDF',   activo: true,  frecuencia: 90, preview: true  },
-                { id: 'cal-4', codigo: 'R-CAL-04', nombre: 'Herramientas actualmente en calibración',          descripcion: 'Equipos fuera del almacén enviados a calibración externa',                    tipo: 'PDF',   activo: true,  frecuencia: 55  },
-                { id: 'cal-5', codigo: 'R-CAL-05', nombre: 'Herramientas calibradas por período',              descripcion: 'Histórico de calibraciones realizadas con fechas y proveedores',               tipo: 'AMBOS', activo: true,  frecuencia: 45  },
-                { id: 'cal-6', codigo: 'R-CAL-06', nombre: 'Herramientas sujetas a calibración por base',      descripcion: 'Control distribuido por base aeronáutica (CBBA, SCZ, LPZ)',                   tipo: 'EXCEL', activo: true,  frecuencia: 40  }
-            ]
-        },
-        {
-            id: 'prestamos', codigo: 'PRE', nombre: 'PRÉSTAMOS',
-            descripcion: 'Herramientas en préstamo, deudores, equipos en reparación externa y kits prestados al personal.',
-            icono: 'assignment_return', bgHeader: 'bg-red-700', bgBadge: 'bg-white text-red-700',
-            reportes: [
-                { id: 'pre-1', codigo: 'R-PRE-01', nombre: 'Herramientas en préstamo activo',                  descripcion: 'Herramientas fuera del almacén con responsable y fecha de salida',            tipo: 'AMBOS', activo: true,  frecuencia: 260, preview: true },
-                { id: 'pre-2', codigo: 'R-PRE-02', nombre: 'Deudores — personal con herramientas pendientes',  descripcion: 'Personal con herramientas no devueltas, ordenado por días de mora',           tipo: 'PDF',   activo: true,  frecuencia: 320, preview: true },
-                { id: 'pre-3', codigo: 'R-PRE-03', nombre: 'Herramientas enviadas a reparación externa',       descripcion: 'Salidas por mantenimiento con proveedor, estado y fecha estimada',            tipo: 'AMBOS', activo: true,  frecuencia: 95  },
-                { id: 'pre-4', codigo: 'R-PRE-04', nombre: 'Historial de préstamos y devoluciones',            descripcion: 'Registro histórico de todos los préstamos con resultado',                     tipo: 'EXCEL', activo: true,  frecuencia: 50  }
-            ]
-        },
-        {
-            id: 'kits', codigo: 'KIT', nombre: 'KITS',
-            descripcion: 'Gestión de kits de herramientas: composición, estado, préstamos y usos registrados.',
-            icono: 'cases', bgHeader: 'bg-violet-700', bgBadge: 'bg-white text-violet-700',
-            reportes: [
-                { id: 'kit-1', codigo: 'R-KIT-01', nombre: 'Listado completo de kits',                         descripcion: 'Todos los kits con cantidad de ítems, categoría, estado y responsable',       tipo: 'AMBOS', activo: true,  frecuencia: 110, preview: true },
-                { id: 'kit-2', codigo: 'R-KIT-02', nombre: 'Kits incompletos o con faltantes',                 descripcion: 'Kits con ítems faltantes o en estado INCOMPLETO',                            tipo: 'PDF',   activo: true,  frecuencia: 65  },
-                { id: 'kit-3', codigo: 'R-KIT-03', nombre: 'Kits actualmente en uso o prestados',              descripcion: 'Kits asignados a personal con fecha, área y orden de trabajo',               tipo: 'AMBOS', activo: true,  frecuencia: 80, preview: true  },
-                { id: 'kit-4', codigo: 'R-KIT-04', nombre: 'Kits por categoría y estado',                      descripcion: 'Clasificación por MANTENIMIENTO · LUBRICACIÓN · FRENOS · CALIBRACIÓN',      tipo: 'EXCEL', activo: true,  frecuencia: 35  }
-            ]
-        },
-        {
-            id: 'miscelaneos', codigo: 'MIS', nombre: 'MISCELÁNEOS',
-            descripcion: 'Consumibles, repuestos, materiales y químicos. Entradas, salidas y control de stock mínimo.',
-            icono: 'category', bgHeader: 'bg-emerald-700', bgBadge: 'bg-white text-emerald-700',
-            reportes: [
-                { id: 'mis-1', codigo: 'R-MIS-01', nombre: 'Inventario de consumibles y materiales',           descripcion: 'Listado con código BOA-M, tipo, P/N, stock actual y stock mínimo',            tipo: 'EXCEL', activo: true,  frecuencia: 200 },
-                { id: 'mis-2', codigo: 'R-MIS-02', nombre: 'Consumibles bajo stock mínimo',                    descripcion: 'Ítems que requieren reposición urgente por tipo y ubicación',                 tipo: 'AMBOS', activo: true,  frecuencia: 140, preview: true },
-                { id: 'mis-3', codigo: 'R-MIS-03', nombre: 'Registro de entradas de materiales',               descripcion: 'Recepciones con N° nota, recibido por, marca y factura',                     tipo: 'AMBOS', activo: true,  frecuencia: 90  },
-                { id: 'mis-4', codigo: 'R-MIS-04', nombre: 'Registro de salidas de materiales',                descripcion: 'Despachos con N° licencia, área, orden de trabajo y aeronave',                tipo: 'AMBOS', activo: true,  frecuencia: 110 }
-            ]
-        }
+    /* ── Tab / sub-reporte activo ── */
+    activeTab    = signal<string>('inventario');
+    activeReport = signal<string>('inv-1');
+
+    /* ── Datos cargados desde el API ── */
+    rows    = signal<any[]>([]);
+    loading = signal(false);
+
+    /* ── Búsqueda y paginación ── */
+    searchTerm = signal('');
+    pageIndex  = signal(0);
+    readonly pageSize = 25;
+
+    /* ── Tabs principales ── */
+    readonly TABS = [
+        { id: 'todos',       label: 'KPI',         icon: 'dashboard'        },
+        { id: 'inventario',  label: 'Inventario',  icon: 'inventory_2'      },
+        { id: 'movimientos', label: 'Movimientos', icon: 'swap_horiz'       },
+        { id: 'calibracion', label: 'Calibración', icon: 'tune'             },
+        { id: 'prestamos',   label: 'Préstamos',   icon: 'assignment_return'},
+        { id: 'kits',        label: 'Kits',        icon: 'cases'            },
+        { id: 'miscelaneos', label: 'Misceláneos', icon: 'category'         },
     ];
 
-    categoriasFiltradas = computed(() => {
-        const term = this.searchTerm().toLowerCase().trim();
-        if (!term) return this.allCategorias;
-        return this.allCategorias.filter(c =>
-            c.nombre.toLowerCase().includes(term) ||
-            c.codigo.toLowerCase().includes(term) ||
-            c.reportes.some(r => r.nombre.toLowerCase().includes(term))
+    /* ── Computed ── */
+    readonly currentOpts   = computed<SubReporteOpt[]>(() => TAB_OPTS[this.activeTab()] ?? []);
+    readonly currentConfig = computed(() => REPORTE_CONFIGS[this.activeReport()]);
+    readonly currentCols   = computed<ColDef[]>(() => this.currentConfig()?.columnas ?? []);
+
+    readonly filteredRows = computed(() => {
+        const s = this.searchTerm().toLowerCase().trim();
+        if (!s) return this.rows();
+        return this.rows().filter(row =>
+            Object.values(row).some(v => String(v ?? '').toLowerCase().includes(s))
         );
     });
 
+    readonly pagedRows = computed(() => {
+        const start = this.pageIndex() * this.pageSize;
+        return this.filteredRows().slice(start, start + this.pageSize);
+    });
+
+    readonly totalPages = computed(() =>
+        Math.max(1, Math.ceil(this.filteredRows().length / this.pageSize))
+    );
+
+    get pageStart(): number {
+        return this.filteredRows().length === 0 ? 0 : this.pageIndex() * this.pageSize + 1;
+    }
+    get pageEnd(): number {
+        return Math.min((this.pageIndex() + 1) * this.pageSize, this.filteredRows().length);
+    }
+
+    readonly kpiCards = computed<KpiCard[]>(() => {
+        const s = this.stats();
+        return [
+            { label: 'Total herramientas',  value: s.total_herramientas       ?? '—', icon: 'construction',      color: 'text-amber-800',  bg: 'bg-amber-50   border-amber-400'  },
+            { label: 'Disponibles',         value: s.herramientas_disponibles  ?? '—', icon: 'check_circle',      color: 'text-green-800',  bg: 'bg-green-50   border-green-400'  },
+            { label: 'Prestadas',           value: s.herramientas_prestadas    ?? '—', icon: 'assignment_return', color: 'text-blue-800',   bg: 'bg-blue-50    border-blue-400'   },
+            { label: 'En cuarentena',       value: s.herramientas_cuarentena   ?? '—', icon: 'do_not_disturb_on', color: 'text-red-800',    bg: 'bg-red-50     border-red-400'    },
+            { label: 'Cal. vencen ≤30 d',   value: s.herramientas_vencen_30    ?? '—', icon: 'schedule',          color: 'text-amber-700',  bg: 'bg-amber-50   border-amber-400'  },
+            { label: 'En calibración',      value: s.enviadas_calibracion      ?? '—', icon: 'tune',              color: 'text-violet-800', bg: 'bg-violet-50  border-violet-400' },
+            { label: 'Deudores activos',    value: s.deudores_activos          ?? '—', icon: 'person_off',        color: 'text-red-800',    bg: 'bg-red-50     border-red-400'    },
+            { label: 'Kits activos',        value: s.kits_activos              ?? '—', icon: 'cases',             color: 'text-violet-800', bg: 'bg-violet-50  border-violet-400' },
+            { label: 'Misc. bajo stock',    value: s.misc_bajo_stock           ?? '—', icon: 'category',          color: 'text-orange-800', bg: 'bg-orange-50  border-orange-400' },
+            { label: 'Bajas del mes',       value: s.bajas_mes                 ?? '—', icon: 'remove_circle',     color: 'text-red-800',    bg: 'bg-red-50     border-red-400'    },
+        ];
+    });
+
+    /* ─────────────────────────────────────────────────────────────────────── */
+
+    constructor() {
+        effect(() => {
+            this.searchTerm();
+            Promise.resolve().then(() => this.pageIndex.set(0));
+        }, { allowSignalWrites: true });
+    }
+
     ngOnInit(): void {
-        this.checkRoute(this.router.url);
-        this.router.events.pipe(filter(e => e instanceof NavigationEnd))
-            .subscribe((e: any) => this.checkRoute(e.url));
+        this._loadStats();
+        this.loadData();
     }
 
-    private checkRoute(url: string): void {
-        this.showCards.set(url.includes('/inventario/reportes') || url === '/reportes' || url === '/reportes/');
+    _loadStats(): void {
+        this.loadingStats.set(true);
+        this.reportesSvc.getDashboardStats().subscribe({
+            next:  s => { this.stats.set(s); this.loadingStats.set(false); },
+            error: () => this.loadingStats.set(false),
+        });
     }
 
-    selectCategory(cat: CategoriaReporte): void { this.selectedCategory.set(cat); }
-    closeModal():                           void { this.selectedCategory.set(null); }
-    handleModalClick(e: MouseEvent):        void { e.stopPropagation(); }
-
-    generateReport(reporte: ReporteItem, formato: FormatoReporte): void {
-        console.log(`Generando ${formato}:`, reporte.codigo);
+    /* ── Cambio de tab ── */
+    setTab(tabId: string): void {
+        if (tabId === 'todos') {
+            this.activeTab.set('todos');
+            this.rows.set([]);
+            this.searchTerm.set('');
+            return;
+        }
+        const opts = TAB_OPTS[tabId];
+        if (!opts?.length) return;
+        this.activeTab.set(tabId);
+        this.activeReport.set(opts[0].id);
+        this.searchTerm.set('');
+        this.pageIndex.set(0);
+        this.loadData();
     }
 
-    previewReport(reporte: ReporteItem): void {
-        console.log('Vista previa:', reporte.codigo);
+    /* ── Cambio de sub-reporte ── */
+    setReport(id: string): void {
+        if (this.activeReport() === id) return;
+        this.activeReport.set(id);
+        this.searchTerm.set('');
+        this.pageIndex.set(0);
+        this.loadData();
     }
 
-    getTipoClass(tipo: string): string {
-        const m: Record<string, string> = {
-            'PDF':   'bg-red-100 text-red-800 border-red-800',
-            'EXCEL': 'bg-green-100 text-green-800 border-green-800',
-            'AMBOS': 'bg-purple-100 text-purple-800 border-purple-800'
-        };
-        return m[tipo] ?? 'bg-gray-100 text-gray-700 border-gray-500';
+    /* ── Carga de datos desde el API ── */
+    loadData(): void {
+        const config = REPORTE_CONFIGS[this.activeReport()];
+        if (!config) return;
+        this.loading.set(true);
+        this.rows.set([]);
+        config.loader(this.reportesSvc, {}).subscribe({
+            next:  (data: any[]) => { this.rows.set(data ?? []); this.loading.set(false); },
+            error: () => { this.rows.set([]); this.loading.set(false); }
+        });
+    }
+
+    /* ── Paginación ── */
+    prevPage(): void { if (this.pageIndex() > 0) this.pageIndex.update(p => p - 1); }
+    nextPage(): void { if (this.pageIndex() < this.totalPages() - 1) this.pageIndex.update(p => p + 1); }
+
+    /* ── Helpers de celda ── */
+    getCellText(row: any, col: ColDef): string {
+        const v = row[col.key];
+        if (v == null || v === '') return '—';
+        if (col.tipo === 'date') {
+            try { return new Date(v).toLocaleDateString('es-BO', { day: '2-digit', month: '2-digit', year: '2-digit' }); }
+            catch { return String(v); }
+        }
+        if (col.tipo === 'days') return `${v}d`;
+        if (col.tipo === 'bool') return v === true ? '✔' : '—';
+        return String(v);
+    }
+
+    getBadgeClass(row: any, col: ColDef): string {
+        return col.badge?.[row[col.key]] ?? 'bg-stone-100 text-stone-600 border-stone-400';
+    }
+
+    getDaysClass(val: any): string {
+        const n = Number(val);
+        if (val == null || isNaN(n)) return 'bg-stone-100 text-stone-500 border-stone-400';
+        if (n < 0)   return 'bg-red-100    text-red-800    border-red-700';
+        if (n <= 30) return 'bg-yellow-100 text-yellow-800 border-yellow-700';
+        return 'bg-green-100 text-green-800 border-green-700';
+    }
+
+    /* ── Imprimir reporte completo ── */
+    imprimirReporte(): void {
+        const config = this.currentConfig();
+        const data   = this.rows();            // TODOS los registros, no paginados
+        if (!config || !data.length) {
+            this.snackBar.open('Sin datos para imprimir', 'OK', { duration: 3000 });
+            return;
+        }
+        const win = window.open('', '_blank');
+        if (!win) {
+            this.snackBar.open('Habilita ventanas emergentes para imprimir', 'OK', { duration: 5000 });
+            return;
+        }
+
+        const opt    = this.currentOpts().find(o => o.id === this.activeReport());
+        const cols   = config.columnas as ColDef[];
+        const today  = new Date().toLocaleDateString('es-BO', { day: '2-digit', month: '2-digit', year: 'numeric' });
+        const tabLbl = this.TABS.find(t => t.id === this.activeTab())?.label?.toUpperCase() ?? '';
+
+        const headerCells = cols.map(c => `<th>${c.header}</th>`).join('');
+        const bodyRows = data.map((row, i) => {
+            const cells = cols.map(c => {
+                let v: any = row[c.key];
+                if (v == null || v === '') return '<td>—</td>';
+                if (c.tipo === 'date') {
+                    try { v = new Date(v).toLocaleDateString('es-BO', { day: '2-digit', month: '2-digit', year: 'numeric' }); } catch {}
+                } else if (c.tipo === 'bool')  { v = v === true ? '✔' : '—'; }
+                  else if (c.tipo === 'days')  { v = `${v}d`; }
+                return `<td>${String(v).replace(/</g, '&lt;').replace(/>/g, '&gt;')}</td>`;
+            }).join('');
+            return `<tr class="${i % 2 === 0 ? 'even' : ''}">${cells}</tr>`;
+        }).join('');
+
+        win.document.write(`<!DOCTYPE html><html lang="es"><head>
+<meta charset="utf-8">
+<title>${opt?.codigo ?? ''} — ${opt?.label ?? ''}</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: Arial, Helvetica, sans-serif; padding: 18px; color: #0f172a; font-size: 11px; }
+  .header { border-bottom: 4px solid #000; padding-bottom: 10px; margin-bottom: 6px;
+            display: flex; justify-content: space-between; align-items: flex-end; }
+  .title-block h2 { font-size: 15px; font-weight: 900; text-transform: uppercase; letter-spacing: -0.5px; }
+  .badges { display: flex; gap: 6px; align-items: center; }
+  .badge { display: inline-block; font-weight: 900; font-size: 9px; padding: 2px 8px;
+           border: 2px solid #000; text-transform: uppercase; }
+  .badge-code { background: #fbbf24; color: #000; }
+  .badge-cat  { background: #0f172a; color: #fbbf24; }
+  .meta { font-size: 9px; color: #94a3b8; margin-bottom: 12px; }
+  table { width: 100%; border-collapse: collapse; border: 3px solid #000; }
+  thead tr { background: #0f172a; }
+  th { color: #fbbf24; font-weight: 900; text-transform: uppercase; padding: 6px 8px;
+       border: 1px solid #334155; text-align: left; font-size: 9px; white-space: nowrap; }
+  td { border: 1px solid #e2e8f0; padding: 5px 8px; font-size: 10px;
+       vertical-align: top; word-break: break-word; max-width: 220px; }
+  tr.even td { background: #f8fafc; }
+  .footer { margin-top: 10px; font-size: 9px; color: #94a3b8; text-align: right; }
+  @media print { @page { size: landscape; margin: 8mm 10mm; } body { padding: 0; } }
+</style>
+</head><body>
+<div class="header">
+  <div class="title-block"><h2>${opt?.label ?? tabLbl}</h2></div>
+  <div class="badges">
+    <span class="badge badge-code">${opt?.codigo ?? ''}</span>
+    <span class="badge badge-cat">${tabLbl}</span>
+  </div>
+</div>
+<div class="meta">Total: ${data.length} registros &nbsp;·&nbsp; Generado: ${today}</div>
+<table>
+  <thead><tr>${headerCells}</tr></thead>
+  <tbody>${bodyRows}</tbody>
+</table>
+<div class="footer">SISTEMA DE GESTIÓN DE HERRAMIENTAS · BOA &nbsp;|&nbsp; ${today}</div>
+<script>window.print();</script>
+</body></html>`);
+        win.document.close();
     }
 }

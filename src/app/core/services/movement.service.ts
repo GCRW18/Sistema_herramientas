@@ -485,7 +485,7 @@ export class MovementService {
         if (!this._personalPromise) {
             this._personalPromise = (this._api.post('herramientas/employees/listarEmployees', {
                 start: 0,
-                limit: 100,
+                limit: 2000,
                 sort: 'full_name',
                 dir: 'asc'
             }) as Promise<any>).then((response: any) => {
@@ -1118,6 +1118,21 @@ export class MovementService {
                 }
                 return of((response?.datos || response?.data)?.[0] || response?.datos || response?.data || {});
             })
+        );
+    }
+
+    /**
+     * Lista envíos activos (ENVIO_BASE y TRASPASO) pendientes de retorno.
+     * Devuelve: movement_number, movement_type_label, send_date, expected_return_date,
+     * days_remaining, alert_status (VENCIDO/VENCE_HOY/PROXIMO/EN_PLAZO/SIN_FECHA),
+     * items_count, source/destination warehouse names.
+     */
+    listarEnviosActivos(params?: { limit?: number; start?: number }): Observable<any[]> {
+        return from(this._api.post('herramientas/movements/listarEnviosActivos', {
+            start: params?.start ?? 0,
+            limit: params?.limit ?? 200
+        })).pipe(
+            switchMap((response: any) => of(response?.datos || response?.data || []))
         );
     }
 

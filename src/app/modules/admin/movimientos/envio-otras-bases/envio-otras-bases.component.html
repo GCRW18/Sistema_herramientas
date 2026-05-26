@@ -1,0 +1,451 @@
+<div class="relative flex flex-col w-full h-full bg-white dark:bg-[#0F172AFF] transition-colors duration-300 font-sans overflow-hidden">
+
+    <!-- Overlay de Carga -->
+    <div *ngIf="isSaving" class="fixed inset-0 z-[120] bg-black/60 backdrop-blur-sm transition-all duration-300 flex items-center justify-center">
+        <div class="bg-white dark:bg-slate-800 border-[3px] border-black rounded-xl p-6 flex flex-col items-center gap-4 shadow-[6px_6px_0px_0px_#000]">
+            <mat-spinner diameter="40"></mat-spinner>
+            <span class="font-black text-black dark:text-white uppercase tracking-wider text-sm">Procesando Envío...</span>
+        </div>
+    </div>
+
+    <div class="flex-1 flex flex-col relative h-full overflow-hidden z-0">
+
+        <!-- HEADER -->
+        <div class="flex items-center gap-4 px-6 py-4 border-b-[3px] border-black shrink-0 bg-white dark:bg-slate-900 relative z-[110] flex-wrap justify-between">
+
+            <div class="flex items-center gap-3">
+                <div class="flex items-center justify-center w-10 h-10 bg-white dark:bg-slate-800 border-[2px] border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] rounded-xl shrink-0 hidden sm:flex">
+                    <mat-icon class="text-black dark:text-amber-400 !text-xl">flight_takeoff</mat-icon>
+                </div>
+                <div>
+                    <h1 class="text-2xl md:text-3xl font-black text-black dark:text-white uppercase tracking-tighter leading-none">
+                        ENVÍO A OTRAS BASES
+                    </h1>
+                    <div class="flex items-center gap-2 mt-1 flex-wrap">
+                        <span class="text-[10px] font-bold bg-amber-400 text-black px-2 py-0.5 rounded inline-block border-2 border-black uppercase tracking-wider">
+                            Logística Inter-Base
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-3">
+                <button (click)="abrirModalDatosEnvio()"
+                        class="header-btn flex items-center gap-2 px-5 py-2 bg-amber-400 border-[2px] border-black font-black text-xs uppercase rounded-xl shadow-[3px_3px_0px_0px_#000] hover:shadow-[1px_1px_0px_0px_#000] hover:translate-x-[2px] hover:translate-y-[2px] transition-all text-black">
+                    <mat-icon class="header-btn-icon !text-base !text-black">edit_document</mat-icon>
+                    <span class="hidden sm:inline">Datos de Envío</span>
+                </button>
+
+                <div class="w-px h-8 bg-black/20 dark:bg-white/20 mx-1 hidden md:block"></div>
+
+                <button (click)="openHerramientaAEnviar()"
+                        class="header-btn flex items-center gap-2 px-5 py-2 bg-black dark:bg-slate-700 border-[2px] border-black font-black text-xs uppercase rounded-xl shadow-[3px_3px_0px_0px_rgba(0,0,0,0.5)] hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,0.5)] hover:translate-x-[2px] hover:translate-y-[2px] transition-all text-white">
+                    <mat-icon class="header-btn-icon !text-base !text-white">add_circle</mat-icon>
+                    <span class="hidden sm:inline">Agregar Ítem</span>
+                </button>
+
+                <button (click)="abrirModalConfirmacion()"
+                        [disabled]="isSaving || dataSource().length === 0"
+                        class="header-btn flex items-center gap-2 px-5 py-2 bg-[#2563eb] border-[2px] border-black font-black text-xs uppercase rounded-xl shadow-[3px_3px_0px_0px_#000] hover:shadow-[1px_1px_0px_0px_#000] hover:translate-x-[2px] hover:translate-y-[2px] transition-all text-white disabled:opacity-50 disabled:shadow-none disabled:translate-x-0 disabled:translate-y-0 disabled:cursor-not-allowed">
+                    <mat-icon class="header-btn-icon !text-base !text-white">send</mat-icon>
+                    <span class="hidden sm:inline">Finalizar Envío</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- INFO WIDGETS -->
+        <div class="px-6 pt-4 shrink-0 bg-[#f8f9fc] dark:bg-[#0F172AFF]">
+            <div *ngIf="!isDatosEnvioValido()" class="bg-white dark:bg-slate-800 border-[3px] border-black p-3.5 rounded-xl flex items-center justify-between shadow-[4px_4px_0px_0px_#000] animate-pulse-border">
+                <div class="flex items-center gap-3">
+                    <div class="bg-red-100 dark:bg-red-900/30 p-2 rounded-lg border-2 border-red-500">
+                        <mat-icon class="text-red-600 dark:text-red-400 !text-2xl">warning</mat-icon>
+                    </div>
+                    <div>
+                        <h3 class="font-black text-sm text-black dark:text-white uppercase tracking-wider leading-none">Faltan Datos del Envío</h3>
+                        <p class="text-[11px] font-bold text-gray-600 dark:text-gray-400 mt-1">Debe configurar la base de destino, el vuelo y los responsables para enviar herramientas.</p>
+                    </div>
+                </div>
+                <button (click)="abrirModalDatosEnvio()" class="px-4 py-2 bg-red-600 text-white font-black text-xs border-[2px] border-black rounded-lg shadow-[3px_3px_0px_0px_#000] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[1px_1px_0px_0px_#000] transition-all uppercase flex items-center gap-2">
+                    <mat-icon class="!text-sm">edit</mat-icon> Configurar
+                </button>
+            </div>
+
+            <div *ngIf="isDatosEnvioValido()" class="bg-white dark:bg-slate-800 border-[3px] border-black p-3.5 rounded-xl shadow-[4px_4px_0px_0px_#000] flex justify-between items-center relative overflow-hidden">
+                <div class="absolute right-0 top-0 bottom-0 w-48 bg-gray-100 dark:bg-slate-700 transform skew-x-12 -mr-16 border-l-[3px] border-black z-0"></div>
+                <div class="flex flex-wrap gap-x-8 gap-y-2 relative z-10 w-full pr-16">
+                    <div class="flex flex-col">
+                        <p class="text-[10px] font-black uppercase tracking-widest text-gray-500 dark:text-gray-400">Destino</p>
+                        <p class="font-black text-sm text-black dark:text-white">{{ getBaseNombre(exitForm.value.baseDestino) }}</p>
+                    </div>
+                    <div class="flex flex-col border-l-2 border-gray-200 dark:border-gray-600 pl-8">
+                        <p class="text-[10px] font-black uppercase tracking-widest text-gray-500 dark:text-gray-400">Tipo Envío</p>
+                        <p class="font-black text-sm text-black dark:text-white">{{ getTipoEnvioLabel(exitForm.value.tipoEnvio) }}</p>
+                    </div>
+                    <div class="flex flex-col border-l-2 border-gray-200 dark:border-gray-600 pl-8">
+                        <p class="text-[10px] font-black uppercase tracking-widest text-gray-500 dark:text-gray-400">Vuelo</p>
+                        <p class="font-black text-sm text-black dark:text-white">{{ exitForm.value.nroVuelo }}</p>
+                    </div>
+                    <div class="flex flex-col border-l-2 border-gray-200 dark:border-gray-600 pl-8">
+                        <p class="text-[10px] font-black uppercase tracking-widest text-gray-500 dark:text-gray-400">Entregado Por</p>
+                        <p class="font-black text-sm text-black dark:text-white truncate max-w-[150px]">{{ exitForm.value.entregadoPorInput }}</p>
+                    </div>
+                    <div class="flex flex-col border-l-2 border-gray-200 dark:border-gray-600 pl-8">
+                        <p class="text-[10px] font-black uppercase tracking-widest text-gray-500 dark:text-gray-400">Recibido Por</p>
+                        <p class="font-black text-sm text-black dark:text-white truncate max-w-[150px]">{{ exitForm.value.recibidoPorInput }}</p>
+                    </div>
+                </div>
+                <button (click)="abrirModalDatosEnvio()" class="absolute right-4 top-1/2 -translate-y-1/2 z-10 w-10 h-10 flex items-center justify-center bg-white dark:bg-slate-800 border-[2px] border-black rounded-xl shadow-[3px_3px_0px_0px_#000] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[1px_1px_0px_0px_#000] transition-all" matTooltip="Modificar Datos">
+                    <mat-icon class="text-black dark:text-white !text-lg">edit</mat-icon>
+                </button>
+            </div>
+        </div>
+
+        <!-- MAIN TABLE AREA -->
+        <div class="flex-1 flex flex-col pt-4 px-6 pb-6 overflow-hidden bg-[#f8f9fc] dark:bg-[#0F172AFF]">
+            <div class="flex-1 flex flex-col border-[3px] border-black bg-white dark:bg-[#0F172AFF] rounded-2xl shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] overflow-hidden">
+
+                <div class="px-5 py-3 bg-[#0F172AFF] border-b-[3px] border-black flex items-center justify-between shrink-0 flex-wrap gap-3">
+                    <div class="flex items-center gap-3 border-r-[2px] border-white/20 pr-5">
+                        <mat-checkbox [checked]="isAllSelected()" [indeterminate]="isSomeSelected()" (change)="toggleAllSelection($event)" class="white-checkbox"></mat-checkbox>
+                        <h2 class="text-sm font-black text-white uppercase tracking-wider flex items-center gap-2">
+                            Seleccionar Todo
+                        </h2>
+                    </div>
+
+                    <div class="flex items-center gap-4">
+                        <div class="flex items-center gap-2 bg-[#FBBF24] rounded-lg px-3 py-1.5 border-2 border-black" *ngIf="getSelectedCount() > 0">
+                            <div class="text-[10px] font-black uppercase tracking-widest text-black leading-none">Seleccionados</div>
+                            <div class="text-sm font-black text-black leading-none">{{ getSelectedCount() }}</div>
+                        </div>
+                        <div class="flex items-center gap-2 bg-white/10 rounded-lg px-3 py-1.5 border-[2px] border-white/20">
+                            <div class="text-[10px] font-black uppercase tracking-widest text-white/80 leading-none">Líneas Ítems</div>
+                            <div class="text-sm font-black text-white leading-none">{{ dataSource().length }}</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="overflow-y-auto flex-1 custom-scrollbar">
+                    <table mat-table [dataSource]="dataSource()" class="w-full">
+
+                        <ng-container matColumnDef="select">
+                            <th mat-header-cell *matHeaderCellDef class="hidden"></th>
+                            <td mat-cell *matCellDef="let element" class="!p-3 !border-b-[2px] !border-black dark:!border-slate-700 !w-12 !min-w-12 text-center">
+                                <mat-checkbox [checked]="element.selected" (change)="toggleSelection(element)" color="primary"></mat-checkbox>
+                            </td>
+                        </ng-container>
+
+                        <ng-container matColumnDef="fila">
+                            <th mat-header-cell *matHeaderCellDef class="!bg-gray-100 dark:!bg-slate-900 !text-black dark:!text-white !font-black !text-[10px] !border-b-[3px] !border-black !p-3 uppercase text-center !w-10 z-[20]">#</th>
+                            <td mat-cell *matCellDef="let element" class="!px-3 !border-b-[2px] !border-black dark:!border-slate-700 text-center font-black text-sm text-gray-500">{{ element.item }}</td>
+                        </ng-container>
+
+                        <ng-container matColumnDef="identificacion">
+                            <th mat-header-cell *matHeaderCellDef class="!bg-gray-100 dark:!bg-slate-900 !text-black dark:!text-white !font-black !text-[10px] !border-b-[3px] !border-black !p-3 uppercase !w-48 z-[20]">Identificación</th>
+                            <td mat-cell *matCellDef="let element" class="!px-3 !py-3 !border-b-[2px] !border-black dark:!border-slate-700">
+                                <span class="bg-black text-white font-mono font-bold px-2 py-0.5 rounded text-[11px] block mb-1 shadow-[2px_2px_0px_0px_rgba(0,0,0,0.5)] w-fit">{{ element.codigo }}</span>
+                                <div class="font-mono text-[10px] text-gray-600 dark:text-gray-400 font-bold">P/N: {{ element.partNumber || '-' }}</div>
+                                <div class="font-mono text-[10px] text-[#2563eb] dark:text-[#60a5fa] font-bold">S/N: {{ element.serialNumber || '-' }}</div>
+                            </td>
+                        </ng-container>
+
+                        <ng-container matColumnDef="descripcion">
+                            <th mat-header-cell *matHeaderCellDef class="!bg-gray-100 dark:!bg-slate-900 !text-black dark:!text-white !font-black !text-[10px] !border-b-[3px] !border-black !p-3 uppercase z-[20]">Descripción / Motivo</th>
+                            <td mat-cell *matCellDef="let element" class="!px-3 !py-3 !border-b-[2px] !border-black dark:!border-slate-700">
+                                <div class="font-black text-xs text-black dark:text-white leading-tight line-clamp-2 mb-1.5">{{ element.descripcion }}</div>
+                                <div class="flex items-center gap-1.5 flex-wrap">
+                                    <span class="text-[10px] bg-gray-200 dark:bg-slate-700 text-gray-800 dark:text-slate-300 px-2 py-0.5 rounded font-bold uppercase border-[2px] border-gray-400 dark:border-gray-600">{{ element.marca || 'S/M' }}</span>
+                                    <span *ngIf="element.motivo" class="text-[9px] bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300 px-2 py-0.5 rounded font-black uppercase border-[2px] border-amber-400 dark:border-amber-600 shadow-[1px_1px_0_#000]">{{ getMotivoLabel(element.motivo) }}</span>
+                                </div>
+                            </td>
+                        </ng-container>
+
+                        <ng-container matColumnDef="cantidad">
+                            <th mat-header-cell *matHeaderCellDef class="!bg-gray-100 dark:!bg-slate-900 !text-black dark:!text-white !font-black !text-[10px] !border-b-[3px] !border-black !p-3 uppercase !w-28 text-center z-[20]">Cant.</th>
+                            <td mat-cell *matCellDef="let element" class="!px-3 !py-3 !border-b-[2px] !border-black dark:!border-slate-700 text-center">
+                                <span class="bg-gray-100 dark:bg-slate-800 border-[2px] border-black text-black dark:text-white rounded px-2 py-1 font-black text-sm block w-fit mx-auto shadow-[2px_2px_0px_0px_#000]">{{ element.cantidad }} <span class="text-[10px]">{{ element.um }}</span></span>
+                            </td>
+                        </ng-container>
+
+                        <ng-container matColumnDef="estado">
+                            <th mat-header-cell *matHeaderCellDef class="!bg-gray-100 dark:!bg-slate-900 !text-black dark:!text-white !font-black !text-[10px] !border-b-[3px] !border-black !p-3 uppercase !w-32 text-center z-[20]">Estado Físico</th>
+                            <td mat-cell *matCellDef="let element" class="!px-3 !py-3 !border-b-[2px] !border-black dark:!border-slate-700 text-center">
+                                <span class="px-2 py-1 rounded text-[10px] font-black border-[2px] border-black shadow-[2px_2px_0px_0px_#000]" [ngClass]="getEstadoClass(element.estado)">{{ element.estado }}</span>
+                            </td>
+                        </ng-container>
+
+                        <ng-container matColumnDef="prioridad">
+                            <th mat-header-cell *matHeaderCellDef class="!bg-gray-100 dark:!bg-slate-900 !text-black dark:!text-white !font-black !text-[10px] !border-b-[3px] !border-black !p-3 uppercase !w-28 text-center z-[20]">Prioridad</th>
+                            <td mat-cell *matCellDef="let element" class="!px-3 !py-3 !border-b-[2px] !border-black dark:!border-slate-700 text-center">
+                                <span class="px-2 py-1.5 rounded-lg font-black text-[10px] border-[2px] border-black shadow-[2px_2px_0px_0px_#000] uppercase" [ngClass]="getPrioridadClass(element.prioridad)">{{ element.prioridad }}</span>
+                            </td>
+                        </ng-container>
+
+                        <ng-container matColumnDef="acciones">
+                            <th mat-header-cell *matHeaderCellDef class="!bg-gray-100 dark:!bg-slate-900 !text-black dark:!text-white !font-black !text-[10px] !border-b-[3px] !border-black !p-3 uppercase text-center !w-28 z-[20]">Acc.</th>
+                            <td mat-cell *matCellDef="let element" class="!px-3 !py-3 !border-b-[2px] !border-black dark:!border-slate-700 text-center">
+                                <div class="flex items-center justify-center gap-1.5">
+                                    <button (click)="openHerramientaAEnviarEdit(element); $event.stopPropagation()" matTooltip="Editar"
+                                            class="w-8 h-8 bg-amber-400 text-black rounded-lg border-[2px] border-black shadow-[3px_3px_0px_0px_#000] hover:shadow-[1px_1px_0px_0px_#000] hover:translate-x-[2px] hover:translate-y-[2px] transition-all flex items-center justify-center">
+                                        <mat-icon class="!text-base">edit</mat-icon>
+                                    </button>
+                                    <button (click)="removeItem(element); $event.stopPropagation()" matTooltip="Quitar"
+                                            class="w-8 h-8 bg-red-600 text-white rounded-lg border-[2px] border-black shadow-[3px_3px_0px_0px_#000] hover:shadow-[1px_1px_0px_0px_#000] hover:translate-x-[2px] hover:translate-y-[2px] transition-all flex items-center justify-center">
+                                        <mat-icon class="!text-base">delete</mat-icon>
+                                    </button>
+                                </div>
+                            </td>
+                        </ng-container>
+
+                        <tr mat-header-row *matHeaderRowDef="displayedColumns; sticky: true"></tr>
+                        <tr mat-row *matRowDef="let row; columns: displayedColumns;" [class.row-selected]="row.selected"
+                            class="hover:bg-amber-50 dark:hover:bg-slate-800/80 transition-colors cursor-pointer" (click)="toggleSelection(row)"></tr>
+                    </table>
+                </div>
+
+                <div *ngIf="dataSource().length === 0" class="flex flex-col items-center justify-center py-24 bg-white dark:bg-slate-800">
+                    <div class="w-20 h-20 bg-gray-100 dark:bg-slate-900 border-[3px] border-black rounded-2xl flex items-center justify-center shadow-[4px_4px_0px_0px_#000] mb-5 transform -rotate-6">
+                        <mat-icon class="!text-4xl text-black dark:text-white">flight_takeoff</mat-icon>
+                    </div>
+                    <p class="text-xl font-black uppercase text-black dark:text-white tracking-wider">Sin Herramientas</p>
+                    <p class="text-sm font-bold text-gray-500 mt-2 text-center max-w-sm">Presione <strong class="text-black dark:text-white">"AGREGAR ÍTEM"</strong> en la parte superior para seleccionar herramientas a enviar.</p>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<!-- MODAL DATOS DE ENVÍO -->
+<ng-template #datosEnvioModal>
+    <div class="bg-stone-100 dark:bg-slate-900 border-[3px] border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] overflow-hidden flex flex-col w-full h-auto max-h-[85vh]">
+
+        <div class="bg-[#0F172AFF] text-white px-5 py-4 border-b-[3px] border-black flex justify-between items-center shrink-0" cdkDrag cdkDragRootElement=".cdk-overlay-pane" cdkDragHandle>
+            <h2 class="text-lg font-black uppercase flex items-center gap-3 tracking-wider">
+                <mat-icon class="text-amber-400 !text-2xl">edit_document</mat-icon> Datos de Envío
+            </h2>
+            <div class="flex items-center gap-3">
+                <button (click)="cerrarModalDatosEnvio()" class="px-4 py-2 bg-red-600 dark:bg-red-600 text-white font-black text-xs border-[2px] border-black rounded-lg shadow-[3px_3px_0px_0px_#000] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[1px_1px_0px_0px_#000] transition-all uppercase">
+                    Cancelar
+                </button>
+                <button (click)="cerrarModalDatosEnvio()" class="px-4 py-2 bg-[#2563eb] text-white font-black text-xs border-[2px] border-black rounded-lg shadow-[3px_3px_0px_0px_#000] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[1px_1px_0px_0px_#000] transition-all uppercase flex items-center gap-2">
+                    <mat-icon class="!text-sm text-white">check</mat-icon> Aceptar
+                </button>
+            </div>
+        </div>
+
+        <div class="flex flex-col md:flex-row flex-1 overflow-hidden">
+
+            <div class="w-full md:w-[60%] p-5 overflow-y-auto custom-scrollbar border-b-[3px] md:border-b-0 md:border-r-[3px] border-black bg-white dark:bg-slate-800">
+                <form [formGroup]="exitForm" class="flex flex-col gap-4">
+
+                    <div class="grid grid-cols-12 gap-3">
+                        <div class="col-span-4">
+                            <label class="text-[10px] font-black uppercase tracking-wider text-gray-700 dark:text-gray-400 block mb-1">Origen</label>
+                            <input formControlName="baseOrigen" type="text" placeholder="Ej: CBB" class="w-full h-10 text-xs font-bold border-[2px] border-black rounded-lg px-3 bg-[#f8f9fc] dark:bg-slate-900 text-black dark:text-white outline-none uppercase focus:shadow-[3px_3px_0px_0px_#000] transition-shadow" />
+                        </div>
+                        <div class="col-span-4">
+                            <label class="text-[10px] font-black uppercase tracking-wider text-gray-700 dark:text-gray-400 block mb-1">Destino *</label>
+                            <input formControlName="baseDestino" type="text" placeholder="Ej: VVI" class="w-full h-10 text-xs font-bold border-[2px] border-black rounded-lg px-3 bg-[#f8f9fc] dark:bg-slate-900 text-black dark:text-white outline-none uppercase focus:shadow-[3px_3px_0px_0px_#000] transition-shadow" [class.border-red-500]="hasError('baseDestino', 'required')" />
+                        </div>
+                        <div class="col-span-4">
+                            <label class="text-[10px] font-black uppercase tracking-wider text-gray-700 dark:text-gray-400 block mb-1">Tipo *</label>
+                            <select formControlName="tipoEnvio" class="w-full h-10 text-xs font-bold border-[2px] border-black rounded-lg px-2 bg-[#f8f9fc] dark:bg-slate-900 text-black dark:text-white outline-none focus:shadow-[3px_3px_0px_0px_#000] transition-shadow cursor-pointer">
+                                <option *ngFor="let tipo of tiposEnvio" [value]="tipo.value">{{ tipo.label }}</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-12 gap-3">
+                        <div class="col-span-4">
+                            <label class="text-[10px] font-black uppercase tracking-wider text-gray-700 dark:text-gray-400 block mb-1">Prioridad *</label>
+                            <select formControlName="prioridad" class="w-full h-10 text-xs font-bold border-[2px] border-black rounded-lg px-2 bg-[#f8f9fc] dark:bg-slate-900 text-black dark:text-white outline-none focus:shadow-[3px_3px_0px_0px_#000] transition-shadow cursor-pointer">
+                                <option *ngFor="let prio of prioridades" [value]="prio.value">{{ prio.label }}</option>
+                            </select>
+                        </div>
+                        <div class="col-span-4">
+                            <label class="text-[10px] font-black uppercase tracking-wider text-gray-700 dark:text-gray-400 block mb-1">Vuelo *</label>
+                            <input type="text" formControlName="nroVuelo" placeholder="BOA-701" class="w-full h-10 text-xs font-bold border-[2px] border-black rounded-lg px-3 bg-[#f8f9fc] dark:bg-slate-900 text-black dark:text-white outline-none uppercase focus:shadow-[3px_3px_0px_0px_#000] transition-shadow" [class.border-red-500]="hasError('nroVuelo', 'required')">
+                        </div>
+                        <div class="col-span-4">
+                            <label class="text-[10px] font-black uppercase tracking-wider text-gray-700 dark:text-gray-400 block mb-1">Aeronave</label>
+                            <input type="text" formControlName="aeronave" placeholder="CP-3209" class="w-full h-10 text-xs font-bold border-[2px] border-black rounded-lg px-3 bg-[#f8f9fc] dark:bg-slate-900 text-black dark:text-white outline-none uppercase focus:shadow-[3px_3px_0px_0px_#000] transition-shadow">
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-12 gap-3">
+                        <div class="col-span-6">
+                            <label class="text-[10px] font-black uppercase tracking-wider text-gray-700 dark:text-gray-400 block mb-1">Fecha *</label>
+                            <input type="date" formControlName="fecha" class="w-full h-10 text-xs font-bold border-[2px] border-black rounded-lg px-3 bg-[#f8f9fc] dark:bg-slate-900 text-black dark:text-white outline-none focus:shadow-[3px_3px_0px_0px_#000] transition-shadow cursor-pointer" [class.border-red-500]="hasError('fecha', 'required')">
+                        </div>
+                        <div class="col-span-6">
+                            <label class="text-[10px] font-black uppercase tracking-wider text-gray-700 dark:text-gray-400 block mb-1">Hora *</label>
+                            <input type="time" formControlName="hora" class="w-full h-10 text-xs font-bold border-[2px] border-black rounded-lg px-3 bg-[#f8f9fc] dark:bg-slate-900 text-black dark:text-white outline-none focus:shadow-[3px_3px_0px_0px_#000] transition-shadow cursor-pointer" [class.border-red-500]="hasError('hora', 'required')">
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-12 gap-3">
+                        <div class="col-span-6 relative">
+                            <label class="text-[10px] font-black uppercase tracking-wider text-gray-700 dark:text-gray-400 block mb-1">Entregado Por *</label>
+                            <input type="text" formControlName="entregadoPorInput" [matAutocomplete]="autoEntrega" placeholder="Funcionario Origen..." class="w-full h-10 text-xs font-bold border-[2px] border-black rounded-lg px-3 bg-[#f8f9fc] dark:bg-slate-900 text-black dark:text-white outline-none uppercase focus:shadow-[3px_3px_0px_0px_#000] transition-shadow" [class.border-red-500]="hasError('entregadoPor', 'required')">
+                            <mat-autocomplete #autoEntrega="matAutocomplete" [displayWith]="displayFuncionario" (optionSelected)="selectFuncionarioEntrega($event.option.value)">
+                                <mat-option *ngFor="let func of filteredFuncionariosEntrega" [value]="func" class="border-b-[2px] border-gray-200 dark:border-gray-700">
+                                    <span class="font-black text-xs uppercase">{{ func.nombreCompleto || func.nombre }}</span>
+                                </mat-option>
+                            </mat-autocomplete>
+                        </div>
+                        <div class="col-span-6 relative">
+                            <label class="text-[10px] font-black uppercase tracking-wider text-gray-700 dark:text-gray-400 block mb-1">Recibido Por *</label>
+                            <input type="text" formControlName="recibidoPorInput" [matAutocomplete]="autoRecibo" placeholder="Funcionario Destino..." class="w-full h-10 text-xs font-bold border-[2px] border-black rounded-lg px-3 bg-[#f8f9fc] dark:bg-slate-900 text-black dark:text-white outline-none uppercase focus:shadow-[3px_3px_0px_0px_#000] transition-shadow disabled:bg-gray-300 disabled:dark:bg-slate-800 disabled:cursor-not-allowed" [class.border-red-500]="hasError('recibidoPor', 'required')">
+                            <mat-autocomplete #autoRecibo="matAutocomplete" [displayWith]="displayFuncionario" (optionSelected)="selectFuncionarioRecibo($event.option.value)">
+                                <mat-option *ngFor="let func of filteredFuncionariosRecibo" [value]="func" class="border-b-[2px] border-gray-200 dark:border-gray-700">
+                                    <span class="font-black text-xs uppercase">{{ func.nombreCompleto || func.nombre }}</span>
+                                </mat-option>
+                            </mat-autocomplete>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-12 gap-3">
+                        <div class="col-span-4">
+                            <label class="text-[10px] font-black uppercase tracking-wider text-gray-700 dark:text-gray-400 block mb-1">O.T.</label>
+                            <input type="text" formControlName="ordenTrabajo" placeholder="OT-2026" class="w-full h-10 text-xs font-bold border-[2px] border-black rounded-lg px-3 bg-[#f8f9fc] dark:bg-slate-900 text-black dark:text-white outline-none uppercase focus:shadow-[3px_3px_0px_0px_#000] transition-shadow">
+                        </div>
+                        <div class="col-span-8">
+                            <label class="text-[10px] font-black uppercase tracking-wider text-gray-700 dark:text-gray-400 block mb-1">Observaciones</label>
+                            <input type="text" formControlName="observaciones" placeholder="Notas extra..." class="w-full h-10 text-xs font-bold border-[2px] border-black rounded-lg px-3 bg-[#f8f9fc] dark:bg-slate-900 text-black dark:text-white outline-none focus:shadow-[3px_3px_0px_0px_#000] transition-shadow">
+                        </div>
+                    </div>
+
+                </form>
+            </div>
+
+            <div class="w-full md:w-[40%] bg-stone-200 dark:bg-slate-800 flex flex-col items-center justify-start p-5 overflow-y-auto custom-scrollbar">
+
+                <div class="bg-white dark:bg-slate-800 border-[3px] border-black rounded-xl flex flex-col w-full shadow-[4px_4px_0px_0px_#000] overflow-hidden mt-2">
+                    <div class="bg-[#FBBF24] border-b-[3px] border-black px-3 py-2 text-center shrink-0">
+                        <span class="font-black uppercase text-black text-xs tracking-widest">Resumen Envío</span>
+                    </div>
+
+                    <div class="p-4 flex flex-col gap-4">
+                        <div class="flex justify-between items-center bg-gray-100 dark:bg-slate-700 border-[3px] border-black shadow-[2px_2px_0px_0px_#000] rounded-xl p-3">
+                            <div class="text-center w-[40%]">
+                                <span class="block text-[8px] font-black uppercase tracking-widest text-gray-500 dark:text-gray-400 mb-1">Origen</span>
+                                <span class="font-black text-lg text-black dark:text-white leading-none">{{ exitForm.value.baseOrigen || '---' }}</span>
+                            </div>
+                            <div class="bg-white dark:bg-slate-800 p-1.5 rounded-lg border-2 border-black rotate-12">
+                                <mat-icon class="text-black dark:text-white !text-lg block">flight_takeoff</mat-icon>
+                            </div>
+                            <div class="text-center w-[40%]">
+                                <span class="block text-[8px] font-black uppercase tracking-widest text-gray-500 dark:text-gray-400 mb-1">Destino</span>
+                                <span class="font-black text-lg text-black dark:text-white leading-none">{{ exitForm.value.baseDestino || '---' }}</span>
+                            </div>
+                        </div>
+
+                        <ul class="text-xs text-black dark:text-white font-medium space-y-2.5">
+                            <li class="flex justify-between border-b-[2px] border-gray-200 dark:border-gray-700 pb-1.5">
+                                <span class="font-bold text-gray-500 dark:text-gray-400 uppercase">Tipo Envío:</span>
+                                <span class="font-black uppercase">{{ getTipoEnvioLabel(exitForm.value.tipoEnvio) }}</span>
+                            </li>
+                            <li class="flex justify-between border-b-[2px] border-gray-200 dark:border-gray-700 pb-1.5">
+                                <span class="font-bold text-gray-500 dark:text-gray-400 uppercase">Prioridad:</span>
+                                <span class="font-black uppercase">{{ exitForm.value.prioridad }}</span>
+                            </li>
+                            <li class="flex justify-between border-b-[2px] border-gray-200 dark:border-gray-700 pb-1.5">
+                                <span class="font-bold text-gray-500 dark:text-gray-400 uppercase">Vuelo / Aeronave:</span>
+                                <span class="font-black uppercase">{{ exitForm.value.nroVuelo || '---' }} <span *ngIf="exitForm.value.aeronave">/ {{ exitForm.value.aeronave }}</span></span>
+                            </li>
+                            <li class="flex justify-between border-b-[2px] border-gray-200 dark:border-gray-700 pb-1.5">
+                                <span class="font-bold text-gray-500 dark:text-gray-400 uppercase">Fecha y Hora:</span>
+                                <span class="font-black uppercase">{{ exitForm.value.fecha || '---' }} {{ exitForm.value.hora || '---' }}</span>
+                            </li>
+                            <li class="flex flex-col border-b-[2px] border-gray-200 dark:border-gray-700 pb-1.5 mt-1">
+                                <span class="font-bold text-gray-500 dark:text-gray-400 uppercase">Entregado Por:</span>
+                                <span class="font-black uppercase truncate mt-0.5">{{ exitForm.value.entregadoPorInput || '---' }}</span>
+                            </li>
+                            <li class="flex flex-col border-b-[2px] border-gray-200 dark:border-gray-700 pb-1.5 mt-1">
+                                <span class="font-bold text-gray-500 dark:text-gray-400 uppercase">Recibido Por:</span>
+                                <span class="font-black uppercase truncate mt-0.5">{{ exitForm.value.recibidoPorInput || '---' }}</span>
+                            </li>
+                            <li class="flex justify-between pb-0.5 mt-1">
+                                <span class="font-bold text-gray-500 dark:text-gray-400 uppercase">O.T. Referencia:</span>
+                                <span class="font-black uppercase">{{ exitForm.value.ordenTrabajo || '---' }}</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</ng-template>
+
+<!-- MODAL CONFIRMACIÓN -->
+<ng-template #confirmacionModal>
+    <div class="bg-stone-100 dark:bg-slate-900 border-[3px] border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] overflow-hidden flex flex-col w-full">
+        <div class="bg-[#2563eb] text-white px-6 py-5 border-b-[3px] border-black flex justify-between items-center shrink-0">
+            <div class="flex items-center gap-4">
+                <div class="bg-white/20 p-2 rounded-lg border-2 border-white/50">
+                    <mat-icon class="text-white !text-3xl block">flight_takeoff</mat-icon>
+                </div>
+                <div>
+                    <h2 class="text-xl font-black uppercase tracking-wider leading-none">Confirmar Envío a Base</h2>
+                    <p class="text-[10px] font-bold mt-1.5 uppercase tracking-widest text-blue-100">Verifique los datos antes de procesar el inventario</p>
+                </div>
+            </div>
+            <button (click)="cerrarModalConfirmacion()" class="hover:bg-white hover:text-black rounded-lg border-2 border-transparent hover:border-black p-1 transition-all">
+                <mat-icon class="!text-lg">close</mat-icon>
+            </button>
+        </div>
+
+        <div class="p-6 flex flex-col gap-5 max-h-[70vh] overflow-y-auto custom-scrollbar bg-stone-100 dark:bg-slate-900">
+
+            <div class="bg-white dark:bg-slate-800 border-[3px] border-black rounded-xl p-5 shadow-[4px_4px_0px_0px_#000]">
+                <h3 class="text-xs font-black uppercase tracking-widest text-black dark:text-white border-b-[3px] border-black pb-2 mb-3">1. Datos Generales</h3>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div>
+                        <p class="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Destino:</p>
+                        <p class="font-black text-base text-black dark:text-white mt-1">{{ getBaseNombre(exitForm.value.baseDestino) }}</p>
+                    </div>
+                    <div>
+                        <p class="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Vuelo / Fecha:</p>
+                        <p class="font-black text-sm text-black dark:text-white mt-1">{{ exitForm.value.nroVuelo }} <br> <span class="text-xs">{{ exitForm.value.fecha }}</span></p>
+                    </div>
+                    <div class="col-span-2">
+                        <p class="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Responsables (Entrega / Recibe):</p>
+                        <p class="font-black text-sm text-black dark:text-white mt-1">{{ exitForm.value.entregadoPorInput }} <br> <span class="text-gray-400">/</span> {{ exitForm.value.recibidoPorInput }}</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-5">
+                <div class="bg-gray-100 dark:bg-slate-700 border-[3px] border-black rounded-xl p-5 shadow-[4px_4px_0px_0px_#000] text-center flex flex-col justify-center">
+                    <p class="text-xs font-black text-gray-600 dark:text-gray-300 uppercase tracking-widest">Líneas Ítems</p>
+                    <p class="font-black text-4xl text-black dark:text-white mt-2">{{ dataSource().length }}</p>
+                </div>
+                <div class="bg-[#FBBF24] border-[3px] border-black rounded-xl p-5 shadow-[4px_4px_0px_0px_#000] text-center flex flex-col justify-center">
+                    <p class="text-xs font-black text-black uppercase tracking-widest">Unidades Físicas</p>
+                    <p class="font-black text-4xl text-black mt-2">{{ getTotalCantidad() }}</p>
+                </div>
+            </div>
+
+            <div class="mt-2">
+                <h3 class="text-[10px] font-black uppercase tracking-widest text-gray-600 dark:text-gray-400 mb-3">3. Resumen de Prioridad</h3>
+                <div class="flex flex-wrap gap-3">
+                    <span *ngFor="let resumen of getResumenPorPrioridadArray()" class="border-[3px] border-black px-4 py-2 rounded-xl flex items-center gap-3 shadow-[3px_3px_0px_0px_#000] bg-white dark:bg-slate-800 text-black dark:text-white">
+                        <span class="text-xs font-black uppercase">{{ resumen.prioridad }}</span>
+                        <span class="text-base font-black bg-gray-100 dark:bg-slate-700 px-2 py-0.5 rounded-lg border-[2px] border-black">{{ resumen.cantidad }}</span>
+                    </span>
+                </div>
+            </div>
+
+        </div>
+
+        <div class="border-t-[3px] border-black p-5 bg-stone-200 dark:bg-slate-800 flex justify-end gap-4 shrink-0">
+            <button (click)="cerrarModalConfirmacion()" class="px-5 py-3 bg-gray-100 dark:bg-slate-800 text-black dark:text-white font-black text-xs border-[3px] border-black rounded-xl shadow-[4px_4px_0px_0px_#000] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[1px_1px_0px_0px_#000] transition-all uppercase tracking-wider">
+                Revisar Nuevamente
+            </button>
+            <button (click)="confirmarEnvio()" class="px-6 py-3 bg-[#2563eb] text-white font-black text-xs border-[3px] border-black rounded-xl shadow-[4px_4px_0px_0px_#000] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[1px_1px_0px_0px_#000] transition-all uppercase tracking-wider flex items-center gap-2">
+                <mat-icon class="!text-sm">send</mat-icon> Procesar e Imprimir
+            </button>
+        </div>
+    </div>
+</ng-template>

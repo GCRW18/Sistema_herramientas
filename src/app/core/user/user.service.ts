@@ -39,7 +39,7 @@ export class UserService {
 
         let protocol = location.protocol.replace(':', '');
         let user = {
-            avatar: `${protocol}://erp.boa.bo/uploaded_files/sis_parametros/Archivo/${auth.logo}`,
+            avatar: auth.logo ? `${protocol}://erp.boa.bo/uploaded_files/sis_parametros/Archivo/${auth.logo}` : null,
             email: auth.email,
             id: auth.id_usuario,
             name: auth.nombre_usuario,

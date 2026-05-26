@@ -8,9 +8,12 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { CdkDrag, CdkDragHandle } from '@angular/cdk/drag-drop';
 import { Subject, lastValueFrom, of } from 'rxjs';
-import { takeUntil, finalize, debounceTime, distinctUntilChanged, switchMap } from 'rxjs/operators';
+import { takeUntil, finalize, debounceTime, distinctUntilChanged, switchMap, map, catchError } from 'rxjs/operators';
 import { CalibrationService } from '../../../../../core/services/calibration.service';
 import { MaintenanceService } from '../../../../../core/services/maintenance.service';
+import { MovementService } from '../../../../../core/services/movement.service';
+
+interface Funcionario { id: number; nombre: string; cargo: string; }
 
 interface Proveedor {
     id_laboratory: number;
@@ -56,9 +59,11 @@ export class FormLoteMantenimientoComponent implements OnInit, OnDestroy {
     private maintenanceService = inject(MaintenanceService);
     public  dialogRef  = inject(MatDialogRef<FormLoteMantenimientoComponent>);
     private snackBar   = inject(MatSnackBar);
+    private movementService = inject(MovementService);
     private cdr        = inject(ChangeDetectorRef);
     private _destroy$  = new Subject<void>();
     private _toolSearch$ = new Subject<string>();
+    private _requestedBySearch$ = new Subject<string>();
 
     @ViewChild('scanInput') scanInputRef!: ElementRef<HTMLInputElement>;
 
@@ -72,6 +77,12 @@ export class FormLoteMantenimientoComponent implements OnInit, OnDestroy {
     selectedProviderId:   number | null = null;
     selectedProviderName  = '';
     sendDateStr           = this._today();
+
+    // Funcionario solicitado por
+    requestedByName = '';
+    requestedByFuncionarios: Funcionario[] = [];
+    requestedByLoading = false;
+    showRequestedByDropdown = false;
 
     // Buscador
     barcodeValue      = 'BOA-H-';
@@ -95,6 +106,7 @@ export class FormLoteMantenimientoComponent implements OnInit, OnDestroy {
     ngOnInit(): void {
         this.loadProviders();
         this._setupToolSearch();
+        this._setupRequestedBySearch();
     }
 
     ngOnDestroy(): void {
@@ -136,6 +148,45 @@ export class FormLoteMantenimientoComponent implements OnInit, OnDestroy {
 
     onToolInput(v: string): void { this._toolSearch$.next(v.trim()); }
     hideToolDropdown(): void { setTimeout(() => this.showToolDropdown = false, 180); }
+
+    // ── Funcionario solicitado por ─────────────────────────
+    private _setupRequestedBySearch(): void {
+        this._requestedBySearch$.pipe(
+            debounceTime(200), distinctUntilChanged(),
+            switchMap(t => {
+                if (t.length < 2) { this.showRequestedByDropdown = false; return of([]); }
+                this.requestedByLoading = true;
+                const q = t.toLowerCase();
+                return this.movementService.getPersonal().pipe(
+                    map(lista => lista
+                        .filter(f => [f.nombreCompleto, f.nombre, f.apellido_paterno, f.apellido_materno]
+                            .filter(Boolean).join(' ').toLowerCase().includes(q))
+                        .slice(0, 10)
+                        .map((f: any) => ({ id: f.id_employee || f.id, nombre: f.nombreCompleto || f.nombre, cargo: f.cargo || '' }))
+                    ),
+                    finalize(() => this.requestedByLoading = false),
+                    catchError(() => of([]))
+                );
+            }),
+            takeUntil(this._destroy$)
+        ).subscribe(res => {
+            this.requestedByFuncionarios = res || [];
+            this.showRequestedByDropdown = this.requestedByFuncionarios.length > 0;
+        });
+    }
+
+    onRequestedByInput(v: string): void {
+        this.requestedByName = v;
+        if (v.length >= 2) this._requestedBySearch$.next(v);
+        else this.showRequestedByDropdown = false;
+    }
+
+    selectRequestedBy(f: Funcionario): void {
+        this.requestedByName = f.nombre;
+        this.showRequestedByDropdown = false;
+    }
+
+    hideRequestedByDropdown(): void { setTimeout(() => this.showRequestedByDropdown = false, 200); }
 
     selectToolSuggestion(tool: any): void {
         this.barcodeValue = tool.code ?? tool.tool_code;
@@ -224,7 +275,7 @@ export class FormLoteMantenimientoComponent implements OnInit, OnDestroy {
                 provider:             this.selectedProviderName,
                 problem:              item.maintenanceType === 'corrective' ? item.discrepancyReportNum : '',
                 notes:                item.notes,
-                requested_by_name:    this._currentUser(),
+                requested_by_name:    this.requestedByName.trim() || this._currentUser(),
             };
 
             try {
@@ -265,7 +316,7 @@ export class FormLoteMantenimientoComponent implements OnInit, OnDestroy {
     private _buildNotaHtml(): string {
         const fecha   = this.fmtDate(this.sendDateStr);
         const empresa = this.selectedProviderName || '—';
-        const usuario = this._currentUser();
+        const usuario = this.requestedByName || this._currentUser();
         const hoy     = this.fmtDate(new Date().toISOString().split('T')[0]);
         const doneItems = this.items.filter(i => i.status === 'done');
 

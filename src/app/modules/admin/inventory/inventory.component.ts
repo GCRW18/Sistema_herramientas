@@ -159,7 +159,7 @@ export class InventoryComponent implements OnDestroy {
             type: 8, label: 'REPORTES', sublabel: '',
             color: '#7113CF', textColor: '#fff',
             svgIcon: 'heroicons_outline:chart-bar',
-            loader: async () => (await import('./reportes/reportes-inventario.component')).ReportesInventarioComponent
+            loader: async () => (await import('./reportes/reports.component')).ReportsComponent
         },
         {
             type: 9, label: 'REGISTRAR', sublabel: 'HERRAMIENTA',

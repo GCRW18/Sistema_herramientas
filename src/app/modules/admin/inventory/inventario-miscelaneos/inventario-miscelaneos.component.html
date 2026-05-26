@@ -6,8 +6,9 @@
     <div class="flex-1 flex flex-col p-4 gap-3 overflow-hidden relative z-10">
 
         <!-- ══ HEADER ══ -->
-        <div class="flex items-center justify-between gap-4 shrink-0 flex-wrap">
+        <div class="flex flex-col gap-3 shrink-0">
 
+            <!-- Título principal -->
             <div class="flex items-center gap-4">
                 <div class="flex items-center justify-center w-10 h-10 bg-white dark:bg-[#0F172AFF] border-[3px] border-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] rounded-xl shrink-0">
                     <mat-icon class="text-black dark:text-[#FFC501FF] !text-base">category</mat-icon>
@@ -22,6 +23,7 @@
                 </div>
             </div>
 
+            <!-- Botones debajo del título -->
             <div class="flex items-center gap-3 flex-wrap">
 
                 <!-- Búsqueda -->
@@ -72,7 +74,7 @@
                 </div>
 
                 <!-- Filtro tipo (solo catálogo) -->
-                <select *ngIf="activeTab() === 'catalogo'"
+                <select [hidden]="activeTab() !== 'catalogo'"
                         [formControl]="filterTipoCtrl"
                         class="h-9 px-3 bg-white dark:bg-[#0F172AFF] text-black dark:text-white
                                border-[2px] border-black rounded-lg font-black text-xs uppercase
@@ -83,7 +85,7 @@
                 </select>
 
                 <!-- Botón de acción (cambia por tab) -->
-                <button *ngIf="activeTab() === 'catalogo'" (click)="nuevoCatalogo()"
+                <button [hidden]="activeTab() !== 'catalogo'" (click)="nuevoCatalogo()"
                         class="px-5 py-2 bg-amber-400 text-black font-black text-xs border-[2px] border-black rounded-xl
                                shadow-[3px_3px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none
                                transition-all uppercase flex items-center gap-2">
@@ -91,7 +93,7 @@
                     <span class="hidden sm:inline">Nuevo Ítem</span>
                 </button>
 
-                <button *ngIf="activeTab() === 'entradas'" (click)="nuevaEntrada()"
+                <button [hidden]="activeTab() !== 'entradas'" (click)="nuevaEntrada()"
                         class="px-5 py-2 bg-amber-400 text-black font-black text-xs border-[2px] border-black rounded-xl
                                shadow-[3px_3px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none
                                transition-all uppercase flex items-center gap-2">
@@ -99,7 +101,7 @@
                     <span class="hidden sm:inline">Nueva Entrada</span>
                 </button>
 
-                <button *ngIf="activeTab() === 'salidas'" (click)="nuevaSalida()"
+                <button [hidden]="activeTab() !== 'salidas'" (click)="nuevaSalida()"
                         class="px-5 py-2 bg-amber-400 text-black font-black text-xs border-[2px] border-black rounded-xl
                                shadow-[3px_3px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none
                                transition-all uppercase flex items-center gap-2">
@@ -114,8 +116,14 @@
         <div class="flex-1 flex flex-col overflow-hidden border-[3px] border-black bg-white dark:bg-[#0F172AFF] rounded-2xl shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
 
             <!-- Cabecera oscura: stats -->
-            <div class="px-4 py-2.5 bg-[#0F172AFF] border-b-[3px] border-black flex items-center justify-end shrink-0 flex-wrap gap-2">
-                <div class="flex items-center gap-2">
+            <div class="px-4 py-2.5 bg-[#0F172AFF] border-b-[3px] border-black flex items-center justify-between shrink-0 flex-wrap gap-2">
+                <!-- Refresh -->
+                <button (click)="refresh()" [disabled]="isLoading()"
+                        class="flex items-center gap-1 h-8 px-2.5 bg-white/10 hover:bg-white/20 text-white border border-white/30 rounded-lg text-[10px] font-black uppercase transition-all disabled:opacity-50">
+                    <mat-icon class="!text-sm" [class.animate-spin]="isLoading()">refresh</mat-icon>
+                    <span class="hidden sm:inline">Actualizar</span>
+                </button>
+                <div class="flex items-center gap-2 flex-wrap">
                     <div class="flex items-center gap-2 bg-white/20 rounded-lg px-3 py-1.5 border border-black">
                         <div class="w-5 h-5 bg-[#FFC501FF] border border-black rounded flex items-center justify-center">
                             <mat-icon class="!text-xs text-black">category</mat-icon>
@@ -123,6 +131,16 @@
                         <div>
                             <div class="text-[8px] font-black uppercase text-white leading-none">Ítems</div>
                             <div class="text-sm font-black text-white leading-none">{{ materiales.length }}</div>
+                        </div>
+                    </div>
+                    <div *ngIf="countBajoStock() > 0"
+                         class="flex items-center gap-2 bg-red-600/40 rounded-lg px-3 py-1.5 border border-red-400">
+                        <div class="w-5 h-5 bg-red-500 border border-black rounded flex items-center justify-center">
+                            <mat-icon class="!text-xs text-white">warning</mat-icon>
+                        </div>
+                        <div>
+                            <div class="text-[8px] font-black uppercase text-red-200 leading-none">Bajo Stock</div>
+                            <div class="text-sm font-black text-white leading-none">{{ countBajoStock() }}</div>
                         </div>
                     </div>
                     <div class="flex items-center gap-2 bg-green-600/30 rounded-lg px-3 py-1.5 border border-black">
@@ -151,7 +169,7 @@
                  md+:      + Tipo, Estado
                  lg+:      + Marca/Compra, Ubicación
             -->
-            <div *ngIf="activeTab() === 'catalogo'" class="flex-1 overflow-auto custom-scrollbar-misc">
+            <div [hidden]="activeTab() !== 'catalogo'" class="flex-1 overflow-auto custom-scrollbar-misc">
                 <table class="w-full min-w-[420px]">
                     <thead class="bg-gray-100 dark:bg-slate-800 border-b-[2px] border-black sticky top-0 z-10">
                     <tr class="text-left text-[10px] font-black uppercase tracking-wider text-black dark:text-white">
@@ -238,8 +256,8 @@
                                     <mat-icon class="!text-sm text-white">visibility</mat-icon>
                                 </button>
                                 <button (click)="eliminarCatalogo(m)" matTooltip="Eliminar"
-                                        class="w-7 h-7 flex items-center justify-center bg-red-100 border-2 border-black rounded-lg shadow-[2px_2px_0px_0px_#000] hover:bg-red-500 hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all">
-                                    <mat-icon class="!text-sm text-red-700">delete</mat-icon>
+                                        class="w-7 h-7 flex items-center justify-center bg-red-600 border-2 border-black rounded-lg shadow-[2px_2px_0px_0px_#000] hover:bg-red-500 hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all">
+                                    <mat-icon class="!text-sm text-white">delete</mat-icon>
                                 </button>
                             </div>
                         </td>
@@ -264,7 +282,7 @@
                  md+:      + Fecha/Hora
                  lg+:      + Recibido por, Marca/P·N
             -->
-            <div *ngIf="activeTab() === 'entradas'" class="flex-1 overflow-auto custom-scrollbar-misc">
+            <div [hidden]="activeTab() !== 'entradas'" class="flex-1 overflow-auto custom-scrollbar-misc">
                 <table class="w-full min-w-[380px]">
                     <thead class="bg-gray-100 dark:bg-slate-800 border-b-[2px] border-black sticky top-0 z-10">
                     <tr class="text-left text-[10px] font-black uppercase tracking-wider text-black dark:text-white">
@@ -326,6 +344,14 @@
                                         class="w-7 h-7 flex items-center justify-center bg-blue-950 border-2 border-black rounded-lg shadow-[2px_2px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all">
                                     <mat-icon class="!text-sm text-white">visibility</mat-icon>
                                 </button>
+                                <button (click)="editarEntrada(e)" matTooltip="Editar entrada"
+                                        class="w-7 h-7 flex items-center justify-center bg-amber-400 border-2 border-black rounded-lg shadow-[2px_2px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all">
+                                    <mat-icon class="!text-sm text-black">edit</mat-icon>
+                                </button>
+                                <button (click)="eliminarEntrada(e)" matTooltip="Eliminar entrada"
+                                        class="w-7 h-7 flex items-center justify-center bg-red-600 border-2 border-black rounded-lg shadow-[2px_2px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all">
+                                    <mat-icon class="!text-sm text-white">delete</mat-icon>
+                                </button>
                             </div>
                         </td>
                     </tr>
@@ -349,7 +375,7 @@
                  md+:      + Fecha/Hora, Solicitante
                  lg+:      + Área, Despachado por
             -->
-            <div *ngIf="activeTab() === 'salidas'" class="flex-1 overflow-auto custom-scrollbar-misc">
+            <div [hidden]="activeTab() !== 'salidas'" class="flex-1 overflow-auto custom-scrollbar-misc">
                 <table class="w-full min-w-[380px]">
                     <thead class="bg-gray-100 dark:bg-slate-800 border-b-[2px] border-black sticky top-0 z-10">
                     <tr class="text-left text-[10px] font-black uppercase tracking-wider text-black dark:text-white">
@@ -415,6 +441,14 @@
                                         class="w-7 h-7 flex items-center justify-center bg-blue-950 border-2 border-black rounded-lg shadow-[2px_2px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all">
                                     <mat-icon class="!text-sm text-white">visibility</mat-icon>
                                 </button>
+                                <button (click)="editarSalida(s)" matTooltip="Editar salida"
+                                        class="w-7 h-7 flex items-center justify-center bg-amber-400 border-2 border-black rounded-lg shadow-[2px_2px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all">
+                                    <mat-icon class="!text-sm text-black">edit</mat-icon>
+                                </button>
+                                <button (click)="eliminarSalida(s)" matTooltip="Eliminar salida"
+                                        class="w-7 h-7 flex items-center justify-center bg-red-600 border-2 border-black rounded-lg shadow-[2px_2px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all">
+                                    <mat-icon class="!text-sm text-white">delete</mat-icon>
+                                </button>
                             </div>
                         </td>
                     </tr>
@@ -434,7 +468,7 @@
             </div>
 
             <!-- ══ VISTA STOCK POR UBICACIÓN ══ -->
-            <div *ngIf="activeTab() === 'stock'" class="flex-1 overflow-auto custom-scrollbar-misc p-4">
+            <div [hidden]="activeTab() !== 'stock'" class="flex-1 overflow-auto custom-scrollbar-misc p-4">
 
                 <!-- Sin datos -->
                 <div *ngIf="!stockPorUbicacion.length" class="flex flex-col items-center justify-center h-full gap-3">

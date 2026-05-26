@@ -88,7 +88,7 @@ export class GestionUbicacionesService {
     /* ════════ Paramétricas ════════ */
 
     getBasesAeronauticas(): Observable<any> {
-        return from(this._api.post('herramientas/Bases/listarBases', { start: 0, limit: 100 }));
+        return from(this._api.post('herramientas/bases/listarBases', { start: 0, limit: 100 }));
     }
 
     getOficinas(): Observable<Oficina[]> {

@@ -3,8 +3,8 @@
     <div class="fixed top-20 right-10 w-40 h-40 bg-[#0F172AFF] rounded-full border-[3px] border-black opacity-5 pointer-events-none"></div>
     <div class="fixed bottom-10 left-10 w-24 h-24 bg-[#FFC501FF] rotate-12 border-[3px] border-black opacity-5 pointer-events-none"></div>
 
-    <!-- ════════════════════ VISTA DE ESTANTES (cuando hay almacén activo) ════════════════════ -->
-    <div *ngIf="almacenActivo() as a" class="flex-1 flex flex-col p-4 overflow-hidden relative z-10">
+    <!-- ════════════════════ VISTA DE ESTANTES ════════════════════ -->
+    <div *ngIf="almacenActivo() as a" class="flex-1 flex flex-col p-2 sm:p-4 overflow-hidden relative z-10">
         <app-gestion-estantes
             [almacen]="a"
             [todosLosAlmacenes]="almacenes"
@@ -13,118 +13,122 @@
     </div>
 
     <!-- ════════════════════ VISTA DE ALMACENES ════════════════════ -->
-    <div *ngIf="!almacenActivo()" class="flex-1 flex flex-col p-4 gap-3 overflow-hidden relative z-10">
+    <div *ngIf="!almacenActivo()" class="flex-1 flex flex-col p-3 sm:p-4 gap-3 overflow-hidden relative z-10">
 
         <!-- HEADER -->
-        <div class="flex items-center justify-between gap-4 shrink-0 flex-wrap">
+        <div class="flex flex-col gap-2 sm:gap-3 shrink-0">
 
-            <div class="flex items-center gap-4">
-                <div class="flex items-center justify-center w-10 h-10 bg-white dark:bg-[#0F172AFF] border-[3px] border-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] rounded-xl shrink-0">
+            <!-- Título principal -->
+            <div class="flex items-center gap-3">
+                <div class="flex items-center justify-center w-9 h-9 sm:w-10 sm:h-10 bg-white dark:bg-[#0F172AFF] border-[3px] border-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] rounded-xl shrink-0">
                     <mat-icon class="text-black dark:text-[#FFC501FF] !text-base">warehouse</mat-icon>
                 </div>
-                <div>
-                    <h1 class="text-xl font-black text-black dark:text-white uppercase tracking-tighter leading-none">
+                <div class="min-w-0">
+                    <h1 class="text-base sm:text-xl font-black text-black dark:text-white uppercase tracking-tighter leading-none truncate">
                         ALMACENES Y UBICACIONES
                     </h1>
-                    <div class="flex items-center gap-2 mt-0.5 flex-wrap">
-                        <p class="text-[10px] font-bold bg-[#FFC501FF] text-black px-2 py-0.5 inline-block border-2 border-black rounded uppercase tracking-wider">
-                            Gestión de Almacenes · Estantes · Niveles
-                        </p>
-                    </div>
+                    <p class="text-[9px] sm:text-[10px] font-bold bg-[#FFC501FF] text-black px-2 py-0.5 inline-block border-2 border-black rounded uppercase tracking-wider mt-0.5">
+                        Gestión de Almacenes · Estantes · Niveles
+                    </p>
                 </div>
             </div>
 
-            <div class="flex items-center gap-3 flex-wrap">
-                <div class="relative flex-1 min-w-[140px] max-w-[224px]">
+            <!-- Controles -->
+            <div class="flex flex-wrap gap-2">
+                <!-- Búsqueda: fila completa en móvil, flex-1 en sm+ -->
+                <div class="relative w-full sm:flex-1 sm:min-w-[140px] sm:max-w-[224px]">
                     <input type="text"
                            [formControl]="searchControl"
-                           placeholder="Buscar almacén, encargado..."
+                           placeholder="Buscar almacén..."
                            class="w-full h-9 pl-9 pr-3 bg-white dark:bg-[#0F172AFF] text-black dark:text-white
                                   border-[2px] border-black rounded-lg font-black text-xs uppercase
-                                  focus:outline-none focus:shadow-[3px_3px_0px_0px_#000] focus:-translate-y-[1px] transition-all
+                                  focus:outline-none focus:shadow-[3px_3px_0px_0px_#000] transition-all
                                   placeholder:font-bold placeholder:normal-case">
                     <mat-icon class="absolute left-2.5 top-2 text-black dark:text-white !text-sm">search</mat-icon>
                 </div>
 
-                <select [formControl]="filterCiudad"
-                        class="shrink-0 h-9 px-3 bg-white dark:bg-[#0F172AFF] text-black dark:text-white
-               border-[2px] border-black rounded-lg font-black text-xs uppercase
-               focus:outline-none focus:shadow-[3px_3px_0px_0px_#000] focus:-translate-y-[1px] transition-all cursor-pointer">
-                    <option value="">Todas las ciudades</option>
-                    <option *ngFor="let c of ciudades" [value]="c.nombre">{{ c.nombre }}</option>
-                </select>
+                <!-- Selects + botón: misma fila en móvil -->
+                <div class="flex gap-2 w-full sm:w-auto sm:contents">
+                    <select [formControl]="filterCiudad"
+                            class="flex-1 sm:flex-none h-9 px-2 sm:px-3 bg-white dark:bg-[#0F172AFF] text-black dark:text-white
+                                   border-[2px] border-black rounded-lg font-black text-xs uppercase
+                                   focus:outline-none focus:shadow-[3px_3px_0px_0px_#000] transition-all cursor-pointer">
+                        <option value="">Todas las ciudades</option>
+                        <option *ngFor="let c of ciudades" [value]="c.nombre">{{ c.nombre }}</option>
+                    </select>
 
-                <select [formControl]="filterEstado"
-                        class="shrink-0 h-9 px-3 bg-white dark:bg-[#0F172AFF] text-black dark:text-white
-                               border-[2px] border-black rounded-lg font-black text-xs uppercase
-                               focus:outline-none focus:shadow-[3px_3px_0px_0px_#000] focus:-translate-y-[1px] transition-all cursor-pointer">
-                    <option *ngFor="let e of estados" [value]="e.value">{{ e.label }}</option>
-                </select>
+                    <select [formControl]="filterEstado"
+                            class="flex-1 sm:flex-none h-9 px-2 sm:px-3 bg-white dark:bg-[#0F172AFF] text-black dark:text-white
+                                   border-[2px] border-black rounded-lg font-black text-xs uppercase
+                                   focus:outline-none focus:shadow-[3px_3px_0px_0px_#000] transition-all cursor-pointer">
+                        <option *ngFor="let e of estados" [value]="e.value">{{ e.label }}</option>
+                    </select>
 
-                <button (click)="nuevoAlmacen()"
-                        class="shrink-0 px-5 py-2 bg-[#FFC501FF] text-black font-black text-xs
-                               border-[2px] border-black rounded-xl
-                               shadow-[3px_3px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px]
-                               hover:shadow-none transition-all uppercase flex items-center gap-2">
-                    <mat-icon class="!text-sm text-black">add_circle</mat-icon>
-                    <span class="hidden sm:inline">Nuevo Almacén</span>
-                </button>
+                    <button (click)="nuevoAlmacen()"
+                            class="shrink-0 px-3 sm:px-5 py-2 bg-[#FFC501FF] text-black font-black text-xs
+                                   border-[2px] border-black rounded-xl
+                                   shadow-[3px_3px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px]
+                                   hover:shadow-none transition-all uppercase flex items-center gap-1.5">
+                        <mat-icon class="!text-sm text-black">add_circle</mat-icon>
+                        <span class="hidden sm:inline">Nuevo Almacén</span>
+                    </button>
+                </div>
             </div>
         </div>
 
         <!-- CARD -->
         <div class="flex-1 flex flex-col overflow-hidden border-[3px] border-black bg-white dark:bg-[#0F172AFF] rounded-2xl shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
 
-            <div class="px-4 py-2.5 bg-[#0F172AFF] dark:bg-[#0F172AFF] border-b-[3px] border-black flex items-center justify-between shrink-0 flex-wrap gap-2">
-                <h2 class="text-sm font-black text-white uppercase tracking-wider flex items-center gap-2">
+            <!-- Dark header stats -->
+            <div class="px-3 sm:px-4 py-2 sm:py-2.5 bg-[#0F172AFF] border-b-[3px] border-black
+                        flex flex-col sm:flex-row sm:items-center sm:justify-between shrink-0 gap-2">
+                <h2 class="text-xs sm:text-sm font-black text-white uppercase tracking-wider flex items-center gap-2">
                     <mat-icon class="!text-base text-[#FFC501FF]">warehouse</mat-icon>
-                    ALMACENES REGISTRADOS ({{ filteredAlmacenes.length }})
+                    ALMACENES ({{ filteredAlmacenes.length }})
                 </h2>
 
-                <div class="flex items-center gap-3">
-                    <div class="flex items-center gap-2 bg-white/20 rounded-lg px-3 py-1.5 border border-black">
-                        <div class="w-5 h-5 bg-[#0F172AFF] border border-black rounded flex items-center justify-center">
-                            <mat-icon class="!text-xs text-[#FFC501FF]">domain</mat-icon>
+                <div class="flex items-center gap-2 flex-wrap">
+                    <div class="flex items-center gap-1.5 bg-white/20 rounded-lg px-2 sm:px-3 py-1 sm:py-1.5 border border-black">
+                        <div class="w-4 h-4 sm:w-5 sm:h-5 bg-[#0F172AFF] border border-black rounded flex items-center justify-center shrink-0">
+                            <mat-icon class="!text-[10px] text-[#FFC501FF]">domain</mat-icon>
                         </div>
                         <div>
-                            <div class="text-[8px] font-black uppercase text-white leading-none">Total</div>
-                            <div class="text-sm font-black text-white leading-none">{{ almacenes.length }}</div>
+                            <div class="text-[7px] sm:text-[8px] font-black uppercase text-white leading-none">Total</div>
+                            <div class="text-xs sm:text-sm font-black text-white leading-none">{{ almacenes.length }}</div>
                         </div>
                     </div>
 
-                    <div class="flex items-center gap-2 bg-green-600/30 rounded-lg px-3 py-1.5 border border-black">
-                        <div class="w-5 h-5 bg-green-600 border border-black rounded flex items-center justify-center">
-                            <mat-icon class="!text-xs text-black">check_circle</mat-icon>
+                    <div class="flex items-center gap-1.5 bg-green-600/30 rounded-lg px-2 sm:px-3 py-1 sm:py-1.5 border border-black">
+                        <div class="w-4 h-4 sm:w-5 sm:h-5 bg-green-600 border border-black rounded flex items-center justify-center shrink-0">
+                            <mat-icon class="!text-[10px] text-black">check_circle</mat-icon>
                         </div>
                         <div>
-                            <div class="text-[8px] font-black uppercase text-white leading-none">Activos</div>
-                            <div class="text-sm font-black text-white leading-none">{{ countActivos() }}</div>
+                            <div class="text-[7px] sm:text-[8px] font-black uppercase text-white leading-none">Activos</div>
+                            <div class="text-xs sm:text-sm font-black text-white leading-none">{{ countActivos() }}</div>
                         </div>
                     </div>
 
-                    <div class="flex items-center gap-2 bg-red-500/30 rounded-lg px-3 py-1.5 border border-black">
-                        <div class="w-5 h-5 bg-red-600 border border-black rounded flex items-center justify-center">
-                            <mat-icon class="!text-xs text-black">remove_circle</mat-icon>
+                    <div class="flex items-center gap-1.5 bg-red-500/30 rounded-lg px-2 sm:px-3 py-1 sm:py-1.5 border border-black">
+                        <div class="w-4 h-4 sm:w-5 sm:h-5 bg-red-600 border border-black rounded flex items-center justify-center shrink-0">
+                            <mat-icon class="!text-[10px] text-black">remove_circle</mat-icon>
                         </div>
                         <div>
-                            <div class="text-[8px] font-black uppercase text-white leading-none">Inactivos</div>
-                            <div class="text-sm font-black text-white leading-none">{{ countInactivos() }}</div>
+                            <div class="text-[7px] sm:text-[8px] font-black uppercase text-white leading-none">Inactivos</div>
+                            <div class="text-xs sm:text-sm font-black text-white leading-none">{{ countInactivos() }}</div>
                         </div>
                     </div>
 
-                    <div class="flex items-center gap-2 bg-amber-500/30 rounded-lg px-3 py-1.5 border border-black">
-                        <div class="w-5 h-5 bg-amber-500 border border-black rounded flex items-center justify-center">
-                            <mat-icon class="!text-xs text-black">shelves</mat-icon>
+                    <div class="hidden sm:flex items-center gap-1.5 bg-amber-500/30 rounded-lg px-2 sm:px-3 py-1 sm:py-1.5 border border-black">
+                        <div class="w-4 h-4 sm:w-5 sm:h-5 bg-amber-500 border border-black rounded flex items-center justify-center shrink-0">
+                            <mat-icon class="!text-[10px] text-black">shelves</mat-icon>
                         </div>
                         <div>
-                            <div class="text-[8px] font-black uppercase text-white leading-none">Estantes</div>
-                            <div class="text-sm font-black text-white leading-none">{{ countEstantes() }}</div>
+                            <div class="text-[7px] sm:text-[8px] font-black uppercase text-white leading-none">Estantes</div>
+                            <div class="text-xs sm:text-sm font-black text-white leading-none">{{ countEstantes() }}</div>
                         </div>
                     </div>
 
-                    <button (click)="cargarAlmacenes()"
-                            [disabled]="isLoading()"
-                            matTooltip="Recargar lista"
+                    <button (click)="cargarAlmacenes()" [disabled]="isLoading()" matTooltip="Recargar lista"
                             class="w-7 h-7 flex items-center justify-center rounded-lg border border-white/30
                                    text-white hover:bg-white/20 transition-all disabled:opacity-40">
                         <mat-icon class="!text-base text-[#FFC501FF]">refresh</mat-icon>
@@ -133,58 +137,65 @@
             </div>
 
             <!-- TABLE -->
-            <div class="flex-1 overflow-auto custom-scrollbar">
-                <table class="w-full">
+            <div class="flex-1 overflow-y-auto overflow-x-auto custom-scrollbar">
+                <table class="w-full min-w-[540px]">
                     <thead class="bg-gray-100 dark:bg-slate-800 border-b-[2px] border-black sticky top-0 z-10">
                     <tr class="text-left text-[10px] font-black uppercase tracking-wider text-black dark:text-white">
-                        <th class="px-4 py-3">Código</th>
-                        <th class="px-4 py-3">Nombre</th>
-                        <th class="px-4 py-3">Ciudad / Oficina</th>
-                        <th class="px-4 py-3 text-center">Tipo</th>
-                        <th class="px-4 py-3 text-center">Estantes</th>
-                        <th class="px-4 py-3 text-center">Estado</th>
-                        <th class="px-4 py-3 text-center">Acciones</th>
+                        <th class="px-3 sm:px-4 py-3">Código</th>
+                        <th class="px-3 sm:px-4 py-3">Nombre</th>
+                        <th class="hidden md:table-cell px-4 py-3">Ciudad / Oficina</th>
+                        <th class="hidden sm:table-cell px-4 py-3 text-center">Tipo</th>
+                        <th class="px-3 sm:px-4 py-3 text-center">Estantes</th>
+                        <th class="px-3 sm:px-4 py-3 text-center">Estado</th>
+                        <th class="px-3 sm:px-4 py-3 text-center">Acciones</th>
                     </tr>
                     </thead>
                     <tbody>
                     <tr *ngFor="let a of filteredAlmacenes"
                         (click)="abrirEstantes(a)"
                         class="border-b border-gray-200 dark:border-slate-700 hover:bg-gray-300 dark:hover:bg-slate-800 cursor-pointer transition-all">
-                        <td class="px-4 py-3 font-mono text-xs font-black text-black dark:text-white">{{ a.codigo }}</td>
-                        <td class="px-4 py-3">
-                            <div class="font-bold text-sm text-black dark:text-white">{{ a.nombre }}</div>
-                            <div class="text-[10px] text-gray-500 mt-0.5" *ngIf="a.descripcion">{{ a.descripcion }}</div>
+
+                        <td class="px-3 sm:px-4 py-3 font-mono text-xs font-black text-black dark:text-white">{{ a.codigo }}</td>
+
+                        <td class="px-3 sm:px-4 py-3">
+                            <div class="font-bold text-xs sm:text-sm text-black dark:text-white">{{ a.nombre }}</div>
+                            <!-- Ciudad visible solo en móvil (cuando la col está oculta) -->
+                            <div class="md:hidden text-[10px] text-gray-500 mt-0.5">{{ a.ciudad }}</div>
+                            <div *ngIf="a.descripcion" class="hidden md:block text-[10px] text-gray-500 mt-0.5">{{ a.descripcion }}</div>
                         </td>
-                        <td class="px-4 py-3 text-xs text-black dark:text-white">
+
+                        <td class="hidden md:table-cell px-4 py-3 text-xs text-black dark:text-white">
                             <div class="font-bold">{{ a.ciudad }}</div>
                             <div class="text-[10px] text-gray-500">{{ a.nombreOficina }}</div>
                         </td>
-                        <td class="px-4 py-3 text-center">
+
+                        <td class="hidden sm:table-cell px-4 py-3 text-center">
                             <span class="px-2 py-0.5 text-[10px] font-black uppercase border-2 border-black rounded bg-blue-900 text-white">
                                 {{ a.tipo }}
                             </span>
                         </td>
-                        <td class="px-4 py-3 text-center">
+
+                        <td class="px-3 sm:px-4 py-3 text-center">
                             <div class="inline-flex items-center gap-1 px-2 py-0.5 border-2 border-black rounded bg-white">
-                                <mat-icon class="!text-[12px] !w-3 !h-3 text-black">shelves</mat-icon>
+                                <mat-icon class="!text-[11px] !w-3 !h-3 text-black">shelves</mat-icon>
                                 <span class="text-[10px] font-black text-black">{{ a.estantesCount ?? 0 }}</span>
                             </div>
                         </td>
-                        <td class="px-4 py-3 text-center">
-                            <span class="px-2 py-0.5 text-[10px] font-black uppercase border-2 border-black rounded"
+
+                        <td class="px-3 sm:px-4 py-3 text-center">
+                            <span class="px-1.5 sm:px-2 py-0.5 text-[9px] sm:text-[10px] font-black uppercase border-2 border-black rounded"
                                   [ngClass]="a.estado === 'ACTIVO' ? 'bg-green-600 text-white' : 'bg-[#FF1414FF] text-white'">
                                 {{ a.estado }}
                             </span>
                         </td>
-                        <td class="px-4 py-3">
+
+                        <td class="px-3 sm:px-4 py-3">
                             <div class="flex gap-1.5 justify-center" (click)="$event.stopPropagation()">
-                                <button (click)="editarAlmacen(a, $event)"
-                                        matTooltip="Editar"
+                                <button (click)="editarAlmacen(a, $event)" matTooltip="Editar"
                                         class="w-7 h-7 flex items-center justify-center bg-[#FFC501FF] border-2 border-black rounded-lg shadow-[2px_2px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all">
                                     <mat-icon class="!text-sm text-black">edit</mat-icon>
                                 </button>
-                                <button (click)="verAlmacen(a); $event.stopPropagation()"
-                                        matTooltip="Ver detalle"
+                                <button (click)="verAlmacen(a); $event.stopPropagation()" matTooltip="Ver detalle"
                                         class="w-7 h-7 flex items-center justify-center bg-blue-950 border-2 border-black rounded-lg shadow-[2px_2px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all">
                                     <mat-icon class="!text-sm text-white">visibility</mat-icon>
                                 </button>
@@ -193,7 +204,7 @@
                     </tr>
 
                     <tr *ngIf="!filteredAlmacenes.length && !isLoading()">
-                        <td colspan="8" class="px-4 py-12 text-center">
+                        <td colspan="7" class="px-4 py-12 text-center">
                             <mat-icon class="!text-5xl text-gray-300 dark:text-gray-600">inbox</mat-icon>
                             <p class="text-xs font-bold uppercase text-gray-500 mt-2">Sin resultados</p>
                         </td>

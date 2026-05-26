@@ -4,12 +4,13 @@ import { FormBuilder, FormGroup, FormArray, Validators, ReactiveFormsModule } fr
 import { MatIconModule } from '@angular/material/icon';
 import { MatDialogRef, MatDialogModule, MAT_DIALOG_DATA } from '@angular/material/dialog';
 import { DragDropModule } from '@angular/cdk/drag-drop';
-import { Subject, Subscription, of } from 'rxjs';
-import { debounceTime, distinctUntilChanged, switchMap, catchError, finalize } from 'rxjs/operators';
+import { Subject, Subscription, of, forkJoin } from 'rxjs';
+import { debounceTime, distinctUntilChanged, switchMap, catchError, finalize, mergeMap, map } from 'rxjs/operators';
 import { MovementService }          from '../../../../core/services/movement.service';
 import { CalibrationService }       from '../../../../core/services/calibration.service';
 import { GestionUbicacionesService } from '../gestion-ubicaciones/gestion-ubicaciones.service';
 import { Warehouse, Rack, Level }   from '../gestion-ubicaciones/interfaces';
+import { KitsService }              from '../../../../core/services/kits.service';
 
 @Component({
     selector: 'app-gestionar-kit',
@@ -45,14 +46,22 @@ export class GestionarKitComponent implements OnInit, OnDestroy {
 
     kitForm: FormGroup;
     modoEdicion = false;
+    saving = false;
+    errorMsg = '';
 
-    readonly categorias = ['MANTENIMIENTO', 'LUBRICACION', 'FRENOS', 'CALIBRACION', 'GENERAL'];
-    readonly estados    = ['COMPLETO', 'INCOMPLETO', 'EN USO', 'MANTENIMIENTO'];
+    categorias: string[]     = [];
+    categoriasLoading        = false;
+    readonly estados = [
+        { value: 'complete',       label: 'COMPLETO' },
+        { value: 'incomplete',     label: 'INCOMPLETO' },
+        { value: 'in_use',         label: 'EN USO' },
+        { value: 'in_calibration', label: 'EN CALIBRACIÓN' }
+    ];
 
     // ── Autocomplete funcionarios ──────────────────────────────────────
-    responsableSuggestions: any[] = [];
-    responsableLoading = false;
-    showResponsableSuggestions = false;
+    funcionarioSuggestions: any[] = [];
+    funcionarioLoading = false;
+    showFuncionarioSuggestions = false;
     private _reqSearch$ = new Subject<string>();
 
     // ── Autocomplete herramientas ──────────────────────────────────────
@@ -63,15 +72,19 @@ export class GestionarKitComponent implements OnInit, OnDestroy {
     private _toolSearch$ = new Subject<string>();
 
     // ── Picker de ubicación ────────────────────────────────────────────
-    pickerOpen    = false;
-    pickerLoading = false;
-    pickerTop     = 0;
-    pickerLeft    = 0;
+    pickerExpanded    = false;
+    showAlmacenGrid   = false;
+    showNivelDropdown = false;
+    loadingWarehouses = false;
+    loadingRacks      = false;
     warehouses:   Warehouse[] = [];
-    racks:        Rack[]      = [];
-    levels:       Level[]     = [];
+    racksFull:    Rack[]      = [];
     selWarehouse: Warehouse | null = null;
     selRack:      Rack | null      = null;
+    selectedLevelId: number | null = null;
+
+    get racks():  Rack[]  { return this.racksFull; }
+    get levels(): Level[] { return this.selRack?.niveles ?? []; }
 
     private _subs = new Subscription();
 
@@ -81,34 +94,70 @@ export class GestionarKitComponent implements OnInit, OnDestroy {
     private movementService  = inject(MovementService);
     private calibrationService = inject(CalibrationService);
     private ubicSvc          = inject(GestionUbicacionesService);
+    private kitsService      = inject(KitsService);
 
     constructor() {
         this.kitForm = this.fb.group({
+            codigo:         [{ value: '', disabled: true }],
             nombreKit:      ['', Validators.required],
             categoria:      ['GENERAL', Validators.required],
-            estado:         ['COMPLETO', Validators.required],
-            responsable:    [''],
+            estado:         ['complete', Validators.required],
+            funcionario:    [''],
             ubicacion:      [''],
             descripcionKit: [''],
             items:          this.fb.array([])
         });
     }
 
+    itemsLoading = false;
+
     ngOnInit(): void {
+        // Cargar categorías desde backend
+        this.categoriasLoading = true;
+        this._subs.add(
+            this.kitsService.getKitCategories().pipe(
+                finalize(() => this.categoriasLoading = false)
+            ).subscribe(cats => {
+                this.categorias = cats.filter(c => c.active).map(c => c.name);
+                if (this.categorias.length > 0 && !this.kitForm.get('categoria')?.value) {
+                    this.kitForm.get('categoria')?.setValue(this.categorias[0]);
+                }
+            })
+        );
+
         if (this.dialogData?.mode === 'edit' && this.dialogData?.kit) {
             this.modoEdicion = true;
             const kit = this.dialogData.kit;
+            const id_kit = kit.id_kit ?? kit.id;
             this.kitForm.patchValue({
-                nombreKit:      kit.nombre      ?? '',
-                categoria:      kit.categoria   ?? 'GENERAL',
-                estado:         kit.estado      ?? 'COMPLETO',
-                responsable:    kit.responsable ?? '',
-                ubicacion:      kit.ubicacion   ?? '',
-                descripcionKit: kit.descripcion ?? ''
+                codigo:         kit.code        ?? '',
+                nombreKit:      kit.name        ?? kit.nombre      ?? '',
+                categoria:      kit.category    ?? kit.categoria   ?? 'GENERAL',
+                estado:         kit.status      ?? 'complete',
+                funcionario:    kit.funcionario_nombre ?? kit.responsable ?? '',
+                ubicacion:      kit.location_name ?? kit.ubicacion ?? '',
+                descripcionKit: kit.description ?? kit.descripcion ?? ''
             });
-            (kit.items ?? []).forEach((item: any) => {
-                this.items.push(this._buildItemGroup(item.descripcion, item.codigoBoamm ?? item.codigo));
-            });
+            // Cargar componentes existentes desde el backend (no desde _raw, que no los tiene)
+            if (id_kit) {
+                this.itemsLoading = true;
+                this._subs.add(
+                    this.kitsService.getKitComponents(id_kit).pipe(
+                        finalize(() => this.itemsLoading = false)
+                    ).subscribe(components => {
+                        components.forEach((c: any) => {
+                            this.items.push(this._buildItemGroup(
+                                c.tool_name ?? c.name ?? '',
+                                c.tool_code ?? c.code ?? '',
+                                c.tool_id ?? null
+                            ));
+                        });
+                    })
+                );
+            }
+        } else {
+            // Modo crear: el código se genera al guardar, no al abrir
+            this.kitForm.get('codigo')?.setValue('Auto-generado al guardar');
         }
 
         // Búsqueda de funcionarios
@@ -118,19 +167,26 @@ export class GestionarKitComponent implements OnInit, OnDestroy {
                 distinctUntilChanged(),
                 switchMap(term => {
                     if (term.length < 2) {
-                        this.responsableSuggestions     = [];
-                        this.showResponsableSuggestions = false;
+                        this.funcionarioSuggestions     = [];
+                        this.showFuncionarioSuggestions = false;
                         return of([]);
                     }
-                    this.responsableLoading = true;
-                    return this.movementService.getFuncionarios(term).pipe(
-                        finalize(() => this.responsableLoading = false),
+                    this.funcionarioLoading = true;
+                    const q = term.toLowerCase();
+                    return this.movementService.getPersonal().pipe(
+                        map(lista => lista
+                            .filter(f => [f.nombreCompleto, f.nombre, f.apellido_paterno, f.apellido_materno]
+                                .filter(Boolean).join(' ').toLowerCase().includes(q))
+                            .slice(0, 10)
+                            .map(f => ({ ...f, nombre: f.nombreCompleto || f.nombre }))
+                        ),
+                        finalize(() => this.funcionarioLoading = false),
                         catchError(() => of([]))
                     );
                 })
             ).subscribe(lista => {
-                this.responsableSuggestions     = lista;
-                this.showResponsableSuggestions = lista.length > 0;
+                this.funcionarioSuggestions     = lista;
+                this.showFuncionarioSuggestions = lista.length > 0;
             })
         );
 
@@ -163,29 +219,29 @@ export class GestionarKitComponent implements OnInit, OnDestroy {
     // ── FormArray ──────────────────────────────────────────────────────
     get items(): FormArray { return this.kitForm.get('items') as FormArray; }
 
-    private _buildItemGroup(descripcion = '', codigo = ''): FormGroup {
+    private _buildItemGroup(descripcion = '', codigo = '', tool_id: number | null = null): FormGroup {
         return this.fb.group({
-            descripcion: [descripcion, Validators.required],
-            codigo:      [codigo,      Validators.required]
+            descripcion: [descripcion],
+            codigo:      [codigo],
+            tool_id:     [tool_id]
         });
     }
 
-    agregarItemVacio(): void          { this.items.push(this._buildItemGroup()); }
-    eliminarItem(i: number): void     { this.items.removeAt(i); }
+    eliminarItem(i: number): void { this.items.removeAt(i); }
 
     // ── Funcionarios ───────────────────────────────────────────────────
-    onReqInput(event: Event): void {
+    onFuncionarioInput(event: Event): void {
         this._reqSearch$.next((event.target as HTMLInputElement).value);
     }
 
     seleccionarFuncionario(f: any): void {
-        this.kitForm.get('responsable')?.setValue(f.nombre ?? f.full_name ?? '');
-        this.showResponsableSuggestions = false;
-        this.responsableSuggestions    = [];
+        this.kitForm.get('funcionario')?.setValue(f.nombre ?? f.full_name ?? '');
+        this.showFuncionarioSuggestions = false;
+        this.funcionarioSuggestions    = [];
     }
 
     ocultarFuncionarios(): void {
-        setTimeout(() => this.showResponsableSuggestions = false, 150);
+        setTimeout(() => this.showFuncionarioSuggestions = false, 150);
     }
 
     // ── Herramientas ───────────────────────────────────────────────────
@@ -197,7 +253,8 @@ export class GestionarKitComponent implements OnInit, OnDestroy {
     seleccionarHerramienta(tool: any): void {
         this.items.push(this._buildItemGroup(
             tool.name ?? tool.tool_name ?? '',
-            tool.code ?? tool.tool_code ?? ''
+            tool.code ?? tool.tool_code ?? '',
+            tool.id_tool ?? tool.tool_id ?? null
         ));
         this.toolSearchValue  = '';
         this.toolSuggestions  = [];
@@ -209,68 +266,158 @@ export class GestionarKitComponent implements OnInit, OnDestroy {
     }
 
     // ── Picker de ubicación ────────────────────────────────────────────
-    openPicker(event: MouseEvent): void {
-        const btn    = event.currentTarget as HTMLElement;
-        const rect   = btn.getBoundingClientRect();
-        const panelW = 420;
-        let left = rect.left;
-        if (left + panelW > window.innerWidth - 8) left = window.innerWidth - panelW - 8;
-        this.pickerTop  = rect.bottom + 6;
-        this.pickerLeft = Math.max(8, left);
-        this.pickerOpen    = true;
-        this.pickerLoading = true;
-        this.racks         = [];
-        this.levels        = [];
-        this.selWarehouse  = null;
-        this.selRack       = null;
-        this.ubicSvc.getWarehouses().subscribe({
-            next:  ws => { this.warehouses = ws.filter(w => w.estado === 'ACTIVO'); this.pickerLoading = false; },
-            error: () => { this.pickerLoading = false; }
-        });
+    togglePicker(): void {
+        this.pickerExpanded = !this.pickerExpanded;
+        if (this.pickerExpanded && !this.warehouses.length) {
+            this.loadingWarehouses = true;
+            this._subs.add(
+                this.ubicSvc.getWarehouses().pipe(
+                    finalize(() => this.loadingWarehouses = false)
+                ).subscribe(ws => {
+                    this.warehouses = ws.filter(w => w.estado === 'ACTIVO');
+                    if (!this.selWarehouse) {
+                        const cbba = this.warehouses.find(w =>
+                            w.ciudad?.toLowerCase().includes('cochabamba') ||
+                            w.nombre?.toLowerCase().includes('cochabamba')
+                        );
+                        if (cbba) this.selectWarehouse(cbba);
+                    }
+                })
+            );
+        }
+    }
+
+    toggleAlmacenGrid(): void { this.showAlmacenGrid = !this.showAlmacenGrid; }
+    toggleNivelDropdown(): void { this.showNivelDropdown = !this.showNivelDropdown; }
+    levelSeleccionado(): Level | null {
+        return this.levels.find(l => l.id === this.selectedLevelId) ?? null;
     }
 
     selectWarehouse(w: Warehouse): void {
-        this.selWarehouse = w;
-        this.selRack      = null;
-        this.levels       = [];
-        this.ubicSvc.getRacks(w.id).subscribe(rs => { this.racks = rs.filter(r => r.activo); });
+        if (this.selWarehouse?.id === w.id) { this.showAlmacenGrid = false; return; }
+        this.selWarehouse   = w;
+        this.selRack        = null;
+        this.selectedLevelId = null;
+        this.racksFull      = [];
+        this.showAlmacenGrid = false;
+        this.showNivelDropdown = false;
+        this.loadingRacks   = true;
+        this._subs.add(
+            this.ubicSvc.getRacks(w.id).pipe(
+                switchMap(rs => {
+                    const activos = rs.filter(r => r.activo);
+                    if (!activos.length) return of([] as Rack[]);
+                    return forkJoin(activos.map(r =>
+                        this.ubicSvc.getLevels(r.id).pipe(
+                            map(ls => ({ ...r, niveles: ls.filter(l => l.activo && !l.isFloor) })),
+                            catchError(() => of({ ...r, niveles: [] as Level[] }))
+                        )
+                    ));
+                }),
+                finalize(() => this.loadingRacks = false)
+            ).subscribe(rs => { this.racksFull = rs; })
+        );
     }
 
     selectRack(r: Rack): void {
-        this.selRack = r;
-        this.levels  = [];
-        this.ubicSvc.getLevels(r.id).subscribe(ls => { this.levels = ls.filter(l => l.activo && !l.isFloor); });
+        this.selRack        = r;
+        this.selectedLevelId = null;
+        this.showNivelDropdown = false;
     }
 
     selectLevel(l: Level): void {
+        this.selectedLevelId = l.id;
         const etiqueta = `${this.selWarehouse!.nombre} › ${this.selRack!.nombre} › ${l.nombre}`;
         this.kitForm.patchValue({ ubicacion: etiqueta });
-        this.pickerOpen = false;
+        this.showNivelDropdown = false;
+        this.pickerExpanded    = false;
     }
 
     clearUbicacion(): void {
         this.kitForm.patchValue({ ubicacion: '' });
-        this.selWarehouse = null;
-        this.selRack      = null;
-        this.racks        = [];
-        this.levels       = [];
+        this.selWarehouse    = null;
+        this.selRack         = null;
+        this.racksFull       = [];
+        this.selectedLevelId = null;
+        this.pickerExpanded  = false;
     }
 
     // ── Submit ─────────────────────────────────────────────────────────
-    cerrar(): void  { this.dialogRef.close(); }
+    cerrar(): void { this.dialogRef.close(); }
 
     onSubmit(): void {
-        if (this.kitForm.valid) this.dialogRef.close(this.kitForm.value);
+        if (!this.kitForm.valid || this.saving) return;
+
+        this.saving   = true;
+        this.errorMsg = '';
+
+        const raw    = this.kitForm.getRawValue();
+        const items  = this.items.value as any[];
+        const payload: any = {
+            code:               raw.codigo,
+            name:               raw.nombreKit,
+            category:           raw.categoria,
+            status:             raw.estado,
+            funcionario_nombre: raw.funcionario || null,
+            location_name:      raw.ubicacion   || null,
+            notes:              raw.descripcionKit || null,
+            kit_type:           'MAINTENANCE',
+            active:             true,
+            is_complete:        false,
+            total_components:   items.length,
+            present_components: 0,
+            completeness_percentage: 0
+        };
+
+        if (this.modoEdicion) {
+            const id_kit = this.dialogData.kit.id_kit ?? this.dialogData.kit.id;
+            payload.id_kit = id_kit;
+
+            this._subs.add(
+                this.kitsService.updateKit(id_kit, payload).pipe(
+                    mergeMap(() => this.kitsService.getKitComponents(id_kit)),
+                    mergeMap(existentes => this.kitsService.deleteKitComponents(existentes)),
+                    mergeMap(() => this.kitsService.saveKitComponents(id_kit, items)),
+                    finalize(() => this.saving = false)
+                ).subscribe({
+                    next: () => { this.dialogRef.close({ saved: true }); },
+                    error: (e) => { this.errorMsg = e?.message ?? 'Error al guardar el kit'; }
+                })
+            );
+        } else {
+            this._subs.add(
+                this.kitsService.getNextKitCode().pipe(
+                    mergeMap(code => {
+                        payload.code = code;
+                        this.kitForm.get('codigo')?.setValue(code);
+                        return this.kitsService.createKit(payload);
+                    }),
+                    mergeMap(res => {
+                        const id_kit = res.id_kit;
+                        if (!id_kit) throw new Error('No se recibió ID del kit creado');
+                        return this.kitsService.saveKitComponents(id_kit, items);
+                    }),
+                    finalize(() => this.saving = false)
+                ).subscribe({
+                    next: () => { this.dialogRef.close({ saved: true }); },
+                    error: (e) => { this.errorMsg = e?.message ?? 'Error al guardar el kit'; }
+                })
+            );
+        }
     }
 
     // ── Helpers ────────────────────────────────────────────────────────
-    getEstadoClass(estado: string): string {
+    getEstadoLabel(value: string): string {
+        return this.estados.find(e => e.value === value)?.label ?? value;
+    }
+
+    getEstadoClass(value: string): string {
         const m: Record<string, string> = {
-            'COMPLETO':      'bg-green-100 text-green-800 border-green-800',
-            'INCOMPLETO':    'bg-yellow-100 text-yellow-800 border-yellow-800',
-            'EN USO':        'bg-blue-100 text-blue-800 border-blue-800',
-            'MANTENIMIENTO': 'bg-purple-100 text-purple-800 border-purple-800'
+            'complete':       'bg-green-100 text-green-800 border-green-800',
+            'incomplete':     'bg-yellow-100 text-yellow-800 border-yellow-800',
+            'in_use':         'bg-blue-100 text-blue-800 border-blue-800',
+            'in_calibration': 'bg-purple-100 text-purple-800 border-purple-800'
         };
-        return m[estado] ?? 'bg-stone-200 text-black border-black';
+        return m[value] ?? 'bg-stone-200 text-black border-black';
     }
 }

@@ -20,6 +20,7 @@ export interface Material {
 
 export interface Entrada {
     id: number;
+    miscelaneo_id: number;
     nroNota: string;
     fecha: string;
     hora: string;
@@ -37,6 +38,7 @@ export interface Entrada {
 
 export interface Salida {
     id: number;
+    miscelaneo_id: number;
     nroNota: string;
     fecha: string;
     hora: string;
@@ -62,11 +64,11 @@ export type TabMisc    = 'catalogo' | 'entradas' | 'salidas' | 'stock';
 export type DialogMode = 'new' | 'edit' | 'view';
 
 export interface UbicacionRef {
-    almacenId:   number;
+    almacenId:     number;
     almacenNombre: string;
-    estandeId:   number;
+    estandeId:     number;
     estanteNombre: string;
-    nivelId:     number;
-    nivelNombre: string;
-    etiqueta:    string; // "Central > EST-01 > N-02"
+    nivelId:       number;
+    nivelNombre:   string;
+    etiqueta:      string;
 }

@@ -5,10 +5,12 @@ import { MatDialog, MatDialogModule, MatDialogRef } from '@angular/material/dial
 import { MatIconModule } from '@angular/material/icon';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatTooltipModule } from '@angular/material/tooltip';
-import { Subject, combineLatest } from 'rxjs';
-import { startWith, takeUntil, debounceTime } from 'rxjs/operators';
+import { Subject, combineLatest, forkJoin } from 'rxjs';
+import { startWith, takeUntil, debounceTime, finalize } from 'rxjs/operators';
 
 import { Material, Entrada, Salida, TabMisc } from './interfaces';
+import { MiscelaneosService } from '../../../../core/services/miscelaneos.service';
+import { ConfirmDeleteComponent } from '../gestion-ubicaciones/confirm-delete/confirm-delete.component';
 
 @Component({
     selector: 'app-inventario-miscelaneos',
@@ -21,6 +23,8 @@ import { Material, Entrada, Salida, TabMisc } from './interfaces';
         .custom-scrollbar-misc::-webkit-scrollbar-track { background: transparent; }
         .custom-scrollbar-misc::-webkit-scrollbar-thumb { background: #000; border-radius: 3px; }
         :host-context(.dark) .custom-scrollbar-misc::-webkit-scrollbar-thumb { background: #cbd5e1; }
+        /* Los paneles de tabs ocultos no ocupan espacio en el flex container */
+        [hidden] { display: none !important; }
     `]
 })
 export class InventarioMiscelaneosComponent implements OnInit, OnDestroy {
@@ -28,15 +32,15 @@ export class InventarioMiscelaneosComponent implements OnInit, OnDestroy {
     public dialogRef  = inject(MatDialogRef<InventarioMiscelaneosComponent>, { optional: true });
     private dialog    = inject(MatDialog);
     private snackBar  = inject(MatSnackBar);
+    private svc       = inject(MiscelaneosService);
     private _destroy$ = new Subject<void>();
 
     activeTab  = signal<TabMisc>('catalogo');
     isLoading  = signal(false);
 
-    searchControl   = new FormControl('');
-    filterTipoCtrl  = new FormControl('');
+    searchControl  = new FormControl('');
+    filterTipoCtrl = new FormControl('');
 
-    // ── Datos ─────────────────────────────────────────
     materiales:         Material[] = [];
     filteredMateriales: Material[] = [];
 
@@ -48,7 +52,7 @@ export class InventarioMiscelaneosComponent implements OnInit, OnDestroy {
 
     tiposItem = ['CONSUMIBLE', 'MATERIAL'];
 
-    // ── Vista Stock por ubicación ──────────────────────
+    // ── Vista Stock por ubicación ──────────────────────────
     get stockPorUbicacion(): { ubicacion: string; items: Material[] }[] {
         const map = new Map<string, Material[]>();
         for (const m of this.materiales.filter(m => m.activo)) {
@@ -69,7 +73,7 @@ export class InventarioMiscelaneosComponent implements OnInit, OnDestroy {
         return items.filter(m => m.stockMin > 0 && m.stock <= m.stockMin).length;
     }
 
-    // ── Lifecycle ─────────────────────────────────────
+    // ── Lifecycle ──────────────────────────────────────────
     ngOnInit(): void {
         combineLatest([
             this.searchControl.valueChanges.pipe(startWith(''), debounceTime(150)),
@@ -77,6 +81,8 @@ export class InventarioMiscelaneosComponent implements OnInit, OnDestroy {
         ])
         .pipe(takeUntil(this._destroy$))
         .subscribe(() => this.applyFilters());
+
+        this.loadAll();
     }
 
     ngOnDestroy(): void {
@@ -84,7 +90,48 @@ export class InventarioMiscelaneosComponent implements OnInit, OnDestroy {
         this._destroy$.complete();
     }
 
-    // ── Filtros ───────────────────────────────────────
+    private loadAll(): void {
+        this.isLoading.set(true);
+        forkJoin({
+            materiales: this.svc.getMiscelaneos(),
+            entradas:   this.svc.getEntradas(),
+            salidas:    this.svc.getSalidas(),
+        })
+        .pipe(finalize(() => this.isLoading.set(false)), takeUntil(this._destroy$))
+        .subscribe({
+            next: ({ materiales, entradas, salidas }) => {
+                this.materiales = materiales;
+                // Enriquecer entradas con marca/pn del catálogo (el API no los devuelve)
+                const matMap = new Map(materiales.map(m => [m.id, m]));
+                this.entradas = entradas.map(e => {
+                    const mat = matMap.get(e.miscelaneo_id);
+                    return mat ? { ...e, marca: mat.marca || '', pn: mat.pn || '' } : e;
+                });
+                this.salidas = salidas;
+                this.applyFilters();
+            },
+            error: () => this.snackBar.open('Error al cargar datos', 'Cerrar', { duration: 3000 })
+        });
+    }
+
+    private loadMateriales(): void {
+        this.svc.getMiscelaneos().pipe(takeUntil(this._destroy$)).subscribe(list => {
+            this.materiales = list;
+            this.applyFilters();
+        });
+    }
+
+    private loadMovimientos(): void {
+        forkJoin({ e: this.svc.getEntradas(), s: this.svc.getSalidas() })
+            .pipe(takeUntil(this._destroy$))
+            .subscribe(({ e, s }) => {
+                this.entradas = e;
+                this.salidas  = s;
+                this.applyFilters();
+            });
+    }
+
+    // ── Filtros ────────────────────────────────────────────
     applyFilters(): void {
         const q    = (this.searchControl.value  ?? '').trim().toLowerCase();
         const tipo = (this.filterTipoCtrl.value ?? '').trim();
@@ -113,11 +160,13 @@ export class InventarioMiscelaneosComponent implements OnInit, OnDestroy {
         this.applyFilters();
     }
 
-    // ── Stats ─────────────────────────────────────────
+    refresh(): void { this.loadAll(); }
+
+    // ── Stats ──────────────────────────────────────────────
     countActivos()   { return this.materiales.filter(m => m.activo).length; }
     countBajoStock() { return this.materiales.filter(m => m.stockMin > 0 && m.stock <= m.stockMin).length; }
 
-    // ── Helpers visuales ──────────────────────────────
+    // ── Helpers visuales ───────────────────────────────────
     getStockPct(m: Material): number {
         if (!m.stockMax) return 0;
         return Math.min(100, (m.stock / m.stockMax) * 100);
@@ -141,77 +190,204 @@ export class InventarioMiscelaneosComponent implements OnInit, OnDestroy {
         return map[tipo] || 'bg-gray-100 text-gray-700';
     }
 
-    // ── Catálogo ──────────────────────────────────────
+    // ── Catálogo ───────────────────────────────────────────
     async nuevoCatalogo(): Promise<void> {
         const { FormMaterialComponent } = await import('./form-material/form-material.component');
-        this.dialog.open(FormMaterialComponent, { maxWidth: '95vw', panelClass: 'no-padding-dialog', data: { mode: 'new' } })
-            .afterClosed().subscribe((r: Material | undefined) => {
-                if (r) {
-                    this.materiales.push({ ...r, id: Date.now(), activo: true });
-                    this.applyFilters();
-                    this.snackBar.open('Ítem registrado', 'Cerrar', { duration: 2500 });
-                }
-            });
+        this.dialog.open(FormMaterialComponent, {
+            maxWidth: '95vw',
+            panelClass: 'no-padding-dialog',
+            data: { mode: 'new' }
+        }).afterClosed().subscribe((r: Partial<Material> | undefined) => {
+            if (!r) return;
+            this.isLoading.set(true);
+            this.svc.createMiscelaneo(r)
+                .pipe(finalize(() => this.isLoading.set(false)))
+                .subscribe({
+                    next: ({ id }) => {
+                        this.snackBar.open('Ítem registrado', 'Cerrar', { duration: 2500 });
+                        this.loadMateriales();
+                    },
+                    error: (err) => this.snackBar.open(err?.message ?? 'Error al guardar', 'Cerrar', { duration: 3500 })
+                });
+        });
     }
 
     async editarCatalogo(m: Material): Promise<void> {
         const { FormMaterialComponent } = await import('./form-material/form-material.component');
-        this.dialog.open(FormMaterialComponent, { maxWidth: '95vw', panelClass: 'no-padding-dialog', data: { mode: 'edit', material: m } })
-            .afterClosed().subscribe((r: Material | undefined) => {
-                if (r) {
-                    const idx = this.materiales.findIndex(x => x.id === m.id);
-                    if (idx !== -1) this.materiales[idx] = { ...r, id: m.id };
-                    this.applyFilters();
-                    this.snackBar.open('Ítem actualizado', 'Cerrar', { duration: 2500 });
-                }
-            });
+        this.dialog.open(FormMaterialComponent, {
+            maxWidth: '95vw',
+            panelClass: 'no-padding-dialog',
+            data: { mode: 'edit', material: m }
+        }).afterClosed().subscribe((r: Partial<Material> | undefined) => {
+            if (!r) return;
+            this.isLoading.set(true);
+            this.svc.updateMiscelaneo(m.id, r)
+                .pipe(finalize(() => this.isLoading.set(false)))
+                .subscribe({
+                    next: () => {
+                        this.snackBar.open('Ítem actualizado', 'Cerrar', { duration: 2500 });
+                        this.loadMateriales();
+                    },
+                    error: (err) => this.snackBar.open(err?.message ?? 'Error al actualizar', 'Cerrar', { duration: 3500 })
+                });
+        });
     }
 
     async verCatalogo(m: Material): Promise<void> {
         const { FormMaterialComponent } = await import('./form-material/form-material.component');
-        this.dialog.open(FormMaterialComponent, { maxWidth: '95vw', panelClass: 'no-padding-dialog', data: { mode: 'view', material: m } });
+        this.dialog.open(FormMaterialComponent, {
+            maxWidth: '95vw',
+            panelClass: 'no-padding-dialog',
+            data: { mode: 'view', material: m }
+        });
     }
 
     eliminarCatalogo(m: Material): void {
-        if (!confirm(`¿Eliminar "${m.producto}" del catálogo?`)) return;
-        this.materiales = this.materiales.filter(x => x.id !== m.id);
-        this.applyFilters();
-        this.snackBar.open('Ítem eliminado', 'Cerrar', { duration: 2500 });
+        const ref = this.dialog.open(ConfirmDeleteComponent, {
+            panelClass: 'no-padding-dialog',
+            data: {
+                title:        'ELIMINAR ÍTEM',
+                itemKind:     'ítem de catálogo',
+                itemCode:     m.codigoBoaM,
+                itemName:     m.producto,
+                warning:      'Se eliminará permanentemente del catálogo de misceláneos.',
+                confirmLabel: 'Eliminar Ítem',
+            }
+        });
+        ref.afterClosed().subscribe(confirmed => {
+            if (!confirmed) return;
+            this.isLoading.set(true);
+            this.svc.deleteMiscelaneo(m.id)
+                .pipe(finalize(() => this.isLoading.set(false)))
+                .subscribe({
+                    next: () => {
+                        this.snackBar.open('Ítem eliminado', 'Cerrar', { duration: 2500 });
+                        this.loadMateriales();
+                    },
+                    error: (err) => this.snackBar.open(err?.message ?? 'Error al eliminar', 'Cerrar', { duration: 3500 })
+                });
+        });
     }
 
-    // ── Entradas ──────────────────────────────────────
+    // ── Entradas ───────────────────────────────────────────
     async nuevaEntrada(): Promise<void> {
         const { FormEntradaComponent } = await import('./form-entrada/form-entrada.component');
-        this.dialog.open(FormEntradaComponent, { maxWidth: '95vw', panelClass: 'no-padding-dialog', data: { mode: 'new' } })
-            .afterClosed().subscribe((r: Entrada | undefined) => {
-                if (r) {
-                    this.entradas.unshift({ ...r, id: Date.now() });
-                    this.applyFilters();
-                    this.snackBar.open('Entrada registrada', 'Cerrar', { duration: 2500 });
-                }
-            });
+        this.dialog.open(FormEntradaComponent, {
+            width:      '900px',
+            maxWidth:   '95vw',
+            height:     '88vh',
+            panelClass: 'no-padding-dialog',
+            data: { mode: 'new', materiales: this.materiales }
+        }).afterClosed().subscribe((ok: boolean | undefined) => {
+            if (ok) this.loadAll();
+        });
     }
 
     async verEntrada(e: Entrada): Promise<void> {
         const { FormEntradaComponent } = await import('./form-entrada/form-entrada.component');
-        this.dialog.open(FormEntradaComponent, { maxWidth: '95vw', panelClass: 'no-padding-dialog', data: { mode: 'view', entrada: e } });
+        this.dialog.open(FormEntradaComponent, {
+            maxWidth: '95vw',
+            panelClass: 'no-padding-dialog',
+            data: { mode: 'view', entrada: e, materiales: this.materiales }
+        });
     }
 
-    // ── Salidas ───────────────────────────────────────
+    async editarEntrada(e: Entrada): Promise<void> {
+        const { FormEntradaComponent } = await import('./form-entrada/form-entrada.component');
+        this.dialog.open(FormEntradaComponent, {
+            width: '560px', maxWidth: '95vw',
+            panelClass: 'no-padding-dialog',
+            data: { mode: 'edit', entrada: e, materiales: this.materiales }
+        }).afterClosed().subscribe((ok: boolean | undefined) => {
+            if (ok) this.loadAll();
+        });
+    }
+
+    eliminarEntrada(e: Entrada): void {
+        const ref = this.dialog.open(ConfirmDeleteComponent, {
+            panelClass: 'no-padding-dialog',
+            data: {
+                title:        'ELIMINAR ENTRADA',
+                itemKind:     'entrada de material',
+                itemCode:     e.nroNota,
+                itemName:     `${e.producto} — ${e.cantidad} ${e.unidad}`,
+                warning:      'Se eliminará el movimiento y el stock será revertido automáticamente.',
+                confirmLabel: 'Eliminar Entrada',
+            }
+        });
+        ref.afterClosed().subscribe(confirmed => {
+            if (!confirmed) return;
+            this.isLoading.set(true);
+            this.svc.eliminarEntrada(e.id)
+                .pipe(finalize(() => this.isLoading.set(false)))
+                .subscribe({
+                    next: () => {
+                        this.snackBar.open(`Entrada ${e.nroNota} eliminada y stock revertido`, 'Cerrar', { duration: 3500 });
+                        this.loadAll();
+                    },
+                    error: (err) => this.snackBar.open(err?.message ?? 'Error al eliminar', 'Cerrar', { duration: 4000 })
+                });
+        });
+    }
+
+    // ── Salidas ────────────────────────────────────────────
     async nuevaSalida(): Promise<void> {
         const { FormSalidaComponent } = await import('./form-salida/form-salida.component');
-        this.dialog.open(FormSalidaComponent, { maxWidth: '95vw', panelClass: 'no-padding-dialog', data: { mode: 'new' } })
-            .afterClosed().subscribe((r: Salida | undefined) => {
-                if (r) {
-                    this.salidas.unshift({ ...r, id: Date.now() });
-                    this.applyFilters();
-                    this.snackBar.open('Salida registrada', 'Cerrar', { duration: 2500 });
-                }
-            });
+        this.dialog.open(FormSalidaComponent, {
+            width:      '900px',
+            maxWidth:   '95vw',
+            height:     '88vh',
+            panelClass: 'no-padding-dialog',
+            data: { mode: 'new', materiales: this.materiales }
+        }).afterClosed().subscribe((ok: boolean | undefined) => {
+            if (ok) this.loadAll();
+        });
     }
 
     async verSalida(s: Salida): Promise<void> {
         const { FormSalidaComponent } = await import('./form-salida/form-salida.component');
-        this.dialog.open(FormSalidaComponent, { maxWidth: '95vw', panelClass: 'no-padding-dialog', data: { mode: 'view', salida: s } });
+        this.dialog.open(FormSalidaComponent, {
+            maxWidth: '95vw',
+            panelClass: 'no-padding-dialog',
+            data: { mode: 'view', salida: s, materiales: this.materiales }
+        });
+    }
+
+    async editarSalida(s: Salida): Promise<void> {
+        const { FormSalidaComponent } = await import('./form-salida/form-salida.component');
+        this.dialog.open(FormSalidaComponent, {
+            width: '500px', maxWidth: '95vw',
+            panelClass: 'no-padding-dialog',
+            data: { mode: 'edit', salida: s, materiales: this.materiales }
+        }).afterClosed().subscribe((ok: boolean | undefined) => {
+            if (ok) this.loadAll();
+        });
+    }
+
+    eliminarSalida(s: Salida): void {
+        const ref = this.dialog.open(ConfirmDeleteComponent, {
+            panelClass: 'no-padding-dialog',
+            data: {
+                title:        'ELIMINAR SALIDA',
+                itemKind:     'salida de material',
+                itemCode:     s.nroNota,
+                itemName:     `${s.producto} — ${s.cantidad} ${s.unidad}`,
+                warning:      'Se eliminará el movimiento y el stock será repuesto automáticamente.',
+                confirmLabel: 'Eliminar Salida',
+            }
+        });
+        ref.afterClosed().subscribe(confirmed => {
+            if (!confirmed) return;
+            this.isLoading.set(true);
+            this.svc.eliminarSalida(s.id)
+                .pipe(finalize(() => this.isLoading.set(false)))
+                .subscribe({
+                    next: () => {
+                        this.snackBar.open(`Salida ${s.nroNota} eliminada y stock repuesto`, 'Cerrar', { duration: 3500 });
+                        this.loadAll();
+                    },
+                    error: (err) => this.snackBar.open(err?.message ?? 'Error al eliminar', 'Cerrar', { duration: 4000 })
+                });
+        });
     }
 }

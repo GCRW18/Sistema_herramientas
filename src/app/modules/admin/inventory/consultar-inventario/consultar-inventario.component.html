@@ -1,534 +1,428 @@
 <div class="flex flex-col w-full h-full bg-[#f8f9fc] dark:bg-[#0F172AFF] transition-colors duration-300 font-sans overflow-hidden">
 
-    <!-- Decorative bg elements -->
-    <div class="fixed top-20 right-10 w-40 h-40 bg-[#0F172AFF] rounded-full border-[3px] border-black opacity-5 pointer-events-none"></div>
-    <div class="fixed bottom-10 left-10 w-24 h-24 bg-[#FFC501FF] rotate-12 border-[3px] border-black opacity-5 pointer-events-none"></div>
+  <!-- Decoraciones de fondo -->
+  <div class="fixed top-20 right-10 w-40 h-40 bg-[#0F172AFF] rounded-full border-[3px] border-black opacity-5 pointer-events-none hidden lg:block"></div>
+  <div class="fixed bottom-10 left-10 w-24 h-24 bg-[#FFC501FF] rotate-12 border-[3px] border-black opacity-5 pointer-events-none hidden lg:block"></div>
 
-    <div class="flex-1 flex flex-col p-4 gap-3 overflow-hidden relative z-10">
+  <div class="flex-1 flex flex-col p-3 sm:p-4 gap-3 overflow-hidden relative z-10">
 
-        <!-- ═══════════════════ HEADER ═══════════════════ -->
-        <div class="flex items-center justify-between gap-4 shrink-0 flex-wrap">
+    <!-- ═══════════════════════════════ HEADER ═══════════════════════════════ -->
 
-            <div class="flex items-center gap-4">
-                <div class="flex items-center justify-center w-10 h-10 bg-white dark:bg-[#0F172AFF] border-[3px] border-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] rounded-xl shrink-0">
-                    <mat-icon class="text-black dark:text-[#FFC501FF] !text-base">construction</mat-icon>
-                </div>
-                <div>
-                    <h1 class="text-xl font-black text-black dark:text-white uppercase tracking-tighter leading-none">
-                        INVENTARIO HERRAMIENTAS
-                    </h1>
-                    <div class="flex items-center gap-2 mt-0.5 flex-wrap">
-                        <p class="text-[10px] font-bold bg-[#FFC501FF] text-black px-2 py-0.5 inline-block border-2 border-black rounded uppercase tracking-wider">
-                            Consulta · Filtros · Exportar
-                        </p>
-                    </div>
-                </div>
-            </div>
-
-            <div class="flex items-center gap-3 flex-wrap">
-
-                <!-- Buscador -->
-                <div class="relative">
-                    <input type="text"
-                           [ngModel]="searchTerm()"
-                           (ngModelChange)="searchTerm.set($event)"
-                           placeholder="Buscar código, descripción, P/N..."
-                           class="w-64 h-9 pl-9 pr-3 bg-white dark:bg-[#0F172AFF] text-black dark:text-white
-                                  border-[2px] border-black rounded-lg font-black text-xs uppercase
-                                  focus:outline-none focus:shadow-[3px_3px_0px_0px_#000] focus:-translate-y-[1px] transition-all
-                                  placeholder:font-bold placeholder:normal-case">
-                    <mat-icon class="absolute left-2.5 top-2 text-black dark:text-white !text-sm">search</mat-icon>
-                </div>
-
-                <!-- Filtro Estado -->
-                <select [ngModel]="selectedEstado()"
-                        (ngModelChange)="selectedEstado.set($event)"
-                        class="h-9 px-3 bg-white dark:bg-[#0F172AFF] text-black dark:text-white
-                               border-[2px] border-black rounded-lg font-black text-xs uppercase
-                               focus:outline-none focus:shadow-[3px_3px_0px_0px_#000] transition-all cursor-pointer">
-                    <option value="todos">Todos los estados</option>
-                    <option *ngFor="let e of estados" [value]="e">{{ e }}</option>
-                </select>
-
-                <!-- Filtro Ubicación -->
-                <select [ngModel]="selectedUbicacion()"
-                        (ngModelChange)="selectedUbicacion.set($event)"
-                        class="h-9 px-3 bg-white dark:bg-[#0F172AFF] text-black dark:text-white
-                               border-[2px] border-black rounded-lg font-black text-xs uppercase
-                               focus:outline-none focus:shadow-[3px_3px_0px_0px_#000] transition-all cursor-pointer">
-                    <option value="todas">Todas las ubicaciones</option>
-                    <option *ngFor="let u of ubicaciones" [value]="u">{{ u }}</option>
-                </select>
-
-                <!-- Limpiar filtros -->
-                <button (click)="limpiarFiltros()"
-                        matTooltip="Limpiar filtros"
-                        class="h-9 px-4 bg-white dark:bg-slate-700 text-black dark:text-white font-black text-xs
-                               border-[2px] border-black rounded-xl
-                               shadow-[3px_3px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px]
-                               hover:shadow-none transition-all uppercase flex items-center gap-1.5">
-                    <mat-icon class="!text-sm">filter_alt_off</mat-icon>
-                    <span class="hidden md:inline">Limpiar</span>
-                </button>
-
-                <!-- Exportar -->
-                <button (click)="exportarExcel()"
-                        class="px-5 py-2 bg-[#FFC501FF] text-black font-black text-xs
-                               border-[2px] border-black rounded-xl
-                               shadow-[3px_3px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px]
-                               hover:shadow-none transition-all uppercase flex items-center gap-2">
-                    <mat-icon class="!text-sm text-black">download</mat-icon>
-                    <span class="hidden sm:inline">Exportar</span>
-                </button>
-            </div>
-        </div>
-
-        <!-- ═══════════════════ CARD PRINCIPAL ═══════════════════ -->
-        <div class="flex-1 flex flex-col overflow-hidden border-[3px] border-black bg-white dark:bg-[#0F172AFF] rounded-2xl shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
-
-            <!-- Card header oscuro con estadísticas -->
-            <div class="px-4 py-2.5 bg-[#0F172AFF] dark:bg-[#0F172AFF] border-b-[3px] border-black flex items-center justify-between shrink-0 flex-wrap gap-2">
-                <h2 class="text-sm font-black text-white uppercase tracking-wider flex items-center gap-2">
-                    <mat-icon class="!text-base text-[#FFC501FF]">construction</mat-icon>
-                    HERRAMIENTAS REGISTRADAS ({{ filteredData().length }})
-                </h2>
-
-                <div class="flex items-center gap-2 flex-wrap">
-
-                    <!-- Stat: Total -->
-                    <div class="flex items-center gap-2 bg-white/20 rounded-lg px-3 py-1.5 border border-black">
-                        <div class="w-5 h-5 bg-[#0F172AFF] border border-black rounded flex items-center justify-center">
-                            <mat-icon class="!text-xs text-[#FFC501FF]">widgets</mat-icon>
-                        </div>
-                        <div>
-                            <div class="text-[8px] font-black uppercase text-white leading-none">Total</div>
-                            <div class="text-sm font-black text-white leading-none">{{ estadisticas().total }}</div>
-                        </div>
-                    </div>
-
-                    <!-- Stat: Disponibles -->
-                    <div class="flex items-center gap-2 bg-green-600/30 rounded-lg px-3 py-1.5 border border-black">
-                        <div class="w-5 h-5 bg-green-600 border border-black rounded flex items-center justify-center">
-                            <mat-icon class="!text-xs text-black">check_circle</mat-icon>
-                        </div>
-                        <div>
-                            <div class="text-[8px] font-black uppercase text-white leading-none">Disponibles</div>
-                            <div class="text-sm font-black text-white leading-none">{{ estadisticas().disponibles }}</div>
-                        </div>
-                    </div>
-
-                    <!-- Stat: Bajo Stock -->
-                    <div class="flex items-center gap-2 bg-amber-500/30 rounded-lg px-3 py-1.5 border border-black">
-                        <div class="w-5 h-5 bg-amber-500 border border-black rounded flex items-center justify-center">
-                            <mat-icon class="!text-xs text-black">warning</mat-icon>
-                        </div>
-                        <div>
-                            <div class="text-[8px] font-black uppercase text-white leading-none">Bajo Stock</div>
-                            <div class="text-sm font-black text-white leading-none">{{ estadisticas().bajoStock }}</div>
-                        </div>
-                    </div>
-
-                    <!-- Stat: Sin Stock -->
-                    <div class="flex items-center gap-2 bg-red-500/30 rounded-lg px-3 py-1.5 border border-black">
-                        <div class="w-5 h-5 bg-red-600 border border-black rounded flex items-center justify-center">
-                            <mat-icon class="!text-xs text-black">remove_circle</mat-icon>
-                        </div>
-                        <div>
-                            <div class="text-[8px] font-black uppercase text-white leading-none">Sin Stock</div>
-                            <div class="text-sm font-black text-white leading-none">{{ estadisticas().sinStock }}</div>
-                        </div>
-                    </div>
-
-                    <!-- Divisor -->
-                    <div class="w-px h-8 bg-white/20 mx-1"></div>
-
-                    <!-- Toggle de vista -->
-                    <div class="flex gap-1 bg-white/10 rounded-lg p-1 border border-white/30">
-                        <button (click)="changeView('table')"
-                                [class.bg-white]="viewMode() === 'table'"
-                                [class.text-black]="viewMode() === 'table'"
-                                [class.text-white]="viewMode() !== 'table'"
-                                matTooltip="Vista tabla"
-                                class="w-7 h-7 rounded flex items-center justify-center transition-all">
-                            <mat-icon class="!text-sm">table_view</mat-icon>
-                        </button>
-                        <button (click)="changeView('grid')"
-                                [class.bg-white]="viewMode() === 'grid'"
-                                [class.text-black]="viewMode() === 'grid'"
-                                [class.text-white]="viewMode() !== 'grid'"
-                                matTooltip="Vista tarjetas"
-                                class="w-7 h-7 rounded flex items-center justify-center transition-all">
-                            <mat-icon class="!text-sm">grid_view</mat-icon>
-                        </button>
-                        <button (click)="changeView('list')"
-                                [class.bg-white]="viewMode() === 'list'"
-                                [class.text-black]="viewMode() === 'list'"
-                                [class.text-white]="viewMode() !== 'list'"
-                                matTooltip="Vista lista"
-                                class="w-7 h-7 rounded flex items-center justify-center transition-all">
-                            <mat-icon class="!text-sm">view_list</mat-icon>
-                        </button>
-                    </div>
-
-                    <!-- Recargar -->
-                    <button (click)="loadInventory()"
-                            [disabled]="isLoading()"
-                            matTooltip="Recargar"
-                            class="w-7 h-7 flex items-center justify-center rounded-lg border border-white/30
-                                   text-white hover:bg-white/20 transition-all disabled:opacity-40">
-                        <mat-icon class="!text-base text-[#FFC501FF]">refresh</mat-icon>
-                    </button>
-                </div>
-            </div>
-
-            <!-- ─── SPINNER ─── -->
-            <div *ngIf="isLoading()" class="flex-1 flex items-center justify-center">
-                <div class="flex flex-col items-center gap-3">
-                    <mat-progress-spinner mode="indeterminate" diameter="40" color="primary"></mat-progress-spinner>
-                    <p class="text-xs font-black uppercase text-gray-500">Cargando inventario...</p>
-                </div>
-            </div>
-
-            <!-- ─── VISTA TABLA ─── -->
-            <div *ngIf="!isLoading() && viewMode() === 'table'" class="flex-1 overflow-auto custom-scrollbar-inv">
-                <table class="w-full">
-                    <thead class="bg-gray-100 dark:bg-slate-800 border-b-[2px] border-black sticky top-0 z-10">
-                    <tr class="text-left text-[10px] font-black uppercase tracking-wider text-black dark:text-white">
-                        <th class="px-4 py-3">Código / P/N</th>
-                        <th class="px-4 py-3">Descripción</th>
-                        <th class="px-4 py-3">Ubicación</th>
-                        <th class="px-4 py-3 text-center">Stock</th>
-                        <th class="px-4 py-3 text-center">Condición</th>
-                        <th class="px-4 py-3 text-center">Estado</th>
-                        <th class="px-4 py-3 text-center">Acciones</th>
-                    </tr>
-                    </thead>
-                    <tbody>
-                    <tr *ngFor="let item of filteredData()"
-                        (click)="verDetalle(item)"
-                        class="border-b border-gray-200 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-800 cursor-pointer transition-all">
-
-                        <td class="px-4 py-3 font-mono text-xs font-black text-black dark:text-white">
-                            <div>{{ item.codigo }}</div>
-                            <div class="text-[10px] text-gray-400 font-normal">{{ item.partNumber }}</div>
-                        </td>
-
-                        <td class="px-4 py-3">
-                            <div class="font-bold text-sm text-black dark:text-white max-w-[200px] truncate">{{ item.descripcion }}</div>
-                            <div *ngIf="item.proveedor" class="text-[10px] text-gray-500 mt-0.5">{{ item.proveedor }}</div>
-                        </td>
-
-                        <td class="px-4 py-3 text-xs text-black dark:text-white">
-                            <div class="flex items-center gap-1 font-bold">
-                                <mat-icon class="!text-xs !w-3 !h-3">place</mat-icon>
-                                {{ item.ubicacion }}
-                            </div>
-                        </td>
-
-                        <td class="px-4 py-3 text-center">
-                            <div class="flex flex-col items-center gap-1">
-                                <span class="text-lg font-black text-black dark:text-white leading-none">{{ item.stockActual }}</span>
-                                <div class="w-16 h-1.5 bg-gray-200 rounded-full border border-black overflow-hidden">
-                                    <div class="h-full transition-all" [ngClass]="getStockBarColor(getStockPorcentaje(item))"
-                                         [style.width.%]="getStockPorcentaje(item)"></div>
-                                </div>
-                            </div>
-                        </td>
-
-                        <td class="px-4 py-3 text-center">
-                            <span class="px-2 py-0.5 text-[10px] font-black uppercase border-2 border-black rounded"
-                                  [ngClass]="getCondicionClass(item.condicion)">
-                                {{ item.condicion }}
-                            </span>
-                        </td>
-
-                        <td class="px-4 py-3 text-center">
-                            <span class="px-2 py-0.5 text-[10px] font-black uppercase border-2 border-black rounded"
-                                  [ngClass]="getStatusClass(item.estado)">
-                                {{ item.estado }}
-                            </span>
-                        </td>
-
-                        <td class="px-4 py-3">
-                            <div class="flex gap-1.5 justify-center" (click)="$event.stopPropagation()">
-                                <button (click)="verDetalle(item)"
-                                        matTooltip="Ver ficha"
-                                        class="w-7 h-7 flex items-center justify-center bg-[#FFC501FF] border-2 border-black rounded-lg shadow-[2px_2px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all">
-                                    <mat-icon class="!text-sm text-black">visibility</mat-icon>
-                                </button>
-                                <button (click)="generarQR(item)"
-                                        matTooltip="Generar QR"
-                                        class="w-7 h-7 flex items-center justify-center bg-blue-950 border-2 border-black rounded-lg shadow-[2px_2px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all">
-                                    <mat-icon class="!text-sm text-white">qr_code</mat-icon>
-                                </button>
-                            </div>
-                        </td>
-                    </tr>
-
-                    <tr *ngIf="!filteredData().length">
-                        <td colspan="7" class="px-4 py-12 text-center">
-                            <mat-icon class="!text-5xl text-gray-300 dark:text-gray-600">inventory_2</mat-icon>
-                            <p class="text-xs font-bold uppercase text-gray-500 mt-2">Sin resultados en inventario</p>
-                            <button (click)="limpiarFiltros()" class="mt-3 text-xs font-bold text-blue-600 hover:underline uppercase">Limpiar filtros</button>
-                        </td>
-                    </tr>
-                    </tbody>
-                </table>
-            </div>
-
-            <!-- ─── VISTA GRID ─── -->
-            <div *ngIf="!isLoading() && viewMode() === 'grid'" class="flex-1 overflow-auto custom-scrollbar-inv p-4">
-                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                    <div *ngFor="let item of filteredData()"
-                         (click)="verDetalle(item)"
-                         class="group bg-white dark:bg-slate-800 border-[3px] border-black rounded-xl overflow-hidden
-                                shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]
-                                hover:-translate-x-[2px] hover:-translate-y-[2px] transition-all cursor-pointer flex flex-col">
-
-                        <div class="px-3 py-2 border-b-[2px] border-black flex justify-between items-center bg-gray-50 dark:bg-slate-900">
-                            <span class="text-[10px] font-black font-mono uppercase text-gray-500">{{ item.codigo }}</span>
-                            <span class="px-2 py-0.5 text-[9px] font-black uppercase rounded border-2 border-black"
-                                  [ngClass]="getStatusClass(item.estado)">
-                                {{ item.estado }}
-                            </span>
-                        </div>
-
-                        <div class="p-4 flex-1 flex flex-col gap-3">
-                            <h3 class="text-sm font-black uppercase leading-tight text-black dark:text-white line-clamp-2 min-h-[2.5rem]">
-                                {{ item.descripcion }}
-                            </h3>
-
-                            <div class="grid grid-cols-2 gap-2 text-[10px] font-bold text-gray-500 uppercase">
-                                <div>
-                                    <span class="block text-gray-400">P/N</span>
-                                    <span class="text-black dark:text-white truncate block">{{ item.partNumber || '—' }}</span>
-                                </div>
-                                <div class="text-right">
-                                    <span class="block text-gray-400">Stock</span>
-                                    <span class="text-black dark:text-white text-lg font-black leading-none">{{ item.stockActual }}</span>
-                                </div>
-                            </div>
-
-                            <div class="h-1.5 w-full bg-gray-200 dark:bg-gray-700 rounded-full border border-black overflow-hidden">
-                                <div class="h-full transition-all duration-300"
-                                     [ngClass]="getStockBarColor(getStockPorcentaje(item))"
-                                     [style.width.%]="getStockPorcentaje(item)"></div>
-                            </div>
-
-                            <div class="flex items-center justify-between pt-2 border-t-[2px] border-dashed border-gray-200 dark:border-gray-700 mt-auto">
-                                <span class="text-[10px] font-bold text-gray-500 flex items-center gap-1">
-                                    <mat-icon class="!text-xs">place</mat-icon> {{ item.ubicacion }}
-                                </span>
-                                <span class="px-2 py-0.5 text-[9px] font-black uppercase rounded border-2 border-black"
-                                      [ngClass]="getCondicionClass(item.condicion)">
-                                    {{ item.condicion }}
-                                </span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div *ngIf="!filteredData().length"
-                         class="col-span-full flex flex-col items-center justify-center py-16 border-[3px] border-dashed border-gray-300 dark:border-gray-600 rounded-xl">
-                        <mat-icon class="!text-5xl text-gray-300 mb-2">inventory_2</mat-icon>
-                        <p class="font-black text-gray-500 uppercase text-xs">Sin resultados</p>
-                    </div>
-                </div>
-            </div>
-
-            <!-- ─── VISTA LISTA ─── -->
-            <div *ngIf="!isLoading() && viewMode() === 'list'" class="flex-1 overflow-auto custom-scrollbar-inv p-3">
-                <div class="space-y-2">
-                    <div *ngFor="let item of filteredData()"
-                         (click)="verDetalle(item)"
-                         class="group bg-white dark:bg-slate-800 border-[3px] border-black rounded-xl p-3
-                                flex items-center gap-4
-                                shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:shadow-[5px_5px_0px_0px_rgba(0,0,0,1)]
-                                hover:-translate-x-[1px] hover:-translate-y-[1px] transition-all cursor-pointer">
-
-                        <div class="w-10 h-10 flex-shrink-0 flex items-center justify-center border-[2px] border-black rounded-lg font-black shadow-sm"
-                             [ngClass]="item.stockActual > 0 ? 'bg-[#FFC501FF] text-black' : 'bg-red-100 text-red-800'">
-                            <mat-icon class="!text-base">{{ item.stockActual > 0 ? 'build' : 'production_quantity_limits' }}</mat-icon>
-                        </div>
-
-                        <div class="flex-1 min-w-0 grid grid-cols-12 gap-3 items-center">
-                            <div class="col-span-12 md:col-span-5">
-                                <div class="flex items-center gap-2 mb-0.5">
-                                    <span class="text-[10px] font-mono font-black text-gray-400">{{ item.codigo }}</span>
-                                    <span class="px-1.5 py-0.5 text-[9px] font-black uppercase rounded border-2 border-black"
-                                          [ngClass]="getStatusClass(item.estado)">{{ item.estado }}</span>
-                                </div>
-                                <h4 class="text-sm font-black uppercase text-black dark:text-white truncate">{{ item.descripcion }}</h4>
-                            </div>
-
-                            <div class="col-span-6 md:col-span-3 text-xs font-bold text-gray-500 uppercase space-y-0.5">
-                                <div class="flex items-center gap-1"><mat-icon class="!text-xs">place</mat-icon> {{ item.ubicacion }}</div>
-                            </div>
-
-                            <div class="col-span-6 md:col-span-4 flex items-center gap-3">
-                                <div class="flex-1">
-                                    <div class="flex justify-between text-[10px] font-black uppercase mb-1">
-                                        <span>Stock</span>
-                                        <span>{{ item.stockActual }}</span>
-                                    </div>
-                                    <div class="h-1.5 w-full bg-gray-200 dark:bg-gray-700 rounded-full border border-black overflow-hidden">
-                                        <div class="h-full transition-all"
-                                             [ngClass]="getStockBarColor(getStockPorcentaje(item))"
-                                             [style.width.%]="getStockPorcentaje(item)"></div>
-                                    </div>
-                                </div>
-                                <mat-icon class="text-gray-400 shrink-0">chevron_right</mat-icon>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div *ngIf="!filteredData().length"
-                         class="flex flex-col items-center justify-center py-16 border-[3px] border-dashed border-gray-300 dark:border-gray-600 rounded-xl">
-                        <mat-icon class="!text-5xl text-gray-300 mb-2">inventory_2</mat-icon>
-                        <p class="font-black text-gray-500 uppercase text-xs">Sin resultados</p>
-                    </div>
-                </div>
-            </div>
-
-        </div>
+    <!-- Título -->
+    <div class="flex items-center gap-3 shrink-0">
+      <div class="flex items-center justify-center w-10 h-10 bg-white dark:bg-[#0F172AFF] border-[3px] border-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] rounded-xl shrink-0">
+        <mat-icon class="text-black dark:text-[#FFC501FF] !text-base">inventory_2</mat-icon>
+      </div>
+      <div class="min-w-0">
+        <h1 class="text-lg sm:text-xl font-black text-black dark:text-white uppercase tracking-tighter leading-none">
+          INVENTARIO UNIFICADO
+        </h1>
+        <p class="text-[10px] font-bold bg-[#FFC501FF] text-black px-2 py-0.5 inline-block border-2 border-black rounded uppercase tracking-wider mt-0.5 truncate max-w-full">
+          Herramientas · Kits · Misceláneos
+        </p>
+      </div>
     </div>
 
-    <!-- ═══════════════════ PANEL DETALLE (overlay) ═══════════════════ -->
-    <div *ngIf="selectedItem()"
-         class="absolute inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
-         (click)="cerrarDetalle()">
-        <div class="w-full max-w-3xl bg-white dark:bg-slate-800 border-[3px] border-black rounded-2xl
-                    shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] overflow-hidden flex flex-col max-h-[90vh]"
-             (click)="$event.stopPropagation()">
+    <!-- Búsquedas — fila propia, se expanden al ancho disponible -->
+    <div class="flex items-center gap-2 shrink-0">
 
-            <!-- Header del panel -->
-            <div class="bg-[#0F172AFF] px-5 py-3.5 flex justify-between items-center border-b-[3px] border-black shrink-0">
-                <div class="flex items-center gap-3">
-                    <div class="w-10 h-10 bg-[#FFC501FF] border-[2px] border-black rounded-lg flex items-center justify-center shadow-[2px_2px_0px_0px_#000]">
-                        <mat-icon class="text-black !text-xl">build</mat-icon>
-                    </div>
-                    <div>
-                        <h2 class="text-base font-black text-white uppercase leading-none">Ficha de Herramienta</h2>
-                        <span class="text-[10px] font-mono font-bold text-white/60">{{ selectedItem()?.codigo }}</span>
-                    </div>
-                </div>
-                <button (click)="cerrarDetalle()"
-                        class="w-9 h-9 bg-white text-black border-[2px] border-black rounded-lg hover:bg-red-500 hover:text-white transition-all flex items-center justify-center">
-                    <mat-icon class="!text-base">close</mat-icon>
-                </button>
-            </div>
+      <!-- Búsqueda libre -->
+      <div class="relative flex-1 min-w-0">
+        <input type="text"
+               [ngModel]="searchTerm()" (ngModelChange)="searchTerm.set($event)"
+               placeholder="Código, nombre, P/N..."
+               class="h-9 pl-9 pr-3 w-full bg-white dark:bg-[#0F172AFF] text-black dark:text-white
+                      border-[2px] border-black rounded-lg font-bold text-xs
+                      focus:outline-none focus:shadow-[3px_3px_0px_0px_#000] focus:-translate-y-[1px] transition-all
+                      placeholder:font-normal placeholder:normal-case placeholder:text-gray-400" />
+        <mat-icon class="absolute left-2.5 top-2 text-black dark:text-white !text-sm">search</mat-icon>
+      </div>
 
-            <!-- Cuerpo del panel -->
-            <div class="p-5 overflow-y-auto custom-scrollbar-inv flex-1">
-                <div class="flex flex-col md:flex-row gap-5">
+      <!-- Búsqueda por comandos — solo sm+ -->
+      <div class="relative w-44 shrink-0 hidden sm:block">
+        <input type="text"
+               [ngModel]="commandSearch()" (ngModelChange)="commandSearch.set($event)"
+               placeholder="tipo:kit  stock&lt;5"
+               class="h-9 pl-9 pr-3 w-full bg-white dark:bg-[#0F172AFF] text-black dark:text-white
+                      border-[2px] border-purple-400 rounded-lg font-mono text-xs
+                      focus:outline-none focus:shadow-[3px_3px_0px_0px_#7c3aed] focus:-translate-y-[1px] transition-all
+                      placeholder:font-normal placeholder:text-purple-300" />
+        <mat-icon class="absolute left-2.5 top-2 text-purple-500 !text-sm">terminal</mat-icon>
+      </div>
 
-                    <!-- Columna izquierda -->
-                    <div class="flex-1 space-y-4">
-
-                        <div>
-                            <span class="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-1">Descripción</span>
-                            <h3 class="text-xl font-black text-black dark:text-white uppercase leading-tight">{{ selectedItem()?.descripcion }}</h3>
-                        </div>
-
-                        <div class="grid grid-cols-2 gap-3">
-                            <div class="p-3 bg-gray-50 dark:bg-slate-700 border-[2px] border-black rounded-xl">
-                                <span class="text-[9px] font-black text-gray-400 uppercase block">Part Number</span>
-                                <span class="text-sm font-black text-black dark:text-white">{{ selectedItem()?.partNumber || '—' }}</span>
-                            </div>
-                            <div class="p-3 bg-gray-50 dark:bg-slate-700 border-[2px] border-black rounded-xl">
-                                <span class="text-[9px] font-black text-gray-400 uppercase block">Ubicación</span>
-                                <span class="text-sm font-black text-black dark:text-white">{{ selectedItem()?.ubicacion }}</span>
-                            </div>
-                            <div class="p-3 bg-gray-50 dark:bg-slate-700 border-[2px] border-black rounded-xl">
-                                <span class="text-[9px] font-black text-gray-400 uppercase block">Valor Unitario</span>
-                                <span class="text-sm font-black text-black dark:text-white">Bs {{ selectedItem()?.valorUnitario }}</span>
-                            </div>
-                        </div>
-
-                        <!-- Nivel de stock -->
-                        <div class="p-4 bg-gray-50 dark:bg-slate-700 border-[2px] border-black rounded-xl">
-                            <div class="flex justify-between items-end mb-2">
-                                <div>
-                                    <span class="text-[9px] font-black text-gray-400 uppercase block">Nivel de Stock</span>
-                                    <span class="text-3xl font-black text-black dark:text-white leading-none">{{ selectedItem()?.stockActual }}</span>
-                                    <span class="text-sm font-bold text-gray-500"> / {{ selectedItem()?.stockMaximo }}</span>
-                                </div>
-                                <div class="flex flex-col items-end gap-1">
-                                    <span class="px-2 py-0.5 text-[10px] font-black uppercase rounded border-2 border-black"
-                                          [ngClass]="getStatusClass(selectedItem()?.estado || '')">
-                                        {{ selectedItem()?.estado }}
-                                    </span>
-                                    <span class="px-2 py-0.5 text-[10px] font-black uppercase rounded border-2 border-black"
-                                          [ngClass]="getCondicionClass(selectedItem()?.condicion || '')">
-                                        {{ selectedItem()?.condicion }}
-                                    </span>
-                                </div>
-                            </div>
-                            <div class="h-3 w-full bg-gray-200 dark:bg-gray-600 rounded-full border border-black overflow-hidden">
-                                <div class="h-full transition-all"
-                                     [ngClass]="getStockBarColor(getStockPorcentaje(selectedItem()!))"
-                                     [style.width.%]="getStockPorcentaje(selectedItem()!)"></div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Columna derecha -->
-                    <div class="w-full md:w-52 space-y-3 shrink-0">
-
-                        <div *ngIf="selectedItem()?.serialNumber"
-                             class="p-3 border-l-4 border-l-[#FFC501FF] bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-r-xl">
-                            <span class="text-[9px] font-black text-gray-400 uppercase block">Serial Number</span>
-                            <span class="font-mono font-black text-sm text-black dark:text-white">{{ selectedItem()?.serialNumber }}</span>
-                        </div>
-
-                        <div *ngIf="selectedItem()?.proveedor"
-                             class="p-3 border-l-4 border-l-blue-500 bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-r-xl">
-                            <span class="text-[9px] font-black text-gray-400 uppercase block">Proveedor / Marca</span>
-                            <span class="font-black text-sm text-black dark:text-white">{{ selectedItem()?.proveedor }}</span>
-                        </div>
-
-                        <div *ngIf="selectedItem()?.fechaCalibracion"
-                             class="p-3 bg-purple-50 dark:bg-purple-900/20 border-[2px] border-purple-400 rounded-xl">
-                            <div class="flex items-center gap-1.5 mb-2 text-purple-800 dark:text-purple-300">
-                                <mat-icon class="!text-sm">verified</mat-icon>
-                                <span class="font-black uppercase text-xs">Calibración</span>
-                            </div>
-                            <div class="space-y-1 text-xs">
-                                <div class="flex justify-between">
-                                    <span class="font-bold text-gray-500">Última:</span>
-                                    <span class="font-black text-black dark:text-white">{{ selectedItem()?.fechaCalibracion | date:'dd/MM/yyyy' }}</span>
-                                </div>
-                                <div class="flex justify-between">
-                                    <span class="font-bold text-gray-500">Próxima:</span>
-                                    <span class="font-black text-red-500">{{ selectedItem()?.proximaCalibracion | date:'dd/MM/yyyy' }}</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Acciones rápidas -->
-                        <div class="pt-3 border-t-2 border-dashed border-gray-300 dark:border-gray-600">
-                            <span class="text-[9px] font-black text-gray-400 uppercase block mb-2">Acciones rápidas</span>
-                            <div class="grid grid-cols-2 gap-2">
-                                <button (click)="ajustarStock(selectedItem()!)"
-                                        class="h-9 bg-black text-white border-2 border-black rounded-lg font-black text-[10px] uppercase
-                                               shadow-[2px_2px_0px_0px_#555] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all">
-                                    Ajustar
-                                </button>
-                                <button (click)="generarQR(selectedItem()!)"
-                                        class="h-9 bg-white dark:bg-slate-700 text-black dark:text-white border-2 border-black rounded-lg font-black text-[10px] uppercase
-                                               shadow-[2px_2px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all">
-                                    QR Code
-                                </button>
-                                <button (click)="imprimirEtiqueta(selectedItem()!)"
-                                        class="col-span-2 h-9 bg-[#FFC501FF] text-black border-2 border-black rounded-lg font-black text-[10px] uppercase
-                                               shadow-[2px_2px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all">
-                                    Imprimir Etiqueta
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
     </div>
 
-</div>
+    <!-- Filtros dropdown — scroll horizontal en mobile, sin wrapping -->
+    <div class="flex items-center gap-2 overflow-x-auto scrollbar-none flex-nowrap shrink-0">
+
+      <!-- Tipo -->
+      <select [ngModel]="selectedTipo()" (ngModelChange)="selectedTipo.set($event)"
+              class="h-9 px-2 sm:px-3 bg-white dark:bg-[#0F172AFF] text-black dark:text-white
+                     border-[2px] border-black rounded-lg font-black text-xs uppercase
+                     focus:outline-none transition-all cursor-pointer shrink-0">
+        <option value="todos">Todos</option>
+        <option value="HERRAMIENTA">Herramientas</option>
+        <option value="KIT">Kits</option>
+        <option value="MISCELANEO">Misceláneos</option>
+      </select>
+
+      <!-- Estado -->
+      <select [ngModel]="selectedEstado()" (ngModelChange)="selectedEstado.set($event)"
+              class="h-9 px-2 sm:px-3 bg-white dark:bg-[#0F172AFF] text-black dark:text-white
+                     border-[2px] border-black rounded-lg font-black text-xs uppercase
+                     focus:outline-none transition-all cursor-pointer shrink-0">
+        <option value="todos">Todos los estados</option>
+        <option *ngFor="let e of estados" [value]="e">{{ e }}</option>
+      </select>
+
+      <!-- Categoría -->
+      <select [ngModel]="selectedCategoria()" (ngModelChange)="selectedCategoria.set($event)"
+              class="h-9 px-2 sm:px-3 bg-white dark:bg-[#0F172AFF] text-black dark:text-white
+                     border-[2px] border-black rounded-lg font-black text-xs uppercase
+                     focus:outline-none transition-all cursor-pointer shrink-0">
+        <option value="todas">Todas las categorías</option>
+        <option *ngFor="let cat of categorias" [value]="cat">{{ cat }}</option>
+      </select>
+
+      <!-- Ubicación — autocomplete -->
+      <div class="relative shrink-0 w-36">
+        <input type="text"
+               [ngModel]="ubicacionSearch()"
+               (ngModelChange)="ubicacionSearch.set($event); showUbicacionDrop.set(true)"
+               (focus)="showUbicacionDrop.set(true)"
+               (blur)="closeUbicacionDrop()"
+               placeholder="Ubicación..."
+               class="h-9 pl-3 pr-7 w-full bg-white dark:bg-[#0F172AFF] text-black dark:text-white
+                      border-[2px] border-black rounded-lg font-black text-xs uppercase
+                      focus:outline-none focus:shadow-[2px_2px_0_#000] transition-all
+                      placeholder:font-normal placeholder:normal-case placeholder:text-gray-400" />
+        <!-- Botón limpiar -->
+        <button *ngIf="ubicacionSearch()" (mousedown)="ubicacionSearch.set(''); showUbicacionDrop.set(false)"
+                class="absolute right-1.5 top-2 text-gray-400 hover:text-black dark:hover:text-white transition-colors">
+          <mat-icon class="!text-sm">close</mat-icon>
+        </button>
+        <!-- Dropdown sugerencias -->
+        <div *ngIf="showUbicacionDrop() && filteredUbicList().length > 0"
+             class="absolute top-full left-0 mt-1 w-full min-w-[160px] z-50
+                    bg-white dark:bg-slate-800 border-2 border-black rounded-xl
+                    shadow-[3px_3px_0_#000] overflow-hidden max-h-48 overflow-y-auto">
+          <button *ngFor="let u of filteredUbicList()"
+                  (mousedown)="selectUbicacion(u)"
+                  class="w-full text-left px-3 py-2 text-[11px] font-bold text-black dark:text-white uppercase
+                         hover:bg-amber-50 dark:hover:bg-slate-700 transition-colors
+                         border-b border-stone-100 dark:border-slate-700 last:border-0">
+            {{ u }}
+          </button>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Fila de filtros secundarios -->
+    <div class="flex items-center gap-2 flex-nowrap overflow-x-auto scrollbar-none pb-0.5 shrink-0">
+
+      <!-- Stock range — sólo md+ -->
+      <div class="items-center gap-1 hidden md:flex">
+        <span class="text-[11px] font-black text-gray-500 dark:text-gray-400 uppercase">Stock</span>
+        <input type="number" min="0" placeholder="Min"
+               [value]="stockDesde() ?? ''"
+               (change)="stockDesde.set($any($event.target).value !== '' ? +$any($event.target).value : null)"
+               class="h-8 w-14 px-2 text-xs bg-white dark:bg-[#0F172AFF] text-black dark:text-white border-[2px] border-black rounded-lg font-bold focus:outline-none transition-all" />
+        <span class="text-[11px] text-gray-400">—</span>
+        <input type="number" min="0" placeholder="Max"
+               [value]="stockHasta() ?? ''"
+               (change)="stockHasta.set($any($event.target).value !== '' ? +$any($event.target).value : null)"
+               class="h-8 w-14 px-2 text-xs bg-white dark:bg-[#0F172AFF] text-black dark:text-white border-[2px] border-black rounded-lg font-bold focus:outline-none transition-all" />
+      </div>
+
+      <select [ngModel]="periodoMovimiento()" (ngModelChange)="periodoMovimiento.set($event)"
+              class="h-8 px-2 sm:px-3 bg-white dark:bg-[#0F172AFF] text-black dark:text-white
+                     border-[2px] border-black rounded-lg font-bold text-[11px] uppercase
+                     focus:outline-none transition-all cursor-pointer shrink-0">
+        <option value="todo">Cualquier período</option>
+        <option value="7">Últ. 7 días</option>
+        <option value="30">Últ. 30 días</option>
+        <option value="90">Últ. 90 días</option>
+      </select>
+
+      <button *ngIf="hasActiveFilters()" (click)="resetFilters()"
+              class="h-8 px-3 flex items-center gap-1 text-[11px] font-black uppercase
+                     bg-red-100 text-red-700 border-[2px] border-red-400 rounded-lg
+                     hover:bg-red-200 transition-all shrink-0">
+        <mat-icon class="!text-xs !w-3.5 !h-3.5">filter_alt_off</mat-icon>
+        Limpiar
+      </button>
+
+      <span *ngIf="hasActiveFilters()"
+            class="text-[10px] font-black uppercase px-2 py-0.5 bg-[#FFC501FF] border-2 border-black rounded text-black shrink-0">
+        Filtros activos
+      </span>
+    </div>
+
+    <!-- Pestañas de navegación — fuera del card, encima de él -->
+    <div class="flex items-center gap-1.5 overflow-x-auto scrollbar-none flex-nowrap shrink-0">
+      <ng-container *ngFor="let tab of TABS">
+        <button (click)="setActiveTab(tab.id)"
+                class="flex items-center gap-1 px-2.5 py-1.5 text-[10px] font-black uppercase rounded-lg border-[2px] transition-all shrink-0"
+                [ngClass]="{
+                  'bg-[#0F172AFF] text-[#FFC501FF] border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]': activeTab() === tab.id,
+                  'bg-white dark:bg-slate-800 text-black dark:text-white border-stone-300 dark:border-slate-600 hover:bg-gray-100 dark:hover:bg-slate-700': activeTab() !== tab.id
+                }">
+          <mat-icon class="!text-[12px] !w-3 !h-3">{{ tab.icon }}</mat-icon>
+          {{ tab.label }}
+          <span class="px-1 py-0.5 text-[9px] font-black rounded"
+                [ngClass]="{
+                  'bg-[#FFC501FF]/20 text-[#FFC501FF]': activeTab() === tab.id,
+                  'bg-black/10 dark:bg-white/10 text-black dark:text-white': activeTab() !== tab.id
+                }">
+            {{ tabCounts()[tab.id] }}
+          </span>
+        </button>
+      </ng-container>
+    </div>
+
+    <!-- ═══════════════════════════════ CARD PRINCIPAL ═══════════════════════════════ -->
+    <div class="flex-1 flex flex-col overflow-hidden border-[3px] border-black bg-gray-50 dark:bg-[#0F172AFF] rounded-2xl shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+
+      <!-- Header oscuro de la card: KPIs + Actualizar + Imprimir -->
+      <div class="px-3 sm:px-4 py-2 bg-[#0F172AFF] border-b-[3px] border-black shrink-0 rounded-t-2xl">
+
+        <!-- KPI chips + botones de acción — scroll horizontal en mobile -->
+        <div class="flex items-center gap-2 overflow-x-auto scrollbar-none flex-nowrap">
+
+          <div class="flex items-center gap-1.5 bg-white/10 rounded-lg px-2 sm:px-2.5 py-1.5 border border-white/20 shrink-0">
+            <div class="w-4 h-4 bg-white/20 rounded flex items-center justify-center">
+              <mat-icon class="!text-[10px] !w-2.5 !h-2.5 text-[#FFC501FF]">inventory_2</mat-icon>
+            </div>
+            <div>
+              <div class="text-[8px] font-black uppercase text-white/70 leading-none">Total</div>
+              <div class="text-sm font-black text-white leading-none">{{ kpiStats().total }}</div>
+            </div>
+          </div>
+
+          <div class="flex items-center gap-1.5 rounded-lg px-2 sm:px-2.5 py-1.5 border border-white/20 shrink-0"
+               [ngClass]="kpiStats().critico > 0 ? 'bg-red-600/40' : 'bg-white/10'">
+            <div class="w-4 h-4 rounded flex items-center justify-center"
+                 [ngClass]="kpiStats().critico > 0 ? 'bg-red-500' : 'bg-white/20'">
+              <mat-icon class="!text-[10px] !w-2.5 !h-2.5 text-white">warning</mat-icon>
+            </div>
+            <div>
+              <div class="text-[8px] font-black uppercase text-white/70 leading-none">Crítico</div>
+              <div class="text-sm font-black leading-none"
+                   [class.text-red-300]="kpiStats().critico > 0"
+                   [class.text-white]="kpiStats().critico === 0">{{ kpiStats().critico }}</div>
+            </div>
+          </div>
+
+          <div class="items-center gap-1.5 bg-blue-600/30 rounded-lg px-2 sm:px-2.5 py-1.5 border border-white/20 shrink-0 hidden sm:flex">
+            <div class="w-4 h-4 bg-blue-500 rounded flex items-center justify-center">
+              <mat-icon class="!text-[10px] !w-2.5 !h-2.5 text-white">assignment_ind</mat-icon>
+            </div>
+            <div>
+              <div class="text-[8px] font-black uppercase text-white/70 leading-none">Prestados</div>
+              <div class="text-sm font-black text-white leading-none">{{ kpiStats().prestados }}</div>
+            </div>
+          </div>
+
+          <div class="items-center gap-1.5 bg-white/10 rounded-lg px-2 sm:px-2.5 py-1.5 border border-white/20 shrink-0 hidden md:flex">
+            <div class="w-4 h-4 bg-white/20 rounded flex items-center justify-center">
+              <mat-icon class="!text-[10px] !w-2.5 !h-2.5 text-gray-300">schedule</mat-icon>
+            </div>
+            <div>
+              <div class="text-[8px] font-black uppercase text-white/70 leading-none">Sin mov. 90d</div>
+              <div class="text-sm font-black text-white leading-none">{{ kpiStats().sinMov90 }}</div>
+            </div>
+          </div>
+
+          <!-- Actualizar — movido desde controles -->
+          <button (click)="loadInventory()" [disabled]="isLoading()"
+                  matTooltip="Recargar inventario"
+                  class="flex items-center gap-1.5 h-7 px-2.5 rounded-lg border border-white/30 shrink-0
+                         text-white hover:bg-white/20 transition-all disabled:opacity-40 font-black text-[10px] uppercase">
+            <mat-icon class="!text-sm !w-4 !h-4 text-[#FFC501FF]" [class.spin]="isLoading()">refresh</mat-icon>
+            Actualizar
+          </button>
+
+          <!-- Imprimir / Guardar PDF -->
+          <button (click)="imprimirListado()" [disabled]="tabFilteredData().length === 0 || isLoading()"
+                  matTooltip="Imprimir / Guardar como PDF"
+                  class="flex items-center gap-1.5 h-7 px-2.5 rounded-lg border border-white/30 shrink-0
+                         text-white hover:bg-white/20 transition-all disabled:opacity-40 font-black text-[10px] uppercase">
+            <mat-icon class="!text-sm !w-4 !h-4 text-[#FFC501FF]">print</mat-icon>
+            Imprimir
+          </button>
+
+        </div>
+      </div>
+
+      <!-- Contador de resultados + paginación rápida -->
+      <div class="px-3 sm:px-4 py-2 bg-gray-100 dark:bg-slate-800 border-b-[2px] border-black flex items-center justify-between shrink-0 gap-2">
+        <span class="text-[10px] font-black uppercase tracking-wider text-black dark:text-white">
+          <ng-container *ngIf="isLoading()">Cargando datos…</ng-container>
+          <ng-container *ngIf="!isLoading()">
+            {{ tabFilteredData().length }} ítems
+            <span *ngIf="totalPages() > 1" class="font-normal text-gray-500 dark:text-gray-400 hidden sm:inline">
+              · pág. {{ currentPage() }} / {{ totalPages() }}
+            </span>
+          </ng-container>
+        </span>
+        <div *ngIf="!isLoading() && totalPages() > 1" class="flex items-center gap-1">
+          <button (click)="prevPage()" [disabled]="currentPage() === 1"
+                  class="h-6 px-2 text-[10px] font-black uppercase bg-white dark:bg-slate-700 border-[2px] border-black rounded-lg
+                         shadow-[1px_1px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all
+                         disabled:opacity-40 disabled:cursor-not-allowed text-black dark:text-white">
+            ←
+          </button>
+          <span class="h-6 px-2 text-[10px] font-black bg-[#0F172AFF] text-[#FFC501FF] border-[2px] border-black rounded-lg flex items-center">
+            {{ currentPage() }}/{{ totalPages() }}
+          </span>
+          <button (click)="nextPage()" [disabled]="currentPage() === totalPages()"
+                  class="h-6 px-2 text-[10px] font-black uppercase bg-white dark:bg-slate-700 border-[2px] border-black rounded-lg
+                         shadow-[1px_1px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all
+                         disabled:opacity-40 disabled:cursor-not-allowed text-black dark:text-white">
+            →
+          </button>
+        </div>
+      </div>
+
+      <!-- ── Spinner ── -->
+      <div *ngIf="isLoading()" class="flex-1 flex flex-col items-center justify-center gap-4">
+        <div class="w-12 h-12 border-4 border-[#FFC501FF] border-t-transparent rounded-full spin"></div>
+        <p class="text-sm font-black uppercase text-gray-500 dark:text-gray-400">Cargando inventario unificado…</p>
+      </div>
+
+      <!-- ── Empty state ── -->
+      <div *ngIf="!isLoading() && pagedData().length === 0" class="flex-1 flex flex-col items-center justify-center gap-3 py-12 px-4 text-center">
+        <mat-icon class="!text-5xl text-gray-300 dark:text-gray-600">inventory_2</mat-icon>
+        <p class="text-xs font-bold uppercase text-gray-500 mt-2">Sin resultados</p>
+        <p *ngIf="hasActiveFilters()" class="text-[11px] text-gray-400 dark:text-gray-500">Ajusta los filtros o la búsqueda</p>
+        <button *ngIf="hasActiveFilters()" (click)="resetFilters()"
+                class="mt-2 px-4 py-2 text-xs font-black uppercase bg-[#FFC501FF] text-black border-[2px] border-black rounded-xl
+                       shadow-[2px_2px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all">
+          Limpiar filtros
+        </button>
+      </div>
+
+      <!-- ── Tabla ── -->
+      <div *ngIf="!isLoading() && pagedData().length > 0" class="flex-1 overflow-auto custom-scrollbar bg-gray-50 dark:bg-[#0F172AFF]">
+        <table class="w-full min-w-[500px] md:min-w-[720px] lg:min-w-[900px]">
+          <thead class="bg-gray-100 dark:bg-slate-800 border-b-[2px] border-black sticky top-0 z-10">
+            <tr class="text-left text-[10px] font-black uppercase tracking-wider text-black dark:text-white">
+              <th class="px-2 sm:px-3 md:px-4 py-2 sm:py-3">Tipo</th>
+              <th class="px-2 sm:px-3 md:px-4 py-2 sm:py-3">Código / P·N</th>
+              <th class="px-2 sm:px-3 md:px-4 py-2 sm:py-3">Nombre · Marca</th>
+              <th class="px-2 sm:px-3 md:px-4 py-2 sm:py-3 hidden sm:table-cell">Categoría</th>
+              <th class="px-2 sm:px-3 md:px-4 py-2 sm:py-3 hidden md:table-cell">Ubicación</th>
+              <th class="px-2 sm:px-3 md:px-4 py-2 sm:py-3 text-center">Stock</th>
+              <th class="px-2 sm:px-3 md:px-4 py-2 sm:py-3 text-center hidden sm:table-cell">Estado</th>
+              <th class="px-2 sm:px-3 md:px-4 py-2 sm:py-3 text-center">Ficha</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let item of pagedData()"
+                (click)="verDetalle(item)"
+                class="border-b border-gray-200 dark:border-slate-700 cursor-pointer transition-all"
+                [ngClass]="{
+                  'bg-red-50   dark:bg-red-950/20  hover:bg-red-100  dark:hover:bg-red-900/30':     item.stockActual === 0,
+                  'bg-white    dark:bg-slate-800/60 hover:bg-gray-100 dark:hover:bg-slate-700':      item.estado === 'DISPONIBLE' && item.stockActual > 0,
+                  'bg-gray-100 dark:bg-slate-800/40 hover:bg-gray-200 dark:hover:bg-slate-700':      item.estado !== 'DISPONIBLE' && item.stockActual !== 0,
+                  '!bg-amber-100 dark:!bg-slate-600': selectedItemId() === item.internalId
+                }">
+
+              <!-- Tipo -->
+              <td class="px-2 sm:px-3 md:px-4 py-2 sm:py-3">
+                <span class="px-1 sm:px-1.5 py-0.5 text-[9px] sm:text-[10px] font-black uppercase border-2 border-black rounded inline-flex items-center gap-0.5 sm:gap-1 {{ getTipoBadgeClass(item.tipo) }}">
+                  <mat-icon class="!text-[10px] sm:!text-[11px] !w-3 !h-3"
+                            [ngClass]="item.tipo === 'HERRAMIENTA' ? '!text-black' : '!text-white'">{{ getTipoIcon(item.tipo) }}</mat-icon>
+                  <span class="hidden sm:inline">{{ item.tipo === 'HERRAMIENTA' ? 'HERR.' : item.tipo === 'MISCELANEO' ? 'MISC.' : item.tipo }}</span>
+                </span>
+              </td>
+
+              <!-- Código / P·N -->
+              <td class="px-2 sm:px-3 md:px-4 py-2 sm:py-3">
+                <div class="font-mono text-[11px] sm:text-xs font-black text-black dark:text-white leading-tight">{{ item.codigo }}</div>
+                <div *ngIf="item.partNumber" class="text-[9px] text-gray-500 dark:text-gray-400 mt-0.5 font-mono truncate max-w-[100px]">P/N {{ item.partNumber }}</div>
+              </td>
+
+              <!-- Nombre · Marca -->
+              <td class="px-2 sm:px-3 md:px-4 py-2 sm:py-3" style="max-width:180px">
+                <div class="font-bold text-xs sm:text-sm text-black dark:text-white truncate leading-tight" [title]="item.nombre">{{ item.nombre }}</div>
+                <div *ngIf="item.marca" class="text-[9px] sm:text-[10px] text-gray-500 dark:text-gray-400 mt-0.5 truncate">{{ item.marca }}</div>
+              </td>
+
+              <!-- Categoría — sm+ -->
+              <td class="px-2 sm:px-3 md:px-4 py-2 sm:py-3 hidden sm:table-cell">
+                <span class="text-[9px] sm:text-[10px] text-gray-600 dark:text-gray-400 truncate block max-w-[100px]">{{ item.categoria || '—' }}</span>
+              </td>
+
+              <!-- Ubicación — sólo md+ -->
+              <td class="px-2 sm:px-3 md:px-4 py-2 sm:py-3 hidden md:table-cell" style="max-width:140px">
+                <div class="text-xs text-black dark:text-white truncate" [title]="item.ubicacion">{{ item.ubicacion }}</div>
+              </td>
+
+              <!-- Stock -->
+              <td class="px-2 sm:px-3 md:px-4 py-2 sm:py-3 text-center">
+                <div class="text-base sm:text-lg font-black leading-none"
+                     [class.text-red-600]="item.stockActual === 0"
+                     [class.text-yellow-600]="item.stockActual > 0 && (item.stockMinimo ?? 0) > 0 && item.stockActual <= (item.stockMinimo ?? 0)"
+                     [class.text-black]="item.stockActual > 0 && !((item.stockMinimo ?? 0) > 0 && item.stockActual <= (item.stockMinimo ?? 0))"
+                     [class.dark:text-white]="item.stockActual > 0">
+                  {{ item.stockActual }}
+                </div>
+                <div *ngIf="(item.stockMinimo ?? 0) > 0" class="text-[9px] text-gray-400 leading-none mt-0.5 hidden sm:block">mín {{ item.stockMinimo }}</div>
+                <div class="text-[9px] text-gray-400 leading-none">{{ item.unidad }}</div>
+              </td>
+
+              <!-- Estado — sm+ -->
+              <td class="px-2 sm:px-3 md:px-4 py-2 sm:py-3 text-center hidden sm:table-cell">
+                <span class="px-1 sm:px-1.5 py-0.5 text-[9px] sm:text-[10px] font-black uppercase border-2 border-black rounded inline-flex items-center gap-1 {{ getStatusBadgeClass(item.estado) }}">
+                  <span *ngIf="item.estado !== 'DISPONIBLE' && item.estado !== 'COMPLETO'"
+                        class="w-1.5 h-1.5 rounded-full shrink-0 {{ getStatusDotClass(item.estado) }}"></span>
+                  <span class="hidden md:inline">{{ item.estado }}</span>
+                </span>
+              </td>
+
+              <!-- Ficha -->
+              <td class="px-2 sm:px-3 md:px-4 py-2 sm:py-3 text-center" (click)="$event.stopPropagation()">
+                <button (click)="verDetalle(item)" matTooltip="Ver ficha completa"
+                        class="w-6 h-6 sm:w-7 sm:h-7 flex items-center justify-center mx-auto bg-[#0F172AFF] border-2 border-black rounded-lg
+                               shadow-[2px_2px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all">
+                  <mat-icon class="!text-xs sm:!text-sm text-[#FFC501FF]">open_in_new</mat-icon>
+                </button>
+              </td>
+
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Footer paginación -->
+      <div *ngIf="!isLoading() && totalPages() > 1"
+           class="px-3 sm:px-4 py-2 bg-gray-100 dark:bg-slate-800 border-t-[2px] border-black flex items-center justify-between shrink-0 rounded-b-2xl gap-2">
+        <span class="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase hidden sm:inline">
+          {{ pageStart }}–{{ pageEnd }} de {{ tabFilteredData().length }} ítems
+        </span>
+        <div class="flex items-center gap-1 mx-auto sm:mx-0">
+          <button (click)="prevPage()" [disabled]="currentPage() === 1"
+                  class="h-6 px-2 text-[10px] font-black uppercase bg-white dark:bg-slate-700 border-[2px] border-black rounded-lg
+                         shadow-[1px_1px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all
+                         disabled:opacity-40 disabled:cursor-not-allowed text-black dark:text-white">
+            ← Ant.
+          </button>
+          <span class="h-6 px-3 text-[10px] font-black bg-[#0F172AFF] text-[#FFC501FF] border-[2px] border-black rounded-lg flex items-center">
+            {{ currentPage() }} / {{ totalPages() }}
+          </span>
+          <button (click)="nextPage()" [disabled]="currentPage() === totalPages()"
+                  class="h-6 px-2 text-[10px] font-black uppercase bg-white dark:bg-slate-700 border-[2px] border-black rounded-lg
+                         shadow-[1px_1px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all
+                         disabled:opacity-40 disabled:cursor-not-allowed text-black dark:text-white">
+            Sig. →
+          </button>
+        </div>
+      </div>
+
+    </div><!-- /card principal -->
+  </div><!-- /p-4 container -->
+</div><!-- /host -->
+
+<!-- Ficha detalle → se abre via MatDialog (FichaInventarioDialogComponent) -->

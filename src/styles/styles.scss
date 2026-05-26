@@ -305,16 +305,63 @@
     }
 }
 
+// Neo-Brutal Transparent Dialog — sin fondo ni márgenes del contenedor (usado en retorno-traspaso, salidas, etc.)
+.neo-dialog-transparent {
+    .mat-mdc-dialog-container {
+        --mdc-dialog-container-shape: 0px;
+        border: none !important;
+        box-shadow: none !important;
+        background: transparent !important;
+        padding: 0 !important;
+
+        .mdc-dialog__surface {
+            background-color: transparent !important;
+            border-radius: 0 !important;
+            padding: 0 !important;
+            box-shadow: none !important;
+        }
+    }
+}
+
+.dark .neo-dialog-transparent {
+    .mat-mdc-dialog-container {
+        border: none !important;
+        background: transparent !important;
+        box-shadow: none !important;
+
+        .mdc-dialog__surface {
+            background-color: transparent !important;
+            padding: 0 !important;
+            box-shadow: none !important;
+        }
+    }
+}
+
 // No Padding Dialog - para diálogos con contenido que maneja su propio padding
 .no-padding-dialog {
     .mat-mdc-dialog-container {
         padding: 0 !important;
         background: transparent !important;
 
+        // El MDC wrapper y su contenedor deben rellenar el pane sin márgenes
+        .mdc-dialog,
+        .mdc-dialog__container {
+            padding: 0 !important;
+            margin: 0 !important;
+            width: 100% !important;
+            height: 100% !important;
+            align-items: flex-start !important;
+        }
+
         .mdc-dialog__surface {
             padding: 0 !important;
             background: transparent !important;
             box-shadow: none !important;
+            border-radius: 0 !important;
+            // Fuerza que la superficie ocupe el ancho completo del pane
+            width: 100% !important;
+            max-width: 100% !important;
+            min-width: 0 !important;
         }
     }
 }

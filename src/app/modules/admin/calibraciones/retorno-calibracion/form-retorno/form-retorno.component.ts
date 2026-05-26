@@ -8,8 +8,8 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { DragDropModule } from '@angular/cdk/drag-drop';
-import { Subject, lastValueFrom } from 'rxjs';
-import { takeUntil, finalize, debounceTime, distinctUntilChanged, switchMap } from 'rxjs/operators';
+import { Subject, lastValueFrom, of } from 'rxjs';
+import { takeUntil, finalize, debounceTime, distinctUntilChanged, switchMap, map, catchError } from 'rxjs/operators';
 import { CalibrationService } from '../../../../../core/services/calibration.service';
 import { MovementService } from '../../../../../core/services/movement.service';
 
@@ -99,19 +99,30 @@ export class FormRetornoComponent implements OnInit, OnDestroy {
 
     private setupFuncionarioSearch(): void {
         this._receivedBySearch$.pipe(
-            debounceTime(400), distinctUntilChanged(),
+            debounceTime(300), distinctUntilChanged(),
             switchMap(term => {
+                if (term.length < 2) { this.showReceivedByDropdown = false; return of([]); }
                 this.receivedByLoading = true;
-                return this.movementService.getFuncionarios(term).pipe(finalize(() => this.receivedByLoading = false));
+                const q = term.toLowerCase();
+                return this.movementService.getPersonal().pipe(
+                    map(lista => lista
+                        .filter(f => [f.nombreCompleto, f.nombre, f.apellido_paterno, f.apellido_materno]
+                            .filter(Boolean).join(' ').toLowerCase().includes(q))
+                        .slice(0, 10)
+                        .map((f: any) => ({
+                            id:     f.id_employee || f.id,
+                            nombre: f.nombreCompleto || f.nombre,
+                            cargo:  f.cargo ?? '',
+                            area:   f.area  ?? ''
+                        }))
+                    ),
+                    finalize(() => this.receivedByLoading = false),
+                    catchError(() => of([]))
+                );
             }),
             takeUntil(this._destroy$)
         ).subscribe(res => {
-            this.receivedByFuncionarios = (res || []).map((f: any) => ({
-                id: f.id_funcionario ?? f.id,
-                nombre: f.nombre_completo ?? f.nombre,
-                cargo: f.cargo ?? '',
-                area: f.area ?? ''
-            }));
+            this.receivedByFuncionarios = res || [];
             this.showReceivedByDropdown = this.receivedByFuncionarios.length > 0;
         });
     }

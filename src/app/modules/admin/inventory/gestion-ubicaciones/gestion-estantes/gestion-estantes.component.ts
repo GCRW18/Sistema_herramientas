@@ -39,7 +39,7 @@ import { GestionUbicacionesService } from '../gestion-ubicaciones.service';
         @keyframes spin { to { transform: rotate(360deg); } }
 
         /* Estante 3D */
-        .estante-3d { perspective: 1000px; }
+        .estante-3d { perspective: 1000px; overflow: hidden; }
         .estante-3d-inner {
             transform: rotateX(8deg) rotateY(-8deg);
             transform-style: preserve-3d;
@@ -52,6 +52,11 @@ import { GestionUbicacionesService } from '../gestion-ubicaciones.service';
         }
         .nivel-3d:hover { transform: translateZ(10px); }
         .nivel-3d.activo { transform: translateZ(16px); }
+        /* En móvil, desactivar 3D para evitar overflow */
+        @media (max-width: 1023px) {
+            .estante-3d-inner { transform: none !important; }
+            .nivel-3d:hover { transform: none; }
+        }
     `]
 })
 export class GestionEstantesComponent implements OnInit, OnChanges, OnDestroy {
@@ -420,8 +425,9 @@ export class GestionEstantesComponent implements OnInit, OnChanges, OnDestroy {
     async nuevoNivel(r: Rack, ev: Event) {
         ev.stopPropagation();
         const { FormNivelComponent } = await import('../form-nivel/form-nivel.component');
-        const regularCount = r.niveles.filter(n => !n.isFloor).length;
-        const ref = this.dialog.open(FormNivelComponent, { width: '560px', maxWidth: '95vw', panelClass: 'no-padding-dialog', data: { mode: 'new', rack: r, suggestedNumero: regularCount } });
+        const regularLevels = r.niveles.filter(n => !n.isFloor);
+        const maxNum = regularLevels.length > 0 ? Math.max(...regularLevels.map(n => n.numero ?? 0)) : 0;
+        const ref = this.dialog.open(FormNivelComponent, { width: '560px', maxWidth: '95vw', panelClass: 'no-padding-dialog', data: { mode: 'new', rack: r, suggestedNumero: maxNum + 1 } });
         ref.afterClosed().subscribe((lvl: Level | null) => {
             if (!lvl) return;
             this.svc.insertLevel({ ...lvl, rackId: r.id }).subscribe({

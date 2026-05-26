@@ -100,6 +100,33 @@
                     <p *ngIf="showDescError && !descripcionTrabajo.trim()" class="text-[7px] font-bold text-red-500 mt-0.5">La descripción es obligatoria.</p>
                 </div>
 
+                <!-- Recibido Por -->
+                <div class="relative">
+                    <label class="text-[7px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-300 mb-1 flex items-center gap-1">
+                        <mat-icon class="!text-[9px]">person</mat-icon>
+                        Recibido Por *
+                    </label>
+                    <div class="relative">
+                        <input type="text"
+                               [value]="receivedByName"
+                               (input)="onReceivedByInput($any($event.target).value)"
+                               (blur)="hideReceivedByDropdown()"
+                               placeholder="Buscar funcionario..."
+                               autocomplete="off"
+                               class="w-full h-9 text-xs font-bold bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-500 rounded-lg px-2.5 pr-8 outline-none placeholder:text-stone-300 dark:placeholder:text-slate-500 hover:border-stone-400 focus:border-black dark:focus:border-white focus:shadow-[2px_2px_0_#000] transition-all">
+                        <mat-spinner *ngIf="receivedByLoading" diameter="14" class="absolute right-2.5 top-2.5"></mat-spinner>
+                    </div>
+                    <div *ngIf="showReceivedByDropdown"
+                         class="absolute z-50 w-full mt-1 border-2 border-black dark:border-slate-500 rounded-lg bg-white dark:bg-slate-800 shadow-[3px_3px_0_#000] overflow-hidden divide-y divide-stone-100 dark:divide-slate-600 max-h-36 overflow-y-auto custom-scrollbar">
+                        <div *ngFor="let f of receivedByFuncionarios"
+                             (mousedown)="selectReceivedBy(f)"
+                             class="px-2.5 py-2 hover:bg-amber-50 dark:hover:bg-slate-700 cursor-pointer transition-colors">
+                            <div class="text-[10px] font-black text-black dark:text-white">{{ f.nombre }}</div>
+                            <div class="text-[8px] font-bold text-stone-400 uppercase">{{ f.cargo }}</div>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Prueba func + Próximo en grilla -->
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
 

@@ -1,34 +1,6 @@
 import { Injectable, inject } from '@angular/core';
-import { from, Observable, of, ReplaySubject, switchMap, tap } from 'rxjs';
+import { from, Observable, of, forkJoin, ReplaySubject, map, catchError, switchMap } from 'rxjs';
 import { ErpApiService } from '../api/api.service';
-
-export interface Kit {
-    id?: string;
-    code?: string;
-    name: string;
-    description: string;
-    status: 'active' | 'inactive' | 'in_use' | 'incomplete';
-    category?: string;
-    location?: string;
-    createdAt?: Date | string;
-    updatedAt?: Date | string;
-    items?: KitItem[];
-    totalItems?: number;
-    availableItems?: number;
-    completionPercentage?: number;
-}
-
-export interface KitItem {
-    id?: string;
-    kitId?: string;
-    toolId: string;
-    toolName?: string;
-    toolCode?: string;
-    quantity: number;
-    isOptional: boolean;
-    alternatives?: string[]; // Array of tool IDs that can replace this item
-    notes?: string;
-}
 
 export interface KitFilters {
     status?: string;
@@ -41,375 +13,288 @@ export interface KitFilters {
 @Injectable({ providedIn: 'root' })
 export class KitsService {
     private _api = inject(ErpApiService);
-    private _kits: ReplaySubject<Kit[]> = new ReplaySubject<Kit[]>(1);
-    private _kit: ReplaySubject<Kit | null> = new ReplaySubject<Kit | null>(1);
+    private _kits: ReplaySubject<any[]> = new ReplaySubject<any[]>(1);
+
+    get kits$(): Observable<any[]> { return this._kits.asObservable(); }
 
     // -----------------------------------------------------------------------------------------------------
-    // @ Accessors
+    // @ Helpers
     // -----------------------------------------------------------------------------------------------------
 
-    /**
-     * Getter for kits
-     */
-    get kits$(): Observable<Kit[]> {
-        return this._kits.asObservable();
+    // pxp-client y api.service nunca rechazan: devuelven { error: true } como valor.
+    // Este helper lo convierte en un error real para que mergeMap/forkJoin fallen correctamente.
+    private _postOrThrow(url: string, params: any): Observable<any> {
+        return from(this._api.post(url, params)).pipe(
+            map((r: any) => {
+                const root = r?.ROOT ?? r;
+                if (root?.error === true) {
+                    throw new Error(root?.detalle?.mensaje ?? root?.mensaje ?? root?.message ?? 'Error del servidor');
+                }
+                return r;
+            })
+        );
     }
 
-    /**
-     * Getter for kit
-     */
-    get kit$(): Observable<Kit | null> {
-        return this._kit.asObservable();
+    private _normalize(r: any): any[] {
+        const d = r?.ROOT?.datos ?? r?.datos ?? r?.data ?? r;
+        if (!d || d === '') return [];
+        return Array.isArray(d) ? d : [d];
+    }
+
+    private _normalizeSingle(r: any): any {
+        const arr = this._normalize(r);
+        return arr[0] ?? null;
     }
 
     // -----------------------------------------------------------------------------------------------------
-    // @ Public methods - Kits CRUD
+    // @ Kits CRUD
     // -----------------------------------------------------------------------------------------------------
 
-    /**
-     * Get all kits
-     */
-    getKits(filters?: KitFilters): Observable<Kit[]> {
-        const params = {
-            start: ((filters?.page || 1) - 1) * (filters?.limit || 50),
-            limit: filters?.limit || 50,
-            sort: 'name',
-            dir: 'asc',
-            ...filters
+    getKits(filters?: KitFilters): Observable<any[]> {
+        const params: any = {
+            start: ((filters?.page ?? 1) - 1) * (filters?.limit ?? 50),
+            limit: filters?.limit ?? 50,
+            sort: 'id_kit',
+            dir: 'desc'
         };
+        if (filters?.status)   params.status   = filters.status;
+        if (filters?.category) params.category = filters.category;
+        if (filters?.search)   params.search   = filters.search;
 
-        return from(this._api.post('herramientas/kits/listKits', params)).pipe(
-            switchMap((response: any) => {
-                const kits = response?.data || [];
+        return from(this._api.post('herramientas/kits/listarKits', params)).pipe(
+            map((r: any) => {
+                const kits = this._normalize(r);
                 this._kits.next(kits);
-                return of(kits);
-            })
+                return kits;
+            }),
+            catchError(() => of([]))
         );
     }
 
-    /**
-     * Get kit by id
-     */
-    getKitById(id: string): Observable<Kit> {
-        return from(this._api.post('herramientas/kits/listKits', {
-            start: 0,
-            limit: 1,
-            id_kit: id
-        })).pipe(
-            switchMap((response: any) => {
-                const kit = response?.data?.[0] || null;
-                if (kit) {
-                    this._kit.next(kit);
-                }
-                return of(kit);
-            })
-        );
-    }
-
-    /**
-     * Get kit by code
-     */
-    getKitByCode(code: string): Observable<Kit> {
-        return from(this._api.post('herramientas/kits/listKits', {
-            start: 0,
-            limit: 1,
-            code: code
-        })).pipe(
-            switchMap((response: any) => {
-                const kit = response?.data?.[0] || null;
-                if (kit) {
-                    this._kit.next(kit);
-                }
-                return of(kit);
-            })
-        );
-    }
-
-    /**
-     * Create new kit
-     */
-    createKit(kit: Partial<Kit>): Observable<Kit> {
-        return from(this._api.post('herramientas/kits/insertKit', kit)).pipe(
-            switchMap((response: any) => {
-                const newKit = response?.data || kit;
-                // Refresh kits list
-                this.getKits().subscribe();
-                return of(newKit);
-            })
-        );
-    }
-
-    /**
-     * Update kit
-     */
-    updateKit(id: string, kit: Partial<Kit>): Observable<Kit> {
-        return from(this._api.post('herramientas/kits/updateKit', {
+    createKit(kit: any): Observable<{ id_kit: number; code: string }> {
+        return from(this._api.post('herramientas/kits/insertarKits', {
             ...kit,
-            id_kit: id
+            active: true,
+            is_complete: false,
+            total_components: 0,
+            present_components: 0,
+            completeness_percentage: 0
         })).pipe(
-            switchMap((response: any) => {
-                const updatedKit = response?.data || kit;
-                // Refresh kits list
-                this.getKits().subscribe();
-                return of(updatedKit);
-            })
+            map((r: any) => {
+                const d = r?.ROOT ?? r;
+                return { id_kit: Number(d?.id_kit ?? d?.data?.id_kit ?? d?.datos?.id_kit ?? 0), code: kit.code ?? '' };
+            }),
+            catchError(err => { throw err; })
         );
     }
 
-    /**
-     * Delete kit
-     */
-    deleteKit(id: string): Observable<boolean> {
-        return from(this._api.post('herramientas/kits/deleteKit', {
-            id_kit: id
-        })).pipe(
-            switchMap((response: any) => {
-                // Refresh kits list
-                this.getKits().subscribe();
-                return of(response?.success || true);
-            })
+    updateKit(id_kit: number, kit: any): Observable<any> {
+        // pxp-client serializa null como la string 'null', que PostgreSQL rechaza en campos bool/int4/date.
+        // Se construye el payload omitiendo nulls y forzando booleanos.
+        const payload: any = { id_kit };
+        for (const [k, v] of Object.entries(kit)) {
+            if (v !== null && v !== undefined && v !== 'null') payload[k] = v;
+        }
+        // Campos bool obligatorios: deben tener valor explícito aunque el raw sea null
+        payload.active               = kit.active               ?? false;
+        payload.requires_calibration = kit.requires_calibration ?? false;
+        payload.is_complete          = kit.is_complete          ?? false;
+
+        return from(this._api.post('herramientas/kits/insertarKits', payload)).pipe(
+            map((r: any) => r),
+            catchError(err => { throw err; })
         );
     }
 
-    /**
-     * Change kit status
-     */
-    changeKitStatus(id: string, status: Kit['status']): Observable<Kit> {
-        return from(this._api.post('herramientas/kits/updateKit', {
-            id_kit: id,
-            status: status
-        })).pipe(
-            switchMap((response: any) => {
-                const updatedKit = response?.data || {};
-                // Refresh kits list
-                this.getKits().subscribe();
-                return of(updatedKit);
+    deleteKit(id_kit: number): Observable<boolean> {
+        return from(this._api.post('herramientas/kits/eliminarKits', { id_kit })).pipe(
+            map(() => true),
+            catchError(() => of(false))
+        );
+    }
+
+    // -----------------------------------------------------------------------------------------------------
+    // @ Correlativos — código auto-generado
+    // -----------------------------------------------------------------------------------------------------
+
+    getNextKitCode(): Observable<string> {
+        return from(this._api.post('herramientas/correlativos/siguienteCorrelativo', { prefijo: 'KIT' })).pipe(
+            map((r: any) => {
+                // ErpApiService.catch() devuelve el error en vez de relanzarlo,
+                // por lo que r puede ser el objeto de error cuando pxp-client rechaza.
+                if (r?.error === true || r?.ROOT?.error === true) {
+                    throw new Error(r?.mensaje ?? r?.ROOT?.mensaje ?? 'Error del servidor al generar correlativo');
+                }
+                let datos = r?.ROOT?.datos ?? r?.datos ?? r?.data ?? r;
+                if (typeof datos === 'string') {
+                    try { datos = JSON.parse(datos); } catch { /* mantener como string */ }
+                }
+                const numero = datos?.numero ?? datos?.nro_formateado;
+                if (!numero) throw new Error('Correlativo KIT no recibido del servidor');
+                return numero as string;
             })
         );
     }
 
     // -----------------------------------------------------------------------------------------------------
-    // @ Public methods - Kit Items Management
+    // @ Componentes del kit
     // -----------------------------------------------------------------------------------------------------
 
-    /**
-     * Get kit items
-     */
-    getKitItems(kitId: string): Observable<KitItem[]> {
-        return from(this._api.post('herramientas/kits/listKitItems', {
-            kit_id: kitId
-        })).pipe(
-            switchMap((response: any) => {
-                return of(response?.data || []);
-            })
-        );
-    }
-
-    /**
-     * Add item to kit
-     */
-    addKitItem(kitId: string, item: Partial<KitItem>): Observable<KitItem> {
-        return from(this._api.post('herramientas/kits/insertKitItem', {
-            ...item,
-            kit_id: kitId
-        })).pipe(
-            switchMap((response: any) => {
-                return of(response?.data || item);
-            })
-        );
-    }
-
-    /**
-     * Update kit item
-     */
-    updateKitItem(itemId: string, item: Partial<KitItem>): Observable<KitItem> {
-        return from(this._api.post('herramientas/kits/updateKitItem', {
-            ...item,
-            id_kit_item: itemId
-        })).pipe(
-            switchMap((response: any) => {
-                return of(response?.data || item);
-            })
-        );
-    }
-
-    /**
-     * Remove item from kit
-     */
-    removeKitItem(itemId: string): Observable<boolean> {
-        return from(this._api.post('herramientas/kits/deleteKitItem', {
-            id_kit_item: itemId
-        })).pipe(
-            switchMap((response: any) => {
-                return of(response?.success || true);
-            })
-        );
-    }
-
-    /**
-     * Bulk add items to kit
-     */
-    bulkAddKitItems(kitId: string, items: Partial<KitItem>[]): Observable<KitItem[]> {
-        return from(this._api.post('herramientas/kits/bulkInsertKitItems', {
+    getKitComponents(kitId: number): Observable<any[]> {
+        return from(this._api.post('herramientas/kitcomponents/listarKitComponents', {
+            start: 0, limit: 200,
             kit_id: kitId,
-            items: items
+            sort:   'id_kit_component',
+            dir:    'asc'
         })).pipe(
-            switchMap((response: any) => {
-                return of(response?.data || items);
+            map((r: any) => this._normalize(r)),
+            catchError(() => of([]))
+        );
+    }
+
+    saveKitComponents(kitId: number, items: any[]): Observable<any[]> {
+        const validos = items.filter(i => i.tool_id);
+        if (!validos.length) return of([]);
+        const calls = validos.map(i =>
+            this._postOrThrow('herramientas/kitcomponents/insertarKitComponents', {
+                kit_id:           kitId,
+                tool_id:          i.tool_id,
+                quantity:         1,
+                is_mandatory:     true,
+                is_present:       true,
+                present_quantity: 0
             })
+        );
+        return forkJoin(calls);
+    }
+
+    deleteKitComponents(components: any[]): Observable<any[]> {
+        if (!components.length) return of([]);
+        const calls = components.map(c =>
+            this._postOrThrow('herramientas/kitcomponents/eliminarKitComponents', {
+                id_kit_component: c.id_kit_component
+            })
+        );
+        return forkJoin(calls);
+    }
+
+    // -----------------------------------------------------------------------------------------------------
+    // @ Categorías de kits
+    // -----------------------------------------------------------------------------------------------------
+
+    getKitCategories(): Observable<{ id_kit_category: number; name: string; active: boolean }[]> {
+        return from(this._api.post('herramientas/kitcategories/listarKitCategorias', {
+            start: 0, limit: 100, sort: 'name', dir: 'asc'
+        })).pipe(
+            map((r: any) => this._normalize(r) as { id_kit_category: number; name: string; active: boolean }[]),
+            catchError(() => of([]))
+        );
+    }
+
+    createKitCategory(name: string): Observable<any> {
+        return from(this._api.post('herramientas/kitcategories/insertarKitCategorias', {
+            name: name.trim().toUpperCase(),
+            active: true
+        })).pipe(
+            catchError(err => { throw err; })
+        );
+    }
+
+    deleteKitCategory(id_kit_category: number): Observable<any> {
+        return this._postOrThrow('herramientas/kitcategories/eliminarKitCategorias', { id_kit_category });
+    }
+
+    getNextWorkOrderNumber(): Observable<string> {
+        return from(this._api.post('herramientas/correlativos/siguienteCorrelativo', { prefijo: 'OT' })).pipe(
+            map((r: any) => {
+                if (r?.error === true || r?.ROOT?.error === true) {
+                    throw new Error(r?.mensaje ?? r?.ROOT?.mensaje ?? 'Error al generar OT');
+                }
+                let datos = r?.ROOT?.datos ?? r?.datos ?? r?.data ?? r;
+                if (typeof datos === 'string') { try { datos = JSON.parse(datos); } catch { /* */ } }
+                const numero = datos?.numero ?? datos?.nro_formateado;
+                if (!numero) throw new Error('Correlativo OT no recibido');
+                return numero as string;
+            }),
+            catchError(() => of(''))
         );
     }
 
     // -----------------------------------------------------------------------------------------------------
-    // @ Public methods - Kit Verification & Status
+    // @ Préstamos de kits
     // -----------------------------------------------------------------------------------------------------
 
-    /**
-     * Verify kit completeness
-     * Returns which items are available, missing, in use, etc.
-     */
-    verifyKitStatus(kitId: string): Observable<any> {
-        return from(this._api.post('herramientas/kits/verifyKitStatus', {
-            kit_id: kitId
-        })).pipe(
-            switchMap((response: any) => {
-                return of(response?.data || {
-                    isComplete: false,
-                    availableItems: [],
-                    missingItems: [],
-                    itemsInUse: [],
-                    itemsRequiringCalibration: []
-                });
-            })
+    prestarKit(data: {
+        kit_id: number;
+        borrower_name: string;
+        borrower_id?: number;
+        department?: string;
+        work_order_number?: string;
+        loan_date?: string;
+        expected_return_date?: string;
+        delivered_by_name?: string;
+        notes?: string;
+    }): Observable<{ id_kit_loan: number; loan_number: string }> {
+        return from(this._api.post('herramientas/kitloans/prestarKit', data)).pipe(
+            map((r: any) => {
+                const root = r?.ROOT ?? r;
+                if (root?.error === true) throw new Error(root?.detalle?.mensaje ?? root?.mensaje ?? 'Error al registrar préstamo');
+                const d = root?.datos ?? root;
+                return {
+                    id_kit_loan: Number(d?.id_kit_loan ?? 0),
+                    loan_number: d?.loan_number ?? ''
+                };
+            }),
+            catchError(err => { throw err; })
         );
     }
 
-    /**
-     * Check if kit can be loaned
-     */
-    checkKitAvailability(kitId: string): Observable<{
-        available: boolean;
-        missingItems: string[];
-        itemsInUse: string[];
-    }> {
-        return from(this._api.post('herramientas/kits/checkAvailability', {
-            kit_id: kitId
-        })).pipe(
-            switchMap((response: any) => {
-                return of(response?.data || {
-                    available: false,
-                    missingItems: [],
-                    itemsInUse: []
-                });
-            })
+    devolverKit(data: {
+        id_kit_loan: number;
+        kit_id: number;
+        verified_by_name: string;
+        verified_by_id?: number;
+        is_complete: boolean;
+        missing_components?: string;
+        damaged_components?: string;
+        extra_components?: string;
+        actions_taken?: string;
+        notes?: string;
+    }): Observable<{ kit_status: string; id_verification: number }> {
+        // Construir payload explícitamente para evitar que pxp-client serialice 'undefined' como string
+        const payload: any = {
+            id_kit_loan:      data.id_kit_loan,
+            kit_id:           data.kit_id,
+            verified_by_name: data.verified_by_name,
+            is_complete:      data.is_complete ? 'true' : 'false',
+        };
+        if (data.verified_by_id)     payload.verified_by_id     = data.verified_by_id;
+        if (data.missing_components) payload.missing_components = data.missing_components;
+        if (data.damaged_components) payload.damaged_components = data.damaged_components;
+        if (data.extra_components)   payload.extra_components   = data.extra_components;
+        if (data.actions_taken)      payload.actions_taken      = data.actions_taken;
+        if (data.notes)              payload.notes              = data.notes;
+
+        return from(this._api.post('herramientas/kitloans/devolverKit', payload)).pipe(
+            map((r: any) => {
+                const root = r?.ROOT ?? r;
+                if (root?.error === true) throw new Error(root?.detalle?.mensaje ?? root?.mensaje ?? 'Error al registrar devolución');
+                const d = root?.datos ?? root;
+                return {
+                    kit_status:      d?.kit_status      ?? 'complete',
+                    id_verification: Number(d?.id_verification ?? 0)
+                };
+            }),
+            catchError(err => { throw err; })
         );
     }
 
-    /**
-     * Loan complete kit
-     */
-    loanKit(kitId: string, loanData: any): Observable<any> {
-        return from(this._api.post('herramientas/kits/loanKit', {
-            kit_id: kitId,
-            ...loanData
-        })).pipe(
-            switchMap((response: any) => {
-                return of(response?.data || {});
-            })
-        );
-    }
-
-    /**
-     * Return kit from loan
-     */
-    returnKit(kitId: string, returnData: any): Observable<any> {
-        return from(this._api.post('herramientas/kits/returnKit', {
-            kit_id: kitId,
-            ...returnData
-        })).pipe(
-            switchMap((response: any) => {
-                return of(response?.data || {});
-            })
-        );
-    }
-
-    // -----------------------------------------------------------------------------------------------------
-    // @ Public methods - Statistics & Reports
-    // -----------------------------------------------------------------------------------------------------
-
-    /**
-     * Get kits statistics
-     */
-    getKitsStatistics(): Observable<any> {
-        return from(this._api.post('herramientas/kits/getStatistics', {})).pipe(
-            switchMap((response: any) => {
-                return of(response?.data || {
-                    totalKits: 0,
-                    activeKits: 0,
-                    inactiveKits: 0,
-                    kitsInUse: 0,
-                    incompleteKits: 0,
-                    totalItems: 0
-                });
-            })
-        );
-    }
-
-    /**
-     * Get kit usage history
-     */
-    getKitHistory(kitId: string): Observable<any[]> {
-        return from(this._api.post('herramientas/kits/getKitHistory', {
-            kit_id: kitId
-        })).pipe(
-            switchMap((response: any) => {
-                return of(response?.data || []);
-            })
-        );
-    }
-
-    /**
-     * Get most used kits
-     */
-    getMostUsedKits(limit: number = 10): Observable<any[]> {
-        return from(this._api.post('herramientas/kits/getMostUsedKits', {
-            limit: limit
-        })).pipe(
-            switchMap((response: any) => {
-                return of(response?.data || []);
-            })
-        );
-    }
-
-    // -----------------------------------------------------------------------------------------------------
-    // @ Public methods - Export & Print
-    // -----------------------------------------------------------------------------------------------------
-
-    /**
-     * Export kits list to Excel
-     */
-    exportKitsToExcel(filters?: KitFilters): Observable<Blob> {
-        return from(this._api.post('herramientas/kits/exportToExcel', filters || {}, {
-            responseType: 'blob'
-        })).pipe(
-            switchMap((response: any) => {
-                return of(response);
-            })
-        );
-    }
-
-    /**
-     * Generate kit label/QR code
-     */
-    generateKitLabel(kitId: string): Observable<Blob> {
-        return from(this._api.post('herramientas/kits/generateLabel', {
-            kit_id: kitId
-        }, {
-            responseType: 'blob'
-        })).pipe(
-            switchMap((response: any) => {
-                return of(response);
-            })
+    getKitLoans(kitId?: number): Observable<any[]> {
+        const params: any = { start: 0, limit: 100, sort: 'id_kit_loan', dir: 'desc' };
+        if (kitId) params.kit_id = kitId;
+        return from(this._api.post('herramientas/kitloans/listarKitLoans', params)).pipe(
+            map((r: any) => this._normalize(r)),
+            catchError(() => of([]))
         );
     }
 }

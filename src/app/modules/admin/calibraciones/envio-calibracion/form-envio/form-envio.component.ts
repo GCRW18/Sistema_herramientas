@@ -9,7 +9,7 @@ import { MatSnackBar, MatSnackBarModule }                                       
 import { MatTooltipModule }                                                          from '@angular/material/tooltip';
 import { CdkDrag, CdkDragHandle }                                                    from '@angular/cdk/drag-drop';
 import { Subject, lastValueFrom, of }                                                from 'rxjs';
-import { takeUntil, finalize, debounceTime, distinctUntilChanged, switchMap }        from 'rxjs/operators';
+import { takeUntil, finalize, debounceTime, distinctUntilChanged, switchMap, map, catchError } from 'rxjs/operators';
 
 import { CalibrationService } from '../../../../../core/services/calibration.service';
 import { MovementService }    from '../../../../../core/services/movement.service';
@@ -207,20 +207,31 @@ export class FormEnvioComponent implements OnInit, OnDestroy {
 
     private _setupFuncionarioSearch(): void {
         this._reqSearch$.pipe(
-            debounceTime(400),
+            debounceTime(300),
             distinctUntilChanged(),
             switchMap(t => {
+                if (t.length < 2) { this.showRequestedByDropdown = false; return of([]); }
                 this.requestedByLoading = true;
-                return this.movementService.getFuncionarios(t).pipe(finalize(() => this.requestedByLoading = false));
+                const q = t.toLowerCase();
+                return this.movementService.getPersonal().pipe(
+                    map(lista => lista
+                        .filter(f => [f.nombreCompleto, f.nombre, f.apellido_paterno, f.apellido_materno]
+                            .filter(Boolean).join(' ').toLowerCase().includes(q))
+                        .slice(0, 10)
+                        .map((f: any) => ({
+                            id:     f.id_employee || f.id,
+                            nombre: f.nombreCompleto || f.nombre,
+                            cargo:  f.cargo || '',
+                            area:   f.area  || ''
+                        }))
+                    ),
+                    finalize(() => this.requestedByLoading = false),
+                    catchError(() => of([]))
+                );
             }),
             takeUntil(this._destroy$)
         ).subscribe(res => {
-            this.requestedByFuncionarios = (res || []).map((f: any) => ({
-                id:     f.id_funcionario || f.id,
-                nombre: f.nombre_completo || f.nombre,
-                cargo:  f.cargo || '',
-                area:   f.area  || ''
-            }));
+            this.requestedByFuncionarios = res || [];
             this.showRequestedByDropdown = this.requestedByFuncionarios.length > 0;
         });
     }

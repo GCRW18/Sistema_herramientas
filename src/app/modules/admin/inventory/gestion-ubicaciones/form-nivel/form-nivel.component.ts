@@ -45,7 +45,8 @@ export class FormNivelComponent {
     constructor() {
         if (this.mode === 'new') {
             const regularLevels = this.rack.niveles.filter(n => !n.isFloor);
-            const num = this.data.suggestedNumero ?? regularLevels.length;
+            const maxNum = regularLevels.length > 0 ? Math.max(...regularLevels.map(n => n.numero ?? 0)) : 0;
+            const num = this.data.suggestedNumero ?? (maxNum + 1);
             this.form.patchValue({
                 numero: num,
                 codigo: `${this.rack.codigo}-N${num}`,
@@ -72,7 +73,8 @@ export class FormNivelComponent {
             } else {
                 this._desbloquearCamposNivel();
                 const regularLevels = this.rack.niveles.filter(n => !n.isFloor);
-                const num = regularLevels.length;
+                const maxNum = regularLevels.length > 0 ? Math.max(...regularLevels.map(n => n.numero ?? 0)) : 0;
+                const num = maxNum + 1;
                 this.form.patchValue({
                     numero: num,
                     codigo: `${this.rack.codigo}-N${num}`,
