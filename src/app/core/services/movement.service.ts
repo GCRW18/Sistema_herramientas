@@ -1057,7 +1057,16 @@ export class MovementService {
         return from(this._api.post('herramientas/movements/registrarRetornoBase', data)).pipe(
             switchMap((response: any) => {
                 if (response?.error) throw new Error(response.mensaje || 'Error al registrar el retorno');
-                return of((response?.datos || response?.data)?.[0] || response?.datos || response?.data || {});
+                const datos = (response?.datos || response?.data)?.[0] || response?.datos || response?.data || {};
+                // pxp devuelve ROOT.error=false incluso cuando la función SQL falla;
+                // el error real queda en datos.error='true' / datos.mensaje
+                if (datos?.error === 'true' || datos?.error === true) {
+                    throw new Error(datos.mensaje || 'Error al registrar el retorno');
+                }
+                if (!datos?.movement_number) {
+                    throw new Error(datos?.mensaje || 'El retorno no pudo registrarse');
+                }
+                return of(datos);
             })
         );
     }
@@ -1065,15 +1074,21 @@ export class MovementService {
     /**
      * Registrar traspaso de herramientas a otra area/departamento.
      * Genera correlativo TRP automaticamente, inserta cabecera + items y decrementa stock.
+     * transfer_type: TEMPORAL | PERMANENTE | REASIGNACION | PRESTAMO
+     * expected_return_date: fecha esperada de retorno (requerida para TEMPORAL y PRESTAMO)
+     * received_by_name: nombre del funcionario que recibe en destino
      */
     registrarTraspasoOtraArea(data: {
         date: string;
         time: string;
         source_warehouse_id?: number;
         responsible_person: string;
+        received_by_name?: string;
         department: string;
         exit_reason: string;
         authorized_by?: string;
+        transfer_type?: string;
+        expected_return_date?: string;
         notes?: string;
         general_observations?: string;
         items_json: string;
@@ -1117,6 +1132,28 @@ export class MovementService {
                     throw new Error(response.mensaje || 'Error al registrar el envío');
                 }
                 return of((response?.datos || response?.data)?.[0] || response?.datos || response?.data || {});
+            })
+        );
+    }
+
+    listarMovimientosCompletados(params?: { limit?: number; start?: number }): Observable<any[]> {
+        return from(this._api.post('herramientas/movements/listarMovimientosCompletados', {
+            start: params?.start ?? 0,
+            limit: params?.limit ?? 200
+        })).pipe(
+            switchMap((response: any) => of(response?.datos || response?.data || []))
+        );
+    }
+
+    cerrarMovimiento(idMovement: number): Observable<any> {
+        return from(this._api.post('herramientas/movements/cerrarMovimiento', { id_movement: idMovement })).pipe(
+            switchMap((response: any) => {
+                if (response?.error) throw new Error(response.mensaje || 'Error al cerrar el movimiento');
+                const datos = (response?.datos || response?.data)?.[0] || response?.datos || response?.data || {};
+                if (datos?.error === 'true' || datos?.error === true) {
+                    throw new Error(datos.mensaje || 'Error al cerrar el movimiento');
+                }
+                return of(datos);
             })
         );
     }

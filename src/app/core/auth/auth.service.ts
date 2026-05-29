@@ -19,10 +19,14 @@ export class AuthService {
      * Constructor
      */
     constructor(private _router: Router) {
-        let auth = JSON.parse(localStorage.getItem('aut'));
-
-        if( auth ) {
-            this._authenticated = true;
+        try {
+            const raw = localStorage.getItem('aut');
+            const auth = raw ? JSON.parse(raw) : null;
+            if (auth && auth.id_usuario) {
+                this._authenticated = true;
+            }
+        } catch {
+            localStorage.removeItem('aut');
         }
     }
 
@@ -269,17 +273,27 @@ export class AuthService {
      * Check the authentication status
      */
     check(): Observable<boolean> {
-        // Check if the user is logged in
-        let auth:any = localStorage.getItem('aut');
-        if ( auth !== null)
-            auth = JSON.parse(auth);
+        const raw = localStorage.getItem('aut');
+        if (raw === null) return of(false);
 
-        // Check if the user is logged in
-        if (auth) {
-            return of(true);
+        let auth: any;
+        try {
+            auth = JSON.parse(raw);
+        } catch {
+            localStorage.removeItem('aut');
+            this._authenticated = false;
+            return of(false);
         }
 
-        return of(false);
+        // Require minimum valid session structure
+        if (!auth || !auth.id_usuario) {
+            localStorage.removeItem('aut');
+            this._authenticated = false;
+            return of(false);
+        }
+
+        this._authenticated = true;
+        return of(true);
     }
 
     /**

@@ -2,7 +2,7 @@
      style="width:560px; max-width:95vw; max-height:90vh; box-shadow: 6px 6px 0 #000">
 
     <!-- ══ HEADER ══ -->
-    <div class="bg-[#0F172A] px-5 py-3.5 flex items-center gap-3 shrink-0 select-none"
+    <div class="bg-[#0F172A] px-3 sm:px-5 py-3 sm:py-3.5 flex items-center gap-3 shrink-0 select-none"
          cdkDrag cdkDragRootElement=".cdk-overlay-pane" cdkDragHandle style="cursor:grab">
         <div class="w-9 h-9 rounded bg-amber-400 border-2 border-black flex items-center justify-center shadow-[2px_2px_0_#fbbf24] shrink-0">
             <mat-icon class="!text-lg text-black">layers</mat-icon>
@@ -14,7 +14,7 @@
     </div>
 
     <!-- ══ CONTEXTO DEL ESTANTE ══ -->
-    <div class="border-b-2 border-black bg-white dark:bg-slate-800 px-5 py-3 flex items-center gap-3 shrink-0">
+    <div class="border-b-2 border-black bg-white dark:bg-slate-800 px-3 sm:px-5 py-2.5 sm:py-3 flex items-center gap-3 shrink-0">
         <div class="w-9 h-9 rounded-xl border-2 border-stone-200 dark:border-slate-700 bg-stone-50 dark:bg-slate-700 flex items-center justify-center shrink-0">
             <mat-icon class="!text-base text-stone-400 dark:text-slate-400">shelves</mat-icon>
         </div>
@@ -28,7 +28,7 @@
     </div>
 
     <!-- ══ CUERPO DEL FORM ══ -->
-    <div class="flex-1 overflow-y-auto px-5 py-5 flex flex-col gap-4">
+    <div class="flex-1 overflow-y-auto px-3 sm:px-5 py-4 sm:py-5 flex flex-col gap-4">
         <form [formGroup]="form" class="flex flex-col gap-4">
 
             <!-- Toggle: Nivel Suelo -->
@@ -164,7 +164,7 @@
     </div>
 
     <!-- ══ FOOTER ══ -->
-    <div class="border-t-2 border-black bg-stone-200 dark:bg-slate-800 px-5 py-3 flex justify-between items-center shrink-0">
+    <div class="border-t-2 border-black bg-stone-200 dark:bg-slate-800 px-3 sm:px-5 py-3 flex justify-between items-center shrink-0">
         <button type="button" (click)="dialogRef.close(null)"
                 class="px-4 py-2 bg-[#FF1414] text-white font-black text-[10px] border-2 border-black rounded-xl shadow-[2px_2px_0_#000] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all uppercase">
             Cancelar

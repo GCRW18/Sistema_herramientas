@@ -38,8 +38,12 @@ export class FormEstanteComponent {
     constructor() {
         if (this.mode === 'new') {
             const next = (this.warehouse?.estantesCount ?? 0) + 1;
-            const codigoSugerido = `${this.warehouse.codigo}-EST-${String(next).padStart(2, '0')}`;
-            this.form.patchValue({ codigo: codigoSugerido });
+            const pad  = String(next).padStart(2, '0');
+            const codigoSugerido = `${this.warehouse.codigo}-EST-${pad}`.slice(0, 40);
+            this.form.patchValue({
+                codigo: codigoSugerido,
+                nombre: `Estante ${pad}`,
+            });
         } else if (this.data.rack) {
             this.form.patchValue(this.data.rack);
         }

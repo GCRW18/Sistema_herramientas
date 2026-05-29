@@ -268,21 +268,21 @@
         <div class="flex-1 flex flex-col md:flex-row overflow-hidden min-h-0">
 
             <!-- IZQUIERDA: Modelo 3D -->
-            <div class="h-[45vh] md:h-auto md:w-1/2 border-b-2 md:border-b-0 md:border-r-2 border-black flex flex-col overflow-hidden bg-gradient-to-br from-gray-100 to-gray-200 dark:from-slate-800 dark:to-slate-900">
+            <div class="h-[36vh] sm:h-[42vh] md:h-auto md:w-1/2 border-b-2 md:border-b-0 md:border-r-2 border-black flex flex-col overflow-hidden bg-gradient-to-br from-gray-100 to-gray-200 dark:from-slate-800 dark:to-slate-900">
 
-                <div class="px-3 sm:px-5 py-2 border-b-2 border-black bg-white dark:bg-slate-800 flex items-center justify-between shrink-0 gap-2 min-h-[52px] sm:min-h-[60px]">
+                <div class="px-3 sm:px-5 py-2 border-b-2 border-black bg-white dark:bg-slate-800 flex items-center justify-between shrink-0 gap-2 min-h-[44px] sm:min-h-[56px]">
                     <div class="min-w-0 flex-1">
-                        <p class="font-mono text-[12px] sm:text-[13px] font-black text-black dark:text-white truncate">Vista del Estante</p>
-                        <p class="text-[10px] font-bold text-gray-500 uppercase mt-0.5 hidden sm:block">Selecciona un nivel para filtrar</p>
+                        <p class="font-mono text-[11px] sm:text-[13px] font-black text-black dark:text-white truncate">Vista del Estante</p>
+                        <p class="text-[9px] sm:text-[10px] font-bold text-gray-500 uppercase mt-0.5 hidden sm:block">Selecciona un nivel para filtrar</p>
                     </div>
                     <div class="flex items-center gap-1.5 sm:gap-2 shrink-0">
                         <button (click)="cargarEstantes()" matTooltip="Recargar datos del estante"
-                                class="w-8 h-8 flex items-center justify-center bg-gray-100 dark:bg-slate-700 border-2 border-black rounded-lg shadow-[2px_2px_0px_0px_#000] hover:translate-y-[1px] hover:shadow-none transition-all">
-                            <mat-icon class="!text-black dark:text-white text-[18px]">refresh</mat-icon>
+                                class="w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center bg-gray-100 dark:bg-slate-700 border-2 border-black rounded-lg shadow-[2px_2px_0px_0px_#000] hover:translate-y-[1px] hover:shadow-none transition-all">
+                            <mat-icon class="!text-black dark:text-white !text-base">refresh</mat-icon>
                         </button>
                         <button (click)="nuevoNivel(r, $event)" matTooltip="Agregar nuevo nivel"
-                                class="px-2 sm:px-3 py-1.5 flex items-center gap-1.5 bg-amber-400 font-black text-[10px] uppercase border-2 border-black rounded-lg shadow-[2px_2px_0px_0px_#000] hover:translate-y-[1px] hover:shadow-none transition-all text-black">
-                            <mat-icon class="!text-black text-sm">add</mat-icon>
+                                class="px-2 sm:px-3 py-1.5 flex items-center gap-1 sm:gap-1.5 bg-amber-400 font-black text-[10px] uppercase border-2 border-black rounded-lg shadow-[2px_2px_0px_0px_#000] hover:translate-y-[1px] hover:shadow-none transition-all text-black">
+                            <mat-icon class="!text-black !text-sm">add</mat-icon>
                             <span class="hidden sm:inline">Nivel</span>
                         </button>
                     </div>
@@ -413,12 +413,12 @@
             </div>
 
             <!-- DERECHA: Listado de Herramientas -->
-            <div class="flex-1 min-h-[280px] md:min-h-0 md:w-1/2 flex flex-col overflow-hidden bg-gray-100 dark:bg-slate-900">
+            <div class="flex-1 min-h-[240px] sm:min-h-[280px] md:min-h-0 md:w-1/2 flex flex-col overflow-hidden bg-gray-100 dark:bg-slate-900">
 
-                <div class="px-3 sm:px-5 py-2 border-b-2 border-black bg-white dark:bg-slate-800 shrink-0 flex flex-wrap items-center justify-between gap-2 z-10 shadow-sm min-h-[52px] sm:min-h-[60px]">
+                <div class="px-3 sm:px-5 py-2 border-b-2 border-black bg-white dark:bg-slate-800 shrink-0 flex flex-wrap items-center justify-between gap-2 z-10 shadow-sm min-h-[44px] sm:min-h-[56px]">
                     <div class="min-w-0 flex-1">
-                        <p class="text-[10px] font-black uppercase text-gray-500">Filtrando en</p>
-                        <p class="text-[13px] sm:text-[15px] leading-tight font-black uppercase text-black dark:text-white mt-0.5 truncate">
+                        <p class="text-[9px] sm:text-[10px] font-black uppercase text-gray-500">Filtrando en</p>
+                        <p class="text-[12px] sm:text-[15px] leading-tight font-black uppercase text-black dark:text-white mt-0.5 truncate">
                             <ng-container *ngIf="nivelActivo as n; else todoEstante">
                                 {{ n.isFloor ? 'Nivel Suelo' : 'Nivel ' + n.numero }} · <span class="text-blue-600">{{ n.nombre }}</span>
                             </ng-container>
@@ -426,16 +426,16 @@
                         </p>
                     </div>
                     <div class="flex items-center gap-2 shrink-0">
-                        <div class="relative w-32 sm:w-44 md:w-40 lg:w-52">
+                        <div class="relative w-28 sm:w-40 md:w-36 lg:w-48">
                             <input type="text" [formControl]="toolSearchControl" placeholder="Buscar..."
-                                   class="w-full h-8 sm:h-9 pl-7 sm:pl-8 pr-3 bg-white dark:bg-slate-900 text-black dark:text-white border-2 border-black rounded-lg font-bold text-[11px] focus:outline-none focus:shadow-[2px_2px_0px_0px_#000] transition-all">
+                                   class="w-full h-8 sm:h-9 pl-7 sm:pl-8 pr-2 bg-white dark:bg-slate-900 text-black dark:text-white border-2 border-black rounded-lg font-bold text-[10px] sm:text-[11px] focus:outline-none focus:shadow-[2px_2px_0px_0px_#000] transition-all">
                             <mat-icon class="absolute left-1.5 sm:left-2 top-[7px] sm:top-2 text-black dark:text-white !text-base">search</mat-icon>
                         </div>
                         <button (click)="agregarHerramienta()" [disabled]="!canAdd()"
                                 matTooltip="Selecciona un nivel para agregar"
                                 [matTooltipDisabled]="canAdd()"
-                                class="px-2 sm:px-4 py-2 bg-amber-400 text-black font-black text-[10px] border-2 border-black rounded-lg shadow-[2px_2px_0px_0px_#000] hover:translate-y-[1px] hover:shadow-none transition-all uppercase flex items-center gap-1 sm:gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed">
-                            <mat-icon class="!text-sm sm:!text-base text-black">add</mat-icon>
+                                class="px-2 sm:px-3 py-2 bg-amber-400 text-black font-black text-[10px] border-2 border-black rounded-lg shadow-[2px_2px_0px_0px_#000] hover:translate-y-[1px] hover:shadow-none transition-all uppercase flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed">
+                            <mat-icon class="!text-sm text-black">add</mat-icon>
                             <span class="hidden sm:inline">Agregar</span>
                         </button>
                     </div>
@@ -445,48 +445,48 @@
                     <div class="flex flex-col gap-2 sm:gap-3">
 
                         <div *ngFor="let t of herramientasVisibles"
-                             class="group relative bg-white dark:bg-slate-800 border-2 border-black rounded-xl p-2 sm:p-3 shadow-[3px_3px_0px_0px_#000] hover:-translate-y-[1px] hover:shadow-[4px_4px_0px_0px_#000] transition-all flex items-center gap-2 sm:gap-3">
+                             class="group relative bg-white dark:bg-slate-800 border-2 border-black rounded-xl p-2 sm:p-3 shadow-[3px_3px_0px_0px_#000] hover:-translate-y-[1px] hover:shadow-[4px_4px_0px_0px_#000] transition-all flex items-center gap-2">
 
-                            <div class="w-9 h-9 sm:w-10 sm:h-10 shrink-0 bg-[#0F172AFF] text-amber-400 border-2 border-black rounded-lg flex items-center justify-center font-black text-xs sm:text-sm shadow-[2px_2px_0px_0px_#000]">
+                            <div class="w-8 h-8 sm:w-10 sm:h-10 shrink-0 bg-[#0F172AFF] text-amber-400 border-2 border-black rounded-lg flex items-center justify-center font-black text-[10px] sm:text-sm shadow-[2px_2px_0px_0px_#000]">
                                 <ng-container *ngIf="t.levelNumero !== undefined && t.levelNumero !== null; else floorIcon">
                                     N{{ t.levelNumero }}
                                 </ng-container>
                                 <ng-template #floorIcon>
-                                    <mat-icon class="!text-[18px] sm:!text-[20px]">foundation</mat-icon>
+                                    <mat-icon class="!text-base sm:!text-[20px]">foundation</mat-icon>
                                 </ng-template>
                             </div>
 
                             <div class="flex-1 min-w-0">
-                                <div class="flex items-center gap-1.5 sm:gap-2 mb-0.5 flex-wrap">
-                                    <span class="font-mono text-[9px] font-black px-1.5 py-0.5 bg-gray-200 dark:bg-slate-700 border border-black rounded text-black dark:text-white">
+                                <div class="flex items-center gap-1 sm:gap-2 mb-0.5 flex-wrap">
+                                    <span class="font-mono text-[8px] sm:text-[9px] font-black px-1 sm:px-1.5 py-0.5 bg-gray-200 dark:bg-slate-700 border border-black rounded text-black dark:text-white">
                                         {{ t.codigo }}
                                     </span>
-                                    <span [ngClass]="[estadoBadge(t.estado).bg, estadoBadge(t.estado).tx]" class="px-1.5 py-0.5 text-[8px] font-black uppercase border border-black rounded">
+                                    <span [ngClass]="[estadoBadge(t.estado).bg, estadoBadge(t.estado).tx]" class="px-1 sm:px-1.5 py-0.5 text-[7px] sm:text-[8px] font-black uppercase border border-black rounded hidden sm:inline">
                                         {{ t.estado }}
                                     </span>
                                 </div>
-                                <p class="font-black text-[11px] sm:text-[12px] leading-tight text-black dark:text-white truncate mt-0.5">{{ t.nombre }}</p>
-                                <p class="text-[10px] font-bold text-gray-500 truncate mt-0.5 hidden sm:block">
+                                <p class="font-black text-[10px] sm:text-[12px] leading-tight text-black dark:text-white truncate mt-0.5">{{ t.nombre }}</p>
+                                <p class="text-[9px] sm:text-[10px] font-bold text-gray-500 truncate mt-0.5 hidden sm:block">
                                     PN: <span class="text-gray-700 dark:text-gray-300">{{ t.pn }}</span>
                                     <span *ngIf="t.sn"> | SN: <span class="text-gray-700 dark:text-gray-300">{{ t.sn }}</span></span>
-                                    <span *ngIf="t.marca"> | Marca: <span class="text-gray-700 dark:text-gray-300">{{ t.marca }}</span></span>
+                                    <span *ngIf="t.marca"> | <span class="text-gray-700 dark:text-gray-300">{{ t.marca }}</span></span>
                                 </p>
                             </div>
 
                             <div class="text-right shrink-0 px-2 sm:px-3 border-r-2 border-gray-200 dark:border-slate-700">
-                                <p class="text-base sm:text-lg font-black text-black dark:text-white leading-none">{{ t.cantidad }}</p>
-                                <p class="text-[8px] font-bold text-gray-500 uppercase mt-0.5">{{ t.um }}</p>
+                                <p class="text-sm sm:text-lg font-black text-black dark:text-white leading-none">{{ t.cantidad }}</p>
+                                <p class="text-[7px] sm:text-[8px] font-bold text-gray-500 uppercase mt-0.5">{{ t.um }}</p>
                             </div>
 
-                            <div class="flex items-center justify-center gap-1 sm:gap-1.5 shrink-0">
-                                <button (click)="editarHerramientaInline(t, $event)" matTooltip="Editar" class="w-7 h-7 flex items-center justify-center bg-amber-400 border-2 border-black rounded shadow-[2px_2px_0px_0px_#000] hover:translate-y-[1px] hover:shadow-none transition-all">
-                                    <mat-icon class="!text-[14px] !w-[14px] !h-[14px] text-black">edit</mat-icon>
+                            <div class="flex items-center justify-center gap-1 shrink-0">
+                                <button (click)="editarHerramientaInline(t, $event)" matTooltip="Editar" class="w-6 h-6 sm:w-7 sm:h-7 flex items-center justify-center bg-amber-400 border-2 border-black rounded shadow-[2px_2px_0px_0px_#000] hover:translate-y-[1px] hover:shadow-none transition-all">
+                                    <mat-icon class="!text-[12px] sm:!text-[14px] text-black">edit</mat-icon>
                                 </button>
-                                <button (click)="moverHerramientaInline(t, $event)" matTooltip="Mover" class="w-7 h-7 flex items-center justify-center bg-blue-500 border-2 border-black rounded shadow-[2px_2px_0px_0px_#000] hover:translate-y-[1px] hover:shadow-none transition-all">
-                                    <mat-icon class="!text-[14px] !w-[14px] !h-[14px] text-white">swap_horiz</mat-icon>
+                                <button (click)="moverHerramientaInline(t, $event)" matTooltip="Mover" class="w-6 h-6 sm:w-7 sm:h-7 flex items-center justify-center bg-blue-500 border-2 border-black rounded shadow-[2px_2px_0px_0px_#000] hover:translate-y-[1px] hover:shadow-none transition-all">
+                                    <mat-icon class="!text-[12px] sm:!text-[14px] text-white">swap_horiz</mat-icon>
                                 </button>
-                                <button (click)="quitarHerramientaInline(t, $event)" matTooltip="Quitar del nivel" class="w-7 h-7 flex items-center justify-center bg-[#FF1414FF] border-2 border-black rounded shadow-[2px_2px_0px_0px_#000] hover:translate-y-[1px] hover:shadow-none transition-all">
-                                    <mat-icon class="!text-[14px] !w-[14px] !h-[14px] text-white">remove_circle</mat-icon>
+                                <button (click)="quitarHerramientaInline(t, $event)" matTooltip="Quitar del nivel" class="w-6 h-6 sm:w-7 sm:h-7 flex items-center justify-center bg-[#FF1414FF] border-2 border-black rounded shadow-[2px_2px_0px_0px_#000] hover:translate-y-[1px] hover:shadow-none transition-all">
+                                    <mat-icon class="!text-[12px] sm:!text-[14px] text-white">remove_circle</mat-icon>
                                 </button>
                             </div>
                         </div>

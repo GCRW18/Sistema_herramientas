@@ -8,7 +8,12 @@ export const AuthGuard: CanActivateFn | CanActivateChildFn = (route, state) => {
     const router: Router = inject(Router);
     const authService: AuthService = inject(AuthService);
 
-    authService.initErp();
+    try {
+        authService.initErp();
+    } catch {
+        // PxpClient init failed — treat as unauthenticated and let check() decide
+    }
+
     // Check the authentication status
     return authService
         .check()

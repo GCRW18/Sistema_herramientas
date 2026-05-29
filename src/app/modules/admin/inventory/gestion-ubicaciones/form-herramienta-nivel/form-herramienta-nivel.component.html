@@ -2,17 +2,17 @@
      style="width:720px; max-width:95vw; max-height:90vh; box-shadow: 6px 6px 0 #000">
 
     <!-- HEADER -->
-    <div class="bg-[#0F172A] px-5 py-3.5 flex items-center gap-3 shrink-0 select-none"
+    <div class="bg-[#0F172A] px-3 sm:px-5 py-3 sm:py-3.5 flex items-center gap-2 sm:gap-3 shrink-0 select-none flex-wrap sm:flex-nowrap"
          cdkDrag cdkDragRootElement=".cdk-overlay-pane" cdkDragHandle style="cursor:grab">
-        <div class="w-9 h-9 rounded bg-amber-400 border-2 border-black flex items-center justify-center shadow-[2px_2px_0_#fbbf24] shrink-0">
-            <mat-icon class="!text-lg text-black">handyman</mat-icon>
+        <div class="w-8 h-8 sm:w-9 sm:h-9 rounded bg-amber-400 border-2 border-black flex items-center justify-center shadow-[2px_2px_0_#fbbf24] shrink-0">
+            <mat-icon class="!text-base sm:!text-lg text-black">handyman</mat-icon>
         </div>
         <div class="flex-1 min-w-0">
-            <p class="text-[9px] text-slate-400 font-bold uppercase tracking-[0.18em] leading-none mb-0.5">Gestión de Ubicaciones</p>
-            <h2 class="text-sm text-white font-black uppercase tracking-tight leading-none">{{ titulo }}</h2>
+            <p class="text-[9px] text-slate-400 font-bold uppercase tracking-[0.18em] leading-none mb-0.5 hidden sm:block">Gestión de Ubicaciones</p>
+            <h2 class="text-xs sm:text-sm text-white font-black uppercase tracking-tight leading-none">{{ titulo }}</h2>
         </div>
         <!-- Buscador herramienta existente -->
-        <div class="relative shrink-0">
+        <div class="relative w-full sm:w-auto sm:shrink-0">
             <input type="text"
                    [(ngModel)]="buscarValue"
                    [ngModelOptions]="{standalone: true}"
@@ -20,7 +20,7 @@
                    (blur)="hideBuscarDropdown()"
                    autocomplete="off"
                    placeholder="Buscar herramienta..."
-                   class="w-44 sm:w-52 h-8 text-[11px] font-bold border-2 border-white/20 rounded-xl px-3 pr-8 uppercase bg-white/10 text-white placeholder:text-white/40 focus:outline-none focus:border-amber-400 focus:bg-white/20 transition-all">
+                   class="w-full sm:w-40 md:w-48 h-8 text-[11px] font-bold border-2 border-white/20 rounded-xl px-3 pr-8 uppercase bg-white/10 text-white placeholder:text-white/40 focus:outline-none focus:border-amber-400 focus:bg-white/20 transition-all">
             <mat-spinner *ngIf="toolSearchLoading" diameter="12" class="absolute right-2 top-2"></mat-spinner>
             <mat-icon *ngIf="!toolSearchLoading" class="absolute right-2 top-1.5 text-white/40 !text-base">search</mat-icon>
             <div *ngIf="showToolDropdown"
@@ -41,7 +41,7 @@
     </div>
 
     <!-- CONTEXTO NIVEL -->
-    <div class="border-b-2 border-black bg-white dark:bg-slate-800 px-5 py-3 flex items-center gap-3 shrink-0">
+    <div class="border-b-2 border-black bg-white dark:bg-slate-800 px-3 sm:px-5 py-2.5 sm:py-3 flex items-center gap-3 shrink-0">
         <div class="w-9 h-9 rounded-xl border-2 border-stone-200 dark:border-slate-700 bg-stone-50 dark:bg-slate-700 flex items-center justify-center shrink-0">
             <mat-icon class="!text-base text-stone-400 dark:text-slate-400">place</mat-icon>
         </div>
@@ -55,10 +55,10 @@
     </div>
 
     <!-- BODY -->
-    <div class="flex-1 overflow-y-auto px-5 py-5 flex flex-col gap-4 custom-scrollbar">
+    <div class="flex-1 overflow-y-auto px-3 sm:px-5 py-4 sm:py-5 flex flex-col gap-4 custom-scrollbar">
 
         <!-- Grid principal -->
-        <form [formGroup]="form" class="grid grid-cols-1 md:grid-cols-12 gap-5">
+        <form [formGroup]="form" class="grid grid-cols-1 md:grid-cols-12 gap-4 sm:gap-5">
 
             <!-- LEFT: Foto + Preview -->
             <div class="md:col-span-5 flex flex-col gap-4">
@@ -203,7 +203,7 @@
     </div>
 
     <!-- FOOTER -->
-    <div class="border-t-2 border-black bg-stone-200 dark:bg-slate-800 px-5 py-3 flex justify-between items-center shrink-0">
+    <div class="border-t-2 border-black bg-stone-200 dark:bg-slate-800 px-3 sm:px-5 py-3 flex justify-between items-center shrink-0">
         <button type="button" (click)="cerrar()"
                 class="px-4 py-2 bg-[#FF1414] text-white font-black text-[10px] border-2 border-black rounded-xl shadow-[2px_2px_0_#000] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all uppercase">
             Cancelar

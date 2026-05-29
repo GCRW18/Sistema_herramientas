@@ -1,4 +1,8 @@
-<div class="relative flex flex-col w-full h-full bg-white dark:bg-[#0F172AFF] transition-colors duration-300 font-sans overflow-hidden">
+<div class="flex flex-col w-full h-full bg-[#f8f9fc] dark:bg-[#0F172AFF] transition-colors duration-300 font-sans overflow-hidden">
+
+    <!-- Decoration circles -->
+    <div class="fixed top-20 right-10 w-40 h-40 bg-[#D97706] rounded-full border-[3px] border-black opacity-5 pointer-events-none hidden lg:block"></div>
+    <div class="fixed bottom-10 left-10 w-24 h-24 bg-[#FFC501FF] rotate-12 border-[3px] border-black opacity-5 pointer-events-none hidden lg:block"></div>
 
     <!-- Overlay de Carga -->
     <div *ngIf="isSaving" class="fixed inset-0 z-[120] bg-black/60 backdrop-blur-sm transition-all duration-300 flex items-center justify-center">
@@ -10,50 +14,60 @@
 
     <div class="flex-1 flex flex-col relative h-full overflow-hidden z-0">
 
-        <!-- HEADER -->
-        <div class="flex items-center gap-4 px-6 py-4 border-b-[3px] border-black shrink-0 bg-white dark:bg-slate-900 relative z-[110] flex-wrap justify-between">
-            <div class="flex items-center gap-3">
-                <div class="flex items-center justify-center w-10 h-10 bg-white dark:bg-slate-800 border-[2px] border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] rounded-xl shrink-0 hidden sm:flex">
-                    <mat-icon class="text-black dark:text-amber-400 !text-xl">sync_alt</mat-icon>
+        <!-- ── HEADER ── -->
+        <div class="flex flex-col gap-3 px-4 pt-4 pb-3 shrink-0 border-b-[3px] border-black bg-[#f8f9fc] dark:bg-[#0F172AFF]">
+
+            <!-- Título principal -->
+            <div class="flex items-center gap-4">
+                <div class="flex items-center justify-center w-10 h-10 bg-white dark:bg-[#0F172AFF] border-[3px] border-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] rounded-xl shrink-0">
+                    <mat-icon class="text-black dark:text-[#FFC501FF] !text-base">sync_alt</mat-icon>
                 </div>
                 <div>
-                    <h1 class="text-2xl md:text-3xl font-black text-black dark:text-white uppercase tracking-tighter leading-none">
+                    <h1 class="text-xl font-black text-black dark:text-white uppercase tracking-tighter leading-none">
                         TRASPASO A OTRA ÁREA
                     </h1>
-                    <div class="flex items-center gap-2 mt-1 flex-wrap">
-                        <span class="text-[10px] font-bold bg-amber-400 text-black px-2 py-0.5 rounded inline-block border-2 border-black uppercase tracking-wider">
-                            Movimiento de Herramientas
-                        </span>
-                    </div>
+                    <p class="text-[10px] font-bold bg-[#FFC501FF] text-black px-2 py-0.5 inline-block border-2 border-black rounded uppercase tracking-wider mt-0.5">
+                        Movimiento de Herramientas
+                    </p>
                 </div>
             </div>
 
-            <div class="flex items-center gap-3">
+            <!-- Tab nav + acciones -->
+            <div class="flex items-center gap-3 flex-wrap">
+
+                <!-- Tab activo (único en este módulo) -->
+                <div class="flex items-center gap-1">
+                    <button class="h-9 px-3 flex items-center gap-1.5 rounded-lg border-[2px] border-black font-black text-[10px] uppercase bg-[#FF1414FF] text-white shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] cursor-default">
+                        <mat-icon class="!text-sm !text-white">sync_alt</mat-icon>
+                        Traspaso
+                    </button>
+                </div>
+
+                <!-- Acciones del traspaso -->
                 <button (click)="abrirModalDatosTraspaso()"
-                        class="header-btn flex items-center gap-2 px-5 py-2 bg-amber-400 border-[2px] border-black font-black text-xs uppercase rounded-xl shadow-[3px_3px_0px_0px_#000] hover:shadow-[1px_1px_0px_0px_#000] hover:translate-x-[2px] hover:translate-y-[2px] transition-all text-black">
-                    <mat-icon class="header-btn-icon !text-base !text-black">edit_document</mat-icon>
+                        class="px-4 py-2 bg-white dark:bg-white/10 text-black dark:text-white font-black text-xs border-[2px] border-black rounded-xl shadow-[2px_2px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all uppercase flex items-center gap-1.5">
+                    <mat-icon class="!text-sm">edit_document</mat-icon>
                     <span class="hidden sm:inline">Datos Traspaso</span>
                 </button>
 
-                <div class="w-px h-8 bg-black/20 dark:bg-white/20 mx-1 hidden md:block"></div>
-
                 <button (click)="openTraspasoHerramienta()"
-                        class="header-btn flex items-center gap-2 px-5 py-2 bg-black dark:bg-slate-700 border-[2px] border-black font-black text-xs uppercase rounded-xl shadow-[3px_3px_0px_0px_rgba(0,0,0,0.5)] hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,0.5)] hover:translate-x-[2px] hover:translate-y-[2px] transition-all text-white">
-                    <mat-icon class="header-btn-icon !text-base !text-white">add_circle</mat-icon>
+                        class="px-4 py-2 bg-white dark:bg-white/10 text-black dark:text-white font-black text-xs border-[2px] border-black rounded-xl shadow-[2px_2px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all uppercase flex items-center gap-1.5">
+                    <mat-icon class="!text-sm">add_circle</mat-icon>
                     <span class="hidden sm:inline">Agregar Ítem</span>
                 </button>
 
                 <button (click)="abrirModalConfirmacion()"
                         [disabled]="isSaving || dataSource().length === 0"
-                        class="header-btn flex items-center gap-2 px-5 py-2 bg-[#2563eb] border-[2px] border-black font-black text-xs uppercase rounded-xl shadow-[3px_3px_0px_0px_#000] hover:shadow-[1px_1px_0px_0px_#000] hover:translate-x-[2px] hover:translate-y-[2px] transition-all text-white disabled:opacity-50 disabled:shadow-none disabled:translate-x-0 disabled:translate-y-0 disabled:cursor-not-allowed">
-                    <mat-icon class="header-btn-icon !text-base !text-white">check_circle</mat-icon>
+                        class="px-5 py-2 bg-amber-400 text-black font-black text-xs border-[2px] border-black rounded-xl shadow-[3px_3px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all uppercase flex items-center gap-2 disabled:opacity-50 disabled:shadow-none disabled:translate-x-0 disabled:cursor-not-allowed">
+                    <mat-icon class="!text-sm !text-black">check_circle</mat-icon>
                     <span class="hidden sm:inline">Finalizar Traspaso</span>
                 </button>
+
             </div>
         </div>
 
         <!-- INFO WIDGETS -->
-        <div class="px-6 pt-4 shrink-0 bg-[#f8f9fc] dark:bg-[#0F172AFF]">
+        <div class="px-4 pt-4 shrink-0 bg-[#f8f9fc] dark:bg-[#0F172AFF]">
             <div *ngIf="!isDatosTraspasoValido()" class="bg-white dark:bg-slate-800 border-[3px] border-black p-3.5 rounded-xl flex items-center justify-between shadow-[4px_4px_0px_0px_#000] animate-pulse-border">
                 <div class="flex items-center gap-3">
                     <div class="bg-red-100 dark:bg-red-900/30 p-2 rounded-lg border-2 border-red-500">
@@ -77,7 +91,11 @@
                         <p class="font-black text-sm text-black dark:text-white">{{ getTipoTraspasoLabel(transferForm.value.tipoTraspaso) }}</p>
                     </div>
                     <div class="flex flex-col border-l-2 border-gray-200 dark:border-gray-600 pl-8">
-                        <p class="text-[10px] font-black uppercase tracking-widest text-gray-500 dark:text-gray-400">Base / Área</p>
+                        <p class="text-[10px] font-black uppercase tracking-widest text-green-600">Almacén Origen</p>
+                        <p class="font-black text-sm text-green-700 dark:text-green-400">{{ transferForm.value.almacenOrigen }}</p>
+                    </div>
+                    <div class="flex flex-col border-l-2 border-gray-200 dark:border-gray-600 pl-8">
+                        <p class="text-[10px] font-black uppercase tracking-widest text-gray-500 dark:text-gray-400">Base Destino / Área</p>
                         <p class="font-black text-sm text-black dark:text-white">{{ transferForm.value.base }} · {{ transferForm.value.gerencia }}</p>
                     </div>
                     <div class="flex flex-col border-l-2 border-gray-200 dark:border-gray-600 pl-8">
@@ -85,8 +103,8 @@
                         <p class="font-black text-sm text-black dark:text-white">{{ transferForm.value.nombreCompleto }}</p>
                     </div>
                     <div class="flex flex-col border-l-2 border-gray-200 dark:border-gray-600 pl-8">
-                        <p class="text-[10px] font-black uppercase tracking-widest text-gray-500 dark:text-gray-400">Licencia / Cargo</p>
-                        <p class="font-black text-sm text-black dark:text-white">{{ transferForm.value.nroLicencia }} · {{ transferForm.value.cargo }}</p>
+                        <p class="text-[10px] font-black uppercase tracking-widest text-amber-600">Autorizado</p>
+                        <p class="font-black text-sm text-black dark:text-white">{{ transferForm.value.autorizadoNombre }}</p>
                     </div>
                 </div>
                 <button (click)="abrirModalDatosTraspaso()" class="absolute right-4 top-1/2 -translate-y-1/2 z-10 w-10 h-10 flex items-center justify-center bg-white dark:bg-slate-800 border-[2px] border-black rounded-xl shadow-[3px_3px_0px_0px_#000] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[1px_1px_0px_0px_#000] transition-all" matTooltip="Modificar Datos">
@@ -96,7 +114,7 @@
         </div>
 
         <!-- MAIN TABLE AREA -->
-        <div class="flex-1 flex flex-col pt-4 px-6 pb-6 overflow-hidden bg-[#f8f9fc] dark:bg-[#0F172AFF]">
+        <div class="flex-1 flex flex-col pt-4 px-4 pb-4 overflow-hidden bg-[#f8f9fc] dark:bg-[#0F172AFF]">
             <div class="flex-1 flex flex-col border-[3px] border-black bg-white dark:bg-[#0F172AFF] rounded-2xl shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] overflow-hidden">
 
                 <div class="px-5 py-3 bg-[#0F172AFF] border-b-[3px] border-black flex items-center justify-between shrink-0 flex-wrap gap-3">
@@ -220,40 +238,111 @@
                         <mat-icon class="!text-base text-black dark:text-white">list_alt</mat-icon> Formulario de Traspaso
                     </h3>
 
-                    <div class="grid grid-cols-12 gap-3">
-                        <div class="col-span-12 md:col-span-6 relative">
-                            <label class="text-[10px] font-black uppercase tracking-wider text-gray-700 dark:text-gray-400 block mb-1">Buscar Funcionario *</label>
-                            <div class="relative">
-                                <input type="text"
-                                       [value]="transferForm.get('nombreCompletoInput')?.value"
-                                       (input)="onPersonaInput($any($event.target).value)"
-                                       (blur)="hideSuggestions()"
-                                       placeholder="Nombre o licencia..."
-                                       autocomplete="off"
-                                       class="w-full h-10 text-xs font-bold border-[2px] rounded-lg px-3 pr-8 bg-white dark:bg-slate-800 text-black dark:text-white outline-none uppercase focus:shadow-[3px_3px_0px_0px_#000] transition-shadow"
-                                       [ngClass]="hasError('nombreCompleto', 'required') ? 'border-red-500' : 'border-black'" />
-                                <mat-spinner *ngIf="personaLoading" diameter="16" class="absolute right-3 top-3"></mat-spinner>
+                    <!-- ── RESPONSABLE ── -->
+                    <div class="border-[2px] border-black rounded-lg bg-blue-50 dark:bg-slate-800/60 p-2.5">
+                        <h4 class="text-[9px] font-black uppercase tracking-widest text-blue-700 dark:text-blue-300 mb-2 flex items-center gap-1.5">
+                            <mat-icon class="!text-xs">person</mat-icon> Responsable del Traspaso *
+                        </h4>
+                        <div class="grid grid-cols-12 gap-2.5">
+                            <div class="col-span-12 md:col-span-6 relative">
+                                <label class="text-[10px] font-black uppercase tracking-wider text-gray-700 dark:text-gray-400 block mb-1">Buscar Funcionario *</label>
+                                <div class="relative">
+                                    <input type="text"
+                                           [value]="transferForm.get('nombreCompletoInput')?.value"
+                                           (input)="onPersonaInput($any($event.target).value)"
+                                           (blur)="hideSuggestions()"
+                                           placeholder="Nombre o licencia..."
+                                           autocomplete="off"
+                                           class="w-full h-10 text-xs font-bold border-[2px] rounded-lg px-3 pr-8 bg-white dark:bg-slate-800 text-black dark:text-white outline-none uppercase focus:shadow-[3px_3px_0px_0px_#000] transition-shadow"
+                                           [ngClass]="hasError('nombreCompleto', 'required') ? 'border-red-500' : 'border-black'" />
+                                    <mat-icon class="absolute left-2.5 top-2.5 text-gray-400 !text-sm pointer-events-none">search</mat-icon>
+                                    <mat-spinner *ngIf="personaLoading" diameter="14" class="absolute right-3 top-3"></mat-spinner>
+                                </div>
+                                <div *ngIf="showPersonaDropdown" class="absolute top-full left-0 right-0 z-50 mt-1 bg-white dark:bg-slate-800 border-[3px] border-black rounded-xl shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] max-h-48 overflow-y-auto">
+                                    <button type="button" *ngFor="let p of personasFiltradas" (mousedown)="seleccionarPersona(p)" class="w-full text-left px-4 py-3 hover:bg-amber-100 dark:hover:bg-slate-700 border-b-[2px] border-gray-200 dark:border-gray-700 last:border-b-0">
+                                        <p class="text-xs font-black text-black dark:text-white uppercase">{{ p.nombre }}</p>
+                                        <p class="text-[10px] font-bold text-gray-600 dark:text-gray-400 uppercase mt-0.5">{{ p.licencia }} | {{ p.cargo }}</p>
+                                    </button>
+                                </div>
                             </div>
-                            <div *ngIf="showPersonaDropdown" class="absolute top-full left-0 right-0 z-50 mt-1 bg-white dark:bg-slate-800 border-[3px] border-black rounded-xl shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] max-h-48 overflow-y-auto">
-                                <button type="button" *ngFor="let p of personasFiltradas" (mousedown)="seleccionarPersona(p)" class="w-full text-left px-4 py-3 hover:bg-amber-100 dark:hover:bg-slate-700 border-b-[2px] border-gray-200 dark:border-gray-700 last:border-b-0">
-                                    <p class="text-xs font-black text-black dark:text-white uppercase">{{ p.nombre }}</p>
-                                    <p class="text-[10px] font-bold text-gray-600 dark:text-gray-400 uppercase mt-0.5">{{ p.licencia }} | {{ p.cargo }}</p>
-                                </button>
+                            <div class="col-span-6 md:col-span-3">
+                                <label class="text-[10px] font-black uppercase tracking-wider text-gray-700 dark:text-gray-400 block mb-1">Cargo *</label>
+                                <input formControlName="cargo" type="text" placeholder="Ej: TÉCNICO" class="w-full h-10 text-xs font-bold border-[2px] border-black rounded-lg px-3 bg-white dark:bg-slate-800 text-black dark:text-white outline-none uppercase focus:shadow-[3px_3px_0px_0px_#000] transition-shadow" [class.border-red-500]="hasError('cargo', 'required')" />
                             </div>
-                        </div>
-                        <div class="col-span-6 md:col-span-3">
-                            <label class="text-[10px] font-black uppercase tracking-wider text-gray-700 dark:text-gray-400 block mb-1">Cargo *</label>
-                            <input formControlName="cargo" type="text" placeholder="Ej: TÉCNICO" class="w-full h-10 text-xs font-bold border-[2px] border-black rounded-lg px-3 bg-white dark:bg-slate-800 text-black dark:text-white outline-none uppercase focus:shadow-[3px_3px_0px_0px_#000] transition-shadow" [class.border-red-500]="hasError('cargo', 'required')" />
-                        </div>
-                        <div class="col-span-6 md:col-span-3">
-                            <label class="text-[10px] font-black uppercase tracking-wider text-gray-700 dark:text-gray-400 block mb-1">Licencia *</label>
-                            <input formControlName="nroLicencia" type="text" placeholder="BOA-001" class="w-full h-10 text-xs font-bold border-[2px] border-black rounded-lg px-3 bg-white dark:bg-slate-800 text-black dark:text-white outline-none uppercase focus:shadow-[3px_3px_0px_0px_#000] transition-shadow" [class.border-red-500]="hasError('nroLicencia', 'required')" />
+                            <div class="col-span-6 md:col-span-3">
+                                <label class="text-[10px] font-black uppercase tracking-wider text-gray-700 dark:text-gray-400 block mb-1">Licencia *</label>
+                                <input formControlName="nroLicencia" type="text" placeholder="BOA-001" class="w-full h-10 text-xs font-bold border-[2px] border-black rounded-lg px-3 bg-white dark:bg-slate-800 text-black dark:text-white outline-none uppercase focus:shadow-[3px_3px_0px_0px_#000] transition-shadow" [class.border-red-500]="hasError('nroLicencia', 'required')" />
+                            </div>
                         </div>
                     </div>
 
-                    <div class="grid grid-cols-12 gap-3">
-                        <div class="col-span-12 md:col-span-5">
-                            <label class="text-[10px] font-black uppercase tracking-wider text-gray-700 dark:text-gray-400 block mb-1">Gerencia *</label>
+                    <!-- ── AUTORIZADO ── -->
+                    <div class="border-[2px] border-black rounded-lg bg-amber-50 dark:bg-slate-800/60 p-2.5">
+                        <h4 class="text-[9px] font-black uppercase tracking-widest text-amber-700 dark:text-amber-300 mb-2 flex items-center gap-1.5">
+                            <mat-icon class="!text-xs">verified_user</mat-icon> Autorizado por *
+                        </h4>
+                        <div class="grid grid-cols-12 gap-2.5">
+                            <div class="col-span-12 md:col-span-6 relative">
+                                <label class="text-[10px] font-black uppercase tracking-wider text-gray-700 dark:text-gray-400 block mb-1">Buscar Funcionario *</label>
+                                <div class="relative">
+                                    <input type="text"
+                                           [value]="transferForm.get('autorizadoInput')?.value"
+                                           (input)="onAutorizadoInput($any($event.target).value)"
+                                           (blur)="hideAutorizadoSuggestions()"
+                                           placeholder="Nombre o licencia..."
+                                           autocomplete="off"
+                                           class="w-full h-10 text-xs font-bold border-[2px] rounded-lg px-3 pr-8 bg-white dark:bg-slate-800 text-black dark:text-white outline-none uppercase focus:shadow-[3px_3px_0px_0px_#fbbf24] transition-shadow"
+                                           [ngClass]="hasError('autorizadoNombre', 'required') || hasError('autorizadoLicencia', 'required') ? 'border-red-500' : 'border-black'" />
+                                    <mat-icon class="absolute left-2.5 top-2.5 text-gray-400 !text-sm pointer-events-none">search</mat-icon>
+                                    <mat-spinner *ngIf="autorizadoLoading" diameter="14" class="absolute right-3 top-3"></mat-spinner>
+                                </div>
+                                <div *ngIf="showAutorizadoDropdown" class="absolute top-full left-0 right-0 z-50 mt-1 bg-white dark:bg-slate-800 border-[3px] border-black rounded-xl shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] max-h-48 overflow-y-auto">
+                                    <button type="button" *ngFor="let p of autorizadosFiltrados" (mousedown)="seleccionarAutorizado(p)" class="w-full text-left px-4 py-3 hover:bg-amber-100 dark:hover:bg-slate-700 border-b-[2px] border-gray-200 dark:border-gray-700 last:border-b-0">
+                                        <p class="text-xs font-black text-black dark:text-white uppercase">{{ p.nombre }}</p>
+                                        <p class="text-[10px] font-bold text-gray-600 dark:text-gray-400 uppercase mt-0.5">{{ p.licencia }} | {{ p.cargo }}</p>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="col-span-6 md:col-span-3">
+                                <label class="text-[10px] font-black uppercase tracking-wider text-gray-700 dark:text-gray-400 block mb-1">Cargo Autorizado</label>
+                                <input formControlName="autorizadoCargo" type="text" placeholder="Ej: JEFE" class="w-full h-10 text-xs font-bold border-[2px] border-black rounded-lg px-3 bg-white dark:bg-slate-800 text-black dark:text-white outline-none uppercase focus:shadow-[3px_3px_0px_0px_#fbbf24] transition-shadow" />
+                            </div>
+                            <div class="col-span-6 md:col-span-3">
+                                <label class="text-[10px] font-black uppercase tracking-wider text-gray-700 dark:text-gray-400 block mb-1">Licencia Aut. *</label>
+                                <input formControlName="autorizadoLicencia" type="text" placeholder="BOA-002" class="w-full h-10 text-xs font-bold border-[2px] border-black rounded-lg px-3 bg-white dark:bg-slate-800 text-black dark:text-white outline-none uppercase focus:shadow-[3px_3px_0px_0px_#fbbf24] transition-shadow" [class.border-red-500]="hasError('autorizadoLicencia', 'required')" />
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ── ALMACENES Y DESTINO ── -->
+                    <div class="grid grid-cols-12 gap-2.5">
+                        <!-- Almacén Origen -->
+                        <div class="col-span-6 md:col-span-3">
+                            <label class="text-[10px] font-black uppercase tracking-wider text-gray-700 dark:text-gray-400 block mb-1 flex items-center gap-1">
+                                <mat-icon class="!text-xs text-green-600">warehouse</mat-icon> Almacén Origen *
+                            </label>
+                            <select formControlName="almacenOrigen" class="w-full h-10 text-xs font-bold border-[2px] border-green-600 rounded-lg px-2 bg-white dark:bg-slate-800 text-black dark:text-white outline-none focus:shadow-[3px_3px_0px_0px_#16a34a] transition-shadow cursor-pointer">
+                                <option value="CBB">CBB — Cochabamba</option>
+                                <option value="VVI">VVI — Villamontes</option>
+                                <option value="LPB">LPB — La Paz</option>
+                                <option value="SCZ">SCZ — Santa Cruz</option>
+                            </select>
+                        </div>
+                        <!-- Base Destino -->
+                        <div class="col-span-6 md:col-span-3">
+                            <label class="text-[10px] font-black uppercase tracking-wider text-gray-700 dark:text-gray-400 block mb-1 flex items-center gap-1">
+                                <mat-icon class="!text-xs text-red-500">flight_takeoff</mat-icon> Base Destino *
+                            </label>
+                            <select formControlName="base" class="w-full h-10 text-xs font-bold border-[2px] border-black rounded-lg px-2 bg-white dark:bg-slate-800 text-black dark:text-white outline-none focus:shadow-[3px_3px_0px_0px_#000] transition-shadow cursor-pointer">
+                                <option value="VVI">VVI</option>
+                                <option value="LPB">LPB</option>
+                                <option value="CBB">CBB</option>
+                                <option value="SCZ">SCZ</option>
+                            </select>
+                        </div>
+                        <!-- Gerencia -->
+                        <div class="col-span-12 md:col-span-6">
+                            <label class="text-[10px] font-black uppercase tracking-wider text-gray-700 dark:text-gray-400 block mb-1">Gerencia Destino *</label>
                             <select formControlName="gerencia" class="w-full h-10 text-xs font-bold border-[2px] border-black rounded-lg px-2 bg-white dark:bg-slate-800 text-black dark:text-white outline-none focus:shadow-[3px_3px_0px_0px_#000] transition-shadow cursor-pointer" [class.border-red-500]="hasError('gerencia', 'required')">
                                 <option value="">-- Seleccionar --</option>
                                 <option value="GERENCIA DE OPERACIONES">Ger. Operaciones</option>
@@ -262,17 +351,10 @@
                                 <option value="GERENCIA TÉCNICA">Ger. Técnica</option>
                             </select>
                         </div>
-                        <div class="col-span-6 md:col-span-4">
+                        <!-- Unidad -->
+                        <div class="col-span-12 md:col-span-12">
                             <label class="text-[10px] font-black uppercase tracking-wider text-gray-700 dark:text-gray-400 block mb-1">Unidad *</label>
                             <input formControlName="unidad" type="text" placeholder="Ej: HERRAMIENTAS" class="w-full h-10 text-xs font-bold border-[2px] border-black rounded-lg px-3 bg-white dark:bg-slate-800 text-black dark:text-white outline-none uppercase focus:shadow-[3px_3px_0px_0px_#000] transition-shadow" [class.border-red-500]="hasError('unidad', 'required')" />
-                        </div>
-                        <div class="col-span-6 md:col-span-3">
-                            <label class="text-[10px] font-black uppercase tracking-wider text-gray-700 dark:text-gray-400 block mb-1">Base *</label>
-                            <select formControlName="base" class="w-full h-10 text-xs font-bold border-[2px] border-black rounded-lg px-2 bg-white dark:bg-slate-800 text-black dark:text-white outline-none focus:shadow-[3px_3px_0px_0px_#000] transition-shadow cursor-pointer">
-                                <option value="VVI">VVI</option>
-                                <option value="LPB">LPB</option>
-                                <option value="CBB">CBB</option>
-                            </select>
                         </div>
                     </div>
 
@@ -290,6 +372,26 @@
                         <div class="col-span-6 md:col-span-3">
                             <label class="text-[10px] font-black uppercase tracking-wider text-gray-700 dark:text-gray-400 block mb-1">Hora *</label>
                             <input type="time" formControlName="hora" class="w-full h-10 text-xs font-bold border-[2px] border-black rounded-lg px-2 bg-white dark:bg-slate-800 text-black dark:text-white outline-none focus:shadow-[3px_3px_0px_0px_#000] transition-shadow cursor-pointer" [class.border-red-500]="hasError('hora', 'required')">
+                        </div>
+
+                        <!-- Fecha Retorno Esperada — visible solo para TEMPORAL o PRESTAMO -->
+                        <div class="col-span-12 md:col-span-6" *ngIf="requiereFechaRetorno()">
+                            <label class="text-[10px] font-black uppercase tracking-wider text-blue-600 dark:text-blue-400 block mb-1 flex items-center gap-1">
+                                <mat-icon class="!text-xs">event_available</mat-icon>
+                                Fecha Retorno Esperada *
+                            </label>
+                            <input type="date" formControlName="fechaRetornoEsperada"
+                                   class="w-full h-10 text-xs font-bold border-[2px] border-blue-500 rounded-lg px-2 bg-blue-50 dark:bg-slate-800 text-black dark:text-white outline-none focus:shadow-[3px_3px_0px_0px_#3b82f6] transition-shadow cursor-pointer">
+                            <p class="text-[9px] text-blue-600 font-bold mt-0.5">Requerida para traspaso {{transferForm.value.tipoTraspaso === 'TEMPORAL' ? 'Temporal' : 'Préstamo'}}</p>
+                        </div>
+
+                        <!-- Recibe en Destino -->
+                        <div class="col-span-12" [class.md:col-span-6]="requiereFechaRetorno()" [class.md:col-span-12]="!requiereFechaRetorno()">
+                            <label class="text-[10px] font-black uppercase tracking-wider text-gray-700 dark:text-gray-400 block mb-1 flex items-center gap-1">
+                                <mat-icon class="!text-xs">person_pin</mat-icon> Recibe en Destino
+                            </label>
+                            <input formControlName="recibeEnDestino" type="text" placeholder="Nombre del receptor (opcional)"
+                                   class="w-full h-10 text-xs font-bold border-[2px] border-black rounded-lg px-3 bg-white dark:bg-slate-800 text-black dark:text-white outline-none uppercase focus:shadow-[3px_3px_0px_0px_#000] transition-shadow" />
                         </div>
                     </div>
 
@@ -333,21 +435,34 @@
                                 <span class="font-bold text-gray-500 dark:text-gray-400 uppercase">Tipo:</span>
                                 <span class="font-black uppercase">{{ getTipoTraspasoLabel(transferForm.value.tipoTraspaso) }}</span>
                             </li>
+                            <li class="flex justify-between border-b-[2px] border-gray-200 dark:border-gray-700 pb-1.5">
+                                <span class="font-bold text-green-600 uppercase flex items-center gap-1"><mat-icon class="!text-xs">warehouse</mat-icon>Origen:</span>
+                                <span class="font-black uppercase bg-green-100 dark:bg-green-900/40 px-2 rounded border border-green-500">{{ transferForm.value.almacenOrigen || '---' }}</span>
+                            </li>
                             <li class="flex flex-col border-b-[2px] border-gray-200 dark:border-gray-700 pb-1.5">
-                                <span class="font-bold text-gray-500 dark:text-gray-400 uppercase">Área / Base:</span>
+                                <span class="font-bold text-gray-500 dark:text-gray-400 uppercase">Área Destino / Base:</span>
                                 <span class="font-black uppercase truncate mt-0.5">{{ transferForm.value.gerencia || '---' }} ({{ transferForm.value.base }})</span>
                             </li>
                             <li class="flex flex-col border-b-[2px] border-gray-200 dark:border-gray-700 pb-1.5">
                                 <span class="font-bold text-gray-500 dark:text-gray-400 uppercase">Responsable:</span>
                                 <span class="font-black uppercase truncate mt-0.5">{{ transferForm.value.nombreCompleto || '---' }}</span>
                             </li>
-                            <li class="flex justify-between border-b-[2px] border-gray-200 dark:border-gray-700 pb-1.5">
-                                <span class="font-bold text-gray-500 dark:text-gray-400 uppercase">Licencia:</span>
-                                <span class="font-black uppercase">{{ transferForm.value.nroLicencia || '---' }}</span>
+                            <li class="flex flex-col border-b-[2px] border-gray-200 dark:border-gray-700 pb-1.5">
+                                <span class="font-bold text-amber-600 uppercase flex items-center gap-1"><mat-icon class="!text-xs">verified_user</mat-icon>Autorizado:</span>
+                                <span class="font-black uppercase truncate mt-0.5">{{ transferForm.value.autorizadoNombre || '---' }}</span>
+                                <span class="text-[9px] font-bold text-gray-500 mt-0.5">{{ transferForm.value.autorizadoLicencia || '' }} {{ transferForm.value.autorizadoCargo ? '| ' + transferForm.value.autorizadoCargo : '' }}</span>
                             </li>
                             <li class="flex justify-between pb-0.5">
                                 <span class="font-bold text-gray-500 dark:text-gray-400 uppercase">Fecha y Hora:</span>
                                 <span class="font-black uppercase">{{ transferForm.value.fecha || '---' }} {{ transferForm.value.hora || '---' }}</span>
+                            </li>
+                            <li *ngIf="requiereFechaRetorno()" class="flex justify-between border-t-[2px] border-gray-200 dark:border-gray-700 pt-1.5">
+                                <span class="font-bold text-blue-500 uppercase">Ret. Esperado:</span>
+                                <span class="font-black uppercase">{{ transferForm.value.fechaRetornoEsperada || 'Sin definir' }}</span>
+                            </li>
+                            <li *ngIf="transferForm.value.recibeEnDestino" class="flex flex-col border-t-[2px] border-gray-200 dark:border-gray-700 pt-1.5">
+                                <span class="font-bold text-gray-500 dark:text-gray-400 uppercase">Recibe:</span>
+                                <span class="font-black uppercase truncate mt-0.5">{{ transferForm.value.recibeEnDestino }}</span>
                             </li>
                         </ul>
                     </div>
@@ -381,10 +496,25 @@
             <div class="bg-white dark:bg-slate-800 border-[3px] border-black rounded-xl p-5 shadow-[4px_4px_0px_0px_#000]">
                 <h3 class="text-xs font-black uppercase tracking-widest text-black dark:text-white border-b-[3px] border-black pb-2 mb-3">1. Datos Generales</h3>
                 <div class="grid grid-cols-2 gap-4 text-sm">
-                    <p class="text-black dark:text-white flex flex-col"><strong class="text-[10px] text-gray-500 uppercase tracking-widest">Personal:</strong><span class="font-black uppercase mt-1">{{ transferForm.value.nombreCompleto }}</span></p>
-                    <p class="text-black dark:text-white flex flex-col"><strong class="text-[10px] text-gray-500 uppercase tracking-widest">Licencia:</strong><span class="font-black uppercase mt-1 font-mono">{{ transferForm.value.nroLicencia }}</span></p>
-                    <p class="text-black dark:text-white flex flex-col"><strong class="text-[10px] text-gray-500 uppercase tracking-widest">Gerencia:</strong><span class="font-black uppercase mt-1">{{ transferForm.value.gerencia }}</span></p>
-                    <p class="text-black dark:text-white flex flex-col"><strong class="text-[10px] text-gray-500 uppercase tracking-widest">Base:</strong><span class="font-black uppercase mt-1">{{ transferForm.value.base }}</span></p>
+                    <p class="text-black dark:text-white flex flex-col">
+                        <strong class="text-[10px] text-green-600 uppercase tracking-widest flex items-center gap-1"><mat-icon class="!text-xs">warehouse</mat-icon>Almacén Origen:</strong>
+                        <span class="font-black uppercase mt-1 text-green-700 dark:text-green-400">{{ transferForm.value.almacenOrigen }}</span>
+                    </p>
+                    <p class="text-black dark:text-white flex flex-col">
+                        <strong class="text-[10px] text-gray-500 uppercase tracking-widest">Base Destino:</strong>
+                        <span class="font-black uppercase mt-1">{{ transferForm.value.base }}</span>
+                    </p>
+                    <p class="text-black dark:text-white flex flex-col"><strong class="text-[10px] text-gray-500 uppercase tracking-widest">Responsable:</strong><span class="font-black uppercase mt-1">{{ transferForm.value.nombreCompleto }}</span></p>
+                    <p class="text-black dark:text-white flex flex-col"><strong class="text-[10px] text-gray-500 uppercase tracking-widest">Lic. Responsable:</strong><span class="font-black uppercase mt-1 font-mono">{{ transferForm.value.nroLicencia }}</span></p>
+                    <p class="text-black dark:text-white flex flex-col">
+                        <strong class="text-[10px] text-amber-600 uppercase tracking-widest flex items-center gap-1"><mat-icon class="!text-xs">verified_user</mat-icon>Autorizado por:</strong>
+                        <span class="font-black uppercase mt-1">{{ transferForm.value.autorizadoNombre }}</span>
+                    </p>
+                    <p class="text-black dark:text-white flex flex-col">
+                        <strong class="text-[10px] text-amber-600 uppercase tracking-widest">Lic. Autorizado:</strong>
+                        <span class="font-black uppercase mt-1 font-mono">{{ transferForm.value.autorizadoLicencia }}</span>
+                    </p>
+                    <p class="text-black dark:text-white flex flex-col col-span-2"><strong class="text-[10px] text-gray-500 uppercase tracking-widest">Gerencia Destino:</strong><span class="font-black uppercase mt-1">{{ transferForm.value.gerencia }}</span></p>
                 </div>
             </div>
 

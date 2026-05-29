@@ -10,52 +10,64 @@
 
   <div class="flex-1 flex flex-col p-3 sm:p-4 gap-3 overflow-hidden relative z-10">
 
-    <!-- ── TITLE ROW ──────────────────────────────────────────────── -->
-    <div class="flex items-center gap-2 shrink-0 flex-wrap">
+    <!-- ── HEADER ──────────────────────────────────────────────── -->
+    <div class="flex flex-col gap-3 shrink-0">
 
-      <div class="flex items-center justify-center w-10 h-10 bg-white dark:bg-[#0F172AFF] border-[3px] border-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] rounded-xl shrink-0">
-        <mat-icon class="text-black dark:text-[#FFC501FF] !text-base">swap_horiz</mat-icon>
+      <!-- Título principal -->
+      <div class="flex items-center gap-4">
+        <div class="flex items-center justify-center w-10 h-10 bg-white dark:bg-[#0F172AFF] border-[3px] border-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] rounded-xl shrink-0">
+          <mat-icon class="text-black dark:text-[#FFC501FF] !text-base">swap_horiz</mat-icon>
+        </div>
+        <div>
+          <h1 class="text-xl font-black text-black dark:text-white uppercase tracking-tighter leading-none">
+            TRASPASO Y RETORNO
+          </h1>
+          <p class="text-[10px] font-bold bg-[#FFC501FF] text-black px-2 py-0.5 inline-block border-2 border-black rounded uppercase tracking-wider mt-0.5">
+            Base · Área · MGH-109
+          </p>
+        </div>
       </div>
-      <div class="min-w-0">
-        <h1 class="text-lg sm:text-xl font-black text-black dark:text-white uppercase tracking-tighter leading-none">
-          TRASPASO Y RETORNO
-        </h1>
-        <p class="text-[10px] font-bold bg-[#FFC501FF] text-black px-2 py-0.5 inline-block border-2 border-black rounded uppercase tracking-wider mt-0.5">
-          ENV · TRP · RB · RTR
-        </p>
+
+      <!-- Tabs de navegación + botones de acción contextuales -->
+      <div class="flex items-center gap-3 flex-wrap">
+
+        <!-- Tabs de vista -->
+        <div class="flex items-center gap-1">
+          <button (click)="setTabView('activos')"
+                  class="h-9 px-3 flex items-center gap-1.5 rounded-lg border-[2px] border-black font-black text-[10px] uppercase transition-all"
+                  [ngClass]="activeTabView === 'activos'
+                      ? 'bg-[#FF1414FF] text-white shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]'
+                      : 'bg-white dark:bg-white/10 text-black dark:text-white hover:bg-red-50 dark:hover:bg-white/20'">
+            <mat-icon class="!text-sm" [ngClass]="activeTabView === 'activos' ? '!text-white' : ''">radar</mat-icon>
+            Activos
+          </button>
+          <button (click)="setTabView('envios')"
+                  class="h-9 px-3 flex items-center gap-1.5 rounded-lg border-[2px] border-black font-black text-[10px] uppercase transition-all"
+                  [ngClass]="activeTabView === 'envios'
+                      ? 'bg-[#FF1414FF] text-white shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]'
+                      : 'bg-white dark:bg-white/10 text-black dark:text-white hover:bg-red-50 dark:hover:bg-white/20'">
+            <mat-icon class="!text-sm" [ngClass]="activeTabView === 'envios' ? '!text-white' : ''">send</mat-icon>
+            Envío Base
+          </button>
+          <button (click)="setTabView('traspasos')"
+                  class="h-9 px-3 flex items-center gap-1.5 rounded-lg border-[2px] border-black font-black text-[10px] uppercase transition-all"
+                  [ngClass]="activeTabView === 'traspasos'
+                      ? 'bg-[#FF1414FF] text-white shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]'
+                      : 'bg-white dark:bg-white/10 text-black dark:text-white hover:bg-red-50 dark:hover:bg-white/20'">
+            <mat-icon class="!text-sm" [ngClass]="activeTabView === 'traspasos' ? '!text-white' : ''">transform</mat-icon>
+            Traspasos
+          </button>
+          <button (click)="setTabView('tecnico')"
+                  class="h-9 px-3 flex items-center gap-1.5 rounded-lg border-[2px] border-black font-black text-[10px] uppercase transition-all"
+                  [ngClass]="activeTabView === 'tecnico'
+                      ? 'bg-[#FF1414FF] text-white shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]'
+                      : 'bg-white dark:bg-white/10 text-black dark:text-white hover:bg-red-50 dark:hover:bg-white/20'">
+            <mat-icon class="!text-sm" [ngClass]="activeTabView === 'tecnico' ? '!text-white' : ''">badge</mat-icon>
+            MGH-109
+          </button>
+        </div>
+
       </div>
-
-      <div class="flex-1"></div>
-
-      <!-- Action buttons -->
-      <button (click)="abrirFormEnvio()"
-              class="flex items-center gap-1.5 h-9 px-3 sm:px-4 rounded-xl border-[2px] border-black bg-blue-600 hover:bg-blue-700 text-white font-black text-[10px] uppercase shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all shrink-0">
-        <mat-icon class="!text-sm">send</mat-icon>
-        <span class="hidden sm:inline">Envío BASE</span>
-        <span class="bg-white/20 text-white text-[9px] font-black px-1 rounded">ENV</span>
-      </button>
-
-      <button (click)="abrirFormTraspaso()"
-              class="flex items-center gap-1.5 h-9 px-3 sm:px-4 rounded-xl border-[2px] border-black bg-[#FFC501FF] hover:bg-yellow-400 text-black font-black text-[10px] uppercase shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all shrink-0">
-        <mat-icon class="!text-sm">transform</mat-icon>
-        <span class="hidden sm:inline">Traspaso</span>
-        <span class="bg-black/20 text-black text-[9px] font-black px-1 rounded">TRP</span>
-      </button>
-
-      <button (click)="abrirFormRetorno()"
-              class="flex items-center gap-1.5 h-9 px-3 sm:px-4 rounded-xl border-[2px] border-black bg-green-600 hover:bg-green-700 text-white font-black text-[10px] uppercase shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all shrink-0">
-        <mat-icon class="!text-sm">move_to_inbox</mat-icon>
-        <span class="hidden sm:inline">Retorno</span>
-        <span class="bg-white/20 text-white text-[9px] font-black px-1 rounded hidden sm:inline">RB/RTR</span>
-      </button>
-
-      <button (click)="abrirFormTraspasoTecnico()"
-              class="flex items-center gap-1.5 h-9 px-3 sm:px-4 rounded-xl border-[2px] border-black bg-purple-700 hover:bg-purple-800 text-white font-black text-[10px] uppercase shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all shrink-0">
-        <mat-icon class="!text-sm">badge</mat-icon>
-        <span class="hidden sm:inline">Traspaso TÉC.</span>
-        <span class="bg-white/20 text-white text-[9px] font-black px-1 rounded">MGH</span>
-      </button>
-
     </div>
 
     <!-- ── ACTIVOS CARD ──────────────────────────────────────────── -->
@@ -111,56 +123,140 @@
             </div>
           </div>
 
-          <button (click)="loadMovActivos()" [disabled]="loadingActivos"
-                  class="ml-auto flex items-center gap-1.5 h-7 px-2.5 rounded-lg border border-white/30 text-white hover:bg-white/20 transition-all disabled:opacity-40 font-black text-[10px] uppercase shrink-0">
-            <mat-icon class="!text-sm !w-4 !h-4 text-[#FFC501FF]" [class.animate-spin]="loadingActivos">refresh</mat-icon>
-            Actualizar
-          </button>
+          <!-- ── Acciones contextuales + Actualizar (esquina derecha) ── -->
+          <div class="ml-auto flex items-center gap-1.5 shrink-0">
+
+            <!-- Envíos Base -->
+            <ng-container *ngIf="activeTabView === 'envios'">
+              <button (click)="abrirFormEnvio()"
+                      class="h-7 px-2.5 flex items-center gap-1.5 rounded-lg bg-[#FFC501FF] border border-black text-black font-black text-[10px] uppercase shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all shrink-0">
+                <mat-icon class="!text-xs !w-3.5 !h-3.5">send</mat-icon>
+                <span class="hidden sm:inline">Nuevo Envío</span>
+                <span class="bg-black/20 text-[8px] font-black px-1 rounded">ENV</span>
+              </button>
+              <mat-icon class="!text-xs text-white/30 shrink-0">chevron_right</mat-icon>
+              <button (click)="abrirFormRetorno()"
+                      class="h-7 px-2.5 flex items-center gap-1.5 rounded-lg border border-white/40 text-white font-black text-[10px] uppercase hover:bg-white/20 transition-all shrink-0">
+                <mat-icon class="!text-xs !w-3.5 !h-3.5">move_to_inbox</mat-icon>
+                <span class="hidden sm:inline">Retorno Base</span>
+                <span class="bg-white/10 text-[8px] font-black px-1 rounded">RB</span>
+              </button>
+            </ng-container>
+
+            <!-- Traspasos -->
+            <ng-container *ngIf="activeTabView === 'traspasos'">
+              <button (click)="abrirFormTraspaso()"
+                      class="h-7 px-2.5 flex items-center gap-1.5 rounded-lg bg-[#FFC501FF] border border-black text-black font-black text-[10px] uppercase shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all shrink-0">
+                <mat-icon class="!text-xs !w-3.5 !h-3.5">transform</mat-icon>
+                <span class="hidden sm:inline">Traspasar</span>
+                <span class="bg-black/20 text-[8px] font-black px-1 rounded">TRP</span>
+              </button>
+              <mat-icon class="!text-xs text-white/30 shrink-0">chevron_right</mat-icon>
+              <button (click)="abrirFormRetornoArea()"
+                      class="h-7 px-2.5 flex items-center gap-1.5 rounded-lg border border-white/40 text-white font-black text-[10px] uppercase hover:bg-white/20 transition-all shrink-0">
+                <mat-icon class="!text-xs !w-3.5 !h-3.5">undo</mat-icon>
+                <span class="hidden sm:inline">Retorno Área</span>
+                <span class="bg-white/10 text-[8px] font-black px-1 rounded">RTR</span>
+              </button>
+            </ng-container>
+
+            <!-- MGH-109 -->
+            <ng-container *ngIf="activeTabView === 'tecnico'">
+              <button (click)="abrirFormTraspasoTecnico()"
+                      class="h-7 px-2.5 flex items-center gap-1.5 rounded-lg bg-[#FFC501FF] border border-black text-black font-black text-[10px] uppercase shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all shrink-0">
+                <mat-icon class="!text-xs !w-3.5 !h-3.5">badge</mat-icon>
+                <span class="hidden sm:inline">Traspasar</span>
+                <span class="bg-black/20 text-[8px] font-black px-1 rounded">MGH</span>
+              </button>
+              <mat-icon class="!text-xs text-white/30 shrink-0">chevron_right</mat-icon>
+              <button (click)="abrirFormDevolucionTecnico()"
+                      class="h-7 px-2.5 flex items-center gap-1.5 rounded-lg border border-white/40 text-white font-black text-[10px] uppercase hover:bg-white/20 transition-all shrink-0">
+                <mat-icon class="!text-xs !w-3.5 !h-3.5">assignment_return</mat-icon>
+                <span class="hidden sm:inline">Dev. Técnica</span>
+                <span class="bg-white/10 text-[8px] font-black px-1 rounded">DEV</span>
+              </button>
+            </ng-container>
+
+            <!-- Actualizar (siempre visible) -->
+            <button (click)="loadMovActivos()" [disabled]="loadingActivos"
+                    class="flex items-center gap-1.5 h-7 px-2.5 rounded-lg border border-white/30 text-white hover:bg-white/20 transition-all disabled:opacity-40 font-black text-[10px] uppercase shrink-0">
+              <mat-icon class="!text-sm !w-4 !h-4 text-[#FFC501FF]" [class.animate-spin]="loadingActivos">refresh</mat-icon>
+              Actualizar
+            </button>
+
+          </div>
         </div>
       </div>
 
-      <!-- Filter sub-bar -->
+      <!-- Filter sub-bar — solo visible en tab Activos para sub-filtrar entre tipos -->
       <div class="px-3 sm:px-4 py-2 bg-gray-100 dark:bg-slate-800 border-b-[2px] border-black flex items-center gap-2 flex-wrap shrink-0">
-        <button type="button" (click)="setFilterActivos('TODOS')"
-                class="h-7 px-3 text-[10px] font-black uppercase rounded-lg border-[2px] transition-all"
-                [ngClass]="filterActivos==='TODOS' ? 'bg-[#0F172AFF] text-[#FFC501FF] border-black shadow-none translate-x-[1px] translate-y-[1px]' : 'bg-white dark:bg-slate-700 text-black dark:text-white border-stone-300 shadow-[1px_1px_0_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none'">
-          Todos ({{movActivos.length}})
-        </button>
-        <button type="button" (click)="setFilterActivos('ENVIO_BASE')"
-                class="h-7 px-3 text-[10px] font-black uppercase rounded-lg border-[2px] transition-all"
-                [ngClass]="filterActivos==='ENVIO_BASE' ? 'bg-[#0F172AFF] text-[#FFC501FF] border-black shadow-none translate-x-[1px] translate-y-[1px]' : 'bg-white dark:bg-slate-700 text-black dark:text-white border-stone-300 shadow-[1px_1px_0_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none'">
-          <mat-icon class="!text-[11px] !w-3 !h-3 align-middle">send</mat-icon> Envíos Base
-        </button>
-        <button type="button" (click)="setFilterActivos('TRASPASO')"
-                class="h-7 px-3 text-[10px] font-black uppercase rounded-lg border-[2px] transition-all"
-                [ngClass]="filterActivos==='TRASPASO' ? 'bg-[#0F172AFF] text-[#FFC501FF] border-black shadow-none translate-x-[1px] translate-y-[1px]' : 'bg-white dark:bg-slate-700 text-black dark:text-white border-stone-300 shadow-[1px_1px_0_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none'">
-          <mat-icon class="!text-[11px] !w-3 !h-3 align-middle">transform</mat-icon> Traspasos
-        </button>
+        <!-- Sub-filtros: solo se muestran en la tab "Activos" -->
+        <ng-container *ngIf="activeTabView === 'activos'">
+          <button type="button" (click)="setFilterActivos('TODOS')"
+                  class="h-7 px-3 text-[10px] font-black uppercase rounded-lg border-[2px] transition-all"
+                  [ngClass]="filterActivos==='TODOS' ? 'bg-[#0F172AFF] text-[#FFC501FF] border-black shadow-none translate-x-[1px] translate-y-[1px]' : 'bg-white dark:bg-slate-700 text-black dark:text-white border-stone-300 shadow-[1px_1px_0_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none'">
+            Todos ({{movActivos.length}})
+          </button>
+          <button type="button" (click)="setFilterActivos('ENVIO_BASE')"
+                  class="h-7 px-3 text-[10px] font-black uppercase rounded-lg border-[2px] transition-all"
+                  [ngClass]="filterActivos==='ENVIO_BASE' ? 'bg-[#0F172AFF] text-[#FFC501FF] border-black shadow-none translate-x-[1px] translate-y-[1px]' : 'bg-white dark:bg-slate-700 text-black dark:text-white border-stone-300 shadow-[1px_1px_0_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none'">
+            <mat-icon class="!text-[11px] !w-3 !h-3 align-middle">send</mat-icon> Envíos Base
+          </button>
+          <button type="button" (click)="setFilterActivos('TRASPASO')"
+                  class="h-7 px-3 text-[10px] font-black uppercase rounded-lg border-[2px] transition-all"
+                  [ngClass]="filterActivos==='TRASPASO' ? 'bg-[#0F172AFF] text-[#FFC501FF] border-black shadow-none translate-x-[1px] translate-y-[1px]' : 'bg-white dark:bg-slate-700 text-black dark:text-white border-stone-300 shadow-[1px_1px_0_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none'">
+            <mat-icon class="!text-[11px] !w-3 !h-3 align-middle">transform</mat-icon> Traspasos
+          </button>
+          <button type="button" (click)="setFilterActivos('COMPLETADOS')"
+                  class="h-7 px-3 text-[10px] font-black uppercase rounded-lg border-[2px] transition-all"
+                  [ngClass]="filterActivos==='COMPLETADOS' ? 'bg-green-700 text-white border-black shadow-none translate-x-[1px] translate-y-[1px]' : 'bg-white dark:bg-slate-700 text-black dark:text-white border-stone-300 shadow-[1px_1px_0_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none'">
+            <mat-icon class="!text-[11px] !w-3 !h-3 align-middle">check_circle</mat-icon> Completados ({{movCompletados.length}})
+          </button>
+        </ng-container>
+        <!-- En tabs específicas: muestra el nombre del filtro activo como badge -->
+        <ng-container *ngIf="activeTabView !== 'activos'">
+          <span class="px-2 py-0.5 bg-[#0F172AFF] text-[#FFC501FF] border-2 border-black rounded text-[9px] font-black uppercase">
+            <mat-icon class="!text-[10px] !w-3 !h-3 align-middle">
+              {{activeTabView === 'envios' ? 'send' : activeTabView === 'traspasos' ? 'transform' : 'badge'}}
+            </mat-icon>
+            {{activeTabView === 'envios' ? 'Envíos a Base' : activeTabView === 'traspasos' ? 'Traspasos Área' : 'MGH-109 Técnico'}}
+          </span>
+        </ng-container>
         <span class="text-[10px] font-bold text-gray-500 dark:text-gray-400 ml-1">
           {{movActivosFiltrados.length}} ítem{{movActivosFiltrados.length!==1?'s':''}}
         </span>
       </div>
 
       <!-- Loading -->
-      <div *ngIf="loadingActivos" class="flex-1 flex flex-col items-center justify-center gap-4">
+      <div *ngIf="loadingActivos || (filterActivos==='COMPLETADOS' && loadingCompletados)" class="flex-1 flex flex-col items-center justify-center gap-4">
         <div class="w-12 h-12 border-4 border-[#FFC501FF] border-t-transparent rounded-full animate-spin"></div>
-        <p class="text-sm font-black uppercase text-gray-500 dark:text-gray-400">Cargando movimientos activos…</p>
+        <p class="text-sm font-black uppercase text-gray-500 dark:text-gray-400">
+          {{filterActivos==='COMPLETADOS' ? 'Cargando completados…' : 'Cargando movimientos activos…'}}
+        </p>
       </div>
 
       <!-- Empty -->
-      <div *ngIf="!loadingActivos && movActivosFiltrados.length===0"
+      <div *ngIf="!(loadingActivos || (filterActivos==='COMPLETADOS' && loadingCompletados)) && movActivosFiltrados.length===0"
            class="flex-1 flex flex-col items-center justify-center gap-3 py-12 px-4 text-center">
-        <mat-icon class="!text-5xl text-gray-300 dark:text-gray-600">radar</mat-icon>
-        <p class="text-xs font-bold uppercase text-gray-500 mt-2">Sin movimientos activos</p>
-        <p *ngIf="filterActivos!=='TODOS'" class="text-[11px] text-gray-400">Prueba cambiando el filtro</p>
-        <button *ngIf="movActivos.length===0" (click)="loadMovActivos()"
+        <mat-icon class="!text-5xl text-gray-300 dark:text-gray-600">
+          {{filterActivos==='COMPLETADOS' ? 'check_circle' : 'radar'}}
+        </mat-icon>
+        <p class="text-xs font-bold uppercase text-gray-500 mt-2">
+          {{filterActivos==='COMPLETADOS' ? 'Sin movimientos completados' : 'Sin movimientos activos'}}
+        </p>
+        <p *ngIf="filterActivos!=='TODOS' && filterActivos!=='COMPLETADOS'" class="text-[11px] text-gray-400">Prueba cambiando el filtro</p>
+        <button *ngIf="filterActivos==='COMPLETADOS'" (click)="loadMovCompletados()"
+                class="h-8 px-4 rounded-xl border-[2px] border-black bg-white dark:bg-slate-800 text-black dark:text-white font-black text-xs uppercase shadow-[2px_2px_0_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all mt-1">
+          Cargar completados
+        </button>
+        <button *ngIf="movActivos.length===0 && filterActivos!=='COMPLETADOS'" (click)="loadMovActivos()"
                 class="h-8 px-4 rounded-xl border-[2px] border-black bg-white dark:bg-slate-800 text-black dark:text-white font-black text-xs uppercase shadow-[2px_2px_0_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all mt-1">
           Cargar datos
         </button>
       </div>
 
       <!-- Table -->
-      <div *ngIf="!loadingActivos && movActivosFiltrados.length>0" class="flex-1 overflow-auto custom-scrollbar bg-gray-50 dark:bg-[#0F172AFF]">
+      <div *ngIf="!(loadingActivos || (filterActivos==='COMPLETADOS' && loadingCompletados)) && movActivosFiltrados.length>0" class="flex-1 overflow-auto custom-scrollbar bg-gray-50 dark:bg-[#0F172AFF]">
         <table class="w-full min-w-[700px]">
           <thead class="bg-gray-100 dark:bg-slate-800 border-b-[2px] border-black sticky top-0 z-10">
             <tr class="text-left text-[10px] font-black uppercase tracking-wider text-black dark:text-white">
@@ -184,10 +280,17 @@
                   getAlertRowClass(mov.alert_status)
                 ]">
               <td class="px-3 py-2.5">
-                <span class="px-1.5 py-0.5 text-[9px] font-black uppercase border-2 border-black rounded inline-flex items-center gap-0.5"
-                      [ngClass]="getTypeClass(mov.movement_type_label)">
-                  {{mov.movement_type_label==='TRASPASO'?'TRP':'ENV'}}
-                </span>
+                <div class="flex flex-col gap-1">
+                  <span class="px-1.5 py-0.5 text-[9px] font-black uppercase border-2 border-black rounded inline-flex items-center gap-0.5"
+                        [ngClass]="getTypeClass(mov.movement_type_label)">
+                    {{mov.movement_type_label==='TRASPASO'?'TRP':'ENV'}}
+                  </span>
+                  <span *ngIf="mov.movement_type_label==='TRASPASO' && mov.transfer_type"
+                        class="px-1.5 py-0.5 text-[8px] font-black uppercase border rounded inline-block"
+                        [ngClass]="getTransferTypeClass(mov.transfer_type)">
+                    {{getTransferTypeLabel(mov.transfer_type)}}
+                  </span>
+                </div>
               </td>
               <td class="px-3 py-2.5">
                 <span class="font-mono font-black text-[10px] bg-[#FFC501FF] text-black px-1.5 py-0.5 rounded border-2 border-black">
@@ -215,29 +318,66 @@
                 <span *ngIf="mov.days_remaining===null" class="text-[10px] text-gray-400">—</span>
               </td>
               <td class="px-3 py-2.5 text-center hidden sm:table-cell">
-                <span class="px-1.5 py-0.5 text-[9px] font-black uppercase border-2 border-black rounded inline-flex items-center gap-1"
+                <span *ngIf="!mov.isCompleted"
+                      class="px-1.5 py-0.5 text-[9px] font-black uppercase border-2 border-black rounded inline-flex items-center gap-1"
                       [ngClass]="getAlertBadgeClass(mov.alert_status)">
                   <span class="w-1.5 h-1.5 rounded-full shrink-0 bg-current"></span>
                   {{getAlertLabel(mov.alert_status)}}
+                </span>
+                <span *ngIf="mov.isCompleted"
+                      class="px-1.5 py-0.5 text-[9px] font-black uppercase border-2 border-green-600 rounded inline-flex items-center gap-1 bg-green-100 text-green-800">
+                  <mat-icon class="!text-[9px] !w-2.5 !h-2.5">check_circle</mat-icon>
+                  DEVUELTO
                 </span>
               </td>
               <td class="px-3 py-2.5 text-center">
                 <span class="text-xs font-black text-black dark:text-white">{{mov.items_count}}</span>
               </td>
               <td class="px-3 py-2.5 text-center">
-                <div class="flex items-center justify-center gap-1.5">
+                <!-- Activos: botón retorno + PDF envío -->
+                <div *ngIf="!mov.isCompleted" class="flex items-center justify-center gap-1.5">
                   <button type="button" (click)="registrarRetornoDesdeActivo(mov)"
-                          [matTooltip]="'Registrar retorno de ' + mov.movement_number"
-                          class="w-7 h-7 flex items-center justify-center bg-[#0F172AFF] border-2 border-black rounded-lg shadow-[2px_2px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all">
-                    <mat-icon class="!text-sm text-[#FFC501FF]">move_to_inbox</mat-icon>
+                          [matTooltip]="mov.movement_type_label==='ENVIO_BASE'
+                            ? 'Ret. BASE — ' + mov.movement_number
+                            : (+mov.destination_warehouse_id)===0
+                              ? 'Dev. TÉC. (MGH-109) — ' + mov.movement_number
+                              : 'Ret. ÁREA — ' + mov.movement_number"
+                          class="w-7 h-7 flex items-center justify-center border-2 border-black rounded-lg shadow-[2px_2px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all"
+                          [ngClass]="mov.movement_type_label==='ENVIO_BASE'
+                            ? 'bg-green-700'
+                            : (+mov.destination_warehouse_id)===0
+                              ? 'bg-green-800'
+                              : 'bg-amber-600'">
+                    <mat-icon class="!text-sm text-white">move_to_inbox</mat-icon>
                   </button>
                   <button type="button" (click)="verPdfActivo(mov)"
                           [disabled]="loadingPdfActivo === mov.id_movement"
-                          [matTooltip]="'Ver/Descargar PDF de ' + mov.movement_number"
+                          [matTooltip]="'PDF Envío — ' + mov.movement_number"
                           class="w-7 h-7 flex items-center justify-center bg-white dark:bg-stone-800 border-2 border-black rounded-lg shadow-[2px_2px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all disabled:opacity-50 disabled:cursor-not-allowed">
                     <mat-icon *ngIf="loadingPdfActivo !== mov.id_movement" class="!text-sm text-[#0F172AFF] dark:text-white">picture_as_pdf</mat-icon>
                     <mat-icon *ngIf="loadingPdfActivo === mov.id_movement" class="!text-sm text-gray-400 animate-spin">refresh</mat-icon>
                   </button>
+                </div>
+                <!-- Completados: badge + PDF envío + PDF retorno -->
+                <div *ngIf="mov.isCompleted" class="flex flex-col items-center gap-1">
+                  <span class="px-1.5 py-0.5 text-[8px] font-black uppercase bg-green-100 text-green-800 border border-green-400 rounded">
+                    {{mov.return_movement_number || 'DEVUELTO'}}
+                  </span>
+                  <div class="flex items-center gap-1">
+                    <button type="button" (click)="verPdfActivo(mov)"
+                            [disabled]="loadingPdfActivo === mov.id_movement"
+                            matTooltip="PDF Envío"
+                            class="w-6 h-6 flex items-center justify-center bg-blue-600 border-2 border-black rounded shadow-[1px_1px_0_#000] hover:translate-x-[0.5px] hover:translate-y-[0.5px] hover:shadow-none transition-all disabled:opacity-50">
+                      <mat-icon class="!text-[11px] text-white">send</mat-icon>
+                    </button>
+                    <button type="button" (click)="verPdfRetornoCompletado(mov)"
+                            [disabled]="!mov.return_id_movement || loadingPdfActivo === mov.id_movement"
+                            matTooltip="PDF Retorno"
+                            class="w-6 h-6 flex items-center justify-center bg-green-700 border-2 border-black rounded shadow-[1px_1px_0_#000] hover:translate-x-[0.5px] hover:translate-y-[0.5px] hover:shadow-none transition-all disabled:opacity-50 disabled:cursor-not-allowed">
+                      <mat-icon *ngIf="loadingPdfActivo !== mov.id_movement" class="!text-[11px] text-white">move_to_inbox</mat-icon>
+                      <mat-icon *ngIf="loadingPdfActivo === mov.id_movement" class="!text-[11px] text-gray-300 animate-spin">refresh</mat-icon>
+                    </button>
+                  </div>
                 </div>
               </td>
             </tr>
@@ -248,59 +388,6 @@
     </div><!-- /activos card -->
   </div><!-- /p-4 -->
 </div><!-- /host -->
-
-
-<!-- ══════════════════════════════════════════════════════════════════
-     MODAL: CONFIRMAR RETORNO
-══════════════════════════════════════════════════════════════════ -->
-<div *ngIf="showConfirmModal"
-     class="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm"
-     (click)="closeConfirmModal()">
-  <div class="bg-white dark:bg-slate-800 border-[3px] border-black rounded-2xl shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] w-full max-w-lg animate-fadeIn"
-       (click)="$event.stopPropagation()">
-    <div class="bg-[#0F172AFF] px-5 py-4 rounded-t-xl flex items-center gap-3">
-      <div class="w-9 h-9 rounded-xl bg-green-500 border-2 border-black flex items-center justify-center shadow-[2px_2px_0_#000] shrink-0">
-        <mat-icon class="!text-lg text-white">check_circle</mat-icon>
-      </div>
-      <div>
-        <p class="text-[9px] text-white/60 font-bold uppercase tracking-widest leading-none mb-0.5">CONFIRMAR OPERACIÓN</p>
-        <h3 class="text-sm text-white font-black uppercase leading-none">Confirmar Retorno</h3>
-      </div>
-      <button type="button" (click)="closeConfirmModal()" class="ml-auto w-7 h-7 flex items-center justify-center bg-white/10 hover:bg-red-500 text-white rounded-lg transition-all">
-        <mat-icon class="!text-sm">close</mat-icon>
-      </button>
-    </div>
-    <div class="px-5 py-4">
-      <p class="text-sm font-bold text-black dark:text-white mb-4">
-        ¿Confirmas el retorno de <span class="font-black text-green-600">{{getSelectedCount()}}</span> herramienta(s)?
-      </p>
-      <div class="flex flex-wrap gap-2 mb-4">
-        <span *ngIf="getResumenCondicion().buenos>0" class="flex items-center gap-1 px-2 py-1.5 bg-green-50 border-2 border-green-400 rounded-xl text-xs font-black text-green-800"><mat-icon class="!text-sm">check_circle</mat-icon>{{getResumenCondicion().buenos}} Bueno(s)</span>
-        <span *ngIf="getResumenCondicion().danados>0" class="flex items-center gap-1 px-2 py-1.5 bg-red-50 border-2 border-red-400 rounded-xl text-xs font-black text-red-800"><mat-icon class="!text-sm">report_problem</mat-icon>{{getResumenCondicion().danados}} Dañado(s)</span>
-        <span *ngIf="getResumenCondicion().calibracion>0" class="flex items-center gap-1 px-2 py-1.5 bg-yellow-50 border-2 border-yellow-400 rounded-xl text-xs font-black text-yellow-800"><mat-icon class="!text-sm">speed</mat-icon>{{getResumenCondicion().calibracion}} Req. Cal.</span>
-        <span *ngIf="getResumenCondicion().faltantes>0" class="flex items-center gap-1 px-2 py-1.5 bg-red-100 border-2 border-red-500 rounded-xl text-xs font-black text-red-900"><mat-icon class="!text-sm">help_outline</mat-icon>{{getResumenCondicion().faltantes}} Faltante(s)</span>
-      </div>
-      <div class="flex items-center justify-between bg-gray-50 dark:bg-slate-700 border-2 border-black/10 rounded-xl px-4 py-3 mb-4">
-        <span class="text-xs font-bold uppercase text-gray-500 tracking-wider">Total retorna</span>
-        <span class="text-base font-black text-black dark:text-white">{{getTotalRetornado()}} <span class="text-xs font-normal text-gray-400">/ {{getTotalEnviado()}} enviadas</span></span>
-      </div>
-      <p class="text-[10px] font-bold text-gray-600 dark:text-gray-300 bg-[#FFC501FF]/10 border border-[#FFC501FF] rounded-lg px-3 py-2">
-        ⚠ Esta acción incrementará el stock, actualizará el estado y marcará el movimiento como RETORNADO.
-      </p>
-    </div>
-    <div class="flex items-center justify-end gap-2 px-5 py-3 border-t-2 border-black/10">
-      <button type="button" (click)="closeConfirmModal()"
-              class="h-9 px-4 rounded-xl border-[2px] border-black bg-white dark:bg-slate-700 text-black dark:text-white font-black text-xs uppercase shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all">
-        Cancelar
-      </button>
-      <button type="button" (click)="finalizarRetorno()"
-              class="h-9 px-5 rounded-xl border-[2px] border-black bg-green-600 hover:bg-green-700 text-white font-black text-xs uppercase shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all flex items-center gap-1.5">
-        <mat-icon class="!text-sm">check_circle</mat-icon>
-        Sí, Confirmar
-      </button>
-    </div>
-  </div>
-</div>
 
 
 <!-- ══════════════════════════════════════════════════════════════════
@@ -748,37 +835,154 @@
             </div>
           </div>
 
-          <div>
-            <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-500 dark:text-slate-300 mb-1.5 block">
-              Responsable <span class="text-black dark:text-white">*</span>
+          <!-- Responsable / Envía con buscador -->
+          <div class="relative">
+            <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-500 dark:text-slate-300 mb-1.5 flex items-center gap-1">
+              <mat-icon class="!text-[11px] text-blue-500">person</mat-icon>
+              Responsable / Envía <span class="text-black dark:text-white font-black ml-0.5">*</span>
             </label>
-            <input type="text" formControlName="responsableTraspaso" placeholder="Nombre del responsable…"
-                   class="w-full h-10 text-sm font-bold bg-white dark:bg-slate-800 dark:text-white border-2 rounded-xl px-3 outline-none transition-all placeholder:text-stone-300 hover:border-stone-400 focus:border-black focus:shadow-[3px_3px_0_#000]"
-                   [ngClass]="traspasoForm.get('responsableTraspaso')?.touched && traspasoForm.get('responsableTraspaso')?.invalid ? 'border-red-500' : 'border-stone-300 dark:border-slate-500'" />
+            <div class="relative">
+              <mat-icon class="absolute left-3 top-2.5 !text-sm text-stone-400 pointer-events-none">search</mat-icon>
+              <input type="text"
+                     [value]="traspasoForm.get('responsableTraspaso')?.value || ''"
+                     (input)="onResponsableTraspasoInput($any($event.target).value)"
+                     (blur)="hideFuncTraspasoRespDropdown()"
+                     placeholder="Buscar por nombre o licencia…"
+                     autocomplete="off"
+                     class="w-full h-10 text-sm font-bold bg-white dark:bg-slate-800 dark:text-white border-2 rounded-xl pl-9 pr-8 outline-none transition-all placeholder:text-stone-300 hover:border-stone-400 focus:border-blue-500 focus:shadow-[3px_3px_0_#3b82f6]"
+                     [ngClass]="traspasoForm.get('responsableTraspaso')?.touched && traspasoForm.get('responsableTraspaso')?.invalid ? 'border-red-500' : 'border-stone-300 dark:border-slate-500'" />
+              <div *ngIf="funcTraspasoRespLoading" class="absolute right-3 top-2.5">
+                <div class="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+              </div>
+            </div>
+            <div *ngIf="showFuncTraspasoRespDropdown && funcionariosTraspasoResp.length"
+                 class="absolute left-0 right-0 top-full mt-1 z-50 bg-white dark:bg-slate-800 border-2 border-black rounded-xl shadow-[3px_3px_0_#000] overflow-hidden max-h-44 overflow-y-auto custom-scrollbar divide-y divide-stone-100 dark:divide-slate-700">
+              <div *ngFor="let f of funcionariosTraspasoResp" (mousedown)="selectFuncionarioTraspasoResp(f)"
+                   class="px-3 py-2 hover:bg-blue-50 dark:hover:bg-slate-700 cursor-pointer transition-colors">
+                <p class="text-xs font-black text-black dark:text-white uppercase">{{ f.nombre }}</p>
+                <p class="text-[9px] font-bold text-stone-400 uppercase mt-0.5">{{ f.cargo }}</p>
+              </div>
+            </div>
             <p *ngIf="traspasoForm.get('responsableTraspaso')?.touched && traspasoForm.get('responsableTraspaso')?.invalid"
                class="text-[9px] text-red-500 font-black mt-1">Requerido</p>
           </div>
 
-          <div>
-            <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-500 dark:text-slate-300 mb-1.5 block">
-              Autorizado por
+          <!-- Recibe en Destino con buscador -->
+          <div class="relative">
+            <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-500 dark:text-slate-300 mb-1.5 flex items-center gap-1">
+              <mat-icon class="!text-[11px] text-green-500">how_to_reg</mat-icon>
+              Recibe en Destino <span class="text-black dark:text-white font-black ml-0.5">*</span>
             </label>
-            <input type="text" formControlName="autorizadoPor" placeholder="Nombre del autorizante…"
-                   class="w-full h-10 text-sm font-bold bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-500 rounded-xl px-3 outline-none transition-all placeholder:text-stone-300 hover:border-stone-400 focus:border-black focus:shadow-[3px_3px_0_#000]" />
+            <div class="relative">
+              <mat-icon class="absolute left-3 top-2.5 !text-sm text-stone-400 pointer-events-none">search</mat-icon>
+              <input type="text"
+                     [value]="traspasoForm.get('recibeEnDestino')?.value || ''"
+                     (input)="onRecibeTraspasoInput($any($event.target).value)"
+                     (blur)="hideFuncTraspasoRecibeDropdown()"
+                     placeholder="Buscar por nombre o licencia…"
+                     autocomplete="off"
+                     class="w-full h-10 text-sm font-bold bg-white dark:bg-slate-800 dark:text-white border-2 rounded-xl pl-9 pr-8 outline-none transition-all placeholder:text-stone-300 hover:border-stone-400 focus:border-green-500 focus:shadow-[3px_3px_0_#22c55e]"
+                     [ngClass]="traspasoForm.get('recibeEnDestino')?.touched && traspasoForm.get('recibeEnDestino')?.invalid ? 'border-red-500' : 'border-stone-300 dark:border-slate-500'" />
+              <div *ngIf="funcTraspasoRecibeLoading" class="absolute right-3 top-2.5">
+                <div class="w-4 h-4 border-2 border-green-500 border-t-transparent rounded-full animate-spin"></div>
+              </div>
+            </div>
+            <div *ngIf="showFuncTraspasoRecibeDropdown && funcionariosTraspasoRecibe.length"
+                 class="absolute left-0 right-0 top-full mt-1 z-50 bg-white dark:bg-slate-800 border-2 border-black rounded-xl shadow-[3px_3px_0_#000] overflow-hidden max-h-44 overflow-y-auto custom-scrollbar divide-y divide-stone-100 dark:divide-slate-700">
+              <div *ngFor="let f of funcionariosTraspasoRecibe" (mousedown)="selectFuncionarioTraspasoRecibe(f)"
+                   class="px-3 py-2 hover:bg-green-50 dark:hover:bg-slate-700 cursor-pointer transition-colors">
+                <p class="text-xs font-black text-black dark:text-white uppercase">{{ f.nombre }}</p>
+                <p class="text-[9px] font-bold text-stone-400 uppercase mt-0.5">{{ f.cargo }}</p>
+              </div>
+            </div>
+            <p *ngIf="traspasoForm.get('recibeEnDestino')?.touched && traspasoForm.get('recibeEnDestino')?.invalid"
+               class="text-[9px] text-red-500 font-black mt-1">Requerido</p>
+          </div>
+
+          <!-- Autorizado con buscador -->
+          <div class="relative">
+            <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-500 dark:text-slate-300 mb-1.5 flex items-center gap-1">
+              <mat-icon class="!text-[11px] text-amber-500">verified_user</mat-icon>
+              Autorizado por <span class="text-black dark:text-white font-black ml-0.5">*</span>
+            </label>
+            <div class="relative">
+              <mat-icon class="absolute left-3 top-2.5 !text-sm text-stone-400 pointer-events-none">search</mat-icon>
+              <input type="text"
+                     [value]="traspasoForm.get('autorizadoPor')?.value || ''"
+                     (input)="onAutorizadoTraspasoInput($any($event.target).value)"
+                     (blur)="hideFuncTraspasoAutDropdown()"
+                     placeholder="Buscar por nombre o licencia…"
+                     autocomplete="off"
+                     class="w-full h-10 text-sm font-bold bg-white dark:bg-slate-800 dark:text-white border-2 rounded-xl pl-9 pr-8 outline-none transition-all placeholder:text-stone-300 hover:border-stone-400 focus:border-amber-400 focus:shadow-[3px_3px_0_#fbbf24]"
+                     [ngClass]="traspasoForm.get('autorizadoPor')?.touched && traspasoForm.get('autorizadoPor')?.invalid ? 'border-red-500' : 'border-stone-300 dark:border-slate-500'" />
+              <div *ngIf="funcTraspasoAutLoading" class="absolute right-3 top-2.5">
+                <div class="w-4 h-4 border-2 border-amber-400 border-t-transparent rounded-full animate-spin"></div>
+              </div>
+            </div>
+            <div *ngIf="showFuncTraspasoAutDropdown && funcionariosTraspasoAut.length"
+                 class="absolute left-0 right-0 top-full mt-1 z-50 bg-white dark:bg-slate-800 border-2 border-black rounded-xl shadow-[3px_3px_0_#000] overflow-hidden max-h-44 overflow-y-auto custom-scrollbar divide-y divide-stone-100 dark:divide-slate-700">
+              <div *ngFor="let f of funcionariosTraspasoAut" (mousedown)="selectFuncionarioTraspasoAut(f)"
+                   class="px-3 py-2 hover:bg-amber-50 dark:hover:bg-slate-700 cursor-pointer transition-colors">
+                <p class="text-xs font-black text-black dark:text-white uppercase">{{ f.nombre }}</p>
+                <p class="text-[9px] font-bold text-stone-400 uppercase mt-0.5">{{ f.cargo }}</p>
+              </div>
+            </div>
+            <p *ngIf="traspasoForm.get('autorizadoPor')?.touched && traspasoForm.get('autorizadoPor')?.invalid"
+               class="text-[9px] text-red-500 font-black mt-1">Requerido</p>
+          </div>
+
+          <!-- Tipo de Traspaso -->
+          <div>
+            <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-500 dark:text-slate-300 mb-1.5 flex items-center gap-1">
+              <mat-icon class="!text-[11px] text-purple-500">category</mat-icon>
+              Tipo Traspaso <span class="text-black dark:text-white font-black ml-0.5">*</span>
+            </label>
+            <div class="flex flex-wrap gap-2">
+              <label *ngFor="let t of tiposTraspaso" class="flex items-center gap-1.5 cursor-pointer">
+                <input type="radio" formControlName="tipoTraspaso" [value]="t.value" class="sr-only" />
+                <span class="px-2.5 py-1.5 rounded-lg border-2 font-black text-[10px] uppercase transition-all cursor-pointer"
+                      [ngClass]="traspasoForm.get('tipoTraspaso')?.value === t.value
+                        ? 'bg-amber-400 text-black border-black shadow-[2px_2px_0_#000] translate-x-[1px] translate-y-[1px]'
+                        : 'bg-white dark:bg-slate-800 text-stone-500 dark:text-slate-400 border-stone-300 dark:border-slate-500 hover:border-stone-400'"
+                      (click)="traspasoForm.patchValue({tipoTraspaso: t.value})">
+                  {{t.label}}
+                </span>
+              </label>
+            </div>
+          </div>
+
+          <!-- Fecha Retorno Esperada — solo para TEMPORAL o PRESTAMO -->
+          <div *ngIf="requiereFechaRetornoTrp()">
+            <label class="text-[8px] font-black uppercase tracking-[0.18em] text-blue-500 mb-1.5 flex items-center gap-1">
+              <mat-icon class="!text-[11px] text-blue-500">event_available</mat-icon>
+              Fecha Retorno Esperada *
+            </label>
+            <input type="date" formControlName="fechaRetornoEsperada"
+                   class="w-full h-10 text-sm font-bold bg-blue-50 dark:bg-slate-800 dark:text-white border-2 border-blue-400 rounded-xl px-3 outline-none transition-all focus:border-blue-600 focus:shadow-[3px_3px_0_#3b82f6]" />
+            <p class="text-[9px] text-blue-600 font-bold mt-1">Requerida para traspaso {{traspasoForm.get('tipoTraspaso')?.value === 'TEMPORAL' ? 'Temporal' : 'Préstamo Interno'}}</p>
           </div>
 
           <div>
             <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-500 dark:text-slate-300 mb-1.5 block">
               Justificación / Notas
             </label>
-            <textarea formControlName="notas" rows="3" placeholder="Motivo del traspaso definitivo…"
+            <textarea formControlName="notas" rows="2" placeholder="Motivo del traspaso…"
                       class="w-full text-sm font-bold bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-500 rounded-xl px-3 py-2 outline-none transition-all placeholder:text-stone-300 hover:border-stone-400 focus:border-black focus:shadow-[3px_3px_0_#000] resize-none"></textarea>
           </div>
 
-          <div class="flex items-start gap-2 bg-amber-50 dark:bg-amber-900/20 border-2 border-amber-400 rounded-xl px-3 py-2">
+          <!-- Warning contextual según tipo -->
+          <div *ngIf="traspasoForm.get('tipoTraspaso')?.value === 'PERMANENTE' || traspasoForm.get('tipoTraspaso')?.value === 'REASIGNACION'"
+               class="flex items-start gap-2 bg-amber-50 dark:bg-amber-900/20 border-2 border-amber-400 rounded-xl px-3 py-2">
             <mat-icon class="!text-sm text-amber-600 shrink-0 mt-0.5">warning</mat-icon>
             <p class="text-[9px] font-bold text-amber-700 dark:text-amber-400 leading-relaxed">
               El traspaso es <strong>definitivo</strong>. Las herramientas no retornarán al almacén origen.
+            </p>
+          </div>
+          <div *ngIf="traspasoForm.get('tipoTraspaso')?.value === 'TEMPORAL' || traspasoForm.get('tipoTraspaso')?.value === 'PRESTAMO'"
+               class="flex items-start gap-2 bg-blue-50 dark:bg-blue-900/20 border-2 border-blue-300 rounded-xl px-3 py-2">
+            <mat-icon class="!text-sm text-blue-500 shrink-0 mt-0.5">info</mat-icon>
+            <p class="text-[9px] font-bold text-blue-700 dark:text-blue-400 leading-relaxed">
+              Traspaso <strong>temporal</strong>. Las herramientas deberán retornar al almacén en la fecha indicada.
             </p>
           </div>
         </form>
@@ -882,7 +1086,7 @@
         </span>
       </div>
       <div class="flex items-center gap-2 shrink-0">
-        <button type="button" (click)="traspasoForm.reset(); itemsTraspaso=[]"
+        <button type="button" (click)="_resetTraspasoTab()"
                 class="h-9 px-3 sm:px-4 bg-stone-200 dark:bg-slate-600 text-black dark:text-white font-black text-[10px] uppercase border-2 border-black rounded-xl shadow-[2px_2px_0_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all">
           Limpiar
         </button>
@@ -919,9 +1123,9 @@
       </div>
       <div>
         <p class="text-[9px] text-slate-400 font-bold uppercase tracking-[0.18em] leading-none mb-0.5">
-          Entradas · {{tipoOrigenActivo==='BASE' ? 'Retorno de Base — RB' : 'Retorno de Traspaso — RTR'}}
+          Entradas · Retorno de Base — RB
         </p>
-        <h2 class="text-sm text-white font-black uppercase tracking-tight leading-none">Registrar Retorno</h2>
+        <h2 class="text-sm text-white font-black uppercase tracking-tight leading-none">Registrar Retorno de Base</h2>
       </div>
       <div class="ml-auto flex items-center gap-2 shrink-0">
         <span *ngIf="getSelectedCount()>0"
@@ -941,33 +1145,6 @@
       <!-- LEFT: tipo + form + query -->
       <div class="sm:basis-[40%] shrink-0 flex flex-col overflow-y-auto custom-scrollbar border-b-2 sm:border-b-0 sm:border-r-2 border-black/20 dark:border-slate-600">
         <div class="p-4 flex flex-col gap-4">
-
-          <!-- Tipo origen toggle -->
-          <div>
-            <h3 class="text-[9px] font-black uppercase text-stone-400 dark:text-slate-300 border-b-2 border-black pb-1.5 flex items-center gap-1.5 mb-3">
-              <mat-icon class="!text-sm text-green-500">settings</mat-icon> Tipo de Retorno
-            </h3>
-            <div class="flex gap-2">
-              <button type="button" (click)="onTipoOrigenChange('BASE')"
-                      class="flex-1 h-10 flex items-center justify-center gap-1.5 border-2 border-black rounded-xl font-black text-xs uppercase transition-all"
-                      [ngClass]="tipoOrigenActivo==='BASE'
-                        ? 'bg-[#0F172A] text-[#FFC501FF] shadow-none translate-x-[1px] translate-y-[1px]'
-                        : 'bg-white dark:bg-slate-700 text-black dark:text-white shadow-[2px_2px_0_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none'">
-                <mat-icon class="!text-sm">flight_takeoff</mat-icon>
-                Retorno Base
-                <span class="text-[9px] bg-blue-100 text-blue-800 border border-blue-300 px-1 rounded">RB</span>
-              </button>
-              <button type="button" (click)="onTipoOrigenChange('TRASPASO')"
-                      class="flex-1 h-10 flex items-center justify-center gap-1.5 border-2 border-black rounded-xl font-black text-xs uppercase transition-all"
-                      [ngClass]="tipoOrigenActivo==='TRASPASO'
-                        ? 'bg-[#0F172A] text-[#FFC501FF] shadow-none translate-x-[1px] translate-y-[1px]'
-                        : 'bg-white dark:bg-slate-700 text-black dark:text-white shadow-[2px_2px_0_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none'">
-                <mat-icon class="!text-sm">undo</mat-icon>
-                Ret. Traspaso
-                <span class="text-[9px] bg-amber-100 text-amber-800 border border-amber-300 px-1 rounded">RTR</span>
-              </button>
-            </div>
-          </div>
 
           <!-- Form fields -->
           <form [formGroup]="retornoForm" class="flex flex-col gap-4">
@@ -1198,6 +1375,56 @@
         </ng-container>
       </div>
     </div>
+
+    <!-- Confirm overlay: retorno base/traspaso -->
+    <div *ngIf="showConfirmModal"
+         class="absolute inset-0 z-[100] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm"
+         (click)="closeConfirmModal()">
+      <div class="bg-white dark:bg-slate-800 border-[3px] border-black rounded-2xl shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] w-full max-w-lg animate-fadeIn"
+           (click)="$event.stopPropagation()">
+        <div class="bg-[#0F172AFF] px-5 py-4 rounded-t-xl flex items-center gap-3">
+          <div class="w-9 h-9 rounded-xl bg-green-500 border-2 border-black flex items-center justify-center shadow-[2px_2px_0_#000] shrink-0">
+            <mat-icon class="!text-lg text-white">check_circle</mat-icon>
+          </div>
+          <div>
+            <p class="text-[9px] text-white/60 font-bold uppercase tracking-widest leading-none mb-0.5">CONFIRMAR OPERACIÓN</p>
+            <h3 class="text-sm text-white font-black uppercase leading-none">Confirmar Retorno</h3>
+          </div>
+          <button type="button" (click)="closeConfirmModal()" class="ml-auto w-7 h-7 flex items-center justify-center bg-white/10 hover:bg-red-500 text-white rounded-lg transition-all">
+            <mat-icon class="!text-sm">close</mat-icon>
+          </button>
+        </div>
+        <div class="px-5 py-4">
+          <p class="text-sm font-bold text-black dark:text-white mb-4">
+            ¿Confirmas el retorno de <span class="font-black text-green-600">{{getSelectedCount()}}</span> herramienta(s)?
+          </p>
+          <div class="flex flex-wrap gap-2 mb-4">
+            <span *ngIf="getResumenCondicion().buenos>0" class="flex items-center gap-1 px-2 py-1.5 bg-green-50 border-2 border-green-400 rounded-xl text-xs font-black text-green-800"><mat-icon class="!text-sm">check_circle</mat-icon>{{getResumenCondicion().buenos}} Bueno(s)</span>
+            <span *ngIf="getResumenCondicion().danados>0" class="flex items-center gap-1 px-2 py-1.5 bg-red-50 border-2 border-red-400 rounded-xl text-xs font-black text-red-800"><mat-icon class="!text-sm">report_problem</mat-icon>{{getResumenCondicion().danados}} Dañado(s)</span>
+            <span *ngIf="getResumenCondicion().calibracion>0" class="flex items-center gap-1 px-2 py-1.5 bg-yellow-50 border-2 border-yellow-400 rounded-xl text-xs font-black text-yellow-800"><mat-icon class="!text-sm">speed</mat-icon>{{getResumenCondicion().calibracion}} Req. Cal.</span>
+            <span *ngIf="getResumenCondicion().faltantes>0" class="flex items-center gap-1 px-2 py-1.5 bg-red-100 border-2 border-red-500 rounded-xl text-xs font-black text-red-900"><mat-icon class="!text-sm">help_outline</mat-icon>{{getResumenCondicion().faltantes}} Faltante(s)</span>
+          </div>
+          <div class="flex items-center justify-between bg-gray-50 dark:bg-slate-700 border-2 border-black/10 rounded-xl px-4 py-3 mb-4">
+            <span class="text-xs font-bold uppercase text-gray-500 tracking-wider">Total retorna</span>
+            <span class="text-base font-black text-black dark:text-white">{{getTotalRetornado()}} <span class="text-xs font-normal text-gray-400">/ {{getTotalEnviado()}} enviadas</span></span>
+          </div>
+          <p class="text-[10px] font-bold text-gray-600 dark:text-gray-300 bg-[#FFC501FF]/10 border border-[#FFC501FF] rounded-lg px-3 py-2">
+            ⚠ Esta acción incrementará el stock, actualizará el estado y marcará el movimiento como RETORNADO.
+          </p>
+        </div>
+        <div class="flex items-center justify-end gap-2 px-5 py-3 border-t-2 border-black/10">
+          <button type="button" (click)="closeConfirmModal()"
+                  class="h-9 px-4 rounded-xl border-[2px] border-black bg-white dark:bg-slate-700 text-black dark:text-white font-black text-xs uppercase shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all">
+            Cancelar
+          </button>
+          <button type="button" (click)="finalizarRetorno()"
+                  class="h-9 px-5 rounded-xl border-[2px] border-black bg-green-600 hover:bg-green-700 text-white font-black text-xs uppercase shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all flex items-center gap-1.5">
+            <mat-icon class="!text-sm">check_circle</mat-icon>
+            Sí, Confirmar
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 </ng-template>
 
@@ -1376,9 +1603,10 @@
               <div *ngFor="let p of personasTecnico" (mousedown)="selectPersonaTecnico(p)"
                    class="px-3 py-2.5 hover:bg-purple-50 dark:hover:bg-slate-700 cursor-pointer transition-colors">
                 <div class="text-xs font-black text-black dark:text-white uppercase">{{p.nombre}}</div>
-                <div class="flex gap-2 mt-0.5">
+                <div class="flex flex-wrap gap-2 mt-0.5">
                   <span *ngIf="p.cargo"    class="text-[9px] font-bold text-stone-400 uppercase">{{p.cargo}}</span>
                   <span *ngIf="p.licencia" class="text-[9px] font-bold text-purple-500 uppercase">LIC: {{p.licencia}}</span>
+                  <span *ngIf="p.area"     class="text-[9px] font-bold text-blue-400 uppercase">{{p.area}}</span>
                 </div>
               </div>
             </div>
@@ -1409,31 +1637,52 @@
             </div>
           </div>
 
+          <!-- ── Responsable que entrega desde almacén ── -->
+          <h3 class="text-[9px] font-black uppercase text-stone-400 dark:text-slate-300 border-b-2 border-black pb-1.5 flex items-center gap-1.5 mt-1">
+            <mat-icon class="!text-sm text-green-600">store</mat-icon> Entrega desde Almacén
+          </h3>
+
+          <div class="relative">
+            <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-500 dark:text-slate-300 mb-1.5 flex justify-between items-center">
+              <span class="flex items-center gap-1">
+                <mat-icon class="!text-[12px] text-green-600">how_to_reg</mat-icon>
+                Recepciona / Entrega <span class="text-black dark:text-white font-black ml-0.5">*</span>
+              </span>
+              <div *ngIf="funcEntregaTecnicoLoading" class="w-4 h-4 border-2 border-green-500 border-t-transparent rounded-full animate-spin"></div>
+            </label>
+            <input type="text" formControlName="responsableEntrega"
+                   (blur)="hideFuncEntregaTecnicoDropdown()"
+                   placeholder="Buscar funcionario que entrega…"
+                   class="w-full h-10 text-sm font-bold bg-white dark:bg-slate-800 dark:text-white border-2 rounded-xl px-3 outline-none transition-all placeholder:text-stone-300 dark:placeholder:text-slate-500 hover:border-stone-400 focus:border-black focus:shadow-[3px_3px_0_#000]"
+                   [ngClass]="traspasoTecnicoForm.get('responsableEntrega')?.touched && traspasoTecnicoForm.get('responsableEntrega')?.invalid ? 'border-red-500' : 'border-stone-300 dark:border-slate-500'" />
+            <!-- Dropdown resultados -->
+            <div *ngIf="showFuncEntregaTecnicoDropdown && funcEntregaTecnico.length"
+                 class="absolute left-0 right-0 top-full mt-1 z-50 bg-white dark:bg-slate-800 border-2 border-black rounded-xl shadow-[3px_3px_0_#000] overflow-hidden max-h-44 overflow-y-auto custom-scrollbar divide-y divide-stone-100 dark:divide-slate-700">
+              <div *ngFor="let f of funcEntregaTecnico" (mousedown)="selectFuncEntregaTecnico(f)"
+                   class="px-3 py-2.5 hover:bg-green-50 dark:hover:bg-slate-700 cursor-pointer transition-colors">
+                <div class="text-xs font-black text-black dark:text-white uppercase">{{f.nombre}}</div>
+                <div *ngIf="f.cargo" class="text-[9px] font-bold text-stone-400 uppercase mt-0.5">{{f.cargo}}</div>
+              </div>
+            </div>
+            <p *ngIf="traspasoTecnicoForm.get('responsableEntrega')?.touched && traspasoTecnicoForm.get('responsableEntrega')?.invalid"
+               class="text-[9px] text-red-500 font-black mt-1">Requerido</p>
+          </div>
+
+          <!-- ── Área / Unidad ── -->
           <h3 class="text-[9px] font-black uppercase text-stone-400 dark:text-slate-300 border-b-2 border-black pb-1.5 flex items-center gap-1.5 mt-1">
             <mat-icon class="!text-sm text-purple-500">apartment</mat-icon> Área / Unidad
           </h3>
 
-          <div class="grid grid-cols-2 gap-3">
-            <div>
-              <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-500 dark:text-slate-300 mb-1.5 block">
-                Gerencia <span class="text-black dark:text-white">*</span>
-              </label>
-              <input type="text" formControlName="gerencia" placeholder="Gerencia de …"
-                     class="w-full h-10 text-sm font-bold bg-white dark:bg-slate-800 dark:text-white border-2 rounded-xl px-3 outline-none transition-all focus:border-black focus:shadow-[3px_3px_0_#000] placeholder:text-stone-300"
-                     [ngClass]="traspasoTecnicoForm.get('gerencia')?.touched && traspasoTecnicoForm.get('gerencia')?.invalid ? 'border-red-500' : 'border-stone-300 dark:border-slate-500'" />
-              <p *ngIf="traspasoTecnicoForm.get('gerencia')?.touched && traspasoTecnicoForm.get('gerencia')?.invalid"
-                 class="text-[9px] text-red-500 font-black mt-1">Requerido</p>
-            </div>
-            <div>
-              <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-500 dark:text-slate-300 mb-1.5 block">
-                Unidad <span class="text-black dark:text-white">*</span>
-              </label>
-              <input type="text" formControlName="unidad" placeholder="Unidad / Dpto…"
-                     class="w-full h-10 text-sm font-bold bg-white dark:bg-slate-800 dark:text-white border-2 rounded-xl px-3 outline-none transition-all focus:border-black focus:shadow-[3px_3px_0_#000] placeholder:text-stone-300"
-                     [ngClass]="traspasoTecnicoForm.get('unidad')?.touched && traspasoTecnicoForm.get('unidad')?.invalid ? 'border-red-500' : 'border-stone-300 dark:border-slate-500'" />
-              <p *ngIf="traspasoTecnicoForm.get('unidad')?.touched && traspasoTecnicoForm.get('unidad')?.invalid"
-                 class="text-[9px] text-red-500 font-black mt-1">Requerido</p>
-            </div>
+          <div>
+            <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-500 dark:text-slate-300 mb-1.5 flex items-center gap-1">
+              <span>Unidad / Área <span class="text-black dark:text-white">*</span></span>
+              <span class="ml-auto text-[8px] text-blue-400 font-bold normal-case">Auto-llenado al seleccionar funcionario</span>
+            </label>
+            <input type="text" formControlName="unidad" placeholder="Unidad organizacional…"
+                   class="w-full h-10 text-sm font-bold bg-white dark:bg-slate-800 dark:text-white border-2 rounded-xl px-3 outline-none transition-all focus:border-black focus:shadow-[3px_3px_0_#000] placeholder:text-stone-300"
+                   [ngClass]="traspasoTecnicoForm.get('unidad')?.touched && traspasoTecnicoForm.get('unidad')?.invalid ? 'border-red-500' : 'border-stone-300 dark:border-slate-500'" />
+            <p *ngIf="traspasoTecnicoForm.get('unidad')?.touched && traspasoTecnicoForm.get('unidad')?.invalid"
+               class="text-[9px] text-red-500 font-black mt-1">Requerido</p>
           </div>
 
           <div class="grid grid-cols-2 gap-3">
@@ -1446,21 +1695,21 @@
             </div>
             <div>
               <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-500 dark:text-slate-300 mb-1.5 block">
-                Base <span class="text-black dark:text-white">*</span>
+                Base destino <span class="text-black dark:text-white">*</span>
               </label>
               <select formControlName="base"
-                      class="w-full h-10 text-sm font-bold bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-500 rounded-xl px-3 outline-none transition-all focus:border-black focus:shadow-[3px_3px_0_#000] appearance-none cursor-pointer">
-                <option value="VVI">VVI — Cochabamba</option>
-                <option value="LPB">LPB — La Paz</option>
-                <option value="SCZ">SCZ — Santa Cruz</option>
-                <option value="SRE">SRE — Sucre</option>
-                <option value="TDD">TDD — Trinidad</option>
-                <option value="BJO">BJO — Bermejo</option>
-                <option value="ORU">ORU — Oruro</option>
-                <option value="POI">POI — Potosí</option>
-                <option value="TJA">TJA — Tarija</option>
-                <option value="MHW">MHW — Monteagudo</option>
+                      class="w-full h-10 text-sm font-bold bg-white dark:bg-slate-800 dark:text-white border-2 rounded-xl px-3 outline-none transition-all focus:border-black focus:shadow-[3px_3px_0_#000] appearance-none cursor-pointer"
+                      [ngClass]="traspasoTecnicoForm.get('base')?.touched && traspasoTecnicoForm.get('base')?.invalid
+                                 ? 'border-red-500' : 'border-stone-300 dark:border-slate-500'">
+                <option [ngValue]="null" disabled>Seleccione base…</option>
+                <option *ngFor="let b of bases" [ngValue]="b">
+                  {{b.codigo ? b.codigo + ' — ' : ''}}{{b.nombre}}
+                </option>
               </select>
+              <p *ngIf="traspasoTecnicoForm.get('base')?.touched && traspasoTecnicoForm.get('base')?.invalid"
+                 class="text-[9px] text-red-500 font-black mt-1">Requerido</p>
+              <p *ngIf="bases.length === 0 && isLoading"
+                 class="text-[9px] text-stone-400 font-bold mt-1">Cargando bases…</p>
             </div>
           </div>
 
@@ -1480,6 +1729,19 @@
                 </span>
               </label>
             </div>
+          </div>
+
+          <!-- Fecha Retorno Esperada — solo para TEMPORAL o PRESTAMO -->
+          <div *ngIf="requiereFechaRetornoTecnico()">
+            <label class="text-[8px] font-black uppercase tracking-[0.18em] text-purple-500 mb-1.5 flex items-center gap-1">
+              <mat-icon class="!text-[11px] text-purple-500">event_available</mat-icon>
+              Fecha Retorno Esperada *
+            </label>
+            <input type="date" formControlName="fechaRetornoEsperada"
+                   class="w-full h-10 text-sm font-bold bg-purple-50 dark:bg-slate-800 dark:text-white border-2 border-purple-400 rounded-xl px-3 outline-none transition-all focus:border-purple-600 focus:shadow-[3px_3px_0_#7c3aed]" />
+            <p class="text-[9px] text-purple-600 font-bold mt-1">
+              Requerida para traspaso {{traspasoTecnicoForm.get('tipoTraspaso')?.value === 'TEMPORAL' ? 'Temporal' : 'Préstamo Interno'}}
+            </p>
           </div>
 
           <div>
@@ -1595,6 +1857,802 @@
           <mat-icon class="!text-sm">badge</mat-icon>
           <span class="hidden xs:inline">Registrar Traspaso</span> MGH-109
         </button>
+      </div>
+    </div>
+  </div>
+</ng-template>
+
+
+<!-- ══════════════════════════════════════════════════════════════════
+     FORM DIALOG: DEVOLUCIÓN TÉCNICA (MGH-109 Return)
+══════════════════════════════════════════════════════════════════ -->
+<ng-template #devolucionTecnicoFormDialog>
+  <div class="bg-stone-100 dark:bg-[#0F172A] sm:border-2 border-black flex flex-col overflow-hidden relative w-full"
+       style="box-shadow:6px 6px 0 #000; height:min(92vh,96dvh)">
+
+    <!-- Saving overlay -->
+    <div *ngIf="isSavingDevolucionTecnico" class="absolute inset-0 bg-black/60 flex items-center justify-center z-50">
+      <div class="bg-stone-100 dark:bg-slate-800 border-2 border-black rounded-xl shadow-[4px_4px_0_#000] px-8 py-6 flex flex-col items-center gap-4">
+        <div class="w-10 h-10 border-4 border-green-400 border-t-transparent rounded-full animate-spin"></div>
+        <span class="font-black text-black dark:text-white uppercase tracking-widest text-sm animate-pulse">Registrando devolución…</span>
+      </div>
+    </div>
+
+    <!-- Header -->
+    <div class="bg-[#0F172A] px-5 py-3 flex items-center gap-3 shrink-0">
+      <div class="w-9 h-9 rounded bg-green-600 border-2 border-black flex items-center justify-center shadow-[2px_2px_0_#166534] shrink-0">
+        <mat-icon class="!text-lg text-white">assignment_return</mat-icon>
+      </div>
+      <div>
+        <p class="text-[9px] text-slate-400 font-bold uppercase tracking-[0.18em] leading-none mb-0.5">Retornos · Devolución Técnica</p>
+        <h2 class="text-sm text-white font-black uppercase tracking-tight leading-none">Devolución MGH-109 — RTR TÉC.</h2>
+      </div>
+      <div class="ml-auto flex items-center gap-2 shrink-0">
+        <span *ngIf="movTecnicoSeleccionado"
+              class="px-2 py-0.5 bg-green-600 text-white font-black text-[10px] border-2 border-black rounded-lg">
+          {{movTecnicoSeleccionado.movement_number}}
+        </span>
+        <button type="button" (click)="cerrarFormDevolucionTecnico()"
+                class="px-3 py-1.5 bg-[#FF1414] text-white font-black text-[10px] border-2 border-black rounded-lg shadow-[2px_2px_0_#000] hover:shadow-none hover:translate-x-[1px] hover:translate-y-[1px] transition-all uppercase">
+          Cerrar
+        </button>
+      </div>
+    </div>
+
+    <!-- Body — 2 columns: Left=list | Right=items+form -->
+    <div class="flex flex-col sm:flex-row flex-1 overflow-hidden min-h-0">
+
+      <!-- ── LEFT: lista de traspasos técnicos activos ───────────── -->
+      <div class="sm:basis-[38%] shrink-0 flex flex-col overflow-hidden border-b-2 sm:border-b-0 sm:border-r-2 border-black/20 dark:border-slate-600">
+
+        <!-- Search técnico -->
+        <div class="px-4 pt-4 pb-2 border-b-2 border-black/10 dark:border-slate-600 shrink-0">
+          <h3 class="text-[9px] font-black uppercase text-stone-400 dark:text-slate-300 flex items-center gap-1.5 mb-2">
+            <mat-icon class="!text-sm text-green-600">manage_search</mat-icon>
+            Seleccionar Traspaso Técnico
+          </h3>
+          <div class="relative">
+            <mat-icon class="absolute left-3 top-2.5 !text-sm text-stone-400 pointer-events-none">person_search</mat-icon>
+            <input type="text" [(ngModel)]="searchTecnicoNombre" [ngModelOptions]="{standalone:true}"
+                   placeholder="Técnico, correlativo, área…"
+                   class="w-full h-9 text-sm font-bold bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-500 rounded-xl pl-9 pr-3 outline-none transition-all focus:border-black focus:shadow-[2px_2px_0_#000] placeholder:text-stone-300" />
+          </div>
+          <p class="text-[9px] text-stone-400 font-bold mt-1.5">
+            {{movTecnicosFiltrados.length}} traspaso{{movTecnicosFiltrados.length!==1?'s':''}} activo{{movTecnicosFiltrados.length!==1?'s':''}}
+          </p>
+        </div>
+
+        <!-- Movement list -->
+        <div class="flex-1 overflow-y-auto custom-scrollbar">
+
+          <!-- Empty -->
+          <div *ngIf="movTecnicosActivos.length===0"
+               class="flex flex-col items-center justify-center gap-2 h-full py-8 px-4 text-center">
+            <mat-icon class="!text-4xl text-stone-300 dark:text-slate-600">inbox</mat-icon>
+            <p class="text-xs font-black uppercase text-stone-400">Sin traspasos activos</p>
+            <button type="button" (click)="loadMovActivos()"
+                    class="mt-1 h-8 px-3 text-[10px] font-black uppercase rounded-lg border-2 border-black bg-white dark:bg-slate-800 text-black dark:text-white shadow-[2px_2px_0_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all">
+              <mat-icon class="!text-sm align-middle">refresh</mat-icon> Recargar
+            </button>
+          </div>
+
+          <!-- No results for search -->
+          <div *ngIf="movTecnicosActivos.length>0 && movTecnicosFiltrados.length===0"
+               class="flex flex-col items-center justify-center gap-2 h-full py-8 px-4 text-center">
+            <mat-icon class="!text-4xl text-stone-300 dark:text-slate-600">search_off</mat-icon>
+            <p class="text-xs font-black uppercase text-stone-400">Sin resultados para "{{searchTecnicoNombre}}"</p>
+          </div>
+
+          <!-- List -->
+          <div *ngFor="let mov of movTecnicosFiltrados"
+               (click)="seleccionarMovimientoTecnico(mov)"
+               class="px-3 py-3 border-b border-stone-200 dark:border-slate-700 cursor-pointer transition-all hover:bg-stone-50 dark:hover:bg-slate-700"
+               [ngClass]="movTecnicoSeleccionado?.id_movement === mov.id_movement
+                 ? 'bg-green-50 dark:bg-green-900/20 border-l-4 border-l-green-600'
+                 : 'border-l-4 border-l-transparent'">
+            <div class="flex items-start gap-2">
+              <div class="flex-1 min-w-0">
+                <div class="flex items-center gap-1.5 flex-wrap">
+                  <span class="font-mono text-[10px] font-black bg-[#FFC501FF] text-black px-1.5 py-0.5 rounded border-2 border-black">
+                    {{mov.movement_number}}
+                  </span>
+                  <span *ngIf="mov.transfer_type"
+                        class="text-[8px] font-black px-1.5 py-0.5 rounded border uppercase"
+                        [ngClass]="getTransferTypeClass(mov.transfer_type)">
+                    {{getTransferTypeLabel(mov.transfer_type)}}
+                  </span>
+                </div>
+                <p class="text-xs font-black text-black dark:text-white mt-1 truncate" [title]="mov.received_by_name">
+                  <mat-icon class="!text-[11px] !w-3 !h-3 align-middle text-green-600">person</mat-icon>
+                  {{mov.received_by_name || '— sin técnico —'}}
+                </p>
+                <p class="text-[9px] font-bold text-stone-400 truncate">{{mov.department || mov.destination_warehouse_name || '—'}}</p>
+                <div class="flex items-center gap-2 mt-1">
+                  <span class="text-[9px] text-stone-400">{{mov.send_date | date:'dd/MM/yy'}}</span>
+                  <span class="text-[9px] font-bold text-black dark:text-white">{{mov.items_count}} ítem(s)</span>
+                  <span *ngIf="mov.alert_status !== 'SIN_FECHA'"
+                        class="text-[8px] font-black px-1 rounded border uppercase"
+                        [ngClass]="getAlertBadgeClass(mov.alert_status)">
+                    {{getAlertLabel(mov.alert_status)}}
+                  </span>
+                </div>
+              </div>
+              <mat-icon *ngIf="movTecnicoSeleccionado?.id_movement === mov.id_movement"
+                        class="!text-base text-green-600 shrink-0 mt-1">check_circle</mat-icon>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── RIGHT: items + form ─────────────────────────────────── -->
+      <div class="flex-1 flex flex-col overflow-hidden min-h-0">
+
+        <!-- Empty state — no movement selected -->
+        <div *ngIf="!movTecnicoSeleccionado"
+             class="flex-1 flex flex-col items-center justify-center gap-3 px-6 text-center">
+          <mat-icon class="!text-5xl text-stone-300 dark:text-slate-600">arrow_back</mat-icon>
+          <p class="text-xs font-black uppercase text-stone-400 dark:text-slate-500">Selecciona un traspaso de la lista</p>
+          <p class="text-[10px] text-stone-400 dark:text-slate-500">para ver sus herramientas y registrar la devolución</p>
+        </div>
+
+        <!-- Loading items -->
+        <div *ngIf="movTecnicoSeleccionado && loadingDevolucionItems"
+             class="flex-1 flex flex-col items-center justify-center gap-3">
+          <div class="w-10 h-10 border-4 border-green-400 border-t-transparent rounded-full animate-spin"></div>
+          <p class="text-xs font-black uppercase text-stone-400">Cargando herramientas…</p>
+        </div>
+
+        <!-- Content -->
+        <ng-container *ngIf="movTecnicoSeleccionado && !loadingDevolucionItems">
+
+          <!-- Movement info bar -->
+          <div class="px-4 py-2.5 bg-green-50 dark:bg-green-900/20 border-b-2 border-black/10 dark:border-slate-600 shrink-0">
+            <div class="flex items-center gap-3 flex-wrap">
+              <div>
+                <p class="text-[8px] font-black uppercase text-green-700 dark:text-green-400 tracking-widest">Técnico</p>
+                <p class="text-sm font-black text-black dark:text-white">{{movTecnicoSeleccionado.received_by_name || '—'}}</p>
+              </div>
+              <div class="h-8 w-px bg-black/10 hidden sm:block"></div>
+              <div>
+                <p class="text-[8px] font-black uppercase text-stone-400 tracking-widest">Unidad / Área</p>
+                <p class="text-xs font-bold text-black dark:text-white">{{movTecnicoSeleccionado.department || '—'}}</p>
+              </div>
+              <div class="h-8 w-px bg-black/10 hidden sm:block"></div>
+              <div>
+                <p class="text-[8px] font-black uppercase text-stone-400 tracking-widest">Fecha Traspaso</p>
+                <p class="text-xs font-bold text-black dark:text-white">{{movTecnicoSeleccionado.send_date | date:'dd/MM/yyyy'}}</p>
+              </div>
+              <div class="ml-auto">
+                <span class="text-xs font-black text-stone-500">{{devolucionTecnicoItems.length}} ítem(s) cargado(s)</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Items table -->
+          <div class="flex-1 overflow-y-auto custom-scrollbar">
+
+            <!-- Select all bar -->
+            <div *ngIf="devolucionTecnicoItems.length>0"
+                 class="sticky top-0 z-10 flex items-center gap-3 px-3 py-2 bg-stone-100 dark:bg-slate-800 border-b-2 border-black/10">
+              <mat-checkbox
+                [checked]="isAllSelectedDevolucion()"
+                [indeterminate]="isSomeSelectedDevolucion()"
+                (change)="toggleAllDevolucion($event)"
+                class="white-checkbox">
+              </mat-checkbox>
+              <span class="text-[10px] font-black uppercase text-stone-500 dark:text-slate-300">
+                {{getSelectedDevolucion().length}} / {{devolucionTecnicoItems.length}} seleccionada(s)
+              </span>
+            </div>
+
+            <!-- Empty items -->
+            <div *ngIf="devolucionTecnicoItems.length===0"
+                 class="flex flex-col items-center justify-center gap-2 h-40 text-center px-4">
+              <mat-icon class="!text-4xl text-stone-300 dark:text-slate-600">inbox</mat-icon>
+              <p class="text-xs font-black uppercase text-stone-400">Sin herramientas en este movimiento</p>
+            </div>
+
+            <!-- Items list -->
+            <div *ngFor="let item of devolucionTecnicoItems"
+                 class="border-b border-stone-200 dark:border-slate-700 transition-colors"
+                 [ngClass]="item.selected ? getRowClass(item) : 'bg-white dark:bg-slate-800/60'">
+
+              <!-- Row header (always visible) -->
+              <div class="flex items-center gap-2 px-3 py-2.5 cursor-pointer"
+                   (click)="toggleSelectionDevolucion(item)">
+                <mat-checkbox [checked]="item.selected" (click)="$event.stopPropagation()"
+                              (change)="toggleSelectionDevolucion(item)" class="shrink-0">
+                </mat-checkbox>
+                <span class="font-mono text-[10px] font-black bg-green-100 dark:bg-green-900/30 text-green-900 dark:text-green-300 px-1.5 py-0.5 rounded border-2 border-green-400 shrink-0">
+                  {{item.codigo || '—'}}
+                </span>
+                <div class="flex-1 min-w-0">
+                  <p class="text-xs font-black text-black dark:text-white truncate">{{item.descripcion}}</p>
+                  <p class="text-[9px] text-stone-400 font-bold">P/N: {{item.pn || '—'}} · S/N: {{item.sn || '—'}}</p>
+                </div>
+                <div class="flex items-center gap-2 shrink-0">
+                  <span class="text-xs font-black text-stone-500">×{{item.cantidadEnviada}}</span>
+                  <span *ngIf="item.selected && item.condicion"
+                        class="text-[8px] font-black px-1.5 py-0.5 rounded border uppercase"
+                        [ngClass]="getCondicionCfg(item.condicion)?.bgColor + ' text-white border-black'">
+                    {{getCondicionCfg(item.condicion)?.label}}
+                  </span>
+                  <button type="button" (click)="$event.stopPropagation(); item.expanded=!item.expanded"
+                          *ngIf="item.selected"
+                          class="w-6 h-6 flex items-center justify-center bg-stone-100 dark:bg-slate-700 border-2 border-black/20 rounded-lg text-stone-400 hover:border-black transition-all">
+                    <mat-icon class="!text-xs">{{item.expanded ? 'expand_less' : 'expand_more'}}</mat-icon>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Expanded detail row (condicion + cantidad + obs) -->
+              <div *ngIf="item.selected && item.expanded" class="px-3 pb-3 flex flex-col gap-2 bg-stone-50 dark:bg-slate-900/20">
+
+                <!-- Error hints -->
+                <div *ngIf="getItemErrors(item).length>0" class="flex flex-wrap gap-1">
+                  <span *ngFor="let e of getItemErrors(item)"
+                        class="text-[9px] font-black text-red-600 bg-red-50 border border-red-300 px-1.5 py-0.5 rounded">
+                    ⚠ {{e}}
+                  </span>
+                </div>
+
+                <!-- Condición chips -->
+                <div>
+                  <label class="text-[8px] font-black uppercase text-stone-400 mb-1 block tracking-widest">
+                    Condición de Retorno *
+                  </label>
+                  <div class="flex flex-wrap gap-1.5">
+                    <button *ngFor="let c of condiciones" type="button"
+                            (click)="onCondicionChange(item, c.value)"
+                            class="flex items-center gap-1 px-2 py-1 rounded-lg border-2 font-black text-[9px] uppercase transition-all"
+                            [ngClass]="item.condicion === c.value
+                              ? c.bgColor + ' text-white border-black shadow-[2px_2px_0_#000]'
+                              : 'bg-white dark:bg-slate-800 text-stone-500 border-stone-300 dark:border-slate-500 hover:border-stone-400'">
+                      <mat-icon class="!text-[10px] !w-3 !h-3">{{c.icon}}</mat-icon>
+                      {{c.label}}
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Cantidad + Observación -->
+                <div class="flex gap-2 flex-wrap">
+                  <div>
+                    <label class="text-[8px] font-black uppercase text-stone-400 mb-1 block tracking-widest">
+                      Cant. Devuelve
+                    </label>
+                    <input type="number" [(ngModel)]="item.cantidadRetorna"
+                           [ngModelOptions]="{standalone:true}"
+                           [min]="item.condicion==='FALTANTE'?0:1"
+                           [max]="item.cantidadEnviada"
+                           [disabled]="item.condicion==='FALTANTE'"
+                           (change)="validateCantidadRetorna(item)"
+                           class="w-20 h-8 text-center border-2 border-stone-300 dark:border-slate-500 rounded-lg text-xs font-black bg-white dark:bg-slate-800 dark:text-white outline-none focus:border-black focus:shadow-[2px_2px_0_#000] transition-all disabled:opacity-50" />
+                    <span class="text-[9px] text-stone-400 ml-1">/ {{item.cantidadEnviada}}</span>
+                  </div>
+                  <div class="flex-1 min-w-[140px]">
+                    <label class="text-[8px] font-black uppercase text-stone-400 mb-1 block tracking-widest">
+                      Observación
+                      <span *ngIf="item.condicion==='DAÑADO'||item.condicion==='FALTANTE'" class="text-red-500">*</span>
+                    </label>
+                    <input type="text" [(ngModel)]="item.observacionItem"
+                           [ngModelOptions]="{standalone:true}"
+                           [placeholder]="(item.condicion==='DAÑADO'||item.condicion==='FALTANTE') ? 'Descripción obligatoria…' : 'Opcional…'"
+                           class="h-8 px-2 w-full bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-500 rounded-lg font-bold text-[10px] outline-none focus:border-black transition-all placeholder:text-stone-300 placeholder:font-normal" />
+                  </div>
+                </div>
+
+              </div>
+            </div>
+          </div>
+
+          <!-- Reception form -->
+          <div class="border-t-2 border-black/20 dark:border-slate-600 px-4 pt-3 pb-2 shrink-0">
+            <h3 class="text-[9px] font-black uppercase text-stone-400 dark:text-slate-300 flex items-center gap-1.5 mb-2">
+              <mat-icon class="!text-sm text-green-600">how_to_reg</mat-icon> Datos de Recepción
+            </h3>
+            <form [formGroup]="devolucionTecnicoForm" class="flex flex-wrap gap-3">
+
+              <!-- Fecha -->
+              <div class="flex-1 min-w-[130px]">
+                <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-500 dark:text-slate-300 mb-1 block">
+                  Fecha Dev. *
+                </label>
+                <input type="date" formControlName="fechaDevolucion"
+                       class="w-full h-9 text-sm font-bold bg-white dark:bg-slate-800 dark:text-white border-2 rounded-xl px-3 outline-none focus:border-black focus:shadow-[2px_2px_0_#000] transition-all"
+                       [ngClass]="devolucionTecnicoForm.get('fechaDevolucion')?.touched && devolucionTecnicoForm.get('fechaDevolucion')?.invalid ? 'border-red-500' : 'border-stone-300 dark:border-slate-500'" />
+              </div>
+
+              <!-- Nro. Documento -->
+              <div class="flex-1 min-w-[120px]">
+                <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-500 dark:text-slate-300 mb-1 block">
+                  Nro. Documento
+                </label>
+                <input type="text" formControlName="nroDocumento" placeholder="Opcional…"
+                       class="w-full h-9 text-sm font-bold bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-500 rounded-xl px-3 outline-none focus:border-black focus:shadow-[2px_2px_0_#000] transition-all placeholder:text-stone-300" />
+              </div>
+
+              <!-- Recibe en almacén — autocomplete -->
+              <div class="relative flex-1 min-w-[160px]">
+                <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-500 dark:text-slate-300 mb-1 flex items-center justify-between">
+                  <span>Recibe en Almacén *</span>
+                  <div *ngIf="funcDevolucionRecibeLoading" class="w-3.5 h-3.5 border-2 border-green-400 border-t-transparent rounded-full animate-spin"></div>
+                </label>
+                <input type="text" formControlName="recibeAlmacen"
+                       (blur)="hideFuncDevolucionRecibeDropdown()" placeholder="Buscar funcionario…"
+                       class="w-full h-9 text-sm font-bold bg-white dark:bg-slate-800 dark:text-white border-2 rounded-xl px-3 outline-none focus:border-black focus:shadow-[2px_2px_0_#000] transition-all placeholder:text-stone-300"
+                       [ngClass]="devolucionTecnicoForm.get('recibeAlmacen')?.touched && devolucionTecnicoForm.get('recibeAlmacen')?.invalid ? 'border-red-500' : 'border-stone-300 dark:border-slate-500'" />
+                <div *ngIf="showFuncDevolucionRecibeDropdown && funcDevolucionRecibe.length"
+                     class="absolute left-0 right-0 top-full mt-1 z-50 bg-white dark:bg-slate-800 border-2 border-black rounded-xl shadow-[3px_3px_0_#000] overflow-hidden max-h-36 overflow-y-auto custom-scrollbar divide-y divide-stone-100 dark:divide-slate-700">
+                  <div *ngFor="let f of funcDevolucionRecibe" (mousedown)="selectFuncDevolucionRecibe(f)"
+                       class="px-3 py-2 hover:bg-stone-50 dark:hover:bg-slate-700 cursor-pointer transition-colors">
+                    <div class="text-xs font-black text-black dark:text-white uppercase">{{f.nombre}}</div>
+                    <div *ngIf="f.cargo" class="text-[9px] font-bold text-stone-400 uppercase">{{f.cargo}}</div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Observaciones -->
+              <div class="w-full">
+                <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-500 dark:text-slate-300 mb-1 block">
+                  Observaciones
+                </label>
+                <input type="text" formControlName="observaciones" placeholder="Estado general, incidencias…"
+                       class="w-full h-9 text-sm font-bold bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-500 rounded-xl px-3 outline-none focus:border-black focus:shadow-[2px_2px_0_#000] transition-all placeholder:text-stone-300" />
+              </div>
+
+            </form>
+          </div>
+
+        </ng-container>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="border-t-2 border-black/20 dark:border-slate-600 px-4 sm:px-5 py-3 flex items-center justify-between shrink-0">
+      <div class="flex items-center gap-2 min-w-0 overflow-hidden">
+        <span *ngIf="movTecnicoSeleccionado" class="text-sm font-black text-black dark:text-white shrink-0">
+          {{getSelectedDevolucion().length}} seleccionada(s)
+        </span>
+        <span *ngIf="movTecnicoSeleccionado?.received_by_name"
+              class="text-xs text-stone-500 dark:text-slate-400 font-bold truncate hidden sm:block">
+          ← {{movTecnicoSeleccionado?.received_by_name}}
+        </span>
+      </div>
+      <div class="flex items-center gap-2 shrink-0">
+        <button type="button" (click)="cerrarFormDevolucionTecnico()"
+                class="h-9 px-3 sm:px-4 bg-stone-200 dark:bg-slate-600 text-black dark:text-white font-black text-[10px] uppercase border-2 border-black rounded-xl shadow-[2px_2px_0_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all">
+          Cancelar
+        </button>
+        <button type="button" (click)="openDevolucionTecnicoConfirm()"
+                [disabled]="!movTecnicoSeleccionado || isSavingDevolucionTecnico"
+                class="h-9 px-4 sm:px-5 bg-green-600 hover:bg-green-700 text-white font-black text-[10px] uppercase border-2 border-black rounded-xl shadow-[3px_3px_0_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all disabled:opacity-40 disabled:cursor-not-allowed disabled:translate-x-0 disabled:shadow-none flex items-center gap-1.5">
+          <mat-icon class="!text-sm">assignment_return</mat-icon>
+          <span class="hidden xs:inline">Registrar Devolución</span> RTR-TÉC
+        </button>
+      </div>
+    </div>
+
+    <!-- Confirm overlay: devolución técnica MGH-109 -->
+    <div *ngIf="showDevolucionTecnicoConfirm"
+         class="absolute inset-0 z-[100] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm"
+         (click)="closeDevolucionTecnicoConfirm()">
+      <div class="bg-white dark:bg-slate-800 border-[3px] border-black rounded-2xl shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] w-full max-w-lg animate-fadeIn"
+           (click)="$event.stopPropagation()">
+        <div class="bg-[#0F172AFF] px-5 py-4 rounded-t-xl flex items-center gap-3">
+          <div class="w-9 h-9 rounded-xl bg-green-600 border-2 border-black flex items-center justify-center shadow-[2px_2px_0_#000] shrink-0">
+            <mat-icon class="!text-lg text-white">assignment_return</mat-icon>
+          </div>
+          <div>
+            <p class="text-[9px] text-white/60 font-bold uppercase tracking-widest leading-none mb-0.5">CONFIRMAR OPERACIÓN</p>
+            <h3 class="text-sm text-white font-black uppercase leading-none">Confirmar Devolución Técnica</h3>
+          </div>
+          <button type="button" (click)="closeDevolucionTecnicoConfirm()" class="ml-auto w-7 h-7 flex items-center justify-center bg-white/10 hover:bg-red-500 text-white rounded-lg transition-all">
+            <mat-icon class="!text-sm">close</mat-icon>
+          </button>
+        </div>
+        <div class="px-5 py-4">
+          <p class="text-sm font-bold text-black dark:text-white mb-2">
+            ¿Confirmas la devolución de
+            <span class="font-black text-green-700">{{getSelectedDevolucion().length}}</span>
+            herramienta(s) de
+            <span class="font-black text-purple-700">{{movTecnicoSeleccionado?.received_by_name || '—'}}</span>?
+          </p>
+          <div class="flex flex-wrap gap-2 mb-4">
+            <span *ngIf="getSelectedDevolucion().length>0" class="px-2 py-1.5 bg-stone-50 border-2 border-stone-300 rounded-xl text-xs font-black text-stone-700">
+              Traspaso: {{movTecnicoSeleccionado?.movement_number}}
+            </span>
+            <span class="px-2 py-1.5 bg-green-50 border-2 border-green-400 rounded-xl text-xs font-black text-green-800">
+              {{getDevolucionBuenosCount()}} Bueno(s)
+            </span>
+            <span *ngIf="getDevolucionDanadosCount()>0"
+                  class="px-2 py-1.5 bg-red-50 border-2 border-red-400 rounded-xl text-xs font-black text-red-800">
+              {{getDevolucionDanadosCount()}} Dañado(s)
+            </span>
+            <span *ngIf="getDevolucionFaltantesCount()>0"
+                  class="px-2 py-1.5 bg-red-100 border-2 border-red-500 rounded-xl text-xs font-black text-red-900">
+              {{getDevolucionFaltantesCount()}} Faltante(s)
+            </span>
+          </div>
+          <p class="text-[10px] font-bold text-gray-600 dark:text-gray-300 bg-green-50 border border-green-400 rounded-lg px-3 py-2">
+            ⚠ Esta acción incrementará el stock del almacén y marcará las herramientas como RETORNADAS.
+          </p>
+        </div>
+        <div class="flex items-center justify-end gap-2 px-5 py-3 border-t-2 border-black/10">
+          <button type="button" (click)="closeDevolucionTecnicoConfirm()"
+                  class="h-9 px-4 rounded-xl border-[2px] border-black bg-white dark:bg-slate-700 text-black dark:text-white font-black text-xs uppercase shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all">
+            Cancelar
+          </button>
+          <button type="button" (click)="finalizarDevolucionTecnico()" [disabled]="isSavingDevolucionTecnico"
+                  class="h-9 px-5 rounded-xl border-[2px] border-black bg-green-600 hover:bg-green-700 text-white font-black text-xs uppercase shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all flex items-center gap-1.5 disabled:opacity-50">
+            <mat-icon class="!text-sm">assignment_return</mat-icon>
+            Sí, Confirmar Devolución
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</ng-template>
+
+
+<!-- ══════════════════════════════════════════════════════════════════
+     FORM DIALOG: RETORNO ÁREA (TRASPASO doble-panel)
+══════════════════════════════════════════════════════════════════ -->
+<ng-template #retornoAreaFormDialog>
+  <div class="bg-stone-100 dark:bg-[#0F172A] sm:border-2 border-black flex flex-col overflow-hidden relative w-full"
+       style="box-shadow:6px 6px 0 #000; height:min(93vh,97dvh)">
+
+    <!-- Saving overlay -->
+    <div *ngIf="isSavingRetornoArea"
+         class="absolute inset-0 z-50 bg-black/60 backdrop-blur-sm flex flex-col items-center justify-center gap-3">
+      <div class="w-12 h-12 border-4 border-amber-400 border-t-transparent rounded-full animate-spin"></div>
+      <p class="text-sm font-black uppercase text-white">Registrando retorno…</p>
+    </div>
+
+    <!-- Header -->
+    <div class="flex items-center gap-3 px-4 py-3 bg-[#0F172A] border-b-[3px] border-black shrink-0">
+      <div class="flex items-center justify-center w-9 h-9 bg-amber-500/30 rounded-xl border-2 border-amber-400/50 shrink-0">
+        <mat-icon class="!text-base text-amber-400">undo</mat-icon>
+      </div>
+      <div class="min-w-0 flex-1">
+        <p class="text-[9px] text-slate-400 font-bold uppercase tracking-[0.18em] leading-none mb-0.5">
+          Entradas · Retorno de Traspaso de Área — RTR
+        </p>
+        <h2 class="text-sm text-white font-black uppercase tracking-tight leading-none">Registrar Retorno de Área</h2>
+      </div>
+      <div class="flex items-center gap-1.5 shrink-0">
+        <span class="px-2 py-1 bg-amber-500/20 border border-amber-400/30 rounded-lg text-[9px] font-black text-amber-300 uppercase hidden sm:block">
+          {{movTraspasosActivos.length}} traspaso(s) activo(s)
+        </span>
+        <button type="button" (click)="cerrarFormRetornoArea()"
+                class="px-3 py-1.5 bg-[#FF1414] text-white font-black text-[10px] border-2 border-black rounded-lg shadow-[2px_2px_0_#000] hover:shadow-none hover:translate-x-[1px] hover:translate-y-[1px] transition-all uppercase">
+          Cerrar
+        </button>
+      </div>
+    </div>
+
+    <!-- Body: 3 columns — lista movs | ítems | form -->
+    <div class="flex flex-col md:flex-row flex-1 overflow-hidden min-h-0">
+
+      <!-- ── COL 1: Lista de movimientos TRASPASO activos ─────────────── -->
+      <div class="md:basis-[26%] shrink-0 flex flex-col overflow-hidden border-b-2 md:border-b-0 md:border-r-2 border-black/20 dark:border-slate-600 bg-stone-50 dark:bg-slate-900/40">
+
+        <!-- Search -->
+        <div class="px-3 py-2.5 border-b-2 border-black/10 shrink-0">
+          <p class="text-[8px] font-black uppercase tracking-widest text-amber-700 dark:text-amber-400 mb-1.5">Traspasos activos</p>
+          <div class="relative">
+            <mat-icon class="absolute left-2.5 top-1/2 -translate-y-1/2 !text-sm text-stone-400">search</mat-icon>
+            <input type="text" [(ngModel)]="searchAreaMovimiento" placeholder="Buscar área, correlativo…"
+                   class="w-full h-8 pl-8 pr-3 text-xs font-bold bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-xl outline-none focus:border-amber-500 transition-all placeholder:text-stone-300" />
+          </div>
+        </div>
+
+        <!-- List -->
+        <div class="flex-1 overflow-y-auto custom-scrollbar">
+          <div *ngIf="movTraspasosFiltrados.length===0" class="flex flex-col items-center justify-center h-32 gap-2 text-center px-3">
+            <mat-icon class="!text-3xl text-stone-300">transform</mat-icon>
+            <p class="text-[10px] font-bold text-stone-400 uppercase">Sin traspasos activos</p>
+          </div>
+          <div *ngFor="let mov of movTraspasosFiltrados"
+               (click)="seleccionarMovimientoArea(mov)"
+               class="px-3 py-2.5 border-b border-stone-100 dark:border-slate-700 cursor-pointer transition-all"
+               [ngClass]="movAreaSeleccionado?.id_movement===mov.id_movement
+                 ? 'bg-amber-50 dark:bg-amber-900/20 border-l-[3px] border-l-amber-500'
+                 : 'hover:bg-stone-100 dark:hover:bg-slate-800 border-l-[3px] border-l-transparent'">
+            <div class="flex items-center justify-between mb-1">
+              <span class="text-[9px] font-black font-mono bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300 px-1.5 py-0.5 rounded border border-amber-300">
+                {{mov.movement_number}}
+              </span>
+              <span class="text-[8px] font-bold text-stone-400">{{mov.send_date | date:'dd/MM/yy'}}</span>
+            </div>
+            <div class="text-[10px] font-black text-black dark:text-white truncate">
+              {{mov.destination_warehouse_name || '—'}}
+            </div>
+            <div class="text-[9px] text-stone-500 dark:text-slate-400 truncate">
+              ← {{mov.source_warehouse_name || '—'}}
+            </div>
+            <div *ngIf="mov.received_by_name" class="text-[8px] text-stone-400 truncate mt-0.5">
+              <mat-icon class="!text-[9px] !w-2.5 !h-2.5 align-middle">person</mat-icon> {{mov.received_by_name}}
+            </div>
+            <div class="flex items-center justify-between mt-1">
+              <span class="text-[8px] font-bold text-stone-400">{{mov.items_count}} ítem(s)</span>
+              <span *ngIf="getAlertRowClass(mov.alert_status)"
+                    class="text-[7px] font-black uppercase px-1 py-0.5 rounded"
+                    [ngClass]="mov.alert_status==='VENCIDO' ? 'bg-red-100 text-red-700' : mov.alert_status==='PROXIMO' ? 'bg-orange-100 text-orange-700' : 'bg-green-100 text-green-700'">
+                {{mov.alert_status==='VENCIDO'?'⚠ VENCIDO':mov.alert_status==='PROXIMO'?'↑ PRÓXIMO':'✓ OK'}}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── COL 2: Ítems del movimiento seleccionado ─────────────────── -->
+      <div class="flex-1 min-h-0 flex flex-col overflow-hidden border-b-2 md:border-b-0 md:border-r-2 border-black/20 dark:border-slate-600">
+
+        <!-- Empty / loading state -->
+        <div *ngIf="!movAreaSeleccionado && !loadingRetornoAreaItems"
+             class="flex-1 flex flex-col items-center justify-center gap-3 py-12 px-4 text-center">
+          <mat-icon class="!text-5xl text-stone-300 dark:text-slate-600">undo</mat-icon>
+          <p class="text-xs font-black uppercase text-stone-400 mt-2">Selecciona un traspaso</p>
+          <p class="text-[11px] text-stone-400">Las herramientas aparecerán aquí</p>
+        </div>
+        <div *ngIf="loadingRetornoAreaItems"
+             class="flex-1 flex flex-col items-center justify-center gap-4">
+          <div class="w-10 h-10 border-4 border-amber-400 border-t-transparent rounded-full animate-spin"></div>
+          <p class="text-sm font-black uppercase text-stone-400">Cargando ítems…</p>
+        </div>
+
+        <!-- Items list -->
+        <ng-container *ngIf="movAreaSeleccionado && !loadingRetornoAreaItems">
+
+          <!-- Sub-header -->
+          <div class="px-3 py-2 bg-amber-50 dark:bg-amber-900/10 border-b-2 border-black/10 shrink-0">
+            <div class="flex items-center gap-2">
+              <mat-checkbox
+                [checked]="isAllSelectedArea()"
+                [indeterminate]="isSomeSelectedArea()"
+                (change)="toggleAllArea($event)"
+                color="warn" class="shrink-0">
+              </mat-checkbox>
+              <div class="flex-1 min-w-0">
+                <p class="text-[9px] font-black uppercase text-amber-700 dark:text-amber-400 truncate">
+                  {{movAreaSeleccionado.movement_number}} — {{movAreaSeleccionado.destination_warehouse_name}}
+                </p>
+                <p class="text-[8px] text-stone-500">{{retornoAreaItems.length}} ítem(s) · {{getSelectedArea().length}} seleccionado(s)</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Items scroll -->
+          <div class="flex-1 overflow-y-auto custom-scrollbar p-2 flex flex-col gap-2">
+            <div *ngFor="let item of retornoAreaItems"
+                 class="border-2 rounded-xl transition-all"
+                 [ngClass]="item.selected ? getRowClass(item) : 'border-stone-200 dark:border-slate-600 bg-white dark:bg-slate-800'">
+
+              <!-- Item header row -->
+              <div class="flex items-center gap-2 px-3 py-2">
+                <mat-checkbox [(ngModel)]="item.selected" (ngModelChange)="toggleSelectionArea(item)" color="warn" class="shrink-0"></mat-checkbox>
+                <div class="flex-1 min-w-0">
+                  <div class="flex items-center gap-1.5 flex-wrap">
+                    <span class="text-[9px] font-black font-mono bg-[#0f172a] text-white px-1.5 py-0.5 rounded">{{item.codigo}}</span>
+                    <span class="text-xs font-bold text-black dark:text-white truncate">{{item.descripcion}}</span>
+                  </div>
+                  <div class="text-[8px] text-stone-500 mt-0.5">P/N: {{item.pn||'—'}} · S/N: {{item.sn||'—'}}</div>
+                </div>
+                <button type="button" (click)="toggleExpand(item)"
+                        *ngIf="item.selected"
+                        class="w-6 h-6 flex items-center justify-center rounded-lg border border-stone-300 dark:border-slate-600 bg-white dark:bg-slate-700 transition-all shrink-0">
+                  <mat-icon class="!text-xs text-stone-500" [class.rotate-180]="item.expanded">expand_more</mat-icon>
+                </button>
+              </div>
+
+              <!-- Expanded condicion row -->
+              <div *ngIf="item.selected && item.expanded"
+                   class="px-3 pb-3 border-t border-stone-100 dark:border-slate-700 pt-2 flex flex-col gap-2">
+                <!-- Condicion chips -->
+                <div>
+                  <p class="text-[7px] font-black uppercase tracking-widest text-stone-500 mb-1.5">Condición *</p>
+                  <div class="flex flex-wrap gap-1.5">
+                    <button *ngFor="let c of condiciones" type="button"
+                            (click)="onCondicionChange(item, c.value)"
+                            class="h-7 px-2.5 text-[9px] font-black uppercase border-2 rounded-lg transition-all"
+                            [ngClass]="item.condicion===c.value
+                              ? c.value==='BUENO' ? 'bg-green-500 text-white border-green-700 shadow-none translate-x-[1px] translate-y-[1px]'
+                              : c.value==='DAÑADO' ? 'bg-red-500 text-white border-red-700 shadow-none translate-x-[1px] translate-y-[1px]'
+                              : c.value==='REQUIERE_CALIBRACION' ? 'bg-yellow-400 text-black border-yellow-600 shadow-none translate-x-[1px] translate-y-[1px]'
+                              : 'bg-red-800 text-white border-red-900 shadow-none translate-x-[1px] translate-y-[1px]'
+                              : 'bg-white dark:bg-slate-700 text-black dark:text-white border-stone-300 dark:border-slate-600 shadow-[1px_1px_0_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none'">
+                      {{c.label}}
+                    </button>
+                  </div>
+                </div>
+                <!-- Cantidad -->
+                <div *ngIf="item.condicion && item.condicion!=='FALTANTE'" class="flex items-center gap-2">
+                  <label class="text-[8px] font-black uppercase text-stone-500 shrink-0">Cant. retorna:</label>
+                  <input type="number" [(ngModel)]="item.cantidadRetorna" (change)="validateCantidadRetorna(item)"
+                         [min]="1" [max]="item.cantidadEnviada"
+                         class="w-16 h-7 text-xs font-bold text-center bg-white dark:bg-slate-700 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-lg outline-none focus:border-amber-500" />
+                  <span class="text-[8px] text-stone-400">/ {{item.cantidadEnviada}} env.</span>
+                </div>
+                <!-- Observación -->
+                <div *ngIf="item.condicion==='DAÑADO' || item.condicion==='FALTANTE'">
+                  <textarea [(ngModel)]="item.observacionItem" rows="2"
+                            placeholder="Descripción del daño / faltante (requerido)…"
+                            class="w-full text-xs font-bold bg-white dark:bg-slate-700 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-xl px-2.5 py-1.5 outline-none focus:border-amber-500 resize-none placeholder:text-stone-300"></textarea>
+                </div>
+                <!-- Item errors -->
+                <div *ngIf="getItemErrors(item).length>0" class="flex flex-wrap gap-1">
+                  <span *ngFor="let e of getItemErrors(item)"
+                        class="text-[8px] font-black text-red-700 bg-red-50 border border-red-300 px-1.5 py-0.5 rounded">⚠ {{e}}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </ng-container>
+      </div>
+
+      <!-- ── COL 3: Formulario de recepción ────────────────────────────── -->
+      <div class="md:basis-[30%] shrink-0 flex flex-col overflow-y-auto custom-scrollbar border-t-2 md:border-t-0 border-black/10">
+        <div class="p-4 flex flex-col gap-4">
+
+          <h3 class="text-[9px] font-black uppercase text-stone-400 dark:text-slate-300 border-b-2 border-black pb-1.5 flex items-center gap-1.5">
+            <mat-icon class="!text-sm text-amber-500">how_to_reg</mat-icon> Datos de Recepción
+          </h3>
+
+          <form [formGroup]="retornoAreaForm" class="flex flex-col gap-4">
+
+            <!-- Fecha -->
+            <div>
+              <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-500 dark:text-slate-300 mb-1.5 block">
+                Fecha Retorno <span class="text-black dark:text-white">*</span>
+              </label>
+              <input type="date" formControlName="fechaRetorno"
+                     class="w-full h-10 text-sm font-bold bg-white dark:bg-slate-800 dark:text-white border-2 rounded-xl px-3 outline-none transition-all focus:border-black focus:shadow-[3px_3px_0_#d97706]"
+                     [ngClass]="retornoAreaForm.get('fechaRetorno')?.touched && retornoAreaForm.get('fechaRetorno')?.invalid ? 'border-red-500' : 'border-stone-300 dark:border-slate-500'" />
+            </div>
+
+            <!-- Nro documento -->
+            <div>
+              <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-500 dark:text-slate-300 mb-1.5 block">
+                Nro. Documento / Nota <span class="text-black dark:text-white">*</span>
+              </label>
+              <input type="text" formControlName="nroDocumento" placeholder="Nro. de nota retorno…"
+                     class="w-full h-10 text-sm font-bold bg-white dark:bg-slate-800 dark:text-white border-2 rounded-xl px-3 outline-none transition-all placeholder:text-stone-300 hover:border-stone-400 focus:border-black focus:shadow-[3px_3px_0_#d97706]"
+                     [ngClass]="retornoAreaForm.get('nroDocumento')?.touched && retornoAreaForm.get('nroDocumento')?.invalid ? 'border-red-500' : 'border-stone-300 dark:border-slate-500'" />
+            </div>
+
+            <!-- Recibe en almacén (autocomplete) -->
+            <div class="relative">
+              <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-500 dark:text-slate-300 mb-1.5 flex justify-between items-center">
+                <span class="flex items-center gap-1">
+                  <mat-icon class="!text-[12px] text-amber-500">how_to_reg</mat-icon> Recibe en Almacén *
+                </span>
+                <div *ngIf="funcRetornoAreaRecibeLoading" class="w-4 h-4 border-2 border-amber-400 border-t-transparent rounded-full animate-spin"></div>
+              </label>
+              <input type="text" formControlName="recibeAlmacen"
+                     (blur)="hideFuncRetornoAreaRecibeDropdown()"
+                     placeholder="Nombre o buscar funcionario…"
+                     class="w-full h-10 text-sm font-bold bg-white dark:bg-slate-800 dark:text-white border-2 rounded-xl px-3 outline-none transition-all placeholder:text-stone-300 hover:border-stone-400 focus:border-black focus:shadow-[3px_3px_0_#d97706]"
+                     [ngClass]="retornoAreaForm.get('recibeAlmacen')?.touched && retornoAreaForm.get('recibeAlmacen')?.invalid ? 'border-red-500' : 'border-stone-300 dark:border-slate-500'" />
+              <div *ngIf="showFuncRetornoAreaRecibeDropdown && funcRetornoAreaRecibe.length"
+                   class="absolute left-0 right-0 top-full mt-1 z-50 bg-white dark:bg-slate-800 border-2 border-black rounded-xl shadow-[3px_3px_0_#000] overflow-hidden max-h-44 overflow-y-auto custom-scrollbar divide-y divide-stone-100 dark:divide-slate-700">
+                <div *ngFor="let f of funcRetornoAreaRecibe" (mousedown)="selectFuncRetornoAreaRecibe(f)"
+                     class="px-3 py-2.5 hover:bg-stone-50 dark:hover:bg-slate-700 cursor-pointer transition-colors">
+                  <div class="text-xs font-black text-black dark:text-white uppercase">{{f.nombre}}</div>
+                  <div *ngIf="f.cargo" class="text-[9px] font-bold text-stone-400 uppercase tracking-tighter">{{f.cargo}}</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Observaciones -->
+            <div>
+              <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-500 dark:text-slate-300 mb-1.5 block">
+                Observaciones
+              </label>
+              <textarea formControlName="observaciones" rows="3" placeholder="Observaciones generales del retorno…"
+                        class="w-full text-sm font-bold bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-500 rounded-xl px-3 py-2 outline-none transition-all placeholder:text-stone-300 hover:border-stone-400 focus:border-black focus:shadow-[3px_3px_0_#d97706] resize-none"></textarea>
+            </div>
+          </form>
+
+          <!-- Resumen selección -->
+          <div *ngIf="getSelectedArea().length>0"
+               class="bg-amber-50 dark:bg-amber-900/20 border-2 border-amber-400 rounded-xl p-3">
+            <p class="text-[8px] font-black uppercase tracking-widest text-amber-700 dark:text-amber-400 mb-2">Resumen del Retorno</p>
+            <div class="flex flex-wrap gap-1.5 mb-2">
+              <span *ngIf="getAreaBuenosCount()>0"    class="text-[9px] font-black px-1.5 py-0.5 bg-green-100 text-green-800 border border-green-400 rounded">✓ {{getAreaBuenosCount()}} Buenos</span>
+              <span *ngIf="getAreaCalibCount()>0"     class="text-[9px] font-black px-1.5 py-0.5 bg-yellow-100 text-yellow-800 border border-yellow-400 rounded">⚙ {{getAreaCalibCount()}} Calib.</span>
+              <span *ngIf="getAreaDanadosCount()>0"   class="text-[9px] font-black px-1.5 py-0.5 bg-red-100 text-red-800 border border-red-400 rounded">⚠ {{getAreaDanadosCount()}} Dañados</span>
+              <span *ngIf="getAreaFaltantesCount()>0" class="text-[9px] font-black px-1.5 py-0.5 bg-red-100 text-red-900 border border-red-600 rounded">✗ {{getAreaFaltantesCount()}} Faltantes</span>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer bar -->
+    <div class="flex items-center justify-between gap-3 px-4 py-3 bg-stone-200 dark:bg-slate-800 border-t-[3px] border-black shrink-0">
+      <div class="flex items-center gap-2 min-w-0">
+        <span class="text-sm font-black text-black dark:text-white shrink-0">{{getSelectedArea().length}} herramienta(s)</span>
+        <span *ngIf="movAreaSeleccionado"
+              class="text-xs text-stone-500 dark:text-slate-400 font-bold truncate hidden sm:block">
+          ← {{movAreaSeleccionado.destination_warehouse_name}}
+        </span>
+      </div>
+      <div class="flex items-center gap-2 shrink-0">
+        <button type="button" (click)="cerrarFormRetornoArea()"
+                class="h-9 px-3 sm:px-4 bg-stone-300 dark:bg-slate-600 text-black dark:text-white font-black text-[10px] uppercase border-2 border-black rounded-xl shadow-[2px_2px_0_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all">
+          Cancelar
+        </button>
+        <button type="button" (click)="openRetornoAreaConfirm()"
+                [disabled]="!movAreaSeleccionado || isSavingRetornoArea"
+                class="h-9 px-4 sm:px-5 bg-amber-600 hover:bg-amber-700 text-white font-black text-[10px] uppercase border-2 border-black rounded-xl shadow-[3px_3px_0_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all disabled:opacity-40 disabled:cursor-not-allowed disabled:translate-x-0 disabled:shadow-none flex items-center gap-1.5">
+          <mat-icon class="!text-sm">undo</mat-icon>
+          <span class="hidden xs:inline">Registrar Retorno</span> RTR-ÁREA
+        </button>
+      </div>
+    </div>
+
+    <!-- Confirm overlay: retorno área -->
+    <div *ngIf="showRetornoAreaConfirm"
+         class="absolute inset-0 z-[100] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm"
+         (click)="closeRetornoAreaConfirm()">
+      <div class="bg-white dark:bg-slate-800 border-[3px] border-black rounded-2xl shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] w-full max-w-lg animate-fadeIn"
+           (click)="$event.stopPropagation()">
+        <div class="flex items-center gap-3 px-5 py-3.5 bg-amber-600 rounded-t-2xl border-b-[3px] border-black">
+          <div class="flex items-center justify-center w-8 h-8 bg-white/20 rounded-xl border-2 border-white/30">
+            <mat-icon class="!text-base text-white">undo</mat-icon>
+          </div>
+          <div>
+            <p class="text-[9px] text-amber-200 font-bold uppercase tracking-widest leading-none mb-0.5">Confirmar acción</p>
+            <h3 class="text-sm text-white font-black uppercase tracking-tight leading-none">Retorno de Traspaso Área</h3>
+          </div>
+          <button type="button" (click)="closeRetornoAreaConfirm()"
+                  class="ml-auto w-7 h-7 flex items-center justify-center bg-white/20 hover:bg-white/30 rounded-lg border border-white/30 transition-colors">
+            <mat-icon class="!text-sm text-white">close</mat-icon>
+          </button>
+        </div>
+        <div class="px-5 py-4">
+          <p class="text-sm font-bold text-black dark:text-white mb-2">
+            ¿Confirmas el retorno de
+            <span class="font-black text-amber-700">{{getSelectedArea().length}}</span>
+            herramienta(s) desde
+            <span class="font-black text-amber-800">{{movAreaSeleccionado?.destination_warehouse_name || '—'}}</span>?
+          </p>
+          <div class="flex flex-wrap gap-2 mb-4">
+            <span *ngIf="getSelectedArea().length>0" class="px-2 py-1.5 bg-stone-50 border-2 border-stone-300 rounded-xl text-xs font-black text-stone-700">
+              Traspaso: {{movAreaSeleccionado?.movement_number}}
+            </span>
+            <span class="px-2 py-1.5 bg-green-50 border-2 border-green-400 rounded-xl text-xs font-black text-green-800">
+              {{getAreaBuenosCount()}} Bueno(s)
+            </span>
+            <span *ngIf="getAreaCalibCount()>0"
+                  class="px-2 py-1.5 bg-yellow-50 border-2 border-yellow-400 rounded-xl text-xs font-black text-yellow-800">
+              {{getAreaCalibCount()}} Calib.
+            </span>
+            <span *ngIf="getAreaDanadosCount()>0"
+                  class="px-2 py-1.5 bg-red-50 border-2 border-red-400 rounded-xl text-xs font-black text-red-800">
+              {{getAreaDanadosCount()}} Dañado(s)
+            </span>
+            <span *ngIf="getAreaFaltantesCount()>0"
+                  class="px-2 py-1.5 bg-red-100 border-2 border-red-500 rounded-xl text-xs font-black text-red-900">
+              {{getAreaFaltantesCount()}} Faltante(s)
+            </span>
+          </div>
+          <p class="text-[10px] font-bold text-gray-600 dark:text-gray-300 bg-amber-50 border border-amber-400 rounded-lg px-3 py-2">
+            ⚠ Esta acción incrementará el stock del almacén y marcará las herramientas como RETORNADAS.
+          </p>
+        </div>
+        <div class="flex items-center justify-end gap-2 px-5 py-3 border-t-2 border-black/10">
+          <button type="button" (click)="closeRetornoAreaConfirm()"
+                  class="h-9 px-4 rounded-xl border-[2px] border-black bg-white dark:bg-slate-700 text-black dark:text-white font-black text-xs uppercase shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all">
+            Cancelar
+          </button>
+          <button type="button" (click)="finalizarRetornoArea()" [disabled]="isSavingRetornoArea"
+                  class="h-9 px-5 rounded-xl border-[2px] border-black bg-amber-600 hover:bg-amber-700 text-white font-black text-xs uppercase shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all flex items-center gap-1.5 disabled:opacity-50">
+            <mat-icon class="!text-sm">undo</mat-icon>
+            Sí, Confirmar Retorno
+          </button>
+        </div>
       </div>
     </div>
   </div>

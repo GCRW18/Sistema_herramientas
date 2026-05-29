@@ -45,9 +45,11 @@ export class GestionUbicacionesComponent implements OnInit, OnDestroy {
     private svc       = inject(GestionUbicacionesService);
     private _destroy$ = new Subject<void>();
 
-    searchControl = new FormControl('');
-    filterCiudad  = new FormControl('');
-    filterEstado  = new FormControl('');
+    searchControl    = new FormControl('');
+    filterCiudad     = new FormControl('');
+    filterEstado     = new FormControl('');
+    ciudadSearchText = new FormControl('');
+    ciudadDropdownOpen = signal(false);
 
     isLoading             = signal(false);
     almacenes:         Warehouse[] = [];
@@ -77,6 +79,14 @@ export class GestionUbicacionesComponent implements OnInit, OnDestroy {
         ])
             .pipe(takeUntil(this._destroy$))
             .subscribe(() => this.applyFilters());
+
+        // Al escribir manualmente en el input de ciudad, limpiar la selección activa
+        this.ciudadSearchText.valueChanges
+            .pipe(takeUntil(this._destroy$))
+            .subscribe(() => {
+                if (this.filterCiudad.value) this.filterCiudad.setValue('');
+                this.ciudadDropdownOpen.set(true);
+            });
     }
 
     ngOnDestroy() {
@@ -131,6 +141,29 @@ export class GestionUbicacionesComponent implements OnInit, OnDestroy {
     countActivos()   { return this.almacenes.filter(a => a.estado === 'ACTIVO').length; }
     countInactivos() { return this.almacenes.filter(a => a.estado === 'INACTIVO').length; }
     countEstantes()  { return this.almacenes.reduce((s, a) => s + (a.estantesCount ?? 0), 0); }
+
+    /* ── Autocomplete ciudad ── */
+    get ciudadesFiltradas(): Ciudad[] {
+        const q = (this.ciudadSearchText.value ?? '').trim().toLowerCase();
+        if (!q) return this.ciudades;
+        return this.ciudades.filter(c => c.nombre.toLowerCase().includes(q));
+    }
+
+    seleccionarCiudad(nombre: string): void {
+        this.ciudadSearchText.setValue(nombre, { emitEvent: false });
+        this.filterCiudad.setValue(nombre);
+        this.ciudadDropdownOpen.set(false);
+    }
+
+    limpiarCiudad(): void {
+        this.ciudadSearchText.setValue('', { emitEvent: false });
+        this.filterCiudad.setValue('');
+        this.ciudadDropdownOpen.set(false);
+    }
+
+    onCiudadBlur(): void {
+        setTimeout(() => this.ciudadDropdownOpen.set(false), 150);
+    }
 
     async nuevoAlmacen() {
         const { FormAlmacenComponent } = await import('./form-almacen/form-almacen.component');

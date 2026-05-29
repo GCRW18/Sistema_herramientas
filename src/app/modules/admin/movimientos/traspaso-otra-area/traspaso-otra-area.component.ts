@@ -90,10 +90,17 @@ export class TraspasoOtraAreaComponent implements OnInit, OnDestroy {
     // Signal para la imagen de referencia del traspaso
     selectedImage = signal<string | null>(null);
 
-    private _personaSearch$ = new Subject<string>();
+    private _personaSearch$        = new Subject<string>();
+    private _cancelPersonaSearch$  = new Subject<void>();
     personasFiltradas: any[] = [];
     personaLoading = false;
     showPersonaDropdown = false;
+
+    private _autorizadoSearch$        = new Subject<string>();
+    private _cancelAutorizadoSearch$  = new Subject<void>();
+    autorizadosFiltrados: any[] = [];
+    autorizadoLoading = false;
+    showAutorizadoDropdown = false;
 
     tiposTraspaso = [
         { value: 'TEMPORAL', label: 'Temporal', color: 'bg-blue-100 text-blue-800 border-blue-500' },
@@ -111,6 +118,7 @@ export class TraspasoOtraAreaComponent implements OnInit, OnDestroy {
     ngOnInit(): void {
         this.initForm();
         this._setupPersonaSearch();
+        this._setupAutorizadoSearch();
     }
 
     ngOnDestroy(): void {
@@ -125,17 +133,24 @@ export class TraspasoOtraAreaComponent implements OnInit, OnDestroy {
         const mm    = now.getMinutes().toString().padStart(2, '0');
 
         this.transferForm = this.fb.group({
-            nombreCompletoInput: ['', Validators.required],
-            nombreCompleto:      [''],
-            nroLicencia:         ['', Validators.required],
-            cargo:               ['', Validators.required],
-            fecha:               [today, Validators.required],
-            hora:                [`${hh}:${mm}`, Validators.required],
-            gerencia:            ['', Validators.required],
-            unidad:              ['', Validators.required],
-            base:                ['VVI', Validators.required],
-            tipoTraspaso:        ['TEMPORAL', Validators.required],
-            observaciones:       ['']
+            nombreCompletoInput:    ['', Validators.required],
+            nombreCompleto:         [''],
+            nroLicencia:            ['', Validators.required],
+            cargo:                  ['', Validators.required],
+            autorizadoInput:        ['', Validators.required],
+            autorizadoNombre:       [''],
+            autorizadoLicencia:     ['', Validators.required],
+            autorizadoCargo:        [''],
+            recibeEnDestino:        [''],
+            fecha:                  [today, Validators.required],
+            hora:                   [`${hh}:${mm}`, Validators.required],
+            gerencia:               ['', Validators.required],
+            unidad:                 ['', Validators.required],
+            almacenOrigen:          ['CBB', Validators.required],
+            base:                   ['VVI', Validators.required],
+            tipoTraspaso:           ['TEMPORAL', Validators.required],
+            fechaRetornoEsperada:   [''],
+            observaciones:          ['']
         });
     }
 
@@ -159,7 +174,8 @@ export class TraspasoOtraAreaComponent implements OnInit, OnDestroy {
                         }))
                     ),
                     finalize(() => this.personaLoading = false),
-                    catchError(() => of([]))
+                    catchError(() => of([])),
+                    takeUntil(this._cancelPersonaSearch$)
                 );
             }),
             takeUntil(this.destroy$)
@@ -176,16 +192,69 @@ export class TraspasoOtraAreaComponent implements OnInit, OnDestroy {
     }
 
     seleccionarPersona(p: any): void {
+        this._cancelPersonaSearch$.next();
         this.transferForm.patchValue({
             nombreCompletoInput: p.nombre,
             nombreCompleto:      p.nombre,
             nroLicencia:         p.licencia,
             cargo:               p.cargo
-        });
+        }, { emitEvent: false });
         this.showPersonaDropdown = false;
+        this.personasFiltradas = [];
     }
 
     hideSuggestions(): void { setTimeout(() => this.showPersonaDropdown = false, 200); }
+
+    private _setupAutorizadoSearch(): void {
+        this._autorizadoSearch$.pipe(
+            debounceTime(200), distinctUntilChanged(),
+            switchMap(t => {
+                if (t.length < 2) { this.showAutorizadoDropdown = false; return of([]); }
+                this.autorizadoLoading = true;
+                const q = t.toLowerCase();
+                return this.movementService.getPersonal().pipe(
+                    map(lista => lista
+                        .filter(f => [f.nombreCompleto, f.nombre, f.apellido_paterno, f.apellido_materno, f.licencia, f.nro_licencia]
+                            .filter(Boolean).join(' ').toLowerCase().includes(q))
+                        .slice(0, 10)
+                        .map((f: any) => ({
+                            id: f.id_employee || f.id,
+                            nombre: f.nombreCompleto || f.nombre,
+                            cargo: f.cargo || '',
+                            licencia: f.licencia ?? f.nro_licencia ?? ''
+                        }))
+                    ),
+                    finalize(() => this.autorizadoLoading = false),
+                    catchError(() => of([])),
+                    takeUntil(this._cancelAutorizadoSearch$)
+                );
+            }),
+            takeUntil(this.destroy$)
+        ).subscribe(res => {
+            this.autorizadosFiltrados = res || [];
+            this.showAutorizadoDropdown = (res || []).length > 0;
+        });
+    }
+
+    onAutorizadoInput(v: string): void {
+        this.transferForm.patchValue({ autorizadoInput: v }, { emitEvent: false });
+        if (v.length >= 2) this._autorizadoSearch$.next(v);
+        else this.showAutorizadoDropdown = false;
+    }
+
+    seleccionarAutorizado(p: any): void {
+        this._cancelAutorizadoSearch$.next();
+        this.transferForm.patchValue({
+            autorizadoInput:    p.nombre,
+            autorizadoNombre:   p.nombre,
+            autorizadoLicencia: p.licencia,
+            autorizadoCargo:    p.cargo
+        }, { emitEvent: false });
+        this.showAutorizadoDropdown = false;
+        this.autorizadosFiltrados = [];
+    }
+
+    hideAutorizadoSuggestions(): void { setTimeout(() => this.showAutorizadoDropdown = false, 200); }
 
     // ── IMAGEN ───────────────────────────────────────────────────────────────
     onImageSelected(event: Event): void {
@@ -261,6 +330,12 @@ export class TraspasoOtraAreaComponent implements OnInit, OnDestroy {
     // --- AYUDAS VISUALES ---
     getTipoTraspasoLabel(tipo: string): string { return this.tiposTraspaso.find(t => t.value === tipo)?.label || tipo; }
 
+    /** Indica si el tipo de traspaso seleccionado requiere fecha de retorno esperada */
+    requiereFechaRetorno(): boolean {
+        const tipo = this.transferForm.get('tipoTraspaso')?.value;
+        return tipo === 'TEMPORAL' || tipo === 'PRESTAMO';
+    }
+
     getEstadoClass(estado: string): string {
         switch (estado) {
             case 'SERVICEABLE': return 'bg-green-100 text-green-800 border-green-500';
@@ -334,17 +409,24 @@ export class TraspasoOtraAreaComponent implements OnInit, OnDestroy {
         const department = `${fv.gerencia} | ${fv.unidad}`.trim();
 
         const payload: any = {
-            date:                 fv.fecha,
-            time:                 fv.hora,
-            responsible_person:   fv.nombreCompleto,
-            department:           department,
-            exit_reason:          'area_transfer',
-            authorized_by:        fv.nroLicencia,
-            notes:                fv.observaciones ?? '',
-            general_observations: `Tipo: ${fv.tipoTraspaso} | Base: ${fv.base} | Cargo: ${fv.cargo} | Licencia: ${fv.nroLicencia}`,
-            items_json:           itemsJson,
-            reference_image:      this.selectedImage() // Si el backend lo soporta, se envía
+            date:                  fv.fecha,
+            time:                  fv.hora,
+            responsible_person:    fv.nombreCompleto,
+            received_by_name:      fv.recibeEnDestino || '',
+            department:            department,
+            exit_reason:           'area_transfer',
+            authorized_by:         fv.autorizadoNombre || fv.autorizadoLicencia,
+            transfer_type:         fv.tipoTraspaso,
+            notes:                 fv.observaciones ?? '',
+            general_observations:  `Origen: ${fv.almacenOrigen} | Destino: ${fv.base} | Cargo: ${fv.cargo} | Lic. Resp.: ${fv.nroLicencia} | Autorizado: ${fv.autorizadoNombre} (${fv.autorizadoLicencia})`,
+            items_json:            itemsJson,
+            reference_image:       this.selectedImage()
         };
+
+        // Agregar fecha de retorno esperada solo para TEMPORAL y PRESTAMO
+        if (fv.fechaRetornoEsperada && this.requiereFechaRetorno()) {
+            payload.expected_return_date = fv.fechaRetornoEsperada;
+        }
 
         this.movementService.registrarTraspasoOtraArea(payload).pipe(
             timeout(30000), finalize(() => { this.isSaving = false; }), takeUntil(this.destroy$)
@@ -355,6 +437,8 @@ export class TraspasoOtraAreaComponent implements OnInit, OnDestroy {
                 this.showMessage(`Traspaso ${nro} registrado exitosamente`, 'success');
                 this.dataSource.set([]);
                 this.transferForm.reset();
+                this.autorizadosFiltrados = [];
+                this.personasFiltradas = [];
                 this.initForm();
                 this.selectedImage.set(null);
 
