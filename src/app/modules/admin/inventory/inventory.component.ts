@@ -1,5 +1,6 @@
-import { Component, OnDestroy, inject, ViewChild, TemplateRef, Type, Injector, TrackByFunction } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject, ViewChild, TemplateRef, Type, Injector, TrackByFunction } from '@angular/core';
 import { CommonModule, NgComponentOutlet } from '@angular/common';
+import { ActivatedRoute } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDialogModule, MatDialogRef } from '@angular/material/dialog';
@@ -9,6 +10,7 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatTableModule } from '@angular/material/table';
 import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 import { Subject, of } from 'rxjs';
+import { takeUntil } from 'rxjs';
 
 interface OpenTab {
     id: number;
@@ -122,9 +124,10 @@ interface ModuleDef {
         }
     `]
 })
-export class InventoryComponent implements OnDestroy {
+export class InventoryComponent implements OnInit, OnDestroy {
     private snackBar = inject(MatSnackBar);
     private injector = inject(Injector);
+    private route    = inject(ActivatedRoute);
 
     private _unsubscribeAll = new Subject<void>();
 
@@ -242,6 +245,15 @@ export class InventoryComponent implements OnDestroy {
     }
 
     trackByTabId: TrackByFunction<OpenTab> = (_index, tab) => tab.id;
+
+    ngOnInit(): void {
+        // Abrir el tab de reportes si viene el query param ?tab=reportes
+        this.route.queryParamMap.pipe(takeUntil(this._unsubscribeAll)).subscribe(params => {
+            if (params.get('tab') === 'reportes') {
+                this.openModule(8); // type 8 = REPORTES
+            }
+        });
+    }
 
     openConsultarInventario(): void {
         this.openModule(10);

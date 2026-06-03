@@ -1,174 +1,219 @@
-<div class="flex flex-col w-full h-full bg-[#f8f9fc] dark:bg-[#0F172AFF] overflow-hidden">
+<div class="flex flex-col w-full h-full bg-[#f8f9fc] dark:bg-[#0F172AFF] transition-colors duration-300 font-sans overflow-hidden">
 
-    <!-- Loading overlays -->
-    <div *ngIf="isSaving || isSavingAjuste" class="absolute inset-0 z-[120] flex items-center justify-center bg-white/60 dark:bg-black/60 backdrop-blur-sm transition-all duration-300">
-        <div class="border-[3px] border-black rounded-xl p-6 flex flex-col items-center gap-4 bg-white dark:bg-slate-800 shadow-[6px_6px_0px_0px_#000] animate-fadeIn">
+    <!-- Loading overlay -->
+    <div *ngIf="isSaving || isSavingAjuste" class="fixed inset-0 z-[120] bg-black/60 flex items-center justify-center">
+        <div class="bg-white dark:bg-slate-800 border-[3px] border-black rounded-2xl shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] p-8 flex flex-col items-center gap-4">
             <mat-spinner diameter="40"></mat-spinner>
-            <span class="font-black text-black dark:text-white uppercase tracking-wider text-sm animate-pulse">
-                {{ isSaving ? 'Registrando Ingreso...' : 'Procesando Ajuste...' }}
-            </span>
+            <p class="text-xs font-black uppercase text-black dark:text-white">{{ isSaving ? 'Registrando Ingreso...' : 'Procesando Ajuste...' }}</p>
         </div>
     </div>
 
     <!-- Decorative circles -->
-    <div class="fixed top-20 right-10 w-40 h-40 bg-[#15803d] rounded-full border-[3px] border-black opacity-5 pointer-events-none z-0"></div>
-    <div class="fixed bottom-10 left-10 w-24 h-24 bg-[#15803d] rotate-12 border-[3px] border-black opacity-10 pointer-events-none z-0"></div>
+    <div class="fixed top-20 right-10 w-40 h-40 bg-[#D97706] rounded-full border-[3px] border-black opacity-5 pointer-events-none z-0"></div>
+    <div class="fixed bottom-10 left-10 w-24 h-24 bg-[#FFC501FF] rotate-12 border-[3px] border-black opacity-5 pointer-events-none z-0"></div>
 
-    <!-- Sub-tab bar -->
-    <div class="flex items-center gap-1 px-4 py-2 border-b-[3px] border-black bg-white dark:bg-slate-900 shrink-0 relative z-10">
-        <!-- Module icon -->
-        <div class="w-8 h-8 rounded-lg bg-[#15803d] border-2 border-black flex items-center justify-center shadow-[2px_2px_0_#000] shrink-0 mr-2">
-            <mat-icon class="!text-sm !w-4 !h-4 text-white">handyman</mat-icon>
-        </div>
+    <div class="flex-1 flex flex-col p-4 gap-3 overflow-hidden relative z-10">
 
-        <!-- Tab: Nueva Herramienta -->
-        <button (click)="setTab('nueva')"
-                class="flex items-center gap-1.5 h-8 px-4 rounded-lg border-[2px] border-black font-black text-[10px] uppercase transition-all"
-                [ngClass]="activeTab() === 'nueva'
-                  ? 'bg-[#15803d] text-white shadow-none translate-x-[1px] translate-y-[1px]'
-                  : 'bg-white dark:bg-slate-700 text-black dark:text-white shadow-[2px_2px_0_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none'">
-            <mat-icon class="!text-sm !w-4 !h-4">inventory_2</mat-icon>
-            Nueva Herramienta
-        </button>
+        <!-- ══ HEADER ══ -->
+        <div class="flex flex-col gap-3 shrink-0">
 
-        <!-- Tab: Ajuste Ingreso -->
-        <button (click)="setTab('ajuste')"
-                class="flex items-center gap-1.5 h-8 px-4 rounded-lg border-[2px] border-black font-black text-[10px] uppercase transition-all"
-                [ngClass]="activeTab() === 'ajuste'
-                  ? 'bg-[#15803d] text-white shadow-none translate-x-[1px] translate-y-[1px]'
-                  : 'bg-white dark:bg-slate-700 text-black dark:text-white shadow-[2px_2px_0_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none'">
-            <mat-icon class="!text-sm !w-4 !h-4">tune</mat-icon>
-            Ajuste Ingreso
-        </button>
-
-        <div class="flex-1"></div>
-        <span class="text-[9px] font-black uppercase text-stone-400 dark:text-slate-500 tracking-widest">ALMACÉN</span>
-    </div>
-
-    <!-- ══════════════════════════════════════════════════════════════════════ -->
-    <!--  TAB: NUEVA HERRAMIENTA                                               -->
-    <!-- ══════════════════════════════════════════════════════════════════════ -->
-    <div [hidden]="activeTab() !== 'nueva'" class="flex-1 flex flex-col overflow-hidden relative">
-
-        <!-- Header actions -->
-        <div class="flex items-center justify-between gap-4 shrink-0 flex-wrap px-6 py-4 border-b-[3px] border-black bg-white dark:bg-slate-900 relative z-[110]">
-            <div class="flex items-center gap-3">
-                <div class="flex items-center justify-center w-10 h-10 bg-white dark:bg-slate-800 border-[2px] border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] rounded-xl shrink-0 hidden sm:flex">
-                    <mat-icon class="text-[#15803d] !text-xl">inventory_2</mat-icon>
+            <!-- Título -->
+            <div class="flex items-center gap-4">
+                <div class="flex items-center justify-center w-10 h-10 bg-white dark:bg-[#0F172AFF] border-[3px] border-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] rounded-xl shrink-0">
+                    <mat-icon class="text-black dark:text-amber-400 !text-base">handyman</mat-icon>
                 </div>
                 <div>
-                    <h1 class="text-2xl md:text-3xl font-black text-black dark:text-white uppercase tracking-tighter leading-none">RECEPCIÓN DE COMPRA</h1>
-                    <div class="flex items-center gap-2 mt-1">
-                        <span class="text-[10px] font-bold bg-amber-400 text-black px-2 py-0.5 rounded inline-block border-2 border-black uppercase tracking-wider shadow-[1px_1px_0px_0px_#000]">INGRESO A ALMACÉN</span>
-                    </div>
+                    <h1 class="text-xl font-black text-black dark:text-white uppercase tracking-tighter leading-none">
+                        INGRESOS A ALMACÉN
+                    </h1>
+                    <p class="text-[10px] font-bold bg-amber-400 text-black px-2 py-0.5 inline-block border-2 border-black rounded uppercase tracking-wider mt-0.5">
+                        Nueva Herramienta · Ajuste Ingreso
+                    </p>
                 </div>
             </div>
-            <div class="flex items-center gap-3">
-                <button (click)="openCatalogo()"
-                        class="flex items-center gap-2 px-5 py-2 bg-[#0F172AFF] border-[2px] border-black font-black text-xs uppercase rounded-xl shadow-[3px_3px_0px_0px_rgba(0,0,0,0.5)] hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,0.5)] hover:translate-x-[2px] hover:translate-y-[2px] transition-all text-white">
-                    <mat-icon class="!text-base !text-white">handyman</mat-icon>
+
+            <!-- Controles: tabs + botones de acción -->
+            <div class="flex items-center gap-2 flex-wrap">
+
+                <!-- Tabs -->
+                <div class="flex items-center gap-1">
+                    <button (click)="setTab('nueva')"
+                            class="h-9 px-3 flex items-center gap-1.5 rounded-lg border-[2px] border-black font-black text-[10px] uppercase transition-all"
+                            [ngClass]="activeTab() === 'nueva'
+                                ? 'bg-[#15803d] text-white shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]'
+                                : 'bg-white dark:bg-white/10 text-black dark:text-white hover:bg-green-50 dark:hover:bg-white/20'">
+                        <mat-icon class="!text-sm" [ngClass]="activeTab() === 'nueva' ? '!text-white' : '!text-black dark:!text-white'">inventory_2</mat-icon>
+                        Nueva Herramienta
+                    </button>
+                    <button (click)="setTab('ajuste')"
+                            class="h-9 px-3 flex items-center gap-1.5 rounded-lg border-[2px] border-black font-black text-[10px] uppercase transition-all"
+                            [ngClass]="activeTab() === 'ajuste'
+                                ? 'bg-[#15803d] text-white shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]'
+                                : 'bg-white dark:bg-white/10 text-black dark:text-white hover:bg-green-50 dark:hover:bg-white/20'">
+                        <mat-icon class="!text-sm" [ngClass]="activeTab() === 'ajuste' ? '!text-white' : '!text-black dark:!text-white'">tune</mat-icon>
+                        Ajuste Ingreso
+                    </button>
+                </div>
+
+                <!-- Botones Nueva Herramienta -->
+                <button [hidden]="activeTab() !== 'nueva'" (click)="openCatalogo()"
+                        class="h-9 px-3 flex items-center gap-1.5 bg-white dark:bg-white/10 border-[2px] border-black rounded-lg font-black text-[10px] uppercase shadow-[2px_2px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all text-black dark:text-white">
+                    <mat-icon class="!text-sm">handyman</mat-icon>
                     <span class="hidden sm:inline">Nueva Herramienta</span>
                 </button>
-                <button (click)="abrirModalHerramienta()"
-                        class="flex items-center gap-2 px-5 py-2 bg-amber-400 border-[2px] border-black font-black text-xs uppercase rounded-xl shadow-[3px_3px_0px_0px_#000] hover:shadow-[1px_1px_0px_0px_#000] hover:translate-x-[2px] hover:translate-y-[2px] transition-all text-black">
-                    <mat-icon class="!text-base !text-black">fact_check</mat-icon>
+                <button [hidden]="activeTab() !== 'nueva'" (click)="abrirModalHerramienta()"
+                        class="h-9 px-3 flex items-center gap-1.5 bg-white dark:bg-white/10 border-[2px] border-black rounded-lg font-black text-[10px] uppercase shadow-[2px_2px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all text-black dark:text-white">
+                    <mat-icon class="!text-sm">fact_check</mat-icon>
                     <span class="hidden sm:inline">Recepcionar Manual</span>
                 </button>
-                <div class="w-px h-8 bg-black/20 dark:bg-white/20 mx-1 hidden md:block"></div>
-                <button (click)="abrirModalConfirmacionNueva()" [disabled]="dataSource.length === 0"
-                        class="flex items-center gap-2 px-5 py-2 bg-[#15803d] border-[2px] border-black font-black text-xs uppercase rounded-xl shadow-[3px_3px_0px_0px_#000] hover:shadow-[1px_1px_0px_0px_#000] hover:translate-x-[2px] hover:translate-y-[2px] transition-all text-white disabled:opacity-50 disabled:shadow-none disabled:translate-x-0 disabled:translate-y-0 disabled:cursor-not-allowed">
-                    <mat-icon class="!text-base !text-white">check_circle</mat-icon>
+                <button [hidden]="activeTab() !== 'nueva'" (click)="abrirModalConfirmacionNueva()" [disabled]="dataSource.length === 0"
+                        class="h-9 px-4 flex items-center gap-1.5 bg-amber-400 border-[2px] border-black rounded-lg font-black text-[10px] uppercase shadow-[2px_2px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all text-black disabled:opacity-40 disabled:cursor-not-allowed disabled:translate-x-0 disabled:translate-y-0 disabled:shadow-[2px_2px_0px_0px_#000]">
+                    <mat-icon class="!text-sm">check_circle</mat-icon>
                     <span class="hidden sm:inline">Confirmar Ingreso</span>
                 </button>
+
+                <!-- Botones Ajuste Ingreso -->
+                <button [hidden]="activeTab() !== 'ajuste'" (click)="abrirModalDatosAjuste()"
+                        class="h-9 px-3 flex items-center gap-1.5 bg-white dark:bg-white/10 border-[2px] border-black rounded-lg font-black text-[10px] uppercase shadow-[2px_2px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all text-black dark:text-white">
+                    <mat-icon class="!text-sm">edit_document</mat-icon>
+                    <span class="hidden sm:inline">Datos Generales</span>
+                </button>
+                <button [hidden]="activeTab() !== 'ajuste'" (click)="openDetalleHerramienta()"
+                        class="h-9 px-3 flex items-center gap-1.5 bg-white dark:bg-white/10 border-[2px] border-black rounded-lg font-black text-[10px] uppercase shadow-[2px_2px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all text-black dark:text-white">
+                    <mat-icon class="!text-sm">add_circle</mat-icon>
+                    <span class="hidden sm:inline">Agregar Ítem</span>
+                </button>
+                <button [hidden]="activeTab() !== 'ajuste'" (click)="abrirModalConfirmacionAjuste()" [disabled]="isSavingAjuste || dataSourceAjuste.length === 0"
+                        class="h-9 px-4 flex items-center gap-1.5 bg-amber-400 border-[2px] border-black rounded-lg font-black text-[10px] uppercase shadow-[2px_2px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all text-black disabled:opacity-40 disabled:cursor-not-allowed disabled:translate-x-0 disabled:translate-y-0 disabled:shadow-[2px_2px_0px_0px_#000]">
+                    <mat-icon class="!text-sm">check_circle</mat-icon>
+                    <span class="hidden sm:inline">Finalizar Ajuste</span>
+                </button>
+
             </div>
         </div>
 
-        <!-- Status banner -->
-        <div class="px-6 pt-4 shrink-0">
-            <div *ngIf="!isRecepcionValida()" class="bg-white dark:bg-slate-800 border-[3px] border-black p-3.5 rounded-xl flex items-center justify-between shadow-[4px_4px_0px_0px_#000] animate-pulse-border">
-                <div class="flex items-center gap-3">
-                    <div class="bg-red-100 dark:bg-red-900/30 p-2 rounded-lg border-2 border-red-500 hidden sm:block">
-                        <mat-icon class="text-red-600 !text-2xl">warning</mat-icon>
-                    </div>
-                    <div>
-                        <h3 class="font-black text-sm text-black dark:text-white uppercase tracking-wider leading-none">Faltan Datos de Recepción</h3>
-                        <p class="text-[11px] font-bold text-gray-600 dark:text-gray-400 mt-1 hidden sm:block">Ingrese CMR y fecha para continuar.</p>
-                    </div>
-                </div>
-                <button (click)="abrirModalRecepcion()" class="px-4 py-2 bg-red-600 text-white font-black text-xs border-[2px] border-black rounded-lg shadow-[3px_3px_0px_0px_#000] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[1px_1px_0px_0px_#000] transition-all uppercase flex items-center gap-2">
-                    <mat-icon class="!text-sm">edit_document</mat-icon> Completar Datos
+        <!-- ══ CARD PRINCIPAL ══ -->
+        <div class="flex-1 flex flex-col overflow-hidden border-[3px] border-black bg-white dark:bg-[#0F172AFF] rounded-2xl shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+
+            <!-- Cabecera oscura: stats -->
+            <div class="px-4 py-2.5 bg-[#0F172AFF] border-b-[3px] border-black flex items-center justify-between shrink-0 flex-wrap gap-2">
+                <button (click)="abrirModalRecepcion()" [hidden]="activeTab() !== 'nueva'"
+                        class="flex items-center gap-1 h-8 px-2.5 bg-white/10 hover:bg-white/20 text-white border border-white/30 rounded-lg text-[10px] font-black uppercase transition-all">
+                    <mat-icon class="!text-sm">receipt_long</mat-icon>
+                    <span class="hidden sm:inline">Datos Recepción</span>
                 </button>
-            </div>
-            <div *ngIf="isRecepcionValida()" class="bg-white dark:bg-slate-800 border-[3px] border-black p-3.5 rounded-xl shadow-[4px_4px_0px_0px_#000] flex justify-between items-center relative overflow-hidden">
-                <div class="absolute right-0 top-0 bottom-0 w-48 bg-green-100 dark:bg-green-900/20 transform skew-x-12 -mr-16 border-l-[3px] border-black z-0 hidden sm:block"></div>
-                <div class="flex flex-wrap gap-x-8 gap-y-2 relative z-10 w-full pr-12 sm:pr-16">
-                    <div class="flex flex-col">
-                        <p class="text-[10px] font-black uppercase tracking-widest text-[#15803d] dark:text-green-400">Doc / CMR</p>
-                        <p class="font-black text-sm text-black dark:text-white">{{ recepcionForm.value.nroCmr }}</p>
-                    </div>
-                    <div class="flex flex-col border-l-2 border-gray-200 dark:border-gray-600 pl-6">
-                        <p class="text-[10px] font-black uppercase tracking-widest text-[#15803d] dark:text-green-400">Fecha</p>
-                        <p class="font-black text-sm text-black dark:text-white">{{ recepcionForm.value.fechaIngreso }}</p>
-                    </div>
-                    <div class="flex flex-col border-l-2 border-gray-200 dark:border-gray-600 pl-6 hidden md:flex">
-                        <p class="text-[10px] font-black uppercase tracking-widest text-[#15803d] dark:text-green-400">Proveedor</p>
-                        <p class="font-black text-sm text-black dark:text-white">{{ recepcionForm.value.proveedor?.nombre || recepcionForm.value.proveedor || 'No especificado' }}</p>
-                    </div>
-                    <div class="flex flex-col border-l-2 border-gray-200 dark:border-gray-600 pl-6 hidden lg:flex">
-                        <p class="text-[10px] font-black uppercase tracking-widest text-[#15803d] dark:text-green-400">Recibido Por</p>
-                        <p class="font-black text-sm text-black dark:text-white">{{ recepcionForm.value.funcionarioRecibe || 'N/A' }}</p>
-                    </div>
-                </div>
-                <button (click)="abrirModalRecepcion()" class="absolute right-4 top-1/2 -translate-y-1/2 z-10 w-10 h-10 flex items-center justify-center bg-white dark:bg-slate-800 border-[2px] border-black rounded-xl shadow-[3px_3px_0px_0px_#000] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[1px_1px_0px_0px_#000] transition-all" matTooltip="Editar Datos">
-                    <mat-icon class="text-[#15803d] dark:text-green-400 !text-lg">edit</mat-icon>
+                <button (click)="abrirModalDatosAjuste()" [hidden]="activeTab() !== 'ajuste'"
+                        class="flex items-center gap-1 h-8 px-2.5 bg-white/10 hover:bg-white/20 text-white border border-white/30 rounded-lg text-[10px] font-black uppercase transition-all">
+                    <mat-icon class="!text-sm">edit_document</mat-icon>
+                    <span class="hidden sm:inline">Datos Ajuste</span>
                 </button>
-            </div>
-        </div>
-
-        <!-- Table area -->
-        <div class="flex-1 flex flex-col pt-4 px-6 pb-6 overflow-hidden z-0">
-            <div class="flex-1 flex flex-col border-[3px] border-black bg-white dark:bg-[#0F172AFF] rounded-2xl shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] overflow-hidden">
-
-                <!-- Table header bar -->
-                <div class="bg-[#0F172AFF] px-5 py-3 border-b-[3px] border-black flex items-center justify-between shrink-0 flex-wrap gap-3">
-                    <div class="flex items-center gap-3 border-r-[2px] border-white/20 pr-5">
-                        <mat-icon class="!text-2xl text-amber-400">list_alt</mat-icon>
-                        <h2 class="text-sm font-black text-white uppercase tracking-wider">Lista de Herramientas a Recepcionar</h2>
+                <div class="flex items-center gap-2 flex-wrap">
+                    <div class="flex items-center gap-2 bg-white/20 rounded-lg px-3 py-1.5 border border-black">
+                        <div class="w-5 h-5 bg-amber-400 border border-black rounded flex items-center justify-center">
+                            <mat-icon class="!text-xs text-black">inventory_2</mat-icon>
+                        </div>
+                        <div>
+                            <div class="text-[8px] font-black uppercase text-white leading-none">Recepción</div>
+                            <div class="text-sm font-black text-white leading-none">{{ dataSource.length }}</div>
+                        </div>
                     </div>
-                    <div class="flex items-center gap-2 bg-white/10 rounded-lg px-3 py-1.5 border-[2px] border-white/20">
-                        <div class="text-[10px] font-black uppercase tracking-widest text-white/80 leading-none hidden sm:block">Total Unidades</div>
-                        <div class="text-sm font-black text-white leading-none">{{ getTotalItems() }}</div>
+                    <div class="flex items-center gap-2 bg-green-600/30 rounded-lg px-3 py-1.5 border border-black">
+                        <div class="w-5 h-5 bg-[#15803d] border border-black rounded flex items-center justify-center">
+                            <mat-icon class="!text-xs text-white">tune</mat-icon>
+                        </div>
+                        <div>
+                            <div class="text-[8px] font-black uppercase text-white leading-none">Ajuste</div>
+                            <div class="text-sm font-black text-white leading-none">{{ dataSourceAjuste.length }}</div>
+                        </div>
+                    </div>
+                    <div *ngIf="activeTab() === 'nueva' && recepcionForm.get('nroCmr')?.value"
+                         class="flex items-center gap-2 bg-amber-500/30 rounded-lg px-3 py-1.5 border border-black">
+                        <mat-icon class="!text-sm text-amber-300">receipt_long</mat-icon>
+                        <div>
+                            <div class="text-[8px] font-black uppercase text-amber-200 leading-none">CMR</div>
+                            <div class="text-[10px] font-black text-white leading-none max-w-[120px] truncate">{{ recepcionForm.get('nroCmr')?.value }}</div>
+                        </div>
+                    </div>
+                    <div *ngIf="activeTab() === 'ajuste' && ajusteForm.get('documento')?.value"
+                         class="flex items-center gap-2 bg-green-600/30 rounded-lg px-3 py-1.5 border border-black">
+                        <mat-icon class="!text-sm text-green-300">tune</mat-icon>
+                        <div>
+                            <div class="text-[8px] font-black uppercase text-green-200 leading-none">Doc</div>
+                            <div class="text-[10px] font-black text-white leading-none">{{ ajusteForm.get('documento')?.value }}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ══ TAB NUEVA HERRAMIENTA ══ -->
+            <div [hidden]="activeTab() !== 'nueva'" class="flex-1 flex flex-col overflow-hidden">
+
+                <!-- Status banner recepción -->
+                <div class="px-4 pt-3 shrink-0">
+                    <div *ngIf="!isRecepcionValida()" class="bg-gray-50 dark:bg-slate-800 border-[2px] border-black p-3 rounded-xl flex items-center justify-between">
+                        <div class="flex items-center gap-2">
+                            <mat-icon class="text-red-600 !text-xl">warning</mat-icon>
+                            <span class="font-black text-xs text-black dark:text-white uppercase">Faltan Datos de Recepción</span>
+                        </div>
+                        <button (click)="abrirModalRecepcion()"
+                                class="h-7 px-3 flex items-center gap-1 bg-red-600 text-white border-2 border-black rounded-lg font-black text-[10px] uppercase shadow-[2px_2px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all">
+                            <mat-icon class="!text-xs">edit_document</mat-icon> Completar
+                        </button>
+                    </div>
+                    <div *ngIf="isRecepcionValida()" class="bg-gray-50 dark:bg-slate-800 border-[2px] border-black p-3 rounded-xl flex items-center justify-between gap-3 flex-wrap">
+                        <div class="flex flex-wrap gap-x-6 gap-y-1">
+                            <div class="flex flex-col">
+                                <span class="text-[9px] font-black uppercase text-[#15803d] dark:text-green-400">CMR</span>
+                                <span class="font-black text-xs text-black dark:text-white">{{ recepcionForm.value.nroCmr }}</span>
+                            </div>
+                            <div class="flex flex-col border-l-2 border-gray-200 dark:border-gray-600 pl-4">
+                                <span class="text-[9px] font-black uppercase text-[#15803d] dark:text-green-400">Fecha</span>
+                                <span class="font-black text-xs text-black dark:text-white">{{ recepcionForm.value.fechaIngreso }}</span>
+                            </div>
+                            <div class="flex flex-col border-l-2 border-gray-200 dark:border-gray-600 pl-4 hidden md:flex">
+                                <span class="text-[9px] font-black uppercase text-[#15803d] dark:text-green-400">Proveedor</span>
+                                <span class="font-black text-xs text-black dark:text-white">{{ recepcionForm.value.proveedor?.nombre || recepcionForm.value.proveedor || 'N/A' }}</span>
+                            </div>
+                            <div class="flex flex-col border-l-2 border-gray-200 dark:border-gray-600 pl-4 hidden lg:flex">
+                                <span class="text-[9px] font-black uppercase text-[#15803d] dark:text-green-400">Recibe</span>
+                                <span class="font-black text-xs text-black dark:text-white">{{ recepcionForm.value.funcionarioRecibe || 'N/A' }}</span>
+                            </div>
+                        </div>
+                        <button (click)="abrirModalRecepcion()"
+                                class="w-8 h-8 flex items-center justify-center bg-white dark:bg-slate-700 border-[2px] border-black rounded-lg shadow-[2px_2px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all" matTooltip="Editar">
+                            <mat-icon class="text-[#15803d] !text-sm">edit</mat-icon>
+                        </button>
                     </div>
                 </div>
 
-                <!-- Table -->
-                <div class="overflow-y-auto flex-1 custom-scrollbar-ing">
+                <!-- Tabla -->
+                <div class="flex-1 overflow-auto custom-scrollbar-ing mt-3">
                     <table class="w-full min-w-[800px]">
                         <thead class="sticky top-0 z-10">
-                        <tr class="border-b-[3px] border-black bg-gray-100 dark:bg-slate-900">
-                            <th class="!text-black dark:!text-white !font-black !text-[10px] !p-4 uppercase text-center !w-12">#</th>
-                            <th class="!text-black dark:!text-white !font-black !text-[10px] !p-4 uppercase text-left">Código</th>
-                            <th class="!text-black dark:!text-white !font-black !text-[10px] !p-4 uppercase text-left">Descripción y Ubicación</th>
-                            <th class="!text-black dark:!text-white !font-black !text-[10px] !p-4 uppercase text-center !w-24">Cant.</th>
-                            <th class="!text-black dark:!text-white !font-black !text-[10px] !p-4 uppercase text-center !w-32">Estado</th>
-                            <th class="!text-black dark:!text-white !font-black !text-[10px] !p-4 uppercase text-center !w-36">Acciones</th>
+                        <tr class="border-b-[2px] border-black bg-gray-100 dark:bg-slate-800">
+                            <th class="!text-black dark:!text-white !font-black !text-[10px] !px-4 !py-2.5 uppercase text-center !w-12">#</th>
+                            <th class="!text-black dark:!text-white !font-black !text-[10px] !px-4 !py-2.5 uppercase text-left">Código</th>
+                            <th class="!text-black dark:!text-white !font-black !text-[10px] !px-4 !py-2.5 uppercase text-left">Descripción y Ubicación</th>
+                            <th class="!text-black dark:!text-white !font-black !text-[10px] !px-4 !py-2.5 uppercase text-center !w-24">Cant.</th>
+                            <th class="!text-black dark:!text-white !font-black !text-[10px] !px-4 !py-2.5 uppercase text-center !w-32">Estado</th>
+                            <th class="!text-black dark:!text-white !font-black !text-[10px] !px-4 !py-2.5 uppercase text-center !w-36">Acciones</th>
                         </tr>
                         </thead>
                         <tbody class="bg-white dark:bg-[#0F172AFF]">
                         <tr *ngFor="let item of dataSource; let i = index"
-                            class="hover:bg-green-50 dark:hover:bg-slate-800/80 transition-colors cursor-pointer border-b-[2px] border-black dark:border-slate-700">
+                            class="hover:bg-green-50 dark:hover:bg-slate-800/80 transition-colors cursor-pointer border-b border-gray-200 dark:border-slate-700">
                             <td class="px-4 py-3 text-center">
-                                <span class="w-8 h-8 inline-flex bg-black text-white rounded-lg font-black text-[10px] items-center justify-center shadow-[2px_2px_0px_0px_#000]">{{ i + 1 }}</span>
+                                <span class="w-7 h-7 inline-flex bg-black text-white rounded-lg font-black text-[10px] items-center justify-center">{{ i + 1 }}</span>
                             </td>
                             <td class="px-4 py-3">
-                                <div class="flex flex-col leading-tight gap-1">
-                                    <span class="bg-[#0F172AFF] text-white font-mono font-bold px-2 py-0.5 rounded text-[11px] block shadow-[2px_2px_0px_0px_rgba(0,0,0,0.5)] w-fit">{{ item.codigoBoa }}</span>
-                                    <div class="font-mono text-[10px] text-gray-600 dark:text-gray-400 font-bold">P/N: {{ item.pn || '-' }}</div>
+                                <div class="flex flex-col leading-tight gap-0.5">
+                                    <span class="font-mono font-black text-amber-700 dark:text-amber-400 text-[10px] bg-amber-50 dark:bg-amber-900/30 px-1.5 py-0.5 rounded border border-amber-200 uppercase w-fit">{{ item.codigoBoa }}</span>
+                                    <div class="font-mono text-[10px] text-gray-500 font-bold">P/N: {{ item.pn || '-' }}</div>
                                     <div class="font-mono text-[10px] text-[#15803d] dark:text-green-400 font-bold">S/N: {{ item.sn || '-' }}</div>
                                 </div>
                             </td>
                             <td class="px-4 py-3">
-                                <div class="font-black text-xs text-black dark:text-white leading-tight mb-1.5">{{ item.descripcion }}</div>
+                                <div class="font-black text-xs text-black dark:text-white leading-tight mb-1">{{ item.descripcion }}</div>
                                 <div class="flex gap-2">
                                     <span class="text-[10px] bg-gray-200 dark:bg-slate-700 px-2 py-0.5 rounded font-black uppercase border-[2px] border-gray-400">
                                         <mat-icon class="!text-[10px] !w-3 !h-3 align-middle">shelves</mat-icon> Est: {{ item.estante }} | Niv: {{ item.nivelUbicacion }}
@@ -177,210 +222,146 @@
                                 </div>
                             </td>
                             <td class="px-4 py-3 text-center">
-                                <span class="bg-gray-100 dark:bg-slate-800 border-[2px] border-black text-black dark:text-white rounded px-2 py-1 font-black text-sm block w-fit mx-auto shadow-[2px_2px_0px_0px_#000]">
+                                <span class="bg-gray-100 dark:bg-slate-800 border-[2px] border-black text-black dark:text-white rounded px-2 py-0.5 font-black text-sm block w-fit mx-auto">
                                     {{ item.cantidad }} <span class="text-[10px]">{{ item.unidadMedida }}</span>
                                 </span>
                             </td>
                             <td class="px-4 py-3 text-center">
-                                <span class="px-2 py-1 rounded text-[10px] font-black border-[2px] border-black uppercase shadow-[2px_2px_0px_0px_#000]" [ngClass]="getEstadoNuevaClass(item.estado)">{{ item.estado }}</span>
+                                <span class="px-2 py-0.5 rounded text-[10px] font-black border-[2px] border-black uppercase" [ngClass]="getEstadoNuevaClass(item.estado)">{{ item.estado }}</span>
                             </td>
                             <td class="px-4 py-3 text-center">
-                                <div class="flex gap-2 justify-center">
-                                    <button (click)="duplicarItem(i)" matTooltip="Duplicar" class="w-8 h-8 flex items-center justify-center border-[2px] border-black bg-amber-100 hover:bg-amber-200 rounded-lg shadow-[2px_2px_0px_0px_#000] transition-all"><mat-icon class="text-amber-700 !text-sm">content_copy</mat-icon></button>
-                                    <button (click)="abrirModalHerramienta(i)" matTooltip="Editar" class="w-8 h-8 flex items-center justify-center border-[2px] border-black bg-blue-100 hover:bg-blue-200 rounded-lg shadow-[2px_2px_0px_0px_#000] transition-all"><mat-icon class="text-blue-700 !text-sm">edit</mat-icon></button>
-                                    <button (click)="eliminarItemNueva(i)" matTooltip="Quitar" class="w-8 h-8 flex items-center justify-center border-[2px] border-black bg-red-100 hover:bg-red-200 rounded-lg shadow-[2px_2px_0px_0px_#000] transition-all"><mat-icon class="text-red-700 !text-sm">delete</mat-icon></button>
+                                <div class="flex gap-1.5 justify-center">
+                                    <button (click)="duplicarItem(i)" matTooltip="Duplicar" class="w-7 h-7 flex items-center justify-center border-[2px] border-black bg-amber-100 hover:bg-amber-200 rounded-lg shadow-[2px_2px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all"><mat-icon class="text-amber-700 !text-sm">content_copy</mat-icon></button>
+                                    <button (click)="abrirModalHerramienta(i)" matTooltip="Editar" class="w-7 h-7 flex items-center justify-center border-[2px] border-black bg-blue-100 hover:bg-blue-200 rounded-lg shadow-[2px_2px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all"><mat-icon class="text-blue-700 !text-sm">edit</mat-icon></button>
+                                    <button (click)="eliminarItemNueva(i)" matTooltip="Quitar" class="w-7 h-7 flex items-center justify-center border-[2px] border-black bg-red-100 hover:bg-red-200 rounded-lg shadow-[2px_2px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all"><mat-icon class="text-red-700 !text-sm">delete</mat-icon></button>
                                 </div>
                             </td>
                         </tr>
                         </tbody>
                     </table>
-                </div>
 
-                <!-- Empty state -->
-                <div *ngIf="dataSource.length === 0" class="flex flex-col items-center justify-center py-24 bg-white dark:bg-slate-800">
-                    <div class="w-20 h-20 bg-gray-100 dark:bg-slate-900 border-[3px] border-black rounded-2xl flex items-center justify-center shadow-[4px_4px_0px_0px_#000] mb-5 transform -rotate-6">
-                        <mat-icon class="!text-4xl text-black dark:text-white">inventory_2</mat-icon>
-                    </div>
-                    <p class="text-xl font-black uppercase text-black dark:text-white tracking-wider">Sin Ítems de Recepción</p>
-                    <p class="text-sm font-bold text-gray-500 mt-2 text-center max-w-sm px-4">Presione <strong class="text-black dark:text-white">"RECEPCIONAR MANUAL"</strong> o <strong class="text-black dark:text-white">"NUEVA HERRAMIENTA"</strong> para comenzar.</p>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- ══════════════════════════════════════════════════════════════════════ -->
-    <!--  TAB: AJUSTE INGRESO                                                  -->
-    <!-- ══════════════════════════════════════════════════════════════════════ -->
-    <div [hidden]="activeTab() !== 'ajuste'" class="flex-1 flex flex-col overflow-hidden relative">
-
-        <!-- Header actions -->
-        <div class="flex items-center justify-between gap-4 shrink-0 flex-wrap px-6 py-4 border-b-[3px] border-black bg-white dark:bg-slate-900 relative z-[110]">
-            <div class="flex items-center gap-3">
-                <div class="flex items-center justify-center w-10 h-10 bg-white dark:bg-slate-800 border-[2px] border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] rounded-xl shrink-0 hidden sm:flex">
-                    <mat-icon class="text-[#15803d] !text-xl">tune</mat-icon>
-                </div>
-                <div>
-                    <h1 class="text-2xl md:text-3xl font-black text-black dark:text-white uppercase tracking-tighter leading-none">AJUSTE DE INGRESO</h1>
-                    <div class="flex items-center gap-2 mt-1">
-                        <span class="text-[10px] font-bold bg-[#15803d] text-white px-2 py-0.5 rounded inline-block border-2 border-black uppercase tracking-wider shadow-[1px_1px_0px_0px_#000]">AJUSTE DE INVENTARIO</span>
-                    </div>
-                </div>
-            </div>
-            <div class="flex items-center gap-3">
-                <button (click)="abrirModalDatosAjuste()"
-                        class="flex items-center gap-2 px-5 py-2 bg-amber-400 border-[2px] border-black font-black text-xs uppercase rounded-xl shadow-[3px_3px_0px_0px_#000] hover:shadow-[1px_1px_0px_0px_#000] hover:translate-x-[2px] hover:translate-y-[2px] transition-all text-black">
-                    <mat-icon class="!text-base !text-black">edit_document</mat-icon>
-                    <span class="hidden sm:inline">Datos Generales</span>
-                </button>
-                <div class="w-px h-8 bg-black/20 dark:bg-white/20 mx-1 hidden md:block"></div>
-                <button (click)="openDetalleHerramienta()"
-                        class="flex items-center gap-2 px-5 py-2 bg-black dark:bg-slate-700 border-[2px] border-black font-black text-xs uppercase rounded-xl shadow-[3px_3px_0px_0px_rgba(0,0,0,0.5)] hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,0.5)] hover:translate-x-[2px] hover:translate-y-[2px] transition-all text-white">
-                    <mat-icon class="!text-base !text-white">add_circle</mat-icon>
-                    <span class="hidden sm:inline">Agregar Ítem</span>
-                </button>
-                <button (click)="abrirModalConfirmacionAjuste()" [disabled]="isSavingAjuste || dataSourceAjuste.length === 0"
-                        class="flex items-center gap-2 px-5 py-2 bg-[#15803d] border-[2px] border-black font-black text-xs uppercase rounded-xl shadow-[3px_3px_0px_0px_#000] hover:shadow-[1px_1px_0px_0px_#000] hover:translate-x-[2px] hover:translate-y-[2px] transition-all text-white disabled:opacity-50 disabled:shadow-none disabled:translate-x-0 disabled:translate-y-0 disabled:cursor-not-allowed">
-                    <mat-icon class="!text-base !text-white">check_circle</mat-icon>
-                    <span class="hidden sm:inline">Finalizar Ajuste</span>
-                </button>
-            </div>
-        </div>
-
-        <!-- Status banner -->
-        <div class="px-6 pt-4 shrink-0">
-            <div *ngIf="!isDatosAjusteValido()" class="bg-white dark:bg-slate-800 border-[3px] border-black p-3.5 rounded-xl flex items-center justify-between shadow-[4px_4px_0px_0px_#000] animate-pulse-border">
-                <div class="flex items-center gap-3">
-                    <div class="bg-red-100 dark:bg-red-900/30 p-2 rounded-lg border-2 border-red-500 hidden sm:block">
-                        <mat-icon class="text-red-600 !text-2xl">warning</mat-icon>
-                    </div>
-                    <div>
-                        <h3 class="font-black text-sm text-black dark:text-white uppercase tracking-wider leading-none">Faltan Datos Generales del Ajuste</h3>
-                        <p class="text-[11px] font-bold text-gray-600 dark:text-gray-400 mt-1 hidden sm:block">Complete quién aprueba, quién realiza y el tipo de ajuste.</p>
-                    </div>
-                </div>
-                <button (click)="abrirModalDatosAjuste()" class="px-4 py-2 bg-red-600 text-white font-black text-xs border-[2px] border-black rounded-lg shadow-[3px_3px_0px_0px_#000] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[1px_1px_0px_0px_#000] transition-all uppercase flex items-center gap-2">
-                    <mat-icon class="!text-sm">edit</mat-icon> Completar
-                </button>
-            </div>
-            <div *ngIf="isDatosAjusteValido()" class="bg-white dark:bg-slate-800 border-[3px] border-black p-3.5 rounded-xl shadow-[4px_4px_0px_0px_#000] flex justify-between items-center relative overflow-hidden">
-                <div class="absolute right-0 top-0 bottom-0 w-48 bg-green-100 dark:bg-green-900/20 transform skew-x-12 -mr-16 border-l-[3px] border-black z-0 hidden sm:block"></div>
-                <div class="flex flex-wrap gap-x-8 gap-y-2 relative z-10 w-full pr-12 sm:pr-16">
-                    <div class="flex flex-col">
-                        <p class="text-[10px] font-black uppercase tracking-widest text-[#15803d] dark:text-green-400">Tipo de Ajuste</p>
-                        <p class="font-black text-sm text-black dark:text-white">{{ getTipoAjusteLabel(ajusteForm.value.tipoAjuste) }}</p>
-                    </div>
-                    <div class="flex flex-col border-l-2 border-gray-200 dark:border-gray-600 pl-6">
-                        <p class="text-[10px] font-black uppercase tracking-widest text-[#15803d] dark:text-green-400">Fecha</p>
-                        <p class="font-black text-sm text-black dark:text-white">{{ getFechaText() }}</p>
-                    </div>
-                    <div class="flex flex-col border-l-2 border-gray-200 dark:border-gray-600 pl-6 hidden md:flex">
-                        <p class="text-[10px] font-black uppercase tracking-widest text-[#15803d] dark:text-green-400">Documento REF</p>
-                        <p class="font-black text-sm text-black dark:text-white">{{ getDocumentoText() }}</p>
-                    </div>
-                    <div class="flex flex-col border-l-2 border-gray-200 dark:border-gray-600 pl-6 hidden lg:flex">
-                        <p class="text-[10px] font-black uppercase tracking-widest text-[#15803d] dark:text-green-400">Realiza / Aprueba</p>
-                        <p class="font-black text-sm text-black dark:text-white">{{ getRealizadoPorNombre() }} <span class="text-gray-400 mx-1">/</span> {{ getAprobadoPorNombre() }}</p>
-                    </div>
-                </div>
-                <button (click)="abrirModalDatosAjuste()" class="absolute right-4 top-1/2 -translate-y-1/2 z-10 w-10 h-10 flex items-center justify-center bg-white dark:bg-slate-800 border-[2px] border-black rounded-xl shadow-[3px_3px_0px_0px_#000] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[1px_1px_0px_0px_#000] transition-all" matTooltip="Editar Datos">
-                    <mat-icon class="text-[#15803d] dark:text-green-400 !text-lg">edit</mat-icon>
-                </button>
-            </div>
-        </div>
-
-        <!-- Table area -->
-        <div class="flex-1 flex flex-col pt-4 px-6 pb-6 overflow-hidden z-0">
-            <div class="flex-1 flex flex-col border-[3px] border-black bg-white dark:bg-[#0F172AFF] rounded-2xl shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] overflow-hidden">
-
-                <!-- Table header bar -->
-                <div class="bg-[#0F172AFF] px-5 py-3 border-b-[3px] border-black flex items-center justify-between shrink-0 flex-wrap gap-3">
-                    <div class="flex items-center gap-3 border-r-[2px] border-white/20 pr-5">
-                        <mat-checkbox [checked]="isAllAjusteSelected()" [indeterminate]="isSomeAjusteSelected()" (change)="toggleAllAjuste($event)" class="white-checkbox"></mat-checkbox>
-                        <h2 class="text-sm font-black text-white uppercase tracking-wider">
-                            <span class="hidden sm:inline">Seleccionar</span> Todo
-                        </h2>
-                    </div>
-                    <div class="flex items-center gap-2 sm:gap-4">
-                        <div *ngIf="getAjusteSelectedCount() > 0" class="flex items-center gap-2 bg-[#FFC501FF] rounded-lg px-3 py-1.5 border-2 border-black">
-                            <div class="text-[10px] font-black uppercase tracking-widest text-black leading-none hidden sm:block">Seleccionados</div>
-                            <div class="text-sm font-black text-black leading-none">{{ getAjusteSelectedCount() }}</div>
+                    <!-- Empty state -->
+                    <div *ngIf="dataSource.length === 0" class="flex flex-col items-center justify-center py-16 gap-3">
+                        <div class="w-16 h-16 bg-gray-100 dark:bg-slate-800 border-[3px] border-black rounded-2xl shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] flex items-center justify-center">
+                            <mat-icon class="!text-3xl text-gray-400 dark:text-gray-600">inventory_2</mat-icon>
                         </div>
-                        <div class="flex items-center gap-2 bg-white/10 rounded-lg px-3 py-1.5 border-[2px] border-white/20">
-                            <div class="text-[10px] font-black uppercase tracking-widest text-white/80 leading-none hidden sm:block">Líneas Ítems</div>
-                            <div class="text-sm font-black text-white leading-none">{{ dataSourceAjuste.length }}</div>
+                        <p class="text-xs font-black uppercase text-gray-500 dark:text-gray-400">Sin herramientas en la recepción</p>
+                        <button (click)="abrirModalHerramienta()"
+                                class="px-4 py-1.5 bg-amber-400 text-black border-2 border-black rounded-lg font-black text-xs uppercase shadow-[2px_2px_0px_0px_#000] hover:translate-y-[1px] hover:shadow-none transition-all">
+                            Recepcionar Manual
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ══ TAB AJUSTE INGRESO ══ -->
+            <div [hidden]="activeTab() !== 'ajuste'" class="flex-1 flex flex-col overflow-hidden">
+
+                <!-- Status banner ajuste -->
+                <div class="px-4 pt-3 shrink-0">
+                    <div *ngIf="!isDatosAjusteValido()" class="bg-gray-50 dark:bg-slate-800 border-[2px] border-black p-3 rounded-xl flex items-center justify-between">
+                        <div class="flex items-center gap-2">
+                            <mat-icon class="text-red-600 !text-xl">warning</mat-icon>
+                            <span class="font-black text-xs text-black dark:text-white uppercase">Faltan Datos Generales del Ajuste</span>
                         </div>
-                        <div *ngIf="dataSourceAjuste.length > 0" class="flex items-center gap-2 bg-[#15803d] rounded-lg px-3 py-1.5 border-[2px] border-black">
-                            <div class="text-[10px] font-black uppercase tracking-widest text-white leading-none hidden sm:block">Unidades</div>
-                            <div class="text-sm font-black text-white leading-none">{{ getTotalCantidadAjuste() }}</div>
+                        <button (click)="abrirModalDatosAjuste()"
+                                class="h-7 px-3 flex items-center gap-1 bg-red-600 text-white border-2 border-black rounded-lg font-black text-[10px] uppercase shadow-[2px_2px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all">
+                            <mat-icon class="!text-xs">edit</mat-icon> Completar
+                        </button>
+                    </div>
+                    <div *ngIf="isDatosAjusteValido()" class="bg-gray-50 dark:bg-slate-800 border-[2px] border-black p-3 rounded-xl flex items-center justify-between gap-3 flex-wrap">
+                        <div class="flex flex-wrap gap-x-6 gap-y-1">
+                            <div class="flex flex-col">
+                                <span class="text-[9px] font-black uppercase text-[#15803d] dark:text-green-400">Tipo</span>
+                                <span class="font-black text-xs text-black dark:text-white">{{ getTipoAjusteLabel(ajusteForm.value.tipoAjuste) }}</span>
+                            </div>
+                            <div class="flex flex-col border-l-2 border-gray-200 dark:border-gray-600 pl-4">
+                                <span class="text-[9px] font-black uppercase text-[#15803d] dark:text-green-400">Fecha</span>
+                                <span class="font-black text-xs text-black dark:text-white">{{ getFechaText() }}</span>
+                            </div>
+                            <div class="flex flex-col border-l-2 border-gray-200 dark:border-gray-600 pl-4 hidden md:flex">
+                                <span class="text-[9px] font-black uppercase text-[#15803d] dark:text-green-400">Doc REF</span>
+                                <span class="font-black text-xs text-black dark:text-white">{{ getDocumentoText() }}</span>
+                            </div>
+                            <div class="flex flex-col border-l-2 border-gray-200 dark:border-gray-600 pl-4 hidden lg:flex">
+                                <span class="text-[9px] font-black uppercase text-[#15803d] dark:text-green-400">Realiza / Aprueba</span>
+                                <span class="font-black text-xs text-black dark:text-white">{{ getRealizadoPorNombre() }} / {{ getAprobadoPorNombre() }}</span>
+                            </div>
                         </div>
+                        <button (click)="abrirModalDatosAjuste()"
+                                class="w-8 h-8 flex items-center justify-center bg-white dark:bg-slate-700 border-[2px] border-black rounded-lg shadow-[2px_2px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all" matTooltip="Editar">
+                            <mat-icon class="text-[#15803d] !text-sm">edit</mat-icon>
+                        </button>
                     </div>
                 </div>
 
-                <!-- Mat-table -->
-                <div class="overflow-y-auto flex-1 custom-scrollbar-ing">
+                <!-- Tabla ajuste -->
+                <div class="flex-1 overflow-auto custom-scrollbar-ing mt-3">
                     <table mat-table [dataSource]="dataSourceAjuste" class="w-full min-w-[800px] border-collapse">
 
                         <ng-container matColumnDef="select">
-                            <th mat-header-cell *matHeaderCellDef class="hidden"></th>
-                            <td mat-cell *matCellDef="let element" class="!p-3 !border-b-[2px] !border-black dark:!border-slate-700 !w-12 !min-w-12 text-center">
+                            <th mat-header-cell *matHeaderCellDef class="!bg-gray-100 dark:!bg-slate-800 !border-b-[2px] !border-black !px-3 !py-2.5 !w-12 !min-w-12">
+                                <mat-checkbox [checked]="isAllAjusteSelected()" [indeterminate]="isSomeAjusteSelected()" (change)="toggleAllAjuste($event)" class="white-checkbox"></mat-checkbox>
+                            </th>
+                            <td mat-cell *matCellDef="let element" class="!p-3 !border-b !border-gray-200 dark:!border-slate-700 !w-12 !min-w-12 text-center">
                                 <mat-checkbox [checked]="element.selected" (change)="toggleSelectionAjuste(element)" color="primary"></mat-checkbox>
                             </td>
                         </ng-container>
 
                         <ng-container matColumnDef="fila">
-                            <th mat-header-cell *matHeaderCellDef class="!bg-gray-100 dark:!bg-slate-900 !text-black dark:!text-white !font-black !text-[10px] !border-b-[3px] !border-black !p-3 uppercase text-center !w-12">#</th>
-                            <td mat-cell *matCellDef="let element; let i = index" class="!px-3 !py-3 !border-b-[2px] !border-black dark:!border-slate-700 text-center font-black text-sm text-gray-500">{{ i + 1 }}</td>
+                            <th mat-header-cell *matHeaderCellDef class="!bg-gray-100 dark:!bg-slate-800 !text-black dark:!text-white !font-black !text-[10px] !border-b-[2px] !border-black !px-3 !py-2.5 uppercase text-center !w-12">#</th>
+                            <td mat-cell *matCellDef="let element; let i = index" class="!px-3 !py-3 !border-b !border-gray-200 dark:!border-slate-700 text-center font-black text-sm text-gray-500">{{ i + 1 }}</td>
                         </ng-container>
 
                         <ng-container matColumnDef="identificacion">
-                            <th mat-header-cell *matHeaderCellDef class="!bg-gray-100 dark:!bg-slate-900 !text-black dark:!text-white !font-black !text-[10px] !border-b-[3px] !border-black !p-3 uppercase !w-48">Identificación</th>
-                            <td mat-cell *matCellDef="let element" class="!px-3 !py-3 !border-b-[2px] !border-black dark:!border-slate-700">
-                                <span class="bg-black text-white font-mono font-bold px-2 py-0.5 rounded text-[11px] block shadow-[2px_2px_0px_0px_rgba(0,0,0,0.5)] w-fit mb-1">{{ element.codigoBoa }}</span>
+                            <th mat-header-cell *matHeaderCellDef class="!bg-gray-100 dark:!bg-slate-800 !text-black dark:!text-white !font-black !text-[10px] !border-b-[2px] !border-black !px-3 !py-2.5 uppercase !w-48">Identificación</th>
+                            <td mat-cell *matCellDef="let element" class="!px-3 !py-3 !border-b !border-gray-200 dark:!border-slate-700">
+                                <span class="font-mono font-black text-amber-700 dark:text-amber-400 text-[10px] bg-amber-50 dark:bg-amber-900/30 px-1.5 py-0.5 rounded border border-amber-200 uppercase block w-fit mb-0.5">{{ element.codigoBoa }}</span>
                                 <div class="font-mono text-[10px] text-gray-600 dark:text-gray-400 font-bold">P/N: {{ element.pn || '-' }}</div>
                                 <div class="font-mono text-[10px] text-[#15803d] dark:text-green-400 font-bold">S/N: {{ element.sn || '-' }}</div>
                             </td>
                         </ng-container>
 
                         <ng-container matColumnDef="descripcion">
-                            <th mat-header-cell *matHeaderCellDef class="!bg-gray-100 dark:!bg-slate-900 !text-black dark:!text-white !font-black !text-[10px] !border-b-[3px] !border-black !p-3 uppercase">Descripción / Marca</th>
-                            <td mat-cell *matCellDef="let element" class="!px-3 !py-3 !border-b-[2px] !border-black dark:!border-slate-700">
+                            <th mat-header-cell *matHeaderCellDef class="!bg-gray-100 dark:!bg-slate-800 !text-black dark:!text-white !font-black !text-[10px] !border-b-[2px] !border-black !px-3 !py-2.5 uppercase">Descripción / Marca</th>
+                            <td mat-cell *matCellDef="let element" class="!px-3 !py-3 !border-b !border-gray-200 dark:!border-slate-700">
                                 <div class="font-black text-xs text-black dark:text-white leading-tight mb-1">{{ element.descripcion }}</div>
                                 <span class="text-[10px] bg-gray-200 dark:bg-slate-700 text-gray-800 dark:text-slate-300 px-2 py-0.5 rounded font-bold uppercase border-[2px] border-gray-400 dark:border-gray-600">{{ element.marca || 'S/M' }}</span>
                             </td>
                         </ng-container>
 
                         <ng-container matColumnDef="cantEstado">
-                            <th mat-header-cell *matHeaderCellDef class="!bg-gray-100 dark:!bg-slate-900 !text-black dark:!text-white !font-black !text-[10px] !border-b-[3px] !border-black !p-3 uppercase !w-32 text-center">Cant / Estado</th>
-                            <td mat-cell *matCellDef="let element" class="!px-3 !py-3 !border-b-[2px] !border-black dark:!border-slate-700 text-center">
-                                <span class="bg-[#FFC501FF] text-black border-[2px] border-black rounded px-2 py-1 font-black text-sm block mb-1.5 w-fit mx-auto shadow-[2px_2px_0px_0px_#000]">{{ element.cantidad }} <span class="text-[10px]">{{ element.um }}</span></span>
-                                <span class="px-2 py-1 rounded font-black text-[10px] border-[2px] border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,0.5)]" [ngClass]="getEstadoAjusteClass(element.estado)">{{ getEstadoAjusteLabel(element.estado) }}</span>
+                            <th mat-header-cell *matHeaderCellDef class="!bg-gray-100 dark:!bg-slate-800 !text-black dark:!text-white !font-black !text-[10px] !border-b-[2px] !border-black !px-3 !py-2.5 uppercase !w-32 text-center">Cant / Estado</th>
+                            <td mat-cell *matCellDef="let element" class="!px-3 !py-3 !border-b !border-gray-200 dark:!border-slate-700 text-center">
+                                <span class="bg-amber-400 text-black border-[2px] border-black rounded px-2 py-0.5 font-black text-sm block mb-1 w-fit mx-auto shadow-[2px_2px_0px_0px_#000]">{{ element.cantidad }} <span class="text-[10px]">{{ element.um }}</span></span>
+                                <span class="px-1.5 py-0.5 rounded font-black text-[10px] border-[2px] border-black" [ngClass]="getEstadoAjusteClass(element.estado)">{{ getEstadoAjusteLabel(element.estado) }}</span>
                             </td>
                         </ng-container>
 
                         <ng-container matColumnDef="ubicacion">
-                            <th mat-header-cell *matHeaderCellDef class="!bg-gray-100 dark:!bg-slate-900 !text-black dark:!text-white !font-black !text-[10px] !border-b-[3px] !border-black !p-3 uppercase !w-32 text-center">Ubicación</th>
-                            <td mat-cell *matCellDef="let element" class="!px-3 !py-3 !border-b-[2px] !border-black dark:!border-slate-700 text-center">
-                                <span class="bg-gray-100 dark:bg-slate-800 px-2 py-1 rounded text-[10px] font-mono font-black border-[2px] border-black inline-block">{{ element.ubicacion || '—' }}</span>
+                            <th mat-header-cell *matHeaderCellDef class="!bg-gray-100 dark:!bg-slate-800 !text-black dark:!text-white !font-black !text-[10px] !border-b-[2px] !border-black !px-3 !py-2.5 uppercase !w-32 text-center">Ubicación</th>
+                            <td mat-cell *matCellDef="let element" class="!px-3 !py-3 !border-b !border-gray-200 dark:!border-slate-700 text-center">
+                                <span class="bg-gray-100 dark:bg-slate-800 px-2 py-0.5 rounded text-[10px] font-mono font-black border-[2px] border-black inline-block">{{ element.ubicacion || '—' }}</span>
                             </td>
                         </ng-container>
 
                         <ng-container matColumnDef="tipoAjuste">
-                            <th mat-header-cell *matHeaderCellDef class="!bg-gray-100 dark:!bg-slate-900 !text-black dark:!text-white !font-black !text-[10px] !border-b-[3px] !border-black !p-3 uppercase !w-32 text-center">Tipo Ajuste</th>
-                            <td mat-cell *matCellDef="let element" class="!px-3 !py-3 !border-b-[2px] !border-black dark:!border-slate-700 text-center">
-                                <span class="px-2 py-1 rounded font-black text-[10px] border-[2px] border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,0.5)] uppercase tracking-wider" [ngClass]="getTipoAjusteClass(element.tipoAjuste)">{{ getTipoAjusteLabel(element.tipoAjuste) }}</span>
+                            <th mat-header-cell *matHeaderCellDef class="!bg-gray-100 dark:!bg-slate-800 !text-black dark:!text-white !font-black !text-[10px] !border-b-[2px] !border-black !px-3 !py-2.5 uppercase !w-32 text-center">Tipo Ajuste</th>
+                            <td mat-cell *matCellDef="let element" class="!px-3 !py-3 !border-b !border-gray-200 dark:!border-slate-700 text-center">
+                                <span class="px-1.5 py-0.5 rounded font-black text-[10px] border-[2px] border-black uppercase" [ngClass]="getTipoAjusteClass(element.tipoAjuste)">{{ getTipoAjusteLabel(element.tipoAjuste) }}</span>
                             </td>
                         </ng-container>
 
                         <ng-container matColumnDef="acciones">
-                            <th mat-header-cell *matHeaderCellDef class="!bg-gray-100 dark:!bg-slate-900 !text-black dark:!text-white !font-black !text-[10px] !border-b-[3px] !border-black !p-3 uppercase text-center !w-24">Acciones</th>
-                            <td mat-cell *matCellDef="let element" class="!px-3 !py-3 !border-b-[2px] !border-black dark:!border-slate-700 text-center">
-                                <div class="flex gap-2 justify-center">
+                            <th mat-header-cell *matHeaderCellDef class="!bg-gray-100 dark:!bg-slate-800 !text-black dark:!text-white !font-black !text-[10px] !border-b-[2px] !border-black !px-3 !py-2.5 uppercase text-center !w-24">Acciones</th>
+                            <td mat-cell *matCellDef="let element" class="!px-3 !py-3 !border-b !border-gray-200 dark:!border-slate-700 text-center">
+                                <div class="flex gap-1.5 justify-center">
                                     <button (click)="editItemAjuste(element); $event.stopPropagation()" matTooltip="Editar"
-                                            class="w-8 h-8 flex items-center justify-center border-[2px] border-black bg-blue-100 hover:bg-blue-200 rounded-lg shadow-[3px_3px_0px_0px_#000] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[1px_1px_0px_0px_#000] transition-all">
+                                            class="w-7 h-7 flex items-center justify-center border-[2px] border-black bg-blue-100 hover:bg-blue-200 rounded-lg shadow-[2px_2px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all">
                                         <mat-icon class="text-blue-700 !text-sm">edit</mat-icon>
                                     </button>
                                     <button (click)="removeItemAjuste(element); $event.stopPropagation()" matTooltip="Quitar"
-                                            class="w-8 h-8 flex items-center justify-center border-[2px] border-black bg-red-100 hover:bg-red-200 rounded-lg shadow-[3px_3px_0px_0px_#000] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[1px_1px_0px_0px_#000] transition-all">
+                                            class="w-7 h-7 flex items-center justify-center border-[2px] border-black bg-red-100 hover:bg-red-200 rounded-lg shadow-[2px_2px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all">
                                         <mat-icon class="text-red-700 !text-sm">delete</mat-icon>
                                     </button>
                                 </div>
@@ -393,85 +374,139 @@
                             class="hover:bg-amber-50 dark:hover:bg-slate-800/80 transition-colors cursor-pointer"
                             (click)="toggleSelectionAjuste(row)"></tr>
                     </table>
-                </div>
 
-                <!-- Empty state -->
-                <div *ngIf="dataSourceAjuste.length === 0" class="flex flex-col items-center justify-center py-24 bg-white dark:bg-slate-800">
-                    <div class="w-20 h-20 bg-gray-100 dark:bg-slate-900 border-[3px] border-black rounded-2xl flex items-center justify-center shadow-[4px_4px_0px_0px_#000] mb-5 transform -rotate-6">
-                        <mat-icon class="!text-4xl text-black dark:text-white">tune</mat-icon>
+                    <!-- Empty state ajuste -->
+                    <div *ngIf="dataSourceAjuste.length === 0" class="flex flex-col items-center justify-center py-16 gap-3">
+                        <div class="w-16 h-16 bg-gray-100 dark:bg-slate-800 border-[3px] border-black rounded-2xl shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] flex items-center justify-center">
+                            <mat-icon class="!text-3xl text-gray-400 dark:text-gray-600">tune</mat-icon>
+                        </div>
+                        <p class="text-xs font-black uppercase text-gray-500 dark:text-gray-400">Sin ítems de ajuste</p>
+                        <button (click)="openDetalleHerramienta()"
+                                class="px-4 py-1.5 bg-amber-400 text-black border-2 border-black rounded-lg font-black text-xs uppercase shadow-[2px_2px_0px_0px_#000] hover:translate-y-[1px] hover:shadow-none transition-all">
+                            Agregar ítem
+                        </button>
                     </div>
-                    <p class="text-xl font-black uppercase text-black dark:text-white tracking-wider">Sin Ítems de Ajuste</p>
-                    <p class="text-sm font-bold text-gray-500 mt-2 text-center max-w-sm px-4">Presione <strong class="text-black dark:text-white">"AGREGAR ÍTEM"</strong> en la parte superior para comenzar.</p>
                 </div>
             </div>
+
         </div>
     </div>
-
 </div>
 
 <!-- ══════════════════════════════════════════════════════════════════════════ -->
 <!--  MODAL: DATOS DE RECEPCIÓN                                                -->
 <!-- ══════════════════════════════════════════════════════════════════════════ -->
 <ng-template #recepcionModal>
-    <div class="bg-[#f8f9fc] dark:bg-slate-900 rounded-2xl border-[3px] border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] flex flex-col w-[95vw] max-w-[800px] overflow-hidden m-auto animate-fadeIn">
-        <div class="bg-[#0F172AFF] text-white px-6 py-5 border-b-[3px] border-black flex justify-between items-center shrink-0">
-            <h2 class="text-lg font-black uppercase flex items-center gap-3 tracking-wider">
-                <mat-icon class="text-amber-400 !text-2xl">receipt_long</mat-icon> Datos de Recepción
-            </h2>
-            <button (click)="cerrarModalRecepcion()" class="w-10 h-10 flex items-center justify-center bg-black text-white font-black border-[2px] border-white/20 rounded-lg hover:bg-gray-800 transition-all cursor-pointer">
-                <mat-icon class="!text-xl">close</mat-icon>
-            </button>
-        </div>
-        <form [formGroup]="recepcionForm" class="p-6 flex flex-col gap-5 overflow-y-auto custom-scrollbar-ing">
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                <div>
-                    <label class="text-[10px] font-black uppercase tracking-wider text-gray-700 dark:text-gray-400 block mb-1">CMR *</label>
-                    <input type="text" formControlName="nroCmr" placeholder="CMR-001" class="w-full h-12 text-sm font-black border-[2px] rounded-lg px-4 bg-white dark:bg-slate-800 text-black dark:text-white outline-none focus:shadow-[3px_3px_0px_0px_#000] transition-shadow uppercase" [ngClass]="hasRecepcionError('nroCmr','required') ? 'border-red-500' : 'border-black'">
-                </div>
-                <div>
-                    <label class="text-[10px] font-black uppercase tracking-wider text-gray-700 dark:text-gray-400 block mb-1">Factura</label>
-                    <input type="text" formControlName="nroFactura" placeholder="FAC-001" class="w-full h-12 text-sm font-black border-[2px] border-black rounded-lg px-4 bg-white dark:bg-slate-800 text-black dark:text-white outline-none focus:shadow-[3px_3px_0px_0px_#000] transition-shadow uppercase">
-                </div>
-            </div>
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                <div>
-                    <label class="text-[10px] font-black uppercase tracking-wider text-gray-700 dark:text-gray-400 block mb-1">Fecha Ingreso *</label>
-                    <input type="date" formControlName="fechaIngreso" class="w-full h-12 text-sm font-black border-[2px] rounded-lg px-4 bg-white dark:bg-slate-800 text-black dark:text-white outline-none focus:shadow-[3px_3px_0px_0px_#000] transition-shadow cursor-pointer" [ngClass]="hasRecepcionError('fechaIngreso','required') ? 'border-red-500' : 'border-black'">
-                </div>
-                <div>
-                    <label class="text-[10px] font-black uppercase tracking-wider text-gray-700 dark:text-gray-400 block mb-1">Orden de Compra</label>
-                    <input type="text" formControlName="ordenCompra" placeholder="PO-001" class="w-full h-12 text-sm font-black border-[2px] border-black rounded-lg px-4 bg-white dark:bg-slate-800 text-black dark:text-white outline-none focus:shadow-[3px_3px_0px_0px_#000] transition-shadow uppercase">
-                </div>
+    <div class="bg-stone-100 dark:bg-slate-900 border-2 border-black overflow-hidden flex flex-col h-full"
+         style="box-shadow: 6px 6px 0 #000">
+
+        <!-- Header -->
+        <div class="bg-[#0F172A] px-5 py-3.5 flex items-center gap-3 shrink-0 select-none"
+             cdkDrag cdkDragRootElement=".cdk-overlay-pane" cdkDragHandle style="cursor:grab">
+            <div class="w-9 h-9 rounded bg-amber-400 border-2 border-black flex items-center justify-center shadow-[2px_2px_0_#fbbf24] shrink-0">
+                <mat-icon class="!text-lg text-black">receipt_long</mat-icon>
             </div>
             <div>
-                <label class="text-[10px] font-black uppercase tracking-wider text-gray-700 dark:text-gray-400 block mb-1">Proveedor</label>
-                <input type="text" formControlName="proveedor" [matAutocomplete]="autoProv" placeholder="Buscar proveedor..." class="w-full h-12 text-sm font-black border-[2px] border-black rounded-lg px-4 bg-white dark:bg-slate-800 text-black dark:text-white outline-none focus:shadow-[3px_3px_0px_0px_#000] transition-shadow">
-                <mat-autocomplete #autoProv="matAutocomplete" [displayWith]="displayProveedor">
-                    <mat-option *ngFor="let p of proveedoresFiltrados" [value]="p"><span class="font-bold">{{ p.nombre }}</span></mat-option>
-                </mat-autocomplete>
+                <p class="text-[9px] text-slate-400 font-bold uppercase tracking-[0.18em] leading-none mb-0.5">Ingresos · Nueva Herramienta</p>
+                <h2 class="text-sm text-white font-black uppercase tracking-tight leading-none">Datos de Recepción</h2>
             </div>
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                <div class="relative">
-                    <label class="text-[10px] font-black uppercase tracking-wider text-gray-700 dark:text-gray-400 block mb-1">Recibido en almacén por *</label>
-                    <input type="text" [value]="recepcionForm.get('funcionarioRecibe')?.value" (input)="onFuncionarioInput($any($event.target).value)" (blur)="hideFuncDropdown()" placeholder="BUSCAR FUNCIONARIO..." autocomplete="off"
-                           class="w-full h-12 text-sm font-black border-[2px] rounded-lg px-4 pr-10 bg-white dark:bg-slate-800 text-black dark:text-white outline-none focus:shadow-[3px_3px_0px_0px_#000] transition-shadow uppercase"
-                           [ngClass]="hasRecepcionError('funcionarioRecibe','required') ? 'border-red-500' : 'border-black'">
-                    <mat-spinner *ngIf="funcLoading" diameter="16" class="absolute right-4 top-10"></mat-spinner>
-                    <div *ngIf="showFuncDropdown" class="absolute z-50 w-full mt-1 top-full border-[3px] border-black rounded-xl bg-white dark:bg-slate-800 shadow-[6px_6px_0_#000] overflow-hidden max-h-48 overflow-y-auto">
-                        <div *ngFor="let f of funcFiltrados" (mousedown)="selectFuncionario(f)" class="px-4 py-3 hover:bg-amber-100 dark:hover:bg-slate-700 cursor-pointer border-b-[2px] border-gray-200 dark:border-gray-700 last:border-b-0 transition-colors">
-                            <div class="text-xs font-black text-black dark:text-white uppercase">{{ f.nombre }}</div>
-                            <div class="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase mt-0.5">{{ f.cargo }}</div>
-                        </div>
+        </div>
+
+        <!-- Body -->
+        <div class="flex-1 overflow-y-auto px-5 py-5 flex flex-col gap-4 custom-scrollbar-ing">
+            <form [formGroup]="recepcionForm" class="flex flex-col gap-4">
+
+                <!-- CMR + Factura -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                        <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1.5 block">CMR <span class="text-red-500">*</span></label>
+                        <input type="text" formControlName="nroCmr" placeholder="CMR-001"
+                               class="w-full h-10 text-sm font-black uppercase bg-white dark:bg-slate-800 dark:text-white border-2 rounded-xl px-3 outline-none transition-all duration-150 placeholder:text-stone-300 dark:placeholder:text-slate-600"
+                               [class]="hasRecepcionError('nroCmr','required')
+                                   ? 'border-red-400 focus:shadow-[2px_2px_0_#f87171]'
+                                   : 'border-stone-300 dark:border-slate-600 hover:border-stone-400 dark:hover:border-slate-500 focus:border-black dark:focus:border-slate-400 focus:shadow-[3px_3px_0_#000]'">
+                        <p *ngIf="hasRecepcionError('nroCmr','required')" class="text-[8px] font-bold text-red-500 mt-1">Campo requerido.</p>
+                    </div>
+                    <div>
+                        <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1.5 block">Factura</label>
+                        <input type="text" formControlName="nroFactura" placeholder="FAC-001"
+                               class="w-full h-10 text-sm font-black uppercase bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-xl px-3 outline-none transition-all duration-150 placeholder:text-stone-300 dark:placeholder:text-slate-600 hover:border-stone-400 dark:hover:border-slate-500 focus:border-black dark:focus:border-slate-400 focus:shadow-[3px_3px_0_#000]">
                     </div>
                 </div>
-                <div>
-                    <label class="text-[10px] font-black uppercase tracking-wider text-gray-700 dark:text-gray-400 block mb-1">Entregado/Conforme por</label>
-                    <input type="text" formControlName="recibiConforme" placeholder="Nombre completo" class="w-full h-12 text-sm font-black border-[2px] border-black rounded-lg px-4 bg-white dark:bg-slate-800 text-black dark:text-white outline-none focus:shadow-[3px_3px_0px_0px_#000] transition-shadow uppercase">
+
+                <!-- Fecha + Orden de Compra -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                        <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1.5 block">Fecha Ingreso <span class="text-red-500">*</span></label>
+                        <input type="date" formControlName="fechaIngreso"
+                               class="w-full h-10 text-sm font-bold bg-white dark:bg-slate-800 dark:text-white border-2 rounded-xl px-3 outline-none transition-all duration-150 cursor-pointer"
+                               [class]="hasRecepcionError('fechaIngreso','required')
+                                   ? 'border-red-400 focus:shadow-[2px_2px_0_#f87171]'
+                                   : 'border-stone-300 dark:border-slate-600 hover:border-stone-400 dark:hover:border-slate-500 focus:border-black dark:focus:border-slate-400 focus:shadow-[3px_3px_0_#000]'">
+                        <p *ngIf="hasRecepcionError('fechaIngreso','required')" class="text-[8px] font-bold text-red-500 mt-1">Campo requerido.</p>
+                    </div>
+                    <div>
+                        <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1.5 block">Orden de Compra</label>
+                        <input type="text" formControlName="ordenCompra" placeholder="PO-001"
+                               class="w-full h-10 text-sm font-black uppercase bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-xl px-3 outline-none transition-all duration-150 placeholder:text-stone-300 dark:placeholder:text-slate-600 hover:border-stone-400 dark:hover:border-slate-500 focus:border-black dark:focus:border-slate-400 focus:shadow-[3px_3px_0_#000]">
+                    </div>
                 </div>
-            </div>
-        </form>
-        <div class="border-t-[3px] border-black p-5 bg-[#f8f9fc] dark:bg-[#0F172AFF] flex justify-end shrink-0">
-            <button (click)="cerrarModalRecepcion()" class="px-8 py-3 bg-amber-400 text-black font-black text-xs border-[3px] border-black rounded-xl shadow-[4px_4px_0px_0px_#000] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[1px_1px_0px_0px_#000] transition-all uppercase tracking-wider">Aceptar Datos</button>
+
+                <!-- Proveedor -->
+                <div>
+                    <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1.5 block">Proveedor</label>
+                    <input type="text" formControlName="proveedor" [matAutocomplete]="autoProv"
+                           placeholder="Buscar proveedor..."
+                           class="w-full h-10 text-sm font-bold bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-xl px-3 outline-none transition-all duration-150 placeholder:text-stone-300 dark:placeholder:text-slate-600 hover:border-stone-400 dark:hover:border-slate-500 focus:border-black dark:focus:border-slate-400 focus:shadow-[3px_3px_0_#000]">
+                    <mat-autocomplete #autoProv="matAutocomplete" [displayWith]="displayProveedor">
+                        <mat-option *ngFor="let p of proveedoresFiltrados" [value]="p">
+                            <span class="font-bold text-sm">{{ p.nombre }}</span>
+                        </mat-option>
+                    </mat-autocomplete>
+                </div>
+
+                <!-- Recibido por + Conforme por -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div class="relative">
+                        <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1.5 block">Recibido en almacén por <span class="text-red-500">*</span></label>
+                        <div class="relative">
+                            <input type="text" [value]="recepcionForm.get('funcionarioRecibe')?.value"
+                                   (input)="onFuncionarioInput($any($event.target).value)"
+                                   (blur)="hideFuncDropdown()"
+                                   placeholder="Buscar funcionario..." autocomplete="off"
+                                   class="w-full h-10 text-sm font-bold uppercase bg-white dark:bg-slate-800 dark:text-white border-2 rounded-xl px-3 pr-8 outline-none transition-all duration-150 placeholder:text-stone-300 dark:placeholder:text-slate-600"
+                                   [class]="hasRecepcionError('funcionarioRecibe','required')
+                                       ? 'border-red-400 focus:shadow-[2px_2px_0_#f87171]'
+                                       : 'border-stone-300 dark:border-slate-600 hover:border-stone-400 dark:hover:border-slate-500 focus:border-black dark:focus:border-slate-400 focus:shadow-[3px_3px_0_#000]'">
+                            <mat-spinner *ngIf="funcLoading" diameter="14" class="absolute right-3 top-3"></mat-spinner>
+                        </div>
+                        <div *ngIf="showFuncDropdown"
+                             class="absolute z-50 w-full mt-1 top-full border-2 border-black rounded-xl bg-white dark:bg-slate-800 shadow-[4px_4px_0_#000] overflow-hidden max-h-48 overflow-y-auto divide-y divide-stone-100 dark:divide-slate-700">
+                            <div *ngFor="let f of funcFiltrados" (mousedown)="selectFuncionario(f)"
+                                 class="px-3 py-2.5 hover:bg-amber-50 dark:hover:bg-slate-700 cursor-pointer transition-colors">
+                                <div class="text-xs font-black text-black dark:text-white uppercase">{{ f.nombre }}</div>
+                                <div class="text-[9px] font-bold text-stone-400 dark:text-slate-400 uppercase mt-0.5">{{ f.cargo }}</div>
+                            </div>
+                        </div>
+                        <p *ngIf="hasRecepcionError('funcionarioRecibe','required')" class="text-[8px] font-bold text-red-500 mt-1">Campo requerido.</p>
+                    </div>
+                    <div>
+                        <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1.5 block">Entregado / Conforme por</label>
+                        <input type="text" formControlName="recibiConforme" placeholder="Nombre completo"
+                               class="w-full h-10 text-sm font-black uppercase bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-xl px-3 outline-none transition-all duration-150 placeholder:text-stone-300 dark:placeholder:text-slate-600 hover:border-stone-400 dark:hover:border-slate-500 focus:border-black dark:focus:border-slate-400 focus:shadow-[3px_3px_0_#000]">
+                    </div>
+                </div>
+
+            </form>
+        </div>
+
+        <!-- Footer -->
+        <div class="border-t-2 border-black bg-stone-200 dark:bg-slate-800 px-5 py-3 flex justify-end shrink-0">
+            <button type="button" (click)="cerrarModalRecepcion()"
+                    class="flex items-center gap-2 px-5 py-2 bg-amber-400 text-black font-black text-[10px] border-2 border-black rounded-xl shadow-[3px_3px_0_#000] hover:shadow-none hover:translate-x-[3px] hover:translate-y-[3px] transition-all uppercase">
+                <mat-icon class="!text-sm">check</mat-icon>
+                Aceptar Datos
+            </button>
         </div>
     </div>
 </ng-template>
@@ -480,128 +515,188 @@
 <!--  MODAL: DETALLE HERRAMIENTA (RECEPCIÓN)                                   -->
 <!-- ══════════════════════════════════════════════════════════════════════════ -->
 <ng-template #herramientaModal>
-    <div class="bg-[#f8f9fc] dark:bg-slate-900 rounded-2xl border-[3px] border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] flex flex-col w-[95vw] max-w-[950px] max-h-[90vh] overflow-hidden m-auto animate-fadeIn">
-        <div class="bg-[#0F172AFF] text-white px-5 py-4 border-b-[3px] border-black flex justify-between items-center shrink-0 cursor-move" cdkDrag cdkDragRootElement=".cdk-overlay-pane" cdkDragHandle>
-            <h2 class="text-lg font-black uppercase flex items-center gap-3 tracking-wider pointer-events-none">
-                <mat-icon class="text-amber-400 !text-2xl">{{ editingIndex !== null ? 'edit' : 'handyman' }}</mat-icon>
-                {{ editingIndex !== null ? 'Editar Detalles de Ingreso' : 'Recepcionar Herramienta' }}
-            </h2>
-            <button (click)="cerrarModalHerramienta()" class="w-10 h-10 flex items-center justify-center bg-black text-white font-black border-[2px] border-white/20 rounded-lg hover:bg-gray-800 transition-all cursor-pointer">
-                <mat-icon class="!text-xl">close</mat-icon>
-            </button>
+    <div class="bg-stone-100 dark:bg-slate-900 border-2 border-black overflow-hidden flex flex-col h-full"
+         style="box-shadow: 6px 6px 0 #000">
+
+        <!-- Header -->
+        <div class="bg-[#0F172A] px-5 py-3.5 flex items-center gap-3 shrink-0 select-none"
+             cdkDrag cdkDragRootElement=".cdk-overlay-pane" cdkDragHandle style="cursor:grab">
+            <div class="w-9 h-9 rounded bg-amber-400 border-2 border-black flex items-center justify-center shadow-[2px_2px_0_#fbbf24] shrink-0">
+                <mat-icon class="!text-lg text-black">{{ editingIndex !== null ? 'edit' : 'handyman' }}</mat-icon>
+            </div>
+            <div>
+                <p class="text-[9px] text-slate-400 font-bold uppercase tracking-[0.18em] leading-none mb-0.5">Ingresos · Recepción Manual</p>
+                <h2 class="text-sm text-white font-black uppercase tracking-tight leading-none">
+                    {{ editingIndex !== null ? 'Editar Detalles de Ingreso' : 'Recepcionar Herramienta' }}
+                </h2>
+            </div>
         </div>
-        <form [formGroup]="herramientaForm" class="p-6 flex flex-col gap-5 overflow-y-auto custom-scrollbar-ing">
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
-                <div>
-                    <label class="text-[10px] font-black uppercase tracking-wider text-gray-700 dark:text-gray-400 block mb-1">P/N *</label>
-                    <input type="text" formControlName="pn" placeholder="ABC-123" class="w-full h-12 text-sm font-black border-[3px] rounded-lg px-4 bg-white dark:bg-slate-800 text-black dark:text-white outline-none focus:shadow-[3px_3px_0px_0px_#000] transition-shadow uppercase" [ngClass]="hasHerramientaError('pn','required') ? 'border-red-500' : 'border-black'">
-                </div>
-                <div>
-                    <label class="text-[10px] font-black uppercase tracking-wider text-gray-700 dark:text-gray-400 block mb-1">S/N</label>
-                    <input type="text" formControlName="sn" placeholder="Nro Serie" class="w-full h-12 text-sm font-black border-[3px] border-black rounded-lg px-4 bg-white dark:bg-slate-800 text-black dark:text-white outline-none focus:shadow-[3px_3px_0px_0px_#000] transition-shadow uppercase">
-                </div>
-                <div>
-                    <label class="text-[10px] font-black uppercase tracking-wider text-gray-700 dark:text-gray-400 block mb-1">Código BOA *</label>
-                    <div class="flex gap-2">
-                        <input type="text" formControlName="codigoBoa" class="flex-1 w-0 h-12 text-sm font-black border-[3px] rounded-lg px-4 bg-white dark:bg-slate-800 text-black dark:text-white outline-none focus:shadow-[3px_3px_0px_0px_#000] transition-shadow uppercase" [ngClass]="hasHerramientaError('codigoBoa','required') ? 'border-red-500' : 'border-black'">
-                        <button type="button" (click)="generarCodigoBoa()" class="h-12 w-12 bg-[#0F172AFF] text-white border-[3px] border-black rounded-lg shadow-[3px_3px_0px_0px_#000] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[1px_1px_0px_0px_#000] transition-all flex items-center justify-center shrink-0" matTooltip="Generar correlativo">
-                            <mat-icon class="!text-lg">auto_awesome</mat-icon>
-                        </button>
-                    </div>
-                </div>
-            </div>
 
-            <div class="bg-blue-50 dark:bg-blue-900/10 border-[3px] border-blue-400 rounded-xl p-5">
-                <h3 class="text-[10px] font-black uppercase tracking-widest text-blue-800 dark:text-blue-300 border-b-[2px] border-blue-200 pb-2 mb-4 flex items-center gap-2">
-                    <mat-icon class="!text-base">where_to_vote</mat-icon> Ubicación Física
-                </h3>
-                <div class="grid grid-cols-2 gap-5">
+        <!-- Body -->
+        <div class="flex-1 overflow-y-auto px-5 py-5 flex flex-col gap-4 custom-scrollbar-ing">
+            <form [formGroup]="herramientaForm" class="flex flex-col gap-4">
+
+                <!-- P/N + S/N + Código BOA -->
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     <div>
-                        <label class="text-[10px] font-black uppercase tracking-wider text-blue-800 dark:text-blue-300 block mb-1">Estante</label>
-                        <input type="text" formControlName="estante" placeholder="Ej: A-1" class="w-full h-12 text-sm font-black border-[3px] border-blue-400 rounded-lg px-4 bg-white text-black outline-none focus:shadow-[3px_3px_0px_0px_#3b82f6] transition-shadow uppercase">
+                        <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1.5 block">P/N <span class="text-red-500">*</span></label>
+                        <input type="text" formControlName="pn" placeholder="ABC-123"
+                               class="w-full h-10 text-sm font-black uppercase bg-white dark:bg-slate-800 dark:text-white border-2 rounded-xl px-3 outline-none transition-all duration-150 placeholder:text-stone-300 dark:placeholder:text-slate-600"
+                               [class]="hasHerramientaError('pn','required')
+                                   ? 'border-red-400 focus:shadow-[2px_2px_0_#f87171]'
+                                   : 'border-stone-300 dark:border-slate-600 hover:border-stone-400 dark:hover:border-slate-500 focus:border-black dark:focus:border-slate-400 focus:shadow-[3px_3px_0_#000]'">
+                        <p *ngIf="hasHerramientaError('pn','required')" class="text-[8px] font-bold text-red-500 mt-1">Campo requerido.</p>
                     </div>
                     <div>
-                        <label class="text-[10px] font-black uppercase tracking-wider text-blue-800 dark:text-blue-300 block mb-1">Nivel / Lugar</label>
-                        <input type="text" formControlName="nivelUbicacion" placeholder="Ej: 2" class="w-full h-12 text-sm font-black border-[3px] border-blue-400 rounded-lg px-4 bg-white text-black outline-none focus:shadow-[3px_3px_0px_0px_#3b82f6] transition-shadow uppercase">
-                    </div>
-                </div>
-            </div>
-
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
-                <div>
-                    <label class="text-[10px] font-black uppercase tracking-wider text-gray-700 dark:text-gray-400 block mb-1">Descripción *</label>
-                    <input type="text" formControlName="descripcion" placeholder="Nombre completo" class="w-full h-12 text-sm font-black border-[3px] rounded-lg px-4 bg-white dark:bg-slate-800 text-black dark:text-white outline-none focus:shadow-[3px_3px_0px_0px_#000] transition-shadow uppercase" [ngClass]="hasHerramientaError('descripcion','required') ? 'border-red-500' : 'border-black'">
-                </div>
-                <div class="grid grid-cols-2 gap-5">
-                    <div>
-                        <label class="text-[10px] font-black uppercase tracking-wider text-gray-700 dark:text-gray-400 block mb-1">Marca *</label>
-                        <input type="text" formControlName="marca" [matAutocomplete]="marcaAuto" class="w-full h-12 text-sm font-black border-[3px] rounded-lg px-4 bg-white dark:bg-slate-800 text-black dark:text-white outline-none focus:shadow-[3px_3px_0px_0px_#000] transition-shadow uppercase" [ngClass]="hasHerramientaError('marca','required') ? 'border-red-500' : 'border-black'">
-                        <mat-autocomplete #marcaAuto="matAutocomplete">
-                            <mat-option *ngFor="let m of marcasFiltradas" [value]="m">{{m}}</mat-option>
-                        </mat-autocomplete>
+                        <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1.5 block">S/N</label>
+                        <input type="text" formControlName="sn" placeholder="Nro Serie"
+                               class="w-full h-10 text-sm font-black uppercase bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-xl px-3 outline-none transition-all duration-150 placeholder:text-stone-300 dark:placeholder:text-slate-600 hover:border-stone-400 dark:hover:border-slate-500 focus:border-black dark:focus:border-slate-400 focus:shadow-[3px_3px_0_#000]">
                     </div>
                     <div>
-                        <label class="text-[10px] font-black uppercase tracking-wider text-gray-700 dark:text-gray-400 block mb-1">Cantidad *</label>
-                        <input type="number" formControlName="cantidad" min="1" class="w-full h-12 text-base text-center font-black border-[3px] border-black rounded-lg px-4 bg-white dark:bg-slate-800 text-black dark:text-white outline-none focus:shadow-[3px_3px_0px_0px_#000] transition-shadow">
+                        <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1.5 block">Código BOA <span class="text-red-500">*</span></label>
+                        <div class="flex gap-2">
+                            <input type="text" formControlName="codigoBoa"
+                                   class="flex-1 w-0 h-10 text-sm font-black uppercase bg-white dark:bg-slate-800 dark:text-white border-2 rounded-xl px-3 outline-none transition-all duration-150"
+                                   [class]="hasHerramientaError('codigoBoa','required')
+                                       ? 'border-red-400 focus:shadow-[2px_2px_0_#f87171]'
+                                       : 'border-stone-300 dark:border-slate-600 hover:border-stone-400 dark:hover:border-slate-500 focus:border-black dark:focus:border-slate-400 focus:shadow-[3px_3px_0_#000]'">
+                            <button type="button" (click)="generarCodigoBoa()"
+                                    class="h-10 w-10 bg-amber-400 border-2 border-black rounded-xl shadow-[2px_2px_0_#000] hover:shadow-none hover:translate-x-px hover:translate-y-px transition-all flex items-center justify-center shrink-0"
+                                    matTooltip="Generar correlativo">
+                                <mat-icon class="!text-base text-black">auto_awesome</mat-icon>
+                            </button>
+                        </div>
+                        <p *ngIf="hasHerramientaError('codigoBoa','required')" class="text-[8px] font-bold text-red-500 mt-1">Campo requerido.</p>
                     </div>
                 </div>
-            </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
-                <div>
-                    <label class="text-[10px] font-black uppercase tracking-wider text-gray-700 dark:text-gray-400 block mb-1">Tipo *</label>
-                    <select formControlName="tipo" class="w-full h-12 text-xs font-black border-[3px] border-black rounded-lg px-3 bg-white dark:bg-slate-800 text-black dark:text-white outline-none cursor-pointer">
-                        <option *ngFor="let t of tiposHerramienta" [value]="t.value">{{ t.label }}</option>
-                    </select>
-                </div>
-                <div>
-                    <label class="text-[10px] font-black uppercase tracking-wider text-gray-700 dark:text-gray-400 block mb-1">Estado *</label>
-                    <select formControlName="estado" class="w-full h-12 text-xs font-black border-[3px] border-black rounded-lg px-3 bg-white dark:bg-slate-800 text-black dark:text-white outline-none cursor-pointer">
-                        <option *ngFor="let e of estadosNueva" [value]="e.value">{{ e.label }}</option>
-                    </select>
-                </div>
-                <div>
-                    <label class="text-[10px] font-black uppercase tracking-wider text-gray-700 dark:text-gray-400 block mb-1">Unidad Medida *</label>
-                    <select formControlName="unidadMedida" class="w-full h-12 text-xs font-black border-[3px] border-black rounded-lg px-3 bg-white dark:bg-slate-800 text-black dark:text-white outline-none cursor-pointer">
-                        <option *ngFor="let u of unidadesMedida" [value]="u.value">{{ u.label }}</option>
-                    </select>
-                </div>
-            </div>
-
-            <div class="grid grid-cols-2 gap-5">
-                <div>
-                    <label class="text-[10px] font-black uppercase tracking-wider text-gray-700 dark:text-gray-400 block mb-1">Criticidad *</label>
-                    <select formControlName="nivelCriticidad" class="w-full h-12 text-xs font-black border-[3px] border-black rounded-lg px-3 bg-white dark:bg-slate-800 text-black dark:text-white outline-none cursor-pointer">
-                        <option *ngFor="let n of nivelesCriticidad" [value]="n.value">{{ n.label }}</option>
-                    </select>
-                </div>
-                <div>
-                    <label class="text-[10px] font-black uppercase tracking-wider text-gray-700 dark:text-gray-400 block mb-1">Fabricación *</label>
-                    <select formControlName="fabricacion" class="w-full h-12 text-xs font-black border-[3px] border-black rounded-lg px-3 bg-white dark:bg-slate-800 text-black dark:text-white outline-none cursor-pointer">
-                        <option *ngFor="let f of tiposFabricacion" [value]="f.value">{{ f.label }}</option>
-                    </select>
-                </div>
-            </div>
-
-            <div class="flex items-center gap-4 p-4 bg-amber-50 dark:bg-amber-900/10 border-[3px] border-amber-400 rounded-xl">
-                <mat-slide-toggle formControlName="requiereCalibracion" color="warn">
-                    <span class="font-black text-xs uppercase tracking-wider text-black dark:text-white">Requiere Calibración</span>
-                </mat-slide-toggle>
-                <div *ngIf="herramientaForm.get('requiereCalibracion')?.value" class="flex flex-1 gap-3">
-                    <div class="flex-1">
-                        <label class="text-[10px] font-black uppercase tracking-wider text-amber-800 dark:text-amber-300 block mb-1">Intervalo (días) *</label>
-                        <input type="number" formControlName="intervaloCalibracion" min="1" class="w-full h-10 text-sm font-black border-[2px] border-amber-400 rounded-lg px-3 bg-white text-black outline-none">
+                <!-- Sección Ubicación Física -->
+                <div class="border-2 border-black rounded-xl overflow-hidden shadow-[3px_3px_0_#000]">
+                    <div class="bg-[#0F172A] px-4 py-2 flex items-center gap-2">
+                        <mat-icon class="!text-sm text-amber-400">where_to_vote</mat-icon>
+                        <span class="text-[9px] font-black uppercase tracking-[0.18em] text-slate-300">Ubicación Física</span>
                     </div>
-                    <div class="flex-1">
-                        <label class="text-[10px] font-black uppercase tracking-wider text-amber-800 dark:text-amber-300 block mb-1">Fecha Cal.</label>
-                        <input type="date" formControlName="fechaCalibracion" class="w-full h-10 text-sm font-black border-[2px] border-amber-400 rounded-lg px-3 bg-white text-black outline-none cursor-pointer">
+                    <div class="bg-white dark:bg-slate-800 p-4 grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1.5 block">Estante</label>
+                            <input type="text" formControlName="estante" placeholder="Ej: A-1"
+                                   class="w-full h-10 text-sm font-bold uppercase bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-xl px-3 outline-none transition-all duration-150 placeholder:text-stone-300 dark:placeholder:text-slate-600 hover:border-stone-400 dark:hover:border-slate-500 focus:border-black dark:focus:border-slate-400 focus:shadow-[3px_3px_0_#000]">
+                        </div>
+                        <div>
+                            <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1.5 block">Nivel / Lugar</label>
+                            <input type="text" formControlName="nivelUbicacion" placeholder="Ej: 2"
+                                   class="w-full h-10 text-sm font-bold uppercase bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-xl px-3 outline-none transition-all duration-150 placeholder:text-stone-300 dark:placeholder:text-slate-600 hover:border-stone-400 dark:hover:border-slate-500 focus:border-black dark:focus:border-slate-400 focus:shadow-[3px_3px_0_#000]">
+                        </div>
                     </div>
                 </div>
-            </div>
-        </form>
-        <div class="border-t-[3px] border-black p-5 bg-[#f8f9fc] dark:bg-[#0F172AFF] flex justify-end gap-4 shrink-0">
-            <button (click)="cerrarModalHerramienta()" class="px-6 py-3 bg-white dark:bg-slate-700 text-black dark:text-white font-black text-xs border-[3px] border-black rounded-xl shadow-[4px_4px_0px_0px_#000] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[1px_1px_0px_0px_#000] transition-all uppercase">Cancelar</button>
-            <button (click)="agregarHerramienta()" class="px-6 py-3 bg-amber-400 text-black font-black text-xs border-[3px] border-black rounded-xl shadow-[4px_4px_0px_0px_#000] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[1px_1px_0px_0px_#000] transition-all uppercase flex items-center gap-2">
+
+                <!-- Descripción + Marca + Cantidad -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div>
+                        <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1.5 block">Descripción <span class="text-red-500">*</span></label>
+                        <input type="text" formControlName="descripcion" placeholder="Nombre completo"
+                               class="w-full h-10 text-sm font-bold bg-white dark:bg-slate-800 dark:text-white border-2 rounded-xl px-3 outline-none transition-all duration-150 placeholder:text-stone-300 dark:placeholder:text-slate-600"
+                               [class]="hasHerramientaError('descripcion','required')
+                                   ? 'border-red-400 focus:shadow-[2px_2px_0_#f87171]'
+                                   : 'border-stone-300 dark:border-slate-600 hover:border-stone-400 dark:hover:border-slate-500 focus:border-black dark:focus:border-slate-400 focus:shadow-[3px_3px_0_#000]'">
+                        <p *ngIf="hasHerramientaError('descripcion','required')" class="text-[8px] font-bold text-red-500 mt-1">Campo requerido.</p>
+                    </div>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1.5 block">Marca <span class="text-red-500">*</span></label>
+                            <input type="text" formControlName="marca" [matAutocomplete]="marcaAuto"
+                                   class="w-full h-10 text-sm font-bold uppercase bg-white dark:bg-slate-800 dark:text-white border-2 rounded-xl px-3 outline-none transition-all duration-150 placeholder:text-stone-300 dark:placeholder:text-slate-600"
+                                   [class]="hasHerramientaError('marca','required')
+                                       ? 'border-red-400 focus:shadow-[2px_2px_0_#f87171]'
+                                       : 'border-stone-300 dark:border-slate-600 hover:border-stone-400 dark:hover:border-slate-500 focus:border-black dark:focus:border-slate-400 focus:shadow-[3px_3px_0_#000]'">
+                            <mat-autocomplete #marcaAuto="matAutocomplete">
+                                <mat-option *ngFor="let m of marcasFiltradas" [value]="m">{{m}}</mat-option>
+                            </mat-autocomplete>
+                            <p *ngIf="hasHerramientaError('marca','required')" class="text-[8px] font-bold text-red-500 mt-1">Campo requerido.</p>
+                        </div>
+                        <div>
+                            <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1.5 block">Cantidad <span class="text-red-500">*</span></label>
+                            <input type="number" formControlName="cantidad" min="1"
+                                   class="w-full h-10 text-base text-center font-black bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-xl px-3 outline-none transition-all duration-150 hover:border-stone-400 dark:hover:border-slate-500 focus:border-black dark:focus:border-slate-400 focus:shadow-[3px_3px_0_#000]">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tipo + Estado + Unidad Medida -->
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div>
+                        <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1.5 block">Tipo <span class="text-red-500">*</span></label>
+                        <select formControlName="tipo"
+                                class="w-full h-10 text-sm font-bold bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-xl px-3 outline-none transition-all duration-150 cursor-pointer hover:border-stone-400 dark:hover:border-slate-500 focus:border-black dark:focus:border-slate-400 focus:shadow-[3px_3px_0_#000]">
+                            <option *ngFor="let t of tiposHerramienta" [value]="t.value">{{ t.label }}</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1.5 block">Estado <span class="text-red-500">*</span></label>
+                        <select formControlName="estado"
+                                class="w-full h-10 text-sm font-bold bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-xl px-3 outline-none transition-all duration-150 cursor-pointer hover:border-stone-400 dark:hover:border-slate-500 focus:border-black dark:focus:border-slate-400 focus:shadow-[3px_3px_0_#000]">
+                            <option *ngFor="let e of estadosNueva" [value]="e.value">{{ e.label }}</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1.5 block">Unidad Medida <span class="text-red-500">*</span></label>
+                        <select formControlName="unidadMedida"
+                                class="w-full h-10 text-sm font-bold bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-xl px-3 outline-none transition-all duration-150 cursor-pointer hover:border-stone-400 dark:hover:border-slate-500 focus:border-black dark:focus:border-slate-400 focus:shadow-[3px_3px_0_#000]">
+                            <option *ngFor="let u of unidadesMedida" [value]="u.value">{{ u.label }}</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Criticidad + Fabricación -->
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1.5 block">Criticidad <span class="text-red-500">*</span></label>
+                        <select formControlName="nivelCriticidad"
+                                class="w-full h-10 text-sm font-bold bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-xl px-3 outline-none transition-all duration-150 cursor-pointer hover:border-stone-400 dark:hover:border-slate-500 focus:border-black dark:focus:border-slate-400 focus:shadow-[3px_3px_0_#000]">
+                            <option *ngFor="let n of nivelesCriticidad" [value]="n.value">{{ n.label }}</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1.5 block">Fabricación <span class="text-red-500">*</span></label>
+                        <select formControlName="fabricacion"
+                                class="w-full h-10 text-sm font-bold bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-xl px-3 outline-none transition-all duration-150 cursor-pointer hover:border-stone-400 dark:hover:border-slate-500 focus:border-black dark:focus:border-slate-400 focus:shadow-[3px_3px_0_#000]">
+                            <option *ngFor="let f of tiposFabricacion" [value]="f.value">{{ f.label }}</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Calibración -->
+                <div class="border-2 border-black rounded-xl overflow-hidden shadow-[3px_3px_0_#000]">
+                    <div class="bg-amber-50 dark:bg-amber-900/20 px-4 py-3 flex items-center gap-4 flex-wrap">
+                        <mat-slide-toggle formControlName="requiereCalibracion" color="warn">
+                            <span class="font-black text-[10px] uppercase tracking-[0.18em] text-black dark:text-white">Requiere Calibración</span>
+                        </mat-slide-toggle>
+                        <div *ngIf="herramientaForm.get('requiereCalibracion')?.value" class="flex flex-1 gap-3 min-w-0">
+                            <div class="flex-1 min-w-0">
+                                <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1.5 block">Intervalo (días) <span class="text-red-500">*</span></label>
+                                <input type="number" formControlName="intervaloCalibracion" min="1"
+                                       class="w-full h-10 text-sm font-black bg-white dark:bg-slate-800 dark:text-white border-2 border-amber-400 rounded-xl px-3 outline-none transition-all duration-150 focus:border-black focus:shadow-[2px_2px_0_#000]">
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1.5 block">Fecha Cal.</label>
+                                <input type="date" formControlName="fechaCalibracion"
+                                       class="w-full h-10 text-sm font-black bg-white dark:bg-slate-800 dark:text-white border-2 border-amber-400 rounded-xl px-3 outline-none transition-all duration-150 cursor-pointer focus:border-black focus:shadow-[2px_2px_0_#000]">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </form>
+        </div>
+
+        <!-- Footer -->
+        <div class="border-t-2 border-black bg-stone-200 dark:bg-slate-800 px-5 py-3 flex justify-between items-center shrink-0">
+            <button type="button" (click)="cerrarModalHerramienta()"
+                    class="px-4 py-2 bg-[#FF1414] text-white font-black text-[10px] border-2 border-black rounded-xl shadow-[2px_2px_0_#000] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all uppercase">
+                Cancelar
+            </button>
+            <button type="button" (click)="agregarHerramienta()"
+                    class="flex items-center gap-2 px-5 py-2 bg-amber-400 text-black font-black text-[10px] border-2 border-black rounded-xl shadow-[3px_3px_0_#000] hover:shadow-none hover:translate-x-[3px] hover:translate-y-[3px] transition-all uppercase">
                 <mat-icon class="!text-sm">{{ editingIndex !== null ? 'save' : 'move_to_inbox' }}</mat-icon>
                 {{ editingIndex !== null ? 'Actualizar Recepción' : 'Añadir a Recepción' }}
             </button>
@@ -681,78 +776,127 @@
 <!--  MODAL: DATOS GENERALES AJUSTE                                            -->
 <!-- ══════════════════════════════════════════════════════════════════════════ -->
 <ng-template #datosAjusteModal>
-    <div class="bg-[#f8f9fc] dark:bg-slate-900 rounded-2xl border-[3px] border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] flex flex-col w-[95vw] max-w-[800px] max-h-[90vh] overflow-hidden m-auto animate-fadeIn">
-        <div class="bg-[#0F172AFF] text-white px-5 py-4 border-b-[3px] border-black flex justify-between items-center shrink-0 cursor-move" cdkDrag cdkDragRootElement=".cdk-overlay-pane" cdkDragHandle>
-            <h2 class="text-lg font-black uppercase flex items-center gap-3 tracking-wider pointer-events-none">
-                <mat-icon class="text-amber-400 !text-2xl">edit_document</mat-icon> Datos Generales de Ajuste
-            </h2>
-            <button (click)="cerrarModalDatosAjuste()" class="w-10 h-10 flex items-center justify-center bg-black text-white font-black border-[2px] border-white/20 rounded-lg hover:bg-gray-800 transition-all cursor-pointer">
-                <mat-icon class="!text-xl">close</mat-icon>
-            </button>
+    <div class="bg-stone-100 dark:bg-slate-900 border-2 border-black overflow-hidden flex flex-col h-full"
+         style="box-shadow: 6px 6px 0 #000">
+
+        <!-- Header -->
+        <div class="bg-[#0F172A] px-5 py-3.5 flex items-center gap-3 shrink-0 select-none"
+             cdkDrag cdkDragRootElement=".cdk-overlay-pane" cdkDragHandle style="cursor:grab">
+            <div class="w-9 h-9 rounded bg-amber-400 border-2 border-black flex items-center justify-center shadow-[2px_2px_0_#fbbf24] shrink-0">
+                <mat-icon class="!text-lg text-black">edit_document</mat-icon>
+            </div>
+            <div>
+                <p class="text-[9px] text-slate-400 font-bold uppercase tracking-[0.18em] leading-none mb-0.5">Ajuste Ingreso</p>
+                <h2 class="text-sm text-white font-black uppercase tracking-tight leading-none">Datos Generales del Ajuste</h2>
+            </div>
         </div>
-        <div class="flex flex-col flex-1 overflow-y-auto p-5 bg-white dark:bg-slate-800 custom-scrollbar-ing">
-            <form [formGroup]="ajusteForm" class="flex flex-col bg-[#f8f9fc] dark:bg-slate-900 border-[3px] border-black rounded-xl p-5 shadow-[4px_4px_0px_0px_#000] gap-4">
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+
+        <!-- Body -->
+        <div class="flex-1 overflow-y-auto px-5 py-5 flex flex-col gap-4 custom-scrollbar-ing">
+            <form [formGroup]="ajusteForm" class="flex flex-col gap-4">
+
+                <!-- Tipo + Fecha -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
-                        <label class="text-[10px] font-black uppercase tracking-wider text-gray-700 dark:text-gray-400 block mb-1">Tipo de Ajuste *</label>
-                        <select formControlName="tipoAjuste" class="w-full h-10 text-xs font-black border-[2px] border-black rounded-lg px-3 bg-white dark:bg-slate-800 text-black dark:text-white outline-none focus:shadow-[3px_3px_0px_0px_#000] transition-shadow cursor-pointer">
+                        <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1.5 block">Tipo de Ajuste <span class="text-red-500">*</span></label>
+                        <select formControlName="tipoAjuste"
+                                class="w-full h-10 text-sm font-bold bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-xl px-3 outline-none transition-all duration-150 cursor-pointer hover:border-stone-400 dark:hover:border-slate-500 focus:border-black dark:focus:border-slate-400 focus:shadow-[3px_3px_0_#000]">
                             <option *ngFor="let t of tiposAjuste" [value]="t.value">{{ t.label }}</option>
                         </select>
                     </div>
                     <div>
-                        <label class="text-[10px] font-black uppercase tracking-wider text-gray-700 dark:text-gray-400 block mb-1">Fecha de Ajuste *</label>
-                        <input type="date" formControlName="fecha" class="w-full h-10 text-xs font-black border-[2px] rounded-lg px-3 bg-white dark:bg-slate-800 text-black dark:text-white outline-none focus:shadow-[3px_3px_0px_0px_#000] transition-shadow cursor-pointer" [ngClass]="hasAjusteError('fecha','required') ? 'border-red-500' : 'border-black'">
+                        <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1.5 block">Fecha de Ajuste <span class="text-red-500">*</span></label>
+                        <input type="date" formControlName="fecha"
+                               class="w-full h-10 text-sm font-bold bg-white dark:bg-slate-800 dark:text-white border-2 rounded-xl px-3 outline-none transition-all duration-150 cursor-pointer"
+                               [class]="hasAjusteError('fecha','required')
+                                   ? 'border-red-400 focus:shadow-[2px_2px_0_#f87171]'
+                                   : 'border-stone-300 dark:border-slate-600 hover:border-stone-400 dark:hover:border-slate-500 focus:border-black dark:focus:border-slate-400 focus:shadow-[3px_3px_0_#000]'">
+                        <p *ngIf="hasAjusteError('fecha','required')" class="text-[8px] font-bold text-red-500 mt-1">Campo requerido.</p>
                     </div>
                 </div>
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-2">
+
+                <!-- Realizado Por + Aprobado Por -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div class="relative">
-                        <label class="text-[10px] font-black uppercase tracking-wider text-gray-700 dark:text-gray-400 block mb-1">Realizado Por *</label>
+                        <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1.5 block">Realizado Por <span class="text-red-500">*</span></label>
                         <div class="relative">
-                            <input type="text" [value]="ajusteForm.get('realizadoPorInput')?.value" (input)="onRealizadoPorInput($any($event.target).value)" (blur)="hideRealizadoPorDropdown()" placeholder="Nombre de quien ajusta..." autocomplete="off"
-                                   class="w-full h-10 text-xs font-black border-[2px] rounded-lg px-3 pr-8 bg-white dark:bg-slate-800 text-black dark:text-white outline-none focus:shadow-[3px_3px_0px_0px_#000] transition-shadow uppercase"
-                                   [ngClass]="hasAjusteError('realizadoPor','required') ? 'border-red-500' : 'border-black'">
-                            <mat-spinner *ngIf="realizadoPorLoading" diameter="16" class="absolute right-3 top-3"></mat-spinner>
+                            <input type="text" [value]="ajusteForm.get('realizadoPorInput')?.value"
+                                   (input)="onRealizadoPorInput($any($event.target).value)"
+                                   (blur)="hideRealizadoPorDropdown()"
+                                   placeholder="Buscar funcionario..." autocomplete="off"
+                                   class="w-full h-10 text-sm font-bold uppercase bg-white dark:bg-slate-800 dark:text-white border-2 rounded-xl px-3 pr-8 outline-none transition-all duration-150 placeholder:text-stone-300 dark:placeholder:text-slate-600"
+                                   [class]="hasAjusteError('realizadoPor','required')
+                                       ? 'border-red-400 focus:shadow-[2px_2px_0_#f87171]'
+                                       : 'border-stone-300 dark:border-slate-600 hover:border-stone-400 dark:hover:border-slate-500 focus:border-black dark:focus:border-slate-400 focus:shadow-[3px_3px_0_#000]'">
+                            <mat-spinner *ngIf="realizadoPorLoading" diameter="14" class="absolute right-3 top-3"></mat-spinner>
                         </div>
-                        <div *ngIf="showRealizadoPorDropdown" class="absolute z-50 w-full mt-1 top-full border-[3px] border-black rounded-xl bg-white dark:bg-slate-800 shadow-[6px_6px_0_#000] overflow-hidden max-h-48 overflow-y-auto">
-                            <div *ngFor="let f of realizadoPorFiltrados" (mousedown)="selectRealizadoPor(f)" class="px-4 py-3 hover:bg-amber-100 dark:hover:bg-slate-700 cursor-pointer border-b-[2px] border-gray-200 dark:border-gray-700 last:border-b-0 transition-colors">
+                        <div *ngIf="showRealizadoPorDropdown"
+                             class="absolute z-50 w-full mt-1 top-full border-2 border-black rounded-xl bg-white dark:bg-slate-800 shadow-[4px_4px_0_#000] overflow-hidden max-h-48 overflow-y-auto divide-y divide-stone-100 dark:divide-slate-700">
+                            <div *ngFor="let f of realizadoPorFiltrados" (mousedown)="selectRealizadoPor(f)"
+                                 class="px-3 py-2.5 hover:bg-amber-50 dark:hover:bg-slate-700 cursor-pointer transition-colors">
                                 <div class="text-xs font-black text-black dark:text-white uppercase">{{ f.nombre }}</div>
-                                <div class="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase mt-0.5">{{ f.cargo }}</div>
+                                <div class="text-[9px] font-bold text-stone-400 dark:text-slate-400 uppercase mt-0.5">{{ f.cargo }}</div>
                             </div>
                         </div>
+                        <p *ngIf="hasAjusteError('realizadoPor','required')" class="text-[8px] font-bold text-red-500 mt-1">Campo requerido.</p>
                     </div>
                     <div class="relative">
-                        <label class="text-[10px] font-black uppercase tracking-wider text-gray-700 dark:text-gray-400 block mb-1">Aprobado Por *</label>
+                        <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1.5 block">Aprobado Por <span class="text-red-500">*</span></label>
                         <div class="relative">
-                            <input type="text" [value]="ajusteForm.get('aprobadoPorInput')?.value" (input)="onAprobadoPorInput($any($event.target).value)" (blur)="hideAprobadoPorDropdown()" placeholder="Nombre de quien aprueba..." autocomplete="off"
-                                   class="w-full h-10 text-xs font-black border-[2px] rounded-lg px-3 pr-8 bg-white dark:bg-slate-800 text-black dark:text-white outline-none focus:shadow-[3px_3px_0px_0px_#000] transition-shadow uppercase"
-                                   [ngClass]="hasAjusteError('aprobadoPor','required') ? 'border-red-500' : 'border-black'">
-                            <mat-spinner *ngIf="aprobadoPorLoading" diameter="16" class="absolute right-3 top-3"></mat-spinner>
+                            <input type="text" [value]="ajusteForm.get('aprobadoPorInput')?.value"
+                                   (input)="onAprobadoPorInput($any($event.target).value)"
+                                   (blur)="hideAprobadoPorDropdown()"
+                                   placeholder="Buscar funcionario..." autocomplete="off"
+                                   class="w-full h-10 text-sm font-bold uppercase bg-white dark:bg-slate-800 dark:text-white border-2 rounded-xl px-3 pr-8 outline-none transition-all duration-150 placeholder:text-stone-300 dark:placeholder:text-slate-600"
+                                   [class]="hasAjusteError('aprobadoPor','required')
+                                       ? 'border-red-400 focus:shadow-[2px_2px_0_#f87171]'
+                                       : 'border-stone-300 dark:border-slate-600 hover:border-stone-400 dark:hover:border-slate-500 focus:border-black dark:focus:border-slate-400 focus:shadow-[3px_3px_0_#000]'">
+                            <mat-spinner *ngIf="aprobadoPorLoading" diameter="14" class="absolute right-3 top-3"></mat-spinner>
                         </div>
-                        <div *ngIf="showAprobadoPorDropdown" class="absolute z-50 w-full mt-1 top-full border-[3px] border-black rounded-xl bg-white dark:bg-slate-800 shadow-[6px_6px_0_#000] overflow-hidden max-h-48 overflow-y-auto">
-                            <div *ngFor="let f of aprobadoPorFiltrados" (mousedown)="selectAprobador(f)" class="px-4 py-3 hover:bg-amber-100 dark:hover:bg-slate-700 cursor-pointer border-b-[2px] border-gray-200 dark:border-gray-700 last:border-b-0 transition-colors">
+                        <div *ngIf="showAprobadoPorDropdown"
+                             class="absolute z-50 w-full mt-1 top-full border-2 border-black rounded-xl bg-white dark:bg-slate-800 shadow-[4px_4px_0_#000] overflow-hidden max-h-48 overflow-y-auto divide-y divide-stone-100 dark:divide-slate-700">
+                            <div *ngFor="let f of aprobadoPorFiltrados" (mousedown)="selectAprobador(f)"
+                                 class="px-3 py-2.5 hover:bg-amber-50 dark:hover:bg-slate-700 cursor-pointer transition-colors">
                                 <div class="text-xs font-black text-black dark:text-white uppercase">{{ f.nombre }}</div>
-                                <div class="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase mt-0.5">{{ f.cargo }}</div>
+                                <div class="text-[9px] font-bold text-stone-400 dark:text-slate-400 uppercase mt-0.5">{{ f.cargo }}</div>
                             </div>
                         </div>
+                        <p *ngIf="hasAjusteError('aprobadoPor','required')" class="text-[8px] font-bold text-red-500 mt-1">Campo requerido.</p>
                     </div>
                 </div>
-                <div class="mt-2">
-                    <label class="text-[10px] font-black uppercase tracking-wider text-gray-700 dark:text-gray-400 block mb-1">Documento Respaldo</label>
-                    <div class="flex gap-3">
-                        <input type="text" formControlName="documento" placeholder="EJ: INV-2025-001" class="flex-1 w-0 h-10 text-xs font-black border-[2px] border-black rounded-lg px-3 bg-white dark:bg-slate-800 text-black dark:text-white outline-none focus:shadow-[3px_3px_0px_0px_#000] transition-shadow uppercase">
-                        <button type="button" (click)="generarDocumento()" class="h-10 px-4 bg-[#0F172AFF] text-white font-black text-[10px] uppercase border-[2px] border-black rounded-lg shadow-[3px_3px_0px_0px_#000] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[1px_1px_0px_0px_#000] transition-all flex items-center justify-center shrink-0 tracking-wider" matTooltip="Auto-generar correlativo">
-                            <mat-icon class="!text-base mr-1">auto_awesome</mat-icon> Generar
+
+                <!-- Documento Respaldo -->
+                <div>
+                    <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1.5 block">Documento Respaldo</label>
+                    <div class="flex gap-2">
+                        <input type="text" formControlName="documento" placeholder="EJ: INV-2025-001"
+                               class="flex-1 w-0 h-10 text-sm font-bold uppercase bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-xl px-3 outline-none transition-all duration-150 placeholder:text-stone-300 dark:placeholder:text-slate-600 hover:border-stone-400 dark:hover:border-slate-500 focus:border-black dark:focus:border-slate-400 focus:shadow-[3px_3px_0_#000]">
+                        <button type="button" (click)="generarDocumento()"
+                                class="h-10 px-4 bg-amber-400 text-black font-black text-[10px] uppercase border-2 border-black rounded-xl shadow-[2px_2px_0_#000] hover:shadow-none hover:translate-x-px hover:translate-y-px transition-all flex items-center gap-1.5 shrink-0"
+                                matTooltip="Auto-generar correlativo">
+                            <mat-icon class="!text-sm">auto_awesome</mat-icon> Generar
                         </button>
                     </div>
                 </div>
-                <div class="mt-2">
-                    <label class="text-[10px] font-black uppercase tracking-wider text-gray-700 dark:text-gray-400 block mb-1">Descripción / Motivo</label>
-                    <textarea formControlName="descripcion" rows="3" placeholder="Motivo general del ajuste..." class="w-full text-xs font-bold border-[2px] border-black rounded-lg p-3 bg-white dark:bg-slate-800 text-black dark:text-white outline-none focus:shadow-[3px_3px_0px_0px_#000] transition-shadow resize-none custom-scrollbar-ing"></textarea>
+
+                <!-- Descripción / Motivo -->
+                <div>
+                    <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1.5 block">Descripción / Motivo</label>
+                    <textarea formControlName="descripcion" rows="4"
+                              placeholder="Motivo general del ajuste..."
+                              class="w-full text-sm font-normal bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-xl px-3 py-2.5 outline-none transition-all duration-150 resize-none placeholder:text-stone-300 dark:placeholder:text-slate-600 hover:border-stone-400 dark:hover:border-slate-500 focus:border-black dark:focus:border-slate-400 focus:shadow-[3px_3px_0_#000] custom-scrollbar-ing"></textarea>
                 </div>
+
             </form>
-            <div class="mt-5 flex justify-end">
-                <button (click)="cerrarModalDatosAjuste()" class="px-6 py-3 bg-amber-400 text-black font-black text-xs border-[3px] border-black rounded-xl shadow-[4px_4px_0px_0px_#000] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[1px_1px_0px_0px_#000] transition-all uppercase tracking-wider">Aceptar Datos</button>
-            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="border-t-2 border-black bg-stone-200 dark:bg-slate-800 px-5 py-3 flex justify-end shrink-0">
+            <button type="button" (click)="cerrarModalDatosAjuste()"
+                    class="flex items-center gap-2 px-5 py-2 bg-amber-400 text-black font-black text-[10px] border-2 border-black rounded-xl shadow-[3px_3px_0_#000] hover:shadow-none hover:translate-x-[3px] hover:translate-y-[3px] transition-all uppercase">
+                <mat-icon class="!text-sm">check</mat-icon>
+                Aceptar Datos
+            </button>
         </div>
     </div>
 </ng-template>

@@ -34,18 +34,21 @@ export class FleetService {
     /**
      * Get all aircraft
      */
+    private _normalize(r: any): any[] {
+        return r?.ROOT?.datos ?? r?.datos ?? r?.data ?? [];
+    }
+
     getAircraft(filters?: AircraftFilters): Observable<Aircraft[]> {
         const params: any = {
             start: 0,
-            limit: 50,
-            sort: 'matricula',
+            limit: 200,
+            sort: 'registration',
             dir: 'asc',
             ...filters
         };
-
-        return from(this._api.post('herramientas/aircraft/listAircraft', params)).pipe(
+        return from(this._api.post('herramientas/aircraft/listarAircraft', params)).pipe(
             switchMap((response: any) => {
-                const aircraft = response?.data || [];
+                const aircraft = this._normalize(response);
                 this._aircraft.next(aircraft);
                 return of(aircraft);
             })
@@ -56,16 +59,12 @@ export class FleetService {
      * Get aircraft by id
      */
     getAircraftById(id: string): Observable<Aircraft> {
-        return from(this._api.post('herramientas/aircraft/listAircraft', {
-            start: 0,
-            limit: 1,
-            id_aircraft: id
+        return from(this._api.post('herramientas/aircraft/listarAircraft', {
+            start: 0, limit: 1, id_aircraft: id
         })).pipe(
             switchMap((response: any) => {
-                const aircraft = response?.data?.[0] || null;
-                if (aircraft) {
-                    this._singleAircraft.next(aircraft);
-                }
+                const aircraft = this._normalize(response)[0] || null;
+                if (aircraft) this._singleAircraft.next(aircraft);
                 return of(aircraft);
             })
         );
@@ -75,16 +74,12 @@ export class FleetService {
      * Get aircraft by registration
      */
     getAircraftByRegistration(registration: string): Observable<Aircraft> {
-        return from(this._api.post('herramientas/aircraft/listAircraft', {
-            start: 0,
-            limit: 1,
-            matricula: registration
+        return from(this._api.post('herramientas/aircraft/listarAircraft', {
+            start: 0, limit: 1, registration
         })).pipe(
             switchMap((response: any) => {
-                const aircraft = response?.data?.[0] || null;
-                if (aircraft) {
-                    this._singleAircraft.next(aircraft);
-                }
+                const aircraft = this._normalize(response)[0] || null;
+                if (aircraft) this._singleAircraft.next(aircraft);
                 return of(aircraft);
             })
         );

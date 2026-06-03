@@ -13,26 +13,24 @@
     <!-- ── HEADER ──────────────────────────────────────────────── -->
     <div class="flex flex-col gap-3 shrink-0">
 
-      <!-- Título principal -->
-      <div class="flex items-center gap-4">
-        <div class="flex items-center justify-center w-10 h-10 bg-white dark:bg-[#0F172AFF] border-[3px] border-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] rounded-xl shrink-0">
-          <mat-icon class="text-black dark:text-[#FFC501FF] !text-base">swap_horiz</mat-icon>
+      <!-- Título principal + tabs a la derecha -->
+      <div class="flex items-center justify-between gap-4">
+        <div class="flex items-center gap-4">
+          <div class="flex items-center justify-center w-10 h-10 bg-white dark:bg-[#0F172AFF] border-[3px] border-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] rounded-xl shrink-0">
+            <mat-icon class="text-black dark:text-[#FFC501FF] !text-base">swap_horiz</mat-icon>
+          </div>
+          <div>
+            <h1 class="text-xl font-black text-black dark:text-white uppercase tracking-tighter leading-none">
+              TRASPASO Y RETORNO
+            </h1>
+            <p class="text-[10px] font-bold bg-[#FFC501FF] text-black px-2 py-0.5 inline-block border-2 border-black rounded uppercase tracking-wider mt-0.5">
+              Base · Área · MGH-109
+            </p>
+          </div>
         </div>
-        <div>
-          <h1 class="text-xl font-black text-black dark:text-white uppercase tracking-tighter leading-none">
-            TRASPASO Y RETORNO
-          </h1>
-          <p class="text-[10px] font-bold bg-[#FFC501FF] text-black px-2 py-0.5 inline-block border-2 border-black rounded uppercase tracking-wider mt-0.5">
-            Base · Área · MGH-109
-          </p>
-        </div>
-      </div>
-
-      <!-- Tabs de navegación + botones de acción contextuales -->
-      <div class="flex items-center gap-3 flex-wrap">
 
         <!-- Tabs de vista -->
-        <div class="flex items-center gap-1">
+        <div class="flex items-center gap-1 shrink-0">
           <button (click)="setTabView('activos')"
                   class="h-9 px-3 flex items-center gap-1.5 rounded-lg border-[2px] border-black font-black text-[10px] uppercase transition-all"
                   [ngClass]="activeTabView === 'activos'
@@ -66,7 +64,6 @@
             MGH-109
           </button>
         </div>
-
       </div>
     </div>
 
@@ -120,6 +117,16 @@
             <div>
               <div class="text-[8px] font-black uppercase text-white/70 leading-none">En plazo</div>
               <div class="text-sm font-black text-white leading-none">{{getActivosStats().enPlazo}}</div>
+            </div>
+          </div>
+
+          <div class="items-center gap-1.5 bg-white/10 rounded-lg px-2.5 py-1.5 border border-white/20 shrink-0 flex">
+            <div class="w-4 h-4 bg-white/20 rounded flex items-center justify-center">
+              <mat-icon class="!text-[10px] !w-2.5 !h-2.5 text-[#FFC501FF]">format_list_numbered</mat-icon>
+            </div>
+            <div>
+              <div class="text-[8px] font-black uppercase text-white/70 leading-none">Ítems</div>
+              <div class="text-sm font-black text-white leading-none">{{movActivosFiltrados.length}}</div>
             </div>
           </div>
 
@@ -189,46 +196,31 @@
       </div>
 
       <!-- Filter sub-bar — solo visible en tab Activos para sub-filtrar entre tipos -->
-      <div class="px-3 sm:px-4 py-2 bg-gray-100 dark:bg-slate-800 border-b-[2px] border-black flex items-center gap-2 flex-wrap shrink-0">
-        <!-- Sub-filtros: solo se muestran en la tab "Activos" -->
-        <ng-container *ngIf="activeTabView === 'activos'">
-          <button type="button" (click)="setFilterActivos('TODOS')"
-                  class="h-7 px-3 text-[10px] font-black uppercase rounded-lg border-[2px] transition-all"
-                  [ngClass]="filterActivos==='TODOS' ? 'bg-[#0F172AFF] text-[#FFC501FF] border-black shadow-none translate-x-[1px] translate-y-[1px]' : 'bg-white dark:bg-slate-700 text-black dark:text-white border-stone-300 shadow-[1px_1px_0_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none'">
-            Todos ({{movActivos.length}})
-          </button>
-          <button type="button" (click)="setFilterActivos('ENVIO_BASE')"
-                  class="h-7 px-3 text-[10px] font-black uppercase rounded-lg border-[2px] transition-all"
-                  [ngClass]="filterActivos==='ENVIO_BASE' ? 'bg-[#0F172AFF] text-[#FFC501FF] border-black shadow-none translate-x-[1px] translate-y-[1px]' : 'bg-white dark:bg-slate-700 text-black dark:text-white border-stone-300 shadow-[1px_1px_0_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none'">
-            <mat-icon class="!text-[11px] !w-3 !h-3 align-middle">send</mat-icon> Envíos Base
-          </button>
-          <button type="button" (click)="setFilterActivos('TRASPASO')"
-                  class="h-7 px-3 text-[10px] font-black uppercase rounded-lg border-[2px] transition-all"
-                  [ngClass]="filterActivos==='TRASPASO' ? 'bg-[#0F172AFF] text-[#FFC501FF] border-black shadow-none translate-x-[1px] translate-y-[1px]' : 'bg-white dark:bg-slate-700 text-black dark:text-white border-stone-300 shadow-[1px_1px_0_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none'">
-            <mat-icon class="!text-[11px] !w-3 !h-3 align-middle">transform</mat-icon> Traspasos
-          </button>
-          <button type="button" (click)="setFilterActivos('COMPLETADOS')"
-                  class="h-7 px-3 text-[10px] font-black uppercase rounded-lg border-[2px] transition-all"
-                  [ngClass]="filterActivos==='COMPLETADOS' ? 'bg-green-700 text-white border-black shadow-none translate-x-[1px] translate-y-[1px]' : 'bg-white dark:bg-slate-700 text-black dark:text-white border-stone-300 shadow-[1px_1px_0_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none'">
-            <mat-icon class="!text-[11px] !w-3 !h-3 align-middle">check_circle</mat-icon> Completados ({{movCompletados.length}})
-          </button>
-        </ng-container>
-        <!-- En tabs específicas: muestra el nombre del filtro activo como badge -->
-        <ng-container *ngIf="activeTabView !== 'activos'">
-          <span class="px-2 py-0.5 bg-[#0F172AFF] text-[#FFC501FF] border-2 border-black rounded text-[9px] font-black uppercase">
-            <mat-icon class="!text-[10px] !w-3 !h-3 align-middle">
-              {{activeTabView === 'envios' ? 'send' : activeTabView === 'traspasos' ? 'transform' : 'badge'}}
-            </mat-icon>
-            {{activeTabView === 'envios' ? 'Envíos a Base' : activeTabView === 'traspasos' ? 'Traspasos Área' : 'MGH-109 Técnico'}}
-          </span>
-        </ng-container>
-        <span class="text-[10px] font-bold text-gray-500 dark:text-gray-400 ml-1">
-          {{movActivosFiltrados.length}} ítem{{movActivosFiltrados.length!==1?'s':''}}
-        </span>
+      <div *ngIf="activeTabView === 'activos'" class="px-3 sm:px-4 py-2 bg-gray-100 dark:bg-slate-800 border-b-[2px] border-black flex items-center gap-2 flex-wrap shrink-0">
+        <button type="button" (click)="setFilterActivos('TODOS')"
+                class="h-7 px-3 text-[10px] font-black uppercase rounded-lg border-[2px] transition-all"
+                [ngClass]="filterActivos==='TODOS' ? 'bg-[#0F172AFF] text-[#FFC501FF] border-black shadow-none translate-x-[1px] translate-y-[1px]' : 'bg-white dark:bg-slate-700 text-black dark:text-white border-stone-300 shadow-[1px_1px_0_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none'">
+          Todos ({{movActivos.length + movCompletados.length}})
+        </button>
+        <button type="button" (click)="setFilterActivos('ENVIO_BASE')"
+                class="h-7 px-3 text-[10px] font-black uppercase rounded-lg border-[2px] transition-all"
+                [ngClass]="filterActivos==='ENVIO_BASE' ? 'bg-[#0F172AFF] text-[#FFC501FF] border-black shadow-none translate-x-[1px] translate-y-[1px]' : 'bg-white dark:bg-slate-700 text-black dark:text-white border-stone-300 shadow-[1px_1px_0_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none'">
+          <mat-icon class="!text-[11px] !w-3 !h-3 align-middle">send</mat-icon> Envíos Base
+        </button>
+        <button type="button" (click)="setFilterActivos('TRASPASO')"
+                class="h-7 px-3 text-[10px] font-black uppercase rounded-lg border-[2px] transition-all"
+                [ngClass]="filterActivos==='TRASPASO' ? 'bg-[#0F172AFF] text-[#FFC501FF] border-black shadow-none translate-x-[1px] translate-y-[1px]' : 'bg-white dark:bg-slate-700 text-black dark:text-white border-stone-300 shadow-[1px_1px_0_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none'">
+          <mat-icon class="!text-[11px] !w-3 !h-3 align-middle">transform</mat-icon> Traspasos
+        </button>
+        <button type="button" (click)="setFilterActivos('COMPLETADOS')"
+                class="h-7 px-3 text-[10px] font-black uppercase rounded-lg border-[2px] transition-all"
+                [ngClass]="filterActivos==='COMPLETADOS' ? 'bg-green-700 text-white border-black shadow-none translate-x-[1px] translate-y-[1px]' : 'bg-white dark:bg-slate-700 text-black dark:text-white border-stone-300 shadow-[1px_1px_0_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none'">
+          <mat-icon class="!text-[11px] !w-3 !h-3 align-middle">check_circle</mat-icon> Completados ({{movCompletados.length}})
+        </button>
       </div>
 
       <!-- Loading -->
-      <div *ngIf="loadingActivos || (filterActivos==='COMPLETADOS' && loadingCompletados)" class="flex-1 flex flex-col items-center justify-center gap-4">
+      <div *ngIf="loadingActivos || ((filterActivos==='COMPLETADOS' || filterActivos==='TODOS') && loadingCompletados)" class="flex-1 flex flex-col items-center justify-center gap-4">
         <div class="w-12 h-12 border-4 border-[#FFC501FF] border-t-transparent rounded-full animate-spin"></div>
         <p class="text-sm font-black uppercase text-gray-500 dark:text-gray-400">
           {{filterActivos==='COMPLETADOS' ? 'Cargando completados…' : 'Cargando movimientos activos…'}}
@@ -236,7 +228,7 @@
       </div>
 
       <!-- Empty -->
-      <div *ngIf="!(loadingActivos || (filterActivos==='COMPLETADOS' && loadingCompletados)) && movActivosFiltrados.length===0"
+      <div *ngIf="!(loadingActivos || ((filterActivos==='COMPLETADOS' || filterActivos==='TODOS') && loadingCompletados)) && movActivosFiltrados.length===0"
            class="flex-1 flex flex-col items-center justify-center gap-3 py-12 px-4 text-center">
         <mat-icon class="!text-5xl text-gray-300 dark:text-gray-600">
           {{filterActivos==='COMPLETADOS' ? 'check_circle' : 'radar'}}
@@ -256,7 +248,7 @@
       </div>
 
       <!-- Table -->
-      <div *ngIf="!(loadingActivos || (filterActivos==='COMPLETADOS' && loadingCompletados)) && movActivosFiltrados.length>0" class="flex-1 overflow-auto custom-scrollbar bg-gray-50 dark:bg-[#0F172AFF]">
+      <div *ngIf="!(loadingActivos || ((filterActivos==='COMPLETADOS' || filterActivos==='TODOS') && loadingCompletados)) && movActivosFiltrados.length>0" class="flex-1 overflow-auto custom-scrollbar bg-gray-50 dark:bg-[#0F172AFF]">
         <table class="w-full min-w-[700px]">
           <thead class="bg-gray-100 dark:bg-slate-800 border-b-[2px] border-black sticky top-0 z-10">
             <tr class="text-left text-[10px] font-black uppercase tracking-wider text-black dark:text-white">
@@ -281,14 +273,30 @@
                 ]">
               <td class="px-3 py-2.5">
                 <div class="flex flex-col gap-1">
-                  <span class="px-1.5 py-0.5 text-[9px] font-black uppercase border-2 border-black rounded inline-flex items-center gap-0.5"
+                  <!-- Badge principal de tipo -->
+                  <span class="px-1.5 py-0.5 text-[9px] font-black uppercase border-2 rounded inline-flex items-center gap-0.5"
                         [ngClass]="getTypeClass(mov.movement_type_label)">
-                    {{mov.movement_type_label==='TRASPASO'?'TRP':'ENV'}}
+                    <ng-container *ngIf="mov.movement_type_label==='MGH_109'">
+                      <mat-icon class="!text-[9px] !w-2.5 !h-2.5">badge</mat-icon>
+                      MGH-109
+                    </ng-container>
+                    <ng-container *ngIf="mov.movement_type_label==='TRASPASO'">TRP</ng-container>
+                    <ng-container *ngIf="mov.movement_type_label==='ENVIO_BASE'">ENV</ng-container>
+                    <ng-container *ngIf="mov.movement_type_label!=='MGH_109' && mov.movement_type_label!=='TRASPASO' && mov.movement_type_label!=='ENVIO_BASE'">
+                      {{mov.movement_type_label}}
+                    </ng-container>
                   </span>
+                  <!-- Sub-badge tipo traspaso (solo TRP regular) -->
                   <span *ngIf="mov.movement_type_label==='TRASPASO' && mov.transfer_type"
                         class="px-1.5 py-0.5 text-[8px] font-black uppercase border rounded inline-block"
                         [ngClass]="getTransferTypeClass(mov.transfer_type)">
                     {{getTransferTypeLabel(mov.transfer_type)}}
+                  </span>
+                  <!-- Sub-badge técnico para MGH-109 -->
+                  <span *ngIf="mov.movement_type_label==='MGH_109' && mov.received_by_name"
+                        class="px-1.5 py-0.5 text-[8px] font-black uppercase border border-yellow-500 rounded inline-block bg-yellow-50 text-yellow-800 truncate max-w-[90px]"
+                        [title]="mov.received_by_name">
+                    {{mov.received_by_name.split(' ')[0]}}
                   </span>
                 </div>
               </td>
@@ -415,6 +423,14 @@
         <h2 class="text-sm text-white font-black uppercase tracking-tight leading-none">Nuevo Envío — ENV</h2>
       </div>
       <div class="ml-auto flex items-center gap-2 shrink-0">
+        <!-- Correlativo preview -->
+        <div class="flex items-center gap-1.5 bg-white/10 rounded-lg px-2.5 py-1 border border-white/20">
+          <div *ngIf="loadingCorrelativo" class="w-3 h-3 border-2 border-[#FFC501FF] border-t-transparent rounded-full animate-spin"></div>
+          <mat-icon *ngIf="!loadingCorrelativo" class="!text-xs text-blue-300">tag</mat-icon>
+          <span class="font-mono text-[11px] font-black text-[#FFC501FF]">
+            {{loadingCorrelativo ? '...' : (envCorrelativoPreview || 'ENV-?')}}
+          </span>
+        </div>
         <span *ngIf="itemsEnvio.length>0"
               class="px-2 py-0.5 bg-blue-500 text-white font-black text-[10px] border-2 border-black rounded-lg">
           {{itemsEnvio.length}} ítem{{itemsEnvio.length!==1?'s':''}}
@@ -479,18 +495,43 @@
             </div>
           </div>
 
+          <!-- Tipo de Envío: EVENTUAL (sin retorno fijo) / PERMANENTE (con fecha retorno) -->
           <div>
-            <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-500 dark:text-slate-300 mb-1.5 block">
-              F. Retorno Esperada <span class="text-black dark:text-white">*</span>
+            <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-500 dark:text-slate-300 mb-1.5 flex items-center gap-1">
+              <mat-icon class="!text-[11px] text-blue-500">swap_horiz</mat-icon>
+              Tipo de Envío
             </label>
-            <input type="date" formControlName="fechaEsperadaRetorno"
-                   class="w-full h-10 text-sm font-bold bg-white dark:bg-slate-800 dark:text-white border-2 rounded-xl px-3 outline-none transition-all focus:border-black focus:shadow-[3px_3px_0_#000]"
-                   [ngClass]="envioForm.get('fechaEsperadaRetorno')?.touched && envioForm.get('fechaEsperadaRetorno')?.invalid ? 'border-red-500' : 'border-stone-300 dark:border-slate-500'" />
-            <p *ngIf="envioForm.get('fechaEsperadaRetorno')?.touched && envioForm.get('fechaEsperadaRetorno')?.invalid"
-               class="text-[9px] text-red-500 font-black mt-1">Requerido</p>
+            <div class="flex gap-2">
+              <label *ngFor="let t of [['EVENTUAL','Eventual','bg-green-100 text-green-800 border-green-500'],['PERMANENTE','Permanente','bg-orange-100 text-orange-800 border-orange-500']]"
+                     class="flex items-center gap-1.5 cursor-pointer">
+                <input type="radio" formControlName="tipoEnvio" [value]="t[0]" class="sr-only" />
+                <span class="px-2.5 py-1 rounded-lg border-2 font-black text-[10px] uppercase transition-all cursor-pointer"
+                      [ngClass]="envioForm.get('tipoEnvio')?.value === t[0]
+                        ? t[2] + ' shadow-[2px_2px_0_#000] translate-x-[1px] translate-y-[1px]'
+                        : 'bg-white dark:bg-slate-800 text-stone-500 dark:text-slate-400 border-stone-300 dark:border-slate-500 hover:border-stone-400'"
+                      (click)="envioForm.patchValue({tipoEnvio: t[0]})">
+                  {{t[1]}}
+                </span>
+              </label>
+            </div>
+            <p class="text-[9px] font-bold mt-1"
+               [ngClass]="envioForm.get('tipoEnvio')?.value === 'PERMANENTE' ? 'text-orange-600' : 'text-stone-400 dark:text-slate-500'">
+              {{envioForm.get('tipoEnvio')?.value === 'PERMANENTE' ? '⚠ Requiere fecha de retorno' : 'Sin fecha de retorno definida'}}
+            </p>
           </div>
 
-          <!-- Vuelo / Aeronave / Prioridad -->
+          <!-- Fecha retorno esperada — solo si tipo PERMANENTE -->
+          <div *ngIf="requiereFechaRetornoEnvio()">
+            <label class="text-[8px] font-black uppercase tracking-[0.18em] text-blue-500 mb-1.5 flex items-center gap-1">
+              <mat-icon class="!text-[11px] text-blue-500">event_available</mat-icon>
+              F. Retorno Esperada <span class="text-black dark:text-white ml-0.5">*</span>
+            </label>
+            <input type="date" formControlName="fechaEsperadaRetorno"
+                   class="w-full h-10 text-sm font-bold bg-blue-50 dark:bg-slate-800 dark:text-white border-2 border-blue-400 rounded-xl px-3 outline-none transition-all focus:border-blue-600 focus:shadow-[3px_3px_0_#3b82f6]" />
+            <p class="text-[9px] text-blue-600 font-bold mt-1">Requerida para envío permanente</p>
+          </div>
+
+          <!-- Vuelo / Aeronave -->
           <h3 class="text-[9px] font-black uppercase text-stone-400 dark:text-slate-300 border-b-2 border-black pb-1.5 flex items-center gap-1.5 mt-1">
             <mat-icon class="!text-sm text-blue-400">flight</mat-icon> Datos de Transporte
           </h3>
@@ -509,25 +550,6 @@
               </label>
               <input type="text" formControlName="aeronave" placeholder="CP-XXXX / matrícula…"
                      class="w-full h-10 text-sm font-bold bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-500 rounded-xl px-3 outline-none transition-all focus:border-black focus:shadow-[3px_3px_0_#000] placeholder:text-stone-300 dark:placeholder:text-slate-500" />
-            </div>
-          </div>
-
-          <div>
-            <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-500 dark:text-slate-300 mb-1.5 block">
-              Prioridad
-            </label>
-            <div class="flex gap-2">
-              <label *ngFor="let p of [['NORMAL','Normal','bg-green-100 text-green-800 border-green-500'],['URGENTE','Urgente','bg-orange-100 text-orange-800 border-orange-500'],['AOG','AOG','bg-red-100 text-red-800 border-red-600']]"
-                     class="flex items-center gap-1.5 cursor-pointer">
-                <input type="radio" formControlName="prioridad" [value]="p[0]" class="sr-only" />
-                <span class="px-2.5 py-1 rounded-lg border-2 font-black text-[10px] uppercase transition-all cursor-pointer"
-                      [ngClass]="envioForm.get('prioridad')?.value === p[0]
-                        ? p[2] + ' shadow-[2px_2px_0_#000] translate-x-[1px] translate-y-[1px]'
-                        : 'bg-white dark:bg-slate-800 text-stone-500 dark:text-slate-400 border-stone-300 dark:border-slate-500 hover:border-stone-400'"
-                      (click)="envioForm.patchValue({prioridad: p[0]})">
-                  {{p[1]}}
-                </span>
-              </label>
             </div>
           </div>
 
@@ -725,6 +747,12 @@
                 class="h-9 px-3 sm:px-4 bg-stone-200 dark:bg-slate-600 text-black dark:text-white font-black text-[10px] uppercase border-2 border-black rounded-xl shadow-[2px_2px_0_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all">
           Limpiar
         </button>
+        <!-- Botón imprimir solicitud CO-MAT -->
+        <button type="button" (click)="imprimirCoMat()" [disabled]="itemsEnvio.length===0"
+                class="h-9 px-3 sm:px-4 bg-amber-500 hover:bg-amber-600 text-black font-black text-[10px] uppercase border-2 border-black rounded-xl shadow-[2px_2px_0_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all disabled:opacity-40 disabled:cursor-not-allowed disabled:translate-x-0 disabled:shadow-none flex items-center gap-1.5">
+          <mat-icon class="!text-sm">print</mat-icon>
+          <span class="hidden sm:inline">CO-MAT</span>
+        </button>
         <button type="button" (click)="guardarEnvio()" [disabled]="!canSaveEnvio()"
                 class="h-9 px-4 sm:px-5 bg-black text-white font-black text-[10px] uppercase border-2 border-black rounded-xl shadow-[3px_3px_0_#1d4ed8] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all disabled:opacity-40 disabled:cursor-not-allowed disabled:translate-x-0 disabled:shadow-none flex items-center gap-1.5">
           <mat-icon class="!text-sm">send</mat-icon>
@@ -761,6 +789,14 @@
         <h2 class="text-sm text-white font-black uppercase tracking-tight leading-none">Nuevo Traspaso — TRP</h2>
       </div>
       <div class="ml-auto flex items-center gap-2 shrink-0">
+        <!-- Correlativo TRP preview -->
+        <div class="flex items-center gap-1.5 bg-white/10 rounded-lg px-2.5 py-1 border border-white/20">
+          <div *ngIf="loadingCorrelativoTrp" class="w-3 h-3 border-2 border-[#FFC501FF] border-t-transparent rounded-full animate-spin"></div>
+          <mat-icon *ngIf="!loadingCorrelativoTrp" class="!text-xs text-amber-300">tag</mat-icon>
+          <span class="font-mono text-[11px] font-black text-[#FFC501FF]">
+            {{loadingCorrelativoTrp ? '...' : (trpCorrelativoPreview || 'TRP-?')}}
+          </span>
+        </div>
         <span *ngIf="itemsTraspaso.length>0"
               class="px-2 py-0.5 bg-amber-400 text-black font-black text-[10px] border-2 border-black rounded-lg">
           {{itemsTraspaso.length}} ítem{{itemsTraspaso.length!==1?'s':''}}
@@ -1024,46 +1060,50 @@
             <mat-icon class="!text-4xl text-stone-300 dark:text-slate-600">move_down</mat-icon>
             <p class="text-xs font-black uppercase text-stone-400 dark:text-slate-500">Busca y agrega herramientas arriba</p>
           </div>
-          <table *ngIf="itemsTraspaso.length>0" class="w-full min-w-[500px]">
+          <table *ngIf="itemsTraspaso.length>0" class="w-full min-w-[680px]">
             <thead class="bg-stone-100 dark:bg-slate-700 border-b-2 border-black/20 sticky top-0">
               <tr class="text-left text-[9px] font-black uppercase tracking-wider text-stone-500 dark:text-slate-300">
-                <th class="px-3 py-2 w-8">#</th>
-                <th class="px-3 py-2">Código</th>
-                <th class="px-3 py-2 min-w-[130px]">Descripción</th>
-                <th class="px-3 py-2">P/N · S/N</th>
-                <th class="px-3 py-2 w-20 text-center">Cant.</th>
-                <th class="px-3 py-2 w-24">Condición</th>
-                <th class="px-3 py-2">Notas</th>
-                <th class="px-3 py-2 w-7"></th>
+                <th class="px-2 py-2 w-7">#</th>
+                <th class="px-2 py-2">Código</th>
+                <th class="px-2 py-2 min-w-[110px]">Descripción</th>
+                <th class="px-2 py-2">P/N · S/N</th>
+                <th class="px-2 py-2 w-16">Marca</th>
+                <th class="px-2 py-2 w-20">Venc. Cal.</th>
+                <th class="px-2 py-2 w-16 text-center">Cant.</th>
+                <th class="px-2 py-2 w-22">Condición</th>
+                <th class="px-2 py-2">Notas</th>
+                <th class="px-2 py-2 w-7"></th>
               </tr>
             </thead>
             <tbody>
               <tr *ngFor="let item of itemsTraspaso; let i=index"
                   class="border-b border-stone-100 dark:border-slate-700 hover:bg-stone-50 dark:hover:bg-slate-700/50 transition-colors">
-                <td class="px-3 py-2 text-[10px] font-black text-stone-400 text-center">{{i+1}}</td>
-                <td class="px-3 py-2">
+                <td class="px-2 py-2 text-[10px] font-black text-stone-400 text-center">{{i+1}}</td>
+                <td class="px-2 py-2">
                   <span class="font-mono text-[10px] font-black bg-[#FFC501FF] text-black px-1.5 py-0.5 rounded border-2 border-black">{{item.codigo}}</span>
                 </td>
-                <td class="px-3 py-2 text-xs font-bold text-black dark:text-white max-w-[140px] truncate" [title]="item.nombre">{{item.nombre}}</td>
-                <td class="px-3 py-2">
+                <td class="px-2 py-2 text-xs font-bold text-black dark:text-white max-w-[120px] truncate" [title]="item.nombre">{{item.nombre}}</td>
+                <td class="px-2 py-2">
                   <p class="font-mono text-[9px] text-stone-400">{{item.pn || '—'}}</p>
                   <p class="font-mono text-[9px] text-stone-400">{{item.sn || '—'}}</p>
                 </td>
-                <td class="px-3 py-2 text-center">
+                <td class="px-2 py-2 text-[9px] font-bold text-stone-500 dark:text-slate-400">{{item.marca || '—'}}</td>
+                <td class="px-2 py-2 font-mono text-[9px] text-stone-400">{{item.fechaVencCal || '—'}}</td>
+                <td class="px-2 py-2 text-center">
                   <input type="number" [(ngModel)]="item.cantidad" [ngModelOptions]="{standalone:true}" min="1"
-                         class="w-14 h-7 text-center px-1 border-2 border-stone-300 dark:border-slate-500 rounded-lg text-xs font-black bg-white dark:bg-slate-800 dark:text-white outline-none focus:border-black transition-all" />
+                         class="w-12 h-7 text-center px-1 border-2 border-stone-300 dark:border-slate-500 rounded-lg text-xs font-black bg-white dark:bg-slate-800 dark:text-white outline-none focus:border-black transition-all" />
                 </td>
-                <td class="px-3 py-2">
+                <td class="px-2 py-2">
                   <select [(ngModel)]="item.condicion" [ngModelOptions]="{standalone:true}"
-                          class="h-7 px-2 w-full bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-500 rounded-lg font-black text-[10px] uppercase outline-none focus:border-black cursor-pointer">
+                          class="h-7 px-1 w-full bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-500 rounded-lg font-black text-[10px] uppercase outline-none focus:border-black cursor-pointer">
                     <option *ngFor="let c of condicionesEnvio" [value]="c.value">{{c.label}}</option>
                   </select>
                 </td>
-                <td class="px-3 py-2">
+                <td class="px-2 py-2">
                   <input type="text" [(ngModel)]="item.notas" [ngModelOptions]="{standalone:true}" placeholder="Opcional…"
                          class="h-7 px-2 w-full bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-500 rounded-lg font-bold text-[10px] outline-none focus:border-black transition-all placeholder:text-stone-300 placeholder:font-normal" />
                 </td>
-                <td class="px-3 py-2 text-center">
+                <td class="px-2 py-2 text-center">
                   <button type="button" (click)="removeToolTraspaso(i)"
                           class="w-6 h-6 flex items-center justify-center bg-red-50 hover:bg-red-500 text-red-500 hover:text-white border-2 border-red-200 hover:border-red-600 rounded-lg transition-all">
                     <mat-icon class="!text-xs">close</mat-icon>

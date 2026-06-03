@@ -39,6 +39,8 @@ interface ToolEnvioItem {
     nombre: string;
     pn: string;
     sn: string;
+    marca: string;
+    fechaVencCal: string;
     cantidad: number;
     condicion: string;
     notas: string;
@@ -89,6 +91,7 @@ interface MovimientoActivo {
     department: string;
     document_number: string;
     notes: string;
+    specific_observations?: string;
     items_count: number;
     expanded?: boolean;
     isCompleted?: boolean;
@@ -194,6 +197,8 @@ export class RetornoTraspasoComponent implements OnInit, OnDestroy {
     showToolDropEnvio            = false;
     searchingToolsEnvio          = false;
     isSavingEnvio                = false;
+    envCorrelativoPreview        = '';
+    loadingCorrelativo           = false;
     private _srchEnvio$          = new Subject<string>();
 
     // ── TRASPASO tab ──────────────────────────────────────────────────────────
@@ -204,6 +209,8 @@ export class RetornoTraspasoComponent implements OnInit, OnDestroy {
     showToolDropTraspaso           = false;
     searchingToolsTraspaso         = false;
     isSavingTraspaso               = false;
+    trpCorrelativoPreview          = '';
+    loadingCorrelativoTrp          = false;
     private _srchTraspaso$         = new Subject<string>();
 
     // Buscadores de funcionario — Traspaso
@@ -380,6 +387,31 @@ export class RetornoTraspasoComponent implements OnInit, OnDestroy {
             width: 'min(1040px, 100vw)', maxWidth: '100vw', maxHeight: '100dvh',
             panelClass: 'neo-dialog-transparent', disableClose: false, autoFocus: false
         });
+        this._fetchEnvCorrelativoPreview();
+    }
+
+    private _fetchEnvCorrelativoPreview(): void {
+        this.loadingCorrelativo = true;
+        this.envCorrelativoPreview = '';
+        this.movSvc.getSiguienteCorrelativoPreview('ENV')
+            .pipe(takeUntil(this._unsub$), finalize(() => this.loadingCorrelativo = false))
+            .subscribe({
+                next: (nro) => {
+                    this.envCorrelativoPreview = nro;
+                    // Pre-llenar nroDocumento con el mismo número para que el CO-MAT
+                    // físico coincida con el registro en el sistema
+                    this.envioForm.patchValue({ nroDocumento: nro }, { emitEvent: false });
+                }
+            });
+    }
+
+    imprimirCoMat(): void {
+        const form = this.envioForm.value;
+        if (this.itemsEnvio.length === 0) {
+            this._showMsg('Agregue al menos una herramienta para imprimir el CO-MAT', 'warning');
+            return;
+        }
+        this._pdfCoMat(this.envCorrelativoPreview || 'ENV-?/?', this.itemsEnvio, form);
     }
     cerrarFormEnvio(): void { this._envioDialogRef?.close(); }
 
@@ -389,8 +421,22 @@ export class RetornoTraspasoComponent implements OnInit, OnDestroy {
             width: 'min(1040px, 100vw)', maxWidth: '100vw', maxHeight: '100dvh',
             panelClass: 'neo-dialog-transparent', disableClose: false, autoFocus: false
         });
+        this._fetchTrpCorrelativoPreview();
     }
     cerrarFormTraspaso(): void { this._traspasoDialogRef?.close(); }
+
+    private _fetchTrpCorrelativoPreview(): void {
+        this.loadingCorrelativoTrp = true;
+        this.trpCorrelativoPreview = '';
+        this.movSvc.getSiguienteCorrelativoPreview('TRP')
+            .pipe(takeUntil(this._unsub$), finalize(() => this.loadingCorrelativoTrp = false))
+            .subscribe({
+                next: (nro) => {
+                    this.trpCorrelativoPreview = nro;
+                    this.traspasoForm.patchValue({ nroDocumento: nro }, { emitEvent: false });
+                }
+            });
+    }
 
     abrirFormRetorno(): void {
         this.allData = []; this.dataSource = [];
@@ -452,10 +498,10 @@ export class RetornoTraspasoComponent implements OnInit, OnDestroy {
             recibeEnDestino:     [''],
             departamento:        [''],
             nroDocumento:        [''],
-            fechaEsperadaRetorno:['', Validators.required],
+            tipoEnvio:           ['EVENTUAL'],
+            fechaEsperadaRetorno:[''],
             nroVuelo:            [''],
             aeronave:            [''],
-            prioridad:           ['NORMAL'],
             notas:               ['']
         });
     }
@@ -492,6 +538,8 @@ export class RetornoTraspasoComponent implements OnInit, OnDestroy {
             toolId: id, codigo: tool.code ?? tool.codigo ?? '',
             nombre: tool.name ?? tool.description ?? '',
             pn: tool.part_number ?? '', sn: tool.serial_number ?? '',
+            marca: tool.brand ?? tool.marca ?? '',
+            fechaVencCal: tool.calibration_expiry_date ?? tool.next_calibration_date ?? '',
             cantidad: 1, condicion: 'good', notas: ''
         });
         this.toolSearchEnvio = ''; this.toolResultsEnvio = []; this.showToolDropEnvio = false;
@@ -500,7 +548,9 @@ export class RetornoTraspasoComponent implements OnInit, OnDestroy {
     removeToolEnvio(i: number): void { this.itemsEnvio.splice(i, 1); }
 
     canSaveEnvio(): boolean {
-        return this.envioForm.valid && this.itemsEnvio.length > 0 && !this.isSavingEnvio;
+        if (!this.envioForm.valid || this.itemsEnvio.length === 0 || this.isSavingEnvio) return false;
+        if (this.requiereFechaRetornoEnvio() && !this.envioForm.get('fechaEsperadaRetorno')?.value) return false;
+        return true;
     }
 
     guardarEnvio(): void {
@@ -527,12 +577,12 @@ export class RetornoTraspasoComponent implements OnInit, OnDestroy {
             responsible_person:  form.responsableEnvia || '',
             department:          form.departamento     || '',
             document_number:     form.nroDocumento     || '',
-            expected_return_date:form.fechaEsperadaRetorno || '',
+            expected_return_date: this.requiereFechaRetornoEnvio() ? (form.fechaEsperadaRetorno || '') : '',
             notes:               form.notas            || '',
             specific_observations: [
-                form.nroVuelo  ? `Vuelo: ${form.nroVuelo}`         : '',
-                form.aeronave  ? `Aeronave: ${form.aeronave}`       : '',
-                form.prioridad && form.prioridad !== 'NORMAL' ? `Prioridad: ${form.prioridad}` : ''
+                `Tipo envío: ${form.tipoEnvio === 'PERMANENTE' ? 'PERMANENTE' : 'EVENTUAL'}`,
+                form.nroVuelo  ? `Vuelo: ${form.nroVuelo}`   : '',
+                form.aeronave  ? `Aeronave: ${form.aeronave}` : ''
             ].filter(Boolean).join(' | '),
             items_json: itemsJson
         }).pipe(finalize(() => this.isSavingEnvio = false), takeUntil(this._unsub$)).subscribe({
@@ -552,7 +602,7 @@ export class RetornoTraspasoComponent implements OnInit, OnDestroy {
         this.envioForm.reset({
             fechaEnvio: new Date().toISOString().split('T')[0],
             horaEnvio:  new Date().toTimeString().slice(0, 5),
-            prioridad:  'NORMAL'
+            tipoEnvio:  'EVENTUAL'
         });
         this._setDefaultAlmacenOrigen();
         this.itemsEnvio = [];
@@ -575,8 +625,14 @@ export class RetornoTraspasoComponent implements OnInit, OnDestroy {
             recibeEnDestino:      ['', Validators.required],
             tipoTraspaso:         ['TEMPORAL', Validators.required],
             fechaRetornoEsperada: [''],
+            nroDocumento:         [''],
             notas:                ['']
         });
+    }
+
+    /** Tipo de envío a base (PERMANENTE requiere fecha retorno, EVENTUAL no) */
+    requiereFechaRetornoEnvio(): boolean {
+        return this.envioForm.get('tipoEnvio')?.value === 'PERMANENTE';
     }
 
     /** Indica si el tipo de traspaso del form TRP requiere fecha de retorno */
@@ -617,6 +673,8 @@ export class RetornoTraspasoComponent implements OnInit, OnDestroy {
             toolId: id, codigo: tool.code ?? tool.codigo ?? '',
             nombre: tool.name ?? tool.description ?? '',
             pn: tool.part_number ?? '', sn: tool.serial_number ?? '',
+            marca: tool.brand ?? tool.marca ?? '',
+            fechaVencCal: tool.calibration_expiry_date ?? tool.next_calibration_date ?? '',
             cantidad: 1, condicion: 'good', notas: ''
         });
         this.toolSearchTraspaso = ''; this.toolResultsTraspaso = []; this.showToolDropTraspaso = false;
@@ -646,9 +704,11 @@ export class RetornoTraspasoComponent implements OnInit, OnDestroy {
         const traspasoPayload: any = {
             date: form.fechaTraspaso, time: (form.horaTraspaso || '00:00') + ':00',
             source_warehouse_id: form.baseOrigen?.id ? Number(form.baseOrigen.id) : undefined,
+            requested_by_name:   form.responsableTraspaso || '',
             responsible_person:  form.responsableTraspaso || '',
             received_by_name:    form.recibeEnDestino     || '',
             department:          form.areaDepartamento    || '',
+            document_number:     form.nroDocumento        || '',
             exit_reason:         'area_transfer',
             authorized_by:       form.autorizadoPor       || '',
             transfer_type:       form.tipoTraspaso        || 'TEMPORAL',
@@ -1236,6 +1296,11 @@ export class RetornoTraspasoComponent implements OnInit, OnDestroy {
                 this.allData    = this.allData.filter(i => !ids.has(i.id));
                 this.dataSource = this.dataSource.filter(i => !ids.has(i.id));
                 this._pdfRetorno(nro, selItems, formVal);
+                // Si hay items DAÑADOS o FALTANTES → genera Reporte de Discrepancia (lógica del sistema Excel)
+                const itemsConNovedad = selItems.filter(it => it.condicion === 'DAÑADO' || it.condicion === 'FALTANTE');
+                if (itemsConNovedad.length > 0) {
+                    setTimeout(() => this._pdfDiscrepancia(nro, itemsConNovedad, formVal), 900);
+                }
                 if (this.dataSource.length === 0) {
                     this._retornoDialogRef?.close();
                     const movOrigen = this.movSeleccionadoParaRetorno;
@@ -1268,27 +1333,32 @@ export class RetornoTraspasoComponent implements OnInit, OnDestroy {
             takeUntil(this._unsub$), finalize(() => this.loadingActivos = false)
         ).subscribe({
             next: (data: any[]) => {
-                this.movActivos = data.map((m: any) => ({
-                    id_movement:                m.id_movement,
-                    movement_number:            m.movement_number  || '',
-                    movement_type_label:        m.movement_type_label || m.type || '',
-                    transfer_type:              m.transfer_type    || '',
-                    send_date:                  m.send_date  || m.date  || '',
-                    expected_return_date:       m.expected_return_date || null,
-                    days_remaining:             m.days_remaining != null ? Number(m.days_remaining) : null,
-                    alert_status:               m.alert_status || 'SIN_FECHA',
-                    source_warehouse_id:        m.source_warehouse_id,
-                    destination_warehouse_id:   m.destination_warehouse_id,
-                    source_warehouse_name:      m.source_warehouse_name      || '',
-                    destination_warehouse_name: m.destination_warehouse_name || '',
-                    requested_by_name:          m.requested_by_name  || '',
-                    received_by_name:           m.received_by_name   || '',
-                    department:                 m.department         || '',
-                    document_number:            m.document_number    || '',
-                    notes:                      m.notes              || '',
-                    items_count:                Number(m.items_count) || 0,
-                    expanded: false
-                }));
+                this.movActivos = data.map((m: any) => {
+                    const isMgh109 = !!(m.specific_observations?.includes('MGH109'));
+                    const rawType  = m.movement_type_label || m.type || '';
+                    return {
+                        id_movement:                m.id_movement,
+                        movement_number:            m.movement_number  || '',
+                        movement_type_label:        isMgh109 ? 'MGH_109' : rawType,
+                        transfer_type:              m.transfer_type    || '',
+                        send_date:                  m.send_date  || m.date  || '',
+                        expected_return_date:       m.expected_return_date || null,
+                        days_remaining:             m.days_remaining != null ? Number(m.days_remaining) : null,
+                        alert_status:               m.alert_status || 'SIN_FECHA',
+                        source_warehouse_id:        m.source_warehouse_id,
+                        destination_warehouse_id:   m.destination_warehouse_id,
+                        source_warehouse_name:      m.source_warehouse_name      || '',
+                        destination_warehouse_name: m.destination_warehouse_name || '',
+                        requested_by_name:          m.requested_by_name  || '',
+                        received_by_name:           m.received_by_name   || '',
+                        department:                 m.department         || '',
+                        document_number:            m.document_number    || '',
+                        notes:                      m.notes              || '',
+                        specific_observations:      m.specific_observations      || '',
+                        items_count:                Number(m.items_count) || 0,
+                        expanded: false
+                    };
+                });
                 this._applyFilterActivos();
             },
             error: () => this._showMsg('Error al cargar movimientos activos', 'error')
@@ -1320,7 +1390,17 @@ export class RetornoTraspasoComponent implements OnInit, OnDestroy {
         if (this.filterActivos === 'COMPLETADOS') {
             this.movActivosFiltrados = [...this.movCompletados];
         } else if (this.filterActivos === 'TODOS') {
-            this.movActivosFiltrados = [...this.movActivos];
+            // TODOS = pendientes de retorno + ya retornados (completados)
+            this.movActivosFiltrados = [...this.movActivos, ...this.movCompletados];
+            // Carga automática de completados si aún no se han traído
+            if (this.movCompletados.length === 0 && !this.loadingCompletados) {
+                this.loadMovCompletados();
+            }
+        } else if (this.filterActivos === 'TRASPASO') {
+            // MGH-109 es un subtipo de TRASPASO → incluirlo en este filtro
+            this.movActivosFiltrados = this.movActivos.filter(m =>
+                m.movement_type_label === 'TRASPASO' || m.movement_type_label === 'MGH_109'
+            );
         } else {
             this.movActivosFiltrados = this.movActivos.filter(m => m.movement_type_label === this.filterActivos);
         }
@@ -1368,7 +1448,9 @@ export class RetornoTraspasoComponent implements OnInit, OnDestroy {
     }
 
     getTypeClass(t: string): string {
-        return t === 'TRASPASO' ? 'bg-amber-400 text-black border-black' : 'bg-blue-600 text-white border-blue-900';
+        if (t === 'MGH_109')  return 'bg-[#0F172A] text-[#FFC501FF] border-[#FFC501FF]';
+        if (t === 'TRASPASO') return 'bg-amber-400 text-black border-black';
+        return 'bg-blue-600 text-white border-blue-900';
     }
 
     /** Clase de badge para el tipo de traspaso (TEMPORAL/PERMANENTE/REASIGNACION/PRESTAMO) */
@@ -1441,6 +1523,8 @@ export class RetornoTraspasoComponent implements OnInit, OnDestroy {
                         nombre:    item.tool?.description || item.tool?.name || item.name || item.description || '',
                         pn:        item.tool?.part_number || item.part_number || '',
                         sn:        item.tool?.serial_number || item.serial_number || '',
+                        marca:     item.tool?.brand || item.brand || '',
+                        fechaVencCal: item.tool?.calibration_expiry_date || item.calibration_expiry_date || '',
                         cantidad:  Number(item.quantity) || 1,
                         condicion: item.condition_state || 'good',
                         notas:     item.notes || '',
@@ -1469,30 +1553,35 @@ export class RetornoTraspasoComponent implements OnInit, OnDestroy {
             takeUntil(this._unsub$), finalize(() => { this.loadingCompletados = false; this._applyFilterActivos(); })
         ).subscribe({
             next: (data: any[]) => {
-                this.movCompletados = (data || []).map((m: any) => ({
-                    id_movement:                Number(m.id_movement),
-                    movement_number:            m.movement_number  || '',
-                    movement_type_label:        m.movement_type_label || m.type || '',
-                    transfer_type:              m.transfer_type    || '',
-                    send_date:                  m.send_date  || m.date  || '',
-                    expected_return_date:       m.expected_return_date || null,
-                    days_remaining:             null,
-                    alert_status:               'DEVUELTO',
-                    source_warehouse_id:        m.source_warehouse_id,
-                    destination_warehouse_id:   m.destination_warehouse_id,
-                    source_warehouse_name:      m.source_warehouse_name      || '',
-                    destination_warehouse_name: m.destination_warehouse_name || '',
-                    requested_by_name:          m.requested_by_name  || '',
-                    received_by_name:           m.received_by_name   || '',
-                    department:                 m.department         || '',
-                    document_number:            m.document_number    || '',
-                    notes:                      m.notes              || '',
-                    items_count:                Number(m.items_count) || 0,
-                    expanded:                   false,
-                    isCompleted:                true,
-                    return_movement_number:     m.return_movement_number || '',
-                    return_id_movement:         Number(m.return_id_movement) || 0,
-                }));
+                this.movCompletados = (data || []).map((m: any) => {
+                    const isMgh109 = !!(m.specific_observations?.includes('MGH109'));
+                    const rawType  = m.movement_type_label || m.type || '';
+                    return {
+                        id_movement:                Number(m.id_movement),
+                        movement_number:            m.movement_number  || '',
+                        movement_type_label:        isMgh109 ? 'MGH_109' : rawType,
+                        transfer_type:              m.transfer_type    || '',
+                        send_date:                  m.send_date  || m.date  || '',
+                        expected_return_date:       m.expected_return_date || null,
+                        days_remaining:             null,
+                        alert_status:               'DEVUELTO',
+                        source_warehouse_id:        m.source_warehouse_id,
+                        destination_warehouse_id:   m.destination_warehouse_id,
+                        source_warehouse_name:      m.source_warehouse_name      || '',
+                        destination_warehouse_name: m.destination_warehouse_name || '',
+                        requested_by_name:          m.requested_by_name  || '',
+                        received_by_name:           m.received_by_name   || '',
+                        department:                 m.department         || '',
+                        document_number:            m.document_number    || '',
+                        notes:                      m.notes              || '',
+                        specific_observations:      m.specific_observations || '',
+                        items_count:                Number(m.items_count) || 0,
+                        expanded:                   false,
+                        isCompleted:                true,
+                        return_movement_number:     m.return_movement_number || '',
+                        return_id_movement:         Number(m.return_id_movement) || 0,
+                    };
+                });
             },
             error: () => this._showMsg('Error al cargar completados', 'error')
         });
@@ -1511,6 +1600,8 @@ export class RetornoTraspasoComponent implements OnInit, OnDestroy {
                         nombre:    item.description || item.name || '',
                         pn:        item.part_number || '',
                         sn:        item.serial_number || '',
+                        marca:     item.brand || '',
+                        fechaVencCal: item.calibration_expiry_date || '',
                         cantidad:  Number(item.quantity) || 1,
                         condicion: item.condition_on_movement || item.condition_state || 'good',
                         notas:     item.notes || '',
@@ -1756,6 +1847,8 @@ export class RetornoTraspasoComponent implements OnInit, OnDestroy {
             toolId: id, codigo: tool.code ?? tool.codigo ?? '',
             nombre: tool.name ?? tool.description ?? '',
             pn: tool.part_number ?? '', sn: tool.serial_number ?? '',
+            marca: tool.brand ?? tool.marca ?? '',
+            fechaVencCal: tool.calibration_expiry_date ?? tool.next_calibration_date ?? '',
             cantidad: 1, condicion: 'good', notas: ''
         });
         this.toolSearchTecnico = ''; this.toolResultsTecnico = []; this.showToolDropTecnico = false;
@@ -1809,12 +1902,14 @@ export class RetornoTraspasoComponent implements OnInit, OnDestroy {
             time:                    fv.hora + ':00',
             source_warehouse_id:     fv.almacenOrigen?.id ? Number(fv.almacenOrigen.id) : undefined,
             destination_warehouse_id:fv.base?.id          ? Number(fv.base.id)           : undefined,
+            requested_by_name:       fv.responsableEntrega || this._getUsuarioActual() || '',
             responsible_person:      fv.responsableEntrega || this._getUsuarioActual() || 'Almacén',
             received_by_name:        fv.nombreCompleto || fv.nombreCompletoInput,
             department,
             exit_reason:             'area_transfer',
             transfer_type:           fv.tipoTraspaso,
             notes:                   fv.observaciones ?? '',
+            specific_observations:   'MGH109',
             general_observations:    `Base: ${baseLabel} | Cargo: ${fv.cargo} | Licencia: ${fv.nroLicencia}`,
             items_json: itemsJson
         };
@@ -1858,14 +1953,19 @@ export class RetornoTraspasoComponent implements OnInit, OnDestroy {
      * (destination_warehouse_id === 0 / "0" / nulo), no un almacén físico.
      */
     private _esTraspasoTecnico(m: MovimientoActivo): boolean {
+        // Nuevo: marcado explícitamente con 'MGH109' en specific_observations
+        if (m.movement_type_label === 'MGH_109') return true;
+        // Fallback para registros anteriores (heurística: sin warehouse destino)
         const id = Number(m.destination_warehouse_id);
         return m.movement_type_label === 'TRASPASO' && (!id || id === 0);
     }
 
     /**
-     * Helper: un TRASPASO es "de área" cuando sí tiene almacén destino real (id > 0).
+     * Helper: un TRASPASO es "de área" cuando tiene almacén destino real (id > 0)
+     * y NO es MGH-109.
      */
     private _esTraspasoArea(m: MovimientoActivo): boolean {
+        if (m.movement_type_label === 'MGH_109') return false;
         const id = Number(m.destination_warehouse_id);
         return m.movement_type_label === 'TRASPASO' && id > 0;
     }
@@ -2734,6 +2834,7 @@ export class RetornoTraspasoComponent implements OnInit, OnDestroy {
         const filas = items.map((it, i) => `
             <tr><td style="text-align:center">${i + 1}</td><td>${it.codigo}</td>
             <td>${it.nombre}</td><td>${it.pn || '---'}</td><td>${it.sn || '---'}</td>
+            ${esTraspaso ? `<td>${it.marca || '---'}</td><td style="font-size:9px">${it.fechaVencCal || '---'}</td>` : ''}
             <td style="text-align:center">${it.cantidad}</td>
             <td style="text-align:center">${condLabel[it.condicion] || it.condicion}</td>
             <td>${it.notas || '---'}</td></tr>`).join('');
@@ -2754,7 +2855,7 @@ export class RetornoTraspasoComponent implements OnInit, OnDestroy {
             ['Fecha Esp. Retorno',   form.fechaEsperadaRetorno || 'N/A'],
             ['Nro. Vuelo',           form.nroVuelo         || '---'],
             ['Aeronave',             form.aeronave         || '---'],
-            ['Prioridad',            form.prioridad        || 'NORMAL'],
+            ['Tipo Envío',           form.tipoEnvio         || 'EVENTUAL'],
             ['Notas',                form.notas            || '---']
         ];
 
@@ -2766,10 +2867,261 @@ export class RetornoTraspasoComponent implements OnInit, OnDestroy {
                 : [responsable, recibe || destino])
             : [responsable, destino];
 
-        this._abrirPdf(nro, tipo, filas, campos,
-            [['#','3%'],['Código BOA','8%'],['Descripción','24%'],['P/N','13%'],['S/N','11%'],
-             ['Cant.','7%'],['Condición','12%'],['Observación','22%']],
-            firmas as [string, string]);
+        const columnas: [string, string][] = esTraspaso
+            ? [['#','3%'],['Código BOA','8%'],['Descripción','18%'],['P/N','10%'],['S/N','9%'],
+               ['Marca','8%'],['Venc. Cal.','9%'],['Cant.','5%'],['Condición','10%'],['Notas','20%']]
+            : [['#','3%'],['Código BOA','8%'],['Descripción','24%'],['P/N','13%'],['S/N','11%'],
+               ['Cant.','7%'],['Condición','12%'],['Observación','22%']];
+        this._abrirPdf(nro, tipo, filas, campos, columnas, firmas as [string, string]);
+    }
+
+    /** Genera la Solicitud de Envío CO-MAT (formato OAM145# N-014 de BoAMM) */
+    private _pdfCoMat(nro: string, items: ToolEnvioItem[], form: any): void {
+        const now  = new Date();
+        const fecha = now.toLocaleDateString('es-BO', { day: '2-digit', month: '2-digit', year: 'numeric' });
+        const hora  = now.toLocaleTimeString('es-BO', { hour: '2-digit', minute: '2-digit' });
+        const origen  = form.baseOrigen?.nombre  || form.baseOrigen?.codigo  || 'ALMACÉN CBB';
+        const destino = form.baseDestino?.nombre || form.baseDestino?.codigo || '---';
+        const responsable = form.responsableEnvia || '---';
+        const recibe      = form.recibeEnDestino  || '';
+        const nVuelo      = form.nroVuelo  || '---';
+        const aeronave    = form.aeronave  || '---';
+        const tipoEnvio   = form.tipoEnvio || 'EVENTUAL';
+        const nBultos     = items.length;
+
+        const rows = items.map((it, i) => `
+            <tr>
+                <td class="tc">${i + 1}</td>
+                <td class="tc"><strong>${it.cantidad}</strong></td>
+                <td>${it.nombre || '-'}</td>
+                <td class="mono">${it.pn || '---'}</td>
+                <td class="mono">${it.sn || '---'}</td>
+                <td class="mono">${it.codigo || '-'}</td>
+            </tr>`).join('');
+
+        const html = `<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8">
+<title>CO-MAT ${nro}</title>
+<style>
+  @page { size: A4; margin: 10mm 12mm; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: Arial, sans-serif; font-size: 10px; color: #000; }
+
+  /* ── ENCABEZADO ── */
+  .top { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #000; padding-bottom: 6px; margin-bottom: 8px; }
+  .top-left { font-size: 8.5px; color: #555; line-height: 1.6; }
+  .top-center { text-align: center; flex: 1; }
+  .top-center h1 { font-size: 14px; font-weight: 900; text-transform: uppercase; letter-spacing: 1px; }
+  .top-center .subtitle { font-size: 9px; color: #555; margin-top: 1px; }
+  .top-right { text-align: right; }
+  .nro-box { border: 2.5px solid #000; padding: 5px 14px; font-size: 16px; font-weight: 900; letter-spacing: 1px; display: inline-block; }
+  .tipo-badge { display: inline-block; background: ${tipoEnvio === 'PERMANENTE' ? '#fbbf24' : '#dcfce7'}; border: 1.5px solid #000; font-weight: 900; font-size: 9px; padding: 2px 7px; border-radius: 3px; margin-top: 3px; }
+
+  /* ── GRID DATOS ── */
+  .meta { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 5px 14px; margin-bottom: 8px; border: 1.5px solid #ddd; border-radius: 4px; padding: 7px 10px; }
+  .field label { display: block; font-size: 7.5px; font-weight: 900; text-transform: uppercase; color: #666; margin-bottom: 1px; }
+  .field span { display: block; font-weight: 700; font-size: 10px; border-bottom: 1px solid #ccc; padding-bottom: 1px; min-height: 13px; }
+
+  /* ── TABLA ── */
+  .sec-title { background: #0f172a; color: #fff; font-size: 9px; font-weight: 900; text-transform: uppercase; padding: 4px 8px; letter-spacing: 0.5px; margin-bottom: 0; }
+  table { width: 100%; border-collapse: collapse; margin-bottom: 10px; }
+  th { background: #334155; color: #fff; padding: 4px 5px; font-size: 8.5px; font-weight: 900; text-transform: uppercase; text-align: left; border: 1px solid #000; }
+  td { padding: 3.5px 5px; border: 1px solid #ddd; font-size: 9px; }
+  tr:nth-child(even) td { background: #f8f9fc; }
+  .tc { text-align: center; }
+  .mono { font-family: monospace; font-size: 9px; }
+
+  /* ── PIE ── */
+  .cargo-info { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 5px 10px; border: 1.5px solid #000; border-radius: 4px; padding: 6px 10px; margin-bottom: 10px; }
+  .cargo-field label { font-size: 7.5px; font-weight: 900; text-transform: uppercase; color: #555; display: block; }
+  .cargo-field span { font-weight: 700; font-size: 10px; border-bottom: 1px solid #aaa; display: block; min-height: 13px; padding-bottom: 1px; }
+
+  .firmas { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 14px; }
+  .firma { border: 1.5px solid #000; padding: 6px 8px; }
+  .firma-title { font-size: 8px; font-weight: 900; text-transform: uppercase; background: #0f172a; color: #fff; padding: 3px 6px; margin: -6px -8px 8px; letter-spacing: 0.3px; }
+  .firma-row { display: flex; justify-content: space-between; gap: 10px; margin-bottom: 4px; }
+  .firma-item label { font-size: 7.5px; text-transform: uppercase; font-weight: 900; color: #555; display: block; }
+  .firma-item span { border-bottom: 1px solid #000; display: block; min-height: 16px; font-size: 9px; font-weight: 700; min-width: 100px; padding-bottom: 1px; }
+  .firma-sign { height: 34px; border-bottom: 1px solid #000; margin-top: 4px; }
+
+  .footer { text-align: center; font-size: 7.5px; color: #888; margin-top: 10px; border-top: 1px dotted #ccc; padding-top: 4px; }
+  @media print { body { padding: 0; } }
+</style>
+<script>window.onload = () => window.print();</script>
+</head><body>
+
+<!-- ENCABEZADO -->
+<div class="top">
+  <div class="top-left">
+    <div><strong>BoAMM</strong>  OAM145# N-014</div>
+    <div>BOLIVIANA DE AVIACIÓN</div>
+    <div>Almacén de Herramientas</div>
+  </div>
+  <div class="top-center">
+    <h1>Solicitud de Envío</h1>
+    <div class="subtitle">CO-MAT — Comprobante de Movimiento de Material</div>
+    <div class="tipo-badge">${tipoEnvio}</div>
+  </div>
+  <div class="top-right">
+    <div class="nro-box">${nro}</div>
+    <div style="font-size:8px;color:#555;margin-top:4px">Fecha: ${fecha} ${hora}</div>
+  </div>
+</div>
+
+<!-- DATOS PRINCIPALES -->
+<div class="meta">
+  <div class="field"><label>Origen / Almacén</label><span>${origen}</span></div>
+  <div class="field"><label>Base Destino</label><span>${destino}</span></div>
+  <div class="field"><label>Fecha Retorno Esperada</label><span>${tipoEnvio === 'PERMANENTE' ? (form.fechaEsperadaRetorno || '---') : 'No aplica (Eventual)'}</span></div>
+  <div class="field"><label>Responsable / Envía</label><span>${responsable}</span></div>
+  <div class="field"><label>Recibe en Destino</label><span>${recibe || '---'}</span></div>
+  <div class="field"><label>Nro. Vuelo / Aeronave</label><span>${nVuelo !== '---' || aeronave !== '---' ? nVuelo + ' / ' + aeronave : '---'}</span></div>
+</div>
+
+<!-- TABLA ITEMS -->
+<div class="sec-title">Detalle de Herramientas / Equipos</div>
+<table>
+  <thead>
+    <tr>
+      <th style="width:4%">ITEM</th>
+      <th style="width:6%">CANT.</th>
+      <th style="width:35%">DESCRIPCIÓN</th>
+      <th style="width:18%">MODELO / P/N</th>
+      <th style="width:15%">SERIAL NUMBER</th>
+      <th style="width:12%">CÓDIGO BOA</th>
+    </tr>
+  </thead>
+  <tbody>${rows}</tbody>
+</table>
+
+<!-- DATOS DE CARGA -->
+<div class="cargo-info">
+  <div class="cargo-field"><label>ORIGEN</label><span>${origen}</span></div>
+  <div class="cargo-field"><label>Nº DE BULTOS</label><span>${nBultos}</span></div>
+  <div class="cargo-field"><label>PESO (Kg)</label><span>&nbsp;</span></div>
+  <div class="cargo-field"><label>SERIAL NUMBER (Envío)</label><span>${nro}</span></div>
+</div>
+
+<!-- FIRMAS -->
+<div class="firmas">
+  <div class="firma">
+    <div class="firma-title">ENTREGUE CONFORME / MM-CBB</div>
+    <div class="firma-row">
+      <div class="firma-item"><label>Nombre</label><span>${responsable}</span></div>
+      <div class="firma-item"><label>Fecha / Hora</label><span>${fecha} ${hora}</span></div>
+    </div>
+    <div class="firma-sign"></div>
+    <div style="font-size:7.5px;text-align:center;margin-top:3px;color:#555;font-weight:700">FIRMA / SELLO</div>
+  </div>
+  <div class="firma">
+    <div class="firma-title">RECIBI CONFORME / CARGA-VOA</div>
+    <div class="firma-row">
+      <div class="firma-item"><label>Nombre</label><span>${recibe || '&nbsp;'}</span></div>
+      <div class="firma-item"><label>Fecha / Hora</label><span>&nbsp;</span></div>
+    </div>
+    <div class="firma-sign"></div>
+    <div style="font-size:7.5px;text-align:center;margin-top:3px;color:#555;font-weight:700">FIRMA / SELLO</div>
+  </div>
+</div>
+
+<div class="footer">
+  BOLIVIANA DE AVIACIÓN — Almacén de Herramientas · CO-MAT | Generado: ${now.toLocaleString('es-BO')} | Nro: ${nro}
+</div>
+</body></html>`;
+        this._abrirBlob(html);
+    }
+
+    /** Genera el "Reporte de Discrepancia" para items devueltos DAÑADOS o FALTANTES */
+    private _pdfDiscrepancia(nro: string, items: TraspasoItem[], form: any): void {
+        const fecha       = form.fechaRetorno
+            ? new Date(form.fechaRetorno).toLocaleDateString('es-BO', { day: '2-digit', month: '2-digit', year: 'numeric' })
+            : new Date().toLocaleDateString('es-BO');
+        const responsable = form.responsableRecibe || '---';
+        const condLabel: Record<string, string> = {
+            DAÑADO: 'DAÑADO / NO SERVICIABLE', FALTANTE: 'FALTANTE',
+            BUENO: 'Bueno', REQUIERE_CALIBRACION: 'Req. Calibración'
+        };
+        const rows = items.map((it, i) => `
+            <tr>
+                <td style="text-align:center">${i + 1}</td>
+                <td><span style="font-family:monospace;font-weight:700;background:#0f172a;color:#fff;padding:1px 5px;border-radius:2px;font-size:9px">${it.codigo || '-'}</span></td>
+                <td>${it.descripcion || '-'}</td>
+                <td style="font-family:monospace;font-size:9px">${it.pn || '-'}</td>
+                <td style="font-family:monospace;font-size:9px">${it.sn || '-'}</td>
+                <td style="font-weight:900;color:#dc2626;text-align:center">${condLabel[it.condicion] || it.condicion || '-'}</td>
+                <td>${it.observacionItem || '---'}</td>
+            </tr>`).join('');
+
+        const html = `<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8">
+<title>Reporte de Discrepancia ${nro}</title>
+<style>
+  @page { size: A4; margin: 14mm 12mm; }
+  * { box-sizing: border-box; }
+  body { font-family: Arial, sans-serif; font-size: 10px; color: #000; margin: 0; }
+  .header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 3px solid #dc2626; padding-bottom: 8px; margin-bottom: 10px; }
+  .title { font-size: 16px; font-weight: 900; text-transform: uppercase; color: #dc2626; margin: 0; letter-spacing: 0.5px; }
+  .subtitle { font-size: 9px; color: #555; margin: 2px 0 0; }
+  .nro-box { background: #dc2626; color: #fff; font-weight: 900; font-size: 13px; padding: 6px 14px; border-radius: 4px; }
+  .alert { background: #fef2f2; border: 2px solid #dc2626; border-radius: 5px; padding: 7px 12px; margin-bottom: 10px; font-size: 9px; font-weight: 700; color: #991b1b; line-height: 1.5; }
+  .grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 5px 14px; margin-bottom: 10px; }
+  .field label { display: block; font-size: 8px; font-weight: 900; text-transform: uppercase; color: #666; }
+  .field span { display: block; font-weight: 700; font-size: 10px; border-bottom: 1px solid #ccc; padding-bottom: 1px; }
+  table { width: 100%; border-collapse: collapse; margin-bottom: 14px; font-size: 9.5px; }
+  th { background: #dc2626; color: #fff; padding: 5px 4px; text-align: left; font-size: 8.5px; text-transform: uppercase; }
+  td { padding: 4px; border-bottom: 1px solid #fca5a5; }
+  tr:nth-child(even) td { background: #fff5f5; }
+  .firmas { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; margin-top: 22px; }
+  .firma { border-top: 2px solid #000; padding-top: 6px; text-align: center; font-size: 9.5px; font-weight: 700; }
+  .firma-red { border-top: 2px solid #dc2626 !important; background: #fff5f5; padding: 6px 4px 4px; }
+  .footer { text-align: center; font-size: 7.5px; color: #888; margin-top: 12px; border-top: 1px dotted #ccc; padding-top: 4px; }
+  @media print { body { padding: 0; } }
+</style>
+<script>window.onload = () => window.print();</script>
+</head><body>
+<div class="header">
+  <div>
+    <h1 class="title">Reporte de Discrepancia</h1>
+    <div class="subtitle">BOLIVIANA DE AVIACIÓN — Almacén de Herramientas · Retorno con novedades</div>
+  </div>
+  <div class="nro-box">${nro}</div>
+</div>
+<div class="alert">
+  ⚠ Este documento certifica el retorno de herramientas en condición <strong>NO SERVICIABLE</strong> (Dañada/Faltante).
+  Requiere investigación, acción correctiva y firmas de los responsables antes de archivarse.
+</div>
+<div class="grid">
+  <div class="field"><label>Nro. Documento Retorno</label><span>${nro}</span></div>
+  <div class="field"><label>Fecha de Retorno</label><span>${fecha}</span></div>
+  <div class="field"><label>Responsable</label><span>${responsable}</span></div>
+  <div class="field"><label>Nro. Referencia (COMAT/TRP)</label><span>${form.nroDocumento || '---'}</span></div>
+  <div class="field"><label>Origen / Base</label><span>${form.ubicacionOrigen?.nombre || '---'}</span></div>
+  <div class="field"><label>Observaciones Generales</label><span>${form.observaciones || '---'}</span></div>
+</div>
+<table>
+  <thead>
+    <tr>
+      <th style="width:3%">#</th>
+      <th style="width:9%">Código BOA</th>
+      <th style="width:27%">Descripción</th>
+      <th style="width:12%">P/N</th>
+      <th style="width:10%">S/N</th>
+      <th style="width:14%">Condición</th>
+      <th style="width:25%">Descripción de Avería / Novedades</th>
+    </tr>
+  </thead>
+  <tbody>${rows}</tbody>
+</table>
+<div class="firmas">
+  <div class="firma"><div style="height:36px"></div>ENTREGA CONFORME<br>${responsable}</div>
+  <div class="firma"><div style="height:36px"></div>RECIBE — ALMACÉN<br>Firma / Sello</div>
+  <div class="firma firma-red">
+    <div style="height:36px"></div>
+    <span style="color:#991b1b;font-size:8.5px;font-weight:900;display:block;margin-bottom:2px">AUTORIZADO / JEFE ALMACÉN</span>
+    Firma / Sello
+  </div>
+</div>
+<div class="footer">BOLIVIANA DE AVIACIÓN — Almacén de Herramientas | Generado: ${new Date().toLocaleString('es-BO')} | Doc: ${nro}</div>
+</body></html>`;
+        this._abrirBlob(html);
     }
 
     private _abrirPdf(

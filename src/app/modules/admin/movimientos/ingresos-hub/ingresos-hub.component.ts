@@ -83,7 +83,7 @@ type TabType = 'nueva' | 'ajuste';
         :host { display: flex; flex-direction: column; height: 100%; }
         .custom-scrollbar-ing::-webkit-scrollbar { width: 6px; height: 6px; }
         .custom-scrollbar-ing::-webkit-scrollbar-track { background: transparent; }
-        .custom-scrollbar-ing::-webkit-scrollbar-thumb { background: #15803d; border-radius: 3px; }
+        .custom-scrollbar-ing::-webkit-scrollbar-thumb { background: #D97706; border-radius: 3px; }
         [hidden] { display: none !important; }
         .row-nueva-selected { background-color: #dcfce7 !important; }
         .row-ajuste-selected { background-color: #fef3c7 !important; }
@@ -334,7 +334,7 @@ export class IngresosHubComponent implements OnInit, OnDestroy {
     // ── Nueva: modal handlers ─────────────────────────────────────────────────
     abrirModalRecepcion(): void {
         this.dialogRefActual = this.dialog.open(this.recepcionModal, {
-            width: '700px', maxWidth: '95vw', panelClass: 'neo-dialog-transparent', disableClose: true
+            width: '700px', maxWidth: '95vw', height: '88vh', panelClass: 'no-padding-dialog', disableClose: true
         });
     }
 
@@ -349,7 +349,7 @@ export class IngresosHubComponent implements OnInit, OnDestroy {
             this._resetHerramientaForm();
         }
         this.dialogRefActual = this.dialog.open(this.herramientaModal, {
-            width: '700px', maxWidth: '95vw', maxHeight: '90vh', panelClass: 'neo-dialog-transparent', disableClose: true
+            width: '900px', maxWidth: '95vw', height: '88vh', panelClass: 'no-padding-dialog', disableClose: true
         });
     }
 
@@ -424,7 +424,7 @@ export class IngresosHubComponent implements OnInit, OnDestroy {
         this.editingIndex = null;
         this.herramientaForm.patchValue(copy);
         this.dialogRefActual = this.dialog.open(this.herramientaModal, {
-            width: '900px', maxWidth: '95vw', maxHeight: '90vh', panelClass: 'neo-dialog-transparent', disableClose: true
+            width: '900px', maxWidth: '95vw', height: '88vh', panelClass: 'no-padding-dialog', disableClose: true
         });
         this._showMsg('Ítem copiado. Ajuste el S/N si es necesario.', 'info');
     }
@@ -470,9 +470,10 @@ export class IngresosHubComponent implements OnInit, OnDestroy {
     }
 
     async openCatalogo(): Promise<void> {
-        const { HerramientasAIngresarComponent } = await import('../nueva-herramienta/herramientas-a-ingresar/herramientas-a-ingresar.component');
+        const { HerramientasAIngresarComponent } = await import('./herramientas-a-ingresar/herramientas-a-ingresar.component');
         const ref = this.dialog.open(HerramientasAIngresarComponent, {
-            width: '700px', maxWidth: '95vw', height: 'auto', maxHeight: '90vh'
+            width: '760px', maxWidth: '95vw', height: '88vh',
+            panelClass: 'no-padding-dialog'
         });
         ref.afterClosed().subscribe((result: any) => {
             if (result?.action !== 'procesar') return;
@@ -642,7 +643,7 @@ export class IngresosHubComponent implements OnInit, OnDestroy {
     // ── Ajuste: modal handlers ────────────────────────────────────────────────
     abrirModalDatosAjuste(): void {
         this.dialogRefActual = this.dialog.open(this.datosAjusteModal, {
-            width: '700px', maxWidth: '95vw', panelClass: 'neo-dialog-transparent', disableClose: true
+            width: '700px', maxWidth: '95vw', height: '88vh', panelClass: 'no-padding-dialog', disableClose: true
         });
     }
 
@@ -709,10 +710,10 @@ export class IngresosHubComponent implements OnInit, OnDestroy {
     editItemAjuste(item: AjusteItem): void { this.openDetalleHerramienta(item); }
 
     async openDetalleHerramienta(editItem?: AjusteItem): Promise<void> {
-        const { DetalleHerramientaComponent } = await import('../ajuste-ingreso/detalle-herramienta/detalle-herramienta.component');
+        const { DetalleHerramientaComponent } = await import('./detalle-herramienta/detalle-herramienta.component');
         const ref = this.dialog.open(DetalleHerramientaComponent, {
-            width: '700px', maxWidth: '95vw', height: 'auto', maxHeight: '90vh',
-            hasBackdrop: true, disableClose: false, autoFocus: false,
+            width: '760px', maxWidth: '95vw', height: '88vh',
+            panelClass: 'no-padding-dialog', hasBackdrop: true, disableClose: false, autoFocus: false,
             data: { tipoAjuste: this.ajusteForm.get('tipoAjuste')?.value, editItem }
         });
         ref.afterClosed().subscribe((result: any) => {

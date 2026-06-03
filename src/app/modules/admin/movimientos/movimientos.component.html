@@ -16,6 +16,15 @@
 
         <div class="flex-1"></div>
 
+        <!-- Botón REPORTES -->
+        <button (click)="irAReportes()"
+                class="header-btn flex items-center gap-2 px-5 py-2 bg-[#FFC501FF] border-[2px] border-black font-black text-xs uppercase rounded-xl shadow-[3px_3px_0px_0px_#000] hover:shadow-[1px_1px_0px_0px_#000] hover:translate-x-[2px] hover:translate-y-[2px] transition-all text-black">
+            <mat-icon class="header-btn-icon !text-base !text-black">bar_chart</mat-icon>
+            <span class="hidden sm:inline">Reportes</span>
+        </button>
+
+        <div class="w-px h-8 bg-black/20 dark:bg-white/20 mx-1"></div>
+
         <!-- Botón MÓDULOS (bandeja) -->
         <button (click)="toggleBandeja()"
                 [class.!bg-black]="showBandeja"
@@ -26,14 +35,6 @@
             <mat-icon class="!text-sm transition-transform duration-200 !text-white dark:!text-white" [class.rotate-180]="showBandeja">expand_more</mat-icon>
         </button>
 
-        <div class="w-px h-8 bg-black/20 dark:bg-white/20 mx-1"></div>
-
-        <!-- Botón Consulta rápida -->
-        <button (click)="openModule(40)"
-                class="header-btn flex items-center gap-2 px-5 py-2 bg-black dark:bg-slate-700 border-[2px] border-black font-black text-xs uppercase rounded-xl shadow-[3px_3px_0px_0px_rgba(0,0,0,0.5)] hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,0.5)] hover:translate-x-[2px] hover:translate-y-[2px] transition-all text-white">
-            <mat-icon class="header-btn-icon !text-base !text-white dark:!text-white">search</mat-icon>
-            <span class="hidden sm:inline">Consulta</span>
-        </button>
     </div>
 
     <!-- ─────────────────── BACKDROP ─────────────────────────────── -->

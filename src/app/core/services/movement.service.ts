@@ -554,6 +554,23 @@ export class MovementService {
     }
 
     /**
+     * Lee el correlativo actual sin incrementarlo y retorna el SIGUIENTE número formateado.
+     * Útil para preview antes de guardar (ej: "ENV-5/2026").
+     */
+    getSiguienteCorrelativoPreview(prefijo: string): Observable<string> {
+        const anio = new Date().getFullYear();
+        return from(this._api.post('herramientas/correlativos/listarCorrelativos', { start: 0, limit: 200 })).pipe(
+            switchMap((response: any) => {
+                const lista: any[] = response?.ROOT?.datos || response?.datos || response?.data || (Array.isArray(response) ? response : []);
+                const row = lista.find((r: any) => r.prefijo === prefijo && Number(r.anio) === anio);
+                const siguiente = row ? (Number(row.ultimo_numero) + 1) : 1;
+                return of(`${prefijo}-${siguiente}/${anio}`);
+            }),
+            catchError(() => of(`${prefijo}-?/${anio}`))
+        );
+    }
+
+    /**
      * Get items of a specific movement
      */
     getMovementItems(movementId: number): Observable<any[]> {
@@ -905,10 +922,10 @@ export class MovementService {
      * Retorna array de loans, cada uno con propiedad items[] conteniendo los datos de la herramienta.
      */
     getActiveLoans(params?: { filtro_adicional?: string; [key: string]: any }): Observable<any[]> {
-        return from(this._api.post('herramientas/movements/listarLoans', {
-            start: 0, limit: 200, sort: 'id_loan', dir: 'desc',
-            ...params
-        })).pipe(
+        const { filtro_adicional, ...rest } = params || {};
+        const postParams: any = { start: 0, limit: 200, sort: 'id_loan', dir: 'desc', ...rest };
+        if (filtro_adicional) { postParams.filtro_adicional = filtro_adicional; }
+        return from(this._api.post('herramientas/movements/listarLoans', postParams)).pipe(
             switchMap((response: any) => of(response?.datos || response?.data || []))
         );
     }
@@ -1133,6 +1150,24 @@ export class MovementService {
                 }
                 return of((response?.datos || response?.data)?.[0] || response?.datos || response?.data || {});
             })
+        );
+    }
+
+    /**
+     * Obtiene valores de he.tparametros filtrados por categoria.
+     * Retorna array de strings con los valores (campo "valor").
+     */
+    getParametrosPorCategoria(categoria: string): Observable<string[]> {
+        return from(this._api.post('herramientas/parametros/listarParametros', {
+            start: 0, limit: 200,
+            sort: 'nombre', dir: 'asc',
+            filtro: `par.categoria = '${categoria}' AND par.active = true AND par.estado_reg = 'activo'`
+        })).pipe(
+            switchMap((response: any) => {
+                const rows: any[] = response?.datos || response?.data || [];
+                return of(rows.map(r => r.valor || r.nombre).filter(Boolean));
+            }),
+            catchError(() => of([]))
         );
     }
 

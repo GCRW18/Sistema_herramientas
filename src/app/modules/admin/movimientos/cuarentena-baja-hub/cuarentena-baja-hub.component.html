@@ -1,53 +1,70 @@
-<div class="flex flex-col w-full h-full bg-[#f8f9fc] dark:bg-[#0F172AFF] overflow-hidden">
+<div class="flex flex-col w-full h-full bg-[#f8f9fc] dark:bg-[#0F172AFF] transition-colors duration-300 font-sans overflow-hidden">
 
-    <!-- Sub-tab bar -->
-    <div class="flex items-center gap-1 px-4 py-2 border-b-[3px] border-black bg-white dark:bg-slate-900 shrink-0">
-        <!-- Icono del módulo -->
-        <div class="w-8 h-8 rounded-lg bg-[#b91c1c] border-2 border-black flex items-center justify-center shadow-[2px_2px_0_#000] shrink-0 mr-2">
-            <mat-icon class="!text-sm !w-4 !h-4 text-white">warning</mat-icon>
+    <!-- Decorative circles -->
+    <div class="fixed top-20 right-10 w-40 h-40 bg-[#D97706] rounded-full border-[3px] border-black opacity-5 pointer-events-none z-0"></div>
+    <div class="fixed bottom-10 left-10 w-24 h-24 bg-[#FFC501FF] rotate-12 border-[3px] border-black opacity-5 pointer-events-none z-0"></div>
+
+    <div class="flex-1 flex flex-col p-4 gap-3 overflow-hidden relative z-10">
+
+        <!-- ══ HEADER ══ -->
+        <div class="flex flex-col gap-3 shrink-0">
+
+            <!-- Título -->
+            <div class="flex items-center gap-4">
+                <div class="flex items-center justify-center w-10 h-10 bg-white dark:bg-[#0F172AFF] border-[3px] border-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] rounded-xl shrink-0">
+                    <mat-icon class="text-black dark:text-amber-400 !text-base">warning</mat-icon>
+                </div>
+                <div>
+                    <h1 class="text-xl font-black text-black dark:text-white uppercase tracking-tighter leading-none">
+                        CUARENTENA · BAJA
+                    </h1>
+                    <p class="text-[10px] font-bold bg-amber-400 text-black px-2 py-0.5 inline-block border-2 border-black rounded uppercase tracking-wider mt-0.5">
+                        Discrepancias · Proceso Administrativo
+                    </p>
+                </div>
+            </div>
+
+            <!-- Tabs -->
+            <div class="flex items-center gap-1">
+                <button (click)="activeTab = 'cuarentena'"
+                        class="h-9 px-3 flex items-center gap-1.5 rounded-lg border-[2px] border-black font-black text-[10px] uppercase transition-all"
+                        [ngClass]="activeTab === 'cuarentena'
+                            ? 'bg-[#b91c1c] text-white shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]'
+                            : 'bg-white dark:bg-white/10 text-black dark:text-white hover:bg-red-50 dark:hover:bg-white/20'">
+                    <mat-icon class="!text-sm" [ngClass]="activeTab === 'cuarentena' ? '!text-white' : '!text-black dark:!text-white'">warning</mat-icon>
+                    Cuarentena
+                </button>
+                <button (click)="activeTab = 'baja'"
+                        class="h-9 px-3 flex items-center gap-1.5 rounded-lg border-[2px] border-black font-black text-[10px] uppercase transition-all"
+                        [ngClass]="activeTab === 'baja'
+                            ? 'bg-[#b91c1c] text-white shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]'
+                            : 'bg-white dark:bg-white/10 text-black dark:text-white hover:bg-red-50 dark:hover:bg-white/20'">
+                    <mat-icon class="!text-sm" [ngClass]="activeTab === 'baja' ? '!text-white' : '!text-black dark:!text-white'">delete_sweep</mat-icon>
+                    Baja de Activo
+                </button>
+            </div>
         </div>
 
-        <!-- Tab CUARENTENA -->
-        <button (click)="activeTab = 'cuarentena'"
-                class="flex items-center gap-1.5 h-8 px-4 rounded-lg border-[2px] border-black font-black text-[10px] uppercase transition-all"
-                [ngClass]="activeTab === 'cuarentena'
-                  ? 'bg-[#b91c1c] text-white shadow-none translate-x-[1px] translate-y-[1px]'
-                  : 'bg-white dark:bg-slate-700 text-black dark:text-white shadow-[2px_2px_0_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none'">
-            <mat-icon class="!text-sm !w-4 !h-4">warning</mat-icon>
-            Cuarentena
-        </button>
+        <!-- Loading -->
+        <div *ngIf="loading" class="flex-1 flex items-center justify-center border-[3px] border-black rounded-2xl bg-white dark:bg-[#0F172AFF] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+            <mat-spinner diameter="36"></mat-spinner>
+        </div>
 
-        <!-- Tab BAJA -->
-        <button (click)="activeTab = 'baja'"
-                class="flex items-center gap-1.5 h-8 px-4 rounded-lg border-[2px] border-black font-black text-[10px] uppercase transition-all"
-                [ngClass]="activeTab === 'baja'
-                  ? 'bg-[#b91c1c] text-white shadow-none translate-x-[1px] translate-y-[1px]'
-                  : 'bg-white dark:bg-slate-700 text-black dark:text-white shadow-[2px_2px_0_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none'">
-            <mat-icon class="!text-sm !w-4 !h-4">delete_sweep</mat-icon>
-            Baja de Activo
-        </button>
+        <!-- ══ CARD PRINCIPAL ══ -->
+        <div *ngIf="!loading" class="flex-1 overflow-hidden border-[3px] border-black bg-white dark:bg-[#0F172AFF] rounded-2xl shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
 
-        <div class="flex-1"></div>
-        <span class="text-[9px] font-black uppercase text-stone-400 dark:text-slate-500 tracking-widest">ACTIVOS</span>
+            <div *ngIf="activeTab === 'cuarentena'" class="h-full overflow-hidden">
+                <ng-container [ngComponentOutlet]="cuarentenaComp!"
+                              [ngComponentOutletInjector]="cuarentenaInj!">
+                </ng-container>
+            </div>
+
+            <div *ngIf="activeTab === 'baja'" class="h-full overflow-hidden">
+                <ng-container [ngComponentOutlet]="bajaComp!"
+                              [ngComponentOutletInjector]="bajaInj!">
+                </ng-container>
+            </div>
+        </div>
+
     </div>
-
-    <!-- Loading -->
-    <div *ngIf="loading" class="flex-1 flex items-center justify-center">
-        <mat-spinner diameter="36"></mat-spinner>
-    </div>
-
-    <!-- Contenido tab CUARENTENA -->
-    <div *ngIf="!loading && activeTab === 'cuarentena'" class="flex-1 overflow-hidden">
-        <ng-container [ngComponentOutlet]="cuarentenaComp!"
-                      [ngComponentOutletInjector]="cuarentenaInj!">
-        </ng-container>
-    </div>
-
-    <!-- Contenido tab BAJA -->
-    <div *ngIf="!loading && activeTab === 'baja'" class="flex-1 overflow-hidden">
-        <ng-container [ngComponentOutlet]="bajaComp!"
-                      [ngComponentOutletInjector]="bajaInj!">
-        </ng-container>
-    </div>
-
 </div>

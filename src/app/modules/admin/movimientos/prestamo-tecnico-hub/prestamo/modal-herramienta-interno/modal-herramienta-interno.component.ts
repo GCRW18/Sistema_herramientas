@@ -11,7 +11,7 @@ import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } 
 import { DragDropModule } from '@angular/cdk/drag-drop';
 import { Subject, takeUntil, debounceTime, distinctUntilChanged, of } from 'rxjs';
 import { catchError } from 'rxjs/operators';
-import { MovementService } from '../../../../../core/services/movement.service'; // Ajusta la ruta
+import { MovementService } from '../../../../../../core/services/movement.service';
 
 export interface HerramientaOption {
     id_tool: number;
@@ -68,8 +68,7 @@ export class ModalHerramientaInternoComponent implements OnInit, OnDestroy {
 
     estados = [
         { value: 'SERVICEABLE', label: 'SERVICEABLE' },
-        { value: 'EN CALIBRACION', label: 'EN CALIBRACION' },
-        { value: 'CUARENTENA', label: 'CUARENTENA' }
+        { value: 'NUEVO',       label: 'NUEVO'       }
     ];
 
     ngOnInit(): void {
@@ -86,6 +85,7 @@ export class ModalHerramientaInternoComponent implements OnInit, OnDestroy {
             existencia:       [{ value: 0, disabled: true }],
             fechaVencimiento: [''],
             unidad:           [''],
+            content_list:     [''],
             estado:           ['SERVICEABLE', Validators.required],
             cantidad:         [1, [Validators.required, Validators.min(1)]],
             observacion:      ['']
@@ -113,22 +113,49 @@ export class ModalHerramientaInternoComponent implements OnInit, OnDestroy {
         this.prestarForm.get('cantidad')?.valueChanges.pipe(takeUntil(this.destroy$)).subscribe(() => this.validateCantidad());
     }
 
+    private readonly _bloqueados = new Set([
+        'decommissioned', 'in_calibration', 'quarantine', 'in_maintenance'
+    ]);
+
+    private _localDate(): string {
+        const d = new Date();
+        return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    }
+
+    errorCarga: string | null = null;
+
     private cargarHerramientas(): void {
         this.isLoading = true;
-        this.movementService.getHerramientasDisponibles({ status: 'DISPONIBLE' }).pipe(
+        this.errorCarga = null;
+        const hoy = this._localDate();
+        this.movementService.getHerramientasDisponibles({}).pipe(
             takeUntil(this.destroy$),
-            catchError(err => { this.isLoading = false; return of([]); })
+            catchError(() => { this.isLoading = false; return of([]); })
         ).subscribe({
             next: (tools) => {
-                if (tools && Array.isArray(tools)) {
-                    this.herramientas = tools.map((t: any) => ({
-                        id_tool: t.id_tool ?? t.id, codigo: t.code ?? t.codigo ?? '', nombre: t.name ?? t.nombre ?? '',
-                        pn: t.part_number ?? t.pn ?? '', sn: t.serial_number ?? t.sn ?? '', marca: t.brand ?? t.marca ?? '',
-                        ubicacion: t.location ?? t.ubicacion ?? '', base: t.warehouse_code ?? t.base ?? 'VVI',
-                        existencia: t.quantity_in_stock ?? t.existencia ?? 0, fechaVencimiento: t.calibration_due_date ?? t.fechaVencimiento ?? '',
-                        unidad: t.unit_of_measure ?? t.unidad ?? 'PZA', estado: t.status ?? 'SERVICEABLE', imagen: t.image_url || null
+                this.herramientas = (tools || [])
+                    .filter((t: any) => {
+                        const status  = (t.status ?? '').toLowerCase();
+                        const stock   = Number(t.quantity_in_stock ?? t.existencia ?? 0);
+                        const expiry  = t.next_calibration_date ?? t.calibration_due_date ?? null;
+                        return !this._bloqueados.has(status) && stock > 0 && !(expiry && expiry < hoy);
+                    })
+                    .map((t: any) => ({
+                        id_tool:          t.id_tool ?? t.id,
+                        codigo:           t.code ?? t.codigo ?? '',
+                        nombre:           t.name ?? t.nombre ?? '',
+                        pn:               t.part_number ?? t.pn ?? '',
+                        sn:               t.serial_number ?? t.sn ?? '',
+                        marca:            t.brand ?? t.marca ?? '',
+                        ubicacion:        t.location ?? t.ubicacion ?? '',
+                        base:             t.warehouse_code ?? t.base ?? '',
+                        existencia:       Number(t.quantity_in_stock ?? t.existencia ?? 0),
+                        fechaVencimiento: t.next_calibration_date ?? t.calibration_due_date ?? '',
+                        unidad:           t.unit_of_measure ?? t.unidad ?? 'PZA',
+                        content_list:     t.content_list ?? '',
+                        estado:           'SERVICEABLE',
+                        imagen:           t.image_url || null
                     }));
-                }
                 this.isLoading = false;
             }
         });
@@ -154,7 +181,8 @@ export class ModalHerramientaInternoComponent implements OnInit, OnDestroy {
         this.prestarForm.patchValue({
             buscar: `${h.codigo} - ${h.nombre}`, id_tool: h.id_tool, codigo: h.codigo, nombre: h.nombre,
             pn: h.pn, sn: h.sn, marca: h.marca, ubicacion: h.ubicacion, base: h.base, existencia: h.existencia,
-            unidad: h.unidad, estado: h.estado, fechaVencimiento: h.fechaVencimiento, cantidad: 1
+            unidad: h.unidad, estado: h.estado, fechaVencimiento: h.fechaVencimiento,
+            content_list: (h as any).content_list ?? '', cantidad: 1
         });
         this.imagenOriginal.set(h.imagen || null);
         this.selectedImage.set(h.imagen || null);

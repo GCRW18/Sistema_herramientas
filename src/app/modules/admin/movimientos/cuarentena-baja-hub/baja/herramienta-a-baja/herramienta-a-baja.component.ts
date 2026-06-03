@@ -11,7 +11,7 @@ import { DragDropModule } from '@angular/cdk/drag-drop';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { Subject, takeUntil, debounceTime, distinctUntilChanged } from 'rxjs';
-import { MovementService } from '../../../../../core/services/movement.service';
+import { MovementService } from '../../../../../../core/services/movement.service';
 
 interface HerramientaOption {
     id_tool?: number;

@@ -283,7 +283,7 @@ export class ReportsComponent implements OnInit {
             return `<tr class="${i % 2 === 0 ? 'even' : ''}">${cells}</tr>`;
         }).join('');
 
-        win.document.write(`<!DOCTYPE html><html lang="es"><head>
+        const htmlContent = `<!DOCTYPE html><html lang="es"><head>
 <meta charset="utf-8">
 <title>${opt?.codigo ?? ''} — ${opt?.label ?? ''}</title>
 <style>
@@ -322,8 +322,91 @@ export class ReportsComponent implements OnInit {
   <tbody>${bodyRows}</tbody>
 </table>
 <div class="footer">SISTEMA DE GESTIÓN DE HERRAMIENTAS · BOA &nbsp;|&nbsp; ${today}</div>
-<script>window.print();</script>
-</body></html>`);
+</body></html>`;
+
+        win.document.write(htmlContent);
         win.document.close();
+        win.onload = () => win.print();
+    }
+
+    /* ── Guardar reporte como PDF (descarga directa) ── */
+    guardarPdf(): void {
+        const config = this.currentConfig();
+        const data   = this.rows();
+        if (!config || !data.length) {
+            this.snackBar.open('Sin datos para exportar', 'OK', { duration: 3000 });
+            return;
+        }
+
+        const opt    = this.currentOpts().find(o => o.id === this.activeReport());
+        const cols   = config.columnas as ColDef[];
+        const today  = new Date().toLocaleDateString('es-BO', { day: '2-digit', month: '2-digit', year: 'numeric' });
+        const tabLbl = this.TABS.find(t => t.id === this.activeTab())?.label?.toUpperCase() ?? '';
+
+        const headerCells = cols.map(c => `<th>${c.header}</th>`).join('');
+        const bodyRows = data.map((row, i) => {
+            const cells = cols.map(c => {
+                let v: any = row[c.key];
+                if (v == null || v === '') return '<td>—</td>';
+                if (c.tipo === 'date') {
+                    try { v = new Date(v).toLocaleDateString('es-BO', { day: '2-digit', month: '2-digit', year: 'numeric' }); } catch {}
+                } else if (c.tipo === 'bool')  { v = v === true ? '✔' : '—'; }
+                  else if (c.tipo === 'days')  { v = `${v}d`; }
+                return `<td>${String(v).replace(/</g, '&lt;').replace(/>/g, '&gt;')}</td>`;
+            }).join('');
+            return `<tr class="${i % 2 === 0 ? 'even' : ''}">${cells}</tr>`;
+        }).join('');
+
+        const htmlContent = `<!DOCTYPE html><html lang="es"><head>
+<meta charset="utf-8">
+<title>${opt?.codigo ?? ''} — ${opt?.label ?? ''}</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: Arial, Helvetica, sans-serif; padding: 18px; color: #0f172a; font-size: 11px; }
+  .header { border-bottom: 4px solid #000; padding-bottom: 10px; margin-bottom: 6px;
+            display: flex; justify-content: space-between; align-items: flex-end; }
+  .title-block h2 { font-size: 15px; font-weight: 900; text-transform: uppercase; letter-spacing: -0.5px; }
+  .badges { display: flex; gap: 6px; align-items: center; }
+  .badge { display: inline-block; font-weight: 900; font-size: 9px; padding: 2px 8px;
+           border: 2px solid #000; text-transform: uppercase; }
+  .badge-code { background: #fbbf24; color: #000; }
+  .badge-cat  { background: #0f172a; color: #fbbf24; }
+  .meta { font-size: 9px; color: #94a3b8; margin-bottom: 12px; }
+  table { width: 100%; border-collapse: collapse; border: 3px solid #000; }
+  thead tr { background: #0f172a; }
+  th { color: #fbbf24; font-weight: 900; text-transform: uppercase; padding: 6px 8px;
+       border: 1px solid #334155; text-align: left; font-size: 9px; white-space: nowrap; }
+  td { border: 1px solid #e2e8f0; padding: 5px 8px; font-size: 10px;
+       vertical-align: top; word-break: break-word; max-width: 220px; }
+  tr.even td { background: #f8fafc; }
+  .footer { margin-top: 10px; font-size: 9px; color: #94a3b8; text-align: right; }
+  @media print { @page { size: landscape; margin: 8mm 10mm; } body { padding: 0; } }
+</style>
+</head><body>
+<div class="header">
+  <div class="title-block"><h2>${opt?.label ?? tabLbl}</h2></div>
+  <div class="badges">
+    <span class="badge badge-code">${opt?.codigo ?? ''}</span>
+    <span class="badge badge-cat">${tabLbl}</span>
+  </div>
+</div>
+<div class="meta">Total: ${data.length} registros &nbsp;·&nbsp; Generado: ${today}</div>
+<table>
+  <thead><tr>${headerCells}</tr></thead>
+  <tbody>${bodyRows}</tbody>
+</table>
+<div class="footer">SISTEMA DE GESTIÓN DE HERRAMIENTAS · BOA &nbsp;|&nbsp; ${today}</div>
+</body></html>`;
+
+        const blob     = new Blob([htmlContent], { type: 'text/html' });
+        const url      = URL.createObjectURL(blob);
+        const filename = `${opt?.codigo ?? 'reporte'}_${new Date().toISOString().slice(0,10)}.html`;
+        const a        = document.createElement('a');
+        a.href = url; a.download = filename; a.rel = 'noopener';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setTimeout(() => URL.revokeObjectURL(url), 60000);
+        this.snackBar.open(`Descargando "${filename}" — ábrelo en el navegador y usa "Guardar como PDF"`, 'OK', { duration: 6000 });
     }
 }

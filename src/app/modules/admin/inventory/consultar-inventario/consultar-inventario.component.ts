@@ -660,9 +660,10 @@ export class ConsultarInventarioComponent implements OnInit {
         const ref = this.dialog.open(FichaInventarioDialogComponent, {
             data:         { item },
             panelClass:   'no-padding-dialog',
-            width:        '760px',
-            maxWidth:     '95vw',
-            height:       '88vh',
+            width:        'auto',
+            maxWidth:     '98vw',
+            height:       'auto',
+            maxHeight:    '98vh',
             autoFocus:    false,
             restoreFocus: false,
         });

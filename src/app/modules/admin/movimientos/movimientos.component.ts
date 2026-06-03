@@ -3,6 +3,7 @@ import {
     Type, Injector, TrackByFunction, ChangeDetectorRef
 } from '@angular/core';
 import { CommonModule, NgComponentOutlet } from '@angular/common';
+import { Router } from '@angular/router';
 import { MatIconModule, MatIconRegistry } from '@angular/material/icon';
 import { MatDialogRef, MatDialogModule } from '@angular/material/dialog';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
@@ -66,6 +67,7 @@ interface OpenTab {
 export class MovimientosComponent implements OnInit, OnDestroy {
 
     private injector      = inject(Injector);
+    private router        = inject(Router);
     private snackBar      = inject(MatSnackBar);
     private iconRegistry  = inject(MatIconRegistry);
     private sanitizer     = inject(DomSanitizer);
@@ -110,12 +112,6 @@ export class MovimientosComponent implements OnInit, OnDestroy {
             svgIcon: 'heroicons_outline:exclamation-triangle',
             loader: async () => (await import('./cuarentena-baja-hub/cuarentena-baja-hub.component')).CuarentenaBajaHubComponent
         },
-        {
-            type: 40, label: 'CONSULTA', sublabel: 'MOVIMIENTOS',
-            color: '#0f766e', textColor: '#fff',
-            svgIcon: 'heroicons_outline:magnifying-glass',
-            loader: async () => (await import('./consulta-movimientos/consulta-movimientos.component')).ConsultaMovimientosComponent
-        },
     ];
 
     constructor() {
@@ -125,6 +121,10 @@ export class MovimientosComponent implements OnInit, OnDestroy {
     // ── Lifecycle ─────────────────────────────────────────────────────────────
     ngOnInit(): void {}
     ngOnDestroy(): void { this._unsub$.next(); this._unsub$.complete(); }
+
+    irAReportes(): void {
+        this.router.navigate(['/inventario'], { queryParams: { tab: 'reportes' } });
+    }
 
     // ── Bandeja ───────────────────────────────────────────────────────────────
     toggleBandeja(): void {

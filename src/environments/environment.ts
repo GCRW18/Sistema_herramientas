@@ -5,7 +5,7 @@ export const environment = {
     mode: 'cors',
     port: location.protocol.replace(':', '') == 'https' ? '443' : '80',
     protocol: location.protocol.replace(':', ''),
-    backendRestVersion: 1,
+    backendRestVersion: 2,
     initWebSocket: 'NO',
     portWs: '8010',
     backendVersion: 'v1',

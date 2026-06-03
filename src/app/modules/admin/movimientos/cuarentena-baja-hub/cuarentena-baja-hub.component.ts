@@ -25,8 +25,8 @@ export class CuarentenaBajaHubComponent implements OnInit {
 
     async ngOnInit() {
         const [c, b] = await Promise.all([
-            import('../poner-cuarentena/poner-cuarentena.component').then(m => m.PonerCuarentenaComponent),
-            import('../baja/baja.component').then(m => m.BajaComponent)
+            import('./poner-cuarentena/poner-cuarentena.component').then(m => m.PonerCuarentenaComponent),
+            import('./baja/baja.component').then(m => m.BajaComponent)
         ]);
         this.cuarentenaComp = c;
         this.bajaComp       = b;

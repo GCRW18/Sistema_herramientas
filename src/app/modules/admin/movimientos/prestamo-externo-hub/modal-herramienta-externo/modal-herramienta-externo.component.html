@@ -1,0 +1,117 @@
+<div class="bg-stone-100 dark:bg-slate-900 border-2 border-black overflow-hidden flex flex-col"
+     cdkDrag cdkDragRootElement=".cdk-overlay-pane"
+     style="width:580px; max-width:95vw; max-height:90vh; box-shadow: 6px 6px 0 #000">
+
+    <!-- Header (drag handle) -->
+    <div class="bg-[#0F172A] px-5 py-3.5 flex items-center gap-3 shrink-0 select-none"
+         cdkDragHandle style="cursor:grab">
+        <div class="w-9 h-9 rounded bg-amber-400 border-2 border-black flex items-center justify-center shadow-[2px_2px_0_#fbbf24] shrink-0">
+            <mat-icon class="!text-lg text-black">handshake</mat-icon>
+        </div>
+        <div>
+            <p class="text-[9px] text-slate-400 font-bold uppercase tracking-[0.18em] leading-none mb-0.5">Préstamo Terceros</p>
+            <h2 class="text-sm text-white font-black uppercase tracking-tight leading-none">Agregar a Terceros</h2>
+        </div>
+    </div>
+
+    <!-- Body: una sola columna -->
+    <div class="flex-1 overflow-y-auto px-5 py-5 flex flex-col gap-4 custom-scrollbar">
+
+        <!-- Sección: Búsqueda de ítem -->
+        <div class="flex items-center gap-2 pb-1.5 border-b-2 border-black">
+            <div class="w-6 h-6 rounded bg-amber-400 border-2 border-black flex items-center justify-center">
+                <mat-icon class="!text-xs text-black">search</mat-icon>
+            </div>
+            <p class="text-[9px] font-black uppercase tracking-[0.18em] text-black dark:text-white">Búsqueda de Ítem</p>
+        </div>
+
+        <form [formGroup]="prestarForm" class="flex flex-col gap-4">
+
+            <!-- Buscar herramienta -->
+            <div class="relative">
+                <input type="text" formControlName="buscar"
+                       (input)="onBuscarChange($any($event.target).value)"
+                       (blur)="hideToolsSuggestions()"
+                       placeholder="Código, Nombre o P/N..."
+                       class="w-full h-10 text-sm font-bold bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-xl px-3 outline-none transition-all duration-150 placeholder:text-stone-300 hover:border-stone-400 focus:border-black focus:shadow-[3px_3px_0_#000] uppercase">
+                <div *ngIf="showToolsSuggestions && filteredHerramientas.length > 0"
+                     class="absolute z-50 w-full mt-1 bg-white dark:bg-slate-800 border-2 border-black rounded-xl overflow-hidden max-h-48 overflow-y-auto divide-y divide-stone-100 dark:divide-slate-700"
+                     style="box-shadow: 4px 4px 0 #000">
+                    <button type="button" *ngFor="let h of filteredHerramientas"
+                            (mousedown)="selectHerramienta(h)"
+                            class="w-full text-left px-3 py-2 hover:bg-purple-50 dark:hover:bg-slate-700 transition-colors">
+                        <p class="text-[10px] font-black text-black dark:text-white">{{ h.codigo || h.code }} — {{ h.nombre || h.name }}</p>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Código + Descripción -->
+            <div class="grid grid-cols-3 gap-3">
+                <div>
+                    <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1.5 block">Código</label>
+                    <input formControlName="codigo" type="text" readonly
+                           class="w-full h-10 text-[10px] font-bold bg-stone-200 dark:bg-slate-700 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-xl px-2 outline-none cursor-not-allowed uppercase">
+                </div>
+                <div class="col-span-2">
+                    <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1.5 block">Descripción</label>
+                    <input formControlName="nombre" type="text" readonly
+                           class="w-full h-10 text-[10px] font-bold bg-stone-200 dark:bg-slate-700 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-xl px-2 outline-none cursor-not-allowed uppercase">
+                </div>
+            </div>
+
+            <!-- Sección: Tarifas y cantidad -->
+            <div class="flex items-center gap-2 pb-1.5 border-b-2 border-black mt-1">
+                <div class="w-6 h-6 rounded bg-amber-400 border-2 border-black flex items-center justify-center">
+                    <mat-icon class="!text-xs text-black">monetization_on</mat-icon>
+                </div>
+                <p class="text-[9px] font-black uppercase tracking-[0.18em] text-black dark:text-white">Tarifas y Cantidad</p>
+            </div>
+
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <div>
+                    <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1.5 block">Cantidad *</label>
+                    <input formControlName="cantidad" type="number" min="1"
+                           class="w-full h-10 text-sm font-bold bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-xl px-3 outline-none transition-all text-center hover:border-stone-400 focus:border-black focus:shadow-[3px_3px_0_#000]">
+                </div>
+                <div>
+                    <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1.5 block">Horas *</label>
+                    <input formControlName="horas" type="number" min="1"
+                           class="w-full h-10 text-sm font-bold text-blue-600 dark:text-blue-400 bg-white dark:bg-slate-800 border-2 border-stone-300 dark:border-slate-600 rounded-xl px-3 outline-none transition-all text-center hover:border-stone-400 focus:border-black focus:shadow-[3px_3px_0_#000]">
+                </div>
+                <div>
+                    <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1.5 block">Costo/Hr $ *</label>
+                    <input formControlName="costoHora" type="number" min="0" step="0.5"
+                           class="w-full h-10 text-sm font-bold text-green-600 dark:text-green-400 bg-white dark:bg-slate-800 border-2 border-stone-300 dark:border-slate-600 rounded-xl px-3 outline-none transition-all text-center hover:border-stone-400 focus:border-black focus:shadow-[3px_3px_0_#000]">
+                </div>
+                <div>
+                    <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1.5 block">Estado</label>
+                    <select formControlName="estado"
+                            class="w-full h-10 px-3 bg-white dark:bg-slate-800 text-black dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-xl text-sm font-bold outline-none transition-all cursor-pointer hover:border-stone-400 focus:border-black">
+                        <option *ngFor="let est of estados" [value]="est.value">{{ est.label }}</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Observaciones -->
+            <div>
+                <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1.5 block">Observaciones</label>
+                <textarea formControlName="observacion" rows="3"
+                          class="w-full text-sm font-normal bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-xl px-3 py-2.5 outline-none transition-all resize-none hover:border-stone-400 focus:border-black focus:shadow-[3px_3px_0_#000]"></textarea>
+            </div>
+        </form>
+    </div>
+
+    <!-- Footer -->
+    <div class="border-t-2 border-black bg-stone-200 dark:bg-slate-800 px-5 py-3 flex justify-between items-center shrink-0">
+        <button type="button" (click)="cerrar()"
+                class="px-4 py-2 bg-[#FF1414] text-white font-black text-[10px] border-2 border-black rounded-xl shadow-[2px_2px_0_#000] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all uppercase">
+            Cancelar
+        </button>
+        <button type="button" (click)="agregar()"
+                [disabled]="!prestarForm.get('codigo')?.value || !validarCantidadState()"
+                class="flex items-center gap-2 px-5 py-2 bg-amber-400 text-black font-black text-[10px] border-2 border-black rounded-xl shadow-[3px_3px_0_#000] hover:shadow-none hover:translate-x-[3px] hover:translate-y-[3px] transition-all uppercase disabled:opacity-40 disabled:cursor-not-allowed disabled:translate-x-0 disabled:translate-y-0 disabled:shadow-[3px_3px_0_#000]">
+            <mat-icon class="!text-sm">add_circle</mat-icon>
+            Agregar a Lista
+        </button>
+    </div>
+</div>

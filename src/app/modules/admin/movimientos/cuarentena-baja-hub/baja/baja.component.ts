@@ -19,8 +19,8 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { Subject, takeUntil, finalize, forkJoin, of } from 'rxjs';
 import { debounceTime, distinctUntilChanged, switchMap, map, catchError } from 'rxjs/operators';
-import { QuarantineService } from '../../../../core/services/quarantine.service';
-import { MovementService } from '../../../../core/services/movement.service';
+import { QuarantineService } from '../../../../../core/services/quarantine.service';
+import { MovementService } from '../../../../../core/services/movement.service';
 
 interface BajaItem {
     toolId?: number;
@@ -295,9 +295,8 @@ export class BajaComponent implements OnInit, OnDestroy {
     // MODAL DE DATOS GENERALES
     abrirModalDatos(): void {
         this.activeDialog = this.dialog.open(this.datosBajaModal, {
-            panelClass: ['!p-0', '!bg-transparent', '!shadow-none'],
-            disableClose: true,
-            maxWidth: '100vw'
+            width: '800px', maxWidth: '95vw', height: '88vh',
+            panelClass: 'no-padding-dialog', disableClose: true
         });
     }
 
@@ -326,15 +325,9 @@ export class BajaComponent implements OnInit, OnDestroy {
             const { HerramientaABajaComponent } = await import('./herramienta-a-baja/herramienta-a-baja.component');
 
             const dialogRef = this.dialog.open(HerramientaABajaComponent, {
-                width: '850px', // Ancho perfecto para 2 columnas holgadas
-                maxWidth: '95vw',
-                height: 'auto',
-                maxHeight: '95vh',
-                // Estas 4 clases son CRUCIALES para evitar el desbordamiento blanco:
-                panelClass: ['!p-0', '!bg-transparent', '!shadow-none', '!border-none'],
-                hasBackdrop: true,
-                disableClose: true,
-                autoFocus: false
+                width: '850px', maxWidth: '95vw', height: '88vh',
+                panelClass: 'no-padding-dialog',
+                hasBackdrop: true, disableClose: true, autoFocus: false
             });
 
             dialogRef.afterClosed()

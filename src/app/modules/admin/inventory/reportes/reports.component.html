@@ -136,6 +136,24 @@
             <span class="hidden sm:inline">Imprimir</span>
           </button>
 
+          <!-- Botón Guardar PDF -->
+          <button (click)="guardarPdf()"
+                  [disabled]="loading() || rows().length === 0"
+                  matTooltip="Guardar reporte como archivo HTML (abre en navegador → Guardar como PDF)"
+                  class="flex items-center gap-1.5 h-8 px-3
+                         bg-[#FFC501FF] text-black
+                         font-black text-[10px] uppercase
+                         border-[2px] border-black rounded-lg
+                         shadow-[2px_2px_0px_0px_#000]
+                         hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none
+                         active:translate-x-[2px] active:translate-y-[2px] active:shadow-none
+                         disabled:opacity-50 disabled:cursor-not-allowed
+                         disabled:translate-x-0 disabled:translate-y-0 disabled:shadow-none
+                         transition-all shrink-0">
+            <mat-icon class="!text-sm !w-4 !h-4">download</mat-icon>
+            <span class="hidden sm:inline">Guardar PDF</span>
+          </button>
+
           <!-- Botón Refresh datos -->
           <button (click)="loadData()"
                   [disabled]="loading()"

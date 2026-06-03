@@ -12,8 +12,8 @@ import { DragDropModule } from '@angular/cdk/drag-drop'; // <--- OBLIGATORIO PAR
 import { Subject, forkJoin, finalize, takeUntil, of } from 'rxjs';
 import { debounceTime, distinctUntilChanged, switchMap, map, catchError } from 'rxjs/operators';
 
-import { MovementService } from '../../../../core/services/movement.service';
-import { QuarantineService } from '../../../../core/services/quarantine.service';
+import { MovementService } from '../../../../../core/services/movement.service';
+import { QuarantineService } from '../../../../../core/services/quarantine.service';
 
 @Component({
     selector: 'app-poner-cuarentena',
@@ -132,9 +132,8 @@ export class PonerCuarentenaComponent implements OnInit, OnDestroy {
     // -------------------------------------------------------------------------
     abrirModalReporte(): void {
         this.activeDialog = this.dialog.open(this.reporteModal, {
-            panelClass: ['!p-0', '!bg-transparent', '!shadow-none'], // Elimina estilos default de Angular Material
-            disableClose: true,
-            maxWidth: '100vw'
+            width: '860px', maxWidth: '95vw', height: '88vh',
+            panelClass: 'no-padding-dialog', disableClose: true
         });
     }
 
@@ -153,9 +152,8 @@ export class PonerCuarentenaComponent implements OnInit, OnDestroy {
         this.showToolDropdown = false;
 
         this.activeDialog = this.dialog.open(this.herramientaModal, {
-            panelClass: ['!p-0', '!bg-transparent', '!shadow-none'],
-            disableClose: true,
-            maxWidth: '100vw'
+            width: '960px', maxWidth: '95vw', height: '88vh',
+            panelClass: 'no-padding-dialog', disableClose: true
         });
     }
 

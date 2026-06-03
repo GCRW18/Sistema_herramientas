@@ -1,0 +1,314 @@
+<div class="flex flex-col w-full h-full overflow-hidden">
+
+    <!-- Spinner superpuesto -->
+    <div *ngIf="isLoading" class="absolute inset-0 z-[120] flex items-center justify-center bg-white/60 dark:bg-black/60 backdrop-blur-sm">
+        <div class="bg-white dark:bg-slate-800 border-[3px] border-black rounded-2xl shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] p-8 flex flex-col items-center gap-4">
+            <mat-spinner diameter="40"></mat-spinner>
+            <p class="text-xs font-black uppercase text-black dark:text-white">Procesando Baja...</p>
+        </div>
+    </div>
+
+    <!-- ══ BARRA DE ACCIONES (cabecera oscura) ══ -->
+    <div class="px-4 py-2.5 bg-[#0F172AFF] border-b-[3px] border-black flex items-center justify-between shrink-0 flex-wrap gap-2">
+        <div class="flex items-center gap-3">
+            <button (click)="abrirModalDatos()"
+                    class="flex items-center gap-1 h-8 px-2.5 bg-white/10 hover:bg-white/20 text-white border border-white/30 rounded-lg text-[10px] font-black uppercase transition-all">
+                <mat-icon class="!text-sm">edit_document</mat-icon>
+                <span class="hidden sm:inline">Datos Proceso</span>
+            </button>
+            <div class="flex items-center gap-2 bg-red-600/40 rounded-lg px-3 py-1.5 border border-red-400">
+                <div class="w-4 h-4 bg-red-600 border border-black rounded flex items-center justify-center">
+                    <mat-icon class="!text-[9px] text-white">delete_sweep</mat-icon>
+                </div>
+                <div>
+                    <div class="text-[8px] font-black uppercase text-white leading-none">A Baja</div>
+                    <div class="text-sm font-black text-white leading-none">{{ dataSource().length }}</div>
+                </div>
+            </div>
+            <div *ngIf="dataSource().length > 0" class="flex items-center gap-2 bg-red-600/30 rounded-lg px-3 py-1.5 border border-black">
+                <div class="text-[8px] font-black uppercase text-white leading-none hidden sm:block">Unidades</div>
+                <div class="text-sm font-black text-white leading-none">{{ getTotalCantidad() }}</div>
+            </div>
+        </div>
+        <div class="flex items-center gap-2">
+            <button (click)="openHerramientaABaja()"
+                    class="h-8 px-3 flex items-center gap-1.5 bg-white dark:bg-white/10 border-[2px] border-black rounded-lg font-black text-[10px] uppercase shadow-[2px_2px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all text-black dark:text-white">
+                <mat-icon class="!text-sm">add_circle</mat-icon>
+                <span class="hidden sm:inline">Agregar Ítem</span>
+            </button>
+            <button (click)="procesarEImprimir()" [disabled]="dataSource().length === 0 || !isProcessValid()"
+                    class="h-8 px-3 flex items-center gap-1.5 bg-amber-400 border-[2px] border-black rounded-lg font-black text-[10px] uppercase shadow-[2px_2px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all text-black disabled:opacity-40 disabled:cursor-not-allowed disabled:translate-x-0 disabled:translate-y-0 disabled:shadow-[2px_2px_0px_0px_#000]">
+                <mat-icon class="!text-sm">print</mat-icon>
+                <span class="hidden sm:inline">Procesar Baja</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- ══ BANNER DE ESTADO ══ -->
+    <div class="px-4 pt-3 shrink-0">
+        <div *ngIf="!isProcessValid()" class="bg-gray-50 dark:bg-slate-800 border-[2px] border-black p-3 rounded-xl flex items-center justify-between">
+            <div class="flex items-center gap-2">
+                <mat-icon class="text-red-600 !text-xl">warning</mat-icon>
+                <span class="font-black text-xs text-black dark:text-white uppercase">Faltan Datos del Proceso de Baja</span>
+            </div>
+            <button (click)="abrirModalDatos()"
+                    class="h-7 px-3 flex items-center gap-1 bg-red-600 text-white border-2 border-black rounded-lg font-black text-[10px] uppercase shadow-[2px_2px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all">
+                <mat-icon class="!text-xs">edit</mat-icon> Configurar
+            </button>
+        </div>
+        <div *ngIf="isProcessValid()" class="bg-gray-50 dark:bg-slate-800 border-[2px] border-black p-3 rounded-xl flex items-center justify-between gap-3 flex-wrap">
+            <div class="flex flex-wrap gap-x-6 gap-y-1">
+                <div class="flex flex-col">
+                    <span class="text-[9px] font-black uppercase text-gray-500 dark:text-gray-400">Procesado Por</span>
+                    <span class="font-black text-xs text-black dark:text-white">{{ bajaForm.value.nombre }}</span>
+                </div>
+                <div class="flex flex-col border-l-2 border-gray-200 dark:border-gray-600 pl-4 hidden md:flex">
+                    <span class="text-[9px] font-black uppercase text-gray-500 dark:text-gray-400">Autorizado Por</span>
+                    <span class="font-black text-xs text-black dark:text-white">{{ bajaForm.value.autorizadoPor || 'S/A' }}</span>
+                </div>
+                <div class="flex flex-col border-l-2 border-gray-200 dark:border-gray-600 pl-4 hidden lg:flex">
+                    <span class="text-[9px] font-black uppercase text-gray-500 dark:text-gray-400">Estado · Fecha</span>
+                    <span class="font-black text-xs text-black dark:text-white">{{ getEstadoLabel(bajaForm.value.estado) }} · {{ bajaForm.value.fecha }}</span>
+                </div>
+            </div>
+            <button (click)="abrirModalDatos()"
+                    class="w-8 h-8 flex items-center justify-center bg-white dark:bg-slate-700 border-[2px] border-black rounded-lg shadow-[2px_2px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all" matTooltip="Editar">
+                <mat-icon class="text-black dark:text-white !text-sm">edit</mat-icon>
+            </button>
+        </div>
+    </div>
+
+    <!-- ══ TABLA ══ -->
+    <div class="flex-1 overflow-auto custom-scrollbar mt-3">
+        <table class="w-full min-w-[800px] border-collapse">
+            <thead class="sticky top-0 z-10">
+            <tr>
+                <th class="!bg-gray-100 dark:!bg-slate-800 !text-black dark:!text-white !font-black !text-[10px] !border-b-[2px] !border-black !px-3 !py-2.5 uppercase !w-12 text-center">N°</th>
+                <th class="!bg-gray-100 dark:!bg-slate-800 !text-black dark:!text-white !font-black !text-[10px] !border-b-[2px] !border-black !px-3 !py-2.5 uppercase text-left !w-32">Código</th>
+                <th class="!bg-gray-100 dark:!bg-slate-800 !text-black dark:!text-white !font-black !text-[10px] !border-b-[2px] !border-black !px-3 !py-2.5 uppercase text-left">Herramienta</th>
+                <th class="!bg-gray-100 dark:!bg-slate-800 !text-black dark:!text-white !font-black !text-[10px] !border-b-[2px] !border-black !px-3 !py-2.5 uppercase text-center !w-24">P/N</th>
+                <th class="!bg-gray-100 dark:!bg-slate-800 !text-black dark:!text-white !font-black !text-[10px] !border-b-[2px] !border-black !px-3 !py-2.5 uppercase text-center !w-24">S/N</th>
+                <th class="!bg-gray-100 dark:!bg-slate-800 !text-black dark:!text-white !font-black !text-[10px] !border-b-[2px] !border-black !px-3 !py-2.5 uppercase text-center !w-20">Cant.</th>
+                <th class="!bg-gray-100 dark:!bg-slate-800 !text-black dark:!text-white !font-black !text-[10px] !border-b-[2px] !border-black !px-3 !py-2.5 uppercase text-center !w-32">Estado</th>
+                <th class="!bg-gray-100 dark:!bg-slate-800 !text-black dark:!text-white !font-black !text-[10px] !border-b-[2px] !border-black !px-3 !py-2.5 uppercase text-center !w-20">Acc.</th>
+            </tr>
+            </thead>
+            <tbody class="bg-white dark:bg-[#0F172AFF]">
+            <tr *ngFor="let item of dataSource(); let i = index"
+                class="hover:bg-amber-50 dark:hover:bg-slate-800/80 transition-colors cursor-pointer border-b border-gray-200 dark:border-slate-700">
+                <td class="!px-3 !py-3 text-center font-black text-sm text-gray-500">{{ i + 1 }}</td>
+                <td class="!px-3 !py-3">
+                    <span class="font-mono font-black text-amber-700 dark:text-amber-400 text-[10px] bg-amber-50 dark:bg-amber-900/30 px-1.5 py-0.5 rounded border border-amber-200 uppercase">{{ item.codigo }}</span>
+                </td>
+                <td class="!px-3 !py-3">
+                    <div class="font-black text-xs text-black dark:text-white leading-tight line-clamp-2" [matTooltip]="item.nombre">{{ item.nombre }}</div>
+                    <div class="font-bold text-[10px] uppercase text-gray-500 mt-0.5">{{ item.base }}</div>
+                </td>
+                <td class="!px-3 !py-3 text-center font-mono text-xs font-bold text-gray-600 dark:text-gray-400">{{ item.pn || '-' }}</td>
+                <td class="!px-3 !py-3 text-center font-mono text-xs font-bold text-[#2563eb] dark:text-[#60a5fa]">{{ item.sn || '-' }}</td>
+                <td class="!px-3 !py-3 text-center">
+                    <span class="bg-gray-100 dark:bg-slate-800 border-[2px] border-black text-black dark:text-white rounded px-2 py-0.5 font-black text-sm block w-fit mx-auto">{{ item.cantidad }}</span>
+                </td>
+                <td class="!px-3 !py-3 text-center">
+                    <span class="px-2 py-0.5 rounded text-[10px] font-black border-[2px] border-black uppercase text-white bg-[#FF1414FF]">
+                        {{ item.estadoFisico }}
+                    </span>
+                </td>
+                <td class="!px-3 !py-3 text-center">
+                    <button (click)="removeItem(i)" matTooltip="Eliminar"
+                            class="w-7 h-7 bg-red-600 text-white rounded-lg border-[2px] border-black shadow-[2px_2px_0px_0px_#000] hover:shadow-none hover:translate-x-[1px] hover:translate-y-[1px] transition-all flex items-center justify-center mx-auto">
+                        <mat-icon class="!text-sm">delete</mat-icon>
+                    </button>
+                </td>
+            </tr>
+            <!-- Empty state -->
+            <tr *ngIf="dataSource().length === 0">
+                <td colspan="8" class="py-16 bg-white dark:bg-[#0F172AFF] text-center">
+                    <div class="flex flex-col items-center justify-center gap-3">
+                        <div class="w-16 h-16 bg-gray-100 dark:bg-slate-800 border-[3px] border-black rounded-2xl flex items-center justify-center shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]">
+                            <mat-icon class="!text-3xl text-gray-400 dark:text-gray-600">delete_sweep</mat-icon>
+                        </div>
+                        <p class="text-xs font-black uppercase text-gray-500 dark:text-gray-400">Sin ítems a baja</p>
+                        <button (click)="openHerramientaABaja()"
+                                class="px-4 py-1.5 bg-amber-400 text-black border-2 border-black rounded-lg font-black text-xs uppercase shadow-[2px_2px_0px_0px_#000] hover:translate-y-[1px] hover:shadow-none transition-all">
+                            Agregar ítem
+                        </button>
+                    </div>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- ========================================================================================= -->
+<!-- MODALES -->
+<!-- ========================================================================================= -->
+
+<!-- MODAL: DATOS PROCESO BAJA -->
+<ng-template #datosBajaModal>
+    <div class="bg-stone-100 dark:bg-slate-900 border-2 border-black overflow-hidden flex flex-col h-full"
+         style="box-shadow: 6px 6px 0 #000">
+
+        <!-- Header -->
+        <div class="bg-[#0F172A] px-5 py-3.5 flex items-center gap-3 shrink-0 select-none"
+             cdkDrag cdkDragRootElement=".cdk-overlay-pane" cdkDragHandle style="cursor:grab">
+            <div class="w-9 h-9 rounded bg-amber-400 border-2 border-black flex items-center justify-center shadow-[2px_2px_0_#fbbf24] shrink-0">
+                <mat-icon class="!text-lg text-black">edit_document</mat-icon>
+            </div>
+            <div>
+                <p class="text-[9px] text-slate-400 font-bold uppercase tracking-[0.18em] leading-none mb-0.5">Baja de Activo</p>
+                <h2 class="text-sm text-white font-black uppercase tracking-tight leading-none">Datos del Proceso de Baja</h2>
+            </div>
+        </div>
+
+        <!-- Body -->
+        <div class="flex-1 overflow-y-auto px-5 py-5 flex flex-col gap-4 custom-scrollbar">
+            <form [formGroup]="bajaForm" class="flex flex-col gap-4">
+
+                <!-- Sección Responsables -->
+                <div class="border-2 border-black rounded-xl overflow-hidden shadow-[3px_3px_0_#000]">
+                    <div class="bg-[#0F172A] px-4 py-2 flex items-center gap-2">
+                        <mat-icon class="!text-sm text-amber-400">engineering</mat-icon>
+                        <span class="text-[9px] font-black uppercase tracking-[0.18em] text-slate-300">Responsables y Autorización</span>
+                    </div>
+                    <div class="bg-white dark:bg-slate-800 p-4 flex flex-col gap-3">
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <!-- Procesado Por -->
+                            <div class="relative">
+                                <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1.5 block">Procesado Por <span class="text-red-500">*</span></label>
+                                <div class="relative">
+                                    <input type="text" [value]="bajaForm.get('procesadoPor')?.value"
+                                           (input)="onProcesadoPorInput($any($event.target).value)"
+                                           (blur)="hideProcesadoPorDropdown()"
+                                           placeholder="Buscar funcionario..." autocomplete="off"
+                                           class="w-full h-10 text-sm font-bold uppercase bg-white dark:bg-slate-800 dark:text-white border-2 rounded-xl px-3 pr-8 outline-none transition-all duration-150 placeholder:text-stone-300"
+                                           [class]="hasError('procesadoPor','required')
+                                               ? 'border-red-400 focus:shadow-[2px_2px_0_#f87171]'
+                                               : 'border-stone-300 dark:border-slate-600 hover:border-stone-400 focus:border-black focus:shadow-[3px_3px_0_#000]'">
+                                    <mat-spinner *ngIf="procesadoPorLoading" diameter="14" class="absolute right-3 top-3"></mat-spinner>
+                                </div>
+                                <div *ngIf="showProcesadoPorDropdown"
+                                     class="absolute z-50 w-full mt-1 top-full border-2 border-black rounded-xl bg-white dark:bg-slate-800 shadow-[4px_4px_0_#000] overflow-hidden max-h-48 overflow-y-auto divide-y divide-stone-100 dark:divide-slate-700">
+                                    <div *ngFor="let p of procesadoPorFuncionarios" (mousedown)="selectProcesadoPor(p)"
+                                         class="px-3 py-2.5 hover:bg-amber-50 dark:hover:bg-slate-700 cursor-pointer transition-colors">
+                                        <div class="text-xs font-black text-black dark:text-white uppercase">{{ p.nombre }}</div>
+                                        <div class="text-[9px] font-bold text-stone-400 dark:text-slate-400 uppercase mt-0.5">{{ p.cargo }}</div>
+                                    </div>
+                                </div>
+                                <p *ngIf="hasError('procesadoPor','required')" class="text-[8px] font-bold text-red-500 mt-1">Campo requerido.</p>
+                            </div>
+
+                            <!-- Inspector -->
+                            <div>
+                                <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1.5 block">Inspector Asignado</label>
+                                <input formControlName="inspector" type="text" placeholder="Nombre inspector..."
+                                       class="w-full h-10 text-sm font-bold uppercase bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-xl px-3 outline-none transition-all duration-150 placeholder:text-stone-300 hover:border-stone-400 focus:border-black focus:shadow-[3px_3px_0_#000]">
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <!-- Verificado Por -->
+                            <div class="relative">
+                                <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1.5 block">Verificado Por</label>
+                                <div class="relative">
+                                    <input type="text" [value]="bajaForm.get('verificadoPor')?.value"
+                                           (input)="onVerificadoPorInput($any($event.target).value)"
+                                           (blur)="hideVerificadoPorDropdown()"
+                                           placeholder="Buscar funcionario..." autocomplete="off"
+                                           class="w-full h-10 text-sm font-bold uppercase bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-xl px-3 pr-8 outline-none transition-all duration-150 placeholder:text-stone-300 hover:border-stone-400 focus:border-black focus:shadow-[3px_3px_0_#000]">
+                                    <mat-spinner *ngIf="verificadoPorLoading" diameter="14" class="absolute right-3 top-3"></mat-spinner>
+                                </div>
+                                <div *ngIf="showVerificadoPorDropdown"
+                                     class="absolute z-50 w-full mt-1 top-full border-2 border-black rounded-xl bg-white dark:bg-slate-800 shadow-[4px_4px_0_#000] overflow-hidden max-h-48 overflow-y-auto divide-y divide-stone-100 dark:divide-slate-700">
+                                    <div *ngFor="let p of verificadoPorFuncionarios" (mousedown)="selectVerificadoPor(p)"
+                                         class="px-3 py-2.5 hover:bg-amber-50 dark:hover:bg-slate-700 cursor-pointer transition-colors">
+                                        <div class="text-xs font-black text-black dark:text-white uppercase">{{ p.nombre }}</div>
+                                        <div class="text-[9px] font-bold text-stone-400 dark:text-slate-400 uppercase mt-0.5">{{ p.cargo }}</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Autorizado Por -->
+                            <div class="relative">
+                                <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1.5 block">Autorizado Por</label>
+                                <div class="relative">
+                                    <input type="text" [value]="bajaForm.get('autorizadoPor')?.value"
+                                           (input)="onAutorizadoPorInput($any($event.target).value)"
+                                           (blur)="hideAutorizadoPorDropdown()"
+                                           placeholder="Buscar funcionario..." autocomplete="off"
+                                           class="w-full h-10 text-sm font-bold uppercase bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-xl px-3 pr-8 outline-none transition-all duration-150 placeholder:text-stone-300 hover:border-stone-400 focus:border-black focus:shadow-[3px_3px_0_#000]">
+                                    <mat-spinner *ngIf="autorizadoPorLoading" diameter="14" class="absolute right-3 top-3"></mat-spinner>
+                                </div>
+                                <div *ngIf="showAutorizadoPorDropdown"
+                                     class="absolute z-50 w-full mt-1 top-full border-2 border-black rounded-xl bg-white dark:bg-slate-800 shadow-[4px_4px_0_#000] overflow-hidden max-h-48 overflow-y-auto divide-y divide-stone-100 dark:divide-slate-700">
+                                    <div *ngFor="let p of autorizadoPorFuncionarios" (mousedown)="selectAutorizadoPor(p)"
+                                         class="px-3 py-2.5 hover:bg-amber-50 dark:hover:bg-slate-700 cursor-pointer transition-colors">
+                                        <div class="text-xs font-black text-black dark:text-white uppercase">{{ p.nombre }}</div>
+                                        <div class="text-[9px] font-bold text-stone-400 dark:text-slate-400 uppercase mt-0.5">{{ p.cargo }}</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sección Detalles del Proceso -->
+                <div class="border-2 border-black rounded-xl overflow-hidden shadow-[3px_3px_0_#000]">
+                    <div class="bg-[#0F172A] px-4 py-2 flex items-center gap-2">
+                        <mat-icon class="!text-sm text-amber-400">schedule</mat-icon>
+                        <span class="text-[9px] font-black uppercase tracking-[0.18em] text-slate-300">Detalles del Proceso</span>
+                    </div>
+                    <div class="bg-white dark:bg-slate-800 p-4 flex flex-col gap-3">
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                            <div>
+                                <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1.5 block">Estado Inicial <span class="text-red-500">*</span></label>
+                                <select formControlName="estado"
+                                        class="w-full h-10 text-sm font-bold bg-white dark:bg-slate-800 dark:text-white border-2 rounded-xl px-3 outline-none transition-all duration-150 cursor-pointer hover:border-stone-400 focus:border-black focus:shadow-[3px_3px_0_#000]"
+                                        [class]="hasError('estado','required') ? 'border-red-400' : 'border-stone-300 dark:border-slate-600'">
+                                    <option [ngValue]="null">-- Seleccionar --</option>
+                                    <option *ngFor="let e of estados" [ngValue]="e.value">{{ e.label }}</option>
+                                </select>
+                                <p *ngIf="hasError('estado','required')" class="text-[8px] font-bold text-red-500 mt-1">Campo requerido.</p>
+                            </div>
+                            <div>
+                                <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1.5 block">Fecha <span class="text-red-500">*</span></label>
+                                <input type="date" formControlName="fecha"
+                                       class="w-full h-10 text-sm font-bold bg-white dark:bg-slate-800 dark:text-white border-2 rounded-xl px-3 outline-none transition-all duration-150 cursor-pointer hover:border-stone-400 focus:border-black focus:shadow-[3px_3px_0_#000]"
+                                       [class]="hasError('fecha','required') ? 'border-red-400' : 'border-stone-300 dark:border-slate-600'">
+                                <p *ngIf="hasError('fecha','required')" class="text-[8px] font-bold text-red-500 mt-1">Campo requerido.</p>
+                            </div>
+                            <div>
+                                <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1.5 block">Hora <span class="text-red-500">*</span></label>
+                                <input type="time" formControlName="hora"
+                                       class="w-full h-10 text-sm font-bold bg-white dark:bg-slate-800 dark:text-white border-2 rounded-xl px-3 outline-none transition-all duration-150 cursor-pointer hover:border-stone-400 focus:border-black focus:shadow-[3px_3px_0_#000]"
+                                       [class]="hasError('hora','required') ? 'border-red-400' : 'border-stone-300 dark:border-slate-600'">
+                                <p *ngIf="hasError('hora','required')" class="text-[8px] font-bold text-red-500 mt-1">Campo requerido.</p>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1.5 block">Observaciones</label>
+                            <textarea formControlName="observaciones" rows="3" placeholder="Notas adicionales..."
+                                      class="w-full text-sm font-normal bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-xl px-3 py-2.5 outline-none transition-all duration-150 resize-none placeholder:text-stone-300 hover:border-stone-400 focus:border-black focus:shadow-[3px_3px_0_#000] custom-scrollbar"></textarea>
+                        </div>
+                    </div>
+                </div>
+
+            </form>
+        </div>
+
+        <!-- Footer -->
+        <div class="border-t-2 border-black bg-stone-200 dark:bg-slate-800 px-5 py-3 flex justify-between items-center shrink-0">
+            <button type="button" (click)="cancelarModalDatos()"
+                    class="px-4 py-2 bg-[#FF1414] text-white font-black text-[10px] border-2 border-black rounded-xl shadow-[2px_2px_0_#000] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all uppercase">
+                Cancelar
+            </button>
+            <button type="button" (click)="cerrarModalDatos()"
+                    class="flex items-center gap-2 px-5 py-2 bg-amber-400 text-black font-black text-[10px] border-2 border-black rounded-xl shadow-[3px_3px_0_#000] hover:shadow-none hover:translate-x-[3px] hover:translate-y-[3px] transition-all uppercase">
+                <mat-icon class="!text-sm">save</mat-icon>
+                Guardar
+            </button>
+        </div>
+    </div>
+</ng-template>

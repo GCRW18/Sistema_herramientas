@@ -8,10 +8,11 @@ import { MatDialogRef, MatDialogModule, MatDialog } from '@angular/material/dial
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { DragDropModule } from '@angular/cdk/drag-drop';
 import { Subject, forkJoin, of } from 'rxjs';
 import { takeUntil, finalize, catchError } from 'rxjs/operators';
 import { MovementService } from '../../../../core/services/movement.service';
-import { ModalHerramientaExternoComponent } from '../prestamo-terceros/modal-herramienta-externo/modal-herramienta-externo.component';
+import { ModalHerramientaExternoComponent } from './modal-herramienta-externo/modal-herramienta-externo.component';
 
 // ── Interfaces ───────────────────────────────────────────────────────────────
 interface ExternalLoanItem {
@@ -36,7 +37,8 @@ type TabType = 'prestamo' | 'devolucion';
     imports: [
         CommonModule, ReactiveFormsModule, FormsModule,
         MatIconModule, MatTableModule, MatCheckboxModule, MatDialogModule,
-        MatSnackBarModule, MatProgressSpinnerModule, MatTooltipModule
+        MatSnackBarModule, MatProgressSpinnerModule, MatTooltipModule,
+        DragDropModule
     ],
     templateUrl: './prestamo-externo-hub.component.html',
     styles: [`
@@ -273,7 +275,7 @@ export class PrestamoExternoHubComponent implements OnInit, OnDestroy {
 
     // ── Items préstamo externo
     openHerramientasAPrestar(): void {
-        const ref = this.dialog.open(ModalHerramientaExternoComponent, { width:'850px', maxWidth:'95vw', panelClass:'no-padding-dialog', disableClose:true });
+        const ref = this.dialog.open(ModalHerramientaExternoComponent, { width:'580px', maxWidth:'95vw', panelClass:'no-padding-dialog', disableClose:true });
         ref.afterClosed().subscribe(result => {
             if (result?.action === 'agregar') {
                 const d = result.data;
@@ -309,7 +311,7 @@ export class PrestamoExternoHubComponent implements OnInit, OnDestroy {
     }
 
     // ── Modales devolución
-    abrirModalBusqueda(): void { this.dialogRefActual = this.dialog.open(this.busquedaModal, { width:'650px', maxWidth:'95vw', panelClass:'no-padding-dialog', disableClose:true }); }
+    abrirModalBusqueda(): void { this.dialogRefActual = this.dialog.open(this.busquedaModal, { width:'560px', maxWidth:'95vw', panelClass:'no-padding-dialog', disableClose:true }); }
     cerrarModalBusqueda(): void { this.dialogRefActual?.close(); }
 
     hasError(field: string, error: string): boolean { const c = this.devolucionForm.get(field); return c ? c.hasError(error) && c.touched : false; }
