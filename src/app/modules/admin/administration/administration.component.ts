@@ -159,6 +159,12 @@ export class AdministrationComponent implements OnDestroy {
             svgIcon: 'heroicons_outline:identification',
             loader: async () => (await import('./funcionarios/funcionarios.component')).FuncionariosComponent
         },
+        {
+            type: 6, label: 'CONFIGURACIÓN', sublabel: 'PARÁMETROS · ALERTAS',
+            color: '#F59E0B', textColor: '#000',
+            svgIcon: 'heroicons_outline:adjustments-horizontal',
+            loader: async () => (await import('./parametros/parametros.component')).ParametrosComponent
+        },
     ];
 
     displayedColumns: string[] = ['fecha', 'tipo', 'entidad', 'usuario', 'acciones'];
@@ -240,11 +246,11 @@ export class AdministrationComponent implements OnDestroy {
 
     openActividadReciente(): void {
         this.dialog.open(this.actividadRecienteDialog, {
-            width: '1100px',
+            width: '700px',
             maxWidth: '95vw',
-            height: '85vh',
-            maxHeight: '90vh',
-            panelClass: 'neo-dialog-admin',
+            height: 'auto',
+            maxHeight: '80vh',
+            panelClass: 'neo-dialog',
             hasBackdrop: true,
             disableClose: false,
             autoFocus: false

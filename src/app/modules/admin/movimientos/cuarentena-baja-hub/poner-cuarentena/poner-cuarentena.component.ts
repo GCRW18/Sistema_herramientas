@@ -51,6 +51,8 @@ export class PonerCuarentenaComponent implements OnInit, OnDestroy {
     toolList: any[] = [];
     selectedToolImage = signal<string | null>(null);
 
+    unidades: string[] = ['CBB', 'LPB', 'VVI', 'SRE', 'TJA', 'SRZ', 'CIJ', 'TDD', 'GYA', 'RIB', 'BYC'];
+
     estadosFisicos = [
         { value: 'S', label: 'SERVICEABLE' },
         { value: 'R', label: 'REPAIRABLE' },
@@ -71,10 +73,13 @@ export class PonerCuarentenaComponent implements OnInit, OnDestroy {
     ];
 
     herramientasCache: any[] = [];
-    toolsFiltradas: any[] = [];
+    toolSuggestions: any[] = [];
     showToolDropdown = false;
+    toolSearchLoading = false;
+    buscarValue = '';
     private toolIdActual = 0;
     private employeeIdActual = 0;
+    private _toolSearch$ = new Subject<string>();
 
     private _personaSearch$ = new Subject<string>();
     personasFiltradas: any[] = [];
@@ -88,6 +93,7 @@ export class PonerCuarentenaComponent implements OnInit, OnDestroy {
         this.initForms();
         this.cargarHerramientas();
         this._setupPersonaSearch();
+        this._setupToolSearch();
     }
 
     ngOnDestroy(): void {
@@ -104,13 +110,14 @@ export class PonerCuarentenaComponent implements OnInit, OnDestroy {
     private initForms(): void {
         const today = new Date().toISOString().split('T')[0];
 
+        const auth = JSON.parse(localStorage.getItem('aut') || '{}');
         this.reporteForm = this.fb.group({
             nroReporteDiscrepancia: ['', Validators.required],
             fecha: [today, Validators.required],
             motivo: [null, Validators.required],
             descripcion: ['', Validators.required],
             nombreApellido: [''],
-            realizadoPor: ['Admin Sistema']
+            realizadoPor: [auth?.nombre_usuario || '']
         });
 
         this.toolForm = this.fb.group({
@@ -150,10 +157,12 @@ export class PonerCuarentenaComponent implements OnInit, OnDestroy {
         this.toolForm.reset({ existencia: 0, cantidad: 1, estadoFisico: 'S', base: 'CBB' });
         this.selectedToolImage.set(null);
         this.showToolDropdown = false;
+        this.buscarValue = '';
+        this.toolSuggestions = [];
 
         this.activeDialog = this.dialog.open(this.herramientaModal, {
-            width: '960px', maxWidth: '95vw', height: '88vh',
-            panelClass: 'no-padding-dialog', disableClose: true
+            width: '800px', maxWidth: '96vw', height: '560px',
+            panelClass: 'no-padding-dialog', disableClose: true, autoFocus: false
         });
     }
 
@@ -167,37 +176,65 @@ export class PonerCuarentenaComponent implements OnInit, OnDestroy {
 
     isReporteValido(): boolean { return this.reporteForm.valid; }
 
-    filtrarHerramientas(event: Event): void {
-        const query = (event.target as HTMLInputElement).value.trim().toLowerCase();
-        if (query.length < 2) {
-            this.toolsFiltradas = [];
-            this.showToolDropdown = false;
-            return;
-        }
-        this.toolsFiltradas = this.herramientasCache
-            .filter(t => (t.code ?? '').toLowerCase().includes(query) || (t.name ?? '').toLowerCase().includes(query))
-            .slice(0, 6);
-        this.showToolDropdown = this.toolsFiltradas.length > 0;
+    private _setupToolSearch(): void {
+        this._toolSearch$.pipe(
+            debounceTime(250),
+            distinctUntilChanged(),
+            takeUntil(this._unsubscribeAll)
+        ).subscribe(q => {
+            const query = q.trim().toLowerCase();
+            if (query.length < 2) {
+                this.toolSuggestions  = [];
+                this.showToolDropdown = false;
+                this.toolSearchLoading = false;
+                return;
+            }
+            this.toolSuggestions = this.herramientasCache
+                .filter(t => {
+                    const nombre = (t.name || t.description || '').toLowerCase();
+                    return (t.code           ?? '').toLowerCase().includes(query) ||
+                           nombre.includes(query) ||
+                           (t.part_number   ?? '').toLowerCase().includes(query) ||
+                           (t.serial_number ?? '').toLowerCase().includes(query);
+                })
+                .slice(0, 8);
+            this.showToolDropdown  = this.toolSuggestions.length > 0;
+            this.toolSearchLoading = false;
+        });
+    }
+
+    onBuscarToolInput(value: string): void {
+        this.buscarValue    = value;
+        this.toolSearchLoading = value.trim().length >= 2;
+        this._toolSearch$.next(value);
+    }
+
+    hideBuscarToolDropdown(): void { setTimeout(() => { this.showToolDropdown = false; }, 180); }
+
+    limpiarBuscarTool(): void {
+        this.buscarValue      = '';
+        this.toolSuggestions  = [];
+        this.showToolDropdown = false;
+        this.toolForm.patchValue({ id_tool: 0, codigo: '', nombre: '', partNumber: '', serialNumber: '', existencia: 0 });
     }
 
     selectTool(tool: any): void {
         this.toolIdActual = tool.id_tool ?? tool.id ?? 0;
+        this.buscarValue  = `${tool.code ?? ''} · ${tool.name ?? ''}`;
         this.toolForm.patchValue({
-            id_tool: this.toolIdActual,
-            codigo: tool.code ?? '',
-            nombre: tool.name ?? '',
-            partNumber: tool.part_number ?? '',
-            serialNumber: tool.serial_number ?? '',
-            existencia: tool.quantity_in_stock ?? 0,
-            cantidad: 1,
+            id_tool:      this.toolIdActual,
+            codigo:       tool.code              ?? '',
+            nombre:       tool.name              ?? '',
+            partNumber:   tool.part_number       ?? '',
+            serialNumber: tool.serial_number     ?? '',
+            existencia:   tool.quantity_in_stock ?? 0,
+            cantidad:     1,
             estadoFisico: 'S'
         });
         this.showToolDropdown = false;
     }
 
-    ocultarSugerencias(): void {
-        setTimeout(() => { this.showToolDropdown = false; }, 200);
-    }
+    ocultarSugerencias(): void { setTimeout(() => { this.showToolDropdown = false; }, 180); }
 
     onToolImageSelected(event: Event): void {
         const input = event.target as HTMLInputElement;
@@ -279,32 +316,21 @@ export class PonerCuarentenaComponent implements OnInit, OnDestroy {
         const rep = this.reporteForm.getRawValue();
 
         const requests = this.toolList.map(tool => {
+            const notesExtra = `Cant: ${tool.cantidad}. Base: ${tool.base || '-'}.` +
+                               (tool.fechaVencimiento ? ` Vence: ${tool.fechaVencimiento}.` : '');
             const payload: any = {
-                reportNumber: rep.nroReporteDiscrepancia,
-                toolId: tool.id_tool,
-                base: tool.base,
-                expirationDate: tool.fechaVencimiento || null,
-                quantityInQuarantine: 1,
-                entryDate: rep.fecha,
-                reportedByName: rep.nombreApellido || rep.realizadoPor,
-                reason: rep.motivo,
-                reasonDescription: rep.descripcion,
-                status: 'active',
-                workflowInstructions: {
-                    productUpdate: {
-                        status: 'CUARENTENA',
-                        quarantineFlag: 'SI',
-                        stockDeduction: tool.cantidad
-                    },
-                    movementLog: {
-                        type: 'SALIDA_CUARENTENA',
-                        reference: rep.nroReporteDiscrepancia,
-                        notes: `Traslado a cuarentena. Motivo: ${rep.motivo}`
-                    }
-                }
+                report_number:      rep.nroReporteDiscrepancia,
+                record_number:      rep.nroReporteDiscrepancia,
+                tool_id:            tool.id_tool,
+                start_date:         rep.fecha,
+                reported_by_name:   rep.nombreApellido || rep.realizadoPor,
+                reason:             rep.motivo,
+                reason_description: rep.descripcion,
+                status:             'active',
+                notes:              notesExtra
             };
 
-            if (this.employeeIdActual > 0) payload.reportedById = this.employeeIdActual;
+            if (this.employeeIdActual > 0) payload.reported_by_id = this.employeeIdActual;
             return this.quarantineService.createQuarantine(payload);
         });
 

@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, OnInit, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatDialogModule, MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
@@ -46,11 +46,20 @@ export class FormAlmacenComponent implements OnInit {
     ciudades          = signal<Ciudad[]>([]);
     oficinas          = signal<Oficina[]>([]);
     ofiDropOpen       = signal(false);
+    ofiSearch         = signal('');
     baseDropOpen      = signal(false);
     ciudadDropOpen    = signal(false);
     tipoDropOpen      = signal(false);
 
     tipos = ['Principal', 'Secundario'];
+
+    oficinasFiltered = computed(() => {
+        const q = this.ofiSearch().toLowerCase().trim();
+        if (!q) return this.oficinas();
+        return this.oficinas().filter(o =>
+            o.nombre_oficina.toLowerCase().includes(q)
+        );
+    });
 
     form: FormGroup = this.fb.group({
         id_base:     [null, Validators.required],
@@ -121,10 +130,17 @@ export class FormAlmacenComponent implements OnInit {
 
     get readOnly(): boolean { return this.mode === 'view'; }
 
-    get nombreBasePreview(): string {
+    get selectedBase(): any {
         const id = this.form.get('id_base')?.value;
-        if (id == null || id === '') return '';
-        const b = this.basesAeronauticas().find(b => Number(b.id_base) === Number(id));
+        if (id == null || id === '') return null;
+        return this.basesAeronauticas().find(b => Number(b.id_base) === Number(id)) ?? null;
+    }
+
+    get selectedBaseCode(): string { return this.selectedBase?.code ?? ''; }
+    get selectedBaseName(): string { return this.selectedBase?.name ?? ''; }
+
+    get nombreBasePreview(): string {
+        const b = this.selectedBase;
         return b ? `${b.name} (${b.code})` : '';
     }
 

@@ -20,7 +20,7 @@ export class RoleService {
             dir: 'asc'
         })).pipe(
             switchMap((response: any) => {
-                const roles = response?.data || [];
+                const roles = response?.datos || response?.data || [];
                 this._roles.next(roles);
                 return of(roles);
             })
@@ -33,7 +33,10 @@ export class RoleService {
             limit: 1,
             id_role: id
         })).pipe(
-            switchMap((response: any) => of(response?.data?.[0] || null))
+            switchMap((response: any) => {
+                const list = response?.datos || response?.data || [];
+                return of(list[0] || null);
+            })
         );
     }
 
@@ -41,7 +44,7 @@ export class RoleService {
         return from(this._api.post('herramientas/roles/insertarRoles', data)).pipe(
             switchMap((response: any) => {
                 this.getRoles().subscribe();
-                return of(response?.data || data);
+                return of(response?.datos?.[0] || response?.data?.[0] || data);
             })
         );
     }
@@ -53,7 +56,7 @@ export class RoleService {
         })).pipe(
             switchMap((response: any) => {
                 this.getRoles().subscribe();
-                return of(response?.data || data);
+                return of(response?.datos?.[0] || response?.data?.[0] || data);
             })
         );
     }
@@ -76,7 +79,7 @@ export class RoleService {
         })).pipe(
             switchMap((response: any) => {
                 this.getRoles().subscribe();
-                return of(response?.data || {});
+                return of(response?.datos?.[0] || response?.data?.[0] || {});
             })
         );
     }

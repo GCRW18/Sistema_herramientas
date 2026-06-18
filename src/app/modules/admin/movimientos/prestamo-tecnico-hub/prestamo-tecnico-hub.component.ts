@@ -17,6 +17,8 @@ interface LoanDisplay {
     borrower_name:           string;
     borrower_license:        string;
     loan_date:               string;
+    loan_time:               string;
+    expected_return_date:    string;
     status:                  string;
     loan_notes:              string;
     aircraft:                string;
@@ -125,21 +127,25 @@ export class PrestamoTecnicoHubComponent implements OnInit, OnDestroy {
         ).subscribe(({ loans, items }: any) => {
             const status = this.filterStatus.value;
             this.loans = ((loans || []) as any[])
-                .filter((l: any) => !status || l.status === status)
+                .filter((l: any) => l.loan_type !== 'external' && (!status || l.status === status))
                 .map((l: any): LoanDisplay => ({
                 id_loan:           Number(l.id_loan),
                 loan_number:       l.loan_number       || `PT-${l.id_loan}`,
                 loan_type:         l.loan_type          || 'internal',
                 borrower_name:     l.borrower_name      || '—',
                 borrower_license:  l.borrower_license   || '—',
-                loan_date:         l.loan_date           || '',
-                status:            l.status              || 'active',
+                loan_date:            l.loan_date           || '',
+                loan_time:            l.loan_time           || '',
+                expected_return_date: l.expected_return_date || '',
+                status:               l.status              || 'active',
                 loan_notes:        l.loan_notes          || '',
                 aircraft:          l.aircraft            || '—',
                 work_order_number: l.work_order_number   || '—',
                 department:        l.department          || '—',
                 delivered_by_name:       l.delivered_by_name        || '—',
-                diasFuera:               this._calcDias(l.loan_date),
+                diasFuera:               l.status === 'returned'
+                                             ? this._calcDias(l.loan_date, l.actual_return_date || l.loan_date)
+                                             : this._calcDias(l.loan_date),
                 actual_return_date:      l.actual_return_date       || '',
                 received_return_by_name: l.received_return_by_name  || '',
                 return_notes:            l.return_notes             || '',
@@ -203,12 +209,20 @@ export class PrestamoTecnicoHubComponent implements OnInit, OnDestroy {
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────
-    private _calcDias(fecha: string): number {
+    private _calcDias(fecha: string, hasta?: string): number {
         if (!fecha) return 0;
-        return Math.ceil(Math.abs(new Date().getTime() - new Date(fecha).getTime()) / 86400000);
+        const end = hasta ? new Date(hasta) : new Date();
+        return Math.ceil(Math.abs(end.getTime() - new Date(fecha).getTime()) / 86400000);
     }
 
     calcDias(fecha: string): number { return this._calcDias(fecha); }
+
+    formatFecha(loan_date: string, loan_time: string): string {
+        if (!loan_date) return '—';
+        const d = loan_date.substring(8, 10) + '/' + loan_date.substring(5, 7) + '/' + loan_date.substring(0, 4);
+        const t = loan_time ? loan_time.substring(0, 5) : '';
+        return t ? d + ' ' + t : d;
+    }
 
     getDiasFueraClass(dias: number): string {
         if (dias <= 3)  return 'bg-green-100 text-green-800 border-green-300';
@@ -240,7 +254,7 @@ export class PrestamoTecnicoHubComponent implements OnInit, OnDestroy {
     async abrirFormPrestamo(): Promise<void> {
         const { FormPrestamoDialogComponent } = await import('./prestamo/form-prestamo-dialog.component');
         this.dialog.open(FormPrestamoDialogComponent, {
-            width: 'min(1040px, 100vw)', maxWidth: '100vw', maxHeight: '100dvh',
+            width: 'min(820px, 100vw)', maxWidth: '100vw', maxHeight: '100dvh',
             panelClass: 'neo-dialog-transparent', disableClose: false, autoFocus: false
         }).afterClosed().subscribe(r => { if (r?.success) { this.showMsg('Préstamo registrado', 'success'); this.loadData(); } });
     }
@@ -248,7 +262,7 @@ export class PrestamoTecnicoHubComponent implements OnInit, OnDestroy {
     async abrirFormDevolucion(): Promise<void> {
         const { FormDevolucionDialogComponent } = await import('./devolucion/form-devolucion-dialog.component');
         this.dialog.open(FormDevolucionDialogComponent, {
-            width: 'min(1040px, 100vw)', maxWidth: '100vw', maxHeight: '100dvh',
+            width: 'min(820px, 100vw)', maxWidth: '100vw', maxHeight: '100dvh',
             panelClass: 'neo-dialog-transparent', disableClose: false, autoFocus: false
         }).afterClosed().subscribe(r => { if (r?.success) { this.showMsg('Devolución registrada', 'success'); this.loadData(); } });
     }
@@ -265,14 +279,14 @@ export class PrestamoTecnicoHubComponent implements OnInit, OnDestroy {
 
         const css = `<style>@page{size:A4 landscape;margin:12mm 10mm}*{box-sizing:border-box}body{font-family:Arial,sans-serif;font-size:10px;color:#000;margin:0}.top{display:flex;justify-content:space-between;margin-bottom:5px}.code-box{border:2px solid #000;padding:3px 10px;font-weight:900;font-size:13px;display:inline-block}h1{text-align:center;font-size:12px;font-weight:900;text-transform:uppercase;background:#111A43;color:white;padding:7px 10px;margin:0 0 7px;border:1px solid #000}.info-tbl{width:100%;border-collapse:collapse;border:1px solid #000;margin-bottom:7px}.info-tbl td{border:1px solid #ddd;padding:3px 6px}.lbl{background:#f0f0f0;font-weight:700;font-size:9px;width:130px}.nro-cell{background:#f0f0f0;text-align:center;font-weight:900;font-size:15px;vertical-align:middle;width:120px}.sec{background:#111A43;color:white;padding:3px 8px;font-weight:900;font-size:10px;text-transform:uppercase;border:1px solid #000}table.det{width:100%;border-collapse:collapse;border:1px solid #000}table.det th{background:#111A43;color:white;padding:5px 4px;font-size:8.5px;font-weight:900;text-transform:uppercase;border:1px solid #000;text-align:center}table.det td{padding:4px;border:1px solid #ddd;font-size:9px}table.det tr:nth-child(even) td{background:#f9f9f9}.nota{border:1px solid #ccc;padding:5px 8px;margin-top:8px;font-size:8.5px;background:#fffde7;line-height:1.5}.sigs{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:16px}.sig{border:1px solid #000;padding:6px 8px;text-align:center}.sig-ttl{font-weight:900;font-size:9px;text-transform:uppercase;margin-bottom:26px;line-height:1.4}.sig-line{border-top:1px solid #000;padding-top:3px;font-size:8.5px}.footer{text-align:center;margin-top:10px;font-size:7.5px;color:#888;border-top:1px dotted #ccc;padding-top:4px}@media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact}}</style>`;
 
-        const fecha     = loan.loan_date ? new Date(loan.loan_date).toLocaleString('es-BO') : '—';
+        const fecha     = this.formatFecha(loan.loan_date, loan.loan_time);
         const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>MGH-100 ${loan.loan_number}</title>${css}</head><body>
 <div class="top"><div style="font-weight:900;font-size:11px">BoAMM &nbsp; OAM145#114 &nbsp; N-114</div><div style="text-align:right"><div class="code-box">MGH-100</div><br><span style="font-size:9px">REV. 0 &nbsp; 2016-10-13</span></div></div>
 <h1>NOTA DE PRÉSTAMO - DEVOLUCIÓN<br><span style="font-size:10px;font-weight:400">HERRAMIENTAS, BANCOS DE PRUEBA Y EQUIPOS DE APOYO</span></h1>
 <table class="info-tbl">
-<tr><td class="lbl">NOMBRE SOLICITANTE:</td><td>${loan.borrower_name}</td><td class="lbl">UNIDAD DESTINO:</td><td>${loan.department}</td><td class="nro-cell" rowspan="4"><div style="font-size:8px;font-weight:400">N° NOTA</div>${loan.loan_number}</td></tr>
+<tr><td class="lbl">RECIBIDO POR (TÉC./INSP.):</td><td style="font-weight:700">${loan.borrower_name}</td><td class="lbl">UNIDAD DESTINO:</td><td>${loan.department}</td><td class="nro-cell" rowspan="4"><div style="font-size:8px;font-weight:400">N° NOTA</div>${loan.loan_number}</td></tr>
 <tr><td class="lbl">LICENCIA:</td><td>${loan.borrower_license}</td><td class="lbl">ORDEN DE TRABAJO:</td><td>${loan.work_order_number}</td></tr>
-<tr><td class="lbl">MATRÍCULA AERONAVE:</td><td>${loan.aircraft}</td><td class="lbl">ENTREGÓ (ALMACÉN):</td><td>${loan.delivered_by_name}</td></tr>
+<tr><td class="lbl">MATRÍCULA AERONAVE:</td><td>${loan.aircraft}</td><td class="lbl">ENTREGADO POR (ALMACÉN):</td><td style="font-weight:700">${loan.delivered_by_name}</td></tr>
 <tr><td class="lbl">FECHA Y HORA:</td><td>${fecha}</td><td class="lbl">OBSERVACIONES:</td><td>${loan.loan_notes}</td></tr>
 </table>
 <div class="sec">DATOS PRÉSTAMO</div>
@@ -309,7 +323,7 @@ export class PrestamoTecnicoHubComponent implements OnInit, OnDestroy {
 
         const css = `<style>@page{size:A4 landscape;margin:12mm 10mm}*{box-sizing:border-box}body{font-family:Arial,sans-serif;font-size:10px;color:#000;margin:0}.top{display:flex;justify-content:space-between;margin-bottom:5px}.code-box{border:2px solid #000;padding:3px 10px;font-weight:900;font-size:13px;display:inline-block}h1{text-align:center;font-size:12px;font-weight:900;text-transform:uppercase;background:#111A43;color:white;padding:7px 10px;margin:0 0 7px;border:1px solid #000}.info-tbl{width:100%;border-collapse:collapse;border:1px solid #000;margin-bottom:7px}.info-tbl td{border:1px solid #ddd;padding:3px 6px}.lbl{background:#f0f0f0;font-weight:700;font-size:9px;width:130px}.nro-cell{background:#f0f0f0;text-align:center;font-weight:900;font-size:13px;vertical-align:middle;width:110px}.sec{background:#111A43;color:white;padding:3px 8px;font-weight:900;font-size:10px;text-transform:uppercase;border:1px solid #000}table.det{width:100%;border-collapse:collapse;border:1px solid #000}table.det th{background:#111A43;color:white;padding:5px 4px;font-size:8.5px;font-weight:900;text-transform:uppercase;border:1px solid #000;text-align:center}table.det td{padding:4px;border:1px solid #ddd;font-size:9px}table.det tr:nth-child(even) td{background:#f9f9f9}.sigs{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:16px}.sig{border:1px solid #000;padding:6px 8px;text-align:center}.sig-ttl{font-weight:900;font-size:9px;text-transform:uppercase;margin-bottom:26px;line-height:1.4}.sig-line{border-top:1px solid #000;padding-top:3px;font-size:8.5px}.footer{text-align:center;margin-top:10px;font-size:7.5px;color:#888;border-top:1px dotted #ccc;padding-top:4px}@media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact}}</style>`;
 
-        const fechaPrest  = loan.loan_date          ? new Date(loan.loan_date).toLocaleString('es-BO')          : '—';
+        const fechaPrest  = this.formatFecha(loan.loan_date, loan.loan_time);
         const fechaDev    = loan.actual_return_date  ? new Date(loan.actual_return_date).toLocaleString('es-BO') : '—';
         const recibePor   = loan.received_return_by_name || '—';
 
@@ -335,9 +349,9 @@ export class PrestamoTecnicoHubComponent implements OnInit, OnDestroy {
 <div class="top"><div style="font-weight:900;font-size:11px">BoAMM &nbsp; OAM145#114 &nbsp; N-114</div><div style="text-align:right"><div class="code-box">MGH-100</div><br><span style="font-size:9px">REV. 0 &nbsp; 2016-10-13</span></div></div>
 <h1>NOTA DE PRÉSTAMO - DEVOLUCIÓN<br><span style="font-size:10px;font-weight:400">HERRAMIENTAS, BANCOS DE PRUEBA Y EQUIPOS DE APOYO</span></h1>
 <table class="info-tbl">
-<tr><td class="lbl">NOMBRE SOLICITANTE:</td><td>${loan.borrower_name}</td><td class="lbl">UNIDAD DESTINO:</td><td>${loan.department}</td><td class="nro-cell" rowspan="4"><div style="font-size:7px;font-weight:400">N° PRÉSTAMO</div><div>${loan.loan_number}</div><div style="font-size:7px;font-weight:400;margin-top:6px;background:#166534;color:white;padding:2px 4px;border-radius:3px">DEVUELTO</div></td></tr>
+<tr><td class="lbl">RECIBIDO POR (TÉC./INSP.):</td><td style="font-weight:700">${loan.borrower_name}</td><td class="lbl">UNIDAD DESTINO:</td><td>${loan.department}</td><td class="nro-cell" rowspan="4"><div style="font-size:7px;font-weight:400">N° PRÉSTAMO</div><div>${loan.loan_number}</div><div style="font-size:7px;font-weight:400;margin-top:6px;background:#166534;color:white;padding:2px 4px;border-radius:3px">DEVUELTO</div></td></tr>
 <tr><td class="lbl">LICENCIA:</td><td>${loan.borrower_license}</td><td class="lbl">ORDEN DE TRABAJO:</td><td>${loan.work_order_number}</td></tr>
-<tr><td class="lbl">MATRÍCULA AERONAVE:</td><td>${loan.aircraft}</td><td class="lbl">ENTREGÓ (ALMACÉN):</td><td>${loan.delivered_by_name}</td></tr>
+<tr><td class="lbl">MATRÍCULA AERONAVE:</td><td>${loan.aircraft}</td><td class="lbl">ENTREGADO POR (ALMACÉN):</td><td style="font-weight:700">${loan.delivered_by_name}</td></tr>
 <tr><td class="lbl">FECHA PRÉSTAMO:</td><td>${fechaPrest}</td><td class="lbl">OBSERVACIONES:</td><td>${loan.loan_notes}</td></tr>
 </table>
 <div class="sec">DATOS PRÉSTAMO</div>

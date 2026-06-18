@@ -180,7 +180,7 @@ export class EnvioCalibracionComponent implements OnInit, OnDestroy {
                         tool_code:            r.tool_code             ?? r.code          ?? '—',
                         tool_name:            r.tool_name             ?? r.name          ?? '—',
                         part_number:          loc?.pn                 ?? '—',
-                        ubicacion:            loc?.ubicacion          ?? '—',
+                        ubicacion:            r.tool_ubicacion        || loc?.ubicacion || '—',
                         supplier_name:        r.supplier_name         ?? r.laboratory_name ?? '—',
                         record_number:        r.record_number         ?? '—',
                         send_date:            r.send_date             ?? '—',
@@ -207,7 +207,8 @@ export class EnvioCalibracionComponent implements OnInit, OnDestroy {
     private _enrichAndApply(): void {
         this.calibraciones = this.calibraciones.map(c => {
             const loc = this.locationMap.get(c.tool_code.trim().toUpperCase());
-            return { ...c, part_number: loc?.pn ?? '—', ubicacion: loc?.ubicacion ?? '—' };
+            const ubicacion = c.ubicacion && c.ubicacion !== '—' ? c.ubicacion : (loc?.ubicacion ?? '—');
+            return { ...c, part_number: loc?.pn ?? '—', ubicacion };
         });
         this.applyFilters();
     }

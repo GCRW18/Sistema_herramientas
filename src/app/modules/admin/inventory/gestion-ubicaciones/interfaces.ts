@@ -51,20 +51,27 @@ export interface Level {
 export type ToolEstado = 'NUEVO' | 'REACONDICIONADO' | 'USADO';
 
 export interface LevelTool {
-    id:             number;
-    levelId:        number;
-    rackId:         number;
-    rackCodigo:     string;
-    levelNumero:    number | null;
-    levelCodigo:    string;
-    codigo:         string;
-    pn:             string;
-    sn?:            string;
-    nombre:         string;
-    marca?:         string;
-    estado:         ToolEstado;
-    cantidad:       number;
-    um:             string;
-    imagenBase64?:  string;
-    observaciones?: string;
+    id:                   number;
+    levelId:              number;
+    rackId:               number;
+    rackCodigo:           string;
+    levelNumero:          number | null;
+    levelCodigo:          string;
+    codigo:               string;
+    pn:                   string;
+    sn?:                  string;
+    nombre:               string;
+    marca?:               string;
+    estado:               ToolEstado;
+    cantidad:             number;
+    um:                   string;
+    imagenBase64?:        string;
+    observaciones?:       string;
+    tipo?:                string;
+    nivelCriticidad?:     string;
+    fabricacion?:         string;
+    requiereCalibracion?: boolean;
+    intervaloCalibracion?: number | null;
+    fechaCalibracion?:    string | null;
+    nroCertificado?:      string;
 }

@@ -2,11 +2,9 @@ import { Component, OnInit, inject, Inject, Optional } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule, Router } from '@angular/router';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatInputModule } from '@angular/material/input';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
-import { MatDialogRef, MAT_DIALOG_DATA, MatDialogModule } from '@angular/material/dialog';
+import { MatDialog, MatDialogRef, MAT_DIALOG_DATA, MatDialogModule } from '@angular/material/dialog';
 import { DragDropModule } from '@angular/cdk/drag-drop';
 import { AVAILABLE_PERMISSIONS, Permission } from '../../../../../../core/models/role.types';
 
@@ -22,37 +20,23 @@ export interface FormRolData {
         CommonModule,
         RouterModule,
         ReactiveFormsModule,
-        MatFormFieldModule,
-        MatInputModule,
         MatButtonModule,
         MatIconModule,
         MatDialogModule,
         DragDropModule
     ],
     templateUrl: './form-rol.component.html',
-    styles: [`
-        :host {
-            display: block;
-            height: 100%;
-        }
-
-        /* Animación suave para la expansión del acordeón */
-        .animate-fadeIn {
-            animation: fadeIn 0.3s ease-out forwards;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(-10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-    `]
+    styles: [':host { display: block; }']
 })
 export class FormRolComponent implements OnInit {
     public dialogRef = inject(MatDialogRef<FormRolComponent>, { optional: true });
+    private dialog = inject(MatDialog);
+
     rolForm!: FormGroup;
     isEditMode = false;
-    groupedPermissions: Map<string, Permission[]> = new Map();
-    expandedModules: Set<string> = new Set();
+    readonly totalPermissions = AVAILABLE_PERMISSIONS.length;
+
+    private groupedPermissions: Map<string, Permission[]> = new Map();
 
     constructor(
         private fb: FormBuilder,
@@ -62,9 +46,10 @@ export class FormRolComponent implements OnInit {
 
     ngOnInit(): void {
         this.initForm();
-        this.groupedPermissions = this.groupPermissionsByModule(AVAILABLE_PERMISSIONS);
-        // Expandir todos los módulos por defecto para mejor visualización inicial
-        this.groupedPermissions.forEach((_, key) => this.expandedModules.add(key));
+        AVAILABLE_PERMISSIONS.forEach(p => {
+            if (!this.groupedPermissions.has(p.module)) this.groupedPermissions.set(p.module, []);
+            this.groupedPermissions.get(p.module)!.push(p);
+        });
 
         if (this.data?.rol && this.data?.mode === 'edit') {
             this.isEditMode = true;
@@ -74,95 +59,50 @@ export class FormRolComponent implements OnInit {
 
     private initForm(): void {
         this.rolForm = this.fb.group({
-            nombre: ['', [Validators.required, Validators.minLength(3)]],
+            nombre:      ['', [Validators.required, Validators.minLength(3)]],
             descripcion: [''],
-            permissions: [[], Validators.required],
-            active: [true]
+            permissions: [[]],
+            active:      [true]
         });
-    }
-
-    private groupPermissionsByModule(permissions: Permission[]): Map<string, Permission[]> {
-        const grouped = new Map<string, Permission[]>();
-        permissions.forEach(perm => {
-            if (!grouped.has(perm.module)) {
-                grouped.set(perm.module, []);
-            }
-            grouped.get(perm.module)!.push(perm);
-        });
-        return grouped;
     }
 
     private loadRolData(rol: any): void {
         this.rolForm.patchValue({
-            nombre: rol.nombre || rol.name,
+            nombre:      rol.nombre || rol.name,
             descripcion: rol.descripcion || rol.description,
             permissions: rol.permissions || [],
-            active: rol.active !== undefined ? rol.active : true
+            active:      rol.active !== undefined ? rol.active : true
         });
     }
 
-    isPermissionSelected(permId: string): boolean {
-        return this.rolForm.get('permissions')?.value?.includes(permId) || false;
+    getSelectedModulesSummary(): { name: string; count: number }[] {
+        const current: string[] = this.rolForm.get('permissions')?.value || [];
+        const result: { name: string; count: number }[] = [];
+        this.groupedPermissions.forEach((perms, module) => {
+            const count = perms.filter(p => current.includes(p.id)).length;
+            if (count > 0) result.push({ name: module, count });
+        });
+        return result;
     }
 
-    togglePermission(permId: string): void {
-        const current = this.rolForm.get('permissions')?.value || [];
-        if (current.includes(permId)) {
-            this.rolForm.patchValue({
-                permissions: current.filter((id: string) => id !== permId)
-            });
-        } else {
-            this.rolForm.patchValue({
-                permissions: [...current, permId]
-            });
-        }
-        this.rolForm.markAsDirty();
-    }
-
-    toggleModulePermissions(module: string): void {
-        const modulePerms = this.groupedPermissions.get(module) || [];
-        const modulePermIds = modulePerms.map(p => p.id);
-        const current = this.rolForm.get('permissions')?.value || [];
-
-        const allSelected = modulePermIds.every(id => current.includes(id));
-
-        if (allSelected) {
-            // Deseleccionar todos
-            this.rolForm.patchValue({
-                permissions: current.filter((id: string) => !modulePermIds.includes(id))
-            });
-        } else {
-            // Seleccionar todos (manteniendo únicos)
-            const newPerms = [...new Set([...current, ...modulePermIds])];
-            this.rolForm.patchValue({ permissions: newPerms });
-        }
-        this.rolForm.markAsDirty();
-    }
-
-    isModuleFullySelected(module: string): boolean {
-        const modulePerms = this.groupedPermissions.get(module) || [];
-        const modulePermIds = modulePerms.map(p => p.id);
-        const current = this.rolForm.get('permissions')?.value || [];
-        return modulePermIds.length > 0 && modulePermIds.every(id => current.includes(id));
-    }
-
-    getSelectedCountInModule(module: string): number {
-        const modulePerms = this.groupedPermissions.get(module) || [];
-        const modulePermIds = modulePerms.map(p => p.id);
-        const current = this.rolForm.get('permissions')?.value || [];
-        return modulePermIds.filter(id => current.includes(id)).length;
-    }
-
-    toggleModuleExpanded(module: string): void {
-        if (this.expandedModules.has(module)) {
-            this.expandedModules.delete(module);
-        } else {
-            this.expandedModules.add(module);
-        }
-    }
-
-    isModuleExpanded(module: string): boolean {
-        return this.expandedModules.has(module);
+    async openPermisosDialog(): Promise<void> {
+        const { PermisosDialogComponent } = await import('./permisos-dialog.component');
+        const current: string[] = this.rolForm.get('permissions')?.value || [];
+        const ref = this.dialog.open(PermisosDialogComponent, {
+            width: '660px',
+            maxWidth: '95vw',
+            maxHeight: '85vh',
+            panelClass: 'neo-dialog',
+            hasBackdrop: true,
+            backdropClass: 'bg-black/30',
+            data: { permissions: current }
+        });
+        ref.afterClosed().subscribe((result: string[] | null) => {
+            if (result !== null && result !== undefined) {
+                this.rolForm.patchValue({ permissions: result });
+                this.rolForm.markAsDirty();
+            }
+        });
     }
 
     onSubmit(): void {
@@ -173,9 +113,7 @@ export class FormRolComponent implements OnInit {
         }
     }
 
-    onCancel(): void {
-        this.closeOrNavigate();
-    }
+    onCancel(): void { this.closeOrNavigate(); }
 
     private closeOrNavigate(result?: any): void {
         if (this.dialogRef) {

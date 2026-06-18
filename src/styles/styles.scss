@@ -209,17 +209,24 @@
         box-shadow: none !important;
         background: transparent !important;
         padding: 0 !important;
+        overflow: visible !important;
+
+        .mdc-dialog {
+            background: transparent !important;
+        }
+
+        .mdc-dialog__container {
+            background: transparent !important;
+            align-items: center !important;
+        }
 
         .mdc-dialog__surface {
             background-color: transparent !important;
             border-radius: 0 !important;
             padding: 0 !important;
             box-shadow: none !important;
+            overflow: visible !important;
         }
-    }
-
-    .cdk-overlay-backdrop {
-        background-color: rgba(0, 0, 0, 0.5);
     }
 }
 
@@ -229,15 +236,41 @@
         background: transparent !important;
         box-shadow: none !important;
 
+        .mdc-dialog,
+        .mdc-dialog__container {
+            background: transparent !important;
+        }
+
         .mdc-dialog__surface {
             background-color: transparent !important;
             padding: 0 !important;
             box-shadow: none !important;
         }
     }
+}
 
-    .cdk-overlay-backdrop {
-        background-color: rgba(0, 0, 0, 0.7);
+// Mini dialog de ubicación/contacto
+.neo-mini-dialog {
+    .mat-mdc-dialog-container {
+        --mdc-dialog-container-shape: 0px;
+        border: none !important;
+        box-shadow: none !important;
+        background: transparent !important;
+        padding: 0 !important;
+        overflow: visible !important;
+
+        .mdc-dialog,
+        .mdc-dialog__container {
+            background: transparent !important;
+        }
+
+        .mdc-dialog__surface {
+            background-color: transparent !important;
+            border-radius: 0 !important;
+            padding: 0 !important;
+            box-shadow: none !important;
+            overflow: visible !important;
+        }
     }
 }
 
@@ -305,34 +338,76 @@
     }
 }
 
+// Clean Dialog for Calibration Alerts
+.neo-dialog-calibration {
+    .mat-mdc-dialog-container {
+        --mdc-dialog-container-shape: 16px;
+        background: transparent !important;
+        box-shadow: none !important;
+        border: none !important;
+        padding: 0 !important;
+
+        .mdc-dialog__container {
+            background: transparent !important;
+        }
+
+        .mdc-dialog__surface {
+            background-color: #f8fafc !important;
+            border-radius: 16px !important;
+            padding: 0 !important;
+            overflow: hidden !important;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2) !important;
+            max-height: 90vh;
+        }
+    }
+}
+
+.dark .neo-dialog-calibration {
+    .mat-mdc-dialog-container {
+        .mdc-dialog__surface {
+            background-color: #1e293b !important;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5) !important;
+        }
+    }
+}
+
 // Neo-Brutal Transparent Dialog — sin fondo ni márgenes del contenedor (usado en retorno-traspaso, salidas, etc.)
 .neo-dialog-transparent {
     .mat-mdc-dialog-container {
         --mdc-dialog-container-shape: 0px;
+        --mdc-dialog-container-color: transparent;
         border: none !important;
         box-shadow: none !important;
         background: transparent !important;
         padding: 0 !important;
+        border-radius: 1rem !important;
+        overflow: hidden !important;
 
         .mdc-dialog__surface {
             background-color: transparent !important;
-            border-radius: 0 !important;
+            border-radius: 1rem !important;
             padding: 0 !important;
             box-shadow: none !important;
+            overflow: hidden !important;
         }
     }
 }
 
 .dark .neo-dialog-transparent {
     .mat-mdc-dialog-container {
+        --mdc-dialog-container-color: transparent;
         border: none !important;
         background: transparent !important;
         box-shadow: none !important;
+        border-radius: 1rem !important;
+        overflow: hidden !important;
 
         .mdc-dialog__surface {
             background-color: transparent !important;
             padding: 0 !important;
             box-shadow: none !important;
+            border-radius: 1rem !important;
+            overflow: hidden !important;
         }
     }
 }

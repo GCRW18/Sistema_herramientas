@@ -16,7 +16,7 @@ import { KitsService }     from '../../../../../core/services/kits.service';
     styles: [`:host { display: flex; flex-direction: column; }`],
     template: `
 <div class="bg-stone-100 dark:bg-slate-900 border-2 border-black flex flex-col w-full max-h-[88vh] rounded-2xl overflow-hidden"
-     style="box-shadow: 6px 6px 0 #000">
+>
 
     <!-- HEADER -->
     <div class="bg-[#0F172A] px-5 py-3 flex items-center gap-3 shrink-0 select-none"

@@ -1,15 +1,20 @@
 import {
     Component, OnInit, OnDestroy, inject,
-    Type, Injector, TrackByFunction, ChangeDetectorRef
+    Type, Injector, TrackByFunction, ChangeDetectorRef,
+    ViewChild, TemplateRef
 } from '@angular/core';
 import { CommonModule, NgComponentOutlet } from '@angular/common';
 import { Router } from '@angular/router';
 import { MatIconModule, MatIconRegistry } from '@angular/material/icon';
-import { MatDialogRef, MatDialogModule } from '@angular/material/dialog';
+import { MatDialog, MatDialogRef, MatDialogModule } from '@angular/material/dialog';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { Subject, of } from 'rxjs';
+import { takeUntil, finalize } from 'rxjs/operators';
 import { DomSanitizer } from '@angular/platform-browser';
+import { DragDropModule } from '@angular/cdk/drag-drop';
+import { MovementService } from '../../../core/services/movement.service';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -42,7 +47,8 @@ interface OpenTab {
     standalone: true,
     imports: [
         CommonModule, NgComponentOutlet,
-        MatIconModule, MatDialogModule, MatSnackBarModule, MatTooltipModule
+        MatIconModule, MatDialogModule, MatSnackBarModule, MatTooltipModule,
+        MatProgressSpinnerModule, DragDropModule
     ],
     templateUrl: './movimientos.component.html',
     styles: [`
@@ -68,18 +74,52 @@ export class MovimientosComponent implements OnInit, OnDestroy {
 
     private injector      = inject(Injector);
     private router        = inject(Router);
+    private dialog        = inject(MatDialog);
     private snackBar      = inject(MatSnackBar);
     private iconRegistry  = inject(MatIconRegistry);
     private sanitizer     = inject(DomSanitizer);
     private cdr           = inject(ChangeDetectorRef);
+    private movService    = inject(MovementService);
 
     private _unsub$ = new Subject<void>();
+
+    @ViewChild('movRecientesDialog') movRecientesDialog!: TemplateRef<any>;
 
     // ── Tab system ────────────────────────────────────────────────────────────
     openTabs:    OpenTab[] = [];
     activeTabId: number | null = null;
     showBandeja  = false;
     private tabCounter = 0;
+
+    // ── Registros recientes ───────────────────────────────────────────────────
+    recentMovements: any[] = [];
+    isLoadingRecents = false;
+    pageIndexMov = 0;
+    readonly pageSizeMov = 15;
+
+    private readonly MOV_TYPE_LABELS: Record<string, string> = {
+        // valores reales de la BD (uppercase)
+        COMPRA:                        'COMPRA',
+        PRESTAMO_INTERNO:              'PRÉSTAMO',
+        PRESTAMO_EXTERNO:              'PRÉST. EXT.',
+        DEVOLUCION_PRESTAMO_INTERNO:   'DEV. INTERNA',
+        DEVOLUCION_PRESTAMO_EXTERNO:   'DEV. EXTERNA',
+        ENVIO_BASE:                    'ENVÍO BASE',
+        RETORNO_BASE:                  'RETORNO BASE',
+        TRASPASO:                      'TRASPASO',
+        CALIBRACION:                   'CALIBRACIÓN',
+        BAJA:                          'BAJA',
+        AJUSTE:                        'AJUSTE',
+        // fallback lowercase (por si algún tipo usa minúsculas)
+        entry:        'ENTRADA',
+        exit:         'SALIDA',
+        loan:         'PRÉSTAMO',
+        return:       'DEVOLUCIÓN',
+        transfer:     'TRASPASO',
+        calibration:  'CALIBRACIÓN',
+        adjustment:   'AJUSTE',
+        decommission: 'BAJA',
+    };
 
     readonly MODULE_DEFS: ModuleDef[] = [
         {
@@ -121,6 +161,79 @@ export class MovimientosComponent implements OnInit, OnDestroy {
     // ── Lifecycle ─────────────────────────────────────────────────────────────
     ngOnInit(): void {}
     ngOnDestroy(): void { this._unsub$.next(); this._unsub$.complete(); }
+
+    openMovRecientes(): void {
+        this.pageIndexMov = 0;
+        this.loadRecentMovements();
+        this.dialog.open(this.movRecientesDialog, {
+            width: '700px',
+            maxWidth: '95vw',
+            height: 'auto',
+            maxHeight: '80vh',
+            panelClass: 'neo-dialog',
+            hasBackdrop: true,
+            disableClose: false,
+            autoFocus: false
+        });
+    }
+
+    loadRecentMovements(): void {
+        this.isLoadingRecents = true;
+        this.cdr.detectChanges();
+        this.movService.getMovements({
+            start: this.pageIndexMov * this.pageSizeMov,
+            limit: this.pageSizeMov,
+            sort: 'date', dir: 'desc'
+        }).pipe(
+            takeUntil(this._unsub$),
+            finalize(() => { this.isLoadingRecents = false; this.cdr.detectChanges(); })
+        ).subscribe({
+            next: (items: any[]) => {
+                this.recentMovements = (items || []).map((m: any) => ({
+                    fecha:         this.formatMovDate(m.date || m.fecha_reg),
+                    tipo:          this.MOV_TYPE_LABELS[m.type || m.movement_type || ''] ?? (m.type || m.movement_type || '-'),
+                    tipoRaw:       m.type || m.movement_type || '',
+                    comprobante:   m.movement_number || m.loan_number || '-',
+                    responsable:   m.requested_by_name || m.responsible_person || m.technician || m.usr_reg || '-',
+                }));
+                this.cdr.detectChanges();
+            },
+            error: () => { this.recentMovements = []; this.cdr.detectChanges(); }
+        });
+    }
+
+    getMovTypeClass(tipoRaw: string): string {
+        switch (tipoRaw) {
+            // valores reales BD (uppercase)
+            case 'COMPRA':                       return 'bg-green-600 text-white';
+            case 'PRESTAMO_INTERNO':             return 'bg-purple-700 text-white';
+            case 'PRESTAMO_EXTERNO':             return 'bg-violet-700 text-white';
+            case 'DEVOLUCION_PRESTAMO_INTERNO':  return 'bg-teal-600 text-white';
+            case 'DEVOLUCION_PRESTAMO_EXTERNO':  return 'bg-cyan-700 text-white';
+            case 'ENVIO_BASE':                   return 'bg-blue-700 text-white';
+            case 'RETORNO_BASE':                 return 'bg-sky-600 text-white';
+            case 'TRASPASO':                     return 'bg-orange-600 text-white';
+            case 'CALIBRACION':                  return 'bg-slate-700 text-white';
+            case 'BAJA':                         return 'bg-red-600 text-white';
+            case 'AJUSTE':                       return 'bg-amber-500 text-black';
+            // fallback lowercase
+            case 'entry':        return 'bg-green-600 text-white';
+            case 'exit':         return 'bg-blue-700 text-white';
+            case 'loan':         return 'bg-purple-700 text-white';
+            case 'return':       return 'bg-teal-600 text-white';
+            case 'transfer':     return 'bg-orange-600 text-white';
+            case 'calibration':  return 'bg-slate-700 text-white';
+            case 'adjustment':   return 'bg-amber-500 text-black';
+            case 'decommission': return 'bg-red-600 text-white';
+            default:             return 'bg-[#0F172A] text-white';
+        }
+    }
+
+    private formatMovDate(date: string): string {
+        if (!date) return '-';
+        try { return new Date(date).toLocaleDateString('es-BO', { day: '2-digit', month: '2-digit', year: 'numeric' }); }
+        catch { return date; }
+    }
 
     irAReportes(): void {
         this.router.navigate(['/inventario'], { queryParams: { tab: 'reportes' } });

@@ -9,7 +9,7 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { debounceTime, startWith } from 'rxjs/operators';
 import { RoleService } from '../../../../core/services/role.service';
-import { Role, AVAILABLE_PERMISSIONS } from '../../../../core/models/role.types';
+import { AVAILABLE_PERMISSIONS } from '../../../../core/models/role.types';
 
 interface RoleDisplay {
     id: string;
@@ -69,16 +69,31 @@ export class RolesComponent implements OnInit {
         });
     }
 
-    private mapToDisplay(roles: Role[]): RoleDisplay[] {
+    private mapToDisplay(roles: any[]): RoleDisplay[] {
         return roles.map(r => ({
-            id: r.id,
-            nombre: r.name,
+            id:          r.id_role?.toString() || r.id?.toString() || '',
+            nombre:      r.name        || '',
             descripcion: r.description || '',
-            permissions: r.permissions || [],
-            userCount: r.userCount || 0,
-            active: r.active,
-            es_sistema: false // Asumir false si no viene del backend
+            permissions: this.parsePermissions(r.permissions),
+            userCount:   parseInt(r.user_count, 10) || 0,
+            active:      r.active === true || r.active === 'true' || r.active === 't',
+            es_sistema:  false
         }));
+    }
+
+    private parsePermissions(raw: any): string[] {
+        if (!raw) return [];
+        if (Array.isArray(raw)) return raw;
+        try { return JSON.parse(raw); } catch { return []; }
+    }
+
+    private mapFormToBackend(data: any): any {
+        return {
+            name:        data.nombre,
+            description: data.descripcion,
+            permissions: JSON.stringify(data.permissions || []),
+            active:      data.active
+        };
     }
 
     setupSearch(): void {
@@ -103,11 +118,12 @@ export class RolesComponent implements OnInit {
     async nuevoRol(): Promise<void> {
         const { FormRolComponent } = await import('./dialogs/form-rol/form-rol.component');
         const dialogRef = this.dialog.open(FormRolComponent, {
-            width: '1000px',
+            width: '460px',
             maxWidth: '95vw',
-            height: '80vh',
+            height: 'auto',
+            maxHeight: '90vh',
             panelClass: 'neo-dialog',
-            disableClose: false
+            disableClose: true
         });
 
         dialogRef.afterClosed().subscribe(result => {
@@ -125,11 +141,13 @@ export class RolesComponent implements OnInit {
 
         const { FormRolComponent } = await import('./dialogs/form-rol/form-rol.component');
         const dialogRef = this.dialog.open(FormRolComponent, {
-            width: '1000px',
+            width: '460px',
             maxWidth: '95vw',
-            height: '80vh',
+            height: 'auto',
+            maxHeight: '90vh',
             data: { rol, mode: 'edit' },
-            panelClass: 'neo-dialog'
+            panelClass: 'neo-dialog',
+            disableClose: true
         });
 
         dialogRef.afterClosed().subscribe(result => {
@@ -142,7 +160,7 @@ export class RolesComponent implements OnInit {
     async verDetalles(rol: RoleDisplay): Promise<void> {
         const { DetalleRolComponent } = await import('./dialogs/detalle-rol/detalle-rol.component');
         this.dialog.open(DetalleRolComponent, {
-            width: '800px',
+            width: '680px',
             maxWidth: '95vw',
             height: 'auto',
             maxHeight: '90vh',
@@ -178,9 +196,14 @@ export class RolesComponent implements OnInit {
             this.showWarning('No se puede cambiar el estado de un rol del sistema');
             return;
         }
-
         const nuevoEstado = !rol.active;
-        this.roleService.toggleRoleStatus(rol.id, nuevoEstado).subscribe({
+        const backendData = this.mapFormToBackend({
+            nombre:      rol.nombre,
+            descripcion: rol.descripcion,
+            permissions: rol.permissions,
+            active:      nuevoEstado
+        });
+        this.roleService.updateRole(rol.id, backendData).subscribe({
             next: () => {
                 this.showSuccess(`Rol ${nuevoEstado ? 'activado' : 'desactivado'} exitosamente`);
                 this.loadRoles();
@@ -190,7 +213,7 @@ export class RolesComponent implements OnInit {
     }
 
     createRol(data: any): void {
-        this.roleService.createRole(data).subscribe({
+        this.roleService.createRole(this.mapFormToBackend(data)).subscribe({
             next: () => {
                 this.showSuccess('Rol creado exitosamente');
                 this.loadRoles();
@@ -200,7 +223,7 @@ export class RolesComponent implements OnInit {
     }
 
     updateRol(id: string, data: any): void {
-        this.roleService.updateRole(id, data).subscribe({
+        this.roleService.updateRole(id, this.mapFormToBackend(data)).subscribe({
             next: () => {
                 this.showSuccess('Rol actualizado exitosamente');
                 this.loadRoles();

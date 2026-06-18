@@ -181,55 +181,69 @@
                 <div class="grid grid-cols-1 xl:grid-cols-3 gap-6 md:gap-8">
 
                     <!-- Activity Log -->
-                    <div class="xl:col-span-2 neo-card-base dark:bg-slate-800 p-0 flex flex-col border-[3px] border-black rounded-2xl shadow-[5px_5px_0px_0px_rgba(0,0,0,1)] overflow-hidden">
-                        <div class="p-4 bg-[#111A43] dark:bg-slate-900 border-b-[3px] border-black flex justify-between items-center">
-                            <h3 class="text-lg md:text-xl font-black uppercase text-white flex items-center gap-2">
-                                <mat-icon class="text-white">history</mat-icon> Registro de Actividad
-                            </h3>
-                            <span class="text-xs font-bold border-2 border-black bg-yellow-400 text-black px-3 py-0.5 rounded-full uppercase">Live</span>
+                    <div class="xl:col-span-2 flex flex-col border-[2px] border-black rounded-xl shadow-[4px_4px_0px_0px_#000] overflow-hidden">
+
+                        <!-- Header -->
+                        <div class="bg-[#0F172A] px-4 py-2.5 flex items-center justify-between shrink-0 border-b-[2px] border-black">
+                            <div class="flex items-center gap-2.5">
+                                <div class="w-7 h-7 rounded-lg bg-[#FFC501] border-2 border-black flex items-center justify-center shadow-[2px_2px_0_#000] shrink-0">
+                                    <mat-icon class="!text-base text-black">history</mat-icon>
+                                </div>
+                                <div>
+                                    <p class="text-[8px] text-slate-400 font-bold uppercase tracking-widest leading-none mb-0.5">Sistema</p>
+                                    <h3 class="text-xs text-white font-black uppercase tracking-tight leading-none">Registro de Actividad</h3>
+                                </div>
+                            </div>
+                            <span class="text-[9px] font-black border-2 border-black bg-[#FFC501] text-black px-2 py-0.5 rounded-full uppercase">Live</span>
                         </div>
 
-                        <div class="overflow-x-auto bg-white dark:bg-slate-800">
+                        <!-- Table -->
+                        <div class="overflow-y-auto overflow-x-auto bg-white dark:bg-slate-800" style="max-height: 300px;">
                             <table class="w-full">
-                                <thead class="bg-gray-100 dark:bg-slate-900 border-b-[3px] border-black">
+                                <thead class="bg-stone-200 dark:bg-[#020617] sticky top-0 z-10 border-b-[2px] border-black text-[10px] font-black uppercase">
                                 <tr>
-                                    <th class="text-left p-3 md:p-4 font-black text-xs uppercase text-black dark:text-white w-28 md:w-32">FECHA</th>
-                                    <th class="text-left p-3 md:p-4 font-black text-xs uppercase text-black dark:text-white w-20 md:w-24">ACCIÓN</th>
-                                    <th class="text-left p-3 md:p-4 font-black text-xs uppercase text-black dark:text-white">DETALLE</th>
-                                    <th class="text-right p-3 md:p-4 font-black text-xs uppercase text-black dark:text-white w-28 md:w-32">USUARIO</th>
+                                    <th class="py-2 px-3 text-left text-black dark:text-amber-400 w-24">Fecha</th>
+                                    <th class="py-2 px-3 text-left text-black dark:text-amber-400 w-20">Acción</th>
+                                    <th class="py-2 px-3 text-left text-black dark:text-amber-400">Detalle</th>
+                                    <th class="py-2 px-3 text-right text-black dark:text-amber-400 w-28">Usuario</th>
                                 </tr>
                                 </thead>
                                 <tbody>
                                 <tr *ngFor="let item of actividadReciente"
-                                    class="border-b-2 border-gray-200 dark:border-slate-700/50 hover:bg-yellow-50 dark:hover:bg-slate-700 transition-colors group">
-                                    <td class="p-3 md:p-4">
-                                        <div class="text-xs font-bold text-gray-600 dark:text-gray-400 group-hover:text-black dark:group-hover:text-white font-mono">{{ formatearFecha(item.fecha) }}</div>
+                                    class="border-b border-gray-200 dark:border-slate-700 hover:bg-stone-50 dark:hover:bg-slate-700/50 transition-colors">
+                                    <td class="py-2 px-3 font-mono text-[10px] font-bold text-gray-900 dark:text-white whitespace-nowrap">{{ formatearFecha(item.fecha) }}</td>
+                                    <td class="py-2 px-3">
+                                        <span [ngClass]="getTipoBgColor(item.tipo)"
+                                              class="px-1.5 py-0.5 rounded text-[9px] font-black border border-black uppercase">
+                                            {{ item.tipo }}
+                                        </span>
                                     </td>
-                                    <td class="p-3 md:p-4">
-                                            <span [class]="getTipoBgColor(item.tipo)"
-                                                  class="inline-block px-2 py-0.5 border-2 border-black rounded text-[10px] font-black uppercase shadow-[2px_2px_0px_0px_rgba(0,0,0,0.3)]">
-                                                {{ item.tipo }}
-                                            </span>
+                                    <td class="py-2 px-3">
+                                        <span class="text-[10px] font-black uppercase text-black dark:text-white leading-tight">{{ item.entidad }}</span>
+                                        <span class="text-[9px] font-bold text-gray-400 dark:text-gray-400 uppercase ml-1">{{ item.detalle }}</span>
                                     </td>
-                                    <td class="p-3 md:p-4">
-                                        <div class="flex flex-col">
-                                            <span class="text-xs font-black uppercase text-black dark:text-white">{{ item.entidad }}</span>
-                                            <span class="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase">{{ item.detalle }}</span>
+                                    <td class="py-2 px-3 text-right">
+                                        <span class="text-[9px] font-bold bg-[#0F172A] text-white px-2 py-0.5 rounded font-mono uppercase">{{ item.usuario }}</span>
+                                    </td>
+                                </tr>
+                                <tr *ngIf="actividadReciente.length === 0">
+                                    <td colspan="4" class="py-10 text-center text-gray-400 dark:text-slate-500 font-black uppercase tracking-wider text-xs">
+                                        <div class="flex flex-col items-center mx-auto">
+                                            <mat-icon class="!text-4xl mb-1.5 text-gray-300 dark:text-slate-600">history</mat-icon>
+                                            Sin registros de actividad
                                         </div>
-                                    </td>
-                                    <td class="p-3 md:p-4 text-right">
-                                        <span class="text-xs font-bold bg-[#111A43] text-white px-2 py-1 rounded uppercase">{{ item.usuario }}</span>
                                     </td>
                                 </tr>
                                 </tbody>
                             </table>
                         </div>
 
-                        <!-- Table Footer -->
-                        <div class="p-3 bg-gray-50 dark:bg-slate-900 border-t-[3px] border-black flex justify-between items-center mt-auto">
-                            <span class="text-xs font-bold text-gray-600 dark:text-gray-400 uppercase">{{ actividadReciente.length }} registros</span>
-                            <span class="text-[10px] font-black text-gray-500 dark:text-gray-500 uppercase tracking-wider">Actualizado en tiempo real</span>
+                        <!-- Footer -->
+                        <div class="px-3 py-1.5 bg-stone-200 dark:bg-[#020617] border-t-[2px] border-black flex justify-between items-center shrink-0">
+                            <span class="text-[10px] font-black text-black dark:text-slate-300 uppercase">{{ actividadReciente.length }} registros</span>
+                            <span class="text-[9px] font-black text-gray-500 uppercase tracking-wider">Tiempo real</span>
                         </div>
+
                     </div>
 
                     <!-- Quick Actions -->

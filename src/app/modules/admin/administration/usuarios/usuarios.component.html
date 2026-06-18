@@ -1,153 +1,182 @@
-<div class="flex flex-col w-full h-full bg-[#FFF] dark:bg-[#0a0f29] transition-colors duration-300 font-sans overflow-hidden">
+<div class="flex flex-col w-full h-full bg-[#f8f9fc] dark:bg-[#0F172AFF] transition-colors duration-300 font-sans overflow-hidden">
 
-    <!-- Decorative shapes -->
-    <div class="fixed top-20 right-10 w-40 h-40 bg-[#111A43] rounded-full border-[3px] border-black opacity-5 pointer-events-none"></div>
-    <div class="fixed bottom-10 left-10 w-24 h-24 bg-blue-500 rotate-12 border-[3px] border-black opacity-10 pointer-events-none"></div>
+  <div class="fixed top-20 right-10 w-40 h-40 bg-[#0F172AFF] rounded-full border-[3px] border-black opacity-5 pointer-events-none hidden lg:block"></div>
+  <div class="fixed bottom-10 left-10 w-24 h-24 bg-[#FFC501FF] rotate-12 border-[3px] border-black opacity-5 pointer-events-none hidden lg:block"></div>
 
-    <div class="flex-1 flex flex-col p-4 gap-3 overflow-hidden relative z-10">
+  <div class="flex-1 flex flex-col p-3 sm:p-4 gap-3 overflow-hidden relative z-10">
 
-        <!-- Header compacto -->
-        <div class="flex items-center justify-between gap-4 shrink-0">
-            <div class="flex items-center gap-4">
-                <div class="flex items-center justify-center w-10 h-10 bg-white dark:bg-slate-800 border-[3px] border-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] rounded-xl">
-                    <mat-icon class="!text-2xl text-black dark:text-white" svgIcon="heroicons_outline:user-group"></mat-icon>
-                </div>
-                <div>
-                    <h1 class="text-xl font-black text-black dark:text-white uppercase tracking-tighter leading-none">USUARIOS</h1>
-                    <p class="text-[10px] font-bold bg-slate-800 text-white px-2 py-0.5 inline-block border border-black mt-0.5">
-                        GESTIÓN DE ACCESOS
-                    </p>
-                </div>
-            </div>
+    <!-- ── HEADER ──────────────────────────────────────────── -->
+    <div class="flex items-center justify-between gap-3 shrink-0 flex-wrap">
 
-            <div class="flex items-center gap-3">
-                <!-- Búsqueda -->
-                <div class="relative">
-                    <input type="text"
-                           [formControl]="searchControl"
-                           placeholder="Buscar usuarios..."
-                           class="w-64 h-9 pl-9 pr-3 bg-white dark:bg-slate-800 text-black dark:text-white border-[2px] border-black rounded-xl font-bold text-sm focus:outline-none focus:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-all">
-                    <mat-icon class="absolute left-2.5 top-1.5 text-gray-400 !text-lg">search</mat-icon>
-                </div>
-                <button (click)="nuevoUsuario()"
-                        class="px-4 py-2 bg-yellow-400 text-black font-black text-sm border-[2px] border-black rounded-full shadow-[3px_3px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[2px_2px_0px_0px_#000] active:shadow-none transition-all uppercase flex items-center gap-2">
-                    <mat-icon class="!text-base">add</mat-icon> Nuevo Usuario
-                </button>
-                <button (click)="volver()"
-                        class="px-4 py-2 bg-[#111A43] text-white font-black text-sm border-[2px] border-black rounded-full shadow-[3px_3px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[2px_2px_0px_0px_#000] active:shadow-none transition-all uppercase flex items-center gap-2">
-                    <mat-icon class="!text-base">arrow_back</mat-icon> Volver
-                </button>
-            </div>
+      <div class="flex items-center gap-4">
+        <div class="flex items-center justify-center w-10 h-10 bg-white dark:bg-[#0F172AFF] border-[3px] border-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] rounded-xl shrink-0">
+          <mat-icon class="text-black dark:text-[#FFC501FF] !text-base" svgIcon="heroicons_outline:user-group"></mat-icon>
+        </div>
+        <div>
+          <h1 class="text-xl font-black text-black dark:text-white uppercase tracking-tighter leading-none">USUARIOS</h1>
+          <p class="text-[10px] font-bold bg-[#FFC501FF] text-black px-2 py-0.5 inline-block border-2 border-black rounded uppercase tracking-wider mt-0.5">
+            Gestión de Accesos
+          </p>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-2 flex-wrap w-full sm:w-auto">
+        <!-- Búsqueda -->
+        <div class="relative flex-1 min-w-[140px] sm:flex-none">
+          <input type="text" [formControl]="searchControl"
+                 placeholder="Buscar usuarios..."
+                 class="w-full h-9 pl-9 pr-3 bg-white dark:bg-slate-800 text-black dark:text-white
+                        border-[2px] border-black dark:border-slate-500 rounded-lg font-black text-xs uppercase
+                        focus:outline-none focus:shadow-[3px_3px_0px_0px_#000] focus:-translate-y-[1px] transition-all
+                        placeholder:font-bold placeholder:normal-case dark:placeholder:text-slate-500">
+          <mat-icon class="absolute left-2.5 top-2 text-black dark:text-white !text-sm">search</mat-icon>
         </div>
 
-        <!-- Tabla -->
-        <div class="flex-1 flex flex-col overflow-hidden border-[3px] border-black bg-white dark:bg-slate-800 rounded-xl shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
-
-            <!-- Header tabla -->
-            <div class="px-4 py-2.5 bg-[#111A43] border-b-[3px] border-black flex items-center justify-between shrink-0">
-                <h3 class="text-sm font-black text-white uppercase tracking-wider flex items-center gap-2">
-                    <mat-icon class="!text-base">group</mat-icon>
-                    USUARIOS DEL SISTEMA ({{ filteredUsuarios.length }})
-                </h3>
-                <div class="flex items-center gap-4 text-xs font-bold text-white/70">
-                    <span class="flex items-center gap-1.5">
-                        <span class="w-2 h-2 bg-emerald-400 border border-white/30 rounded-full"></span>
-                        Activos: {{ getUsuariosActivos() }}
-                    </span>
-                    <span class="flex items-center gap-1.5">
-                        <span class="w-2 h-2 bg-red-400 border border-white/30 rounded-full"></span>
-                        Inactivos: {{ getUsuariosInactivos() }}
-                    </span>
-                </div>
-            </div>
-
-            <!-- Spinner -->
-            @if (isLoading) {
-            <div class="flex items-center justify-center flex-1">
-                <mat-spinner diameter="40"></mat-spinner>
-            </div>
-            }
-
-            @if (!isLoading) {
-            <div class="overflow-y-auto flex-1 custom-scrollbar">
-                <table class="w-full">
-                    <thead class="sticky top-0 z-10">
-                        <tr class="border-b-[2px] border-black bg-gray-100 dark:bg-slate-700">
-                            <th class="text-left px-4 py-2 font-black text-xs uppercase text-black dark:text-white">NOMBRE</th>
-                            <th class="text-left px-4 py-2 font-black text-xs uppercase text-black dark:text-white">EMAIL</th>
-                            <th class="text-left px-4 py-2 font-black text-xs uppercase text-black dark:text-white w-36">ROL</th>
-                            <th class="text-left px-4 py-2 font-black text-xs uppercase text-black dark:text-white w-36">DEPARTAMENTO</th>
-                            <th class="text-center px-4 py-2 font-black text-xs uppercase text-black dark:text-white w-28">ESTADO</th>
-                            <th class="text-left px-4 py-2 font-black text-xs uppercase text-black dark:text-white w-40">ÚLTIMO ACCESO</th>
-                            <th class="text-center px-4 py-2 font-black text-xs uppercase text-black dark:text-white w-28">ACCIONES</th>
-                        </tr>
-                    </thead>
-                    <tbody class="bg-white dark:bg-slate-800">
-                        @for (usuario of filteredUsuarios; track usuario.id; let last = $last) {
-                        <tr [class.border-b]="!last"
-                            class="border-gray-200 dark:border-slate-600 hover:bg-blue-50 dark:hover:bg-slate-700 transition-colors">
-
-                            <td class="px-4 py-2">
-                                <div class="flex items-center gap-2">
-                                    <div class="w-8 h-8 bg-blue-600 border-2 border-black rounded-full flex items-center justify-center shrink-0">
-                                        <span class="text-white font-black text-xs">{{ usuario.nombre.charAt(0) }}</span>
-                                    </div>
-                                    <span class="font-bold text-gray-900 dark:text-white text-sm">{{ usuario.nombre }}</span>
-                                </div>
-                            </td>
-
-                            <td class="px-4 py-2">
-                                <span class="text-gray-700 dark:text-gray-300 font-semibold text-sm">{{ usuario.email }}</span>
-                            </td>
-
-                            <td class="px-4 py-2">
-                                <span class="inline-block px-2 py-0.5 border-2 border-black rounded-lg text-xs font-black uppercase bg-white dark:bg-slate-600 text-black dark:text-white shadow-[1px_1px_0px_0px_#000]">
-                                    {{ usuario.rol }}
-                                </span>
-                            </td>
-
-                            <td class="px-4 py-2">
-                                <span class="text-gray-600 dark:text-gray-400 font-semibold text-sm">{{ usuario.departamento }}</span>
-                            </td>
-
-                            <td class="px-4 py-2 text-center">
-                                @if (usuario.estado === 'ACTIVO') {
-                                <span class="inline-block px-2 py-0.5 bg-emerald-100 border-2 border-emerald-500 rounded-lg text-emerald-800 font-black text-xs uppercase">ACTIVO</span>
-                                } @else {
-                                <span class="inline-block px-2 py-0.5 bg-red-100 border-2 border-red-500 rounded-lg text-red-800 font-black text-xs uppercase">INACTIVO</span>
-                                }
-                            </td>
-
-                            <td class="px-4 py-2">
-                                <span class="text-gray-600 dark:text-gray-400 font-mono font-bold text-xs">{{ usuario.ultimoAcceso }}</span>
-                            </td>
-
-                            <td class="px-4 py-2">
-                                <div class="flex gap-2 justify-center">
-                                    <button (click)="editarUsuario(usuario)"
-                                            class="w-8 h-8 flex items-center justify-center border-2 border-black bg-yellow-400 hover:bg-yellow-300 rounded-lg shadow-[2px_2px_0px_0px_#000] active:translate-y-[1px] active:shadow-none transition-all">
-                                        <mat-icon class="text-black !text-base">edit</mat-icon>
-                                    </button>
-                                    <button (click)="eliminarUsuario(usuario)"
-                                            class="w-8 h-8 flex items-center justify-center border-2 border-black bg-white dark:bg-slate-600 hover:bg-red-50 rounded-lg shadow-[2px_2px_0px_0px_#000] active:translate-y-[1px] active:shadow-none transition-all">
-                                        <mat-icon class="text-red-600 !text-base">delete</mat-icon>
-                                    </button>
-                                </div>
-                            </td>
-                        </tr>
-                        } @empty {
-                        <tr>
-                            <td colspan="7" class="p-10 text-center">
-                                <mat-icon class="!text-5xl text-gray-300 dark:text-gray-600 mb-2">person_off</mat-icon>
-                                <p class="text-gray-500 dark:text-gray-400 font-bold">No se encontraron usuarios</p>
-                            </td>
-                        </tr>
-                        }
-                    </tbody>
-                </table>
-            </div>
-            }
-
-        </div>
+        <!-- Nuevo usuario -->
+        <button (click)="nuevoUsuario()"
+                class="h-9 px-3 flex items-center gap-1.5 rounded-lg border-[2px] border-black font-black text-[10px] uppercase transition-all
+                       bg-[#FFC501FF] text-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none">
+          <mat-icon class="!text-sm">add_circle</mat-icon>
+          <span class="hidden sm:inline">Nuevo Usuario</span>
+        </button>
+      </div>
     </div>
+
+    <!-- ── CARD PRINCIPAL ──────────────────────────────────────────── -->
+    <div class="flex-1 flex flex-col overflow-hidden border-[3px] border-black bg-gray-50 dark:bg-[#0F172AFF] rounded-2xl shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+
+      <!-- Dark header con KPIs -->
+      <div class="px-3 sm:px-4 py-2 bg-[#0F172AFF] border-b-[3px] border-black shrink-0 rounded-t-2xl">
+        <div class="flex items-center gap-2 overflow-x-auto scrollbar-none flex-nowrap">
+
+          <div class="flex items-center gap-1.5 bg-white/10 rounded-lg px-2.5 py-1.5 border border-white/20 shrink-0">
+            <mat-icon class="!text-[10px] text-[#FFC501FF]">group</mat-icon>
+            <div>
+              <div class="text-[8px] font-black uppercase text-white/70 leading-none">Total</div>
+              <div class="text-sm font-black text-white leading-none">{{ filteredUsuarios.length }}</div>
+            </div>
+          </div>
+
+          <div class="flex items-center gap-1.5 bg-white/10 rounded-lg px-2.5 py-1.5 border border-white/20 shrink-0">
+            <mat-icon class="!text-[10px] text-green-300">check_circle</mat-icon>
+            <div>
+              <div class="text-[8px] font-black uppercase text-white/70 leading-none">Activos</div>
+              <div class="text-sm font-black text-white leading-none">{{ getUsuariosActivos() }}</div>
+            </div>
+          </div>
+
+          <div class="flex items-center gap-1.5 bg-white/10 rounded-lg px-2.5 py-1.5 border border-white/20 shrink-0">
+            <mat-icon class="!text-[10px] text-red-300">block</mat-icon>
+            <div>
+              <div class="text-[8px] font-black uppercase text-white/70 leading-none">Inactivos</div>
+              <div class="text-sm font-black text-white leading-none">{{ getUsuariosInactivos() }}</div>
+            </div>
+          </div>
+
+          <div class="ml-auto flex items-center gap-1.5 shrink-0">
+            <button (click)="cargarUsuarios()"
+                    [disabled]="isLoading"
+                    class="flex items-center gap-1.5 h-7 px-2.5 rounded-lg border border-white/30 text-white hover:bg-white/20 transition-all disabled:opacity-40 font-black text-[10px] uppercase shrink-0">
+              <mat-icon class="!text-sm !w-4 !h-4 text-[#FFC501FF]" [class.animate-spin]="isLoading">refresh</mat-icon>
+              Actualizar
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Loading -->
+      <div *ngIf="isLoading" class="flex-1 flex flex-col items-center justify-center gap-4">
+        <div class="w-12 h-12 border-4 border-[#FFC501FF] border-t-transparent rounded-full animate-spin"></div>
+        <p class="text-sm font-black uppercase text-gray-500 dark:text-gray-400">Cargando usuarios…</p>
+      </div>
+
+      <!-- Tabla -->
+      <div *ngIf="!isLoading" class="flex-1 overflow-auto custom-scrollbar bg-gray-50 dark:bg-[#0F172AFF]">
+        <table class="w-full min-w-[700px]">
+          <thead class="bg-gray-100 dark:bg-slate-800 border-b-[2px] border-black sticky top-0 z-10">
+            <tr class="text-left text-[10px] font-black uppercase tracking-wider text-black dark:text-white">
+              <th class="px-3 py-2.5">NOMBRE</th>
+              <th class="px-3 py-2.5">EMAIL</th>
+              <th class="px-3 py-2.5 w-36">ROL</th>
+              <th class="px-3 py-2.5 w-36">DEPARTAMENTO</th>
+              <th class="px-3 py-2.5 text-center w-28">ESTADO</th>
+              <th class="px-3 py-2.5 w-40">ÚLTIMO ACCESO</th>
+              <th class="px-3 py-2.5 text-center w-28">ACCIONES</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (usuario of filteredUsuarios; track usuario.id; let idx = $index; let last = $last) {
+            <tr class="border-b border-gray-200 dark:border-slate-700 transition-all"
+                [ngClass]="idx % 2 === 0 ? 'bg-white dark:bg-slate-800/60' : 'bg-gray-50 dark:bg-slate-800/40'">
+
+              <td class="px-3 py-2.5">
+                <div class="flex items-center gap-2">
+                  <div class="w-7 h-7 bg-[#0F172AFF] border-2 border-black rounded-lg flex items-center justify-center shrink-0">
+                    <span class="text-[#FFC501FF] font-black text-[10px]">{{ usuario.nombre.charAt(0) }}</span>
+                  </div>
+                  <span class="text-xs font-bold text-black dark:text-white">{{ usuario.nombre }}</span>
+                </div>
+              </td>
+
+              <td class="px-3 py-2.5">
+                <span class="text-xs font-bold text-black dark:text-white">{{ usuario.email }}</span>
+              </td>
+
+              <td class="px-3 py-2.5">
+                <span class="font-mono font-black text-[10px] bg-[#0F172AFF] text-white px-1.5 py-0.5 rounded border border-black">
+                  {{ usuario.rol }}
+                </span>
+              </td>
+
+              <td class="px-3 py-2.5">
+                <span class="text-xs font-bold text-black dark:text-white">{{ usuario.departamento }}</span>
+              </td>
+
+              <td class="px-3 py-2.5 text-center">
+                @if (usuario.estado === 'ACTIVO') {
+                  <span class="px-1.5 py-0.5 text-[9px] font-black uppercase border-2 border-black rounded inline-flex items-center gap-1 bg-green-500 text-white">ACTIVO</span>
+                } @else {
+                  <span class="px-1.5 py-0.5 text-[9px] font-black uppercase border-2 border-black rounded inline-flex items-center gap-1 bg-stone-300 text-black">INACTIVO</span>
+                }
+              </td>
+
+              <td class="px-3 py-2.5">
+                <span class="text-[9px] font-bold font-mono text-gray-500 dark:text-gray-400">{{ usuario.ultimoAcceso }}</span>
+              </td>
+
+              <td class="px-3 py-2.5">
+                <div class="flex gap-1.5 justify-center">
+                  <button (click)="editarUsuario(usuario)"
+                          matTooltip="Editar"
+                          class="w-7 h-7 flex items-center justify-center bg-[#FFC501FF] border-2 border-black rounded-lg shadow-[2px_2px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all">
+                    <mat-icon class="!text-sm text-black">edit</mat-icon>
+                  </button>
+                  <button (click)="eliminarUsuario(usuario)"
+                          matTooltip="Eliminar"
+                          class="w-7 h-7 flex items-center justify-center bg-white dark:bg-slate-700 border-2 border-black rounded-lg shadow-[2px_2px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all">
+                    <mat-icon class="!text-sm text-red-600">delete</mat-icon>
+                  </button>
+                </div>
+              </td>
+            </tr>
+            } @empty {
+            <tr>
+              <td colspan="7" class="py-12 text-center">
+                <div class="flex flex-col items-center gap-3">
+                  <mat-icon class="!text-5xl text-gray-300 dark:text-gray-600">person_off</mat-icon>
+                  <p class="text-xs font-bold uppercase text-gray-500 mt-2">No se encontraron usuarios</p>
+                  <button (click)="nuevoUsuario()"
+                          class="h-8 px-4 rounded-xl border-[2px] border-black bg-[#FFC501FF] text-black font-black text-xs uppercase shadow-[2px_2px_0_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all mt-1 flex items-center gap-1.5">
+                    <mat-icon class="!text-sm">add_circle</mat-icon>Nuevo Usuario
+                  </button>
+                </div>
+              </td>
+            </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+
+    </div><!-- /card -->
+  </div><!-- /p-4 -->
 </div>

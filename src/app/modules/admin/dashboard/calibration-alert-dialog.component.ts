@@ -28,173 +28,113 @@ export interface CalibrationAlertDialogData {
     standalone: true,
     imports: [CommonModule, MatDialogModule, MatButtonModule, MatIconModule],
     template: `
-        <!-- Header -->
-        <div style="
-            background: #111A43;
-            padding: 18px 24px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            border-bottom: 3px solid black;
-        ">
-            <div style="display: flex; align-items: center; gap: 12px;">
-                <div style="
-                    background: #ff6b00;
-                    border: 2px solid rgba(255,255,255,0.4);
-                    border-radius: 50%;
-                    width: 40px; height: 40px;
-                    display: flex; align-items: center; justify-content: center;
-                    flex-shrink: 0;
-                ">
-                    <mat-icon style="color: white; font-size: 22px; width:22px; height:22px; line-height:22px;">warning</mat-icon>
+
+    <div class="flex flex-col overflow-hidden">
+
+        <!-- ── HEADER ─────────────────────────────────────────────────────── -->
+        <div class="bg-[#0F172A] px-5 py-3.5 flex items-center justify-between gap-3 shrink-0">
+            <div class="flex items-center gap-3">
+                <div class="w-9 h-9 rounded bg-[#FF1414] flex items-center justify-center shrink-0">
+                    <mat-icon class="text-white !text-xl">warning</mat-icon>
                 </div>
                 <div>
-                    <h2 style="color: white; font-weight: 900; font-size: 17px; margin: 0; text-transform: uppercase; letter-spacing: 0.05em; line-height: 1.2;">
-                        Alertas de Calibración
-                    </h2>
-                    <p style="color: #94a3b8; font-size: 12px; margin: 2px 0 0; font-weight: 700;">
-                        Herramientas con calibración próxima a vencer o vencida
-                    </p>
+                    <p class="text-[9px] text-slate-400 font-bold uppercase tracking-[0.18em] leading-none mb-0.5">Calibración</p>
+                    <h2 class="text-sm text-white font-black uppercase tracking-tight leading-none">Alertas de Calibración</h2>
                 </div>
             </div>
-            <button (click)="close()" style="
-                background: rgba(255,255,255,0.08);
-                border: 2px solid rgba(255,255,255,0.25);
-                border-radius: 8px;
-                color: white;
-                width: 36px; height: 36px;
-                cursor: pointer;
-                display: flex; align-items: center; justify-content: center;
-                flex-shrink: 0;
-            ">
-                <mat-icon style="font-size: 20px; width:20px; height:20px; line-height:20px;">close</mat-icon>
+            <button (click)="close()"
+                    class="w-8 h-8 flex items-center justify-center rounded hover:bg-white/10 transition-colors shrink-0">
+                <mat-icon class="text-white !text-xl">close</mat-icon>
             </button>
         </div>
 
-        <!-- Summary Cards -->
-        <div style="
-            padding: 14px 24px;
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 10px;
-            background: #f8fafc;
-            border-bottom: 2px solid black;
-        ">
-            <div style="background: #fef2f2; border: 2px solid black; border-radius: 10px; padding: 10px 12px; text-align: center; box-shadow: 3px 3px 0px 0px rgba(0,0,0,1);">
-                <div style="font-size: 26px; font-weight: 900; color: #dc2626; line-height: 1;">{{ data.expiredCount }}</div>
-                <div style="font-size: 9px; font-weight: 900; text-transform: uppercase; color: #ef4444; margin-top: 2px; letter-spacing: 0.05em;">VENCIDAS</div>
-            </div>
-            <div style="background: #fff7ed; border: 2px solid black; border-radius: 10px; padding: 10px 12px; text-align: center; box-shadow: 3px 3px 0px 0px rgba(0,0,0,1);">
-                <div style="font-size: 26px; font-weight: 900; color: #ea580c; line-height: 1;">{{ data.critical7dCount }}</div>
-                <div style="font-size: 9px; font-weight: 900; text-transform: uppercase; color: #f97316; margin-top: 2px; letter-spacing: 0.05em;">CRÍTICAS 7D</div>
-            </div>
-            <div style="background: #fefce8; border: 2px solid black; border-radius: 10px; padding: 10px 12px; text-align: center; box-shadow: 3px 3px 0px 0px rgba(0,0,0,1);">
-                <div style="font-size: 26px; font-weight: 900; color: #ca8a04; line-height: 1;">{{ data.urgent15dCount }}</div>
-                <div style="font-size: 9px; font-weight: 900; text-transform: uppercase; color: #eab308; margin-top: 2px; letter-spacing: 0.05em;">URGENTES 15D</div>
+        <!-- ── KPI CHIPS ───────────────────────────────────────────────────── -->
+        <div class="bg-stone-100 px-4 py-3 border-b border-stone-300 shrink-0">
+            <div class="grid grid-cols-3 gap-2">
+
+                <div class="flex flex-col items-center bg-white rounded-lg px-3 py-2.5 border border-stone-200">
+                    <span class="text-2xl font-black text-[#FF1414] leading-none">{{ data.expiredCount }}</span>
+                    <span class="text-[9px] font-bold text-stone-400 uppercase tracking-wider mt-1">Vencidas</span>
+                </div>
+
+                <div class="flex flex-col items-center bg-white rounded-lg px-3 py-2.5 border border-stone-200">
+                    <span class="text-2xl font-black text-orange-500 leading-none">{{ data.critical7dCount }}</span>
+                    <span class="text-[9px] font-bold text-stone-400 uppercase tracking-wider mt-1">Críticas 7d</span>
+                </div>
+
+                <div class="flex flex-col items-center bg-white rounded-lg px-3 py-2.5 border border-stone-200">
+                    <span class="text-2xl font-black text-amber-500 leading-none">{{ data.urgent15dCount }}</span>
+                    <span class="text-[9px] font-bold text-stone-400 uppercase tracking-wider mt-1">Urgentes 15d</span>
+                </div>
+
             </div>
         </div>
 
-        <!-- Alerts List -->
-        <div style="max-height: 300px; overflow-y: auto; background: white;">
-            <div *ngFor="let alert of data.alerts; let last = last" style="
-                display: flex;
-                align-items: center;
-                gap: 12px;
-                padding: 11px 24px;
-            " [style.border-bottom]="last ? 'none' : '1px solid #e5e7eb'">
+        <!-- ── LISTA ───────────────────────────────────────────────────────── -->
+        <div class="overflow-y-auto bg-stone-100" style="max-height: 320px;">
+            <div class="px-4 py-3 flex flex-col gap-2">
 
-                <span style="
-                    display: inline-block;
-                    padding: 3px 8px;
-                    border-radius: 5px;
-                    font-size: 9px;
-                    font-weight: 900;
-                    border: 1.5px solid black;
-                    text-transform: uppercase;
-                    white-space: nowrap;
-                    min-width: 72px;
-                    text-align: center;
-                    letter-spacing: 0.03em;
-                " [ngStyle]="getUrgencyStyle(alert.urgency)">
-                    {{ getUrgencyLabel(alert.urgency) }}
-                </span>
+                <div *ngFor="let alert of data.alerts"
+                     class="flex items-center gap-3 bg-white rounded-lg px-3 py-2.5 border border-stone-200 hover:border-stone-300 transition-colors">
 
-                <div style="flex: 1; min-width: 0;">
-                    <div style="font-weight: 900; font-size: 13px; color: black; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.3;">
-                        {{ alert.tool_name }}
+                    <!-- Dot urgencia -->
+                    <div class="w-2 h-2 rounded-full shrink-0"
+                         [ngClass]="alert.days_remaining <= 0 ? 'bg-[#FF1414]' : alert.days_remaining <= 7 ? 'bg-orange-500' : 'bg-amber-400'">
                     </div>
-                    <div style="font-size: 11px; font-weight: 700; color: #6b7280; font-family: monospace; margin-top: 1px;">
-                        {{ alert.tool_code }}&nbsp;·&nbsp;{{ alert.warehouse }}
+
+                    <!-- Datos herramienta -->
+                    <div class="flex-1 min-w-0">
+                        <div class="text-xs font-bold text-stone-800 leading-tight truncate">{{ alert.tool_name }}</div>
+                        <div class="text-[10px] text-stone-400 font-mono mt-0.5">{{ alert.tool_code }} · {{ alert.warehouse }}</div>
                     </div>
+
+                    <!-- Badge urgencia + días -->
+                    <div class="flex items-center gap-2 shrink-0">
+                        <span class="text-[10px] font-bold px-2 py-0.5 rounded"
+                              [ngClass]="getUrgencyClass(alert.urgency)">
+                            {{ getUrgencyLabel(alert.urgency) }}
+                        </span>
+                        <div class="text-right">
+                            <div class="text-xs font-black leading-tight"
+                                 [ngClass]="alert.days_remaining <= 0 ? 'text-[#FF1414]' : alert.days_remaining <= 7 ? 'text-orange-500' : 'text-amber-500'">
+                                {{ alert.days_remaining <= 0 ? 'VENCIDA' : alert.days_remaining + 'd' }}
+                            </div>
+                            <div class="text-[10px] text-stone-400 font-mono">{{ alert.calibration_expiry }}</div>
+                        </div>
+                    </div>
+
                 </div>
 
-                <div style="text-align: right; flex-shrink: 0;">
-                    <div style="font-size: 12px; font-weight: 900; font-family: monospace; line-height: 1.3;"
-                         [style.color]="alert.days_remaining <= 0 ? '#dc2626' : alert.days_remaining <= 7 ? '#ea580c' : '#ca8a04'">
-                        {{ alert.days_remaining <= 0 ? 'VENCIDA' : alert.days_remaining + 'días' }}
-                    </div>
-                    <div style="font-size: 10px; color: #9ca3af; font-family: monospace; margin-top: 1px;">
-                        {{ alert.calibration_expiry }}
-                    </div>
+                <!-- Empty state -->
+                <div *ngIf="data.alerts.length === 0" class="py-10 flex flex-col items-center gap-2">
+                    <mat-icon class="!text-4xl text-stone-300">check_circle</mat-icon>
+                    <p class="text-sm font-bold text-stone-400">Sin alertas críticas</p>
                 </div>
-            </div>
 
-            <div *ngIf="data.alerts.length === 0" style="padding: 32px; text-align: center; color: #9ca3af;">
-                <mat-icon style="font-size: 40px; width:40px; height:40px; line-height:40px; opacity: 0.4; color: #22c55e;">check_circle</mat-icon>
-                <p style="font-weight: 900; font-size: 12px; text-transform: uppercase; margin-top: 8px;">Sin alertas críticas</p>
             </div>
         </div>
 
-        <!-- Footer Actions -->
-        <div style="
-            padding: 14px 24px;
-            display: flex;
-            justify-content: flex-end;
-            gap: 12px;
-            border-top: 2px solid black;
-            background: #f8fafc;
-        ">
-            <button (click)="close()" style="
-                padding: 9px 18px;
-                background: white;
-                border: 2px solid black;
-                border-radius: 8px;
-                font-weight: 900;
-                font-size: 12px;
-                cursor: pointer;
-                box-shadow: 3px 3px 0px 0px rgba(0,0,0,1);
-                text-transform: uppercase;
-                letter-spacing: 0.05em;
-                transition: all 0.15s;
-            " onmousedown="this.style.boxShadow='1px 1px 0px 0px rgba(0,0,0,1)'; this.style.transform='translate(2px,2px)'"
-               onmouseup="this.style.boxShadow='3px 3px 0px 0px rgba(0,0,0,1)'; this.style.transform=''"
-               onmouseleave="this.style.boxShadow='3px 3px 0px 0px rgba(0,0,0,1)'; this.style.transform=''">
+        <!-- ── FOOTER ──────────────────────────────────────────────────────── -->
+        <div class="border-t border-stone-300 bg-stone-100 px-4 py-3 flex items-center justify-between gap-3 shrink-0">
+
+            <button (click)="close()"
+                    class="h-8 px-4 rounded text-sm font-semibold text-stone-500 hover:text-stone-800 hover:bg-stone-200 transition-all">
                 Cerrar
             </button>
-            <button (click)="viewAll()" style="
-                padding: 9px 18px;
-                background: #111A43;
-                color: white;
-                border: 2px solid black;
-                border-radius: 8px;
-                font-weight: 900;
-                font-size: 12px;
-                cursor: pointer;
-                box-shadow: 3px 3px 0px 0px rgba(0,0,0,1);
-                text-transform: uppercase;
-                letter-spacing: 0.05em;
-                transition: all 0.15s;
-                display: flex;
-                align-items: center;
-                gap: 6px;
-            " onmousedown="this.style.boxShadow='1px 1px 0px 0px rgba(0,0,0,1)'; this.style.transform='translate(2px,2px)'"
-               onmouseup="this.style.boxShadow='3px 3px 0px 0px rgba(0,0,0,1)'; this.style.transform=''"
-               onmouseleave="this.style.boxShadow='3px 3px 0px 0px rgba(0,0,0,1)'; this.style.transform=''">
-                <mat-icon style="font-size: 16px; width:16px; height:16px; line-height:16px;">open_in_new</mat-icon>
-                Ver todas las alertas
+
+            <button (click)="viewAll()"
+                    class="h-8 px-4 bg-[#0F172A] text-white rounded text-sm font-semibold hover:bg-slate-700 transition-colors flex items-center gap-1.5">
+                <mat-icon class="!text-sm">open_in_new</mat-icon>
+                Ver calibraciones
             </button>
+
         </div>
-    `
+
+    </div>
+    `,
+    styles: [`
+        :host { display: flex; flex-direction: column; overflow: hidden; }
+    `]
 })
 export class CalibrationAlertDialogComponent {
 
@@ -204,27 +144,27 @@ export class CalibrationAlertDialogComponent {
         private router: Router
     ) {}
 
-    getUrgencyStyle(urgency: string): Record<string, string> {
+    getUrgencyClass(urgency: string): string {
         switch (urgency) {
-            case 'EXPIRED':     return { background: '#ef4444', color: 'white' };
-            case 'CRITICAL_7D': return { background: '#f97316', color: 'white' };
-            case 'URGENT_15D':  return { background: '#eab308', color: 'black' };
-            default:            return { background: '#e5e7eb', color: 'black' };
+            case 'EXPIRED':     return 'bg-red-50 text-[#FF1414]';
+            case 'CRITICAL_7D': return 'bg-orange-50 text-orange-600';
+            case 'URGENT_15D':  return 'bg-amber-50 text-amber-600';
+            default:            return 'bg-stone-100 text-stone-500';
         }
     }
 
     getUrgencyLabel(urgency: string): string {
         switch (urgency) {
-            case 'EXPIRED':     return 'VENCIDA';
-            case 'CRITICAL_7D': return 'CRÍTICA 7D';
-            case 'URGENT_15D':  return 'URGENTE 15D';
+            case 'EXPIRED':     return 'Vencida';
+            case 'CRITICAL_7D': return '7 días';
+            case 'URGENT_15D':  return '15 días';
             default:            return urgency;
         }
     }
 
     viewAll(): void {
         this.dialogRef.close();
-        this.router.navigate(['/calibraciones/alertas']);
+        this.router.navigate(['/calibraciones']);
     }
 
     close(): void {

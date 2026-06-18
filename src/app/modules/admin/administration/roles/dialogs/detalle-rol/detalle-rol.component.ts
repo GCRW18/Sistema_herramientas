@@ -56,9 +56,10 @@ export class DetalleRolComponent {
         this.dialogRef.close();
         const { FormRolComponent } = await import('../form-rol/form-rol.component');
         this.dialog.open(FormRolComponent, {
-            width: '1000px',
+            width: '460px',
             maxWidth: '95vw',
-            height: '80vh',
+            height: 'auto',
+            maxHeight: '90vh',
             panelClass: 'neo-dialog',
             data: { rol: this.data.rol, mode: 'edit' }
         });

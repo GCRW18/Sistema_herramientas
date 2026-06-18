@@ -1,16 +1,13 @@
 import { Component, OnInit, OnDestroy, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDialogModule, MatDialog } from '@angular/material/dialog';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { debounceTime, distinctUntilChanged, combineLatest, startWith, Subscription } from 'rxjs';
-import { switchMap, of } from 'rxjs';
 import { EmployeeService } from '../../../../core/services/employee.service';
-
-const MIN_SEARCH_CHARS = 2;
+import { MovementService } from '../../../../core/services/movement.service';
 
 @Component({
     selector: 'app-funcionarios',
@@ -32,19 +29,22 @@ const MIN_SEARCH_CHARS = 2;
     `]
 })
 export class FuncionariosComponent implements OnInit, OnDestroy {
-    private router      = inject(Router);
-    private dialog      = inject(MatDialog);
-    private snackBar    = inject(MatSnackBar);
-    private empService  = inject(EmployeeService);
-    private sub         = new Subscription();
+    private dialog          = inject(MatDialog);
+    private snackBar        = inject(MatSnackBar);
+    private empService      = inject(EmployeeService);
+    private movementService = inject(MovementService);
+    private sub             = new Subscription();
 
-    searchControl   = new FormControl('');
-    filterArea      = new FormControl('');
+    searchControl = new FormControl('');
+    filterArea    = new FormControl('');
 
     empleados: any[]         = [];
     filteredEmpleados: any[] = [];
-    isLoading  = false;
-    hasSearched = false;
+    pagedEmpleados: any[]    = [];
+    isLoading = false;
+
+    currentPage = 1;
+    readonly pageSize = 25;
 
     areas = [
         { value: '', label: 'Todas las áreas' },
@@ -57,69 +57,99 @@ export class FuncionariosComponent implements OnInit, OnDestroy {
     ];
 
     ngOnInit(): void {
+        // Carga inicial
+        this.loadAll();
+
+        // Filtro reactivo client-side
         this.sub.add(
             combineLatest([
-                this.searchControl.valueChanges.pipe(startWith(''), debounceTime(400), distinctUntilChanged()),
+                this.searchControl.valueChanges.pipe(startWith(''), debounceTime(250), distinctUntilChanged()),
                 this.filterArea.valueChanges.pipe(startWith(''), distinctUntilChanged())
-            ]).pipe(
-                switchMap(([search, area]) => {
-                    const term = (search || '').trim();
-                    // Solo buscar si hay al menos MIN_SEARCH_CHARS chars en el nombre o se filtra por área
-                    if (term.length < MIN_SEARCH_CHARS && !area) {
-                        this.hasSearched = false;
-                        this.empleados = [];
-                        this.filteredEmpleados = [];
-                        return of([]);
-                    }
-                    this.isLoading = true;
-                    this.hasSearched = true;
-                    return this.empService.getEmployees({
-                        search: term.length >= MIN_SEARCH_CHARS ? term : undefined,
-                        area: area || undefined
-                    });
-                })
-            ).subscribe({
-                next: (data) => {
-                    this.empleados = data;
-                    this.filteredEmpleados = data;
-                    this.isLoading = false;
-                },
-                error: () => {
-                    this.isLoading = false;
-                    this.showError('Error al buscar funcionarios');
-                }
+            ]).subscribe(([search, area]) => {
+                this.applyFilters(search || '', area || '');
             })
         );
     }
 
     ngOnDestroy(): void { this.sub.unsubscribe(); }
 
-    // Recarga tras crear/editar aplicando los filtros actuales
-    recargar(): void {
-        const term = (this.searchControl.value || '').trim();
-        const area = this.filterArea.value || '';
-        if (term.length < MIN_SEARCH_CHARS && !area) return;
+    loadAll(): void {
         this.isLoading = true;
-        this.empService.getEmployees({
-            search: term.length >= MIN_SEARCH_CHARS ? term : undefined,
-            area: area || undefined
-        }).subscribe({
-            next: (data) => { this.empleados = data; this.filteredEmpleados = data; this.isLoading = false; },
-            error: () => { this.isLoading = false; }
+        this.empService.getFuncionarios().subscribe({
+            next: (data) => {
+                this.empleados = data;
+                this.applyFilters(this.searchControl.value || '', this.filterArea.value || '');
+                this.isLoading = false;
+            },
+            error: () => {
+                this.isLoading = false;
+                this.showError('Error al cargar funcionarios');
+            }
         });
     }
 
-    getActivos(): number { return this.filteredEmpleados.filter(e => e.active).length; }
+    private applyFilters(search: string, area: string): void {
+        let result = [...this.empleados];
+        const term = search.trim().toLowerCase();
+        if (term) {
+            result = result.filter(e =>
+                (e.full_name      || '').toLowerCase().includes(term) ||
+                (e.cuenta         || '').toLowerCase().includes(term) ||
+                (e.license_number || '').toLowerCase().includes(term) ||
+                (e.cargo          || '').toLowerCase().includes(term)
+            );
+        }
+        if (area) {
+            result = result.filter(e => e.area === area);
+        }
+        this.filteredEmpleados = result;
+        this.currentPage = 1;
+        this.updatePage();
+    }
+
+    private updatePage(): void {
+        const start = (this.currentPage - 1) * this.pageSize;
+        this.pagedEmpleados = this.filteredEmpleados.slice(start, start + this.pageSize);
+    }
+
+    get totalPages(): number {
+        return Math.ceil(this.filteredEmpleados.length / this.pageSize);
+    }
+
+    get pages(): number[] {
+        const total = this.totalPages;
+        const current = this.currentPage;
+        const delta = 2;
+        const range: number[] = [];
+        for (let i = Math.max(1, current - delta); i <= Math.min(total, current + delta); i++) {
+            range.push(i);
+        }
+        return range;
+    }
+
+    goToPage(page: number): void {
+        if (page < 1 || page > this.totalPages) return;
+        this.currentPage = page;
+        this.updatePage();
+    }
+
+    get pageEnd(): number {
+        return Math.min(this.currentPage * this.pageSize, this.filteredEmpleados.length);
+    }
+
+    recargar(): void { this.loadAll(); }
+
+    getActivos(): number   { return this.filteredEmpleados.filter(e => e.active).length; }
     getInactivos(): number { return this.filteredEmpleados.filter(e => !e.active).length; }
 
     async nuevoFuncionario(): Promise<void> {
         const { FormFuncionarioComponent } = await import('./dialogs/form-funcionario/form-funcionario.component');
         this.dialog.open(FormFuncionarioComponent, {
-            width: '900px', maxWidth: '95vw', maxHeight: '90vh', panelClass: 'neo-dialog'
+            width: '520px', maxWidth: '95vw', maxHeight: '90vh', panelClass: 'neo-dialog'
         }).afterClosed().subscribe(result => {
             if (result) {
                 this.empService.createEmployee(result).subscribe({
-                    next: () => { this.showSuccess('Funcionario creado exitosamente'); this.recargar(); },
+                    next: () => { this.movementService.clearPersonalCache(); this.showSuccess('Funcionario creado exitosamente'); this.recargar(); },
                     error: () => this.showError('Error al crear funcionario')
                 });
             }
@@ -128,14 +158,18 @@ export class FuncionariosComponent implements OnInit, OnDestroy {
 
     async editarFuncionario(emp: any): Promise<void> {
         const { FormFuncionarioComponent } = await import('./dialogs/form-funcionario/form-funcionario.component');
+        const isNew = !emp.id_employee;
         this.dialog.open(FormFuncionarioComponent, {
-            width: '900px', maxWidth: '95vw', maxHeight: '90vh',
-            data: { empleado: emp, mode: 'edit' }, panelClass: 'neo-dialog'
+            width: '520px', maxWidth: '95vw', maxHeight: '90vh',
+            data: { empleado: emp, mode: isNew ? 'create' : 'edit' }, panelClass: 'neo-dialog'
         }).afterClosed().subscribe(result => {
             if (result) {
-                this.empService.updateEmployee(emp.id_employee, result).subscribe({
-                    next: () => { this.showSuccess('Funcionario actualizado'); this.recargar(); },
-                    error: () => this.showError('Error al actualizar funcionario')
+                const op$ = isNew
+                    ? this.empService.createEmployee(result)
+                    : this.empService.updateEmployee(emp.id_employee, result);
+                op$.subscribe({
+                    next: () => { this.movementService.clearPersonalCache(); this.showSuccess(isNew ? 'Datos registrados' : 'Funcionario actualizado'); this.recargar(); },
+                    error: () => this.showError('Error al guardar funcionario')
                 });
             }
         });
@@ -144,13 +178,13 @@ export class FuncionariosComponent implements OnInit, OnDestroy {
     async toggleEstado(emp: any): Promise<void> {
         const accion = emp.active ? 'desactivar' : 'activar';
         if (!confirm(`¿Está seguro de ${accion} a ${emp.full_name}?`)) return;
-        this.empService.updateEmployee(emp.id_employee, { active: !emp.active } as any).subscribe({
-            next: () => { this.showSuccess(`Funcionario ${emp.active ? 'desactivado' : 'activado'}`); this.recargar(); },
+        this.empService.updateEmployee(emp.id_employee, { ...emp, active: !emp.active }).subscribe({
+            next: () => { this.movementService.clearPersonalCache(); this.showSuccess(`Funcionario ${emp.active ? 'desactivado' : 'activado'}`); this.recargar(); },
             error: () => this.showError('Error al cambiar estado')
         });
     }
 
-    volver(): void { this.router.navigate(['/administration']); }
+    trackByEmp(_: number, emp: any): number { return emp.id_usuario ?? emp.id_employee; }
 
     private showSuccess(msg: string): void {
         this.snackBar.open(msg, 'Cerrar', { duration: 3000, horizontalPosition: 'end', verticalPosition: 'top', panelClass: ['snackbar-success'] });

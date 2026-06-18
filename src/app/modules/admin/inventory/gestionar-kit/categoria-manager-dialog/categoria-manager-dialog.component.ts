@@ -18,7 +18,7 @@ interface KitCategory {
     imports: [CommonModule, FormsModule, MatIconModule],
     template: `
 <div class="bg-stone-100 dark:bg-slate-900 border-2 border-black rounded-2xl overflow-hidden flex flex-col"
-     style="box-shadow: 6px 6px 0 #000; width: 420px; max-width: 95vw;">
+     style="width: 420px; max-width: 95vw;">
 
     <!-- HEADER -->
     <div class="bg-[#0F172A] px-4 py-3 flex items-center gap-3 shrink-0">

@@ -12,11 +12,8 @@ import { NavigationService } from 'app/core/navigation/navigation.service';
 import { Navigation } from 'app/core/navigation/navigation.types';
 import { LanguagesComponent } from 'app/layout/common/languages/languages.component';
 import { NotificationsComponent } from 'app/layout/common/notifications/notifications.component';
-import { SearchComponent } from 'app/layout/common/search/search.component';
-import { UserComponent } from 'app/layout/common/user/user.component';
 import { SchemeComponent } from 'app/layout/common/scheme/scheme.component';
-import { ThemeComponent } from 'app/layout/common/theme/theme.component';
-import { ErpFullscreenComponent } from '@erp/components/fullscreen';
+import { UserComponent } from 'app/layout/common/user/user.component';
 import { Subject, takeUntil } from 'rxjs';
 
 @Component({
@@ -30,10 +27,7 @@ import { Subject, takeUntil } from 'rxjs';
         MatButtonModule,
         MatIconModule,
         LanguagesComponent,
-        ErpFullscreenComponent,
-        SearchComponent,
         SchemeComponent,
-        ThemeComponent,
         NotificationsComponent,
         UserComponent,
         RouterOutlet,

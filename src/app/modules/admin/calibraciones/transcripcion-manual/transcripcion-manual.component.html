@@ -23,11 +23,11 @@
             </div>
 
             <div class="flex items-center justify-end gap-3 flex-wrap flex-1 sm:mr-2">
-                <div class="relative">
+                <div class="relative flex-1 min-w-[140px] sm:flex-none">
                     <input type="text"
                            [formControl]="searchControl"
                            placeholder="Buscar registro..."
-                           class="w-52 h-9 pl-9 pr-3 bg-white dark:bg-slate-800 text-black dark:text-white
+                           class="w-full h-9 pl-9 pr-3 bg-white dark:bg-slate-800 text-black dark:text-white
                                   border-[2px] border-black dark:border-slate-500 rounded-lg font-black text-xs uppercase
                                   focus:outline-none focus:shadow-[3px_3px_0px_0px_#000] dark:focus:shadow-[3px_3px_0px_0px_#FFC501] focus:-translate-y-[1px] transition-all placeholder:font-bold placeholder:normal-case dark:placeholder:text-slate-500">
                     <mat-icon class="absolute left-2.5 top-2 text-black dark:text-white !text-sm">search</mat-icon>
@@ -142,7 +142,7 @@
 
 <ng-template #formDialogTemplate>
     <div class="bg-stone-100 dark:bg-slate-900 border-2 border-black overflow-hidden flex flex-col relative"
-         style="width:660px; max-width:95vw; max-height:90vh; box-shadow: 6px 6px 0 #000">
+         style="width:660px; max-width:95vw; max-height:90vh">
 
         <!-- Header -->
         <div class="bg-[#0F172A] px-5 py-3.5 flex items-center gap-3 shrink-0 select-none"
@@ -201,7 +201,7 @@
                     </div>
                 </div>
 
-                <div class="grid grid-cols-4 gap-2">
+                <div class="grid grid-cols-1 sm:grid-cols-4 gap-2">
                     <div class="col-span-1">
                         <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1.5 block">Código</label>
                         <input type="text" [value]="selectedTool?.tool_code || ''" readonly
@@ -221,7 +221,7 @@
                     <mat-icon class="!text-sm">description</mat-icon> 2. Datos del Certificado
                 </p>
 
-                <div class="grid grid-cols-2 gap-3">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
                         <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1.5 block">N° Certificado *</label>
                         <input type="text" [(ngModel)]="certificateNumber" (ngModelChange)="showCertError.set(false)"
@@ -243,7 +243,7 @@
                     </div>
                 </div>
 
-                <div class="grid grid-cols-2 gap-3">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
                         <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1.5 block">Fecha Calibración *</label>
                         <input type="date" [(ngModel)]="calibrationDateStr"
@@ -269,7 +269,7 @@
                     <mat-icon class="!text-sm">science</mat-icon> 3. Laboratorio
                 </p>
 
-                <div class="grid grid-cols-2 gap-3">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
                         <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1.5 block">Laboratorio Sistema</label>
                         <select [(ngModel)]="labId" (ngModelChange)="onLabChange()"

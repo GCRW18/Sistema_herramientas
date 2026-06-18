@@ -1,7 +1,6 @@
 import { Component, OnInit, OnDestroy, signal, inject, ViewChild, TemplateRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router } from '@angular/router';
-import { FormBuilder, FormGroup, ReactiveFormsModule, FormsModule, Validators } from '@angular/forms';
+import { FormBuilder, FormControl, FormGroup, ReactiveFormsModule, FormsModule, Validators } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
 import { MatTableModule } from '@angular/material/table';
 import { MatCheckboxModule } from '@angular/material/checkbox';
@@ -12,14 +11,21 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatAutocompleteModule } from '@angular/material/autocomplete';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { DragDropModule } from '@angular/cdk/drag-drop';
+import { OverlayModule } from '@angular/cdk/overlay';
 import { Subject, of } from 'rxjs';
 import { takeUntil, finalize, catchError, debounceTime, distinctUntilChanged, switchMap, map } from 'rxjs/operators';
-import { MovementService } from '../../../../core/services/movement.service';
+import { MovementService }    from '../../../../core/services/movement.service';
+import { ToolService }         from '../../../../core/services/tool.service';
+import { SupplierService }      from '../../../../core/services/supplier.service';
+import { CalibrationService }   from '../../../../core/services/calibration.service';
+import { GestionUbicacionesService } from '../../inventory/gestion-ubicaciones/gestion-ubicaciones.service';
+import { Warehouse, Rack, Level }    from '../../inventory/gestion-ubicaciones/interfaces';
 
 interface Proveedor {
     id: string;
     nombre: string;
     nit?: string;
+    contacto?: string;
     direccion?: string;
     telefono?: string;
 }
@@ -32,12 +38,9 @@ interface HerramientaItem {
     cantidad: number;
     unidadMedida: string;
     estado: string;
-    costoHora: number;
-    costoServicio: number;
     estante: string;
     nivelUbicacion: string;
     accesorios: string;
-    documento: string;
     observacion: string;
     requiereCalibracion: boolean;
     intervaloCalibracion: number | null;
@@ -47,6 +50,10 @@ interface HerramientaItem {
     marca: string;
     nivelCriticidad: string;
     fabricacion: string;
+    imagen?: string | null;
+    warehouseId?: number | null;
+    rackId?: number | null;
+    levelId?: number | null;
 }
 
 interface AjusteItem {
@@ -64,10 +71,16 @@ interface AjusteItem {
     tipoAjuste: string;
     documentos: string;
     obs: string;
+    tipo?: string;
+    nivelCriticidad?: string;
+    fabricacion?: string;
+    warehouseId?: number | null;
+    rackId?: number | null;
+    levelId?: number | null;
     selected?: boolean;
 }
 
-type TabType = 'nueva' | 'ajuste';
+type TabType = 'nueva' | 'ajuste' | 'historial';
 
 @Component({
     selector: 'app-ingresos-hub',
@@ -76,7 +89,7 @@ type TabType = 'nueva' | 'ajuste';
         CommonModule, ReactiveFormsModule, FormsModule,
         MatIconModule, MatTableModule, MatCheckboxModule,
         MatDialogModule, MatSnackBarModule, MatProgressSpinnerModule,
-        MatTooltipModule, MatAutocompleteModule, MatSlideToggleModule, DragDropModule
+        MatTooltipModule, MatAutocompleteModule, MatSlideToggleModule, DragDropModule, OverlayModule
     ],
     templateUrl: './ingresos-hub.component.html',
     styles: [`
@@ -98,28 +111,63 @@ type TabType = 'nueva' | 'ajuste';
         .animate-pulse-border { animation: pulse-border 2s cubic-bezier(.4,0,.6,1) infinite; }
         @keyframes fadeIn { from { opacity:0; transform:translateY(-10px); } to { opacity:1; transform:translateY(0); } }
         .animate-fadeIn { animation: fadeIn 0.2s ease-out forwards; }
+        ::ng-deep .ubic-backdrop { background: rgba(0,0,0,0.25) !important; }
     `]
 })
 export class IngresosHubComponent implements OnInit, OnDestroy {
 
     @ViewChild('recepcionModal')    recepcionModal!:    TemplateRef<any>;
     @ViewChild('herramientaModal')  herramientaModal!:  TemplateRef<any>;
+    @ViewChild('ubicDialogTpl')     ubicDialogTpl!:     TemplateRef<any>;
     @ViewChild('confirmNuevaModal') confirmNuevaModal!: TemplateRef<any>;
     @ViewChild('datosAjusteModal')  datosAjusteModal!:  TemplateRef<any>;
     @ViewChild('confirmAjusteModal') confirmAjusteModal!: TemplateRef<any>;
+    @ViewChild('catalogModal')      catalogModal!:      TemplateRef<any>;
+    @ViewChild('itemDetailModal')        itemDetailModal!:        TemplateRef<any>;
+    @ViewChild('recepcionDetalleModal')  recepcionDetalleModal!:  TemplateRef<any>;
+    @ViewChild('ajusteDetalleModal')     ajusteDetalleModal!:     TemplateRef<any>;
 
     public  dialogRefComponent = inject(MatDialogRef<IngresosHubComponent>, { optional: true });
     private dialogRefActual: MatDialogRef<any> | null = null;
     private dialog      = inject(MatDialog);
     private fb          = inject(FormBuilder);
-    private router      = inject(Router);
     private snackBar    = inject(MatSnackBar);
-    private movementSvc = inject(MovementService);
-    private destroy$    = new Subject<void>();
+    private movementSvc    = inject(MovementService);
+    private toolSvc        = inject(ToolService);
+    private supplierSvc    = inject(SupplierService);
+    private calibrationSvc = inject(CalibrationService);
+    private ubicSvc        = inject(GestionUbicacionesService);
+    private destroy$       = new Subject<void>();
 
     // ── Tab state ──────────────────────────────────────────────────────────────
     activeTab = signal<TabType>('nueva');
-    setTab(tab: TabType): void { this.activeTab.set(tab); }
+    setTab(tab: TabType): void {
+        this.activeTab.set(tab);
+        if (tab === 'historial' && this.historialItems.length === 0 && !this.isLoadingHistorial) {
+            this.loadHistorial();
+        }
+    }
+
+    // ── Inline delete confirmation ─────────────────────────────────────────────
+    confirmingDeleteNueva:  number | null = null;
+    confirmingDeleteAjuste: number | null = null;
+    confirmingBulkDelete = false;
+
+    // ── Catalog modal search ───────────────────────────────────────────────────
+    catalogSearch  = '';
+    catalogItems:  any[] = [];
+    catalogLoading = false;
+    private catalog$ = new Subject<string>();
+
+    // ── Imagen herramienta (manual) ────────────────────────────────────────────
+    herramientaImagen = signal<string | null>(null);
+
+    // ── Buscador herramienta existente (header herramientaModal) ──────────────
+    herBuscarValue       = '';
+    herSuggestions:  any[] = [];
+    showHerDD        = false;
+    herSearchLoading = false;
+    private _herSearch$ = new Subject<string>();
 
     // ══════════════════════════════════════════════════════════════════════════
     //  NUEVA HERRAMIENTA
@@ -135,11 +183,76 @@ export class IngresosHubComponent implements OnInit, OnDestroy {
     funcLoading   = false;
     showFuncDropdown = false;
 
-    proveedores:         Proveedor[] = [];
+    proveedores:          Proveedor[] = [];
     proveedoresFiltrados: Proveedor[] = [];
+    proveedorInput        = '';
+    showProveedorDropdown = false;
+    proveedorSeleccionado: Proveedor | null = null;
+
     marcas:         string[] = [];
     marcasFiltradas: string[] = [];
     private ultimoCorrelativo = 0;
+
+    selectedItemDetail: HerramientaItem | null = null;
+
+    // ── Historial ──────────────────────────────────────────────────────────────
+    searchControl      = new FormControl('');
+    filterMovType      = new FormControl('');
+    historialItems:    any[] = [];
+    filteredHistorial: any[] = [];
+    isLoadingHistorial = false;
+    historialTotal     = 0;
+
+    abrirDetalleRecepcion(): void {
+        this.dialog.open(this.recepcionDetalleModal, {
+            width: '460px', maxWidth: '95vw',
+            panelClass: 'no-padding-dialog', disableClose: false, autoFocus: false
+        });
+    }
+
+    abrirDetalleAjuste(): void {
+        this.dialog.open(this.ajusteDetalleModal, {
+            width: '460px', maxWidth: '95vw',
+            panelClass: 'no-padding-dialog', disableClose: false, autoFocus: false
+        });
+    }
+
+    abrirDetalleItem(item: HerramientaItem): void {
+        this.selectedItemDetail = item;
+        this.dialog.open(this.itemDetailModal, {
+            width: '460px', maxWidth: '95vw',
+            panelClass: 'no-padding-dialog', disableClose: false, autoFocus: false
+        });
+    }
+
+    // ── Ubicación buscador (herramientaModal) ──────────────────────────────────
+    ubAlmacenes:          Warehouse[] = [];
+    ubAlmacenesFiltrados: Warehouse[] = [];
+    ubAlmacenSearch      = '';
+    showAlmacenDD        = false;
+    loadingAlmacenes     = false;
+    ubSelectedWarehouse: Warehouse | null = null;
+    private _warehouseCbba: Warehouse | null = null;
+
+    ubRacks:           Rack[] = [];
+    ubEstantesFiltrados: Rack[] = [];
+    ubEstanteSearch    = '';
+    showEstanteDD      = false;
+    loadingRacks       = false;
+    ubSelectedRack:    Rack | null = null;
+
+    ubLevels:     Level[] = [];
+    loadingLevels = false;
+    showUbAlmacenGrid  = true;
+    showUbNivelDD      = false;
+    ubSelectedLevel: Level | null = null;
+    showUbicacionPanel = false;
+    private ubicDialogRef: MatDialogRef<any> | null = null;
+
+    _recibiConformeSearch$    = new Subject<string>();
+    recibiConformeFiltrados:    { id: string; nombre: string; cargo: string }[] = [];
+    recibiConformeLoading     = false;
+    showRecibiConformeDropdown = false;
 
     unidadesMedida = [
         { value: 'UNIDAD', label: 'UNIDAD' }, { value: 'PAR',   label: 'PAR'   },
@@ -153,13 +266,14 @@ export class IngresosHubComponent implements OnInit, OnDestroy {
         { value: 'USADO',           label: 'USADO'           }
     ];
 
-    tiposHerramienta = [
+    tiposHerramienta: { value: string; label: string }[] = [
         { value: 'HERRAMIENTA',    label: 'HERRAMIENTA'                  },
         { value: 'BANCO_PRUEBA',   label: 'BANCO DE PRUEBA'              },
         { value: 'CONSUMIBLE',     label: 'CONSUMIBLE'                   },
         { value: 'EQUIPO_MEDICION', label: 'EQUIPO DE MEDICIÓN'          },
         { value: 'EQUIPO_SOPORTE',  label: 'EQUIPO DE SOPORTE EN TIERRA' }
     ];
+    private readonly _tiposFallback = [...this.tiposHerramienta];
 
     nivelesCriticidad = [
         { value: 'A', label: 'A - Crítico', descripcion: 'Herramienta esencial para operaciones' },
@@ -213,11 +327,82 @@ export class IngresosHubComponent implements OnInit, OnDestroy {
     // ══════════════════════════════════════════════════════════════════════════
     ngOnInit(): void {
         this._initFormsNueva();
-        this._setupFuncionarioSearch();
-        this._loadInitialData();
         this._initFormAjuste();
-        this._setupRealizadoPorSearch();
-        this._setupAprobadoPorSearch();
+        this._loadInitialData();
+        this._loadAlmacenes();
+
+        this._crearBuscadorFuncionario(
+            this._funcSearch$,
+            v => this.funcLoading = v,
+            v => this.funcFiltrados = v,
+            v => this.showFuncDropdown = v
+        );
+        this._crearBuscadorFuncionario(
+            this._realizadoPorSearch$,
+            v => this.realizadoPorLoading = v,
+            v => this.realizadoPorFiltrados = v,
+            v => this.showRealizadoPorDropdown = v
+        );
+        this._crearBuscadorFuncionario(
+            this._aprobadoPorSearch$,
+            v => this.aprobadoPorLoading = v,
+            v => this.aprobadoPorFiltrados = v,
+            v => this.showAprobadoPorDropdown = v
+        );
+        this._crearBuscadorFuncionario(
+            this._recibiConformeSearch$,
+            v => this.recibiConformeLoading = v,
+            v => this.recibiConformeFiltrados = v,
+            v => this.showRecibiConformeDropdown = v
+        );
+
+        this.recepcionForm.get('tipoDe')?.valueChanges.pipe(takeUntil(this.destroy$))
+            .subscribe(() => {
+                this.recepcionForm.patchValue({ nroCmr: '' });
+                this.recepcionForm.patchValue({ recibiConforme: '' });
+            });
+
+        this.searchControl.valueChanges.pipe(
+            debounceTime(250), takeUntil(this.destroy$)
+        ).subscribe(() => this.applyHistorialFilters());
+
+        this.filterMovType.valueChanges.pipe(takeUntil(this.destroy$))
+            .subscribe(() => this.applyHistorialFilters());
+
+        this.catalog$.pipe(
+            debounceTime(300),
+            distinctUntilChanged(),
+            switchMap(term => {
+                if (term.trim().length < 2) {
+                    this.catalogItems   = [];
+                    this.catalogLoading = false;
+                    return of([]);
+                }
+                this.catalogLoading = true;
+                return this.toolSvc.getTools({ query: term.trim() }).pipe(
+                    catchError(() => of([])),
+                    finalize(() => this.catalogLoading = false)
+                );
+            }),
+            takeUntil(this.destroy$)
+        ).subscribe(tools => { this.catalogItems = tools as any[]; });
+
+        this._herSearch$.pipe(
+            debounceTime(300),
+            distinctUntilChanged(),
+            switchMap(term => {
+                if (term.trim().length < 2) { this.showHerDD = false; return of([]); }
+                this.herSearchLoading = true;
+                return this.toolSvc.getTools({ query: term.trim() }).pipe(
+                    catchError(() => of([])),
+                    finalize(() => { this.herSearchLoading = false; })
+                );
+            }),
+            takeUntil(this.destroy$)
+        ).subscribe(tools => {
+            this.herSuggestions = tools as any[];
+            this.showHerDD      = this.herSuggestions.length > 0;
+        });
     }
 
     ngOnDestroy(): void {
@@ -234,7 +419,7 @@ export class IngresosHubComponent implements OnInit, OnDestroy {
             nroCmr:           ['', [Validators.required, Validators.minLength(3)]],
             nroFactura:       [''],
             proveedor:        [''],
-            fechaIngreso:     [new Date().toISOString().split('T')[0], Validators.required],
+            fechaIngreso:     [this._localDateStr(), Validators.required],
             funcionarioRecibe: ['', Validators.required],
             recibiConforme:   [''],
             ordenCompra:      [''],
@@ -252,7 +437,6 @@ export class IngresosHubComponent implements OnInit, OnDestroy {
             estante:              [''],
             nivelUbicacion:       [''],
             accesorios:           [''],
-            documento:            [''],
             observacion:          [''],
             requiereCalibracion:  [false],
             intervaloCalibracion: [null],
@@ -261,12 +445,11 @@ export class IngresosHubComponent implements OnInit, OnDestroy {
             tipo:                 ['HERRAMIENTA', Validators.required],
             marca:                ['', Validators.required],
             nivelCriticidad:      ['B', Validators.required],
-            fabricacion:          ['INTERNACIONAL', Validators.required]
+            fabricacion:          ['INTERNACIONAL', Validators.required],
+            warehouseId:          [null],
+            rackId:               [null],
+            levelId:              [null]
         });
-
-        this.recepcionForm.get('proveedor')?.valueChanges.pipe(
-            takeUntil(this.destroy$), debounceTime(300), distinctUntilChanged()
-        ).subscribe(v => this._filtrarProveedores(v));
 
         this.herramientaForm.get('marca')?.valueChanges.pipe(
             takeUntil(this.destroy$), debounceTime(200), distinctUntilChanged()
@@ -286,12 +469,17 @@ export class IngresosHubComponent implements OnInit, OnDestroy {
         });
     }
 
-    private _setupFuncionarioSearch(): void {
-        this._funcSearch$.pipe(
+    private _crearBuscadorFuncionario(
+        search$: Subject<string>,
+        setLoading: (v: boolean) => void,
+        setItems:   (v: any[])   => void,
+        setShow:    (v: boolean) => void
+    ): void {
+        search$.pipe(
             debounceTime(200), distinctUntilChanged(),
             switchMap(t => {
-                if (t.length < 2) { this.showFuncDropdown = false; return of([]); }
-                this.funcLoading = true;
+                if (t.length < 2) { setShow(false); return of([]); }
+                setLoading(true);
                 const q = t.toLowerCase();
                 return this.movementSvc.getPersonal().pipe(
                     map((lista: any[]) => lista
@@ -302,30 +490,33 @@ export class IngresosHubComponent implements OnInit, OnDestroy {
                             id:     String(f.id_employee || f.id),
                             nombre: f.nombreCompleto || `${f.nombre || ''} ${f.apellido_paterno || ''}`.trim(),
                             cargo:  f.cargo || ''
-                        }))
-                    ),
-                    finalize(() => this.funcLoading = false),
+                        }))),
+                    finalize(() => setLoading(false)),
                     catchError(() => of([]))
                 );
             }),
             takeUntil(this.destroy$)
-        ).subscribe(res => {
-            this.funcFiltrados = res || [];
-            this.showFuncDropdown = this.funcFiltrados.length > 0;
-        });
+        ).subscribe(res => { setItems(res || []); setShow((res || []).length > 0); });
     }
 
     private _loadInitialData(): void {
-        this.movementSvc.getProveedores().pipe(takeUntil(this.destroy$))
+        this.supplierSvc.getSuppliers().pipe(takeUntil(this.destroy$))
             .subscribe({ next: (data: any[]) => {
-                this.proveedores = data.map(p => ({
-                    id: p.id, nombre: p.nombre || p.name, nit: p.nit, direccion: p.direccion, telefono: p.telefono
-                }));
-                this.proveedoresFiltrados = [...this.proveedores];
-            }});
+                    this.proveedores = data.map((s: any) => ({
+                        id:       String(s.id_supplier ?? s.id ?? ''),
+                        nombre:   s.name ?? '',
+                        nit:      s.taxId ?? s.tax_id ?? '',
+                        contacto: s.contactPerson ?? s.contact_person ?? '',
+                        direccion: s.address ?? '',
+                        telefono: s.phone ?? ''
+                    }));
+                    this.proveedoresFiltrados = [...this.proveedores];
+                }});
 
         this.movementSvc.getDistinctBrands().pipe(takeUntil(this.destroy$))
             .subscribe({ next: (brands: string[]) => { this.marcas = brands; this.marcasFiltradas = [...brands]; } });
+
+        this._cargarTiposHerramienta();
 
         this.movementSvc.getLastBoaCode().pipe(takeUntil(this.destroy$))
             .subscribe({ next: (num: number) => { this.ultimoCorrelativo = num; } });
@@ -333,27 +524,61 @@ export class IngresosHubComponent implements OnInit, OnDestroy {
 
     // ── Nueva: modal handlers ─────────────────────────────────────────────────
     abrirModalRecepcion(): void {
+        if (!this.recepcionForm.get('nroCmr')?.value) {
+            this.generarNroCmr();
+        }
         this.dialogRefActual = this.dialog.open(this.recepcionModal, {
-            width: '700px', maxWidth: '95vw', height: '88vh', panelClass: 'no-padding-dialog', disableClose: true
+            width: '520px', maxWidth: '95vw', height: '88vh', panelClass: 'no-padding-dialog', disableClose: true
         });
+    }
+
+    generarNroCmr(): void {
+        const tipo = this.recepcionForm.get('tipoDe')?.value || 'COMPRA';
+        const prefijos: Record<string, string> = { 'COMPRA': 'CMR', 'DONACION': 'DON', 'TRANSFERENCIA': 'TRANS' };
+        this.movementSvc.getSiguienteCorrelativoPreview(prefijos[tipo] || 'CMR')
+            .pipe(takeUntil(this.destroy$))
+            .subscribe(num => this.recepcionForm.patchValue({ nroCmr: num }));
     }
 
     cerrarModalRecepcion(): void { this.dialogRefActual?.close(); }
 
     abrirModalHerramienta(index?: number): void {
+        this._resetUbicacionBuscador();
         if (index !== undefined) {
             this.editingIndex = index;
             this.herramientaForm.patchValue({ ...this.dataSource[index] });
+            this.herramientaImagen.set((this.dataSource[index] as any).imagen || null);
+            // Mostrar valores guardados en los inputs del buscador
+            const item = this.dataSource[index];
+            if (item.estante) this.ubEstanteSearch = item.estante;
+            if (item.nivelUbicacion) this.ubLevels = [];
         } else {
             this.editingIndex = null;
             this._resetHerramientaForm();
+            if (this._warehouseCbba) {
+                this.seleccionarUbAlmacen(this._warehouseCbba);
+            }
         }
         this.dialogRefActual = this.dialog.open(this.herramientaModal, {
-            width: '900px', maxWidth: '95vw', height: '88vh', panelClass: 'no-padding-dialog', disableClose: true
+            width: '800px', maxWidth: '96vw', height: '560px', panelClass: 'no-padding-dialog', disableClose: true
         });
     }
 
-    cerrarModalHerramienta(): void { this.editingIndex = null; this.dialogRefActual?.close(); }
+    cerrarModalHerramienta(): void {
+        this.editingIndex = null;
+        this.herramientaImagen.set(null);
+        this.dialogRefActual?.close();
+    }
+
+    onHerramientaImageSelected(event: Event): void {
+        const file = (event.target as HTMLInputElement).files?.[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = () => this.herramientaImagen.set(reader.result as string);
+        reader.readAsDataURL(file);
+    }
+
+    clearHerramientaImagen(): void { this.herramientaImagen.set(null); }
 
     abrirModalConfirmacionNueva(): void {
         const validation = this.validateRecepcion();
@@ -367,7 +592,7 @@ export class IngresosHubComponent implements OnInit, OnDestroy {
             return;
         }
         this.dialogRefActual = this.dialog.open(this.confirmNuevaModal, {
-            width: '700px', maxWidth: '95vw', panelClass: 'neo-dialog-transparent', disableClose: true
+            width: '580px', maxWidth: '95vw', panelClass: 'no-padding-dialog', disableClose: true
         });
     }
 
@@ -392,11 +617,10 @@ export class IngresosHubComponent implements OnInit, OnDestroy {
             ...f,
             pn:                   f.pn.toUpperCase(),
             codigoBoa:            f.codigoBoa.toUpperCase(),
-            costoHora:            0,
-            costoServicio:        0,
             intervaloCalibracion: f.requiereCalibracion ? f.intervaloCalibracion : null,
             fechaCalibracion:     f.requiereCalibracion ? f.fechaCalibracion     : null,
-            nroCertificado:       f.requiereCalibracion ? f.nroCertificado       : ''
+            nroCertificado:       f.requiereCalibracion ? f.nroCertificado       : '',
+            imagen:               this.herramientaImagen() || null
         };
         if (this.editingIndex !== null) {
             this.dataSource[this.editingIndex] = item;
@@ -410,10 +634,17 @@ export class IngresosHubComponent implements OnInit, OnDestroy {
     }
 
     eliminarItemNueva(index: number): void {
-        if (confirm(`¿Eliminar ${this.dataSource[index].pn} de la lista?`)) {
-            this.dataSource.splice(index, 1);
-            this.dataSource = [...this.dataSource];
-        }
+        this.confirmingDeleteNueva = index;
+    }
+
+    cancelarEliminarNueva(): void {
+        this.confirmingDeleteNueva = null;
+    }
+
+    ejecutarEliminarNueva(index: number): void {
+        this.dataSource.splice(index, 1);
+        this.dataSource = [...this.dataSource];
+        this.confirmingDeleteNueva = null;
     }
 
     duplicarItem(index: number): void {
@@ -423,8 +654,12 @@ export class IngresosHubComponent implements OnInit, OnDestroy {
         copy.codigoBoa = `BOA-H-${this.ultimoCorrelativo.toString().padStart(4, '0')}`;
         this.editingIndex = null;
         this.herramientaForm.patchValue(copy);
+        this._resetUbicacionBuscador();
+        if (this._warehouseCbba) {
+            this.seleccionarUbAlmacen(this._warehouseCbba);
+        }
         this.dialogRefActual = this.dialog.open(this.herramientaModal, {
-            width: '900px', maxWidth: '95vw', height: '88vh', panelClass: 'no-padding-dialog', disableClose: true
+            width: '800px', maxWidth: '96vw', height: '560px', panelClass: 'no-padding-dialog', disableClose: true
         });
         this._showMsg('Ítem copiado. Ajuste el S/N si es necesario.', 'info');
     }
@@ -436,13 +671,16 @@ export class IngresosHubComponent implements OnInit, OnDestroy {
         const rec = this.recepcionForm.value;
         const prov = rec.proveedor;
         const provNombre = typeof prov === 'object' ? prov?.nombre : prov || '';
-        const itemsJson = JSON.stringify(this.dataSource.map(h => ({
+        const itemsSnapshot = [...this.dataSource];
+        const itemsJson = JSON.stringify(itemsSnapshot.map(h => ({
             code: h.codigoBoa, name: h.descripcion, description: h.descripcion,
+            tool_type: h.tipo || 'HERRAMIENTA',
             brand: h.marca || '', part_number: h.pn || '', serial_number: h.sn || '',
-            quantity: h.cantidad, purchase_price: 0, rental_cost_service: 0,
+            quantity: h.cantidad,
             shelf: h.estante || '', shelf_level: h.nivelUbicacion || '', accessories: h.accesorios || '',
-            document_ref: h.documento || '', unit_of_measure: h.unidadMedida || 'UNIDAD',
-            condition: h.estado === 'NUEVO' ? 'new' : h.estado === 'REACONDICIONADO' ? 'fair' : 'good',
+            warehouse_id: h.warehouseId || null, rack_id: h.rackId || null, level_id: h.levelId || null,
+            document_ref: '', unit_of_measure: h.unidadMedida || 'UNIDAD',
+            condition: h.estado === 'NUEVO' ? 'new' : h.estado === 'REACONDICIONADO' ? 'reconditioned' : 'good',
             criticality_level: h.nivelCriticidad || 'B', manufacture_origin: h.fabricacion || 'INTERNACIONAL',
             requires_calibration: h.requiereCalibracion || false, calibration_interval: h.intervaloCalibracion || null,
             calibration_date: h.fechaCalibracion || null, certificate_number: h.nroCertificado || '', notes: h.observacion || ''
@@ -455,42 +693,88 @@ export class IngresosHubComponent implements OnInit, OnDestroy {
             supplier:           provNombre,
             invoice_number:     rec.nroFactura       || '',
             purchase_order:     rec.ordenCompra      || '',
-            notes:              rec.observaciones    || '',
-            warehouse_id: 1,
+            notes:              (rec.tipoDe ? '[' + rec.tipoDe + '] ' : '') + (rec.observaciones || ''),
+            warehouse_id: null,
             items_json: itemsJson
         }).pipe(takeUntil(this.destroy$), finalize(() => this.isSaving = false))
             .subscribe({
                 next: (resp: any) => {
-                    this._showMsg(`Recepción registrada: ${resp?.movement_number}`, 'success');
+                    this._showMsg(`Recepción registrada: ${resp?.movement_number || rec.nroCmr}`, 'success');
+                    this._abrirImpresionIngreso(resp?.movement_number || rec.nroCmr, itemsSnapshot, rec, provNombre);
+                    // Reset in-place — no navigate
+                    this.dataSource = [];
+                    this.recepcionForm.reset({
+                        tipoDe: 'COMPRA',
+                        fechaIngreso: this._localDateStr()
+                    });
+                    this.proveedorInput = '';
+                    this.proveedorSeleccionado = null;
+                    this.loadHistorial();
                     if (this.dialogRefComponent) this.dialogRefComponent.close({ success: true });
-                    else this.router.navigate(['/entradas']);
                 },
                 error: (err: any) => this._showMsg(err?.message || 'Error al registrar', 'error')
             });
     }
 
-    async openCatalogo(): Promise<void> {
-        const { HerramientasAIngresarComponent } = await import('./herramientas-a-ingresar/herramientas-a-ingresar.component');
-        const ref = this.dialog.open(HerramientasAIngresarComponent, {
-            width: '760px', maxWidth: '95vw', height: '88vh',
-            panelClass: 'no-padding-dialog'
+    openCatalogo(): void {
+        this.catalogSearch  = '';
+        this.catalogItems   = [];
+        this.catalogLoading = false;
+        this.dialogRefActual = this.dialog.open(this.catalogModal, {
+            width: '760px', maxWidth: '95vw', height: '80vh', panelClass: 'no-padding-dialog', disableClose: false
         });
-        ref.afterClosed().subscribe((result: any) => {
-            if (result?.action !== 'procesar') return;
-            const data = result.data;
-            const existe = this.dataSource.some(i => i.codigoBoa.toUpperCase() === (data.codigo || '').toUpperCase());
-            if (existe) { this._showMsg('Esta herramienta ya está en la recepción', 'warning'); return; }
-            this.dataSource.push({
-                pn: data.pn || '', sn: data.sn || '', descripcion: data.nombre || data.descripcion || '',
-                codigoBoa: data.codigo || '', cantidad: data.cantidad || 1, unidadMedida: data.um || data.unidadMedida || 'UNIDAD',
-                estado: data.estado || 'NUEVO', costoHora: 0, costoServicio: 0, estante: '', nivelUbicacion: '',
-                accesorios: '', documento: data.documento || '', observacion: data.observaciones || '',
-                requiereCalibracion: false, intervaloCalibracion: null, fechaCalibracion: null, nroCertificado: '',
-                tipo: 'HERRAMIENTA', marca: '', nivelCriticidad: 'B', fabricacion: 'INTERNACIONAL'
+    }
+
+    onCatalogSearch(term: string): void {
+        this.catalogSearch = term;
+        this.catalog$.next(term);
+    }
+
+    selectFromCatalog(tool: any): void {
+        this.dialogRefActual?.close();
+        this.editingIndex = null;
+        this._resetHerramientaForm();
+        this.herramientaForm.patchValue({
+            pn:          tool.part_number  || tool.pn          || '',
+            sn:          tool.serial_number || tool.sn          || '',
+            descripcion: tool.name         || tool.description  || tool.descripcion || '',
+            marca:       tool.brand        || tool.marca        || '',
+            tipo:        tool.tool_type    || 'HERRAMIENTA',
+            unidadMedida: tool.unit_of_measure || 'UNIDAD',
+            estado:      'NUEVO',
+        });
+        this.generarCodigoBoa();
+        setTimeout(() => {
+            this.dialogRefActual = this.dialog.open(this.herramientaModal, {
+                width: '800px', maxWidth: '96vw', height: '560px', panelClass: 'no-padding-dialog', disableClose: true
             });
-            this.dataSource = [...this.dataSource];
-            this._showMsg('Añadido desde catálogo. Complete detalles como Nro. Serie o Estante.', 'success');
+        }, 100);
+    }
+
+    // ── Buscador herramienta existente (header herramientaModal) ─────────────
+    onHerBuscarInput(val: string): void {
+        this.herBuscarValue = val;
+        this._herSearch$.next(val);
+    }
+
+    hideHerDD(): void { setTimeout(() => { this.showHerDD = false; }, 180); }
+
+    seleccionarHerExistente(tool: any): void {
+        this.herBuscarValue = `${tool.code || ''} · ${tool.name || tool.description || ''}`;
+        this.showHerDD = false;
+        this.herramientaForm.patchValue({
+            pn:          tool.part_number  || '',
+            sn:          tool.serial_number || '',
+            codigoBoa:   tool.code         || '',
+            descripcion: tool.name         || tool.description || '',
+            marca:       tool.brand        || '',
         });
+    }
+
+    limpiarHerBuscar(): void {
+        this.herBuscarValue = '';
+        this.herSuggestions = [];
+        this.showHerDD      = false;
     }
 
     // ── Nueva: utilities ──────────────────────────────────────────────────────
@@ -506,7 +790,71 @@ export class IngresosHubComponent implements OnInit, OnDestroy {
 
     hideFuncDropdown(): void { setTimeout(() => this.showFuncDropdown = false, 150); }
 
+    onProveedorInput(val: string): void {
+        this.proveedorInput = val;
+        this.recepcionForm.patchValue({ proveedor: val });
+        this.proveedorSeleccionado = null;
+        this._filtrarProveedores(val);
+        this.showProveedorDropdown = val.length > 0 && this.proveedoresFiltrados.length > 0;
+    }
+
+    selectProveedor(p: Proveedor): void {
+        this.proveedorInput = p.nombre;
+        this.recepcionForm.patchValue({ proveedor: p.nombre });
+        this.proveedorSeleccionado = p;
+        this.showProveedorDropdown = false;
+    }
+
+    hideProveedorDropdown(): void { setTimeout(() => this.showProveedorDropdown = false, 150); }
+
+    onRecibiConformeInput(val: string): void {
+        this.recepcionForm.patchValue({ recibiConforme: val });
+        this._recibiConformeSearch$.next(val);
+    }
+
+    selectRecibiConforme(f: { id: string; nombre: string; cargo: string }): void {
+        this.recepcionForm.patchValue({ recibiConforme: f.nombre });
+        this.showRecibiConformeDropdown = false;
+    }
+
+    hideRecibiConformeDropdown(): void { setTimeout(() => this.showRecibiConformeDropdown = false, 150); }
+
     isRecepcionValida(): boolean { return this.recepcionForm.valid; }
+
+    getNroCmrLabel(): string {
+        const t = this.recepcionForm.get('tipoDe')?.value;
+        if (t === 'DONACION')      return 'N° Carta de Donación';
+        if (t === 'TRANSFERENCIA') return 'N° Doc. Transferencia';
+        return 'N° CMR / Documento';
+    }
+
+    getNroCmrPlaceholder(): string {
+        const t = this.recepcionForm.get('tipoDe')?.value;
+        if (t === 'DONACION')      return 'CART-DON-001';
+        if (t === 'TRANSFERENCIA') return 'TRANS-2026-001';
+        return 'CMR-001 / NRT-2026';
+    }
+
+    getProveedorLabel(): string {
+        const t = this.recepcionForm.get('tipoDe')?.value;
+        if (t === 'DONACION')      return 'Donante / Organización';
+        if (t === 'TRANSFERENCIA') return 'Dependencia / Origen';
+        return 'Proveedor / Empresa';
+    }
+
+    getProveedorPlaceholder(): string {
+        const t = this.recepcionForm.get('tipoDe')?.value;
+        if (t === 'DONACION')      return 'Nombre del donante u organización...';
+        if (t === 'TRANSFERENCIA') return 'Dependencia de origen...';
+        return 'Nombre del proveedor o empresa...';
+    }
+
+    getEntregadoPorLabel(): string {
+        const t = this.recepcionForm.get('tipoDe')?.value;
+        if (t === 'DONACION')      return 'Representante Donante';
+        if (t === 'TRANSFERENCIA') return 'Responsable Origen';
+        return 'Entregado / Conforme por';
+    }
 
     validateRecepcion(): { valid: boolean; errors: string[] } {
         const errors: string[] = [];
@@ -552,18 +900,192 @@ export class IngresosHubComponent implements OnInit, OnDestroy {
             codigoBoa: 'BOA-H-', cantidad: 1, unidadMedida: 'UNIDAD', estado: 'NUEVO',
             requiereCalibracion: false, tipo: 'HERRAMIENTA', nivelCriticidad: 'B', fabricacion: 'INTERNACIONAL'
         });
+        this.herramientaImagen.set(null);
+        this._resetUbicacionBuscador();
+    }
+
+    // ── Ubicación buscador ────────────────────────────────────────────────────
+
+    private _loadAlmacenes(): void {
+        this.loadingAlmacenes = true;
+        this.ubicSvc.getWarehouses().pipe(takeUntil(this.destroy$))
+            .subscribe({
+                next: ws => {
+                    this.ubAlmacenes = ws;
+                    this.ubAlmacenesFiltrados = ws;
+                    this._warehouseCbba = ws.find(w =>
+                        w.ciudad?.toLowerCase().includes('cbba') ||
+                        w.ciudad?.toLowerCase().includes('cochabamba') ||
+                        w.nombre?.toLowerCase().includes('cbba') ||
+                        w.nombre?.toLowerCase().includes('cochabamba')
+                    ) || null;
+                },
+                error: () => {},
+                complete: () => { this.loadingAlmacenes = false; }
+            });
+    }
+
+    private _resetUbicacionBuscador(): void {
+        this.closeUbicacionDialog();
+        this.ubSelectedWarehouse = null;
+        this.ubAlmacenSearch     = '';
+        this.ubAlmacenesFiltrados = [...this.ubAlmacenes];
+        this.showAlmacenDD       = false;
+        this.showUbAlmacenGrid   = true;
+        this.ubSelectedRack      = null;
+        this.ubEstanteSearch     = '';
+        this.ubEstantesFiltrados = [];
+        this.showEstanteDD       = false;
+        this.ubRacks             = [];
+        this.ubLevels            = [];
+        this.ubSelectedLevel     = null;
+        this.showUbNivelDD       = false;
+        this.showUbicacionPanel  = false;
+    }
+
+    onUbAlmacenInput(val: string): void {
+        this.ubAlmacenSearch = val;
+        const q = val.trim().toUpperCase();
+        this.ubAlmacenesFiltrados = q
+            ? this.ubAlmacenes.filter(w => w.codigo.toUpperCase().includes(q) || w.nombre.toUpperCase().includes(q))
+            : this.ubAlmacenes;
+        this.showAlmacenDD = this.ubAlmacenesFiltrados.length > 0;
+    }
+
+    hideUbAlmacenDD(): void { setTimeout(() => { this.showAlmacenDD = false; }, 180); }
+
+    seleccionarUbAlmacen(w: Warehouse): void {
+        this.ubSelectedWarehouse = w;
+        this.ubAlmacenSearch     = `${w.codigo} · ${w.nombre}`;
+        this.showAlmacenDD       = false;
+        this.showUbAlmacenGrid   = false;
+        this.ubSelectedRack      = null;
+        this.ubEstanteSearch     = '';
+        this.ubRacks             = [];
+        this.ubEstantesFiltrados = [];
+        this.ubLevels            = [];
+        this.ubSelectedLevel     = null;
+        this.showUbNivelDD       = false;
+        this.herramientaForm.patchValue({ estante: '', nivelUbicacion: '', warehouseId: w.id, rackId: null, levelId: null });
+        this.loadingRacks = true;
+        this.ubicSvc.getRacks(w.id).pipe(takeUntil(this.destroy$))
+            .subscribe({ next: rs => { this.ubRacks = rs; this.ubEstantesFiltrados = rs; }, error: () => {}, complete: () => { this.loadingRacks = false; } });
+    }
+
+    limpiarUbAlmacen(): void {
+        this._resetUbicacionBuscador();
+        this.herramientaForm.patchValue({ estante: '', nivelUbicacion: '', warehouseId: null, rackId: null, levelId: null });
+    }
+
+    onUbEstanteInput(val: string): void {
+        this.ubEstanteSearch = val;
+        const q = val.trim().toUpperCase();
+        this.ubEstantesFiltrados = q
+            ? this.ubRacks.filter(r => r.codigo.toUpperCase().includes(q) || r.nombre.toUpperCase().includes(q))
+            : this.ubRacks;
+        this.showEstanteDD = this.ubEstantesFiltrados.length > 0;
+    }
+
+    hideUbEstanteDD(): void { setTimeout(() => { this.showEstanteDD = false; }, 180); }
+
+    seleccionarUbEstante(r: Rack): void {
+        this.ubSelectedRack  = r;
+        this.ubEstanteSearch = `${r.codigo} · ${r.nombre}`;
+        this.showEstanteDD   = false;
+        this.ubLevels        = [];
+        this.ubSelectedLevel = null;
+        this.showUbNivelDD   = false;
+        this.herramientaForm.patchValue({ estante: r.codigo, nivelUbicacion: '', rackId: r.id, levelId: null });
+        this.loadingLevels = true;
+        this.ubicSvc.getLevels(r.id).pipe(takeUntil(this.destroy$))
+            .subscribe({ next: ls => { this.ubLevels = ls; }, error: () => {}, complete: () => { this.loadingLevels = false; } });
+    }
+
+    limpiarUbEstante(): void {
+        this.ubSelectedRack  = null;
+        this.ubEstanteSearch = '';
+        this.ubLevels        = [];
+        this.ubSelectedLevel = null;
+        this.showUbNivelDD   = false;
+        this.herramientaForm.patchValue({ estante: '', nivelUbicacion: '', rackId: null, levelId: null });
+    }
+
+    seleccionarUbNivel(levelId: number | null): void {
+        if (!levelId) { this.herramientaForm.patchValue({ nivelUbicacion: '' }); return; }
+        const l = this.ubLevels.find(x => x.id === levelId);
+        if (l) this.herramientaForm.patchValue({ nivelUbicacion: l.isFloor ? 'SUELO' : l.codigo });
+    }
+
+    openUbicacionDialog(): void {
+        if (this.ubicDialogRef) { this.closeUbicacionDialog(); return; }
+        this.showUbicacionPanel = true;
+        this.ubicDialogRef = this.dialog.open(this.ubicDialogTpl, {
+            width: 'min(420px, 96vw)',
+            maxHeight: '90vh',
+            panelClass: 'no-padding-dialog',
+            hasBackdrop: true,
+            backdropClass: 'ubic-backdrop',
+            autoFocus: false,
+        });
+        this.ubicDialogRef.afterClosed().subscribe(() => {
+            this.ubicDialogRef = null;
+            this.showUbicacionPanel = false;
+        });
+    }
+
+    closeUbicacionDialog(): void {
+        this.ubicDialogRef?.close();
+        this.ubicDialogRef = null;
+        this.showUbicacionPanel = false;
+    }
+
+    seleccionarUbNivelCard(l: Level): void {
+        this.ubSelectedLevel = l;
+        this.showUbNivelDD   = false;
+        this.herramientaForm.patchValue({ nivelUbicacion: l.isFloor ? 'SUELO' : l.codigo, levelId: l.id });
+        this.closeUbicacionDialog();
     }
 
     private _filtrarProveedores(v: string): void {
-        this.proveedoresFiltrados = v
-            ? this.proveedores.filter(p => p.nombre.toLowerCase().includes(v.toLowerCase()) || (p.nit && p.nit.includes(v.toLowerCase())))
-            : [...this.proveedores];
+        if (!v) { this.proveedoresFiltrados = [...this.proveedores]; return; }
+        const q = v.toLowerCase();
+        this.proveedoresFiltrados = this.proveedores.filter(p =>
+            p.nombre.toLowerCase().includes(q) ||
+            (p.nit && p.nit.toLowerCase().includes(q)) ||
+            (p.contacto && p.contacto.toLowerCase().includes(q))
+        );
     }
 
     private _filtrarMarcas(v: string): void {
         this.marcasFiltradas = v
             ? this.marcas.filter(m => m.toLowerCase().includes(v.toLowerCase()))
             : [...this.marcas];
+    }
+
+    // ── Categorías dinámicas ──────────────────────────────────────────────────
+    _cargarTiposHerramienta(): void {
+        this.movementSvc.getIngresosCategories().pipe(takeUntil(this.destroy$))
+            .subscribe({
+                next: (cats) => {
+                    if (cats.length > 0) {
+                        this.tiposHerramienta = cats.map(c => ({
+                            value: c.code || c.name.replace(/\s+/g, '_'),
+                            label: c.name
+                        }));
+                    }
+                },
+                error: () => { /* mantiene el array estático como fallback */ }
+            });
+    }
+
+    async abrirCategorias(): Promise<void> {
+        const { CategoriaIngresosDialogComponent } = await import('./categoria-ingresos-dialog/categoria-ingresos-dialog.component');
+        const ref = this.dialog.open(CategoriaIngresosDialogComponent, {
+            panelClass: 'no-padding-dialog', disableClose: false
+        });
+        ref.afterClosed().subscribe(result => {
+            if (result?.recargar) this._cargarTiposHerramienta();
+        });
     }
 
     // ══════════════════════════════════════════════════════════════════════════
@@ -582,68 +1104,13 @@ export class IngresosHubComponent implements OnInit, OnDestroy {
         });
     }
 
-    private _setupRealizadoPorSearch(): void {
-        this._realizadoPorSearch$.pipe(
-            debounceTime(200), distinctUntilChanged(),
-            switchMap(t => {
-                if (t.length < 2) { this.showRealizadoPorDropdown = false; return of([]); }
-                this.realizadoPorLoading = true;
-                const q = t.toLowerCase();
-                return this.movementSvc.getPersonal().pipe(
-                    map((lista: any[]) => lista
-                        .filter(f => [f.nombreCompleto, f.nombre, f.apellido_paterno, f.apellido_materno]
-                            .filter(Boolean).join(' ').toLowerCase().includes(q))
-                        .slice(0, 10)
-                        .map(f => ({
-                            id:     String(f.id_employee || f.id),
-                            nombre: f.nombreCompleto || `${f.nombre || ''} ${f.apellido_paterno || ''}`.trim(),
-                            cargo:  f.cargo || ''
-                        }))
-                    ),
-                    finalize(() => this.realizadoPorLoading = false),
-                    catchError(() => of([]))
-                );
-            }),
-            takeUntil(this.destroy$)
-        ).subscribe(res => {
-            this.realizadoPorFiltrados = res || [];
-            this.showRealizadoPorDropdown = this.realizadoPorFiltrados.length > 0;
-        });
-    }
-
-    private _setupAprobadoPorSearch(): void {
-        this._aprobadoPorSearch$.pipe(
-            debounceTime(200), distinctUntilChanged(),
-            switchMap(t => {
-                if (t.length < 2) { this.showAprobadoPorDropdown = false; return of([]); }
-                this.aprobadoPorLoading = true;
-                const q = t.toLowerCase();
-                return this.movementSvc.getPersonal().pipe(
-                    map((lista: any[]) => lista
-                        .filter(f => [f.nombreCompleto, f.nombre, f.apellido_paterno, f.apellido_materno]
-                            .filter(Boolean).join(' ').toLowerCase().includes(q))
-                        .slice(0, 10)
-                        .map(f => ({
-                            id:     String(f.id_employee || f.id),
-                            nombre: f.nombreCompleto || `${f.nombre || ''} ${f.apellido_paterno || ''}`.trim(),
-                            cargo:  f.cargo || ''
-                        }))
-                    ),
-                    finalize(() => this.aprobadoPorLoading = false),
-                    catchError(() => of([]))
-                );
-            }),
-            takeUntil(this.destroy$)
-        ).subscribe(res => {
-            this.aprobadoPorFiltrados = res || [];
-            this.showAprobadoPorDropdown = this.aprobadoPorFiltrados.length > 0;
-        });
-    }
-
     // ── Ajuste: modal handlers ────────────────────────────────────────────────
     abrirModalDatosAjuste(): void {
+        if (!this.ajusteForm.get('documento')?.value) {
+            this.generarDocumento();
+        }
         this.dialogRefActual = this.dialog.open(this.datosAjusteModal, {
-            width: '700px', maxWidth: '95vw', height: '88vh', panelClass: 'no-padding-dialog', disableClose: true
+            width: '820px', maxWidth: '98vw', height: '88vh', panelClass: 'no-padding-dialog', disableClose: true
         });
     }
 
@@ -701,10 +1168,32 @@ export class IngresosHubComponent implements OnInit, OnDestroy {
     }
 
     removeItemAjuste(item: AjusteItem): void {
-        if (confirm(`¿Está seguro de eliminar el item ${item.codigoBoa}?`)) {
-            this.dataSourceAjuste = this.dataSourceAjuste.filter(i => i.id !== item.id);
-            this._showMsg(`Item ${item.codigoBoa} eliminado`, 'info');
-        }
+        this.confirmingDeleteAjuste = item.id;
+    }
+
+    cancelarEliminarAjuste(): void {
+        this.confirmingDeleteAjuste = null;
+    }
+
+    ejecutarEliminarAjuste(item: AjusteItem): void {
+        this.dataSourceAjuste = this.dataSourceAjuste.filter(i => i.id !== item.id);
+        this.confirmingDeleteAjuste = null;
+        this._showMsg(`Item ${item.codigoBoa} eliminado`, 'info');
+    }
+
+    eliminarSeleccionados(): void {
+        this.confirmingBulkDelete = true;
+    }
+
+    cancelarBulkDelete(): void {
+        this.confirmingBulkDelete = false;
+    }
+
+    ejecutarBulkDelete(): void {
+        const count = this.dataSourceAjuste.filter(i => i.selected).length;
+        this.dataSourceAjuste = this.dataSourceAjuste.filter(i => !i.selected);
+        this.confirmingBulkDelete = false;
+        this._showMsg(`${count} ítem(s) eliminados`, 'info');
     }
 
     editItemAjuste(item: AjusteItem): void { this.openDetalleHerramienta(item); }
@@ -712,52 +1201,47 @@ export class IngresosHubComponent implements OnInit, OnDestroy {
     async openDetalleHerramienta(editItem?: AjusteItem): Promise<void> {
         const { DetalleHerramientaComponent } = await import('./detalle-herramienta/detalle-herramienta.component');
         const ref = this.dialog.open(DetalleHerramientaComponent, {
-            width: '760px', maxWidth: '95vw', height: '88vh',
+            width: '800px', maxWidth: '96vw', height: '560px',
             panelClass: 'no-padding-dialog', hasBackdrop: true, disableClose: false, autoFocus: false,
             data: { tipoAjuste: this.ajusteForm.get('tipoAjuste')?.value, editItem }
         });
         ref.afterClosed().subscribe((result: any) => {
             if (result?.action !== 'procesar') return;
+            const mapped = {
+                toolId:          result.data.toolId          || 0,
+                pn:              result.data.pn              || '',
+                descripcion:     result.data.nombre          || '',
+                marca:           result.data.marca           || '',
+                sn:              result.data.sn              || '',
+                codigoBoa:       result.data.codigo          || '',
+                cantidad:        result.data.cantidad        || 1,
+                um:              result.data.um              || '',
+                estado:          result.data.estado          || '',
+                ubicacion:       result.data.ubicacion       || '',
+                tipoAjuste:      result.data.tipoAjuste      || this.ajusteForm.get('tipoAjuste')?.value,
+                documentos:      result.data.documento       || '',
+                obs:             result.data.observaciones   || '',
+                tipo:            result.data.tipo            || 'HERRAMIENTA',
+                nivelCriticidad: result.data.nivelCriticidad || 'B',
+                fabricacion:     result.data.fabricacion     || 'INTERNACIONAL',
+                warehouseId:     result.data.warehouseId     || null,
+                rackId:          result.data.rackId          || null,
+                levelId:         result.data.levelId         || null,
+            };
             if (editItem) {
                 const idx = this.dataSourceAjuste.findIndex(i => i.id === editItem.id);
                 if (idx !== -1) {
-                    this.dataSourceAjuste[idx] = {
-                        ...this.dataSourceAjuste[idx],
-                        toolId:      result.data.toolId      || this.dataSourceAjuste[idx].toolId,
-                        pn:          result.data.pn           || '',
-                        descripcion: result.data.nombre       || '',
-                        marca:       result.data.marca        || '',
-                        sn:          result.data.sn           || '',
-                        codigoBoa:   result.data.codigo       || '',
-                        cantidad:    result.data.cantidad     || 1,
-                        um:          result.data.um           || '',
-                        estado:      result.data.estado       || '',
-                        ubicacion:   result.data.ubicacion    || '',
-                        tipoAjuste:  result.data.tipoAjuste   || this.ajusteForm.get('tipoAjuste')?.value,
-                        documentos:  result.data.documento    || '',
-                        obs:         result.data.observaciones || ''
-                    };
+                    this.dataSourceAjuste[idx] = { ...this.dataSourceAjuste[idx], ...mapped };
                     this.dataSourceAjuste = [...this.dataSourceAjuste];
                     this._showMsg(`Item ${result.data.codigo} actualizado`, 'success');
                 }
             } else {
-                const newItem: AjusteItem = {
-                    id:          this.itemIdCounter++,
-                    toolId:      result.data.toolId      || 0,
-                    pn:          result.data.pn           || '',
-                    descripcion: result.data.nombre       || '',
-                    marca:       result.data.marca        || '',
-                    sn:          result.data.sn           || '',
-                    codigoBoa:   result.data.codigo       || '',
-                    cantidad:    result.data.cantidad     || 1,
-                    um:          result.data.um           || '',
-                    estado:      result.data.estado       || '',
-                    ubicacion:   result.data.ubicacion    || '',
-                    tipoAjuste:  result.data.tipoAjuste   || this.ajusteForm.get('tipoAjuste')?.value,
-                    documentos:  result.data.documento    || '',
-                    obs:         result.data.observaciones || '',
-                    selected:    false
-                };
+                const codigoNuevo = (result.data.codigo || '').toUpperCase();
+                if (codigoNuevo && this.dataSourceAjuste.some(i => i.codigoBoa.toUpperCase() === codigoNuevo)) {
+                    this._showMsg(`Código ${codigoNuevo} ya está en la lista de ajuste`, 'warning');
+                    return;
+                }
+                const newItem: AjusteItem = { id: this.itemIdCounter++, selected: false, ...mapped };
                 this.dataSourceAjuste = [...this.dataSourceAjuste, newItem];
                 this._showMsg(`Item ${result.data.codigo} agregado`, 'success');
             }
@@ -780,15 +1264,20 @@ export class IngresosHubComponent implements OnInit, OnDestroy {
             tool_id:  Number(i.toolId),
             quantity: i.cantidad,
             condicion: i.estado || 'SERVICEABLE',
-            notes:    i.obs || ''
+            notes:    [
+                i.tipoAjuste  ? '[' + i.tipoAjuste + ']'   : '',
+                i.documentos  ? 'DOC:' + i.documentos       : '',
+                i.obs || ''
+            ].filter(Boolean).join(' | ')
         })));
+        const tipoLabel = fv.tipoAjuste || 'INVENTARIO';
         this.movementSvc.registrarAjusteIngreso({
             date:               fv.fecha,
             time:               new Date().toTimeString().slice(0, 8),
             responsible_person: fv.realizadoPorInput || fv.realizadoPor,
             authorized_by:      fv.aprobadoPorInput  || fv.aprobadoPor,
             document_number:    fv.documento  || '',
-            notes:              fv.descripcion || '',
+            notes:              '[' + tipoLabel + '] ' + (fv.descripcion || ''),
             items_json:         itemsJson
         }).pipe(
             takeUntil(this.destroy$),
@@ -800,6 +1289,7 @@ export class IngresosHubComponent implements OnInit, OnDestroy {
                 this._showMsg(`Ajuste registrado exitosamente: ${nro}`, 'success');
                 this.dataSourceAjuste = [];
                 this.ajusteForm.reset({ tipoAjuste: 'INVENTARIO', fecha: new Date().toISOString().split('T')[0] });
+                this.loadHistorial();
                 if (this.dialogRefComponent) this.dialogRefComponent.close({ success: true, data: result });
             },
             error: (err: any) => this._showMsg('Error al registrar el ajuste: ' + (err?.message || ''), 'error')
@@ -852,13 +1342,13 @@ export class IngresosHubComponent implements OnInit, OnDestroy {
     generarDocumento(): void {
         const tipo = this.ajusteForm.get('tipoAjuste')?.value;
         const prefijos: { [k: string]: string } = {
-            'INVENTARIO': 'INV', 'REUBICACION': 'REUB', 'DONACION': 'DON',
-            'ENCONTRADO': 'AJU', 'SOBRANTE': 'SOB',    'CORRECCION': 'CORR'
+            'INVENTARIO': 'AI', 'REUBICACION': 'REUB', 'DONACION': 'DON',
+            'ENCONTRADO': 'AJU', 'SOBRANTE': 'SOB', 'CORRECCION': 'CORR'
         };
-        const prefijo = prefijos[tipo] || 'AJU';
-        const year = new Date().getFullYear();
-        const num  = Math.floor(Math.random() * 900) + 100;
-        this.ajusteForm.patchValue({ documento: `${prefijo}-${year}-${num}` });
+        const prefijo = prefijos[tipo] || 'AI';
+        this.movementSvc.getSiguienteCorrelativoPreview(prefijo)
+            .pipe(takeUntil(this.destroy$))
+            .subscribe(num => this.ajusteForm.patchValue({ documento: num }));
     }
 
     hasAjusteError(field: string, error: string): boolean {
@@ -867,11 +1357,135 @@ export class IngresosHubComponent implements OnInit, OnDestroy {
     }
 
     // ══════════════════════════════════════════════════════════════════════════
+    //  HISTORIAL
+    // ══════════════════════════════════════════════════════════════════════════
+    loadHistorial(): void {
+        this.isLoadingHistorial = true;
+        this.movementSvc.getHistorialMovimientos({ limit: 200, movement_type: 'entry' })
+            .pipe(takeUntil(this.destroy$), finalize(() => this.isLoadingHistorial = false),
+                catchError(() => of({ data: [], total: 0 })))
+            .subscribe((result: any) => {
+                this.historialItems = result.data || [];
+                this.historialTotal = this.historialItems.length;
+                this.applyHistorialFilters();
+            });
+    }
+
+    applyHistorialFilters(): void {
+        const q    = (this.searchControl.value || '').toLowerCase().trim();
+        const tipo = this.filterMovType.value || '';
+        let base   = this.historialItems;
+        if (tipo === 'purchase') {
+            base = base.filter((m: any) => (m.movement_number || '').toUpperCase().startsWith('ING-'));
+        } else if (tipo === 'adjustment') {
+            base = base.filter((m: any) => (m.movement_number || '').toUpperCase().startsWith('AI-'));
+        }
+        this.filteredHistorial = q
+            ? base.filter((m: any) =>
+                (m.movement_number    || '').toLowerCase().includes(q) ||
+                (m.responsible_person || '').toLowerCase().includes(q) ||
+                (m.received_by_name   || '').toLowerCase().includes(q) ||
+                (m.supplier || m.document_number || '').toLowerCase().includes(q))
+            : [...base];
+    }
+
+    isAjusteIngreso(m: any): boolean {
+        return (m.movement_number || '').toUpperCase().startsWith('AI-');
+    }
+
+    pdfHistorialItem(m: any): void {
+        const generarPdfConItems = (items: any[]) => {
+            const nro   = m.movement_number || '---';
+            const fecha = m.date ? new Date(m.date).toLocaleDateString('es-BO') : '';
+            const resp  = m.received_by_name || m.responsible_person || '---';
+            const prov  = m.supplier || m.document_number || '---';
+            const rows = items.length
+                ? items.map((it: any, idx: number) => `
+                    <tr>
+                        <td style="text-align:center">${idx + 1}</td>
+                        <td style="font-family:monospace;font-weight:700">${it.code || it.codigo || '-'}</td>
+                        <td style="font-family:monospace;font-size:9px">${it.part_number || it.pn || '-'}</td>
+                        <td style="font-family:monospace;font-size:9px">${it.serial_number || it.sn || '-'}</td>
+                        <td style="text-align:center;font-weight:700">${it.quantity || it.cantidad || 1}</td>
+                        <td>${it.description || it.name || it.descripcion || '-'}</td>
+                    </tr>`).join('')
+                : `<tr><td colspan="6" style="text-align:center;color:#888">Sin detalle disponible</td></tr>`;
+            const css = `<style>@page{size:A4;margin:12mm}*{box-sizing:border-box}body{font-family:Arial,sans-serif;font-size:10px;color:#000;margin:0}h1{text-align:center;font-size:12px;font-weight:900;text-transform:uppercase;background:#111A43;color:white;padding:7px 10px;margin:0 0 7px;border:1px solid #000}.info-tbl{width:100%;border-collapse:collapse;border:1px solid #000;margin-bottom:7px}.info-tbl td{border:1px solid #ddd;padding:3px 6px}.lbl{background:#f0f0f0;font-weight:700;font-size:9px;width:130px}.nro-cell{background:#f0f0f0;text-align:center;font-weight:900;font-size:15px;vertical-align:middle;width:120px}.sec{background:#111A43;color:white;padding:3px 8px;font-weight:900;font-size:10px;text-transform:uppercase;border:1px solid #000}table.det{width:100%;border-collapse:collapse;border:1px solid #000}table.det th{background:#111A43;color:white;padding:4px;font-size:8px;font-weight:900;text-transform:uppercase;border:1px solid #000;text-align:center}table.det td{padding:3px 4px;border:1px solid #ddd;font-size:9px}table.det tr:nth-child(even) td{background:#f9f9f9}.footer{text-align:center;margin-top:10px;font-size:7.5px;color:#888;border-top:1px dotted #ccc;padding-top:4px}@media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact}}</style>`;
+            const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Ingreso ${nro}</title>${css}<script>window.onload=function(){setTimeout(function(){window.print();},500);};<\/script></head><body>
+<h1>NOTA DE INGRESO A ALMACÉN</h1>
+<table class="info-tbl"><tr><td class="lbl">N° DOCUMENTO:</td><td><strong>${nro}</strong></td><td class="nro-cell" rowspan="2">N°<br>${nro}</td></tr><tr><td class="lbl">FECHA:</td><td>${fecha}</td></tr><tr><td class="lbl">RECIBIDO POR:</td><td>${resp}</td><td class="lbl">PROVEEDOR / REF:</td><td>${prov}</td></tr></table>
+<div class="sec">DETALLE</div>
+<table class="det"><thead><tr><th>#</th><th>CÓDIGO</th><th>P/N</th><th>S/N</th><th>CANT.</th><th>DESCRIPCIÓN</th></tr></thead><tbody>${rows}</tbody></table>
+<div class="footer">Sistema de Gestión de Herramientas - BOA &nbsp;|&nbsp; ${new Date().toLocaleString('es-BO')}</div>
+</body></html>`;
+            const blob = new Blob([html], { type: 'text/html' });
+            const url  = URL.createObjectURL(blob);
+            const a    = document.createElement('a');
+            a.href = url; a.target = '_blank'; a.rel = 'noopener';
+            document.body.appendChild(a); a.click(); document.body.removeChild(a);
+            setTimeout(() => URL.revokeObjectURL(url), 60000);
+        };
+
+        if (m.id_movement) {
+            this.movementSvc.getMovementItems(Number(m.id_movement)).pipe(
+                takeUntil(this.destroy$),
+                catchError(() => of([]))
+            ).subscribe(items => generarPdfConItems(items));
+        } else {
+            generarPdfConItems([]);
+        }
+    }
+
+    // ══════════════════════════════════════════════════════════════════════════
+    //  PDF — NUEVA HERRAMIENTA (INGRESO POR COMPRA)
+    // ══════════════════════════════════════════════════════════════════════════
+    private _abrirImpresionIngreso(nro: string, items: HerramientaItem[], rec: any, provNombre: string): void {
+        const now  = new Date().toLocaleString('es-BO');
+        const rows = items.map((h, idx) => `
+            <tr>
+                <td style="text-align:center">${idx + 1}</td>
+                <td><span style="font-family:monospace;font-weight:700;background:#0f172a;color:white;padding:1px 5px;border-radius:3px;font-size:9px">${h.codigoBoa}</span></td>
+                <td style="font-family:monospace;font-size:9px">${h.pn || '-'}</td>
+                <td style="font-family:monospace;font-size:9px">${h.sn || '-'}</td>
+                <td style="text-align:center;font-weight:700">${h.cantidad}</td>
+                <td style="font-size:9px">${h.unidadMedida || 'UND'}</td>
+                <td>${h.descripcion || '-'}</td>
+                <td style="font-size:9px">${h.marca || '-'}</td>
+                <td style="text-align:center"><span style="padding:1px 4px;border:1px solid #000;font-size:8px;font-weight:700">${h.estado}</span></td>
+                <td style="font-size:8.5px">${h.estante ? h.estante + (h.nivelUbicacion ? '/' + h.nivelUbicacion : '') : '-'}</td>
+            </tr>`).join('');
+
+        const css = `<style>@page{size:A4 landscape;margin:12mm 10mm}*{box-sizing:border-box}body{font-family:Arial,sans-serif;font-size:10px;color:#000;margin:0}.top{display:flex;justify-content:space-between;margin-bottom:5px}.code-box{border:2px solid #000;padding:3px 10px;font-weight:900;font-size:13px;display:inline-block}h1{text-align:center;font-size:12px;font-weight:900;text-transform:uppercase;background:#111A43;color:white;padding:7px 10px;margin:0 0 7px;border:1px solid #000}.info-tbl{width:100%;border-collapse:collapse;border:1px solid #000;margin-bottom:7px}.info-tbl td{border:1px solid #ddd;padding:3px 6px}.lbl{background:#f0f0f0;font-weight:700;font-size:9px;width:130px}.nro-cell{background:#f0f0f0;text-align:center;font-weight:900;font-size:15px;vertical-align:middle;width:120px}.sec{background:#111A43;color:white;padding:3px 8px;font-weight:900;font-size:10px;text-transform:uppercase;border:1px solid #000}table.det{width:100%;border-collapse:collapse;border:1px solid #000}table.det th{background:#111A43;color:white;padding:4px 3px;font-size:8px;font-weight:900;text-transform:uppercase;border:1px solid #000;text-align:center}table.det td{padding:3px 4px;border:1px solid #ddd;font-size:9px}table.det tr:nth-child(even) td{background:#f9f9f9}.sigs{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:16px}.sig{border:1px solid #000;padding:6px 8px;text-align:center}.sig-ttl{font-weight:900;font-size:9px;text-transform:uppercase;margin-bottom:26px}.sig-line{border-top:1px solid #000;padding-top:3px;font-size:8.5px}.footer{text-align:center;margin-top:10px;font-size:7.5px;color:#888;border-top:1px dotted #ccc;padding-top:4px}@media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact}}</style>`;
+
+        const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>NI ${nro}</title>${css}<script>window.onload=function(){setTimeout(function(){window.print();},500);};<\/script></head><body>
+<div class="top"><div style="font-weight:900;font-size:11px">BoAMM &nbsp; OAM145# N-114</div><div style="text-align:right"><div class="code-box">NI</div><br><span style="font-size:9px">NOTA DE INGRESO</span></div></div>
+<h1>NOTA DE INGRESO A ALMACÉN DE HERRAMIENTAS<br><span style="font-size:10px;font-weight:400">HERRAMIENTAS, BANCOS DE PRUEBA Y EQUIPOS DE APOYO</span></h1>
+<table class="info-tbl">
+<tr><td class="lbl">DOCUMENTO / CMR:</td><td style="font-weight:700">${rec.nroCmr || nro}</td><td class="lbl">FACTURA:</td><td>${rec.nroFactura || '—'}</td><td class="nro-cell" rowspan="3"><div style="font-size:8px;font-weight:400">N° INGRESO</div>${nro}</td></tr>
+<tr><td class="lbl">PROVEEDOR:</td><td>${provNombre || '—'}</td><td class="lbl">ORDEN DE COMPRA:</td><td>${rec.ordenCompra || '—'}</td></tr>
+<tr><td class="lbl">RECIBE EN ALMACÉN:</td><td style="font-weight:700">${rec.funcionarioRecibe || '—'}</td><td class="lbl">FECHA INGRESO:</td><td>${rec.fechaIngreso || '—'}</td></tr>
+</table>
+<div class="sec">DETALLE DE HERRAMIENTAS INGRESADAS</div>
+<table class="det"><thead><tr><th>#</th><th>CÓDIGO BOA</th><th>P/N</th><th>S/N</th><th>CANT.</th><th>UND</th><th>DESCRIPCIÓN</th><th>MARCA</th><th>ESTADO</th><th>UBICACIÓN</th></tr></thead><tbody>${rows}</tbody></table>
+<div class="sigs">
+<div class="sig"><div class="sig-ttl">ENTREGADO POR / PROVEEDOR</div><div style="font-size:9px;margin-bottom:16px">${rec.recibiConforme || '____________________'}</div><div class="sig-line">Firma / Sello</div></div>
+<div class="sig"><div class="sig-ttl">RECIBIDO EN ALMACÉN</div><div style="font-size:9px;margin-bottom:16px">${rec.funcionarioRecibe || '____________________'}</div><div class="sig-line">Firma / Cargo</div></div>
+<div class="sig"><div class="sig-ttl">JEFE DE ALMACÉN</div><div class="sig-line">Firma / Cargo</div></div>
+</div>
+<div class="footer">Sistema de Gestión de Herramientas - BOA &nbsp;|&nbsp; ${now}</div>
+</body></html>`;
+        const blob = new Blob([html], { type: 'text/html' });
+        const url  = URL.createObjectURL(blob);
+        const a    = document.createElement('a');
+        a.href = url; a.target = '_blank'; a.rel = 'noopener';
+        document.body.appendChild(a); a.click(); document.body.removeChild(a);
+        setTimeout(() => URL.revokeObjectURL(url), 60000);
+    }
+
+    // ══════════════════════════════════════════════════════════════════════════
     //  PDF — AJUSTE INGRESO
     // ══════════════════════════════════════════════════════════════════════════
     private _abrirImpresionAjuste(nro: string, items: AjusteItem[], fv: any): void {
-        const w = window.open('', '_blank');
-        if (!w) return;
         const now = new Date().toLocaleString('es-BO');
         const rows = items.map((item, idx) => `
             <tr>
@@ -969,13 +1583,22 @@ export class IngresosHubComponent implements OnInit, OnDestroy {
   </div>
   <div class="footer">Sistema de Gestión de Herramientas - BOA &nbsp;|&nbsp; ${now}</div>
 </body></html>`;
-        w.document.write(html);
-        w.document.close();
+        const blob = new Blob([html], { type: 'text/html' });
+        const url  = URL.createObjectURL(blob);
+        const a    = document.createElement('a');
+        a.href = url; a.target = '_blank'; a.rel = 'noopener';
+        document.body.appendChild(a); a.click(); document.body.removeChild(a);
+        setTimeout(() => URL.revokeObjectURL(url), 60000);
     }
 
     // ══════════════════════════════════════════════════════════════════════════
     //  SHARED UTILITIES
     // ══════════════════════════════════════════════════════════════════════════
+    private _localDateStr(): string {
+        const d = new Date();
+        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    }
+
     private _showMsg(msg: string, type: 'success' | 'error' | 'warning' | 'info'): void {
         this.snackBar.open(msg, 'OK', { duration: 4000, horizontalPosition: 'end', verticalPosition: 'top', panelClass: [`snackbar-${type}`] });
     }

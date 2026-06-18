@@ -8,6 +8,7 @@ import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { FormUsuarioComponent } from './dialogs/form-usuario/form-usuario.component';
 import { UsuariosService, UsuarioHE } from '../../../../core/services/usuarios.service';
@@ -36,6 +37,7 @@ interface UsuarioTabla {
         MatFormFieldModule,
         MatInputModule,
         MatProgressSpinnerModule,
+        MatSnackBarModule,
         ReactiveFormsModule
     ],
     templateUrl: './usuarios.component.html',
@@ -49,6 +51,7 @@ interface UsuarioTabla {
 export class UsuariosComponent implements OnInit {
     private router          = inject(Router);
     private dialog          = inject(MatDialog);
+    private snackBar        = inject(MatSnackBar);
     private usuariosService = inject(UsuariosService);
     private roleService     = inject(RoleService);
 
@@ -75,7 +78,7 @@ export class UsuariosComponent implements OnInit {
         });
     }
 
-    private cargarUsuarios(): void {
+    cargarUsuarios(): void {
         this.isLoading = true;
         this.usuariosService.getUsuarios().subscribe({
             next: (data: UsuarioHE[]) => {
@@ -119,10 +122,10 @@ export class UsuariosComponent implements OnInit {
 
     nuevoUsuario(): void {
         const dialogRef = this.dialog.open(FormUsuarioComponent, {
-            width: '900px',
+            width: '480px',
             maxWidth: '95vw',
             maxHeight: '90vh',
-            panelClass: ['neo-dialog', 'no-padding-dialog'],
+            panelClass: 'neo-dialog',
             data: { mode: 'create', rolesList: this.rolesList }
         });
 
@@ -139,16 +142,25 @@ export class UsuariosComponent implements OnInit {
                 id_role:      result.role_id,
                 departamento: result.departamento || 'Sin asignar',
                 active:       result.active ? 'true' : 'false'
-            }).subscribe({ next: () => this.cargarUsuarios() });
+            }).subscribe({
+                next: () => {
+                    this.snackBar.open('Usuario creado exitosamente', 'OK', { duration: 3000, verticalPosition: 'top' });
+                    this.cargarUsuarios();
+                },
+                error: (err) => {
+                    const msg = err?.error?.datos?.[0]?.mensaje || err?.message || 'Error al crear usuario';
+                    this.snackBar.open(msg, 'Cerrar', { duration: 7000, verticalPosition: 'top' });
+                }
+            });
         });
     }
 
     editarUsuario(usuario: UsuarioTabla): void {
         const dialogRef = this.dialog.open(FormUsuarioComponent, {
-            width: '900px',
+            width: '480px',
             maxWidth: '95vw',
             maxHeight: '90vh',
-            panelClass: ['neo-dialog', 'no-padding-dialog'],
+            panelClass: 'neo-dialog',
             data: {
                 mode: 'edit',
                 rolesList: this.rolesList,
@@ -179,7 +191,16 @@ export class UsuariosComponent implements OnInit {
                 id_role:      result.role_id,
                 departamento: result.departamento || 'Sin asignar',
                 active:       result.active ? 'true' : 'false'
-            }).subscribe({ next: () => this.cargarUsuarios() });
+            }).subscribe({
+                next: () => {
+                    this.snackBar.open('Usuario actualizado exitosamente', 'OK', { duration: 3000, verticalPosition: 'top' });
+                    this.cargarUsuarios();
+                },
+                error: (err) => {
+                    const msg = err?.error?.datos?.[0]?.mensaje || err?.message || 'Error al actualizar usuario';
+                    this.snackBar.open(msg, 'Cerrar', { duration: 7000, verticalPosition: 'top' });
+                }
+            });
         });
     }
 

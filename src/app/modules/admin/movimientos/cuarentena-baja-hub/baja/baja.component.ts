@@ -108,7 +108,7 @@ export class BajaComponent implements OnInit, OnDestroy {
 
     isLoading = false;
 
-    unidades: string[] = ['CBB', 'LPB', 'SRE', 'TJA', 'SRZ', 'CIJ', 'TDD', 'GYA', 'RIB', 'BYC'];
+    unidades: string[] = ['CBB', 'LPB', 'VVI', 'SRE', 'TJA', 'SRZ', 'CIJ', 'TDD', 'GYA', 'RIB', 'BYC'];
 
     private _procesadoPorSearch$ = new Subject<string>();
     procesadoPorFuncionarios: any[] = [];
@@ -295,7 +295,7 @@ export class BajaComponent implements OnInit, OnDestroy {
     // MODAL DE DATOS GENERALES
     abrirModalDatos(): void {
         this.activeDialog = this.dialog.open(this.datosBajaModal, {
-            width: '800px', maxWidth: '95vw', height: '88vh',
+            width: '720px', maxWidth: '95vw',
             panelClass: 'no-padding-dialog', disableClose: true
         });
     }
@@ -325,7 +325,7 @@ export class BajaComponent implements OnInit, OnDestroy {
             const { HerramientaABajaComponent } = await import('./herramienta-a-baja/herramienta-a-baja.component');
 
             const dialogRef = this.dialog.open(HerramientaABajaComponent, {
-                width: '850px', maxWidth: '95vw', height: '88vh',
+                width: '800px', maxWidth: '96vw', height: '560px',
                 panelClass: 'no-padding-dialog',
                 hasBackdrop: true, disableClose: true, autoFocus: false
             });

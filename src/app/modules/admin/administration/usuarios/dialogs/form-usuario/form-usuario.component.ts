@@ -2,13 +2,12 @@ import { Component, OnInit, inject, Inject, Optional } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule, Router } from '@angular/router';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators, AbstractControl, ValidationErrors } from '@angular/forms';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatInputModule } from '@angular/material/input';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
-import { MatSelectModule } from '@angular/material/select';
 import { MatDialogRef, MAT_DIALOG_DATA, MatDialogModule } from '@angular/material/dialog';
+import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { DragDropModule } from '@angular/cdk/drag-drop';
+import { RoleService } from '../../../../../../core/services/role.service';
 
 export interface FormUsuarioData {
     usuario?: any;
@@ -23,102 +22,29 @@ export interface FormUsuarioData {
         CommonModule,
         RouterModule,
         ReactiveFormsModule,
-        MatFormFieldModule,
-        MatInputModule,
         MatButtonModule,
         MatIconModule,
-        MatSelectModule,
         MatDialogModule,
+        MatSnackBarModule,
         DragDropModule
     ],
     templateUrl: './form-usuario.component.html',
     styles: [`
-        :host {
-            display: block;
-            height: 100%;
-        }
-
-        /* Clases de utilidad para inputs Neo-Brutalistas */
+        :host { display: block; height: 100%; }
         .neo-input {
-            width: 100%;
-            height: 48px;
-            padding: 0 16px;
-            background-color: #f9fafb;
-            border: 3px solid #000;
-            border-radius: 12px;
-            font-weight: 700;
-            font-size: 14px;
-            color: #1f2937;
-            transition: all 0.2s;
-        }
-
-        .neo-input:focus {
-            outline: none;
-            box-shadow: 4px 4px 0px 0px #2563EB; /* Blue shadow */
-            transform: translateY(-2px);
-            border-color: #000;
-        }
-
-        /* Dark mode overrides for inputs */
-        :host-context(.dark) .neo-input {
-            background-color: #334155;
-            color: white;
-            border-color: #94a3b8;
-        }
-
-        :host-context(.dark) .neo-input:focus {
-            border-color: #60a5fa;
-            box-shadow: 4px 4px 0px 0px #60a5fa;
-        }
-
-        /* Labels */
-        .field-label {
-            display: block;
-            font-size: 11px;
-            font-weight: 900;
+            width: 100%; height: 40px; padding: 0 12px;
+            background-color: #f9fafb; border: 2px solid #000;
+            border-radius: 8px; font-weight: 900; font-size: 12px;
+            color: #1f2937; transition: all 0.15s; appearance: auto;
             text-transform: uppercase;
-            color: #6b7280;
-            margin-bottom: 6px;
-            margin-left: 4px;
         }
-
-        :host-context(.dark) .field-label {
-            color: #cbd5e1;
-        }
-
-        /* Estilos específicos para mat-select dentro del diseño neo */
-        :host ::ng-deep .neo-select .mat-mdc-text-field-wrapper {
-            background-color: transparent !important;
-            padding: 0 !important;
-        }
-
-        :host ::ng-deep .neo-select .mat-mdc-form-field-flex {
-            background-color: #f9fafb;
-            border: 3px solid #000;
-            border-radius: 12px;
-            height: 48px;
-            align-items: center;
-            padding: 0 12px;
-            transition: all 0.2s;
-        }
-
-        :host ::ng-deep .neo-select .mat-mdc-form-field-flex:hover {
-            background-color: #f3f4f6;
-        }
-
-        :host-context(.dark) ::ng-deep .neo-select .mat-mdc-form-field-flex {
-            background-color: #334155;
-            border-color: #94a3b8;
-        }
-
-        :host ::ng-deep .neo-select.mat-focused .mat-mdc-form-field-flex {
-            box-shadow: 4px 4px 0px 0px #2563EB;
-            transform: translateY(-2px);
-        }
-
-        /* Ocultar underline default de material */
-        :host ::ng-deep .mat-mdc-line-ripple { display: none; }
-        :host ::ng-deep .mat-mdc-form-field-subscript-wrapper { display: none; }
+        .neo-input::placeholder { font-weight: 700; text-transform: none; color: #9ca3af; }
+        .neo-input:focus { outline: none; box-shadow: 3px 3px 0px 0px #000; transform: translateY(-1px); border-color: #000; }
+        :host-context(.dark) .neo-input { background-color: #1e293b; color: white; border-color: #475569; }
+        :host-context(.dark) .neo-input::placeholder { color: #64748b; }
+        :host-context(.dark) .neo-input:focus { border-color: #475569; }
+        .field-label { display: block; font-size: 10px; font-weight: 900; text-transform: uppercase; color: #6b7280; margin-bottom: 4px; margin-left: 2px; letter-spacing: 0.05em; }
+        :host-context(.dark) .field-label { color: #94a3b8; }
     `]
 })
 export class FormUsuarioComponent implements OnInit {
@@ -130,6 +56,9 @@ export class FormUsuarioComponent implements OnInit {
 
     rolesList: { id: number; nombre: string }[] = [];
 
+    private roleService = inject(RoleService);
+    private snackBar    = inject(MatSnackBar);
+
     constructor(
         private fb: FormBuilder,
         private router: Router,
@@ -137,32 +66,49 @@ export class FormUsuarioComponent implements OnInit {
     ) {}
 
     ngOnInit(): void {
-        // Cargar roles desde data (vienen del backend via RoleService)
         if (this.data?.rolesList?.length) {
             this.rolesList = this.data.rolesList.map((r: any) => ({
                 id: r.id_role,
                 nombre: r.name
             }));
+        } else {
+            // Carga directa si el padre no pasó roles (race condition o primer acceso)
+            this.roleService.getRoles().subscribe({
+                next: (roles: any[]) => {
+                    this.rolesList = roles.map((r: any) => ({
+                        id: r.id_role,
+                        nombre: r.name
+                    }));
+                }
+            });
         }
-        this.initForm();
         if (this.data?.usuario && this.data?.mode === 'edit') {
             this.isEditMode = true;
+        }
+        this.initForm();
+        if (this.isEditMode) {
             this.loadUsuarioData(this.data.usuario);
         }
     }
 
+    departamentos = [
+        'Sistemas', 'Operaciones', 'Mantenimiento', 'Calidad',
+        'Almacén', 'Compras', 'Administración', 'Gerencia'
+    ];
+
     private initForm(): void {
         this.usuarioForm = this.fb.group({
-            username: ['', [Validators.required, Validators.minLength(4)]],
-            nombres: ['', Validators.required],
-            apellidos: ['', Validators.required],
-            ci: ['', Validators.required],
-            telefono: [''],
-            email: ['', [Validators.required, Validators.email]],
-            password: ['', this.isEditMode ? [] : [Validators.required, Validators.minLength(6)]],
+            username:     ['', [Validators.required, Validators.minLength(4)]],
+            nombres:      ['', Validators.required],
+            apellidos:    ['', Validators.required],
+            ci:           ['', Validators.required],
+            telefono:     [''],
+            email:        ['', Validators.required],
+            departamento: [''],
+            password:     ['', this.isEditMode ? [] : [Validators.required]],
             confirm_password: ['', this.isEditMode ? [] : [Validators.required]],
-            role_id: ['', Validators.required],
-            active: [true]
+            role_id:      ['', Validators.required],
+            active:       [true]
         }, { validators: this.passwordMatchValidator });
     }
 
@@ -180,31 +126,35 @@ export class FormUsuarioComponent implements OnInit {
 
     private loadUsuarioData(usuario: any): void {
         this.usuarioForm.patchValue({
-            username: usuario.username,
-            nombres: usuario.nombres,
-            apellidos: usuario.apellidos,
-            ci: usuario.ci,
-            telefono: usuario.telefono,
-            email: usuario.email,
-            role_id: usuario.role_id,
-            active: usuario.active !== undefined ? usuario.active : true
+            username:     usuario.username,
+            nombres:      usuario.nombres,
+            apellidos:    usuario.apellidos,
+            ci:           usuario.ci,
+            telefono:     usuario.telefono,
+            email:        usuario.email,
+            departamento: usuario.departamento || '',
+            role_id:      usuario.role_id,
+            active:       usuario.active !== undefined ? usuario.active : true
             // Password se deja vacío intencionalmente
         });
 
-        // Actualizar validadores para modo edición (password opcional)
-        this.usuarioForm.get('password')?.removeValidators(Validators.required);
-        this.usuarioForm.get('confirm_password')?.removeValidators(Validators.required);
-        this.usuarioForm.get('password')?.updateValueAndValidity();
-        this.usuarioForm.get('confirm_password')?.updateValueAndValidity();
+        // Password opcional en edición — ya gestionado por initForm() con isEditMode=true
     }
 
     onSubmit(): void {
         if (this.usuarioForm.valid) {
-            // Eliminar confirm_password del objeto final antes de enviar
             const { confirm_password, ...formData } = this.usuarioForm.value;
             this.closeOrNavigate(formData);
         } else {
             this.usuarioForm.markAllAsTouched();
+            const camposInvalidos = Object.keys(this.usuarioForm.controls)
+                .filter(k => this.usuarioForm.get(k)?.invalid)
+                .join(', ');
+            const mismatch = this.usuarioForm.hasError('mismatch');
+            const msg = mismatch
+                ? 'Las contraseñas no coinciden'
+                : `Campos incompletos: ${camposInvalidos}`;
+            this.snackBar.open(msg, 'OK', { duration: 5000, verticalPosition: 'top' });
         }
     }
 

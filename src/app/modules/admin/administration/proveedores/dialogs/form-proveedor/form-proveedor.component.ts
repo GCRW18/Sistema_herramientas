@@ -2,12 +2,9 @@ import { Component, OnInit, inject, Inject, Optional } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule, Router } from '@angular/router';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatInputModule } from '@angular/material/input';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
-import { MatSelectModule } from '@angular/material/select';
-import { MatDialogRef, MAT_DIALOG_DATA, MatDialogModule } from '@angular/material/dialog';
+import { MatDialogRef, MAT_DIALOG_DATA, MatDialogModule, MatDialog } from '@angular/material/dialog';
 import { DragDropModule } from '@angular/cdk/drag-drop';
 
 export interface FormProveedorData {
@@ -22,11 +19,8 @@ export interface FormProveedorData {
         CommonModule,
         RouterModule,
         ReactiveFormsModule,
-        MatFormFieldModule,
-        MatInputModule,
         MatButtonModule,
         MatIconModule,
-        MatSelectModule,
         MatDialogModule,
         DragDropModule
     ],
@@ -37,65 +31,50 @@ export interface FormProveedorData {
             height: 100%;
         }
 
-        /* Clases de utilidad para inputs Neo-Brutalistas */
         .neo-input {
-            width: 100%;
-            height: 48px;
-            padding: 0 16px;
-            background-color: #f9fafb;
-            border: 3px solid #000;
-            border-radius: 12px;
-            font-weight: 700;
-            font-size: 14px;
-            color: #1f2937;
-            transition: all 0.2s;
-        }
-
-        .neo-input:focus {
-            outline: none;
-            box-shadow: 4px 4px 0px 0px #059669; /* Emerald shadow */
-            transform: translateY(-2px);
-            border-color: #000;
-        }
-
-        /* Dark mode overrides for inputs */
-        :host-context(.dark) .neo-input {
-            background-color: #334155;
-            color: white;
-            border-color: #94a3b8;
-        }
-
-        :host-context(.dark) .neo-input:focus {
-            border-color: #34d399;
-            box-shadow: 4px 4px 0px 0px #34d399;
-        }
-
-        /* Labels */
-        .field-label {
-            display: block;
-            font-size: 11px;
-            font-weight: 900;
+            width: 100%; height: 40px; padding: 0 12px;
+            background-color: #f9fafb; border: 2px solid #000;
+            border-radius: 8px; font-weight: 900; font-size: 12px;
+            color: #1f2937; transition: all 0.15s; appearance: auto;
             text-transform: uppercase;
-            color: #6b7280;
-            margin-bottom: 6px;
-            margin-left: 4px;
         }
-
-        :host-context(.dark) .field-label {
-            color: #cbd5e1;
-        }
-
-        textarea.neo-input {
-            height: auto;
-            padding-top: 12px;
-            padding-bottom: 12px;
-        }
+        .neo-input::placeholder { font-weight: 700; text-transform: none; color: #9ca3af; }
+        .neo-input:focus { outline: none; box-shadow: 3px 3px 0px 0px #000; transform: translateY(-1px); border-color: #000; }
+        :host-context(.dark) .neo-input { background-color: #1e293b; color: white; border-color: #475569; }
+        :host-context(.dark) .neo-input::placeholder { color: #64748b; }
+        :host-context(.dark) .neo-input:focus { border-color: #475569; }
+        .field-label { display: block; font-size: 10px; font-weight: 900; text-transform: uppercase; color: #6b7280; margin-bottom: 4px; margin-left: 2px; letter-spacing: 0.05em; }
+        :host-context(.dark) .field-label { color: #94a3b8; }
     `]
 })
 export class FormProveedorComponent implements OnInit {
     public dialogRef = inject(MatDialogRef<FormProveedorComponent>, { optional: true });
+    private dialog = inject(MatDialog);
     proveedorForm!: FormGroup;
     isEditMode = false;
+
+    async openUbicacionDialog(): Promise<void> {
+        const { UbicacionContactoDialogComponent } = await import('./ubicacion-contacto-dialog.component');
+        const ref = this.dialog.open(UbicacionContactoDialogComponent, {
+            panelClass: 'neo-mini-dialog',
+            hasBackdrop: true,
+            backdropClass: 'bg-black/20',
+            data: {
+                ciudad:             this.proveedorForm.get('ciudad')?.value,
+                pais:               this.proveedorForm.get('pais')?.value,
+                direccion:          this.proveedorForm.get('direccion')?.value,
+                contacto_principal: this.proveedorForm.get('contacto_principal')?.value,
+                telefono_contacto:  this.proveedorForm.get('telefono_contacto')?.value,
+                email_contacto:     this.proveedorForm.get('email_contacto')?.value,
+                sitio_web:          this.proveedorForm.get('sitio_web')?.value
+            }
+        });
+        ref.afterClosed().subscribe(result => {
+            if (result) {
+                this.proveedorForm.patchValue(result);
+            }
+        });
+    }
 
     tiposProveedor = [
         { value: 'HERRAMIENTAS', label: 'Herramientas' },
@@ -120,24 +99,24 @@ export class FormProveedorComponent implements OnInit {
 
     private initForm(): void {
         this.proveedorForm = this.fb.group({
-            codigo: ['', Validators.required],
-            nombre_comercial: ['', Validators.required],
-            razon_social: ['', Validators.required],
-            nit: ['', Validators.required],
-            tipo_proveedor: ['HERRAMIENTAS', Validators.required],
-            direccion: [''],
-            ciudad: ['', Validators.required],
-            pais: ['Bolivia', Validators.required],
-            telefono: ['', [Validators.required, Validators.pattern(/^\+?[0-9\s\-()]+$/)]],
-            email: ['', [Validators.required, Validators.email]],
-            contacto_principal: ['', Validators.required],
-            telefono_contacto: [''],
-            email_contacto: ['', Validators.email],
-            sitio_web: ['', Validators.pattern(/^https?:\/\/.+/)],
-            calificacion: [0, [Validators.min(0), Validators.max(5)]],
-            condiciones_pago: [''],
-            tiempo_entrega_dias: [0, Validators.min(0)],
-            observaciones: ['']
+            codigo:             [''],
+            nombre_comercial:   ['', Validators.required],
+            razon_social:       [''],
+            nit:                ['', Validators.required],
+            tipo_proveedor:     ['HERRAMIENTAS', Validators.required],
+            direccion:          [''],
+            ciudad:             [''],
+            pais:               ['Bolivia'],
+            telefono:           ['', [Validators.required, Validators.pattern(/^\+?[0-9\s\-()]+$/)]],
+            email:              ['', [Validators.required, Validators.email]],
+            contacto_principal: [''],
+            telefono_contacto:  [''],
+            email_contacto:     [''],
+            sitio_web:          [''],
+            calificacion:       [0, [Validators.min(0), Validators.max(5)]],
+            condiciones_pago:   [''],
+            tiempo_entrega_dias:[0, Validators.min(0)],
+            observaciones:      ['']
         });
     }
 

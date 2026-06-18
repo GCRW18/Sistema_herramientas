@@ -1,5 +1,5 @@
 <div class="bg-stone-100 dark:bg-[#0F172A] border-2 border-black overflow-hidden flex flex-col w-full h-full"
-     style="box-shadow: 6px 6px 0 #000">
+>
 
     <!-- ── HEADER ── -->
     <div class="bg-[#0F172A] px-4 py-3 flex items-center gap-3 shrink-0 select-none"
@@ -140,7 +140,7 @@
                 </div>
 
                 <!-- Fecha + Hora -->
-                <div class="grid grid-cols-2 gap-2">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
                     <div>
                         <label class="text-[8px] font-black uppercase tracking-[0.14em] text-stone-400 mb-1 block">Fecha *</label>
                         <input type="date" [(ngModel)]="fecha"
@@ -155,7 +155,7 @@
                 </div>
 
                 <!-- Solicitante + Despachado Por (2 col) -->
-                <div class="grid grid-cols-2 gap-2">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
                     <div class="relative">
                         <label class="text-[8px] font-black uppercase tracking-[0.14em] text-stone-400 mb-1 flex items-center justify-between">
                             <span class="flex items-center gap-0.5"><mat-icon class="!text-[10px] text-orange-500">how_to_reg</mat-icon>Solicitante *</span>
@@ -201,7 +201,7 @@
                 </div>
 
                 <!-- OT + Aeronave (2 col) -->
-                <div class="grid grid-cols-2 gap-2">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
                     <div>
                         <label class="text-[8px] font-black uppercase tracking-[0.14em] text-stone-400 mb-1 block">Orden de Trabajo</label>
                         <input type="text" [(ngModel)]="ordenTrabajo" placeholder="OT-auto"
@@ -276,7 +276,7 @@
                     </h3>
 
                     <!-- Fecha + Hora -->
-                    <div class="grid grid-cols-2 gap-3">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <div>
                             <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-300 mb-1.5 block">Fecha *</label>
                             <input type="date" [(ngModel)]="fecha"
@@ -357,7 +357,7 @@
                     </div>
 
                     <!-- OT + Aeronave -->
-                    <div class="grid grid-cols-2 gap-3">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <div>
                             <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-300 mb-1.5 block">Orden de Trabajo</label>
                             <input type="text" [(ngModel)]="ordenTrabajo" placeholder="OT-auto"

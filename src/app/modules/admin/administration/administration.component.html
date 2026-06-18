@@ -92,6 +92,15 @@
                 <p class="text-[9px] font-bold uppercase leading-tight text-center w-full truncate" [class.text-black]="isTabOpen(5)" [class.text-gray-700]="!isTabOpen(5)">Y TÉCNICOS</p>
             </button>
 
+            <button (click)="openModule(6)"
+                    class="group relative flex flex-col items-center gap-1.5 p-3 rounded-xl border-[2px] border-black transition-all hover:-translate-y-1 w-[120px] shrink-0"
+                    [style.background-color]="isTabOpen(6) ? '#FBBF24' : '#f8f9fc'"
+                    [style.box-shadow]="'3px 3px 0px 0px rgba(0,0,0,1)'">
+                <mat-icon svgIcon="heroicons_outline:adjustments-horizontal" class="!w-8 !h-8 !text-3xl shrink-0 text-black"></mat-icon>
+                <p class="text-[10px] font-black uppercase leading-tight text-center w-full text-black">CONFIGURACIÓN</p>
+                <p class="text-[9px] font-bold uppercase leading-tight text-center w-full truncate" [class.text-black]="isTabOpen(6)" [class.text-gray-700]="!isTabOpen(6)">PARÁMETROS · ALERTAS</p>
+            </button>
+
         </div>
     </div>
 
@@ -162,93 +171,78 @@
 
 <!-- ========== DIALOG: ACTIVIDAD RECIENTE (ng-template) ========== -->
 <ng-template #actividadRecienteDialog>
-    <div class="flex flex-col w-full h-full bg-[#f8f9fc] dark:bg-[#0F172AFF] transition-colors duration-300 font-sans overflow-hidden relative"
-         cdkDrag cdkDragRootElement=".cdk-overlay-pane" cdkDragBoundary=".cdk-overlay-container">
+    <div class="overflow-hidden flex flex-col relative font-sans" style="max-height:80vh">
 
-        <div class="fixed top-16 left-10 w-64 h-64 bg-[#111A43] rounded-full border-4 border-black opacity-5 pointer-events-none"></div>
-        <div class="fixed bottom-10 right-10 w-32 h-32 bg-[#F8B400FF] rotate-45 border-4 border-black opacity-5 pointer-events-none"></div>
-
-        <div class="flex-1 flex flex-col p-4 md:p-6 relative h-full overflow-hidden gap-4">
-
-            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 shrink-0 relative z-10">
-                <div class="flex items-center gap-4">
-                    <button mat-dialog-close
-                            class="w-12 h-12 bg-white dark:bg-slate-800 border-2 border-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] active:shadow-none active:translate-x-1 active:translate-y-1 hover:scale-105 transition-all flex items-center justify-center rounded-lg cursor-pointer"
-                            (mousedown)="$event.stopPropagation()">
-                        <mat-icon class="!text-2xl text-black dark:text-white">arrow_back</mat-icon>
-                    </button>
-                    <div>
-                        <h1 class="text-2xl md:text-3xl font-black text-black dark:text-white uppercase tracking-tight leading-none">
-                            Actividad Reciente
-                        </h1>
-                        <p class="text-xs font-bold bg-[#F8B400FF] text-black px-2 py-0.5 rounded-sm border border-black mt-1 inline-block">
-                            REGISTRO DEL SISTEMA
-                        </p>
-                    </div>
+        <!-- Header -->
+        <div class="bg-[#0F172A] px-4 py-2.5 flex items-center justify-between shrink-0 border-b-[2px] border-black"
+             cdkDrag cdkDragRootElement=".cdk-overlay-pane" cdkDragHandle style="cursor:grab">
+            <div class="flex items-center gap-2.5">
+                <div class="w-7 h-7 rounded-lg bg-[#FFC501] border-2 border-black flex items-center justify-center shadow-[2px_2px_0_#000] shrink-0">
+                    <mat-icon class="!text-base text-black">history</mat-icon>
+                </div>
+                <div>
+                    <p class="text-[8px] text-slate-400 font-bold uppercase tracking-widest leading-none mb-0.5">Administración</p>
+                    <h2 class="text-xs text-white font-black uppercase tracking-tight leading-none">Actividad Reciente</h2>
                 </div>
             </div>
+            <div class="flex items-center gap-1.5">
+                <span class="text-[9px] font-black border-2 border-black bg-[#FFC501] text-black px-2 py-0.5 rounded-full uppercase">
+                    {{ recentRecords.length }} registros
+                </span>
+                <button mat-dialog-close
+                        class="w-7 h-7 flex items-center justify-center bg-[#FF1414] border-[2px] border-black rounded-full text-white shadow-[2px_2px_0_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all">
+                    <mat-icon class="!text-sm">close</mat-icon>
+                </button>
+            </div>
+        </div>
 
-            <div class="neo-card-base-admin bg-white dark:bg-slate-800 overflow-hidden flex flex-col flex-1 relative z-10 border-2 border-black">
+        <!-- Table -->
+        <div class="flex flex-col overflow-hidden p-2 bg-[#f8f9fc] dark:bg-[#0F172A]">
+            <div class="border-[2px] border-black rounded-xl overflow-hidden flex flex-col bg-white dark:bg-slate-800 shadow-[4px_4px_0px_0px_#000]">
 
-                <div class="bg-[#0F172AFF] px-4 py-2 border-b-2 border-black flex items-center justify-between shrink-0 h-12">
-                    <div class="flex items-center gap-3">
-                        <mat-icon class="text-white !text-xl">history</mat-icon>
-                        <span class="font-black text-xs md:text-sm uppercase text-white">Registro de Actividad</span>
-                    </div>
-                    <span class="bg-white text-black px-2 py-0.5 rounded text-xs font-black border border-black shadow-[2px_2px_0px_0px_#000]">
-                        Total: {{ recentRecords.length }}
-                    </span>
-                </div>
-
-                <div class="overflow-auto flex-1 bg-[#f8f9fc] dark:bg-slate-900/50 custom-scrollbar-admin">
-                    <table mat-table [dataSource]="recentRecords" class="w-full">
-
-                        <ng-container matColumnDef="fecha">
-                            <th mat-header-cell *matHeaderCellDef class="header-neo text-sm py-3 px-4">FECHA</th>
-                            <td mat-cell *matCellDef="let element" class="cell-neo font-mono font-bold text-sm px-4 text-black dark:text-white">{{ element.fecha }}</td>
-                        </ng-container>
-
-                        <ng-container matColumnDef="tipo">
-                            <th mat-header-cell *matHeaderCellDef class="header-neo text-sm py-3 px-4">TIPO</th>
-                            <td mat-cell *matCellDef="let element" class="cell-neo px-4">
-                                <span class="inline-block px-2 py-1 rounded text-[10px] sm:text-xs font-black border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,0.5)] bg-[#0F172AFF] text-white">
+                <div class="overflow-auto custom-scrollbar-admin" style="max-height:52vh">
+                    <table class="w-full">
+                        <thead class="bg-stone-200 dark:bg-[#020617] sticky top-0 z-10 border-b-[2px] border-black text-[10px] font-black uppercase">
+                        <tr>
+                            <th class="py-2 px-3 text-left text-black dark:text-amber-400 w-24">Fecha</th>
+                            <th class="py-2 px-3 text-left text-black dark:text-amber-400">Tipo</th>
+                            <th class="py-2 px-3 text-left text-black dark:text-amber-400">Entidad</th>
+                            <th class="py-2 px-3 text-left text-black dark:text-amber-400 w-28">Usuario</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr *ngFor="let element of recentRecords"
+                            class="border-b border-gray-200 dark:border-slate-700 hover:bg-stone-50 dark:hover:bg-slate-700/50 transition-colors">
+                            <td class="py-2 px-3 font-mono text-[10px] font-bold text-gray-900 dark:text-white whitespace-nowrap">{{ element.fecha }}</td>
+                            <td class="py-2 px-3">
+                                <span class="px-1.5 py-0.5 rounded text-[9px] font-black border border-black bg-[#0F172A] text-white uppercase">
                                     {{ element.tipo }}
                                 </span>
                             </td>
-                        </ng-container>
-
-                        <ng-container matColumnDef="entidad">
-                            <th mat-header-cell *matHeaderCellDef class="header-neo text-sm py-3 px-4">ENTIDAD</th>
-                            <td mat-cell *matCellDef="let element" class="cell-neo font-black text-sm px-4 text-black dark:text-white">{{ element.entidad }}</td>
-                        </ng-container>
-
-                        <ng-container matColumnDef="usuario">
-                            <th mat-header-cell *matHeaderCellDef class="header-neo text-sm py-3 px-4">USUARIO</th>
-                            <td mat-cell *matCellDef="let element" class="cell-neo font-black text-xs sm:text-sm px-4 text-black dark:text-white">{{ element.usuario }}</td>
-                        </ng-container>
-
-                        <ng-container matColumnDef="acciones">
-                            <th mat-header-cell *matHeaderCellDef class="header-neo text-right text-sm py-3 px-4">ACCIONES</th>
-                            <td mat-cell *matCellDef="let element" class="cell-neo text-right px-4">
-                                <div class="flex gap-2 justify-end">
-                                    <button class="w-8 h-8 flex items-center justify-center border-2 border-black bg-white dark:bg-slate-700 hover:bg-gray-100 hover:scale-110 rounded-lg shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] active:translate-y-[1px] active:shadow-none transition-all">
-                                        <mat-icon class="text-black dark:text-white !text-lg !w-5 !h-5">visibility</mat-icon>
-                                    </button>
+                            <td class="py-2 px-3 text-[10px] font-black text-gray-900 dark:text-white uppercase">{{ element.entidad }}</td>
+                            <td class="py-2 px-3">
+                                <span class="text-[9px] font-bold bg-[#0F172A] text-white px-2 py-0.5 rounded font-mono uppercase">{{ element.usuario }}</span>
+                            </td>
+                        </tr>
+                        <tr *ngIf="recentRecords.length === 0">
+                            <td colspan="4" class="py-10 text-center text-gray-400 dark:text-slate-500 font-black uppercase tracking-wider text-xs">
+                                <div class="flex flex-col items-center mx-auto">
+                                    <mat-icon class="!text-4xl mb-1.5 text-gray-300 dark:text-slate-600">history</mat-icon>
+                                    Sin actividad reciente
                                 </div>
                             </td>
-                        </ng-container>
-
-                        <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
-                        <tr mat-row *matRowDef="let row; columns: displayedColumns;"
-                            class="hover:bg-white dark:hover:bg-slate-900 transition-all border-b-2 border-black dark:border-slate-700/50 h-14 cursor-pointer"></tr>
+                        </tr>
+                        </tbody>
                     </table>
+                </div>
 
-                    <div *ngIf="recentRecords.length === 0" class="flex flex-col items-center justify-center h-full py-16 opacity-50">
-                        <mat-icon class="!text-6xl text-black dark:text-gray-500">analytics</mat-icon>
-                        <p class="text-sm font-black mt-2 uppercase text-black dark:text-gray-500">No hay actividad reciente</p>
-                    </div>
+                <!-- Footer -->
+                <div class="flex items-center justify-between px-3 py-1.5 border-t-[2px] border-black bg-stone-200 dark:bg-[#020617] shrink-0">
+                    <span class="text-[10px] font-black text-black dark:text-slate-300 uppercase">Registro del sistema</span>
+                    <span class="text-[9px] font-black text-gray-500 uppercase tracking-wider">Tiempo real</span>
                 </div>
             </div>
         </div>
+
     </div>
 </ng-template>

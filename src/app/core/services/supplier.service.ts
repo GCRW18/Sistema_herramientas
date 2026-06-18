@@ -21,14 +21,14 @@ export class SupplierService {
         const params: any = {
             start: 0,
             limit: 50,
-            sort: 'nombre',
+            sort: 'name',
             dir: 'asc',
             ...filters
         };
 
         return from(this._api.post('herramientas/suppliers/listarSuppliers', params)).pipe(
             switchMap((response: any) => {
-                const suppliers = response?.data || [];
+                const suppliers = response?.datos || response?.data || [];
                 this._suppliers.next(suppliers);
                 return of(suppliers);
             })
@@ -42,7 +42,7 @@ export class SupplierService {
             id_supplier: id
         })).pipe(
             switchMap((response: any) => {
-                const supplier = response?.data?.[0] || null;
+                const supplier = (response?.datos || response?.data)?.[0] || null;
                 if (supplier) {
                     this._supplier.next(supplier);
                 }
@@ -51,24 +51,22 @@ export class SupplierService {
         );
     }
 
-    createSupplier(supplier: Partial<Supplier>): Observable<Supplier> {
+    createSupplier(supplier: Partial<any>): Observable<any> {
         return from(this._api.post('herramientas/suppliers/insertarSuppliers', supplier)).pipe(
             switchMap((response: any) => {
-                const newSupplier = response?.data || supplier;
-                this._supplier.next(newSupplier as Supplier);
+                const newSupplier = response?.datos || response?.data || supplier;
                 return of(newSupplier);
             })
         );
     }
 
-    updateSupplier(id: string, supplier: Partial<Supplier>): Observable<Supplier> {
+    updateSupplier(id: string, supplier: Partial<any>): Observable<any> {
         return from(this._api.post('herramientas/suppliers/insertarSuppliers', {
             ...supplier,
-            id_proveedor: id
+            id_supplier: id
         })).pipe(
             switchMap((response: any) => {
-                const updatedSupplier = response?.data || supplier;
-                this._supplier.next(updatedSupplier as Supplier);
+                const updatedSupplier = response?.datos || response?.data || supplier;
                 return of(updatedSupplier);
             })
         );

@@ -3,16 +3,24 @@ import { from, Observable, of, ReplaySubject, switchMap } from 'rxjs';
 import { ErpApiService } from '../api/api.service';
 
 export interface Customer {
-    id: string;
+    id_customer: number;
+    code: string;
     name: string;
-    contactName: string;
-    email: string;
-    phone: string;
+    customer_type?: string;
+    company_name?: string;
+    contact_person?: string;
+    email?: string;
+    phone?: string;
+    city?: string;
+    country?: string;
     address?: string;
-    taxId?: string;
+    tax_id?: string;
+    fiscal_registry?: string;
+    phone_contact?: string;
+    email_contact?: string;
     notes?: string;
-    createdAt: string;
-    updatedAt: string;
+    active: boolean;
+    estado_reg: string;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -21,104 +29,57 @@ export class CustomerService {
     private _customers: ReplaySubject<Customer[]> = new ReplaySubject<Customer[]>(1);
     private _customer: ReplaySubject<Customer> = new ReplaySubject<Customer>(1);
 
-    // -----------------------------------------------------------------------------------------------------
-    // @ Accessors
-    // -----------------------------------------------------------------------------------------------------
-
-    /**
-     * Getter for customers
-     */
     get customers$(): Observable<Customer[]> {
         return this._customers.asObservable();
     }
 
-    /**
-     * Getter for customer
-     */
     get customer$(): Observable<Customer> {
         return this._customer.asObservable();
     }
 
-    // -----------------------------------------------------------------------------------------------------
-    // @ Public methods
-    // -----------------------------------------------------------------------------------------------------
-
-    /**
-     * Get all customers
-     */
     getCustomers(filters?: any): Observable<Customer[]> {
-        const params: any = {
-            start: 0,
-            limit: 50,
-            sort: 'name',
-            dir: 'asc',
-            ...filters
-        };
-
-        // Using PXP's organization module - Cliente entity
+        const params: any = { start: 0, limit: 500, sort: 'name', dir: 'asc', ...filters };
         return from(this._api.post('herramientas/customers/listarCustomers', params)).pipe(
             switchMap((response: any) => {
-                const customers = response?.data || [];
+                const customers = response?.datos || response?.data || [];
                 this._customers.next(customers);
                 return of(customers);
             })
         );
     }
 
-    /**
-     * Get customer by id
-     */
     getCustomerById(id: string): Observable<Customer> {
         return from(this._api.post('herramientas/customers/listarCustomers', {
-            start: 0,
-            limit: 1,
-            id_customer: id
+            start: 0, limit: 1, id_customer: id
         })).pipe(
             switchMap((response: any) => {
-                const customer = response?.data?.[0] || null;
-                if (customer) {
-                    this._customer.next(customer);
-                }
+                const customer = (response?.datos || response?.data || [])[0] || null;
+                if (customer) this._customer.next(customer);
                 return of(customer);
             })
         );
     }
 
-    /**
-     * Create customer
-     */
-    createCustomer(customer: Partial<Customer>): Observable<Customer> {
+    createCustomer(customer: Partial<any>): Observable<any> {
         return from(this._api.post('herramientas/customers/insertarCustomers', customer)).pipe(
-            switchMap((response: any) => {
-                return of(response?.data || customer);
-            })
+            switchMap((response: any) => of(response?.datos?.[0] || response?.data?.[0] || customer))
         );
     }
 
-    /**
-     * Update customer
-     */
-    updateCustomer(id: string, customer: Partial<Customer>): Observable<Customer> {
+    updateCustomer(id: string, customer: Partial<any>): Observable<any> {
         return from(this._api.post('herramientas/customers/insertarCustomers', {
             ...customer,
             id_customer: id
         })).pipe(
-            switchMap((response: any) => {
-                return of(response?.data || customer);
-            })
+            switchMap((response: any) => of(response?.datos?.[0] || response?.data?.[0] || customer))
         );
     }
 
-    /**
-     * Delete customer
-     */
     deleteCustomer(id: string): Observable<void> {
         return from(this._api.post('herramientas/customers/eliminarCustomers', {
             id_customer: id
         })).pipe(
-            switchMap(() => {
-                return of(undefined);
-            })
+            switchMap(() => of(undefined))
         );
     }
 }

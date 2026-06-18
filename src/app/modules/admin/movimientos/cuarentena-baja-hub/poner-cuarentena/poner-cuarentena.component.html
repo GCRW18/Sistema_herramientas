@@ -1,4 +1,4 @@
-<div class="flex flex-col w-full h-full overflow-hidden">
+﻿<div class="flex flex-col w-full h-full overflow-hidden">
 
     <!-- Spinner superpuesto -->
     <div *ngIf="isLoading" class="absolute inset-0 z-[120] flex items-center justify-center bg-white/60 dark:bg-black/60 backdrop-blur-sm">
@@ -16,9 +16,9 @@
                 <mat-icon class="!text-sm">receipt_long</mat-icon>
                 <span class="hidden sm:inline">Datos Reporte</span>
             </button>
-            <div class="flex items-center gap-2 bg-[#FF1414FF]/40 rounded-lg px-3 py-1.5 border border-red-400">
-                <div class="w-4 h-4 bg-[#FF1414FF] border border-black rounded flex items-center justify-center">
-                    <mat-icon class="!text-[9px] text-white">warning</mat-icon>
+            <div class="flex items-center gap-2 bg-amber-500/30 rounded-lg px-3 py-1.5 border border-amber-400">
+                <div class="w-4 h-4 bg-amber-400 border border-black rounded flex items-center justify-center">
+                    <mat-icon class="!text-[9px] text-black">warning</mat-icon>
                 </div>
                 <div>
                     <div class="text-[8px] font-black uppercase text-white leading-none">Cuarentena</div>
@@ -27,7 +27,7 @@
             </div>
             <div *ngIf="isReporteValido() && reporteForm.value.nroReporteDiscrepancia"
                  class="flex items-center gap-2 bg-amber-500/30 rounded-lg px-3 py-1.5 border border-black">
-                <mat-icon class="!text-sm text-amber-300">receipt_long</mat-icon>
+                <mat-icon class="!text-sm text-white">receipt_long</mat-icon>
                 <div>
                     <div class="text-[8px] font-black uppercase text-amber-200 leading-none">Reporte</div>
                     <div class="text-[10px] font-black text-white leading-none max-w-[100px] truncate">{{ reporteForm.value.nroReporteDiscrepancia }}</div>
@@ -52,11 +52,11 @@
     <div class="px-4 pt-3 shrink-0">
         <div *ngIf="!isReporteValido()" class="bg-gray-50 dark:bg-slate-800 border-[2px] border-black p-3 rounded-xl flex items-center justify-between">
             <div class="flex items-center gap-2">
-                <mat-icon class="text-red-600 !text-xl">warning</mat-icon>
+                <mat-icon class="text-black dark:text-white !text-xl">warning</mat-icon>
                 <span class="font-black text-xs text-black dark:text-white uppercase">Faltan Detalles del Reporte</span>
             </div>
             <button (click)="abrirModalReporte()"
-                    class="h-7 px-3 flex items-center gap-1 bg-red-600 text-white border-2 border-black rounded-lg font-black text-[10px] uppercase shadow-[2px_2px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all">
+                    class="h-7 px-3 flex items-center gap-1 bg-[#FF1414] text-white border-2 border-black rounded-lg font-black text-[10px] uppercase shadow-[2px_2px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all">
                 <mat-icon class="!text-xs">edit</mat-icon> Configurar
             </button>
         </div>
@@ -113,13 +113,13 @@
                     <span class="bg-gray-100 dark:bg-slate-800 border-[2px] border-black text-black dark:text-white rounded px-2 py-0.5 font-black text-sm block w-fit mx-auto">{{ item.cantidad }}</span>
                 </td>
                 <td class="!px-3 !py-3 text-center">
-                    <span class="px-2 py-0.5 rounded text-[10px] font-black border-[2px] border-black uppercase text-white bg-[#FF1414FF]">
+                    <span class="px-2 py-0.5 rounded text-[10px] font-black border-[2px] border-black uppercase text-black bg-amber-400">
                         {{ getEstadoFisicoLabel(item.estadoFisico) }}
                     </span>
                 </td>
                 <td class="!px-3 !py-3 text-center">
                     <button (click)="removerDeLista(i)" matTooltip="Quitar"
-                            class="w-7 h-7 bg-red-600 text-white rounded-lg border-[2px] border-black shadow-[2px_2px_0px_0px_#000] hover:shadow-none hover:translate-x-[1px] hover:translate-y-[1px] transition-all flex items-center justify-center mx-auto">
+                            class="w-7 h-7 bg-[#FF1414] text-white rounded-lg border-[2px] border-black shadow-[2px_2px_0px_0px_#000] hover:shadow-none hover:translate-x-[1px] hover:translate-y-[1px] transition-all flex items-center justify-center mx-auto">
                         <mat-icon class="!text-sm">delete</mat-icon>
                     </button>
                 </td>
@@ -129,7 +129,7 @@
                 <td colspan="8" class="py-16 bg-white dark:bg-[#0F172AFF] text-center">
                     <div class="flex flex-col items-center justify-center gap-3">
                         <div class="w-16 h-16 bg-gray-100 dark:bg-slate-800 border-[3px] border-black rounded-2xl flex items-center justify-center shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]">
-                            <mat-icon class="!text-3xl text-gray-400 dark:text-gray-600">assignment_late</mat-icon>
+                            <mat-icon class="!text-3xl text-black/20 dark:text-white/20">assignment_late</mat-icon>
                         </div>
                         <p class="text-xs font-black uppercase text-gray-500 dark:text-gray-400">Sin ítems en cuarentena</p>
                         <button (click)="abrirModalHerramienta()"
@@ -150,11 +150,11 @@
 
 <!-- MODAL 1: REPORTE -->
 <ng-template #reporteModal>
-    <div class="bg-stone-100 dark:bg-slate-900 border-2 border-black overflow-hidden flex flex-col h-full"
-         style="box-shadow: 6px 6px 0 #000">
+    <div class="bg-stone-100 dark:bg-slate-900 border-2 border-black rounded-xl overflow-hidden flex flex-col h-full"
+>
 
         <!-- Header -->
-        <div class="bg-[#0F172A] px-5 py-3.5 flex items-center gap-3 shrink-0 select-none"
+        <div class="bg-[#0F172A] px-4 sm:px-5 py-3 flex items-center gap-3 shrink-0 select-none"
              cdkDrag cdkDragRootElement=".cdk-overlay-pane" cdkDragHandle style="cursor:grab">
             <div class="w-9 h-9 rounded bg-amber-400 border-2 border-black flex items-center justify-center shadow-[2px_2px_0_#fbbf24] shrink-0">
                 <mat-icon class="!text-lg text-black">warning_amber</mat-icon>
@@ -173,25 +173,25 @@
 
                 <div class="border-2 border-black rounded-xl overflow-hidden shadow-[3px_3px_0_#000]">
                     <div class="bg-[#0F172A] px-4 py-2 flex items-center gap-2">
-                        <mat-icon class="!text-sm text-amber-400">info</mat-icon>
+                        <mat-icon class="!text-sm text-white">info</mat-icon>
                         <span class="text-[9px] font-black uppercase tracking-[0.18em] text-slate-300">Datos Generales</span>
                     </div>
                     <div class="bg-white dark:bg-slate-800 p-4">
                         <form [formGroup]="reporteForm" class="flex flex-col gap-3">
-                            <div class="grid grid-cols-2 gap-3">
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                 <div>
-                                    <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1.5 block">Nro. Reporte <span class="text-red-500">*</span></label>
+                                    <label class="text-[7px] font-black uppercase tracking-wider text-black dark:text-white mb-0.5 block">Nro. Reporte <span class="text-red-500">*</span></label>
                                     <input type="text" formControlName="nroReporteDiscrepancia"
-                                           class="w-full h-10 text-sm font-black uppercase bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-xl px-3 outline-none transition-all duration-150 hover:border-stone-400 focus:border-black focus:shadow-[3px_3px_0_#000]">
+                                           class="w-full h-8 text-sm font-black uppercase bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-xl px-3 outline-none transition-all hover:border-stone-400 focus:border-black focus:shadow-[2px_2px_0_#000]">
                                 </div>
                                 <div>
-                                    <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1.5 block">Fecha Reporte <span class="text-red-500">*</span></label>
+                                    <label class="text-[7px] font-black uppercase tracking-wider text-black dark:text-white mb-0.5 block">Fecha Reporte <span class="text-red-500">*</span></label>
                                     <input type="date" formControlName="fecha"
-                                           class="w-full h-10 text-sm font-bold bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-xl px-3 outline-none transition-all duration-150 cursor-pointer hover:border-stone-400 focus:border-black focus:shadow-[3px_3px_0_#000]">
+                                           class="w-full h-8 text-xs font-bold bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-xl px-3 outline-none transition-all cursor-pointer hover:border-stone-400 focus:border-black focus:shadow-[2px_2px_0_#000]">
                                 </div>
                             </div>
                             <div>
-                                <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1.5 block">Motivo Principal <span class="text-red-500">*</span></label>
+                                <label class="text-[7px] font-black uppercase tracking-wider text-black dark:text-white mb-0.5 block">Motivo Principal <span class="text-red-500">*</span></label>
                                 <div class="grid grid-cols-3 gap-2">
                                     <button *ngFor="let mot of motivosCuarentena" type="button"
                                             (click)="reporteForm.patchValue({motivo: mot.value})"
@@ -215,18 +215,18 @@
                 <!-- Personal Reportante -->
                 <div class="border-2 border-black rounded-xl overflow-hidden shadow-[3px_3px_0_#000]">
                     <div class="bg-[#0F172A] px-4 py-2 flex items-center gap-2">
-                        <mat-icon class="!text-sm text-amber-400">person</mat-icon>
+                        <mat-icon class="!text-sm text-white">person</mat-icon>
                         <span class="text-[9px] font-black uppercase tracking-[0.18em] text-slate-300">Personal Reportante</span>
                     </div>
                     <div class="bg-white dark:bg-slate-800 p-4 relative">
-                        <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1.5 block">Funcionario</label>
+                        <label class="text-[7px] font-black uppercase tracking-wider text-black dark:text-white mb-0.5 block">Funcionario</label>
                         <div class="relative">
                             <input type="text"
                                    [value]="reporteForm.get('nombreApellido')?.value"
                                    (input)="onPersonaInput($any($event.target).value)"
                                    (blur)="hidePersonaDropdown()"
                                    placeholder="Buscar funcionario..." autocomplete="off"
-                                   class="w-full h-10 text-sm font-bold uppercase bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-xl px-3 pr-8 outline-none transition-all duration-150 placeholder:text-stone-300 hover:border-stone-400 focus:border-black focus:shadow-[3px_3px_0_#000]">
+                                   class="w-full h-8 text-sm font-bold uppercase bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-xl px-3 pr-8 outline-none transition-all placeholder:text-stone-300 hover:border-stone-400 focus:border-black focus:shadow-[2px_2px_0_#000]">
                             <mat-spinner *ngIf="personaLoading" diameter="14" class="absolute right-3 top-3"></mat-spinner>
                         </div>
                         <div *ngIf="showPersonaDropdown"
@@ -243,13 +243,13 @@
                 <!-- Descripción -->
                 <div class="border-2 border-black rounded-xl overflow-hidden shadow-[3px_3px_0_#000] flex-1 flex flex-col">
                     <div class="bg-[#0F172A] px-4 py-2 flex items-center gap-2">
-                        <mat-icon class="!text-sm text-amber-400">edit_note</mat-icon>
+                        <mat-icon class="!text-sm text-white">edit_note</mat-icon>
                         <span class="text-[9px] font-black uppercase tracking-[0.18em] text-slate-300">Descripción General <span class="text-red-400">*</span></span>
                     </div>
                     <div class="bg-white dark:bg-slate-800 p-4 flex-1 flex flex-col">
                         <textarea [formGroup]="reporteForm" formControlName="descripcion" rows="5"
                                   placeholder="Detalle de fallas, hallazgos o no conformidades..."
-                                  class="w-full flex-1 text-sm font-normal bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-xl px-3 py-2.5 outline-none transition-all duration-150 resize-none placeholder:text-stone-300 hover:border-stone-400 focus:border-black focus:shadow-[3px_3px_0_#000] custom-scrollbar"></textarea>
+                                  class="w-full flex-1 text-sm font-normal bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-xl px-3 py-2.5 outline-none transition-all duration-150 resize-none placeholder:text-stone-300 hover:border-stone-400 focus:border-black focus:shadow-[2px_2px_0_#000] custom-scrollbar"></textarea>
                     </div>
                 </div>
 
@@ -257,7 +257,7 @@
         </div>
 
         <!-- Footer -->
-        <div class="border-t-2 border-black bg-stone-200 dark:bg-slate-800 px-5 py-3 flex justify-between items-center shrink-0">
+        <div class="border-t-2 border-black bg-stone-200 dark:bg-slate-800 px-4 sm:px-5 py-2.5 flex justify-between items-center shrink-0">
             <button type="button" (click)="cerrarModalActivo()"
                     class="px-4 py-2 bg-[#FF1414] text-white font-black text-[10px] border-2 border-black rounded-xl shadow-[2px_2px_0_#000] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all uppercase">
                 Cancelar
@@ -273,184 +273,168 @@
 
 <!-- MODAL 2: HERRAMIENTA -->
 <ng-template #herramientaModal>
-    <div class="bg-stone-100 dark:bg-slate-900 border-2 border-black overflow-hidden flex flex-col h-full"
-         style="box-shadow: 6px 6px 0 #000">
+    <div class="bg-stone-100 dark:bg-slate-900 border-2 border-black rounded-xl overflow-hidden flex flex-col w-full h-full">
 
         <!-- Header -->
-        <div class="bg-[#0F172A] px-5 py-3.5 flex items-center gap-3 shrink-0 select-none"
+        <div class="bg-[#0F172A] px-4 sm:px-5 py-3 flex items-center gap-3 shrink-0 select-none flex-wrap sm:flex-nowrap"
              cdkDrag cdkDragRootElement=".cdk-overlay-pane" cdkDragHandle style="cursor:grab">
-            <div class="w-9 h-9 rounded bg-amber-400 border-2 border-black flex items-center justify-center shadow-[2px_2px_0_#fbbf24] shrink-0">
-                <mat-icon class="!text-lg text-black">warning_amber</mat-icon>
+            <div class="w-8 h-8 rounded bg-amber-400 border-2 border-black flex items-center justify-center shadow-[2px_2px_0_#fbbf24] shrink-0">
+                <mat-icon class="!text-base text-black">warning_amber</mat-icon>
             </div>
-            <div>
-                <p class="text-[9px] text-slate-400 font-bold uppercase tracking-[0.18em] leading-none mb-0.5">Cuarentena · Activo</p>
-                <h2 class="text-sm text-white font-black uppercase tracking-tight leading-none">Agregar Herramienta a Cuarentena</h2>
+            <div class="flex-1 min-w-0">
+                <p class="text-[9px] text-slate-400 font-bold uppercase tracking-[0.15em] leading-none mb-0.5 hidden sm:block">Cuarentena · Activo</p>
+                <h2 class="text-xs text-white font-black uppercase tracking-tight leading-none">Agregar Herramienta a Cuarentena</h2>
+            </div>
+
+            <!-- Buscador en header (igual que ajuste de ingreso) -->
+            <div class="relative w-full sm:w-auto sm:shrink-0">
+                <input type="text"
+                       [value]="buscarValue"
+                       (input)="onBuscarToolInput($any($event.target).value)"
+                       (blur)="hideBuscarToolDropdown()"
+                       (focus)="onBuscarToolInput(buscarValue)"
+                       autocomplete="off"
+                       placeholder="Buscar por código o nombre..."
+                       class="w-full sm:w-64 md:w-72 h-8 text-xs font-bold border-2 border-white/20 rounded-xl px-3 pr-8 uppercase bg-white/10 text-white placeholder:text-white/40 placeholder:normal-case focus:outline-none focus:border-amber-400 focus:bg-white/20 transition-all">
+                <div *ngIf="toolSearchLoading"
+                     class="absolute right-2.5 top-2 w-3.5 h-3.5 border-2 border-white/50 border-t-transparent rounded-full animate-spin"></div>
+                <mat-icon *ngIf="!toolSearchLoading && !toolForm.get('id_tool')?.value"
+                          class="absolute right-2 top-1.5 text-white/40 !text-base pointer-events-none">search</mat-icon>
+                <button *ngIf="toolForm.get('id_tool')?.value" type="button" (click)="limpiarBuscarTool()"
+                        class="absolute right-1.5 top-1 w-6 h-6 flex items-center justify-center rounded hover:bg-white/20 transition-colors">
+                    <mat-icon class="!text-sm text-white/60">close</mat-icon>
+                </button>
+                <!-- Dropdown resultados -->
+                <div *ngIf="showToolDropdown"
+                     class="absolute z-[300] w-80 bg-white dark:bg-slate-800 border-2 border-black dark:border-slate-600 rounded-xl shadow-[4px_4px_0_#000] max-h-60 overflow-y-auto mt-1 top-full right-0 custom-scrollbar divide-y divide-stone-100 dark:divide-slate-700">
+                    <div *ngFor="let t of toolSuggestions"
+                         (mousedown)="selectTool(t)"
+                         class="px-3 py-2 hover:bg-amber-50 dark:hover:bg-slate-700 cursor-pointer transition-colors">
+                        <div class="flex items-center gap-2">
+                            <span class="font-mono font-black text-[10px] text-black dark:text-white bg-stone-100 dark:bg-slate-700 px-1.5 py-0.5 rounded">{{ t.code }}</span>
+                            <span class="text-[9px] font-bold text-stone-500 dark:text-slate-400 uppercase truncate">{{ t.name }}</span>
+                        </div>
+                        <div class="flex gap-3 mt-0.5">
+                            <span *ngIf="t.part_number" class="text-[9px] text-stone-400">P/N: <strong>{{ t.part_number }}</strong></span>
+                            <span *ngIf="t.serial_number" class="text-[9px] text-stone-400">S/N: {{ t.serial_number }}</span>
+                            <span *ngIf="t.quantity_in_stock != null" class="text-[9px] text-stone-400">Stock: <strong>{{ t.quantity_in_stock }}</strong></span>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
 
         <!-- Body -->
-        <div class="flex-1 overflow-y-auto px-5 py-5 flex flex-col md:flex-row gap-5 custom-scrollbar">
+        <div class="flex-1 overflow-hidden">
+            <form [formGroup]="toolForm" class="h-full flex flex-col sm:flex-row overflow-hidden min-h-0">
 
-            <!-- Izquierda: Formulario -->
-            <div class="w-full md:w-[55%] flex flex-col gap-4">
+                <!-- Columna izquierda: campos -->
+                <div class="flex-1 overflow-y-auto custom-scrollbar px-4 py-3 flex flex-col gap-2">
 
-                <!-- Buscar herramienta -->
-                <div>
-                    <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1.5 block">Buscar Herramienta <span class="text-red-500">*</span></label>
-                    <div class="relative">
-                        <form [formGroup]="toolForm">
-                            <input type="text" formControlName="codigo"
-                                   (input)="filtrarHerramientas($event)" (blur)="ocultarSugerencias()"
-                                   placeholder="Código o nombre..." autocomplete="off"
-                                   class="w-full h-10 text-sm font-black uppercase bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-xl px-3 outline-none transition-all duration-150 placeholder:text-stone-300 hover:border-stone-400 focus:border-black focus:shadow-[3px_3px_0_#000]">
-                        </form>
-                        <div *ngIf="showToolDropdown && toolsFiltradas.length > 0"
-                             class="absolute z-50 w-full mt-1 top-full border-2 border-black rounded-xl bg-white dark:bg-slate-800 shadow-[4px_4px_0_#000] overflow-hidden max-h-48 overflow-y-auto divide-y divide-stone-100 dark:divide-slate-700">
-                            <div *ngFor="let t of toolsFiltradas" (mousedown)="selectTool(t)"
-                                 class="px-3 py-2.5 hover:bg-amber-50 dark:hover:bg-slate-700 cursor-pointer transition-colors">
-                                <span class="text-xs font-black uppercase text-black dark:text-white block">{{ t.code }}</span>
-                                <span class="text-[9px] font-bold text-stone-400 dark:text-slate-400 mt-0.5 block">{{ t.name }}</span>
+                    <!-- Fila 1: P/N · S/N · Stock -->
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                        <div>
+                            <label class="text-[9px] font-black uppercase tracking-wider text-stone-400 dark:text-slate-400 mb-1 block">P/N</label>
+                            <input type="text" formControlName="partNumber" readonly
+                                   class="w-full h-8 text-xs font-black bg-stone-100 dark:bg-slate-700 dark:text-slate-300 border-2 border-stone-200 dark:border-slate-600 rounded-lg px-2.5 outline-none cursor-not-allowed">
+                        </div>
+                        <div>
+                            <label class="text-[9px] font-black uppercase tracking-wider text-stone-400 dark:text-slate-400 mb-1 block">S/N</label>
+                            <input type="text" formControlName="serialNumber" readonly
+                                   class="w-full h-8 text-xs font-black bg-stone-100 dark:bg-slate-700 dark:text-slate-300 border-2 border-stone-200 dark:border-slate-600 rounded-lg px-2.5 outline-none cursor-not-allowed">
+                        </div>
+                        <div>
+                            <label class="text-[9px] font-black uppercase tracking-wider text-stone-400 dark:text-slate-400 mb-1 block">Stock</label>
+                            <input type="number" formControlName="existencia" readonly
+                                   class="w-full h-8 text-xs font-black text-center bg-amber-50 dark:bg-amber-900/20 border-2 border-amber-400 rounded-lg px-2 outline-none cursor-not-allowed dark:text-amber-300">
+                        </div>
+                    </div>
+
+                    <!-- Fila 2: Nombre -->
+                    <div>
+                        <label class="text-[9px] font-black uppercase tracking-wider text-stone-400 dark:text-slate-400 mb-1 block">Nombre / Descripción</label>
+                        <input type="text" formControlName="nombre" readonly
+                               class="w-full h-8 text-xs font-black bg-stone-100 dark:bg-slate-700 dark:text-slate-300 border-2 border-stone-200 dark:border-slate-600 rounded-lg px-2.5 outline-none cursor-not-allowed">
+                    </div>
+
+                    <!-- Separador Configuración -->
+                    <div class="flex items-center gap-1.5 mt-1">
+                        <span class="text-[8px] font-black uppercase tracking-widest text-stone-400 dark:text-slate-500">Configuración</span>
+                        <div class="flex-1 h-px bg-stone-200 dark:bg-slate-700"></div>
+                    </div>
+
+                    <!-- Fila 3: Base · Fecha Vencimiento -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        <div>
+                            <label class="text-[9px] font-black uppercase tracking-wider text-stone-400 dark:text-slate-400 mb-1 block">Base Asignada <span class="text-red-500">*</span></label>
+                            <select formControlName="base"
+                                    class="w-full h-8 text-xs font-bold bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-lg px-2.5 outline-none transition-all cursor-pointer hover:border-stone-400 focus:border-black focus:shadow-[2px_2px_0_#000]">
+                                <option *ngFor="let u of unidades" [value]="u">{{ u }}</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="text-[9px] font-black uppercase tracking-wider text-stone-400 dark:text-slate-400 mb-1 block">Fecha Vencimiento</label>
+                            <input type="date" formControlName="fechaVencimiento"
+                                   class="w-full h-8 text-xs font-bold bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-lg px-2.5 outline-none transition-all cursor-pointer hover:border-stone-400 focus:border-black focus:shadow-[2px_2px_0_#000]">
+                        </div>
+                    </div>
+
+                    <!-- Fila 4: Cantidad · Estado Físico -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        <div>
+                            <label class="text-[9px] font-black uppercase tracking-wider text-stone-400 dark:text-slate-400 mb-1 block">Cantidad <span class="text-red-500">*</span></label>
+                            <input type="number" formControlName="cantidad" min="1"
+                                   class="w-full h-8 text-xs font-black text-center bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-lg px-2.5 outline-none transition-all hover:border-stone-400 focus:border-black focus:shadow-[2px_2px_0_#000]">
+                        </div>
+                        <div>
+                            <label class="text-[9px] font-black uppercase tracking-wider text-stone-400 dark:text-slate-400 mb-1 block">Estado Físico <span class="text-red-500">*</span></label>
+                            <div class="flex gap-1 h-8">
+                                <button *ngFor="let opt of estadosFisicos" type="button"
+                                        (click)="toolForm.patchValue({estadoFisico: opt.value})"
+                                        class="flex-1 text-[8px] font-black border-2 rounded-lg transition-all uppercase"
+                                        [ngClass]="toolForm.get('estadoFisico')?.value === opt.value
+                                            ? 'border-black bg-white dark:bg-slate-700 shadow-[2px_2px_0_#000] text-black dark:text-white'
+                                            : 'border-stone-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-stone-400 dark:text-slate-500 hover:border-stone-400'">
+                                    {{ opt.label }}
+                                </button>
                             </div>
                         </div>
                     </div>
+
                 </div>
 
-                <!-- Datos fijos + configuración -->
-                <div class="border-2 border-black rounded-xl overflow-hidden shadow-[3px_3px_0_#000]">
-                    <div class="bg-[#0F172A] px-4 py-2 flex items-center gap-2">
-                        <mat-icon class="!text-sm text-amber-400">info</mat-icon>
-                        <span class="text-[9px] font-black uppercase tracking-[0.18em] text-slate-300">Datos de la Herramienta</span>
-                    </div>
-                    <div class="bg-white dark:bg-slate-800 p-4">
-                        <form [formGroup]="toolForm" class="flex flex-col gap-3">
-                            <div class="grid grid-cols-3 gap-3">
-                                <div>
-                                    <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1.5 block">P/N</label>
-                                    <input type="text" formControlName="partNumber" readonly
-                                           class="w-full h-10 text-sm font-black bg-stone-100 dark:bg-slate-700 dark:text-slate-300 border-2 border-stone-200 dark:border-slate-600 rounded-xl px-3 outline-none cursor-not-allowed">
-                                </div>
-                                <div>
-                                    <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1.5 block">S/N</label>
-                                    <input type="text" formControlName="serialNumber" readonly
-                                           class="w-full h-10 text-sm font-black bg-stone-100 dark:bg-slate-700 dark:text-slate-300 border-2 border-stone-200 dark:border-slate-600 rounded-xl px-3 outline-none cursor-not-allowed">
-                                </div>
-                                <div>
-                                    <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1.5 block">Stock</label>
-                                    <input type="number" formControlName="existencia" readonly
-                                           class="w-full h-10 text-base font-black text-center bg-amber-50 dark:bg-amber-900/20 border-2 border-amber-400 rounded-xl px-2 outline-none cursor-not-allowed dark:text-amber-300">
-                                </div>
-                            </div>
-                            <div>
-                                <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1.5 block">Nombre / Descripción</label>
-                                <input type="text" formControlName="nombre" readonly
-                                       class="w-full h-10 text-sm font-black bg-stone-100 dark:bg-slate-700 dark:text-slate-300 border-2 border-stone-200 dark:border-slate-600 rounded-xl px-3 outline-none cursor-not-allowed truncate">
-                            </div>
-                        </form>
-                    </div>
-                </div>
-
-                <!-- Datos de Cuarentena -->
-                <div class="border-2 border-black rounded-xl overflow-hidden shadow-[3px_3px_0_#000]">
-                    <div class="bg-[#0F172A] px-4 py-2 flex items-center gap-2">
-                        <mat-icon class="!text-sm text-amber-400">assignment_turned_in</mat-icon>
-                        <span class="text-[9px] font-black uppercase tracking-[0.18em] text-slate-300">Configuración de Cuarentena</span>
-                    </div>
-                    <div class="bg-white dark:bg-slate-800 p-4">
-                        <div [formGroup]="toolForm" class="grid grid-cols-2 gap-3 mb-3">
-                            <div>
-                                <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1.5 block">Base Asignada <span class="text-red-500">*</span></label>
-                                <select formControlName="base"
-                                        class="w-full h-10 text-sm font-bold bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-xl px-3 outline-none transition-all duration-150 cursor-pointer hover:border-stone-400 focus:border-black focus:shadow-[3px_3px_0_#000]">
-                                    <option value="CBB">CBB</option>
-                                    <option value="VVI">VVI</option>
-                                    <option value="LPB">LPB</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1.5 block">Fecha Vencimiento</label>
-                                <input type="date" formControlName="fechaVencimiento"
-                                       class="w-full h-10 text-sm font-bold bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-xl px-3 outline-none transition-all duration-150 cursor-pointer hover:border-stone-400 focus:border-black focus:shadow-[3px_3px_0_#000]">
-                            </div>
-                        </div>
-                        <div [formGroup]="toolForm" class="grid grid-cols-2 gap-3">
-                            <div>
-                                <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1.5 block">Cantidad <span class="text-red-500">*</span></label>
-                                <input type="number" formControlName="cantidad" min="1"
-                                       class="w-full h-10 text-base font-black text-center bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-xl px-3 outline-none transition-all duration-150 hover:border-stone-400 focus:border-black focus:shadow-[3px_3px_0_#000]">
-                            </div>
-                            <div>
-                                <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1.5 block">Estado Físico <span class="text-red-500">*</span></label>
-                                <div class="flex gap-1.5 h-10">
-                                    <button *ngFor="let opt of estadosFisicos" type="button"
-                                            (click)="toolForm.patchValue({estadoFisico: opt.value})"
-                                            class="flex-1 text-[9px] font-black border-2 rounded-xl transition-all duration-150 uppercase"
-                                            [class]="toolForm.get('estadoFisico')?.value === opt.value
-                                                ? 'border-black bg-white dark:bg-slate-700 shadow-[2px_2px_0_#000] text-black dark:text-white'
-                                                : 'border-stone-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-stone-400 dark:text-slate-500 hover:border-stone-400'">
-                                        {{ opt.label }}
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Derecha: Imagen + Impacto -->
-            <div class="w-full md:w-[45%] flex flex-col gap-4">
-
-                <!-- Foto -->
-                <div class="flex-1 flex flex-col">
-                    <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1.5 block text-center">Foto del Activo <span class="text-red-500">*</span></label>
-                    <div class="flex-1 border-2 border-dashed border-stone-400 dark:border-slate-600 rounded-xl flex flex-col items-center justify-center relative overflow-hidden bg-white dark:bg-slate-800 group cursor-pointer hover:border-black transition-all duration-150 min-h-[180px]"
+                <!-- Columna derecha: Foto -->
+                <div class="w-2/5 flex flex-col items-center justify-center border-t-2 sm:border-t-0 sm:border-l-2 border-stone-200 dark:border-slate-700 px-4 py-4">
+                    <label class="text-[9px] font-black uppercase tracking-wider text-stone-400 dark:text-slate-400 mb-2 block text-center">Foto del Activo <span class="text-red-500">*</span></label>
+                    <div class="w-72 h-72 border-2 border-dashed border-stone-300 dark:border-slate-600 rounded-xl bg-stone-50 dark:bg-slate-900 flex flex-col items-center justify-center relative overflow-hidden cursor-pointer hover:border-amber-400 transition-colors group"
                          (click)="fileInputTool.click()">
                         <img *ngIf="selectedToolImage()" [src]="selectedToolImage()"
                              class="w-full h-full object-contain p-2 absolute inset-0 z-10 bg-white dark:bg-slate-800">
                         <div *ngIf="!selectedToolImage()"
-                             class="flex flex-col items-center text-stone-300 dark:text-slate-600">
-                            <mat-icon class="!text-5xl mb-2">add_a_photo</mat-icon>
-                            <span class="text-[9px] font-black uppercase tracking-widest">Click para subir foto</span>
+                             class="flex flex-col items-center text-stone-300 dark:text-slate-600 gap-1">
+                            <mat-icon class="!text-5xl">add_photo_alternate</mat-icon>
+                            <span class="text-[9px] font-black uppercase text-stone-400">Click para subir</span>
                         </div>
                         <div *ngIf="selectedToolImage()"
-                             class="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center z-20">
-                            <span class="bg-white text-black text-[10px] font-black border-2 border-black px-4 py-2 rounded-xl uppercase shadow-[3px_3px_0_#000]">Cambiar Foto</span>
+                             class="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center z-20">
+                            <span class="text-white text-[9px] font-black uppercase bg-black/60 px-2 py-1 border border-white rounded-lg">Cambiar foto</span>
                         </div>
                     </div>
                     <input type="file" #fileInputTool (change)="onToolImageSelected($event)" accept="image/*" class="hidden">
                 </div>
 
-                <!-- Impacto de Inventario -->
-                <div class="border-2 border-black rounded-xl overflow-hidden shadow-[3px_3px_0_#000]">
-                    <div class="bg-[#0F172A] px-4 py-2 flex items-center gap-2">
-                        <mat-icon class="!text-sm text-amber-400">analytics</mat-icon>
-                        <span class="text-[9px] font-black uppercase tracking-[0.18em] text-slate-300">Impacto de Inventario</span>
-                    </div>
-                    <div class="bg-white dark:bg-slate-800 px-4 py-3 flex flex-col gap-2">
-                        <div class="flex justify-between items-center border-b border-stone-100 dark:border-slate-700 pb-2">
-                            <span class="text-[9px] font-bold text-stone-400 dark:text-slate-400 uppercase">Herramienta:</span>
-                            <span class="text-[10px] font-black text-black dark:text-white truncate max-w-[160px] text-right uppercase">{{ toolForm.get('nombre')?.value || '—' }}</span>
-                        </div>
-                        <div class="flex justify-between items-center">
-                            <span class="text-[9px] font-bold text-stone-400 dark:text-slate-400 uppercase">Cuarentena final:</span>
-                            <span class="text-2xl font-black text-[#FF1414]">+{{ toolForm.get('cantidad')?.value || 0 }}
-                                <span class="text-[10px] text-stone-400">Und</span>
-                            </span>
-                        </div>
-                    </div>
-                </div>
-            </div>
+            </form>
         </div>
 
         <!-- Footer -->
-        <div class="border-t-2 border-black bg-stone-200 dark:bg-slate-800 px-5 py-3 flex justify-between items-center shrink-0">
+        <div class="border-t-2 border-black bg-stone-200 dark:bg-slate-800 px-4 py-2 flex justify-between items-center shrink-0">
             <button type="button" (click)="cerrarModalActivo()"
-                    class="px-4 py-2 bg-[#FF1414] text-white font-black text-[10px] border-2 border-black rounded-xl shadow-[2px_2px_0_#000] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all uppercase">
-                Cancelar
+                    class="flex items-center gap-1 px-3 py-1.5 bg-[#FF1414] text-white font-black text-[10px] border-2 border-black rounded-lg shadow-[2px_2px_0_#000] hover:shadow-none hover:translate-x-[1px] hover:translate-y-[1px] transition-all uppercase">
+                <mat-icon class="!text-xs">close</mat-icon>Cancelar
             </button>
             <button type="button" (click)="addToolToList()" [disabled]="toolForm.invalid || !selectedToolImage()"
-                    class="flex items-center gap-2 px-5 py-2 bg-amber-400 text-black font-black text-[10px] border-2 border-black rounded-xl shadow-[3px_3px_0_#000] hover:shadow-none hover:translate-x-[3px] hover:translate-y-[3px] transition-all uppercase disabled:opacity-40 disabled:cursor-not-allowed disabled:translate-x-0 disabled:translate-y-0 disabled:shadow-[3px_3px_0_#000]">
-                <mat-icon class="!text-sm">warning_amber</mat-icon>
-                Agregar a Lista
+                    class="flex items-center gap-1.5 px-3 py-1.5 bg-amber-400 text-black font-black text-[10px] border-2 border-black rounded-lg shadow-[2px_2px_0_#000] hover:shadow-none hover:translate-x-[1px] hover:translate-y-[1px] transition-all uppercase disabled:opacity-40 disabled:cursor-not-allowed disabled:translate-x-0 disabled:translate-y-0 disabled:shadow-[2px_2px_0_#000]">
+                <mat-icon class="!text-xs">warning_amber</mat-icon>Agregar a Lista
             </button>
         </div>
     </div>

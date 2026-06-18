@@ -1,794 +1,311 @@
-<div class="flex flex-col w-full h-full bg-stone-100 dark:bg-slate-900 transition-colors duration-300 font-sans overflow-hidden">
+﻿<div class="flex flex-col w-full h-full bg-[#f8f9fc] dark:bg-[#0F172AFF] transition-colors duration-300 font-sans overflow-hidden">
 
-    <!-- Decorative circles -->
-    <div class="fixed top-20 right-10 w-40 h-40 bg-purple-400 rounded-full border-[3px] border-black opacity-5 pointer-events-none"></div>
-    <div class="fixed bottom-10 left-10 w-24 h-24 bg-violet-600 rotate-12 border-[3px] border-black opacity-5 pointer-events-none"></div>
+  <div class="fixed top-20 right-10 w-40 h-40 bg-[#7113CF] rounded-full border-[3px] border-black opacity-5 pointer-events-none hidden lg:block"></div>
+  <div class="fixed bottom-10 left-10 w-24 h-24 bg-[#FFC501FF] rotate-12 border-[3px] border-black opacity-5 pointer-events-none hidden lg:block"></div>
 
-    <!-- Loading overlay -->
-    <div *ngIf="isSaving" class="fixed inset-0 z-[120] bg-black/60 flex items-center justify-center">
-        <div class="bg-white dark:bg-slate-800 border-2 border-black rounded-2xl p-8 flex flex-col items-center gap-4"
-             style="box-shadow: 6px 6px 0 #000">
-            <mat-progress-spinner mode="indeterminate" diameter="40"></mat-progress-spinner>
-            <p class="text-xs font-black uppercase text-black dark:text-white">Procesando...</p>
+  <div class="flex-1 flex flex-col p-3 sm:p-4 gap-3 overflow-hidden relative z-10">
+
+    <!-- ── HEADER ──────────────────────────────────────────── -->
+    <div class="flex items-center justify-between gap-3 shrink-0 flex-wrap">
+
+      <div class="flex items-center gap-4">
+        <div class="flex items-center justify-center w-10 h-10 bg-white dark:bg-[#0F172AFF] border-[3px] border-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] rounded-xl shrink-0">
+          <mat-icon class="text-[#7113CF] !text-base">storefront</mat-icon>
         </div>
+        <div>
+          <h1 class="text-xl font-black text-black dark:text-white uppercase tracking-tighter leading-none">
+            PRÉSTAMO TERCEROS
+          </h1>
+          <p class="text-[10px] font-bold bg-[#7113CF] text-white px-2 py-0.5 inline-block border-2 border-black rounded uppercase tracking-wider mt-0.5">
+            Movimientos · Empresas Externas · MGH-100
+          </p>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-2 flex-wrap">
+        <!-- Búsqueda -->
+        <div class="relative flex-1 min-w-[140px] sm:flex-none">
+          <input type="text" [formControl]="searchControl"
+                 placeholder="Buscar empresa, nota..."
+                 class="w-full h-9 pl-9 pr-3 bg-white dark:bg-slate-800 text-black dark:text-white
+                        border-[2px] border-black dark:border-slate-500 rounded-lg font-black text-xs uppercase
+                        focus:outline-none focus:shadow-[3px_3px_0px_0px_#000] focus:-translate-y-[1px] transition-all
+                        placeholder:font-bold placeholder:normal-case dark:placeholder:text-slate-500">
+          <mat-icon class="absolute left-2.5 top-2 text-black dark:text-white !text-sm">search</mat-icon>
+        </div>
+
+        <!-- Filtro estado -->
+        <select *ngIf="activeTab === 'prestamo'" [formControl]="filterStatus"
+                class="h-9 px-2 bg-white dark:bg-slate-800 border-[2px] rounded-lg font-black text-xs uppercase focus:outline-none transition-all cursor-pointer"
+                [ngClass]="filterStatus.value === 'active'   ? 'text-black border-black' :
+                            filterStatus.value === 'returned' ? 'text-black border-black' :
+                                                               'text-black dark:text-white border-black dark:border-slate-500'">
+          <option *ngFor="let e of estadosFiltro" [value]="e.value">{{ e.label }}</option>
+        </select>
+
+        <!-- Tabs -->
+        <div class="flex items-center gap-1">
+          <button (click)="setTab('prestamo')"
+                  class="h-9 px-3 flex items-center gap-1.5 rounded-lg border-[2px] border-black font-black text-[10px] uppercase transition-all"
+                  [ngClass]="activeTab === 'prestamo'
+                      ? 'bg-[#7113CF] text-white shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]'
+                      : 'bg-white dark:bg-white/10 text-black dark:text-white hover:bg-purple-50 dark:hover:bg-white/20'">
+            <mat-icon class="!text-sm">storefront</mat-icon>
+            Préstamos
+            <span class="bg-black/20 text-[8px] font-black px-1 rounded">{{ filteredLoans.length }}</span>
+          </button>
+          <button (click)="setTab('devolucion')"
+                  class="h-9 px-3 flex items-center gap-1.5 rounded-lg border-[2px] border-black font-black text-[10px] uppercase transition-all"
+                  [ngClass]="activeTab === 'devolucion'
+                      ? 'bg-[#7113CF] text-white shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]'
+                      : 'bg-white dark:bg-white/10 text-black dark:text-white hover:bg-purple-50 dark:hover:bg-white/20'">
+            <mat-icon class="!text-sm">assignment_return</mat-icon>
+            Devoluciones
+            <span class="bg-black/20 text-[8px] font-black px-1 rounded">{{ filteredPending.length }}</span>
+          </button>
+        </div>
+      </div>
     </div>
 
-    <div class="flex-1 flex flex-col p-4 gap-3 overflow-hidden relative z-10">
+    <!-- ── CARD PRINCIPAL ──────────────────────────────────────────── -->
+    <div class="flex-1 flex flex-col overflow-hidden border-[3px] border-black bg-gray-50 dark:bg-[#0F172AFF] rounded-2xl shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
 
-        <!-- ══ HEADER ══ -->
-        <div class="flex flex-col gap-3 shrink-0">
+      <!-- KPI dark header -->
+      <div class="px-3 sm:px-4 py-2 bg-[#0F172AFF] border-b-[3px] border-black shrink-0 rounded-t-2xl">
+        <div class="flex items-center gap-2 overflow-x-auto scrollbar-none flex-nowrap">
 
-            <!-- Título -->
-            <div class="flex items-center gap-4">
-                <div class="w-10 h-10 rounded bg-amber-400 border-2 border-black flex items-center justify-center shadow-[2px_2px_0_#fbbf24] shrink-0">
-                    <mat-icon class="!text-base text-black">storefront</mat-icon>
-                </div>
-                <div>
-                    <p class="text-[9px] text-stone-400 dark:text-slate-400 font-bold uppercase tracking-[0.18em] leading-none mb-0.5">Movimientos · Empresas Externas</p>
-                    <h1 class="text-xl font-black text-black dark:text-white uppercase tracking-tighter leading-none">
-                        PRÉSTAMO TERCEROS
-                    </h1>
-                </div>
+          <ng-container *ngIf="activeTab === 'prestamo'">
+            <div class="flex items-center gap-1.5 bg-white/10 rounded-lg px-2.5 py-1.5 border border-white/20 shrink-0">
+              <mat-icon class="!text-[10px] text-purple-400">storefront</mat-icon>
+              <div>
+                <div class="text-[8px] font-black uppercase text-white/70 leading-none">PE Activos</div>
+                <div class="text-sm font-black text-white leading-none">{{ filteredLoans.length }}</div>
+              </div>
             </div>
+          </ng-container>
 
-            <!-- Controles -->
-            <div class="flex items-center gap-2 flex-wrap">
-
-                <!-- Tabs -->
-                <div class="flex items-center gap-1">
-                    <button (click)="setTab('prestamo')"
-                            class="h-9 px-3 flex items-center gap-1.5 rounded-lg border-2 border-black font-black text-[10px] uppercase transition-all"
-                            [ngClass]="activeTab() === 'prestamo'
-                                ? 'bg-[#7113CF] text-white shadow-[2px_2px_0_#000]'
-                                : 'bg-white dark:bg-white/10 text-black dark:text-white hover:bg-purple-50 dark:hover:bg-white/20'">
-                        <mat-icon class="!text-sm" [ngClass]="activeTab() === 'prestamo' ? '!text-white' : '!text-black dark:!text-white'">storefront</mat-icon>
-                        Préstamo Ext.
-                    </button>
-                    <button (click)="setTab('devolucion')"
-                            class="h-9 px-3 flex items-center gap-1.5 rounded-lg border-2 border-black font-black text-[10px] uppercase transition-all"
-                            [ngClass]="activeTab() === 'devolucion'
-                                ? 'bg-[#7113CF] text-white shadow-[2px_2px_0_#000]'
-                                : 'bg-white dark:bg-white/10 text-black dark:text-white hover:bg-purple-50 dark:hover:bg-white/20'">
-                        <mat-icon class="!text-sm" [ngClass]="activeTab() === 'devolucion' ? '!text-white' : '!text-black dark:!text-white'">assignment_return</mat-icon>
-                        Devolución
-                    </button>
-                </div>
-
-                <!-- Botones préstamo externo -->
-                <button [hidden]="activeTab() !== 'prestamo'" (click)="openHerramientasAPrestar()"
-                        class="h-9 px-3 flex items-center gap-1.5 bg-white dark:bg-white/10 border-2 border-black rounded-lg font-black text-[10px] uppercase shadow-[2px_2px_0_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all text-black dark:text-white shrink-0">
-                    <mat-icon class="!text-sm">add_circle</mat-icon>
-                    <span class="hidden sm:inline">Agregar Herramienta</span>
-                </button>
-
-                <button [hidden]="activeTab() !== 'prestamo'" (click)="abrirModalDatosExterno()"
-                        class="h-9 px-3 flex items-center gap-1.5 bg-white dark:bg-white/10 border-2 border-black rounded-lg font-black text-[10px] uppercase shadow-[2px_2px_0_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all text-black dark:text-white shrink-0">
-                    <mat-icon class="!text-sm">business</mat-icon>
-                    <span class="hidden sm:inline">Datos de Empresa</span>
-                </button>
-
-                <button [hidden]="activeTab() !== 'prestamo'" (click)="procesarExterno()"
-                        [disabled]="externalDataSource().length === 0"
-                        class="h-9 px-4 flex items-center gap-1.5 bg-amber-400 border-2 border-black rounded-lg font-black text-[10px] uppercase shadow-[2px_2px_0_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all text-black disabled:opacity-40 disabled:cursor-not-allowed disabled:translate-x-0 disabled:translate-y-0 disabled:shadow-[2px_2px_0_#000] shrink-0">
-                    <mat-icon class="!text-sm">send</mat-icon>
-                    <span class="hidden sm:inline">Procesar Préstamo</span>
-                </button>
-
-                <!-- Botones devolución -->
-                <button [hidden]="activeTab() !== 'devolucion'" (click)="abrirModalBusqueda()"
-                        class="h-9 px-3 flex items-center gap-1.5 bg-white dark:bg-white/10 border-2 border-black rounded-lg font-black text-[10px] uppercase shadow-[2px_2px_0_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all text-black dark:text-white shrink-0">
-                    <mat-icon class="!text-sm">search</mat-icon>
-                    <span class="hidden sm:inline">Buscar Empresa</span>
-                </button>
-
-                <button [hidden]="activeTab() !== 'devolucion'" (click)="abrirConfirmDevolucion()"
-                        [disabled]="getSelCountDevolucion() === 0"
-                        class="h-9 px-4 flex items-center gap-1.5 bg-amber-400 border-2 border-black rounded-lg font-black text-[10px] uppercase shadow-[2px_2px_0_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all text-black disabled:opacity-40 disabled:cursor-not-allowed disabled:translate-x-0 disabled:translate-y-0 disabled:shadow-[2px_2px_0_#000] shrink-0">
-                    <mat-icon class="!text-sm">assignment_return</mat-icon>
-                    <span class="hidden sm:inline">Registrar Devolución</span>
-                </button>
-
+          <ng-container *ngIf="activeTab === 'devolucion'">
+            <div class="flex items-center gap-1.5 bg-white/10 rounded-lg px-2.5 py-1.5 border border-white/20 shrink-0">
+              <mat-icon class="!text-[10px] text-amber-300">assignment_return</mat-icon>
+              <div>
+                <div class="text-[8px] font-black uppercase text-white/70 leading-none">Ítems pendientes</div>
+                <div class="text-sm font-black text-white leading-none">{{ filteredPending.length }}</div>
+              </div>
             </div>
+          </ng-container>
+
+          <!-- Acciones -->
+          <div class="ml-auto flex items-center gap-1.5 shrink-0">
+            <button *ngIf="activeTab === 'prestamo'" (click)="abrirFormPrestamo()"
+                    class="h-7 px-2.5 flex items-center gap-1.5 rounded-lg bg-[#FFC501FF] border border-black text-black font-black text-[10px] uppercase shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all shrink-0">
+              <mat-icon class="!text-xs !w-3.5 !h-3.5">add_circle</mat-icon>
+              <span class="hidden sm:inline">Nuevo PE</span>
+            </button>
+
+            <button *ngIf="activeTab === 'devolucion'" (click)="abrirFormDevolucion()"
+                    class="h-7 px-2.5 flex items-center gap-1.5 rounded-lg bg-[#FFC501FF] border border-black text-black font-black text-[10px] uppercase shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all shrink-0">
+              <mat-icon class="!text-xs !w-3.5 !h-3.5">assignment_return</mat-icon>
+              <span class="hidden sm:inline">Registrar Devolución</span>
+            </button>
+
+            <button (click)="loadData()" [disabled]="isLoading()"
+                    class="flex items-center gap-1.5 h-7 px-2.5 rounded-lg border border-white/30 text-white hover:bg-white/20 transition-all disabled:opacity-40 font-black text-[10px] uppercase shrink-0">
+              <mat-icon class="!text-sm !w-4 !h-4 text-purple-400" [class.animate-spin]="isLoading()">refresh</mat-icon>
+              Actualizar
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Loading ── -->
+      <div *ngIf="isLoading()" class="flex-1 flex flex-col items-center justify-center gap-4">
+        <div class="w-12 h-12 border-4 border-[#7113CF] border-t-transparent rounded-full animate-spin"></div>
+        <p class="text-sm font-black uppercase text-gray-500 dark:text-gray-400">Cargando datos…</p>
+      </div>
+
+      <!-- ══ TAB: PRÉSTAMOS ══ -->
+      <ng-container *ngIf="!isLoading() && activeTab === 'prestamo'">
+
+        <div *ngIf="filteredLoans.length === 0"
+             class="flex-1 flex flex-col items-center justify-center gap-3 py-12 px-4 text-center">
+          <mat-icon class="!text-5xl text-gray-300 dark:text-gray-600">storefront</mat-icon>
+          <p class="text-xs font-bold uppercase text-gray-500 mt-2">
+            {{ filterStatus.value === 'returned' ? 'Sin préstamos devueltos' :
+               filterStatus.value === '' ? 'Sin préstamos externos registrados' :
+               'Sin préstamos externos activos' }}
+          </p>
+          <button *ngIf="filterStatus.value !== 'returned'" (click)="abrirFormPrestamo()"
+                  class="h-8 px-4 rounded-xl border-[2px] border-black bg-[#7113CF] text-white font-black text-xs uppercase shadow-[2px_2px_0_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all mt-1 flex items-center gap-1.5">
+            <mat-icon class="!text-sm">add_circle</mat-icon>Nuevo Préstamo PE
+          </button>
         </div>
 
-        <!-- ══ CARD PRINCIPAL ══ -->
-        <div class="flex-1 flex flex-col overflow-hidden border-2 border-black bg-white dark:bg-slate-900 rounded-xl"
-             style="box-shadow: 4px 4px 0 #000">
+        <div *ngIf="filteredLoans.length > 0" class="flex-1 overflow-auto custom-scrollbar bg-gray-50 dark:bg-[#0F172AFF]">
+          <table class="w-full min-w-[680px]">
+            <thead class="bg-gray-100 dark:bg-slate-800 border-b-[2px] border-black sticky top-0 z-10">
+              <tr class="text-left text-[10px] font-black uppercase tracking-wider text-black dark:text-white">
+                <th class="px-3 py-2.5">N° Nota</th>
+                <th class="px-3 py-2.5">Empresa / Tercero</th>
+                <th class="px-3 py-2.5">Motivo</th>
+                <th class="px-3 py-2.5">Entregado por</th>
+                <th class="px-3 py-2.5">Fecha Préstamo</th>
+                <th class="px-3 py-2.5 text-center">Días</th>
+                <th class="px-3 py-2.5 text-center">Estado</th>
+                <th class="px-3 py-2.5 text-center w-20">Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let mov of filteredLoans; let idx = index"
+                  class="border-b border-gray-200 dark:border-slate-700 transition-all"
+                  [ngClass]="idx % 2 === 0 ? 'bg-white dark:bg-slate-800/60' : 'bg-gray-50 dark:bg-slate-800/40'">
 
-            <!-- Cabecera oscura: stats -->
-            <div class="px-4 py-2.5 bg-[#0F172A] border-b-2 border-black flex items-center justify-between shrink-0 flex-wrap gap-2">
-                <button (click)="activeTab() === 'devolucion' ? abrirModalBusqueda() : null" [disabled]="activeTab() !== 'devolucion' || isSearching"
-                        class="flex items-center gap-1 h-8 px-2.5 bg-white/10 hover:bg-white/20 text-white border border-white/30 rounded-lg text-[10px] font-black uppercase transition-all disabled:opacity-50 disabled:cursor-default">
-                    <mat-icon class="!text-sm" [class.animate-spin]="isSearching">refresh</mat-icon>
-                    <span class="hidden sm:inline">{{ isSearching ? 'Buscando...' : 'Actualizar' }}</span>
-                </button>
-                <div class="flex items-center gap-2 flex-wrap">
-                    <div class="flex items-center gap-2 bg-white/20 rounded-lg px-3 py-1.5 border border-black">
-                        <div class="w-5 h-5 bg-amber-400 border border-black rounded flex items-center justify-center">
-                            <mat-icon class="!text-xs text-black">storefront</mat-icon>
-                        </div>
-                        <div>
-                            <div class="text-[8px] font-black uppercase text-white leading-none">Préstamo</div>
-                            <div class="text-sm font-black text-white leading-none">{{ externalDataSource().length }}</div>
-                        </div>
-                    </div>
-                    <div class="flex items-center gap-2 bg-purple-600/30 rounded-lg px-3 py-1.5 border border-black">
-                        <div class="w-5 h-5 bg-[#7113CF] border border-black rounded flex items-center justify-center">
-                            <mat-icon class="!text-xs text-white">assignment_return</mat-icon>
-                        </div>
-                        <div>
-                            <div class="text-[8px] font-black uppercase text-white leading-none">Devolución</div>
-                            <div class="text-sm font-black text-white leading-none">{{ dataSourceDevolucion.length }}</div>
-                        </div>
-                    </div>
-                    <!-- Importe total préstamo -->
-                    <div *ngIf="activeTab() === 'prestamo' && importeTotal() > 0"
-                         class="flex items-center gap-2 bg-green-600/30 rounded-lg px-3 py-1.5 border border-black">
-                        <mat-icon class="!text-sm text-green-300">attach_money</mat-icon>
-                        <div>
-                            <div class="text-[8px] font-black uppercase text-green-200 leading-none">Total $US</div>
-                            <div class="text-sm font-black text-white leading-none">{{ importeTotal() | number:'1.2-2' }}</div>
-                        </div>
-                    </div>
-                    <!-- Info empresa activa en préstamo -->
-                    <div *ngIf="activeTab() === 'prestamo' && externalForm.get('nombreEmpresa')?.value"
-                         class="flex items-center gap-2 bg-amber-500/30 rounded-lg px-3 py-1.5 border border-black">
-                        <mat-icon class="!text-sm text-amber-300">business</mat-icon>
-                        <div>
-                            <div class="text-[8px] font-black uppercase text-amber-200 leading-none">Empresa</div>
-                            <div class="text-[10px] font-black text-white leading-none max-w-[120px] truncate">{{ externalForm.get('nombreEmpresa')?.value }}</div>
-                        </div>
-                    </div>
-                    <!-- Info empresa activa en devolución -->
-                    <div *ngIf="activeTab() === 'devolucion' && _terceroSeleccionado"
-                         class="flex items-center gap-2 bg-purple-600/30 rounded-lg px-3 py-1.5 border border-black">
-                        <mat-icon class="!text-sm text-purple-300">storefront</mat-icon>
-                        <div>
-                            <div class="text-[8px] font-black uppercase text-purple-200 leading-none">Tercero</div>
-                            <div class="text-[10px] font-black text-white leading-none max-w-[120px] truncate">{{ _terceroSeleccionado?.razonSocial }}</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
+                <td class="px-3 py-2.5">
+                  <span class="font-mono font-black text-[10px] bg-[#7113CF] text-white px-1.5 py-0.5 rounded border-2 border-black">
+                    {{ mov.loan_number }}
+                  </span>
+                </td>
 
-            <!-- ══ TAB PRÉSTAMO EXTERNO ══ -->
-            <div [hidden]="activeTab() !== 'prestamo'" class="flex-1 flex flex-col overflow-hidden">
+                <td class="px-3 py-2.5">
+                  <div class="text-xs font-bold text-black dark:text-white">{{ mov.borrower_name }}</div>
+                </td>
 
-                <!-- Barra selección -->
-                <div *ngIf="getSelCountExternal() > 0"
-                     class="px-4 py-2 bg-amber-400 border-b-2 border-black flex items-center gap-3 shrink-0">
-                    <mat-icon class="!text-sm text-black">check_box</mat-icon>
-                    <span class="text-xs font-black text-black uppercase">{{ getSelCountExternal() }} seleccionada(s)</span>
-                    <button (click)="eliminarSeleccionadosExterno()"
-                            class="ml-auto h-7 px-2.5 flex items-center gap-1 bg-black text-white border border-black rounded-lg font-black text-[10px] uppercase hover:bg-red-700 transition-all">
-                        <mat-icon class="!text-xs">delete</mat-icon>
-                        Eliminar sel.
+                <td class="px-3 py-2.5" style="max-width:140px">
+                  <div class="text-xs font-bold text-black dark:text-white truncate uppercase">{{ mov.motivo }}</div>
+                </td>
+
+                <td class="px-3 py-2.5">
+                  <div class="text-xs font-bold text-stone-500 dark:text-slate-300">{{ mov.delivered_by_name }}</div>
+                </td>
+
+                <td class="px-3 py-2.5 text-xs font-bold text-black dark:text-white whitespace-nowrap">
+                  {{ formatFecha(mov.loan_date, mov.loan_time) }}
+                </td>
+
+                <td class="px-3 py-2.5 text-center">
+                  <span class="text-xs font-black text-black dark:text-white">
+                    {{ mov.diasFuera }}d
+                  </span>
+                </td>
+
+                <td class="px-3 py-2.5 text-center">
+                  <span class="px-1.5 py-0.5 text-[9px] font-black uppercase border-2 border-black rounded inline-flex items-center gap-1 bg-green-500 text-black">
+                    {{ mov.status === 'active' ? 'ACTIVO' : 'DEVUELTO' }}
+                  </span>
+                </td>
+
+                <td class="px-3 py-2.5 text-center">
+                  <div class="flex items-center justify-center">
+                    <button *ngIf="mov.status === 'active'" (click)="pdfPrestamo(mov)"
+                            matTooltip="Imprimir nota de préstamo PE"
+                            class="w-7 h-7 flex items-center justify-center bg-[#7113CF] border-2 border-black rounded-lg shadow-[2px_2px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all">
+                      <mat-icon class="!text-sm text-white">print</mat-icon>
                     </button>
-                </div>
-
-                <!-- Tabla préstamo externo -->
-                <div class="flex-1 overflow-auto custom-scrollbar-ext">
-                    <mat-table [dataSource]="externalDataSource()" class="w-full min-w-[760px]">
-
-                        <ng-container matColumnDef="select">
-                            <mat-header-cell *matHeaderCellDef class="!px-3 !py-2 !min-w-[48px] !max-w-[48px] bg-stone-100 dark:bg-slate-800 border-b-2 border-black">
-                                <mat-checkbox (change)="toggleAllExternal($event)" [checked]="isAllSelExternal()" [indeterminate]="isSomeSelExternal()"></mat-checkbox>
-                            </mat-header-cell>
-                            <mat-cell *matCellDef="let item" class="!px-3 !min-w-[48px] !max-w-[48px]" [class.row-selected]="item.selected">
-                                <mat-checkbox [checked]="item.selected" (change)="toggleSelExternal(item)"></mat-checkbox>
-                            </mat-cell>
-                        </ng-container>
-
-                        <ng-container matColumnDef="codigo">
-                            <mat-header-cell *matHeaderCellDef class="!px-3 !py-2 bg-stone-100 dark:bg-slate-800 border-b-2 border-black !text-[10px] font-black uppercase text-black dark:text-white !min-w-[90px]">Código</mat-header-cell>
-                            <mat-cell *matCellDef="let item" class="!px-3 !min-w-[90px]" [class.row-selected]="item.selected">
-                                <span class="font-mono font-black text-purple-700 dark:text-purple-400 text-[10px] bg-purple-50 dark:bg-purple-900/30 px-1.5 py-0.5 rounded border border-purple-200 uppercase">{{ item.codigo }}</span>
-                            </mat-cell>
-                        </ng-container>
-
-                        <ng-container matColumnDef="pn">
-                            <mat-header-cell *matHeaderCellDef class="!px-3 !py-2 bg-stone-100 dark:bg-slate-800 border-b-2 border-black !text-[10px] font-black uppercase text-black dark:text-white !min-w-[80px]">P/N</mat-header-cell>
-                            <mat-cell *matCellDef="let item" class="!px-3 !min-w-[80px]" [class.row-selected]="item.selected">
-                                <span class="font-mono text-[10px] text-stone-500 dark:text-slate-400">{{ item.pn || '—' }}</span>
-                            </mat-cell>
-                        </ng-container>
-
-                        <ng-container matColumnDef="descripcion">
-                            <mat-header-cell *matHeaderCellDef class="!px-3 !py-2 bg-stone-100 dark:bg-slate-800 border-b-2 border-black !text-[10px] font-black uppercase text-black dark:text-white !min-w-[160px]">Descripción</mat-header-cell>
-                            <mat-cell *matCellDef="let item" class="!px-3 !min-w-[160px]" [class.row-selected]="item.selected">
-                                <div>
-                                    <div class="text-xs font-bold text-black dark:text-white truncate max-w-[180px]">{{ item.descripcion }}</div>
-                                    <div class="text-[9px] text-stone-400">{{ item.marca || '' }}</div>
-                                </div>
-                            </mat-cell>
-                        </ng-container>
-
-                        <ng-container matColumnDef="sn">
-                            <mat-header-cell *matHeaderCellDef class="!px-3 !py-2 bg-stone-100 dark:bg-slate-800 border-b-2 border-black !text-[10px] font-black uppercase text-black dark:text-white !min-w-[80px]">S/N</mat-header-cell>
-                            <mat-cell *matCellDef="let item" class="!px-3 !min-w-[80px]" [class.row-selected]="item.selected">
-                                <span class="font-mono text-[10px] text-stone-400 dark:text-slate-500">{{ item.sn || '—' }}</span>
-                            </mat-cell>
-                        </ng-container>
-
-                        <ng-container matColumnDef="cantidad">
-                            <mat-header-cell *matHeaderCellDef class="!px-3 !py-2 bg-stone-100 dark:bg-slate-800 border-b-2 border-black !text-[10px] font-black uppercase text-black dark:text-white !min-w-[60px] text-center">Cant.</mat-header-cell>
-                            <mat-cell *matCellDef="let item" class="!px-3 !min-w-[60px] text-center" [class.row-selected]="item.selected">
-                                <span class="text-sm font-black text-black dark:text-white">{{ item.cantidad }}</span>
-                            </mat-cell>
-                        </ng-container>
-
-                        <ng-container matColumnDef="horas">
-                            <mat-header-cell *matHeaderCellDef class="!px-3 !py-2 bg-stone-100 dark:bg-slate-800 border-b-2 border-black !text-[10px] font-black uppercase text-black dark:text-white !min-w-[70px] text-center">Horas</mat-header-cell>
-                            <mat-cell *matCellDef="let item" class="!px-3 !min-w-[70px] text-center" [class.row-selected]="item.selected">
-                                <span class="text-xs font-black text-stone-600 dark:text-slate-300">{{ item.horas }}</span>
-                                <span class="text-[9px] text-stone-400 ml-0.5">h</span>
-                            </mat-cell>
-                        </ng-container>
-
-                        <ng-container matColumnDef="total">
-                            <mat-header-cell *matHeaderCellDef class="!px-3 !py-2 bg-stone-100 dark:bg-slate-800 border-b-2 border-black !text-[10px] font-black uppercase text-black dark:text-white !min-w-[80px] text-right">Total $US</mat-header-cell>
-                            <mat-cell *matCellDef="let item" class="!px-3 !min-w-[80px] text-right" [class.row-selected]="item.selected">
-                                <span class="text-xs font-black text-green-700 dark:text-green-400">{{ item.precioTotal ? '$' + (item.precioTotal | number:'1.2-2') : '—' }}</span>
-                            </mat-cell>
-                        </ng-container>
-
-                        <ng-container matColumnDef="acciones">
-                            <mat-header-cell *matHeaderCellDef class="!px-3 !py-2 bg-stone-100 dark:bg-slate-800 border-b-2 border-black !text-[10px] font-black uppercase text-black dark:text-white !min-w-[60px] text-center">Acc.</mat-header-cell>
-                            <mat-cell *matCellDef="let item; let i = index" class="!px-3 !min-w-[60px]" [class.row-selected]="item.selected">
-                                <button (click)="eliminarItemExterno(i)" matTooltip="Eliminar"
-                                        class="w-7 h-7 flex items-center justify-center bg-red-600 border-2 border-black rounded-lg shadow-[2px_2px_0_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all">
-                                    <mat-icon class="!text-sm text-white">delete</mat-icon>
-                                </button>
-                            </mat-cell>
-                        </ng-container>
-
-                        <mat-header-row *matHeaderRowDef="displayedExternalColumns; sticky: true"></mat-header-row>
-                        <mat-row *matRowDef="let row; columns: displayedExternalColumns;"
-                                 class="border-b border-stone-200 dark:border-slate-700 hover:bg-purple-50 dark:hover:bg-slate-800 transition-all cursor-pointer"
-                                 (click)="toggleSelExternal(row)"></mat-row>
-                    </mat-table>
-
-                    <!-- Empty state -->
-                    <div *ngIf="externalDataSource().length === 0" class="flex flex-col items-center justify-center py-16 gap-3">
-                        <div class="w-16 h-16 bg-stone-100 dark:bg-slate-800 border-2 border-black rounded-2xl flex items-center justify-center"
-                             style="box-shadow: 3px 3px 0 #000">
-                            <mat-icon class="!text-3xl text-stone-400 dark:text-slate-600">storefront</mat-icon>
-                        </div>
-                        <p class="text-xs font-black uppercase text-stone-400 dark:text-slate-400">Sin herramientas en el préstamo</p>
-                        <button (click)="openHerramientasAPrestar()"
-                                class="px-4 py-1.5 bg-amber-400 text-black border-2 border-black rounded-lg font-black text-xs uppercase shadow-[2px_2px_0_#000] hover:translate-y-[1px] hover:shadow-none transition-all">
-                            Agregar herramienta
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-            <!-- ══ TAB DEVOLUCIÓN ══ -->
-            <div [hidden]="activeTab() !== 'devolucion'" class="flex-1 flex flex-col overflow-hidden">
-
-                <!-- Info bar cuando hay datos -->
-                <div *ngIf="dataSourceDevolucion.length > 0 && _terceroSeleccionado"
-                     class="px-4 py-2 bg-purple-50 dark:bg-purple-900/20 border-b-2 border-black flex items-center gap-3 shrink-0 flex-wrap">
-                    <div class="flex items-center gap-2">
-                        <mat-icon class="!text-sm text-purple-700 dark:text-purple-400">storefront</mat-icon>
-                        <span class="text-xs font-black text-purple-900 dark:text-purple-200 uppercase">{{ _terceroSeleccionado?.razonSocial }}</span>
-                        <span *ngIf="_terceroSeleccionado?.nit" class="text-[10px] font-bold text-purple-600 dark:text-purple-400 bg-purple-100 dark:bg-purple-900/40 px-2 py-0.5 rounded border border-purple-300 dark:border-purple-700">NIT: {{ _terceroSeleccionado.nit }}</span>
-                    </div>
-                    <div class="flex items-center gap-2 ml-auto">
-                        <span class="text-[10px] font-black text-purple-800 dark:text-purple-200 uppercase">{{ dataSourceDevolucion.length }} herramienta(s) cargadas</span>
-                    </div>
-                </div>
-
-                <!-- Barra selección devolución -->
-                <div *ngIf="getSelCountDevolucion() > 0"
-                     class="px-4 py-2 bg-[#7113CF] border-b-2 border-black flex items-center gap-3 shrink-0 flex-wrap">
-                    <mat-icon class="!text-sm text-white">check_box</mat-icon>
-                    <span class="text-xs font-black text-white uppercase">{{ getSelCountDevolucion() }} seleccionada(s) para devolver</span>
-                    <button (click)="abrirConfirmDevolucion()"
-                            class="ml-auto h-7 px-3 flex items-center gap-1 bg-amber-400 text-black border-2 border-black rounded-lg font-black text-[10px] uppercase shadow-[2px_2px_0_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all">
-                        <mat-icon class="!text-xs">assignment_return</mat-icon>
-                        Devolver
+                    <button *ngIf="mov.status === 'returned'" (click)="pdfDevolucion(mov)"
+                            matTooltip="Imprimir nota unificada MGH-100"
+                            class="w-7 h-7 flex items-center justify-center bg-blue-700 border-2 border-black rounded-lg shadow-[2px_2px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all">
+                      <mat-icon class="!text-sm text-white">assignment_return</mat-icon>
                     </button>
-                </div>
+                  </div>
+                </td>
 
-                <!-- Tabla devolución -->
-                <div class="flex-1 overflow-auto custom-scrollbar-ext">
-                    <mat-table [dataSource]="dataSourceDevolucion" class="w-full min-w-[960px]">
-
-                        <ng-container matColumnDef="select">
-                            <mat-header-cell *matHeaderCellDef class="!px-3 !py-2 !min-w-[48px] !max-w-[48px] bg-stone-100 dark:bg-slate-800 border-b-2 border-black">
-                                <mat-checkbox (change)="toggleAllDevolucion($event)" [checked]="isAllSelDevolucion()" [indeterminate]="isSomeSelDevolucion()"></mat-checkbox>
-                            </mat-header-cell>
-                            <mat-cell *matCellDef="let item" class="!px-3 !min-w-[48px] !max-w-[48px]" [class.row-selected]="item.selected">
-                                <mat-checkbox [checked]="item.selected" (change)="toggleSelDevolucion(item)"></mat-checkbox>
-                            </mat-cell>
-                        </ng-container>
-
-                        <ng-container matColumnDef="fila">
-                            <mat-header-cell *matHeaderCellDef class="!px-3 !py-2 bg-stone-100 dark:bg-slate-800 border-b-2 border-black !text-[10px] font-black uppercase text-black dark:text-white !min-w-[40px] !max-w-[40px] text-center">#</mat-header-cell>
-                            <mat-cell *matCellDef="let item" class="!px-3 !min-w-[40px] !max-w-[40px] text-center" [class.row-selected]="item.selected">
-                                <span class="text-[10px] font-black text-stone-400 dark:text-slate-400">{{ item.fila }}</span>
-                            </mat-cell>
-                        </ng-container>
-
-                        <ng-container matColumnDef="identificacion">
-                            <mat-header-cell *matHeaderCellDef class="!px-3 !py-2 bg-stone-100 dark:bg-slate-800 border-b-2 border-black !text-[10px] font-black uppercase text-black dark:text-white !min-w-[110px]">Identificación</mat-header-cell>
-                            <mat-cell *matCellDef="let item" class="!px-3 !min-w-[110px]" [class.row-selected]="item.selected">
-                                <div>
-                                    <span class="font-mono font-black text-purple-700 dark:text-purple-400 text-[10px] bg-purple-50 dark:bg-purple-900/30 px-1.5 py-0.5 rounded border border-purple-200 uppercase block">{{ item.codigo }}</span>
-                                    <span class="text-[9px] text-stone-400 font-mono">P/N: {{ item.pn || '—' }}</span>
-                                    <span class="text-[9px] text-stone-400 font-mono ml-1">S/N: {{ item.sn || '—' }}</span>
-                                </div>
-                            </mat-cell>
-                        </ng-container>
-
-                        <ng-container matColumnDef="descripcion">
-                            <mat-header-cell *matHeaderCellDef class="!px-3 !py-2 bg-stone-100 dark:bg-slate-800 border-b-2 border-black !text-[10px] font-black uppercase text-black dark:text-white !min-w-[150px]">Descripción</mat-header-cell>
-                            <mat-cell *matCellDef="let item" class="!px-3 !min-w-[150px]" [class.row-selected]="item.selected">
-                                <div class="text-xs font-bold text-black dark:text-white truncate max-w-[160px]">{{ item.descripcion }}</div>
-                                <div class="text-[9px] text-stone-400">{{ item.marca || '' }}</div>
-                            </mat-cell>
-                        </ng-container>
-
-                        <ng-container matColumnDef="tipoContrato">
-                            <mat-header-cell *matHeaderCellDef class="!px-3 !py-2 bg-stone-100 dark:bg-slate-800 border-b-2 border-black !text-[10px] font-black uppercase text-black dark:text-white !min-w-[100px]">Tipo</mat-header-cell>
-                            <mat-cell *matCellDef="let item" class="!px-3 !min-w-[100px]" [class.row-selected]="item.selected">
-                                <span class="px-1.5 py-0.5 text-[9px] font-black uppercase border rounded"
-                                      [ngClass]="getTipoEmpresaClass(item.tipoContrato)">
-                                    {{ getTipoEmpresaLabel(item.tipoContrato) }}
-                                </span>
-                            </mat-cell>
-                        </ng-container>
-
-                        <ng-container matColumnDef="fechaSalida">
-                            <mat-header-cell *matHeaderCellDef class="!px-3 !py-2 bg-stone-100 dark:bg-slate-800 border-b-2 border-black !text-[10px] font-black uppercase text-black dark:text-white !min-w-[90px]">F. Salida</mat-header-cell>
-                            <mat-cell *matCellDef="let item" class="!px-3 !min-w-[90px]" [class.row-selected]="item.selected">
-                                <span class="text-[9px] font-bold text-stone-500 dark:text-slate-400">{{ item.fechaSalida | date:'dd/MM/yy' }}</span>
-                            </mat-cell>
-                        </ng-container>
-
-                        <ng-container matColumnDef="diasFuera">
-                            <mat-header-cell *matHeaderCellDef class="!px-3 !py-2 bg-stone-100 dark:bg-slate-800 border-b-2 border-black !text-[10px] font-black uppercase text-black dark:text-white !min-w-[70px] text-center">Días</mat-header-cell>
-                            <mat-cell *matCellDef="let item" class="!px-3 !min-w-[70px] text-center" [class.row-selected]="item.selected">
-                                <span class="px-1.5 py-px text-[9px] font-black border rounded"
-                                      [ngClass]="getDiasFueraClass(item.diasFuera)">
-                                    {{ item.diasFuera }}d
-                                </span>
-                            </mat-cell>
-                        </ng-container>
-
-                        <ng-container matColumnDef="cantidad">
-                            <mat-header-cell *matHeaderCellDef class="!px-3 !py-2 bg-stone-100 dark:bg-slate-800 border-b-2 border-black !text-[10px] font-black uppercase text-black dark:text-white !min-w-[60px] text-center">Cant.</mat-header-cell>
-                            <mat-cell *matCellDef="let item" class="!px-3 !min-w-[60px] text-center" [class.row-selected]="item.selected">
-                                <span class="text-sm font-black text-black dark:text-white">{{ item.cantidad }}</span>
-                            </mat-cell>
-                        </ng-container>
-
-                        <ng-container matColumnDef="condicion">
-                            <mat-header-cell *matHeaderCellDef class="!px-3 !py-2 bg-stone-100 dark:bg-slate-800 border-b-2 border-black !text-[10px] font-black uppercase text-black dark:text-white !min-w-[200px]">Condición</mat-header-cell>
-                            <mat-cell *matCellDef="let item" class="!px-3 !min-w-[200px]" [class.row-selected]="item.selected" (click)="$event.stopPropagation()">
-                                <div class="flex flex-wrap gap-0.5">
-                                    <button *ngFor="let c of condicionesDevolucion"
-                                            (click)="updateCondicion(item, c.value)"
-                                            class="px-1.5 py-px text-[8px] font-black uppercase border-2 border-black rounded transition-all"
-                                            [ngClass]="item.condicionDevolucion === c.value
-                                                ? c.bgColor + ' text-white shadow-[1px_1px_0_#000]'
-                                                : 'bg-white dark:bg-slate-700 text-stone-500 dark:text-slate-400 hover:bg-stone-100'">
-                                        {{ c.label }}
-                                    </button>
-                                </div>
-                            </mat-cell>
-                        </ng-container>
-
-                        <ng-container matColumnDef="observaciones">
-                            <mat-header-cell *matHeaderCellDef class="!px-3 !py-2 bg-stone-100 dark:bg-slate-800 border-b-2 border-black !text-[10px] font-black uppercase text-black dark:text-white !min-w-[140px]">Observación</mat-header-cell>
-                            <mat-cell *matCellDef="let item" class="!px-3 !min-w-[140px]" [class.row-selected]="item.selected" (click)="$event.stopPropagation()">
-                                <input type="text" [(ngModel)]="item.observaciones"
-                                       placeholder="Opcional"
-                                       class="w-full h-7 px-2 text-[10px] font-bold border-2 border-black rounded bg-white dark:bg-slate-700 dark:text-white focus:outline-none focus:bg-purple-50 transition-all">
-                            </mat-cell>
-                        </ng-container>
-
-                        <mat-header-row *matHeaderRowDef="displayedDevolucionColumns; sticky: true"></mat-header-row>
-                        <mat-row *matRowDef="let row; columns: displayedDevolucionColumns;"
-                                 class="border-b border-stone-200 dark:border-slate-700 hover:bg-purple-50 dark:hover:bg-slate-800 transition-all cursor-pointer"
-                                 [class.row-selected]="row.selected"
-                                 (click)="toggleSelDevolucion(row)"></mat-row>
-                    </mat-table>
-
-                    <!-- Empty state devolución -->
-                    <div *ngIf="dataSourceDevolucion.length === 0" class="flex flex-col items-center justify-center py-16 gap-3">
-                        <div class="w-16 h-16 bg-stone-100 dark:bg-slate-800 border-2 border-black rounded-2xl flex items-center justify-center"
-                             style="box-shadow: 3px 3px 0 #000">
-                            <mat-icon class="!text-3xl text-stone-400 dark:text-slate-600">assignment_return</mat-icon>
-                        </div>
-                        <p class="text-xs font-black uppercase text-stone-400 dark:text-slate-400">Busque una empresa para ver sus préstamos activos</p>
-                        <button (click)="abrirModalBusqueda()"
-                                class="px-4 py-1.5 bg-[#7113CF] text-white border-2 border-black rounded-lg font-black text-xs uppercase shadow-[2px_2px_0_#000] hover:translate-y-[1px] hover:shadow-none transition-all">
-                            Buscar empresa
-                        </button>
-                    </div>
-                </div>
-            </div>
-
+              </tr>
+            </tbody>
+          </table>
         </div>
-    </div>
+
+      </ng-container>
+
+      <!-- ══ TAB: DEVOLUCIONES ══ -->
+      <ng-container *ngIf="!isLoading() && activeTab === 'devolucion'">
+
+        <div *ngIf="filteredPending.length === 0"
+             class="flex-1 flex flex-col items-center justify-center gap-3 py-12 px-4 text-center">
+          <mat-icon class="!text-5xl text-gray-300 dark:text-gray-600">assignment_return</mat-icon>
+          <p class="text-xs font-bold uppercase text-gray-500 mt-2">Sin ítems pendientes de devolución</p>
+          <button (click)="abrirFormDevolucion()"
+                  class="h-8 px-4 rounded-xl border-[2px] border-black bg-[#7113CF] text-white font-black text-xs uppercase shadow-[2px_2px_0_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all mt-1 flex items-center gap-1.5">
+            <mat-icon class="!text-sm">assignment_return</mat-icon>Registrar Devolución
+          </button>
+        </div>
+
+        <div *ngIf="filteredPending.length > 0" class="flex-1 overflow-auto custom-scrollbar bg-gray-50 dark:bg-[#0F172AFF]">
+          <table class="w-full min-w-[860px]">
+            <thead class="bg-gray-100 dark:bg-slate-800 border-b-[2px] border-black sticky top-0 z-10">
+              <tr class="text-left text-[10px] font-black uppercase tracking-wider text-black dark:text-white">
+                <th class="px-3 py-2.5">N° Nota PE</th>
+                <th class="px-3 py-2.5">Empresa</th>
+                <th class="px-3 py-2.5">Código</th>
+                <th class="px-3 py-2.5 min-w-[130px]">Descripción</th>
+                <th class="px-3 py-2.5">P/N</th>
+                <th class="px-3 py-2.5">S/N</th>
+                <th class="px-3 py-2.5">F. Préstamo</th>
+                <th class="px-3 py-2.5 text-center">Días</th>
+                <th class="px-3 py-2.5 text-center">Cant.</th>
+                <th class="px-3 py-2.5">Estado</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let item of filteredPending; let idx = index"
+                  class="border-b border-gray-200 dark:border-slate-700 transition-all"
+                  [ngClass]="idx % 2 === 0 ? 'bg-white dark:bg-slate-800/60' : 'bg-gray-50 dark:bg-slate-800/40'">
+
+                <td class="px-3 py-2.5">
+                  <span class="font-mono font-black text-[10px] bg-[#7113CF] text-white px-1.5 py-0.5 rounded border-2 border-black whitespace-nowrap">
+                    {{ item.loanNumber }}
+                  </span>
+                </td>
+
+                <td class="px-3 py-2.5">
+                  <div class="text-xs font-bold text-black dark:text-white">{{ item.empresa }}</div>
+                </td>
+
+                <td class="px-3 py-2.5">
+                  <span class="font-mono font-black text-[10px] bg-[#0F172AFF] text-white px-1.5 py-0.5 rounded border border-black whitespace-nowrap">
+                    {{ item.codigo }}
+                  </span>
+                </td>
+
+                <td class="px-3 py-2.5" style="max-width:170px">
+                  <div class="text-xs font-bold text-black dark:text-white truncate" [title]="item.descripcion">{{ item.descripcion }}</div>
+                </td>
+
+                <td class="px-3 py-2.5">
+                  <span class="font-mono text-[9px] text-gray-500 dark:text-gray-400">{{ item.pn }}</span>
+                </td>
+
+                <td class="px-3 py-2.5">
+                  <span class="font-mono text-[9px] text-gray-500 dark:text-gray-400">{{ item.sn }}</span>
+                </td>
+
+                <td class="px-3 py-2.5 text-xs font-bold text-black dark:text-white">
+                  {{ item.loanDate | date:'dd/MM/yy' }}
+                </td>
+
+                <td class="px-3 py-2.5 text-center">
+                  <span class="text-xs font-black text-black dark:text-white">
+                    {{ item.diasFuera }}d
+                  </span>
+                </td>
+
+                <td class="px-3 py-2.5 text-center">
+                  <span class="text-xs font-black text-black dark:text-white">{{ item.cantidad }}</span>
+                  <span class="text-[9px] text-gray-400 ml-0.5">{{ item.und }}</span>
+                </td>
+
+                <td class="px-3 py-2.5">
+                  <span class="px-1 py-0.5 text-[9px] font-black uppercase border border-black rounded block w-fit truncate"
+                        [ngClass]="getEstadoClass(item.estadoAlPrestar)">
+                    {{ getCondicionLabel(item.estadoAlPrestar) }}
+                  </span>
+                </td>
+
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+      </ng-container>
+
+    </div><!-- /card -->
+  </div><!-- /p-4 -->
 </div>
-
-<!-- ══════════════════════════════════════════════════════════
-     MODAL: DATOS DE EMPRESA (Préstamo Externo)
-══════════════════════════════════════════════════════════ -->
-<ng-template #datosExternoModal>
-    <div class="bg-stone-100 dark:bg-slate-900 border-2 border-black overflow-hidden flex flex-col"
-         style="width:650px; max-width:95vw; max-height:90vh; box-shadow: 6px 6px 0 #000">
-
-        <div class="bg-[#0F172A] px-5 py-3.5 flex items-center gap-3 shrink-0 select-none"
-             cdkDrag cdkDragRootElement=".cdk-overlay-pane" cdkDragHandle style="cursor:grab">
-            <div class="w-9 h-9 rounded bg-amber-400 border-2 border-black flex items-center justify-center shadow-[2px_2px_0_#fbbf24] shrink-0">
-                <mat-icon class="!text-lg text-black">business</mat-icon>
-            </div>
-            <div class="flex-1">
-                <p class="text-[9px] text-slate-400 font-bold uppercase tracking-[0.18em] leading-none mb-0.5">Préstamo Terceros</p>
-                <h2 class="text-sm text-white font-black uppercase tracking-tight leading-none">Datos de la Empresa</h2>
-            </div>
-            <button (click)="cerrarModalDatosExterno()"
-                    class="w-7 h-7 flex items-center justify-center bg-white/10 hover:bg-white/30 border border-white/30 rounded-lg transition-all shrink-0">
-                <mat-icon class="!text-sm text-white">close</mat-icon>
-            </button>
-        </div>
-
-        <form [formGroup]="externalForm" class="flex-1 overflow-y-auto px-5 py-5 flex flex-col gap-4">
-
-            <!-- Buscar empresa autocomplete -->
-            <div class="relative">
-                <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1.5 block">Buscar Empresa</label>
-                <div class="relative">
-                    <input type="text" [value]="externalForm.get('buscarEmpresa')?.value"
-                           (input)="onEmpresaInput($any($event.target).value)"
-                           (blur)="hideEmpresasDropdown()"
-                           placeholder="Razón social o NIT..."
-                           class="w-full h-10 pl-9 pr-3 text-sm font-bold bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-xl outline-none transition-all duration-150 placeholder:text-stone-300 hover:border-stone-400 focus:border-black focus:shadow-[3px_3px_0_#000]">
-                    <mat-icon class="absolute left-2.5 top-2.5 text-stone-400 !text-sm">search</mat-icon>
-                </div>
-                <div *ngIf="showEmpresasDropdown && empresasFiltradas.length > 0"
-                     class="absolute z-50 w-full mt-1 bg-white dark:bg-slate-800 border-2 border-black rounded-xl overflow-hidden max-h-48 overflow-y-auto divide-y divide-stone-100 dark:divide-slate-700"
-                     style="box-shadow: 4px 4px 0 #000">
-                    <button *ngFor="let e of empresasFiltradas"
-                            type="button"
-                            (mousedown)="selectEmpresa(e)"
-                            class="w-full px-3 py-2 text-left hover:bg-purple-50 dark:hover:bg-slate-700 transition-colors">
-                        <div class="font-black text-xs text-black dark:text-white">{{ e.razonSocial }}</div>
-                        <div class="text-[10px] text-stone-400 dark:text-slate-400">NIT: {{ e.nit || '—' }} · {{ e.tipoEmpresa }}</div>
-                    </button>
-                </div>
-            </div>
-
-            <div class="grid grid-cols-2 gap-3">
-
-                <div class="col-span-2">
-                    <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1.5 block">Empresa / Solicitante <span class="text-red-500">*</span></label>
-                    <input formControlName="nombreEmpresa" type="text"
-                           class="w-full h-10 text-sm font-bold bg-white dark:bg-slate-800 dark:text-white border-2 rounded-xl px-3 outline-none transition-all duration-150"
-                           [class]="hasErrorExternal('nombreEmpresa','required')
-                               ? 'border-red-400 focus:shadow-[2px_2px_0_#f87171]'
-                               : 'border-stone-300 dark:border-slate-600 hover:border-stone-400 focus:border-black focus:shadow-[3px_3px_0_#000]'">
-                    <p *ngIf="hasErrorExternal('nombreEmpresa','required')" class="text-[8px] font-bold text-red-500 mt-1">Campo requerido.</p>
-                </div>
-
-                <div>
-                    <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1.5 block">NIT</label>
-                    <input formControlName="nit" type="text"
-                           class="w-full h-10 text-sm font-bold bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-xl px-3 outline-none transition-all hover:border-stone-400 focus:border-black focus:shadow-[3px_3px_0_#000]">
-                </div>
-
-                <div>
-                    <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1.5 block">Contacto</label>
-                    <input formControlName="contacto" type="text"
-                           class="w-full h-10 text-sm font-bold bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-xl px-3 outline-none transition-all hover:border-stone-400 focus:border-black focus:shadow-[3px_3px_0_#000]">
-                </div>
-
-                <div>
-                    <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1.5 block">Teléfono</label>
-                    <input formControlName="telefono" type="text"
-                           class="w-full h-10 text-sm font-bold bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-xl px-3 outline-none transition-all hover:border-stone-400 focus:border-black focus:shadow-[3px_3px_0_#000]">
-                </div>
-
-                <div>
-                    <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1.5 block">Fecha <span class="text-red-500">*</span></label>
-                    <input formControlName="fecha" type="date"
-                           class="w-full h-10 text-sm font-bold bg-white dark:bg-slate-800 dark:text-white border-2 rounded-xl px-3 outline-none transition-all"
-                           [class]="hasErrorExternal('fecha','required')
-                               ? 'border-red-400 focus:shadow-[2px_2px_0_#f87171]'
-                               : 'border-stone-300 dark:border-slate-600 hover:border-stone-400 focus:border-black focus:shadow-[3px_3px_0_#000]'">
-                </div>
-
-                <div>
-                    <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1.5 block">Hora <span class="text-red-500">*</span></label>
-                    <input formControlName="hora" type="time"
-                           class="w-full h-10 text-sm font-bold bg-white dark:bg-slate-800 dark:text-white border-2 rounded-xl px-3 outline-none transition-all"
-                           [class]="hasErrorExternal('hora','required')
-                               ? 'border-red-400 focus:shadow-[2px_2px_0_#f87171]'
-                               : 'border-stone-300 dark:border-slate-600 hover:border-stone-400 focus:border-black focus:shadow-[3px_3px_0_#000]'">
-                </div>
-
-                <div class="col-span-2">
-                    <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1.5 block">Motivo del Préstamo <span class="text-red-500">*</span></label>
-                    <select formControlName="motivoPrestamo"
-                            class="w-full h-10 px-3 bg-white dark:bg-slate-800 text-black dark:text-white border-2 rounded-xl text-sm font-bold outline-none transition-all cursor-pointer hover:border-stone-400"
-                            [class]="hasErrorExternal('motivoPrestamo','required')
-                               ? 'border-red-400'
-                               : 'border-stone-300 dark:border-slate-600 focus:border-black'">
-                        <option value="">— Seleccionar motivo —</option>
-                        <option *ngFor="let m of tiposMotivoPrestamo" [value]="m.value">{{ m.label }}</option>
-                    </select>
-                    <p *ngIf="hasErrorExternal('motivoPrestamo','required')" class="text-[8px] font-bold text-red-500 mt-1">Requerido.</p>
-                </div>
-
-                <div class="col-span-2">
-                    <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1.5 block">Autorizado por</label>
-                    <input formControlName="autorizado" type="text"
-                           placeholder="Nombre del autorizante..."
-                           class="w-full h-10 text-sm font-bold bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-xl px-3 outline-none transition-all placeholder:text-stone-300 hover:border-stone-400 focus:border-black focus:shadow-[3px_3px_0_#000]">
-                </div>
-
-                <div class="col-span-2">
-                    <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1.5 block">Observaciones</label>
-                    <textarea formControlName="observaciones" rows="2"
-                              class="w-full text-sm font-normal bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-xl px-3 py-2.5 outline-none transition-all resize-none hover:border-stone-400 focus:border-black focus:shadow-[3px_3px_0_#000]"></textarea>
-                </div>
-            </div>
-        </form>
-
-        <div class="border-t-2 border-black bg-stone-200 dark:bg-slate-800 px-5 py-3 flex justify-between items-center shrink-0">
-            <button type="button" (click)="cerrarModalDatosExterno()"
-                    class="px-4 py-2 bg-[#FF1414] text-white font-black text-[10px] border-2 border-black rounded-xl shadow-[2px_2px_0_#000] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all uppercase">
-                Cancelar
-            </button>
-            <button type="button" (click)="cerrarModalDatosExterno()"
-                    [disabled]="externalForm.invalid"
-                    class="flex items-center gap-2 px-5 py-2 bg-amber-400 text-black font-black text-[10px] border-2 border-black rounded-xl shadow-[3px_3px_0_#000] hover:shadow-none hover:translate-x-[3px] hover:translate-y-[3px] transition-all uppercase disabled:opacity-40 disabled:cursor-not-allowed disabled:translate-x-0 disabled:translate-y-0 disabled:shadow-[3px_3px_0_#000]">
-                <mat-icon class="!text-sm">check</mat-icon>
-                Confirmar
-            </button>
-        </div>
-    </div>
-</ng-template>
-
-<!-- ══════════════════════════════════════════════════════════
-     MODAL: CONFIRMAR PRÉSTAMO EXTERNO
-══════════════════════════════════════════════════════════ -->
-<ng-template #confirmExternoModal>
-    <div class="bg-stone-100 dark:bg-slate-900 border-2 border-black overflow-hidden flex flex-col"
-         style="width:600px; max-width:95vw; max-height:90vh; box-shadow: 6px 6px 0 #000">
-
-        <div class="bg-[#0F172A] px-5 py-3.5 flex items-center gap-3 shrink-0">
-            <div class="w-9 h-9 rounded bg-amber-400 border-2 border-black flex items-center justify-center shadow-[2px_2px_0_#fbbf24] shrink-0">
-                <mat-icon class="!text-lg text-black">send</mat-icon>
-            </div>
-            <div>
-                <p class="text-[9px] text-slate-400 font-bold uppercase tracking-[0.18em] leading-none mb-0.5">Préstamo Terceros</p>
-                <h2 class="text-sm text-white font-black uppercase tracking-tight leading-none">Confirmar Préstamo Externo</h2>
-            </div>
-        </div>
-
-        <div class="flex-1 overflow-y-auto px-5 py-5 flex flex-col gap-4">
-
-            <div class="bg-white dark:bg-slate-800 border-2 border-black rounded-xl p-3 flex flex-col gap-1">
-                <p class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1">Empresa</p>
-                <div class="font-black text-sm text-black dark:text-white">{{ externalForm.get('nombreEmpresa')?.value }}</div>
-                <div class="flex items-center gap-3 text-[10px] font-bold text-stone-500 dark:text-slate-300">
-                    <span *ngIf="externalForm.get('nit')?.value">NIT: {{ externalForm.get('nit')?.value }}</span>
-                    <span *ngIf="externalForm.get('contacto')?.value">· Contacto: {{ externalForm.get('contacto')?.value }}</span>
-                </div>
-                <div class="flex items-center gap-2 flex-wrap mt-0.5 text-[10px] font-bold text-stone-500 dark:text-slate-300">
-                    <span>{{ externalForm.get('fecha')?.value }} {{ externalForm.get('hora')?.value }}</span>
-                    <span *ngIf="externalForm.get('motivoPrestamo')?.value">· {{ externalForm.get('motivoPrestamo')?.value }}</span>
-                </div>
-            </div>
-
-            <div class="flex flex-col gap-1 max-h-48 overflow-y-auto">
-                <p class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1">Herramientas ({{ externalDataSource().length }})</p>
-                <div *ngFor="let item of externalDataSource()"
-                     class="flex items-center gap-2 px-3 py-1.5 bg-purple-50 dark:bg-slate-800 border-2 border-black rounded-xl">
-                    <mat-icon class="!text-sm text-purple-600">storefront</mat-icon>
-                    <div class="flex-1 min-w-0">
-                        <span class="font-mono text-[10px] font-black text-purple-700 dark:text-purple-400">{{ item.codigo }}</span>
-                        <span class="text-[10px] text-stone-500 dark:text-slate-300 ml-2 truncate">{{ item.descripcion }}</span>
-                    </div>
-                    <span class="text-xs font-black text-black dark:text-white shrink-0">{{ item.cantidad }} u.</span>
-                    <span class="text-xs font-black text-green-700 dark:text-green-400 shrink-0">{{ item.precioTotal ? '$' + (item.precioTotal | number:'1.2-2') : '' }}</span>
-                </div>
-            </div>
-
-            <div *ngIf="importeTotal() > 0"
-                 class="flex items-center justify-between px-3 py-2 bg-green-50 dark:bg-green-900/20 border-2 border-green-400 rounded-xl">
-                <span class="text-xs font-black uppercase text-green-800 dark:text-green-200">Total Importe $US</span>
-                <span class="text-sm font-black text-green-800 dark:text-green-200">${{ importeTotal() | number:'1.2-2' }}</span>
-            </div>
-
-            <p class="text-[10px] font-bold text-stone-500 dark:text-slate-400 bg-blue-50 dark:bg-blue-900/20 border-2 border-blue-300 dark:border-blue-700 rounded-xl px-3 py-2">
-                Se generará la nota MGH-100 y se registrará el préstamo en el sistema.
-            </p>
-        </div>
-
-        <div class="border-t-2 border-black bg-stone-200 dark:bg-slate-800 px-5 py-3 flex justify-between items-center shrink-0">
-            <button (click)="cerrarModalConfirmExterno()"
-                    class="px-4 py-2 bg-[#FF1414] text-white font-black text-[10px] border-2 border-black rounded-xl shadow-[2px_2px_0_#000] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all uppercase">
-                Cancelar
-            </button>
-            <button (click)="finalizarExterno()"
-                    class="flex items-center gap-2 px-5 py-2 bg-amber-400 text-black font-black text-[10px] border-2 border-black rounded-xl shadow-[3px_3px_0_#000] hover:shadow-none hover:translate-x-[3px] hover:translate-y-[3px] transition-all uppercase">
-                <mat-icon class="!text-sm">print</mat-icon>
-                Registrar e Imprimir
-            </button>
-        </div>
-    </div>
-</ng-template>
-
-<!-- ══════════════════════════════════════════════════════════
-     MODAL: BÚSQUEDA EMPRESA (Devolución)
-══════════════════════════════════════════════════════════ -->
-<ng-template #busquedaModal>
-    <div class="bg-stone-100 dark:bg-slate-900 border-2 border-black overflow-hidden flex flex-col"
-         style="width:560px; max-width:95vw; max-height:90vh; box-shadow: 6px 6px 0 #000">
-
-        <div class="bg-[#0F172A] px-5 py-3.5 flex items-center gap-3 shrink-0 select-none"
-             cdkDrag cdkDragRootElement=".cdk-overlay-pane" cdkDragHandle style="cursor:grab">
-            <div class="w-9 h-9 rounded bg-amber-400 border-2 border-black flex items-center justify-center shadow-[2px_2px_0_#fbbf24] shrink-0">
-                <mat-icon class="!text-lg text-black">manage_search</mat-icon>
-            </div>
-            <div class="flex-1">
-                <p class="text-[9px] text-slate-400 font-bold uppercase tracking-[0.18em] leading-none mb-0.5">Devolución</p>
-                <h2 class="text-sm text-white font-black uppercase tracking-tight leading-none">Buscar Préstamos Activos</h2>
-            </div>
-            <button (click)="cerrarModalBusqueda()"
-                    class="w-7 h-7 flex items-center justify-center bg-white/10 hover:bg-white/30 border border-white/30 rounded-lg transition-all shrink-0">
-                <mat-icon class="!text-sm text-white">close</mat-icon>
-            </button>
-        </div>
-
-        <form [formGroup]="devolucionForm" class="flex-1 overflow-y-auto px-5 py-5 flex flex-col gap-4">
-
-            <!-- Buscar tercero -->
-            <div class="relative">
-                <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1.5 block">Empresa / Tercero <span class="text-red-500">*</span></label>
-                <div class="relative">
-                    <input type="text" [value]="devolucionForm.get('tercero')?.value"
-                           (input)="onTerceroInput($any($event.target).value)"
-                           (blur)="hideTercerosDropdown()"
-                           placeholder="Razón social o NIT..."
-                           class="w-full h-10 pl-9 pr-3 text-sm font-bold bg-white dark:bg-slate-800 dark:text-white border-2 rounded-xl outline-none transition-all duration-150 placeholder:text-stone-300"
-                           [class]="hasError('tercero','required')
-                               ? 'border-red-400 focus:shadow-[2px_2px_0_#f87171]'
-                               : 'border-stone-300 dark:border-slate-600 hover:border-stone-400 focus:border-black focus:shadow-[3px_3px_0_#000]'">
-                    <mat-icon class="absolute left-2.5 top-2.5 text-stone-400 !text-sm">storefront</mat-icon>
-                    <mat-icon *ngIf="isSearching" class="absolute right-2.5 top-2.5 text-stone-400 !text-sm animate-spin">refresh</mat-icon>
-                </div>
-                <div *ngIf="showTercerosDropdown && tercerosFiltrados.length > 0"
-                     class="absolute z-50 w-full mt-1 bg-white dark:bg-slate-800 border-2 border-black rounded-xl overflow-hidden max-h-48 overflow-y-auto divide-y divide-stone-100 dark:divide-slate-700"
-                     style="box-shadow: 4px 4px 0 #000">
-                    <button *ngFor="let t of tercerosFiltrados"
-                            type="button"
-                            (mousedown)="selectTercero(t)"
-                            class="w-full px-3 py-2 text-left hover:bg-purple-50 dark:hover:bg-slate-700 transition-colors">
-                        <div class="font-black text-xs text-black dark:text-white">{{ t.razonSocial }}</div>
-                        <div class="text-[10px] text-stone-400 dark:text-slate-400">NIT: {{ t.nit || '—' }} · {{ t.tipoEmpresa }}</div>
-                    </button>
-                </div>
-                <p *ngIf="hasError('tercero','required')" class="text-[8px] font-bold text-red-500 mt-1">Requerido.</p>
-            </div>
-
-            <!-- Filtrar por herramienta -->
-            <div>
-                <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1.5 block">Filtrar por Código / P/N (opcional)</label>
-                <div class="relative">
-                    <input formControlName="codigoHerramienta" type="text"
-                           placeholder="Código o P/N de herramienta..."
-                           class="w-full h-10 pl-9 pr-3 text-sm font-bold bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-xl outline-none transition-all placeholder:text-stone-300 hover:border-stone-400 focus:border-black focus:shadow-[3px_3px_0_#000]">
-                    <mat-icon class="absolute left-2.5 top-2.5 text-stone-400 !text-sm">hardware</mat-icon>
-                </div>
-            </div>
-
-            <!-- Fecha devolución -->
-            <div>
-                <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1.5 block">Fecha Devolución <span class="text-red-500">*</span></label>
-                <input formControlName="fechaDevolucion" type="date"
-                       class="w-full h-10 text-sm font-bold bg-white dark:bg-slate-800 dark:text-white border-2 rounded-xl px-3 outline-none transition-all"
-                       [class]="hasError('fechaDevolucion','required')
-                           ? 'border-red-400 focus:shadow-[2px_2px_0_#f87171]'
-                           : 'border-stone-300 dark:border-slate-600 hover:border-stone-400 focus:border-black focus:shadow-[3px_3px_0_#000]'">
-                <p *ngIf="hasError('fechaDevolucion','required')" class="text-[8px] font-bold text-red-500 mt-1">Requerido.</p>
-            </div>
-
-            <!-- Observaciones -->
-            <div>
-                <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1.5 block">Observaciones</label>
-                <textarea formControlName="observaciones" rows="2"
-                          class="w-full text-sm font-normal bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-xl px-3 py-2.5 outline-none transition-all resize-none hover:border-stone-400 focus:border-black focus:shadow-[3px_3px_0_#000]"></textarea>
-            </div>
-        </form>
-
-        <div class="border-t-2 border-black bg-stone-200 dark:bg-slate-800 px-5 py-3 flex justify-between items-center shrink-0">
-            <button type="button" (click)="cerrarModalBusqueda()"
-                    class="px-4 py-2 bg-[#FF1414] text-white font-black text-[10px] border-2 border-black rounded-xl shadow-[2px_2px_0_#000] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all uppercase">
-                Cancelar
-            </button>
-            <button type="button" (click)="buscarHerramientas()"
-                    [disabled]="!isBusquedaValida() || isSearching"
-                    class="flex items-center gap-2 px-5 py-2 bg-amber-400 text-black font-black text-[10px] border-2 border-black rounded-xl shadow-[3px_3px_0_#000] hover:shadow-none hover:translate-x-[3px] hover:translate-y-[3px] transition-all uppercase disabled:opacity-40 disabled:cursor-not-allowed disabled:translate-x-0 disabled:translate-y-0 disabled:shadow-[3px_3px_0_#000]">
-                <mat-icon class="!text-sm" [class.animate-spin]="isSearching">{{ isSearching ? 'refresh' : 'search' }}</mat-icon>
-                {{ isSearching ? 'Buscando...' : 'Consultar' }}
-            </button>
-        </div>
-    </div>
-</ng-template>
-
-<!-- ══════════════════════════════════════════════════════════
-     MODAL: CONFIRMAR DEVOLUCIÓN TERCEROS
-══════════════════════════════════════════════════════════ -->
-<ng-template #confirmDevolucionModal>
-    <div class="bg-stone-100 dark:bg-slate-900 border-2 border-black overflow-hidden flex flex-col"
-         style="width:600px; max-width:95vw; max-height:90vh; box-shadow: 6px 6px 0 #000">
-
-        <div class="bg-[#0F172A] px-5 py-3.5 flex items-center gap-3 shrink-0">
-            <div class="w-9 h-9 rounded bg-amber-400 border-2 border-black flex items-center justify-center shadow-[2px_2px_0_#fbbf24] shrink-0">
-                <mat-icon class="!text-lg text-black">assignment_return</mat-icon>
-            </div>
-            <div>
-                <p class="text-[9px] text-slate-400 font-bold uppercase tracking-[0.18em] leading-none mb-0.5">Terceros</p>
-                <h2 class="text-sm text-white font-black uppercase tracking-tight leading-none">Confirmar Devolución</h2>
-            </div>
-        </div>
-
-        <div class="flex-1 overflow-y-auto px-5 py-5 flex flex-col gap-4">
-
-            <div class="bg-purple-50 dark:bg-purple-900/20 border-2 border-purple-300 dark:border-purple-700 rounded-xl p-3">
-                <p class="text-[8px] font-black uppercase tracking-[0.18em] text-purple-500 dark:text-purple-400 mb-0.5">Empresa que devuelve</p>
-                <div class="font-black text-sm text-black dark:text-white">{{ _terceroSeleccionado?.razonSocial }}</div>
-                <div class="text-[10px] font-bold text-stone-500 dark:text-slate-300 mt-0.5">
-                    Fecha devolución: {{ devolucionForm.get('fechaDevolucion')?.value }}
-                </div>
-            </div>
-
-            <div>
-                <p class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-2">Resumen por condición</p>
-                <div class="flex flex-wrap gap-2">
-                    <div *ngFor="let r of getResumenPorCondicion()"
-                         class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border-2 border-black"
-                         [ngClass]="r.bgColor">
-                        <span class="text-xs font-black text-white">{{ r.cantidad }}</span>
-                        <span class="text-[10px] font-black text-white uppercase">{{ r.condicion }}</span>
-                    </div>
-                </div>
-            </div>
-
-            <div class="max-h-40 overflow-y-auto flex flex-col gap-1">
-                <p class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1">Herramientas ({{ getSelCountDevolucion() }})</p>
-                <div *ngFor="let item of getSelDevolucionItems()"
-                     class="flex items-center gap-2 px-3 py-1.5 border-2 border-black rounded-xl bg-purple-50 dark:bg-purple-900/20">
-                    <mat-icon class="!text-sm" [ngClass]="getCondicionClass(item.condicionDevolucion) + ' text-white rounded px-0.5'">
-                        {{ getCondicionIcon(item.condicionDevolucion) }}
-                    </mat-icon>
-                    <div class="flex-1 min-w-0">
-                        <span class="font-mono text-[10px] font-black text-purple-700 dark:text-purple-400">{{ item.codigo }}</span>
-                        <span class="text-[10px] text-stone-500 dark:text-slate-300 ml-1 truncate">{{ item.descripcion }}</span>
-                    </div>
-                    <span class="text-[9px] font-black text-black dark:text-white shrink-0 bg-white dark:bg-slate-700 border border-black rounded px-1">{{ item.condicionDevolucion }}</span>
-                    <span class="text-xs font-black text-black dark:text-white shrink-0">{{ item.cantidad }} u.</span>
-                </div>
-            </div>
-        </div>
-
-        <div class="border-t-2 border-black bg-stone-200 dark:bg-slate-800 px-5 py-3 flex justify-between items-center shrink-0">
-            <button (click)="cerrarConfirmDevolucion()"
-                    class="px-4 py-2 bg-[#FF1414] text-white font-black text-[10px] border-2 border-black rounded-xl shadow-[2px_2px_0_#000] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all uppercase">
-                Cancelar
-            </button>
-            <button (click)="finalizarDevolucion()"
-                    class="flex items-center gap-2 px-5 py-2 bg-amber-400 text-black font-black text-[10px] border-2 border-black rounded-xl shadow-[3px_3px_0_#000] hover:shadow-none hover:translate-x-[3px] hover:translate-y-[3px] transition-all uppercase">
-                <mat-icon class="!text-sm">check_circle</mat-icon>
-                Confirmar Devolución
-            </button>
-        </div>
-    </div>
-</ng-template>

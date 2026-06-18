@@ -2,12 +2,9 @@ import { Component, OnInit, inject, Inject, Optional } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule, Router } from '@angular/router';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatInputModule } from '@angular/material/input';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
-import { MatSelectModule } from '@angular/material/select';
-import { MatDialogRef, MAT_DIALOG_DATA, MatDialogModule } from '@angular/material/dialog';
+import { MatDialog, MatDialogRef, MAT_DIALOG_DATA, MatDialogModule } from '@angular/material/dialog';
 import { DragDropModule } from '@angular/cdk/drag-drop';
 
 export interface FormClienteData {
@@ -22,11 +19,8 @@ export interface FormClienteData {
         CommonModule,
         RouterModule,
         ReactiveFormsModule,
-        MatFormFieldModule,
-        MatInputModule,
         MatButtonModule,
         MatIconModule,
-        MatSelectModule,
         MatDialogModule,
         DragDropModule
     ],
@@ -36,58 +30,11 @@ export interface FormClienteData {
             display: block;
             height: 100%;
         }
-
-        /* Clases de utilidad para inputs Neo-Brutalistas */
-        .neo-input {
-            width: 100%;
-            height: 48px;
-            padding: 0 16px;
-            background-color: #f9fafb;
-            border: 3px solid #000;
-            border-radius: 12px;
-            font-weight: 700;
-            font-size: 14px;
-            color: #1f2937;
-            transition: all 0.2s;
-        }
-
-        .neo-input:focus {
-            outline: none;
-            box-shadow: 4px 4px 0px 0px #f59e0b; /* Amber shadow */
-            transform: translateY(-2px);
-            border-color: #000;
-        }
-
-        /* Dark mode overrides for inputs */
-        :host-context(.dark) .neo-input {
-            background-color: #334155;
-            color: white;
-            border-color: #94a3b8;
-        }
-
-        :host-context(.dark) .neo-input:focus {
-            border-color: #fbbf24;
-            box-shadow: 4px 4px 0px 0px #fbbf24;
-        }
-
-        /* Labels */
-        .field-label {
-            display: block;
-            font-size: 11px;
-            font-weight: 900;
-            text-transform: uppercase;
-            color: #6b7280;
-            margin-bottom: 6px;
-            margin-left: 4px;
-        }
-
-        :host-context(.dark) .field-label {
-            color: #cbd5e1;
-        }
     `]
 })
 export class FormClienteComponent implements OnInit {
     public dialogRef = inject(MatDialogRef<FormClienteComponent>, { optional: true });
+    private dialog = inject(MatDialog);
     clienteForm!: FormGroup;
     isEditMode = false;
 
@@ -108,20 +55,20 @@ export class FormClienteComponent implements OnInit {
 
     private initForm(): void {
         this.clienteForm = this.fb.group({
-            tipo_cliente: ['EMPRESA', Validators.required],
-            nombre: ['', Validators.required],
-            razon_social: [''],
-            nit: [''],
-            registro_fiscal: [''],
-            direccion: [''],
-            ciudad: ['', Validators.required],
-            pais: ['Bolivia', Validators.required],
-            telefono: ['', [Validators.required, Validators.pattern(/^\+?[0-9\s\-()]+$/)]],
-            email: ['', [Validators.required, Validators.email]],
+            tipo_cliente:       ['', Validators.required],
+            nombre:             ['', Validators.required],
+            nit:                [''],
+            razon_social:       [''],
+            registro_fiscal:    [''],
+            ciudad:             ['', Validators.required],
+            pais:               ['Bolivia', Validators.required],
+            direccion:          [''],
+            telefono:           ['', [Validators.required, Validators.pattern(/^\+?[0-9\s\-()]+$/)]],
+            email:              ['', [Validators.required, Validators.email]],
             contacto_principal: ['', Validators.required],
-            telefono_contacto: [''],
-            email_contacto: ['', Validators.email],
-            observaciones: ['']
+            telefono_contacto:  [''],
+            email_contacto:     ['', Validators.email],
+            observaciones:      ['']
         });
     }
 
@@ -132,19 +79,49 @@ export class FormClienteComponent implements OnInit {
                 razonSocialControl?.setValidators([Validators.required]);
             } else {
                 razonSocialControl?.clearValidators();
-                razonSocialControl?.setValue(''); // Limpiar si cambia a persona
+                razonSocialControl?.setValue('');
             }
             razonSocialControl?.updateValueAndValidity();
         });
     }
 
-    // Método helper para cambiar el tipo desde las tarjetas visuales
-    setClientType(type: 'EMPRESA' | 'PERSONA'): void {
-        this.clienteForm.patchValue({ tipo_cliente: type });
+    async openClienteForm(tipo: 'EMPRESA' | 'PERSONA'): Promise<void> {
+        const { TipoClienteFormDialogComponent } = await import('./tipo-cliente-form-dialog.component');
+        const current = this.clienteForm.value;
+
+        const ref = this.dialog.open(TipoClienteFormDialogComponent, {
+            panelClass: 'neo-mini-dialog',
+            hasBackdrop: true,
+            backdropClass: 'bg-black/30',
+            disableClose: true,
+            data: {
+                tipo,
+                nombre:             current.nombre,
+                nit:                current.nit,
+                razon_social:       current.razon_social,
+                registro_fiscal:    current.registro_fiscal,
+                ciudad:             current.ciudad,
+                pais:               current.pais,
+                direccion:          current.direccion,
+                email:              current.email,
+                telefono:           current.telefono,
+                contacto_principal: current.contacto_principal,
+                telefono_contacto:  current.telefono_contacto,
+                email_contacto:     current.email_contacto,
+                observaciones:      current.observaciones
+            }
+        });
+
+        ref.afterClosed().subscribe(result => {
+            if (result) {
+                this.clienteForm.patchValue({ tipo_cliente: tipo });
+                this.clienteForm.patchValue(result);
+            }
+        });
     }
 
     private loadClienteData(cliente: any): void {
-        this.clienteForm.patchValue(cliente);
+        this.clienteForm.patchValue(cliente, { emitEvent: false });
     }
 
     onSubmit(): void {

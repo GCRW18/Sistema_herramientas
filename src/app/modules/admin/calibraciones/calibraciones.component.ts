@@ -273,10 +273,10 @@ export class CalibracionesComponent implements OnInit, OnDestroy, AfterViewInit 
         this.pageIndex = 0;
         this.loadRecentCalibrations();
         this.dialog.open(this.calibracionesRecientesDialog, {
-            width: '1100px',
+            width: '700px',
             maxWidth: '95vw',
-            height: '85vh',
-            maxHeight: '90vh',
+            height: 'auto',
+            maxHeight: '80vh',
             panelClass: 'neo-dialog',
             hasBackdrop: true,
             disableClose: false,
@@ -309,31 +309,28 @@ export class CalibracionesComponent implements OnInit, OnDestroy, AfterViewInit 
         this.isLoading = true;
         this.cdr.detectChanges();
 
-        this.movementService.getHistorialMovimientos({
-            movement_type: 'calibration',
-            page: this.pageIndex + 1,
+        this.calibrationService.getCalibrations({
+            start: this.pageIndex * this.pageSize,
             limit: this.pageSize
         }).pipe(
             takeUntil(this._unsubscribeAll),
             finalize(() => setTimeout(() => { this.isLoading = false; this.cdr.detectChanges(); }))
         ).subscribe({
-            next: (response) => {
+            next: (items: any[]) => {
                 setTimeout(() => {
-                    if (response && response.data && response.data.length > 0) {
-                        this.recentCalibrations = response.data.map((item: any) => ({
-                            id: item.id || item.id_calibration,
-                            fecha: this.formatDate(item.date || item.fecha),
-                            tipo: this.mapCalType(item.tipo || item.type),
-                            estado: this.mapStatus(item.status || item.estado),
-                            responsable: item.requestedBy?.fullName || item.responsable || 'N/A',
-                            nroComprobante: item.record_number || item.nroComprobante || '-',
-                            items: item.items?.length || 0
-                        }));
-                        this.totalRecords = response.total || this.recentCalibrations.length;
-                    } else {
-                        this.recentCalibrations = [];
-                        this.totalRecords = 0;
-                    }
+                    const arr = items || [];
+                    this.recentCalibrations = arr.map((item: any) => ({
+                        id: String(item.id_calibration || item.id || ''),
+                        fecha: this.formatDate(item.send_date || item.request_date || item.fecha_reg),
+                        tipo: this.mapCalType(item.calibration_type || item.tipo || item.type),
+                        estado: this.mapStatus(item.status || item.estado),
+                        responsable: item.requested_by_name || item.responsable || 'N/A',
+                        nroComprobante: item.record_number || item.nroComprobante || '-',
+                        items: 0
+                    }));
+                    this.totalRecords = arr.length < this.pageSize
+                        ? this.pageIndex * this.pageSize + arr.length
+                        : (this.pageIndex + 1) * this.pageSize + 1;
                     this.cdr.detectChanges();
                 });
             },
@@ -349,12 +346,19 @@ export class CalibracionesComponent implements OnInit, OnDestroy, AfterViewInit 
     }
 
     private mapCalType(type: string): string {
-        const map: Record<string, string> = { send: 'ENVÍO', return: 'RETORNO', batch: 'ENVÍO LOTE', jack_service: 'SERVICIO GATA' };
+        const map: Record<string, string> = {
+            periodic:      'PERIÓDICA',
+            calibration:   'CALIBRACIÓN',
+            verification:  'VERIFICACIÓN',
+            repair:        'REPARACIÓN',
+            initial:       'INICIAL',
+            extraordinary: 'EXTRAORDINARIA'
+        };
         return map[type] || type?.toUpperCase() || 'N/A';
     }
 
     private mapStatus(status: string): string {
-        const map: Record<string, string> = { sent: 'EN LABORATORIO', completed: 'COMPLETADO', returned: 'RETORNADO', pending: 'PENDIENTE', rejected: 'RECHAZADO', cancelled: 'CANCELADO' };
+        const map: Record<string, string> = { sent: 'EN LABORATORIO', in_transit: 'EN TRÁNSITO', in_process: 'EN PROCESO', completed: 'COMPLETADO', returned: 'RETORNADO', pending: 'PENDIENTE', rejected: 'RECHAZADO', cancelled: 'CANCELADO' };
         return map[status] || status?.toUpperCase() || 'N/A';
     }
 
@@ -362,7 +366,7 @@ export class CalibracionesComponent implements OnInit, OnDestroy, AfterViewInit 
         switch (estado) {
             case 'COMPLETADO': case 'RETORNADO': return 'bg-green-600 text-white border-black';
             case 'PENDIENTE':                    return 'bg-amber-500 text-black border-black';
-            case 'EN LABORATORIO': case 'ENVIADO': return 'bg-blue-700 text-white border-black';
+            case 'EN LABORATORIO': case 'ENVIADO': case 'EN PROCESO': case 'EN TRÁNSITO': return 'bg-blue-700 text-white border-black';
             case 'RECHAZADO': case 'CANCELADO':  return 'bg-red-600 text-white border-black';
             default:                             return 'bg-gray-500 text-white border-black';
         }

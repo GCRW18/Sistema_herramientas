@@ -25,6 +25,15 @@
 
         <div class="w-px h-8 bg-black/20 dark:bg-white/20 mx-1"></div>
 
+        <!-- Botón REGISTROS RECIENTES -->
+        <button (click)="openMovRecientes()"
+                class="header-btn flex items-center gap-2 px-5 py-2 bg-black dark:bg-slate-700 border-[2px] border-black font-black text-xs uppercase rounded-xl shadow-[3px_3px_0px_0px_rgba(0,0,0,0.5)] hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,0.5)] hover:translate-x-[2px] hover:translate-y-[2px] transition-all text-white">
+            <mat-icon class="header-btn-icon !text-base !text-white">history</mat-icon>
+            <span class="hidden sm:inline">Registros Recientes</span>
+        </button>
+
+        <div class="w-px h-8 bg-black/20 dark:bg-white/20 mx-1"></div>
+
         <!-- Botón MÓDULOS (bandeja) -->
         <button (click)="toggleBandeja()"
                 [class.!bg-black]="showBandeja"
@@ -132,3 +141,88 @@
     </div>
 
 </div>
+
+<!-- ── DIALOG: REGISTROS RECIENTES ── -->
+<ng-template #movRecientesDialog>
+    <div class="overflow-hidden flex flex-col relative font-sans" style="max-height:80vh">
+
+        <!-- Header -->
+        <div class="bg-[#0F172A] px-4 py-2.5 flex items-center justify-between shrink-0 border-b-[2px] border-black"
+             cdkDrag cdkDragRootElement=".cdk-overlay-pane" cdkDragHandle style="cursor:grab">
+            <div class="flex items-center gap-2.5">
+                <div class="w-7 h-7 rounded-lg bg-[#FFC501] border-2 border-black flex items-center justify-center shadow-[2px_2px_0_#000] shrink-0">
+                    <mat-icon class="!text-base text-black">history</mat-icon>
+                </div>
+                <div>
+                    <p class="text-[8px] text-slate-400 font-bold uppercase tracking-widest leading-none mb-0.5">Movimientos</p>
+                    <h2 class="text-xs text-white font-black uppercase tracking-tight leading-none">Registros Recientes</h2>
+                </div>
+            </div>
+            <div class="flex items-center gap-1.5">
+                <button (click)="loadRecentMovements()"
+                        class="flex items-center gap-1 px-2.5 py-1 bg-slate-800 border-[2px] border-black rounded-full text-[9px] font-black text-[#FFC501] uppercase shadow-[2px_2px_0_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all">
+                    <mat-icon class="!text-xs">refresh</mat-icon>
+                    <span>Actualizar</span>
+                </button>
+                <button mat-dialog-close
+                        class="w-7 h-7 flex items-center justify-center bg-[#FF1414] border-[2px] border-black rounded-full text-white shadow-[2px_2px_0_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all">
+                    <mat-icon class="!text-sm">close</mat-icon>
+                </button>
+            </div>
+        </div>
+
+        <!-- Loading -->
+        <div *ngIf="isLoadingRecents" class="absolute inset-0 bg-white/70 dark:bg-slate-900/70 z-[9999] flex flex-col items-center justify-center backdrop-blur-sm">
+            <mat-spinner diameter="32"></mat-spinner>
+            <span class="font-black text-black dark:text-white uppercase mt-3 text-[10px] tracking-widest">Cargando...</span>
+        </div>
+
+        <!-- Table -->
+        <div class="flex flex-col overflow-hidden p-2 bg-[#f8f9fc] dark:bg-[#0F172A]">
+            <div class="border-[2px] border-black rounded-xl overflow-hidden flex flex-col bg-white dark:bg-slate-800 shadow-[4px_4px_0px_0px_#000]">
+
+                <div class="overflow-auto custom-scrollbar" style="max-height:52vh">
+                    <table class="w-full">
+                        <thead class="bg-stone-200 dark:bg-[#020617] sticky top-0 z-10 border-b-[2px] border-black text-[10px] font-black uppercase">
+                        <tr>
+                            <th class="py-2 px-3 text-left text-black dark:text-amber-400 w-24">Fecha</th>
+                            <th class="py-2 px-3 text-left text-black dark:text-amber-400 w-28">Tipo</th>
+                            <th class="py-2 px-3 text-left text-black dark:text-amber-400">N° Comprobante</th>
+                            <th class="py-2 px-3 text-left text-black dark:text-amber-400">Responsable</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr *ngFor="let m of recentMovements"
+                            class="border-b border-gray-200 dark:border-slate-700 hover:bg-stone-50 dark:hover:bg-slate-700/50 transition-colors">
+                            <td class="py-2 px-3 font-mono text-[10px] font-bold text-gray-900 dark:text-white whitespace-nowrap">{{ m.fecha }}</td>
+                            <td class="py-2 px-3">
+                                <span [ngClass]="getMovTypeClass(m.tipoRaw)"
+                                      class="px-1.5 py-0.5 rounded text-[9px] font-black border border-black uppercase">
+                                    {{ m.tipo }}
+                                </span>
+                            </td>
+                            <td class="py-2 px-3 font-mono text-[10px] font-bold text-amber-700 dark:text-amber-400">{{ m.comprobante }}</td>
+                            <td class="py-2 px-3 text-[10px] font-bold text-gray-700 dark:text-gray-300">{{ m.responsable }}</td>
+                        </tr>
+                        <tr *ngIf="recentMovements.length === 0 && !isLoadingRecents">
+                            <td colspan="4" class="py-10 text-center text-gray-400 dark:text-slate-500 font-black uppercase tracking-wider text-xs">
+                                <div class="flex flex-col items-center mx-auto">
+                                    <mat-icon class="!text-4xl mb-1.5 text-gray-300 dark:text-slate-600">swap_horiz</mat-icon>
+                                    Sin registros de movimientos
+                                </div>
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Footer -->
+                <div class="flex items-center justify-between px-3 py-1.5 border-t-[2px] border-black bg-stone-200 dark:bg-[#020617] shrink-0">
+                    <span class="text-[10px] font-black text-black dark:text-slate-300 uppercase">{{ recentMovements.length }} registros</span>
+                    <span class="text-[9px] font-black text-gray-500 uppercase tracking-wider">Últimos movimientos</span>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</ng-template>

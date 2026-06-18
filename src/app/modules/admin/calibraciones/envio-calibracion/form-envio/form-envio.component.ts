@@ -324,8 +324,15 @@ export class FormEnvioComponent implements OnInit, OnDestroy {
                 item.status = 'sending';
                 this.cdr.detectChanges();
 
+                const calTypeMap: Record<string, string> = {
+                    calibration:        'calibration',
+                    repair:             'repair',
+                    calibration_repair: 'calibration',
+                    verification:       'verification',
+                };
                 const payload = {
                     tool_id:              item.tool.id_tool,
+                    calibration_type:     calTypeMap[item.workType] ?? 'calibration',
                     work_type:            this._workTypeMap[item.workType] ?? item.workType,
                     supplier_id:          item.supplierId,
                     supplier_name:        item.supplierName,

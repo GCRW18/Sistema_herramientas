@@ -1,0 +1,104 @@
+<div class="bg-stone-100 dark:bg-slate-900 border-2 border-black flex flex-col w-full max-h-[90vh] rounded-2xl overflow-hidden">
+
+    <!-- HEADER -->
+    <div class="bg-[#0F172A] px-5 py-3 flex items-center gap-3 shrink-0 select-none"
+         cdkDrag cdkDragRootElement=".cdk-overlay-pane" cdkDragHandle style="cursor:grab">
+        <div class="w-9 h-9 rounded bg-amber-500 border-2 border-black flex items-center justify-center shadow-[2px_2px_0_#000] shrink-0">
+            <mat-icon class="!text-lg text-white">notifications_active</mat-icon>
+        </div>
+        <div class="flex-1 min-w-0">
+            <p class="text-[9px] text-slate-400 font-bold uppercase tracking-[0.18em] leading-none mb-0.5">Administración · Alertas</p>
+            <h2 class="text-sm text-white font-black uppercase tracking-tight leading-none">
+                {{ isEditMode ? 'Editar Destinatario' : 'Nuevo Destinatario' }}
+            </h2>
+        </div>
+        <button type="button" (click)="onCancel()" (mousedown)="$event.stopPropagation()"
+                class="w-8 h-8 flex items-center justify-center rounded-lg bg-white/10 hover:bg-white/20 transition-colors border border-white/10 shrink-0">
+            <mat-icon class="text-white !text-base">close</mat-icon>
+        </button>
+    </div>
+
+    <!-- FORM -->
+    <form [formGroup]="form" class="flex-1 overflow-y-auto px-5 py-4 flex flex-col gap-3">
+
+        <!-- Nombre -->
+        <div>
+            <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1 block">
+                Nombre *
+            </label>
+            <input formControlName="nombre" type="text" placeholder="Ej. Supervisor de Mantenimiento"
+                   class="w-full h-9 text-sm font-bold bg-white dark:bg-slate-800 dark:text-white border-2 rounded-xl px-3 outline-none transition-all placeholder:text-stone-300 placeholder:font-normal dark:placeholder:text-slate-600 hover:border-stone-400 focus:border-black focus:shadow-[3px_3px_0_#000] uppercase"
+                   [ngClass]="form.get('nombre')?.invalid && form.get('nombre')?.touched ? 'border-red-400' : 'border-stone-300 dark:border-slate-600'">
+            <p *ngIf="form.get('nombre')?.invalid && form.get('nombre')?.touched"
+               class="text-[8px] font-bold text-red-500 mt-0.5">Requerido (mín. 3 caracteres).</p>
+        </div>
+
+        <!-- Email -->
+        <div>
+            <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1 block">
+                Email *
+            </label>
+            <input formControlName="email" type="email" placeholder="supervisor@boa.bo"
+                   class="w-full h-9 text-sm font-bold bg-white dark:bg-slate-800 dark:text-white border-2 rounded-xl px-3 outline-none transition-all placeholder:text-stone-300 placeholder:font-normal dark:placeholder:text-slate-600 hover:border-stone-400 focus:border-black focus:shadow-[3px_3px_0_#000]"
+                   [ngClass]="form.get('email')?.invalid && form.get('email')?.touched ? 'border-red-400' : 'border-stone-300 dark:border-slate-600'">
+            <p *ngIf="form.get('email')?.invalid && form.get('email')?.touched"
+               class="text-[8px] font-bold text-red-500 mt-0.5">Email inválido.</p>
+        </div>
+
+        <!-- Días de alerta -->
+        <div>
+            <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1 block">
+                Días de alerta anticipada *
+            </label>
+            <div class="flex items-center gap-3">
+                <input formControlName="dias_alerta" type="number" min="1" max="365" placeholder="30"
+                       class="w-28 h-9 text-sm font-black bg-white dark:bg-slate-800 dark:text-white border-2 rounded-xl px-3 outline-none transition-all hover:border-stone-400 focus:border-black focus:shadow-[3px_3px_0_#000]"
+                       [ngClass]="form.get('dias_alerta')?.invalid && form.get('dias_alerta')?.touched ? 'border-red-400' : 'border-stone-300 dark:border-slate-600'">
+                <span class="text-[10px] font-black uppercase text-stone-400 dark:text-slate-500">días antes del vencimiento</span>
+            </div>
+            <p *ngIf="form.get('dias_alerta')?.invalid && form.get('dias_alerta')?.touched"
+               class="text-[8px] font-bold text-red-500 mt-0.5">Ingrese un valor entre 1 y 365.</p>
+        </div>
+
+        <!-- Notas -->
+        <div>
+            <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1 block">
+                Notas
+            </label>
+            <textarea formControlName="notes" rows="3" placeholder="Descripción opcional..."
+                      class="w-full px-3 py-2 text-sm font-bold bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-xl outline-none transition-all placeholder:text-stone-300 placeholder:font-normal dark:placeholder:text-slate-600 hover:border-stone-400 focus:border-black focus:shadow-[3px_3px_0_#000] resize-none"></textarea>
+        </div>
+
+        <!-- Estado activo -->
+        <div class="flex items-center gap-3 bg-white dark:bg-slate-800 border-2 border-stone-300 dark:border-slate-600 rounded-xl px-3 py-2">
+            <label class="relative inline-flex items-center cursor-pointer shrink-0">
+                <input type="checkbox" formControlName="activo" class="sr-only peer">
+                <div class="w-10 h-6 bg-stone-300 peer-focus:outline-none rounded-full peer dark:bg-slate-600 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[3px] after:left-[3px] after:bg-white after:border after:rounded-full after:h-[18px] after:w-[18px] after:transition-all peer-checked:bg-amber-500 border-2 border-black"></div>
+            </label>
+            <div>
+                <p class="text-[10px] font-black uppercase leading-none"
+                   [ngClass]="form.get('activo')?.value ? 'text-green-700 dark:text-green-400' : 'text-stone-500 dark:text-slate-400'">
+                    {{ form.get('activo')?.value ? 'Destinatario Activo' : 'Destinatario Inactivo' }}
+                </p>
+                <p class="text-[9px] text-stone-400 dark:text-slate-500 mt-0.5">
+                    {{ form.get('activo')?.value ? 'Recibirá alertas de vencimiento por email' : 'No recibirá notificaciones' }}
+                </p>
+            </div>
+        </div>
+
+    </form>
+
+    <!-- FOOTER -->
+    <div class="border-t-2 border-black bg-stone-200 dark:bg-slate-800 px-4 py-2.5 flex justify-between items-center gap-2 shrink-0">
+        <button type="button" (click)="onCancel()"
+                class="px-4 py-2 bg-[#FF1414] text-white font-black text-[10px] border-2 border-black rounded-xl shadow-[2px_2px_0_#000] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all uppercase">
+            Cancelar
+        </button>
+        <button type="button" (click)="onSubmit()" [disabled]="!form.valid"
+                class="flex items-center gap-2 px-5 py-2 bg-[#0F172A] text-white font-black text-[10px] border-2 border-black rounded-xl shadow-[3px_3px_0_#000] hover:shadow-none hover:translate-x-[3px] hover:translate-y-[3px] transition-all uppercase disabled:opacity-40 disabled:cursor-not-allowed disabled:pointer-events-none">
+            <mat-icon class="!text-white !text-base">{{ isEditMode ? 'save' : 'person_add' }}</mat-icon>
+            {{ isEditMode ? 'Guardar Cambios' : 'Crear Destinatario' }}
+        </button>
+    </div>
+
+</div>

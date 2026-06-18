@@ -1,5 +1,5 @@
 import { Injectable, inject } from '@angular/core';
-import { catchError, forkJoin, from, Observable, of, ReplaySubject, switchMap, tap } from 'rxjs';
+import { catchError, forkJoin, from, map, Observable, of, ReplaySubject, switchMap, tap } from 'rxjs';
 import { Movement, MovementVoucher, CreateMovement } from '../models';
 import { ErpApiService } from '../api/api.service';
 
@@ -381,7 +381,7 @@ export class MovementService {
     getHerramientasDisponibles(filters?: any): Observable<any[]> {
         return from(this._api.post('herramientas/tools/listTools', {
             start: 0,
-            limit: 500,
+            limit: 2000,
             ...filters
         })).pipe(
             switchMap((response: any) => of(response?.datos || response?.data || []))
@@ -483,27 +483,30 @@ export class MovementService {
      */
     getPersonal(): Observable<any[]> {
         if (!this._personalPromise) {
-            this._personalPromise = (this._api.post('herramientas/employees/listarEmployees', {
+            this._personalPromise = (this._api.post('herramientas/employees/listarFuncionarios', {
                 start: 0,
                 limit: 2000,
                 sort: 'full_name',
                 dir: 'asc'
             }) as Promise<any>).then((response: any) => {
-                const data = response?.datos || response?.data || [];
-                return data.map((emp: any) => ({
-                    id:               emp.id_employee || emp.id,
-                    id_employee:      emp.id_employee || emp.id,
+                const raw: any[] = response?.datos || response?.data || [];
+                const mapped = raw.map((emp: any) => ({
+                    id:               emp.id_usuario || emp.id_employee || emp.id,
+                    id_employee:      emp.id_usuario || emp.id_employee || emp.id,
                     licencia:         emp.license_number || '',
                     nro_licencia:     emp.license_number || '',
-                    nombreCompleto:   emp.full_name || `${emp.first_name || ''} ${emp.paternal_last_name || ''} ${emp.maternal_last_name || ''}`.trim(),
-                    nombre:           emp.first_name || '',
-                    apellido_paterno: emp.paternal_last_name || '',
-                    apellido_materno: emp.maternal_last_name || '',
-                    cargo:            emp.cargo || emp.employee_type || '',
+                    nombreCompleto:   emp.full_name ||
+                                      `${emp.apellido_paterno || emp.paternal_last_name || ''} ${emp.apellido_materno || emp.maternal_last_name || ''} ${emp.nombre || emp.first_name || ''}`.trim(),
+                    nombre:           emp.nombre || emp.first_name || '',
+                    apellido_paterno: emp.apellido_paterno || emp.paternal_last_name || '',
+                    apellido_materno: emp.apellido_materno || emp.maternal_last_name || '',
+                    cargo:            emp.cargo || emp.employee_type || emp.cuenta || '',
                     departamento:     emp.area || '',
                     area:             emp.area || '',
-                    active:           emp.active
+                    active:           emp.active === true || emp.active === 't' || emp.active === 'true' || true
                 }));
+                if (mapped.length === 0) this._personalPromise = null;
+                return mapped;
             });
         }
         return from(this._personalPromise);
@@ -664,6 +667,42 @@ export class MovementService {
                 return of(datos);
             })
         );
+    }
+
+    // ─── Categorías de ingresos (he.tcategories) ──────────────────────────────
+
+    getIngresosCategories(): Observable<{ id_category: number; name: string; code: string; active: boolean }[]> {
+        return from(this._api.post('herramientas/categories/listCategories', {
+            start: 0, limit: 200, sort: 'display_order', dir: 'asc'
+        })).pipe(
+            map((r: any) => {
+                const data = r?.ROOT?.datos ?? r?.datos ?? r?.data ?? [];
+                return (Array.isArray(data) ? data : []).filter((c: any) => c.active !== false);
+            }),
+            catchError(() => of([]))
+        );
+    }
+
+    createIngresosCategory(name: string): Observable<any> {
+        const upper = name.trim().toUpperCase();
+        return from(this._api.post('herramientas/categories/insertCategory', {
+            name: upper,
+            code: upper.replace(/\s+/g, '_'),
+            description: '',
+            color: 'bg-gray-600',
+            icon: 'category',
+            display_order: 0,
+            is_fixed: false,
+            parent_category_id: null,
+            level: 1,
+            has_children: false,
+            active: true
+        })).pipe(catchError(err => { throw err; }));
+    }
+
+    deleteIngresosCategory(id_category: number): Observable<any> {
+        return from(this._api.post('herramientas/categories/deleteCategory', { id_category }))
+            .pipe(catchError(err => { throw err; }));
     }
 
     /**

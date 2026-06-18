@@ -1,412 +1,415 @@
-<!-- ══════════════════════════════════════════════════════════════════
+﻿<!-- ══════════════════════════════════════════════════════════════════
      FORM DIALOG: REGISTRAR DEVOLUCIÓN — DP (wide, panel doble)
 ══════════════════════════════════════════════════════════════════ -->
-<div class="bg-stone-100 dark:bg-[#0F172A] sm:border-2 border-black flex flex-col overflow-hidden relative w-full"
-     style="box-shadow:6px 6px 0 #000; height:min(85vh,90dvh)">
+<div class="bg-stone-100 dark:bg-[#0F172A] sm:border-2 border-black rounded-2xl flex flex-col overflow-hidden relative w-full"
+     style="box-shadow:6px 6px 0 #000; height:min(560px,90vh)">
 
-  <!-- Saving overlay -->
-  <div *ngIf="isSaving" class="absolute inset-0 bg-black/60 flex items-center justify-center z-50">
-    <div class="bg-stone-100 dark:bg-slate-800 border-2 border-black rounded-xl shadow-[4px_4px_0_#000] px-8 py-6 flex flex-col items-center gap-4">
-      <div class="w-10 h-10 border-4 border-[#FFC501FF] border-t-transparent rounded-full animate-spin"></div>
-      <span class="font-black text-black dark:text-white uppercase tracking-widest text-sm animate-pulse">Registrando…</span>
+    <!-- Saving overlay -->
+    <div *ngIf="isSaving" class="absolute inset-0 bg-black/60 flex items-center justify-center z-50">
+        <div class="bg-stone-100 dark:bg-slate-800 border-2 border-black rounded-xl shadow-[4px_4px_0_#000] px-8 py-6 flex flex-col items-center gap-4">
+            <div class="w-10 h-10 border-4 border-[#FFC501FF] border-t-transparent rounded-full animate-spin"></div>
+            <span class="font-black text-black dark:text-white uppercase tracking-widest text-sm animate-pulse">Registrando…</span>
+        </div>
     </div>
-  </div>
 
-  <!-- Header -->
-  <div class="bg-[#0F172A] px-5 py-3 flex items-center gap-3 shrink-0">
-    <div class="w-9 h-9 rounded bg-amber-400 border-2 border-black flex items-center justify-center shadow-[2px_2px_0_#fbbf24] shrink-0">
-      <mat-icon class="!text-lg text-black">assignment_return</mat-icon>
-    </div>
-    <div>
-      <p class="text-[9px] text-slate-400 font-bold uppercase tracking-[0.18em] leading-none mb-0.5">Préstamo Técnico Interno</p>
-      <h2 class="text-sm text-white font-black uppercase tracking-tight leading-none">DEVOLUCIÓN TÉCNICA</h2>
-    </div>
-    <div class="ml-auto flex items-center gap-2 shrink-0">
+    <!-- Header -->
+    <div class="bg-[#0F172A] px-4 py-3 flex items-center gap-3 shrink-0">
+        <div class="w-8 h-8 rounded bg-amber-400 border-2 border-black flex items-center justify-center shadow-[2px_2px_0_#fbbf24] shrink-0">
+            <mat-icon class="!text-base text-black">assignment_return</mat-icon>
+        </div>
+        <div>
+            <p class="text-[9px] text-slate-400 font-bold uppercase tracking-[0.15em] leading-none mb-1">Préstamo Técnico Interno</p>
+            <h2 class="text-sm text-white font-black uppercase tracking-tight leading-none">Devolución Técnica</h2>
+        </div>
+        <div class="ml-auto flex items-center gap-2 shrink-0">
       <span *ngIf="dataSourceDevolucion.length > 0"
-            class="px-2 py-0.5 bg-amber-500 text-black font-black text-[10px] border-2 border-black rounded-lg">
+            class="px-2 py-1 bg-amber-500 text-black font-black text-[10px] border border-black rounded leading-none">
         {{ dataSourceDevolucion.length }} ítem{{ dataSourceDevolucion.length !== 1 ? 's' : '' }}
       </span>
-      <button type="button" (click)="cerrar()"
-              class="px-3 py-1.5 bg-[#FF1414] text-white font-black text-[10px] border-2 border-black rounded-lg shadow-[2px_2px_0_#000] hover:shadow-none hover:translate-x-[1px] hover:translate-y-[1px] transition-all uppercase">
-        Cancelar
-      </button>
-    </div>
-  </div>
-
-  <!-- Body: LEFT (form búsqueda) / RIGHT (tabla devolución) -->
-  <div class="flex flex-col sm:flex-row flex-1 overflow-hidden min-h-0">
-
-    <!-- LEFT: form búsqueda técnico + campos devolución -->
-    <div class="sm:basis-[42%] shrink-0 overflow-y-auto custom-scrollbar border-b-2 sm:border-b-0 sm:border-r-2 border-black/20 dark:border-slate-500">
-      <form [formGroup]="devolucionForm" class="p-4 sm:p-5 flex flex-col gap-4">
-
-        <h3 class="text-[9px] font-black uppercase text-stone-400 dark:text-slate-300 border-b-2 border-black pb-1.5 flex items-center gap-1.5">
-          <mat-icon class="!text-sm text-amber-500">search</mat-icon> Búsqueda — Técnico o Herramienta
-        </h3>
-
-        <!-- Buscar funcionario -->
-        <div class="relative">
-          <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-500 dark:text-slate-300 mb-1.5 flex justify-between items-center">
-            <span>Técnico <span class="text-stone-400 font-normal normal-case">(o buscar por herramienta)</span></span>
-            <div *ngIf="funcionarioLoading" class="w-4 h-4 border-2 border-[#FFC501FF] border-t-transparent rounded-full animate-spin"></div>
-          </label>
-          <div class="relative">
-            <input type="text" [value]="devolucionForm.get('funcionario')?.value"
-                   (input)="onFuncionarioInput($any($event.target).value)"
-                   (blur)="hideFuncionarioDropdown()"
-                   placeholder="Nombre del técnico..."
-                   class="w-full h-10 pl-9 pr-3 text-sm font-bold bg-white dark:bg-slate-800 dark:text-white border-2 rounded-xl outline-none transition-all duration-150 placeholder:text-stone-300"
-                   [ngClass]="hasError('funcionario','required') ? 'border-red-400' : 'border-stone-300 dark:border-slate-500 hover:border-stone-400 focus:border-black focus:shadow-[3px_3px_0_#000]'">
-            <mat-icon class="absolute left-2.5 top-2.5 text-stone-400 !text-sm">person_search</mat-icon>
-          </div>
-          <div *ngIf="showFuncionarioDropdown && funcionariosFiltrados.length > 0"
-               class="absolute z-50 w-full mt-1 bg-white dark:bg-slate-800 border-2 border-black rounded-xl overflow-hidden max-h-48 overflow-y-auto divide-y divide-stone-100 dark:divide-slate-700"
-               style="box-shadow: 4px 4px 0 #000">
-            <button *ngFor="let f of funcionariosFiltrados" type="button" (mousedown)="selectFuncionario(f)"
-                    class="w-full px-3 py-2 text-left hover:bg-blue-50 dark:hover:bg-slate-700 transition-colors">
-              <div class="font-black text-xs text-black dark:text-white">{{ f.nombre }}</div>
-              <div class="text-[10px] text-stone-400 dark:text-slate-400">{{ f.cargo }} · Lic: {{ f.licencia || '—' }}</div>
-            </button>
-          </div>
         </div>
-
-        <!-- Buscar herramienta -->
-        <div class="relative">
-          <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-500 dark:text-slate-300 mb-1.5 block">Herramienta <span class="text-stone-400 font-normal normal-case">(o buscar por técnico)</span></label>
-          <div class="relative">
-            <input type="text" [value]="devolucionForm.get('codigoHerramienta')?.value"
-                   (input)="onHerramientaInput($any($event.target).value)"
-                   (blur)="hideHerramientaDropdown()"
-                   placeholder="Código, nombre o P/N..."
-                   class="w-full h-10 pl-9 pr-8 text-sm font-bold bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-500 rounded-xl outline-none transition-all placeholder:text-stone-300 hover:border-stone-400 focus:border-black focus:shadow-[3px_3px_0_#000]">
-            <mat-icon class="absolute left-2.5 top-2.5 text-stone-400 !text-sm">hardware</mat-icon>
-            <button *ngIf="devolucionForm.get('codigoHerramienta')?.value" type="button" (click)="clearHerramienta()"
-                    class="absolute right-2 top-2 text-stone-400 hover:text-black transition-colors">
-              <mat-icon class="!text-sm">close</mat-icon>
-            </button>
-          </div>
-          <div *ngIf="showHerramientaDropdown && herramientasFiltradas.length > 0"
-               class="absolute z-50 w-full mt-1 bg-white dark:bg-slate-800 border-2 border-black rounded-xl overflow-hidden max-h-40 overflow-y-auto divide-y divide-stone-100 dark:divide-slate-700"
-               style="box-shadow: 4px 4px 0 #000">
-            <button *ngFor="let h of herramientasFiltradas" type="button" (mousedown)="selectHerramienta(h)"
-                    class="w-full px-3 py-2 text-left hover:bg-amber-50 dark:hover:bg-slate-700 transition-colors">
-              <div class="font-black text-[10px] text-amber-700 dark:text-amber-400">{{ h.codigo }}</div>
-              <div class="text-[10px] text-stone-400 truncate">{{ h.nombre }}</div>
-            </button>
-          </div>
-        </div>
-
-        <!-- Fecha y Hora -->
-        <div class="grid grid-cols-2 gap-3">
-          <div>
-            <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-500 dark:text-slate-300 mb-1.5 block">Fecha Devolución <span class="text-red-500">*</span></label>
-            <input formControlName="fechaDevolucion" type="date"
-                   class="w-full h-10 text-sm font-bold bg-white dark:bg-slate-800 dark:text-white border-2 rounded-xl px-3 outline-none transition-all"
-                   [ngClass]="hasError('fechaDevolucion','required') ? 'border-red-400' : 'border-stone-300 dark:border-slate-500 hover:border-stone-400 focus:border-black focus:shadow-[3px_3px_0_#000]'">
-          </div>
-          <div>
-            <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-500 dark:text-slate-300 mb-1.5 block">Hora <span class="text-red-500">*</span></label>
-            <input formControlName="horaDevolucion" type="time"
-                   class="w-full h-10 text-sm font-bold bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-500 rounded-xl px-3 outline-none transition-all hover:border-stone-400 focus:border-black focus:shadow-[3px_3px_0_#000]">
-          </div>
-        </div>
-
-        <!-- Responsable Recibe (autocomplete) -->
-        <div class="relative">
-          <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-500 dark:text-slate-300 mb-1.5 flex justify-between items-center">
-            <span>Responsable Recibe <span class="text-red-500">*</span></span>
-            <div *ngIf="responsableLoading" class="w-4 h-4 border-2 border-[#FFC501FF] border-t-transparent rounded-full animate-spin"></div>
-          </label>
-          <div class="relative">
-            <input type="text" [value]="devolucionForm.get('responsableRecibe')?.value"
-                   (input)="onResponsableInput($any($event.target).value)"
-                   (blur)="hideResponsableDropdown()"
-                   placeholder="Nombre del almacenero..."
-                   class="w-full h-10 pl-9 pr-3 text-sm font-bold bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-500 rounded-xl outline-none transition-all placeholder:text-stone-300 hover:border-stone-400 focus:border-black focus:shadow-[3px_3px_0_#000]">
-            <mat-icon class="absolute left-2.5 top-2.5 text-stone-400 !text-sm">manage_accounts</mat-icon>
-          </div>
-          <div *ngIf="showResponsableDropdown && responsablesFiltrados.length > 0"
-               class="absolute z-50 w-full mt-1 bg-white dark:bg-slate-800 border-2 border-black rounded-xl overflow-hidden max-h-40 overflow-y-auto divide-y divide-stone-100 dark:divide-slate-700"
-               style="box-shadow: 4px 4px 0 #000">
-            <button *ngFor="let r of responsablesFiltrados" type="button" (mousedown)="selectResponsable(r)"
-                    class="w-full px-3 py-2 text-left hover:bg-green-50 dark:hover:bg-slate-700 transition-colors">
-              <div class="font-black text-xs text-black dark:text-white">{{ r.nombre }}</div>
-              <div class="text-[10px] text-stone-400 dark:text-slate-400">{{ r.cargo }}</div>
-            </button>
-          </div>
-        </div>
-
-        <!-- Unidad Destino y Orden de Trabajo -->
-        <div class="grid grid-cols-2 gap-3">
-          <div>
-            <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-500 dark:text-slate-300 mb-1.5 block">
-              Unidad / Área
-              <span class="text-stone-300 font-normal normal-case ml-1">(auto)</span>
-            </label>
-            <input formControlName="unidadDestino" type="text"
-                   class="w-full h-10 text-sm font-bold bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-500 rounded-xl px-3 outline-none transition-all hover:border-stone-400 focus:border-black focus:shadow-[3px_3px_0_#000]">
-          </div>
-          <div>
-            <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-500 dark:text-slate-300 mb-1.5 block">
-              Orden de Trabajo
-              <span class="text-stone-300 font-normal normal-case ml-1">(auto)</span>
-            </label>
-            <input formControlName="ordenTrabajo" type="text"
-                   class="w-full h-10 text-sm font-bold bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-500 rounded-xl px-3 outline-none transition-all hover:border-stone-400 focus:border-black focus:shadow-[3px_3px_0_#000]">
-          </div>
-        </div>
-
-        <!-- Notas del préstamo original (solo lectura, aparece después de buscar) -->
-        <div *ngIf="loanNotes"
-             class="bg-blue-50 dark:bg-blue-900/20 border-2 border-blue-300 dark:border-blue-700 rounded-xl px-3 py-2">
-          <label class="text-[8px] font-black uppercase tracking-[0.18em] text-blue-700 dark:text-blue-300 mb-1 block flex items-center gap-1">
-            <mat-icon class="!text-xs">sticky_note_2</mat-icon> Notas del Préstamo Original
-          </label>
-          <p class="text-xs text-blue-900 dark:text-blue-100 leading-relaxed">{{ loanNotes }}</p>
-        </div>
-
-        <div>
-          <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-500 dark:text-slate-300 mb-1.5 block">Notas de Devolución</label>
-          <textarea formControlName="observaciones" rows="2"
-                    class="w-full text-sm font-normal bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-500 rounded-xl px-3 py-2.5 outline-none transition-all resize-none hover:border-stone-400 focus:border-black focus:shadow-[3px_3px_0_#000]"></textarea>
-        </div>
-
-        <!-- Botón Cargar Préstamos -->
-        <div class="border-t-2 border-dashed border-black/20 dark:border-slate-600 pt-3">
-          <button type="button" (click)="realizarConsulta()" [disabled]="!isBusquedaValida() || isSearching"
-                  class="w-full flex items-center justify-center gap-2 h-10 bg-amber-400 text-black font-black text-[10px] border-2 border-black rounded-xl shadow-[3px_3px_0_#000] hover:shadow-none hover:translate-x-[3px] hover:translate-y-[3px] transition-all uppercase disabled:opacity-40 disabled:cursor-not-allowed disabled:translate-x-0 disabled:translate-y-0 disabled:shadow-[3px_3px_0_#000]">
-            <mat-icon class="!text-sm" [class.animate-spin]="isSearching">{{ isSearching ? 'refresh' : 'search' }}</mat-icon>
-            {{ isSearching ? 'Buscando...' : 'Buscar Préstamos' }}
-          </button>
-        </div>
-      </form>
     </div>
 
-    <!-- RIGHT: tabla de devolución -->
-    <div class="flex-1 min-h-0 flex flex-col overflow-hidden">
+    <!-- Body: LEFT (form búsqueda) / RIGHT (tabla devolución) -->
+    <div class="flex flex-col sm:flex-row flex-1 overflow-hidden min-h-0">
 
-      <!-- Sin resultados -->
-      <div *ngIf="sinResultados && !isSearching && dataSourceDevolucion.length === 0"
-           class="flex-1 flex flex-col items-center justify-center gap-3 px-6 text-center">
-        <div class="w-16 h-16 rounded-2xl bg-stone-100 dark:bg-slate-800 border-2 border-black flex items-center justify-center shadow-[3px_3px_0_#000]">
-          <mat-icon class="!text-3xl text-stone-400 dark:text-slate-500">person_off</mat-icon>
+        <!-- LEFT: form búsqueda técnico + campos devolución -->
+        <div class="sm:basis-[40%] shrink-0 overflow-y-auto custom-scrollbar border-b-2 sm:border-b-0 sm:border-r-2 border-black/20 dark:border-slate-500">
+            <form [formGroup]="devolucionForm" class="px-4 py-3 flex flex-col gap-3">
+
+                <!-- ── Búsqueda ── -->
+                <div class="flex items-center gap-1.5">
+                    <mat-icon class="!text-xs text-amber-500 shrink-0">search</mat-icon>
+                    <span class="text-[9px] font-black uppercase text-stone-400 dark:text-slate-500 tracking-wider whitespace-nowrap">Búsqueda — Técnico o Herramienta</span>
+                    <div class="flex-1 h-px bg-stone-200 dark:bg-slate-600 ml-1"></div>
+                </div>
+
+                <!-- Buscar funcionario -->
+                <div class="relative">
+                    <label class="text-[9px] font-black uppercase tracking-tight text-stone-500 dark:text-slate-400 mb-1 flex justify-between items-center">
+                        <span>Técnico <span class="text-stone-400 font-normal normal-case">(o buscar por herramienta)</span></span>
+                        <div *ngIf="funcionarioLoading" class="w-3 h-3 border-2 border-[#FFC501FF] border-t-transparent rounded-full animate-spin"></div>
+                    </label>
+                    <div class="relative">
+                        <input type="text" [value]="devolucionForm.get('funcionario')?.value"
+                               (input)="onFuncionarioInput($any($event.target).value)"
+                               (blur)="hideFuncionarioDropdown()"
+                               placeholder="Nombre del técnico..."
+                               class="w-full h-8 pl-8 pr-3 text-xs font-bold bg-white dark:bg-slate-800 dark:text-white border-2 rounded-lg outline-none transition-all placeholder:text-stone-300"
+                               [ngClass]="hasError('funcionario','required') ? 'border-red-400' : 'border-stone-300 dark:border-slate-500 hover:border-stone-400 focus:border-black focus:shadow-[2px_2px_0_#000]'">
+                        <mat-icon class="absolute left-2.5 top-1/2 -translate-y-1/2 text-stone-400 !text-sm !w-[14px] !h-[14px] !leading-[14px] pointer-events-none">person_search</mat-icon>
+                    </div>
+                    <div *ngIf="showFuncionarioDropdown && funcionariosFiltrados.length > 0"
+                         class="absolute left-0 right-0 top-full mt-1 z-50 bg-white dark:bg-slate-800 border-2 border-black rounded-xl overflow-hidden max-h-40 overflow-y-auto divide-y divide-stone-100 dark:divide-slate-700"
+                         style="box-shadow: 4px 4px 0 #000">
+                        <button *ngFor="let f of funcionariosFiltrados" type="button" (mousedown)="selectFuncionario(f)"
+                                class="w-full px-3 py-2 text-left hover:bg-blue-50 dark:hover:bg-slate-700 transition-colors">
+                            <div class="font-black text-xs text-black dark:text-white uppercase">{{ f.nombre }}</div>
+                            <div class="text-[10px] text-stone-400 dark:text-slate-400">{{ f.cargo }} · Lic: {{ f.licencia || '—' }}</div>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Buscar herramienta -->
+                <div class="relative">
+                    <label class="text-[9px] font-black uppercase tracking-tight text-stone-500 dark:text-slate-400 mb-1 block">Herramienta <span class="text-stone-400 font-normal normal-case">(o buscar por técnico)</span></label>
+                    <div class="relative">
+                        <input type="text" [value]="devolucionForm.get('codigoHerramienta')?.value"
+                               (input)="onHerramientaInput($any($event.target).value)"
+                               (blur)="hideHerramientaDropdown()"
+                               placeholder="Código, nombre o P/N..."
+                               class="w-full h-8 pl-8 pr-8 text-xs font-bold bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-500 rounded-lg outline-none transition-all placeholder:text-stone-300 hover:border-stone-400 focus:border-black focus:shadow-[2px_2px_0_#000]">
+                        <mat-icon class="absolute left-2.5 top-1/2 -translate-y-1/2 text-stone-400 !text-sm !w-[14px] !h-[14px] !leading-[14px] pointer-events-none">hardware</mat-icon>
+                        <button *ngIf="devolucionForm.get('codigoHerramienta')?.value" type="button" (click)="clearHerramienta()"
+                                class="absolute right-2 top-1/2 -translate-y-1/2 text-stone-400 hover:text-black transition-colors">
+                            <mat-icon class="!text-sm">close</mat-icon>
+                        </button>
+                    </div>
+                    <div *ngIf="showHerramientaDropdown && herramientasFiltradas.length > 0"
+                         class="absolute left-0 right-0 top-full mt-1 z-50 bg-white dark:bg-slate-800 border-2 border-black rounded-xl overflow-hidden max-h-40 overflow-y-auto divide-y divide-stone-100 dark:divide-slate-700"
+                         style="box-shadow: 4px 4px 0 #000">
+                        <button *ngFor="let h of herramientasFiltradas" type="button" (mousedown)="selectHerramienta(h)"
+                                class="w-full px-3 py-2 text-left hover:bg-amber-50 dark:hover:bg-slate-700 transition-colors">
+                            <div class="font-black text-xs text-amber-700 dark:text-amber-400 uppercase">{{ h.codigo }}</div>
+                            <div class="text-[10px] text-stone-400 truncate">{{ h.nombre }}</div>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Botón Buscar -->
+                <button type="button" (click)="realizarConsulta()" [disabled]="!isBusquedaValida() || isSearching"
+                        class="w-full flex items-center justify-center gap-1.5 h-8 bg-amber-400 text-black font-black text-[10px] border-2 border-black rounded-lg shadow-[2px_2px_0_#000] hover:shadow-none hover:translate-x-[1px] hover:translate-y-[1px] transition-all uppercase disabled:opacity-40 disabled:cursor-not-allowed disabled:translate-x-0 disabled:translate-y-0 disabled:shadow-[2px_2px_0_#000]">
+                    <mat-icon class="!text-sm" [class.animate-spin]="isSearching">{{ isSearching ? 'refresh' : 'search' }}</mat-icon>
+                    {{ isSearching ? 'Buscando...' : 'Buscar Préstamos' }}
+                </button>
+
+                <!-- ── Datos de Devolución ── -->
+                <div class="flex items-center gap-1.5 mt-1">
+                    <mat-icon class="!text-xs text-amber-500 shrink-0">assignment_return</mat-icon>
+                    <span class="text-[9px] font-black uppercase text-stone-400 dark:text-slate-500 tracking-wider whitespace-nowrap">Datos de Devolución</span>
+                    <div class="flex-1 h-px bg-stone-200 dark:bg-slate-600 ml-1"></div>
+                </div>
+
+                <!-- Fecha + Hora -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <div>
+                        <label class="text-[9px] font-black uppercase tracking-tight text-stone-500 dark:text-slate-400 mb-1 block">Fecha Devolución <span class="text-red-500">*</span></label>
+                        <input formControlName="fechaDevolucion" type="date"
+                               class="w-full h-8 text-xs font-bold bg-white dark:bg-slate-800 dark:text-white border-2 rounded-lg px-2.5 outline-none transition-all"
+                               [ngClass]="hasError('fechaDevolucion','required') ? 'border-red-400' : 'border-stone-300 dark:border-slate-500 hover:border-stone-400 focus:border-black focus:shadow-[2px_2px_0_#000]'">
+                    </div>
+                    <div>
+                        <label class="text-[9px] font-black uppercase tracking-tight text-stone-500 dark:text-slate-400 mb-1 block">Hora <span class="text-red-500">*</span></label>
+                        <input formControlName="horaDevolucion" type="time"
+                               class="w-full h-8 text-xs font-bold bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-500 rounded-lg px-2.5 outline-none transition-all hover:border-stone-400 focus:border-black focus:shadow-[2px_2px_0_#000]">
+                    </div>
+                </div>
+
+                <!-- Responsable Recibe -->
+                <div class="relative">
+                    <label class="text-[9px] font-black uppercase tracking-tight text-stone-500 dark:text-slate-400 mb-1 flex justify-between items-center">
+                        <span>Responsable Recibe <span class="text-red-500">*</span></span>
+                        <div *ngIf="responsableLoading" class="w-3 h-3 border-2 border-[#FFC501FF] border-t-transparent rounded-full animate-spin"></div>
+                    </label>
+                    <div class="relative">
+                        <input type="text" [value]="devolucionForm.get('responsableRecibe')?.value"
+                               (input)="onResponsableInput($any($event.target).value)"
+                               (blur)="hideResponsableDropdown()"
+                               placeholder="Nombre del almacenero..."
+                               class="w-full h-8 pl-8 pr-3 text-xs font-bold bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-500 rounded-lg outline-none transition-all placeholder:text-stone-300 hover:border-stone-400 focus:border-black focus:shadow-[2px_2px_0_#000]">
+                        <mat-icon class="absolute left-2.5 top-1/2 -translate-y-1/2 text-stone-400 !text-sm !w-[14px] !h-[14px] !leading-[14px] pointer-events-none">manage_accounts</mat-icon>
+                    </div>
+                    <div *ngIf="showResponsableDropdown && responsablesFiltrados.length > 0"
+                         class="absolute left-0 right-0 top-full mt-1 z-50 bg-white dark:bg-slate-800 border-2 border-black rounded-xl overflow-hidden max-h-40 overflow-y-auto divide-y divide-stone-100 dark:divide-slate-700"
+                         style="box-shadow: 4px 4px 0 #000">
+                        <button *ngFor="let r of responsablesFiltrados" type="button" (mousedown)="selectResponsable(r)"
+                                class="w-full px-3 py-2 text-left hover:bg-green-50 dark:hover:bg-slate-700 transition-colors">
+                            <div class="font-black text-xs text-black dark:text-white uppercase">{{ r.nombre }}</div>
+                            <div class="text-[10px] text-stone-400 dark:text-slate-400">{{ r.cargo }}</div>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Unidad / Área + Orden de Trabajo -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <div>
+                        <label class="text-[9px] font-black uppercase tracking-tight text-stone-500 dark:text-slate-400 mb-1 flex items-center gap-1">
+                            Unidad / Área
+                            <span class="text-stone-300 font-normal normal-case">(auto)</span>
+                        </label>
+                        <input formControlName="unidadDestino" type="text"
+                               class="w-full h-8 text-xs font-bold bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-500 rounded-lg px-2.5 outline-none transition-all hover:border-stone-400 focus:border-black focus:shadow-[2px_2px_0_#000]">
+                    </div>
+                    <div>
+                        <label class="text-[9px] font-black uppercase tracking-tight text-stone-500 dark:text-slate-400 mb-1 flex items-center gap-1">
+                            Orden de Trabajo
+                            <span class="text-stone-300 font-normal normal-case">(auto)</span>
+                        </label>
+                        <input formControlName="ordenTrabajo" type="text"
+                               class="w-full h-8 text-xs font-bold bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-500 rounded-lg px-2.5 outline-none transition-all hover:border-stone-400 focus:border-black focus:shadow-[2px_2px_0_#000]">
+                    </div>
+                </div>
+
+                <!-- Notas del préstamo original (solo lectura) -->
+                <div *ngIf="loanNotes" class="bg-blue-50 dark:bg-blue-900/20 border-2 border-blue-300 dark:border-blue-700 rounded-lg px-3 py-2">
+                    <label class="text-[9px] font-black uppercase tracking-tight text-blue-700 dark:text-blue-300 mb-1 flex items-center gap-1">
+                        <mat-icon class="!text-xs">sticky_note_2</mat-icon> Notas del Préstamo Original
+                    </label>
+                    <p class="text-xs text-blue-900 dark:text-blue-100 leading-relaxed">{{ loanNotes }}</p>
+                </div>
+
+                <!-- Notas de Devolución -->
+                <div>
+                    <label class="text-[9px] font-black uppercase tracking-tight text-stone-500 dark:text-slate-400 mb-1 block">Notas de Devolución</label>
+                    <textarea formControlName="observaciones" rows="2"
+                              class="w-full text-xs font-bold bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-500 rounded-lg px-3 py-2 outline-none transition-all resize-none hover:border-stone-400 focus:border-black focus:shadow-[2px_2px_0_#000]"></textarea>
+                </div>
+            </form>
         </div>
-        <div>
-          <p class="text-sm font-black text-black dark:text-white uppercase tracking-tight">Sin préstamos asignados</p>
-          <p class="text-[11px] text-stone-400 dark:text-slate-500 mt-1">
-            <span class="font-bold text-black dark:text-white">{{ _funcionarioNombre || devolucionForm.get('codigoHerramienta')?.value || 'El técnico buscado' }}</span>
-            no tiene herramientas prestadas actualmente.
-          </p>
-        </div>
-        <button type="button" (click)="realizarConsulta()"
-                class="h-8 px-4 rounded-xl border-[2px] border-black bg-amber-400 text-black font-black text-xs uppercase shadow-[2px_2px_0_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all flex items-center gap-1.5">
-          <mat-icon class="!text-sm">refresh</mat-icon>Buscar de nuevo
-        </button>
-      </div>
 
-      <!-- Estado inicial (sin búsqueda) -->
-      <div *ngIf="!sinResultados && !isSearching && dataSourceDevolucion.length === 0"
-           class="flex-1 flex flex-col items-center justify-center gap-2 px-6 text-center">
-        <mat-icon class="!text-4xl text-stone-200 dark:text-slate-700">manage_search</mat-icon>
-        <p class="text-xs font-bold uppercase text-stone-400 dark:text-slate-500">Busca un técnico o herramienta para ver sus préstamos activos</p>
-      </div>
+        <!-- RIGHT: tabla de devolución -->
+        <div class="flex-1 min-h-0 flex flex-col overflow-hidden">
 
-      <!-- Info resultado búsqueda (cuando hay datos) -->
-      <div *ngIf="dataSourceDevolucion.length > 0"
-           class="px-4 py-2 bg-blue-50 dark:bg-blue-900/20 border-b-2 border-black/20 dark:border-slate-500 flex items-center gap-3 shrink-0 flex-wrap">
-        <mat-icon class="!text-sm text-blue-700 dark:text-blue-400">{{ _funcionarioNombre ? 'person' : 'hardware' }}</mat-icon>
-        <span class="text-xs font-black text-blue-900 dark:text-blue-200 uppercase">
+            <!-- Sin resultados -->
+            <div *ngIf="sinResultados && !isSearching && dataSourceDevolucion.length === 0"
+                 class="flex-1 flex flex-col items-center justify-center gap-3 px-6 text-center">
+                <div class="w-16 h-16 rounded-2xl bg-stone-100 dark:bg-slate-800 border-2 border-black flex items-center justify-center shadow-[3px_3px_0_#000]">
+                    <mat-icon class="!text-3xl text-stone-400 dark:text-slate-500">person_off</mat-icon>
+                </div>
+                <div>
+                    <p class="text-sm font-black text-black dark:text-white uppercase tracking-tight">Sin préstamos asignados</p>
+                    <p class="text-xs text-stone-400 dark:text-slate-500 mt-1.5">
+                        <span class="font-bold text-black dark:text-white">{{ _funcionarioNombre || devolucionForm.get('codigoHerramienta')?.value || 'El técnico buscado' }}</span>
+                        no tiene herramientas prestadas actualmente.
+                    </p>
+                </div>
+                <button type="button" (click)="realizarConsulta()"
+                        class="h-9 px-4 rounded-xl border-2 border-black bg-amber-400 text-black font-black text-xs uppercase shadow-[2px_2px_0_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all flex items-center gap-1.5">
+                    <mat-icon class="!text-sm">refresh</mat-icon>Buscar de nuevo
+                </button>
+            </div>
+
+            <!-- Estado inicial (sin búsqueda) -->
+            <div *ngIf="!sinResultados && !isSearching && dataSourceDevolucion.length === 0"
+                 class="flex-1 flex flex-col items-center justify-center gap-3 px-6 text-center">
+                <mat-icon class="!text-5xl text-stone-200 dark:text-slate-700">manage_search</mat-icon>
+                <p class="text-sm font-bold uppercase text-stone-400 dark:text-slate-500">Busca un técnico o herramienta para ver sus préstamos activos</p>
+            </div>
+
+            <!-- Info resultado búsqueda -->
+            <div *ngIf="dataSourceDevolucion.length > 0"
+                 class="px-4 py-2.5 bg-blue-50 dark:bg-blue-900/20 border-b-2 border-black/20 dark:border-slate-500 flex items-center gap-3 shrink-0 flex-wrap">
+                <mat-icon class="!text-base text-blue-700 dark:text-blue-400">{{ _funcionarioNombre ? 'person' : 'hardware' }}</mat-icon>
+                <span class="text-xs font-black text-blue-900 dark:text-blue-200 uppercase">
           {{ _funcionarioNombre || ('Herramienta: ' + devolucionForm.get('codigoHerramienta')?.value) }}
         </span>
-        <span *ngIf="_funcionarioLicencia" class="text-[10px] font-bold text-blue-600 dark:text-blue-400 bg-blue-100 dark:bg-blue-900/40 px-2 py-0.5 rounded border border-blue-300 dark:border-blue-700">LIC: {{ _funcionarioLicencia }}</span>
-        <span class="text-[10px] font-black text-blue-800 dark:text-blue-200 uppercase ml-auto">{{ dataSourceDevolucion.length }} herramienta(s)</span>
-      </div>
+                <span *ngIf="_funcionarioLicencia" class="text-[10px] font-bold text-blue-600 dark:text-blue-400 bg-blue-100 dark:bg-blue-900/40 px-2 py-1 rounded border border-blue-300 dark:border-blue-700">LIC: {{ _funcionarioLicencia }}</span>
+                <span class="text-[10px] font-black text-blue-800 dark:text-blue-200 uppercase ml-auto">{{ dataSourceDevolucion.length }} herramienta(s)</span>
+            </div>
 
-      <!-- Selection bar -->
-      <div *ngIf="getSelCountDevolucion() > 0"
-           class="px-4 py-2 bg-[#FF1414FF] border-b-2 border-black/20 dark:border-slate-500 flex items-center gap-3 shrink-0 flex-wrap animate-fadeIn">
-        <mat-icon class="!text-sm text-white">check_box</mat-icon>
-        <span class="text-xs font-black text-white uppercase">{{ getSelCountDevolucion() }} seleccionada(s) para devolver</span>
-      </div>
+            <!-- Selection bar -->
+            <div *ngIf="getSelCountDevolucion() > 0"
+                 class="px-4 py-2.5 bg-[#FF1414FF] border-b-2 border-black/20 dark:border-slate-500 flex items-center gap-3 shrink-0 flex-wrap animate-fadeIn">
+                <mat-icon class="!text-base text-white">check_box</mat-icon>
+                <span class="text-xs font-black text-white uppercase">{{ getSelCountDevolucion() }} seleccionada(s) para devolver</span>
+            </div>
 
-      <!-- Tabla devolución -->
-      <div *ngIf="dataSourceDevolucion.length > 0" class="flex-1 overflow-auto custom-scrollbar bg-gray-50 dark:bg-[#0F172AFF]">
+            <!-- Tabla devolución -->
+            <div *ngIf="dataSourceDevolucion.length > 0" class="flex-1 overflow-auto custom-scrollbar bg-gray-50 dark:bg-[#0F172AFF]">
+                <table class="w-full min-w-[740px]">
+                    <thead class="bg-gray-100 dark:bg-slate-800 border-b-2 border-black sticky top-0 z-10">
+                    <tr class="text-left text-[10px] font-black uppercase tracking-wider text-black dark:text-white">
+                        <th class="px-3 py-2 w-10">
+                            <mat-checkbox (change)="toggleAllDevolucion($event)" [checked]="isAllSelDevolucion()" [indeterminate]="isSomeSelDevolucion()"></mat-checkbox>
+                        </th>
+                        <th class="px-3 py-2">Código / P·N</th>
+                        <th class="px-3 py-2 min-w-[130px]">Descripción</th>
+                        <th class="px-3 py-2">Estado</th>
+                        <th class="px-3 py-2 hidden md:table-cell">Aeronave / OT</th>
+                        <th class="px-3 py-2">Fecha / Días Fuera</th>
+                        <th class="px-3 py-2 text-center w-24">Cantidad</th>
+                        <th class="px-3 py-2 min-w-[170px]">Condición Devolución</th>
+                        <th class="px-3 py-2 min-w-[130px]">Observación</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr *ngFor="let item of dataSourceDevolucion; let idx = index"
+                        class="border-b border-gray-200 dark:border-slate-700 cursor-pointer transition-all"
+                        [ngClass]="[idx%2===0 ? 'bg-white dark:bg-slate-800/60' : 'bg-gray-50 dark:bg-slate-800/40', item.selected ? 'bg-amber-50 dark:bg-amber-900/20' : 'hover:bg-red-50 dark:hover:bg-slate-800']"
+                        (click)="toggleSelDevolucion(item)">
 
-        <!-- Table -->
-        <table *ngIf="dataSourceDevolucion.length > 0" class="w-full min-w-[700px]">
-          <thead class="bg-gray-100 dark:bg-slate-800 border-b-[2px] border-black sticky top-0 z-10">
-            <tr class="text-left text-[10px] font-black uppercase tracking-wider text-black dark:text-white">
-              <th class="px-3 py-2.5 w-10">
-                <mat-checkbox (change)="toggleAllDevolucion($event)" [checked]="isAllSelDevolucion()" [indeterminate]="isSomeSelDevolucion()"></mat-checkbox>
-              </th>
-              <th class="px-3 py-2.5">Código / P·N</th>
-              <th class="px-3 py-2.5 min-w-[120px]">Descripción</th>
-              <th class="px-3 py-2.5">Estado</th>
-              <th class="px-3 py-2.5 hidden md:table-cell">Aeronave / OT</th>
-              <th class="px-3 py-2.5">Fecha / Días Fuera</th>
-              <th class="px-3 py-2.5 text-center w-24">Cantidad</th>
-              <th class="px-3 py-2.5 min-w-[160px]">Condición Devolución</th>
-              <th class="px-3 py-2.5 min-w-[120px]">Observación</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr *ngFor="let item of dataSourceDevolucion; let idx = index"
-                class="border-b border-gray-200 dark:border-slate-700 cursor-pointer transition-all"
-                [ngClass]="[idx%2===0 ? 'bg-white dark:bg-slate-800/60' : 'bg-gray-50 dark:bg-slate-800/40', item.selected ? 'bg-amber-50 dark:bg-amber-900/20' : 'hover:bg-red-50 dark:hover:bg-slate-800']"
-                (click)="toggleSelDevolucion(item)">
+                        <td class="px-3 py-3">
+                            <mat-checkbox [checked]="item.selected" (change)="toggleSelDevolucion(item)" (click)="$event.stopPropagation()"></mat-checkbox>
+                        </td>
 
-              <td class="px-3 py-2.5">
-                <mat-checkbox [checked]="item.selected" (change)="toggleSelDevolucion(item)" (click)="$event.stopPropagation()"></mat-checkbox>
-              </td>
+                        <td class="px-3 py-3">
+                            <span class="font-mono font-black text-[11px] bg-[#FFC501FF] text-black px-2 py-1 rounded border-2 border-black block w-fit">{{ item.codigo }}</span>
+                            <span class="text-[10px] text-stone-400 font-mono block mt-1 leading-snug">P/N: {{ item.pn || '—' }}</span>
+                            <span class="text-[10px] text-stone-400 font-mono block leading-snug">N/S: {{ item.sn || '—' }}</span>
+                        </td>
 
-              <td class="px-3 py-2.5">
-                <span class="font-mono font-black text-[10px] bg-[#FFC501FF] text-black px-1.5 py-0.5 rounded border-2 border-black block w-fit">{{ item.codigo }}</span>
-                <span class="text-[9px] text-stone-400 font-mono">P/N: {{ item.pn || '—' }}</span>
-                <span class="text-[9px] text-stone-400 font-mono block">N/S: {{ item.sn || '—' }}</span>
-              </td>
+                        <td class="px-3 py-3" style="max-width:150px">
+                            <div class="text-xs font-bold text-black dark:text-white truncate">{{ item.descripcion }}</div>
+                            <div class="text-[10px] text-stone-400">{{ item.marca || '' }}</div>
+                            <div *ngIf="item.listaContenido" class="text-[10px] text-blue-500 dark:text-blue-400 font-mono truncate" [title]="item.listaContenido">{{ item.listaContenido }}</div>
+                        </td>
 
-              <td class="px-3 py-2.5" style="max-width:140px">
-                <div class="text-xs font-bold text-black dark:text-white truncate">{{ item.descripcion }}</div>
-                <div class="text-[9px] text-stone-400">{{ item.marca || '' }}</div>
-                <div *ngIf="item.listaContenido" class="text-[9px] text-blue-500 dark:text-blue-400 font-mono truncate" [title]="item.listaContenido">{{ item.listaContenido }}</div>
-              </td>
-
-              <td class="px-3 py-2.5">
-                <span class="text-[9px] font-bold text-stone-500 dark:text-slate-400 block">{{ item.fechaCalibracion || '—' }}</span>
-                <span class="px-1 py-px text-[9px] font-black uppercase border border-black rounded"
-                      [ngClass]="getEstadoPrestarClass(item.estadoAlPrestar)">
+                        <td class="px-3 py-3">
+                            <span class="text-[10px] font-bold text-stone-500 dark:text-slate-400 block mb-1">{{ item.fechaCalibracion || '—' }}</span>
+                            <span class="px-1.5 py-0.5 text-[10px] font-black uppercase border-2 border-black rounded inline-block"
+                                  [ngClass]="getEstadoPrestarClass(item.estadoAlPrestar)">
                   {{ getEstadoPrestarLabel(item.estadoAlPrestar) }}
                 </span>
-              </td>
+                        </td>
 
-              <td class="px-3 py-2.5 hidden md:table-cell">
-                <div class="text-[10px] font-bold text-stone-600 dark:text-slate-300">{{ item.aeronave || '—' }}</div>
-                <div class="text-[9px] text-stone-400">{{ item.ordenTrabajo || '' }}</div>
-              </td>
+                        <td class="px-3 py-3 hidden md:table-cell">
+                            <div class="text-[11px] font-bold text-stone-600 dark:text-slate-300">{{ item.aeronave || '—' }}</div>
+                            <div class="text-[10px] text-stone-400">{{ item.ordenTrabajo || '' }}</div>
+                        </td>
 
-              <td class="px-3 py-2.5">
-                <span class="text-[9px] font-bold text-stone-500 dark:text-slate-400 block">{{ item.fechaPrestamo | date:'dd/MM/yy' }}</span>
-                <span class="px-1.5 py-px text-[9px] font-black border rounded" [ngClass]="getDiasFueraClass(item.diasFuera)">{{ item.diasFuera }}d</span>
-              </td>
+                        <td class="px-3 py-3">
+                            <span class="text-[10px] font-bold text-stone-500 dark:text-slate-400 block mb-1">{{ item.fechaPrestamo | date:'dd/MM/yy' }}</span>
+                            <span class="px-2 py-0.5 text-[10px] font-black border rounded inline-block" [ngClass]="getDiasFueraClass(item.diasFuera)">{{ item.diasFuera }}d</span>
+                        </td>
 
-              <td class="px-3 py-2.5 text-center" (click)="$event.stopPropagation()">
-                <span class="text-[9px] text-stone-400 font-bold block">Prest: {{ item.cantidadPrestada }}</span>
-                <input type="number" [(ngModel)]="item.cantidadDevolver" (change)="validateCantidad(item)"
-                       [min]="1" [max]="item.cantidadPrestada"
-                       class="w-14 h-6 px-1 text-xs font-black text-center border-2 border-black rounded bg-white dark:bg-slate-700 dark:text-white focus:outline-none focus:bg-amber-50 transition-all">
-              </td>
+                        <td class="px-3 py-3 text-center" (click)="$event.stopPropagation()">
+                            <span class="text-[10px] text-stone-400 font-bold block mb-1">Prest: {{ item.cantidadPrestada }}</span>
+                            <input type="number" [(ngModel)]="item.cantidadDevolver" (change)="validateCantidad(item)"
+                                   [min]="1" [max]="item.cantidadPrestada"
+                                   class="w-16 h-8 px-1 text-sm font-black text-center border-2 border-black rounded-lg bg-white dark:bg-slate-700 dark:text-white focus:outline-none focus:bg-amber-50 transition-all">
+                        </td>
 
-              <td class="px-3 py-2.5" (click)="$event.stopPropagation()">
-                <div class="flex flex-wrap gap-0.5">
-                  <button *ngFor="let c of condiciones" (click)="item.condicionDevolucion = c.value; onCondicionChange(item)"
-                          class="px-1.5 py-px text-[8px] font-black uppercase border-2 border-black rounded transition-all"
-                          [ngClass]="item.condicionDevolucion === c.value ? c.bgColor + ' text-white shadow-[1px_1px_0_#000]' : 'bg-white dark:bg-slate-700 text-stone-500 dark:text-slate-400 hover:bg-stone-100'">
-                    {{ c.label }}
-                  </button>
-                </div>
-              </td>
+                        <td class="px-3 py-3" (click)="$event.stopPropagation()">
+                            <div class="flex flex-wrap gap-1">
+                                <button *ngFor="let c of condiciones" (click)="item.condicionDevolucion = c.value; onCondicionChange(item)"
+                                        class="px-2 py-1 text-[9px] font-black uppercase border-2 border-black rounded transition-all"
+                                        [ngClass]="item.condicionDevolucion === c.value ? c.bgColor + ' text-white shadow-[1px_1px_0_#000]' : 'bg-white dark:bg-slate-700 text-stone-500 dark:text-slate-400 hover:bg-stone-100'">
+                                    {{ c.label }}
+                                </button>
+                            </div>
+                        </td>
 
-              <td class="px-3 py-2.5" (click)="$event.stopPropagation()">
-                <input type="text" [(ngModel)]="item.observacionItem"
-                       [placeholder]="(item.condicionDevolucion === 'DAÑADO' || item.condicionDevolucion === 'FALTANTE') ? 'Requerido *' : 'Opcional'"
-                       class="w-full h-7 px-2 text-[10px] font-bold border-2 rounded bg-white dark:bg-slate-700 dark:text-white focus:outline-none focus:bg-amber-50 transition-all"
-                       [ngClass]="(item.condicionDevolucion === 'DAÑADO' || item.condicionDevolucion === 'FALTANTE') && !item.observacionItem ? 'border-red-500 animate-pulse-border' : 'border-black'">
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
+                        <td class="px-3 py-3" (click)="$event.stopPropagation()">
+                            <input type="text" [(ngModel)]="item.observacionItem"
+                                   [placeholder]="(item.condicionDevolucion === 'DAÑADO' || item.condicionDevolucion === 'FALTANTE') ? 'Requerido *' : 'Opcional'"
+                                   class="w-full h-8 px-2.5 text-[10px] font-bold border-2 rounded-lg bg-white dark:bg-slate-700 dark:text-white focus:outline-none focus:bg-amber-50 transition-all"
+                                   [ngClass]="(item.condicionDevolucion === 'DAÑADO' || item.condicionDevolucion === 'FALTANTE') && !item.observacionItem ? 'border-red-500 animate-pulse-border' : 'border-black'">
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
     </div>
-  </div>
 
-  <!-- Footer -->
-  <div class="border-t-2 border-black/20 dark:border-slate-500 px-4 sm:px-5 py-3 flex items-center justify-between shrink-0 bg-stone-50 dark:bg-slate-800/50">
-    <div class="flex items-center gap-2 min-w-0 overflow-hidden">
-      <span class="text-sm font-black text-black dark:text-white shrink-0">{{ getSelCountDevolucion() }} seleccionada(s)</span>
-      <span *ngIf="_funcionarioNombre"
-            class="text-xs text-stone-500 dark:text-slate-400 font-bold truncate hidden sm:block">
+    <!-- Footer -->
+    <div class="border-t-2 border-black bg-stone-200 dark:bg-slate-800 px-4 py-2 flex items-center justify-between shrink-0">
+        <div class="flex items-center gap-2 min-w-0 overflow-hidden shrink-0">
+            <span class="text-[10px] font-black text-black dark:text-white shrink-0">{{ getSelCountDevolucion() }} sel.</span>
+            <span *ngIf="_funcionarioNombre"
+                  class="text-[9px] text-stone-500 dark:text-slate-400 font-bold truncate hidden sm:block max-w-[120px]">
         → {{ _funcionarioNombre }}
       </span>
+        </div>
+        <div class="flex items-center gap-2 shrink-0">
+            <button type="button" (click)="cerrar()"
+                    class="flex items-center gap-1 px-3 py-1.5 bg-red-500 text-white font-black text-[10px] uppercase border-2 border-black rounded-lg shadow-[2px_2px_0_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all">
+                <mat-icon class="!text-xs">close</mat-icon>
+                Cancelar
+            </button>
+            <button type="button" (click)="abrirConfirmDevolucion()" [disabled]="getSelCountDevolucion() === 0"
+                    class="flex items-center gap-1 px-3 py-1.5 bg-amber-400 text-black font-black text-[10px] uppercase border-2 border-black rounded-lg shadow-[2px_2px_0_#fbbf24] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all disabled:opacity-40 disabled:cursor-not-allowed disabled:translate-x-0 disabled:shadow-none">
+                <mat-icon class="!text-xs">assignment_return</mat-icon>
+                Registrar DP
+            </button>
+        </div>
     </div>
-    <div class="flex items-center gap-2 shrink-0">
-      <button type="button" (click)="cerrar()"
-              class="h-9 px-3 sm:px-4 bg-[#FF1414] text-white font-black text-[10px] uppercase border-2 border-black rounded-xl shadow-[2px_2px_0_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all">
-        Cancelar
-      </button>
-      <button type="button" (click)="abrirConfirmDevolucion()" [disabled]="getSelCountDevolucion() === 0"
-              class="h-9 px-4 sm:px-5 bg-amber-400 text-black font-black text-[10px] uppercase border-2 border-black rounded-xl shadow-[3px_3px_0_#fbbf24] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all disabled:opacity-40 disabled:cursor-not-allowed disabled:translate-x-0 disabled:translate-y-0 disabled:shadow-none flex items-center gap-1.5">
-        <mat-icon class="!text-sm">assignment_return</mat-icon>
-        Registrar DP
-      </button>
-    </div>
-  </div>
 </div>
 
 <!-- MODAL: CONFIRMAR DEVOLUCIÓN -->
 <ng-template #confirmDevolucionModal>
-  <div class="bg-stone-100 dark:bg-[#0F172A] border-2 border-black overflow-hidden flex flex-col"
-       style="width:700px; max-width:95vw; max-height:90vh; box-shadow: 6px 6px 0 #000">
+    <div class="bg-stone-100 dark:bg-[#0F172A] border-2 border-black overflow-hidden flex flex-col"
+         style="width:700px; max-width:95vw; max-height:90vh">
 
-    <div class="bg-[#0F172A] px-5 py-3.5 flex items-center gap-3 shrink-0">
-      <div class="w-9 h-9 rounded bg-amber-400 border-2 border-black flex items-center justify-center shadow-[2px_2px_0_#fbbf24] shrink-0">
-        <mat-icon class="!text-lg text-black">assignment_return</mat-icon>
-      </div>
-      <div>
-        <p class="text-[9px] text-slate-400 font-bold uppercase tracking-[0.18em] leading-none mb-0.5">Devolución</p>
-        <h2 class="text-sm text-white font-black uppercase tracking-tight leading-none">Confirmar Devolución</h2>
-      </div>
-    </div>
-
-    <div class="flex-1 overflow-y-auto px-5 py-5 flex flex-col gap-4 custom-scrollbar">
-
-      <div class="bg-blue-50 dark:bg-blue-900/20 border-2 border-blue-300 dark:border-blue-700 rounded-xl p-3">
-        <p class="text-[8px] font-black uppercase tracking-[0.18em] text-blue-500 dark:text-blue-400 mb-0.5">Técnico que devuelve</p>
-        <div class="font-black text-sm text-black dark:text-white">{{ _funcionarioNombre }}</div>
-        <div class="text-[10px] font-bold text-stone-500 dark:text-slate-300 mt-0.5">
-          Fecha: {{ devolucionForm.get('fechaDevolucion')?.value }} {{ devolucionForm.get('horaDevolucion')?.value }} · Recibe: {{ devolucionForm.get('responsableRecibe')?.value }}
+        <div class="bg-[#0F172A] px-4 py-3 flex items-center gap-3 shrink-0">
+            <div class="w-8 h-8 rounded bg-amber-400 border-2 border-black flex items-center justify-center shadow-[2px_2px_0_#fbbf24] shrink-0">
+                <mat-icon class="!text-base text-black">assignment_return</mat-icon>
+            </div>
+            <div>
+                <p class="text-[9px] text-slate-400 font-bold uppercase tracking-[0.15em] leading-none mb-1">Devolución</p>
+                <h2 class="text-sm text-white font-black uppercase tracking-tight leading-none">Confirmar Devolución</h2>
+            </div>
         </div>
-      </div>
 
-      <div>
-        <p class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-500 dark:text-slate-300 mb-2">Resumen por condición</p>
-        <div class="flex flex-wrap gap-2">
-          <div *ngFor="let r of getResumenCondicion()" class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border-2 border-black" [ngClass]="r.color">
-            <span class="text-xs font-black text-white">{{ r.cantidad }}</span>
-            <span class="text-[10px] font-black text-white uppercase">{{ r.condicion }}</span>
-          </div>
-        </div>
-      </div>
+        <div class="flex-1 overflow-y-auto px-4 py-4 flex flex-col gap-3 custom-scrollbar">
 
-      <div class="max-h-44 overflow-y-auto flex flex-col gap-1 custom-scrollbar">
-        <p class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-500 dark:text-slate-300 mb-1">Herramientas ({{ getSelCountDevolucion() }})</p>
-        <div *ngFor="let item of getSelDevolucionItems()"
-             class="flex items-center gap-2 px-3 py-1.5 border-2 border-black rounded-xl"
-             [ngClass]="item.condicionDevolucion === 'BUENO' ? 'bg-green-50 dark:bg-green-900/20'
+            <div class="bg-blue-50 dark:bg-blue-900/20 border-2 border-blue-300 dark:border-blue-700 rounded-xl p-3">
+                <p class="text-[9px] font-black uppercase tracking-[0.15em] text-blue-500 dark:text-blue-400 mb-1">Técnico que devuelve</p>
+                <div class="font-black text-sm text-black dark:text-white">{{ _funcionarioNombre }}</div>
+                <div class="text-xs font-bold text-stone-500 dark:text-slate-300 mt-1">
+                    Fecha: {{ devolucionForm.get('fechaDevolucion')?.value }} {{ devolucionForm.get('horaDevolucion')?.value }} · Recibe: {{ devolucionForm.get('responsableRecibe')?.value }}
+                </div>
+            </div>
+
+            <div>
+                <p class="text-[9px] font-black uppercase tracking-[0.15em] text-stone-500 dark:text-slate-300 mb-2">Resumen por condición</p>
+                <div class="flex flex-wrap gap-2">
+                    <div *ngFor="let r of getResumenCondicion()" class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border-2 border-black" [ngClass]="r.color">
+                        <span class="text-sm font-black text-white">{{ r.cantidad }}</span>
+                        <span class="text-[10px] font-black text-white uppercase">{{ r.condicion }}</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="max-h-44 overflow-y-auto flex flex-col gap-1.5 custom-scrollbar">
+                <p class="text-[9px] font-black uppercase tracking-[0.15em] text-stone-500 dark:text-slate-300 mb-1">Herramientas ({{ getSelCountDevolucion() }})</p>
+                <div *ngFor="let item of getSelDevolucionItems()"
+                     class="flex items-center gap-2 px-3 py-2 border-2 border-black rounded-xl"
+                     [ngClass]="item.condicionDevolucion === 'BUENO' ? 'bg-green-50 dark:bg-green-900/20'
                         : item.condicionDevolucion === 'DAÑADO' ? 'bg-red-50 dark:bg-red-900/20'
                         : item.condicionDevolucion === 'FALTANTE' ? 'bg-red-100 dark:bg-red-900/30'
                         : 'bg-yellow-50 dark:bg-yellow-900/20'">
-          <mat-icon class="!text-sm" [ngClass]="item.condicionDevolucion === 'BUENO' ? 'text-green-600' : item.condicionDevolucion === 'DAÑADO' || item.condicionDevolucion === 'FALTANTE' ? 'text-red-600' : 'text-yellow-600'">
-            {{ getCondicionIcon(item.condicionDevolucion) }}
-          </mat-icon>
-          <div class="flex-1 min-w-0">
-            <span class="font-mono text-[10px] font-black text-amber-700 dark:text-amber-400">{{ item.codigo }}</span>
-            <span class="text-[10px] text-stone-500 dark:text-slate-300 ml-1 truncate">{{ item.descripcion }}</span>
-          </div>
-          <span class="text-xs font-black text-black dark:text-white shrink-0">{{ item.cantidadDevolver }}/{{ item.cantidadPrestada }}</span>
+                    <mat-icon class="!text-base" [ngClass]="item.condicionDevolucion === 'BUENO' ? 'text-green-600' : item.condicionDevolucion === 'DAÑADO' || item.condicionDevolucion === 'FALTANTE' ? 'text-red-600' : 'text-yellow-600'">
+                        {{ getCondicionIcon(item.condicionDevolucion) }}
+                    </mat-icon>
+                    <div class="flex-1 min-w-0">
+                        <span class="font-mono text-xs font-black text-amber-700 dark:text-amber-400">{{ item.codigo }}</span>
+                        <span class="text-xs text-stone-500 dark:text-slate-300 ml-2 truncate">{{ item.descripcion }}</span>
+                    </div>
+                    <span class="text-sm font-black text-black dark:text-white shrink-0">{{ item.cantidadDevolver }}/{{ item.cantidadPrestada }}</span>
+                </div>
+            </div>
         </div>
-      </div>
-    </div>
 
-    <div class="border-t-2 border-black bg-stone-200 dark:bg-slate-800 px-5 py-3 flex justify-between items-center shrink-0">
-      <button (click)="cerrarConfirmDevolucion()"
-              class="px-4 py-2 bg-[#FF1414] text-white font-black text-[10px] border-2 border-black rounded-xl shadow-[2px_2px_0_#000] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all uppercase">
-        Cancelar
-      </button>
-      <button (click)="finalizarDevolucion()"
-              class="flex items-center gap-2 px-5 py-2 bg-amber-400 text-black font-black text-[10px] border-2 border-black rounded-xl shadow-[3px_3px_0_#000] hover:shadow-none hover:translate-x-[3px] hover:translate-y-[3px] transition-all uppercase">
-        <mat-icon class="!text-sm">check_circle</mat-icon>
-        Confirmar Devolución
-      </button>
+        <div class="border-t-2 border-black bg-stone-200 dark:bg-slate-800 px-4 py-3 flex justify-between items-center shrink-0">
+            <button (click)="cerrarConfirmDevolucion()"
+                    class="flex items-center gap-1 px-3 py-1.5 bg-red-500 text-white font-black text-[10px] border-2 border-black rounded-lg shadow-[2px_2px_0_#000] hover:shadow-none hover:translate-x-[1px] hover:translate-y-[1px] transition-all uppercase">
+                <mat-icon class="!text-xs">close</mat-icon>Cancelar
+            </button>
+            <button (click)="finalizarDevolucion()"
+                    class="flex items-center gap-1.5 px-3 py-1.5 bg-amber-400 text-black font-black text-[10px] border-2 border-black rounded-lg shadow-[2px_2px_0_#000] hover:shadow-none hover:translate-x-[1px] hover:translate-y-[1px] transition-all uppercase">
+                <mat-icon class="!text-sm">check_circle</mat-icon>
+                Confirmar Devolución
+            </button>
+        </div>
     </div>
-  </div>
 </ng-template>

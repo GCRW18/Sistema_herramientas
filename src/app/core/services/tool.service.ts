@@ -32,44 +32,30 @@ export class ToolService {
     // -----------------------------------------------------------------------------------------------------
 
     /**
-     * Get all tools with optional filters
-     * FIX: Construir filtros SQL manualmente para evitar error de sintaxis
+     * Get all tools with optional filters.
+     * Cuando hay query de texto, usa searchToolsAutocomplete (HE_TOS_SEARCH con quote_literal)
+     * en vez de listTools+filtro_adicional — el backend ignoraba filtro_adicional porque
+     * f_get_record no mapea esa clave, retornando todos los tools sin filtrar.
      */
     getTools(filters?: ToolFilters): Observable<Tool[]> {
-        const params: any = {
-            start: 0,
-            limit: 1000,
-            sort: 'name',
-            dir: 'asc'
-        };
-
-        const additionalFilters: string[] = [];
-
-        if (filters?.query) {
-            const searchTerm = filters.query.replace(/'/g, "''");
-            additionalFilters.push(`(
-              LOWER(tls.code::varchar) LIKE LOWER('%${searchTerm}%') OR
-              LOWER(tls.name::varchar) LIKE LOWER('%${searchTerm}%') OR
-              LOWER(tls.serial_number::varchar) LIKE LOWER('%${searchTerm}%') OR
-              LOWER(tls.description::varchar) LIKE LOWER('%${searchTerm}%')
-          )`);
+        if (filters?.query && filters.query.trim().length >= 2) {
+            return from(this._api.post('herramientas/tools/searchToolsAutocomplete', {
+                search_term: filters.query.trim(),
+                start: 0,
+                limit: 20
+            })).pipe(
+                switchMap((response: any) => {
+                    const tools = response?.datos || response?.data || [];
+                    return of(tools);
+                })
+            );
         }
 
-        if (filters?.categoryId) {
-            additionalFilters.push(`tls.category_id = ${filters.categoryId}`);
-        }
+        const params: any = { start: 0, limit: 1000 };
 
-        if (filters?.warehouseId) {
-            additionalFilters.push(`tls.warehouse_id = ${filters.warehouseId}`);
-        }
-
-        if (filters?.status) {
-            additionalFilters.push(`tls.status = '${filters.status}'`);
-        }
-
-        if (additionalFilters.length > 0) {
-            params.filtro_adicional = additionalFilters.join(' AND ');
-        }
+        if (filters?.categoryId) params.category_id = filters.categoryId;
+        if (filters?.warehouseId) params.warehouse_id = filters.warehouseId;
+        if (filters?.status)      params.status = filters.status;
 
         return from(this._api.post('herramientas/tools/listTools', params)).pipe(
             switchMap((response: any) => {
@@ -214,7 +200,7 @@ export class ToolService {
     getToolsRequiringCalibration(): Observable<Tool[]> {
         return from(this._api.post('herramientas/tools/getToolsRequireCalibration', {})).pipe(
             switchMap((response: any) => {
-                return of(response?.data || []);
+                return of(response?.datos || response?.data || []);
             })
         );
     }
@@ -225,7 +211,7 @@ export class ToolService {
     getToolsWithExpiredCalibration(): Observable<Tool[]> {
         return from(this._api.post('herramientas/tools/getToolsExpiredCalibration', {})).pipe(
             switchMap((response: any) => {
-                return of(response?.data || []);
+                return of(response?.datos || response?.data || []);
             })
         );
     }

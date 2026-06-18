@@ -20,12 +20,21 @@ interface ProveedorDisplay {
     codigo: string;
     nombre_comercial: string;
     razon_social: string;
+    nit: string;
     tipo_proveedor: string;
     contacto_principal: string;
     telefono: string;
     email: string;
+    direccion: string;
     ciudad: string;
+    pais: string;
+    sitio_web: string;
+    telefono_contacto: string;
+    email_contacto: string;
     calificacion: number;
+    condiciones_pago: string;
+    tiempo_entrega_dias: number;
+    observaciones: string;
     estado: string;
     active: boolean;
 }
@@ -87,20 +96,29 @@ export class ProveedoresComponent implements OnInit {
         });
     }
 
-    private mapToDisplay(suppliers: Supplier[]): ProveedorDisplay[] {
+    private mapToDisplay(suppliers: any[]): ProveedorDisplay[] {
         return suppliers.map(s => ({
-            id: s.id,
-            codigo: s.code || '-',
-            nombre_comercial: s.name || '',
-            razon_social: s.name || '',
-            tipo_proveedor: this.mapType(s.type),
-            contacto_principal: s.contactPerson || '-',
-            telefono: s.phone || '-',
-            email: s.email || '-',
-            ciudad: '-',
-            calificacion: 0,
-            estado: s.active ? 'ACTIVO' : 'INACTIVO',
-            active: s.active
+            id:                  s.id_supplier?.toString() || s.id?.toString() || '',
+            codigo:              s.code           || '',
+            nombre_comercial:    s.name           || '',
+            razon_social:        s.name           || '',
+            nit:                 s.tax_id         || '',
+            tipo_proveedor:      this.mapType(s.type),
+            contacto_principal:  s.contact_person || '',
+            telefono:            s.phone          || '',
+            email:               s.email          || '',
+            direccion:           s.address        || '',
+            ciudad:              s.city           || '',
+            pais:                'Bolivia',
+            sitio_web:           s.website        || '',
+            telefono_contacto:   s.phone_contact  || '',
+            email_contacto:      s.email_contact  || '',
+            calificacion:        parseFloat(s.rating)      || 0,
+            condiciones_pago:    s.payment_terms  || '',
+            tiempo_entrega_dias: parseInt(s.delivery_days) || 0,
+            observaciones:       s.notes          || '',
+            estado:              (s.active === true || s.active === 'true' || s.active === 't') ? 'ACTIVO' : 'INACTIVO',
+            active:              s.active === true || s.active === 'true' || s.active === 't'
         }));
     }
 
@@ -112,6 +130,34 @@ export class ProveedoresComponent implements OnInit {
             'general': 'MIXTO'
         };
         return typeMap[type || ''] || 'MIXTO';
+    }
+
+    private mapFormToBackend(formData: any): any {
+        const typeReverseMap: any = {
+            'HERRAMIENTAS': 'tools',
+            'CALIBRACION': 'calibration',
+            'REPARACION': 'maintenance',
+            'MIXTO': 'general'
+        };
+        return {
+            code:          formData.codigo,
+            name:          formData.nombre_comercial,
+            contact_person:formData.contacto_principal,
+            email:         formData.email,
+            phone:         formData.telefono,
+            address:       formData.direccion,
+            city:          formData.ciudad,
+            website:       formData.sitio_web,
+            type:          typeReverseMap[formData.tipo_proveedor] || 'general',
+            tax_id:        formData.nit,
+            notes:         formData.observaciones,
+            phone_contact: formData.telefono_contacto,
+            email_contact: formData.email_contacto,
+            delivery_days: formData.tiempo_entrega_dias || 0,
+            payment_terms: formData.condiciones_pago,
+            rating:        formData.calificacion || 0,
+            active:        true
+        };
     }
 
     setupFilters(): void {
@@ -149,11 +195,12 @@ export class ProveedoresComponent implements OnInit {
     async nuevoProveedor(): Promise<void> {
         const { FormProveedorComponent } = await import('./dialogs/form-proveedor/form-proveedor.component');
         const dialogRef = this.dialog.open(FormProveedorComponent, {
-            width: '1200px',
+            width: '560px',
             maxWidth: '95vw',
             height: 'auto',
             maxHeight: '90vh',
             panelClass: 'neo-dialog',
+            hasBackdrop: false,
             disableClose: false
         });
 
@@ -167,12 +214,13 @@ export class ProveedoresComponent implements OnInit {
     async editarProveedor(proveedor: ProveedorDisplay): Promise<void> {
         const { FormProveedorComponent } = await import('./dialogs/form-proveedor/form-proveedor.component');
         const dialogRef = this.dialog.open(FormProveedorComponent, {
-            width: '1200px',
+            width: '560px',
             maxWidth: '95vw',
             height: 'auto',
             maxHeight: '90vh',
             data: { proveedor, mode: 'edit' },
-            panelClass: 'neo-dialog'
+            panelClass: 'neo-dialog',
+            hasBackdrop: false
         });
 
         dialogRef.afterClosed().subscribe(result => {
@@ -184,29 +232,46 @@ export class ProveedoresComponent implements OnInit {
 
     async verDetalles(proveedor: ProveedorDisplay): Promise<void> {
         const { DetalleProveedorComponent } = await import('./dialogs/detalle-proveedor/detalle-proveedor.component');
-        this.dialog.open(DetalleProveedorComponent, {
-            width: '900px',
+        const ref = this.dialog.open(DetalleProveedorComponent, {
+            width: '560px',
             maxWidth: '95vw',
             height: 'auto',
             maxHeight: '90vh',
             data: { proveedor },
             panelClass: 'neo-dialog'
         });
+        ref.afterClosed().subscribe(result => {
+            if (result === 'updated') this.loadProveedores();
+        });
     }
 
     async toggleEstado(proveedor: ProveedorDisplay): Promise<void> {
         const nuevoEstado = !proveedor.active;
-        const mensaje = nuevoEstado ? 'activar' : 'desactivar';
 
-        if (confirm(`¿Está seguro de ${mensaje} al proveedor ${proveedor.nombre_comercial}?`)) {
-            // Aquí iría la llamada al servicio para actualizar el estado
-            this.showSuccess(`Proveedor ${nuevoEstado ? 'activado' : 'desactivado'} exitosamente`);
-            this.loadProveedores();
-        }
+        const { ConfirmToggleDialogComponent } = await import('./dialogs/confirm-toggle-dialog.component');
+        const ref = this.dialog.open(ConfirmToggleDialogComponent, {
+            panelClass: 'neo-mini-dialog',
+            hasBackdrop: true,
+            backdropClass: 'bg-black/20',
+            data: { nombre: proveedor.nombre_comercial, activar: nuevoEstado }
+        });
+
+        ref.afterClosed().subscribe(confirmed => {
+            if (confirmed) {
+                this.supplierService.updateSupplier(proveedor.id, { active: nuevoEstado }).subscribe({
+                    next: () => {
+                        this.showSuccess(`Proveedor ${nuevoEstado ? 'activado' : 'desactivado'} exitosamente`);
+                        this.loadProveedores();
+                    },
+                    error: (err) => this.handleError(err)
+                });
+            }
+        });
     }
 
-    createProveedor(data: Partial<Supplier>): void {
-        this.supplierService.createSupplier(data).subscribe({
+    createProveedor(formData: any): void {
+        const supplierData = this.mapFormToBackend(formData);
+        this.supplierService.createSupplier(supplierData).subscribe({
             next: () => {
                 this.showSuccess('Proveedor creado exitosamente');
                 this.loadProveedores();
@@ -215,8 +280,9 @@ export class ProveedoresComponent implements OnInit {
         });
     }
 
-    updateProveedor(id: string, data: Partial<Supplier>): void {
-        this.supplierService.updateSupplier(id, data).subscribe({
+    updateProveedor(id: string, formData: any): void {
+        const supplierData = this.mapFormToBackend(formData);
+        this.supplierService.updateSupplier(id, supplierData).subscribe({
             next: () => {
                 this.showSuccess('Proveedor actualizado exitosamente');
                 this.loadProveedores();

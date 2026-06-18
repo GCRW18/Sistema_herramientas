@@ -1,14 +1,19 @@
-import { Component, inject, OnInit } from '@angular/core';
+import { Component, inject, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { FormBuilder, FormGroup, ReactiveFormsModule, FormsModule, Validators } from '@angular/forms';
 import { MatDialogModule, MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { DragDropModule } from '@angular/cdk/drag-drop';
+import { Subject } from 'rxjs';
+import { takeUntil } from 'rxjs/operators';
 
 import { Herramienta } from '../interfaces';
+import { GestionUbicacionesService } from '../../gestion-ubicaciones/gestion-ubicaciones.service';
+import { Warehouse, Rack, Level } from '../../gestion-ubicaciones/interfaces';
 
 type Mode = 'new' | 'edit' | 'view';
 type TabKey = 'general' | 'calibracion' | 'consumibles' | 'misc';
@@ -19,11 +24,13 @@ type TabKey = 'general' | 'calibracion' | 'consumibles' | 'misc';
     imports: [
         CommonModule,
         ReactiveFormsModule,
+        FormsModule,
         MatDialogModule,
         MatIconModule,
         MatSnackBarModule,
         MatSlideToggleModule,
         MatTooltipModule,
+        MatProgressSpinnerModule,
         DragDropModule,
     ],
     templateUrl: './form-herramienta.component.html',
@@ -35,12 +42,14 @@ type TabKey = 'general' | 'calibracion' | 'consumibles' | 'misc';
         .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #e55a00; }
     `]
 })
-export class FormHerramientaComponent implements OnInit {
+export class FormHerramientaComponent implements OnInit, OnDestroy {
 
-    dialogRef = inject(MatDialogRef<FormHerramientaComponent>);
-    private fb       = inject(FormBuilder);
-    private snackBar = inject(MatSnackBar);
-    private data     = inject<{ mode: Mode; herramienta?: Herramienta }>(MAT_DIALOG_DATA);
+    dialogRef     = inject(MatDialogRef<FormHerramientaComponent>);
+    private fb    = inject(FormBuilder);
+    private snack = inject(MatSnackBar);
+    private data  = inject<{ mode: Mode; herramienta?: Herramienta }>(MAT_DIALOG_DATA);
+    private ubicSvc = inject(GestionUbicacionesService);
+    private _destroy$ = new Subject<void>();
 
     mode: Mode = this.data.mode;
     activeTab: TabKey = 'general';
@@ -53,18 +62,30 @@ export class FormHerramientaComponent implements OnInit {
         { value: 'miscelaneo', label: 'Misceláneo', icon: 'category' },
     ];
 
-    // Mock — luego se cargan desde el servicio de almacenes
-    almacenes = [
-        { id: 1, codigo: 'ALM-CBBA-01', nombre: 'Almacén Central Aero' },
-        { id: 2, codigo: 'ALM-SCZ-01',  nombre: 'Depósito Santa Cruz'  },
-        { id: 3, codigo: 'ALM-LPZ-01',  nombre: 'Centro Logístico LP'  },
-    ];
+    /* ════════ Ubicación — almacén ════════ */
+    almacenes:          Warehouse[] = [];
+    almacenesFiltrados: Warehouse[] = [];
+    almacenSearch    = '';
+    showAlmacenDD    = false;
+    selectedWarehouse: Warehouse | null = null;
+    loadingAlmacenes = false;
+
+    /* ════════ Ubicación — estante ════════ */
+    racks:            Rack[] = [];
+    estantesFiltrados: Rack[] = [];
+    estanteSearch    = '';
+    showEstanteDD    = false;
+    selectedRack: Rack | null = null;
+    loadingRacks = false;
+
+    /* ════════ Ubicación — nivel ════════ */
+    levels: Level[] = [];
+    loadingLevels = false;
 
     form!: FormGroup;
 
     ngOnInit() {
         this.form = this.fb.group({
-            // GENERAL
             codigo:      ['', [Validators.required, Validators.maxLength(40)]],
             pn:          ['', [Validators.required, Validators.maxLength(60)]],
             sn:          [''],
@@ -77,7 +98,6 @@ export class FormHerramientaComponent implements OnInit {
             rackId:      [null],
             levelId:     [null],
 
-            // TOGGLE CALIBRACIÓN
             sujetaCalibracion:  [false],
             calFrecuenciaMeses: [12],
             calUltima:          [''],
@@ -85,12 +105,10 @@ export class FormHerramientaComponent implements OnInit {
             calProveedor:       [''],
             calCertificado:     [''],
 
-            // CONSUMIBLE
             stockMinimo:   [0],
             stockActual:   [0],
             unidadConsumo: ['UN'],
 
-            // MISC
             notas: [''],
         });
 
@@ -115,10 +133,154 @@ export class FormHerramientaComponent implements OnInit {
         }
 
         this.applyCalibrationValidators(this.form.value.sujetaCalibracion);
-        this.form.get('sujetaCalibracion')?.valueChanges.subscribe(v => this.applyCalibrationValidators(!!v));
+        this.form.get('sujetaCalibracion')?.valueChanges
+            .pipe(takeUntil(this._destroy$))
+            .subscribe(v => this.applyCalibrationValidators(!!v));
 
         if (this.mode === 'view') this.form.disable();
+
+        this._loadAlmacenes();
     }
+
+    ngOnDestroy(): void {
+        this._destroy$.next();
+        this._destroy$.complete();
+    }
+
+    /* ════════ Carga inicial ════════ */
+
+    private _loadAlmacenes(): void {
+        this.loadingAlmacenes = true;
+        this.ubicSvc.getWarehouses()
+            .pipe(takeUntil(this._destroy$))
+            .subscribe({
+                next: ws => {
+                    this.almacenes = ws;
+                    this.almacenesFiltrados = ws;
+                    // Restaurar selección si viene en edición
+                    const wId = this.form.get('warehouseId')?.value;
+                    if (wId) {
+                        const found = ws.find(w => w.id === wId);
+                        if (found) this._setWarehouse(found, false);
+                    }
+                },
+                error: () => {},
+                complete: () => { this.loadingAlmacenes = false; }
+            });
+    }
+
+    /* ════════ Almacén buscador ════════ */
+
+    onAlmacenInput(val: string): void {
+        this.almacenSearch = val;
+        const q = val.trim().toUpperCase();
+        this.almacenesFiltrados = q
+            ? this.almacenes.filter(w => w.codigo.toUpperCase().includes(q) || w.nombre.toUpperCase().includes(q))
+            : this.almacenes;
+        this.showAlmacenDD = this.almacenesFiltrados.length > 0;
+    }
+
+    hideAlmacenDD(): void {
+        setTimeout(() => { this.showAlmacenDD = false; }, 180);
+    }
+
+    seleccionarAlmacen(w: Warehouse): void {
+        this._setWarehouse(w, true);
+        this.showAlmacenDD = false;
+    }
+
+    limpiarAlmacen(): void {
+        this.selectedWarehouse = null;
+        this.almacenSearch = '';
+        this.selectedRack = null;
+        this.estanteSearch = '';
+        this.racks = [];
+        this.estantesFiltrados = [];
+        this.levels = [];
+        this.form.patchValue({ warehouseId: null, rackId: null, levelId: null });
+    }
+
+    private _setWarehouse(w: Warehouse, loadRacks = true): void {
+        this.selectedWarehouse = w;
+        this.almacenSearch = `${w.codigo} · ${w.nombre}`;
+        this.form.patchValue({ warehouseId: w.id, rackId: null, levelId: null });
+        this.selectedRack = null;
+        this.estanteSearch = '';
+        this.levels = [];
+        if (loadRacks) this._loadRacks(w.id);
+    }
+
+    /* ════════ Estante buscador ════════ */
+
+    private _loadRacks(warehouseId: number): void {
+        this.loadingRacks = true;
+        this.racks = [];
+        this.estantesFiltrados = [];
+        this.ubicSvc.getRacks(warehouseId)
+            .pipe(takeUntil(this._destroy$))
+            .subscribe({
+                next: rs => {
+                    this.racks = rs;
+                    this.estantesFiltrados = rs;
+                    const rId = this.form.get('rackId')?.value;
+                    if (rId) {
+                        const found = rs.find(r => r.id === rId);
+                        if (found) this._setRack(found, false);
+                    }
+                },
+                error: () => {},
+                complete: () => { this.loadingRacks = false; }
+            });
+    }
+
+    onEstanteInput(val: string): void {
+        this.estanteSearch = val;
+        const q = val.trim().toUpperCase();
+        this.estantesFiltrados = q
+            ? this.racks.filter(r => r.codigo.toUpperCase().includes(q) || r.nombre.toUpperCase().includes(q))
+            : this.racks;
+        this.showEstanteDD = this.estantesFiltrados.length > 0;
+    }
+
+    hideEstanteDD(): void {
+        setTimeout(() => { this.showEstanteDD = false; }, 180);
+    }
+
+    seleccionarEstante(r: Rack): void {
+        this._setRack(r, true);
+        this.showEstanteDD = false;
+    }
+
+    limpiarEstante(): void {
+        this.selectedRack = null;
+        this.estanteSearch = '';
+        this.levels = [];
+        this.form.patchValue({ rackId: null, levelId: null });
+    }
+
+    private _setRack(r: Rack, loadLevels = true): void {
+        this.selectedRack = r;
+        this.estanteSearch = `${r.codigo} · ${r.nombre}`;
+        this.form.patchValue({ rackId: r.id, levelId: null });
+        this.levels = [];
+        if (loadLevels) this._loadLevels(r.id);
+    }
+
+    /* ════════ Niveles ════════ */
+
+    private _loadLevels(rackId: number): void {
+        this.loadingLevels = true;
+        this.levels = [];
+        this.ubicSvc.getLevels(rackId)
+            .pipe(takeUntil(this._destroy$))
+            .subscribe({
+                next: ls => { this.levels = ls; },
+                error: () => {},
+                complete: () => { this.loadingLevels = false; }
+            });
+    }
+
+    /* ════════ Calibración validators ════════ */
 
     private applyCalibrationValidators(active: boolean) {
         const fields = ['calFrecuenciaMeses', 'calProxima'] as const;
@@ -134,6 +296,8 @@ export class FormHerramientaComponent implements OnInit {
             c.updateValueAndValidity({ emitEvent: false });
         });
     }
+
+    /* ════════ Getters ════════ */
 
     get titulo(): string {
         return this.mode === 'new'  ? 'Nueva Herramienta'
@@ -165,11 +329,12 @@ export class FormHerramientaComponent implements OnInit {
         return true;
     }
 
+    /* ════════ Save ════════ */
+
     save() {
         if (this.form.invalid) {
             this.form.markAllAsTouched();
-            this.snackBar.open('Complete los campos requeridos en cada pestaña', 'Cerrar', { duration: 3000 });
-            // Saltar al primer tab con error
+            this.snack.open('Complete los campos requeridos en cada pestaña', 'Cerrar', { duration: 3000 });
             if (this.formHasErrorIn('general'))     this.activeTab = 'general';
             else if (this.formHasErrorIn('calibracion') && this.sujetaCalibracion) this.activeTab = 'calibracion';
             return;
@@ -205,19 +370,21 @@ export class FormHerramientaComponent implements OnInit {
             miscelaneo: v.categoria === 'miscelaneo' ? {
                 notas: v.notas?.trim() || undefined,
             } : undefined,
-            fechaRegistro: this.data.herramienta?.fechaRegistro ?? new Date().toISOString().slice(0, 10),
+            fechaRegistro: this.data.herramienta?.fechaRegistro ?? (() => {
+                const d = new Date();
+                return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+            })(),
         };
 
-        // TODO: conectar al servicio de herramientas
         this.dialogRef.close(out);
     }
 
     private formHasErrorIn(tab: TabKey): boolean {
         const groups: Record<TabKey, string[]> = {
-            general:      ['codigo', 'pn', 'descripcion', 'categoria', 'cantidad', 'unidad', 'estado'],
-            calibracion:  ['calFrecuenciaMeses', 'calProxima'],
-            consumibles:  ['stockMinimo', 'stockActual'],
-            misc:         [],
+            general:     ['codigo', 'pn', 'descripcion', 'categoria', 'cantidad', 'unidad', 'estado'],
+            calibracion: ['calFrecuenciaMeses', 'calProxima'],
+            consumibles: ['stockMinimo', 'stockActual'],
+            misc:        [],
         };
         return groups[tab].some(f => this.form.get(f)?.invalid);
     }

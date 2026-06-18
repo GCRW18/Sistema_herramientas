@@ -24,7 +24,7 @@ export type ItemType = 'HERRAMIENTA' | 'KIT' | 'MISCELANEO';
 export type UnifiedStatus =
     | 'DISPONIBLE' | 'BAJO STOCK' | 'SIN STOCK'
     | 'EN CALIBRACION' | 'EN PRESTAMO' | 'CUARENTENA'
-    | 'EN USO' | 'COMPLETO' | 'INCOMPLETO' | 'BAJA';
+    | 'EN MANTENIMIENTO' | 'EN USO' | 'COMPLETO' | 'INCOMPLETO' | 'BAJA';
 
 export type TabId = 'todos' | 'herramientas' | 'kits' | 'miscelaneos' | 'critico' | 'prestados';
 
@@ -58,6 +58,11 @@ export interface UnifiedItem {
     requiresCalibration?: boolean;
     fechaCalibracion?:    Date;
     proximaCalibracion?:  Date;
+    estadoFisico?:        string;
+    nivelCriticidad?:     string;
+    fabricacion?:         string;
+    intervaloCalibracion?: number;
+    nroCertificado?:      string;
     imagen?:              string;
     valorUnitario?:       number;
     proveedor?:           string;
@@ -169,7 +174,8 @@ export class ConsultarInventarioComponent implements OnInit {
 
     readonly estados: UnifiedStatus[] = [
         'DISPONIBLE','BAJO STOCK','SIN STOCK','EN CALIBRACION',
-        'EN PRESTAMO','CUARENTENA','EN USO','COMPLETO','INCOMPLETO','BAJA'
+        'EN PRESTAMO','EN USO','EN MANTENIMIENTO','CUARENTENA',
+        'COMPLETO','INCOMPLETO','BAJA'
     ];
 
     // ── Computed: pestañas filtradas ──────────────────────────────────────────
@@ -357,8 +363,9 @@ export class ConsultarInventarioComponent implements OnInit {
             miscs:      this.miscelaneosService.getMiscelaneos().pipe(catchError(() => of([]))),
             warehouses: this.warehouseService.getWarehouses().pipe(catchError(() => of([]))),
             locations:  this.warehouseService.getAllLocations().pipe(catchError(() => of([]))),
+            categories: this.movementService.getIngresosCategories().pipe(catchError(() => of([]))),
         }).subscribe({
-            next: ({ tools, kits, miscs, warehouses, locations }) => {
+            next: ({ tools, kits, miscs, warehouses, locations, categories }) => {
                 // Maps para resolución rápida de nombres
                 const warehouseMap: Record<number, string> = {};
                 for (const w of warehouses as any[]) {
@@ -368,9 +375,13 @@ export class ConsultarInventarioComponent implements OnInit {
                 for (const l of locations as any[]) {
                     locationMap[l.id_location] = l.name;
                 }
+                const categoryMap: Record<number, string> = {};
+                for (const c of categories as any[]) {
+                    categoryMap[c.id_category] = c.name;
+                }
 
                 const items: UnifiedItem[] = [
-                    ...(tools as any[]).map(t => this.mapTool(t, warehouseMap, locationMap)),
+                    ...(tools as any[]).map(t => this.mapTool(t, warehouseMap, locationMap, categoryMap)),
                     ...(kits  as any[]).map(k => this.mapKit(k)),
                     ...(miscs as any[]).map(m => this.mapMisc(m)),
                 ];
@@ -396,7 +407,8 @@ export class ConsultarInventarioComponent implements OnInit {
     private mapTool(
         t: any,
         wMap: Record<number, string>,
-        lMap: Record<number, string>
+        lMap: Record<number, string>,
+        catMap: Record<number, string> = {}
     ): UnifiedItem {
         const wName = t.warehouse_id ? wMap[t.warehouse_id] : undefined;
         const lName  = t.location_id  ? lMap[t.location_id]   : undefined;
@@ -411,15 +423,17 @@ export class ConsultarInventarioComponent implements OnInit {
         }
 
         const statusMap: Record<string, UnifiedStatus> = {
-            available:      'DISPONIBLE',
-            calibration:    'EN CALIBRACION', in_calibration: 'EN CALIBRACION',
-            loaned:         'EN PRESTAMO',     in_use:         'EN PRESTAMO',
-            transferred:    'EN PRESTAMO',
-            quarantine:     'CUARENTENA',      decommissioned: 'CUARENTENA',
-            maintenance:    'CUARENTENA',      in_maintenance: 'CUARENTENA',
-            DISPONIBLE:     'DISPONIBLE',      CALIBRACION:    'EN CALIBRACION',
-            PRESTADO:       'EN PRESTAMO',     TRANSFERIDO:    'EN PRESTAMO',
-            CUARENTENA:     'CUARENTENA',      BAJA:           'CUARENTENA',
+            available:        'DISPONIBLE',
+            in_calibration:   'EN CALIBRACION',  calibration:    'EN CALIBRACION',
+            in_use:           'EN USO',           loaned:         'EN PRESTAMO',
+            transferred:      'EN PRESTAMO',
+            in_maintenance:   'EN MANTENIMIENTO', maintenance:    'EN MANTENIMIENTO',
+            quarantine:       'CUARENTENA',
+            decommissioned:   'BAJA',             lost:           'BAJA',
+            // valores legados en español
+            DISPONIBLE:       'DISPONIBLE',       CALIBRACION:    'EN CALIBRACION',
+            PRESTADO:         'EN PRESTAMO',      TRANSFERIDO:    'EN PRESTAMO',
+            CUARENTENA:       'CUARENTENA',       BAJA:           'BAJA',
         };
         let estado: UnifiedStatus = statusMap[t.status] || 'DISPONIBLE';
         if (estado === 'DISPONIBLE' && (t.quantity_in_stock ?? 0) <= 0) estado = 'SIN STOCK';
@@ -427,6 +441,9 @@ export class ConsultarInventarioComponent implements OnInit {
         const condicionMap: Record<string, string> = {
             new: 'EXCELENTE', excellent: 'EXCELENTE',
             good: 'BUENO', fair: 'REGULAR', poor: 'MALO', damaged: 'MALO',
+        };
+        const estadoFisicoMap: Record<string, string> = {
+            new: 'NUEVO', reconditioned: 'REACONDICIONADO', good: 'USADO',
         };
 
         let imagen: string | undefined;
@@ -443,7 +460,7 @@ export class ConsultarInventarioComponent implements OnInit {
             serialNumber:        t.serial_number || undefined,
             marca:               t.brand         || undefined,
             descripcion:         t.description   || undefined,
-            categoria:           t.category_name || t.nombre_categoria || undefined,
+            categoria:           (t.category_id ? catMap[t.category_id] : undefined) || t.category_name || undefined,
             unidad:              t.unit_of_measure || 'UNIDAD',
             ubicacion,
             almacen:             wName,
@@ -452,10 +469,15 @@ export class ConsultarInventarioComponent implements OnInit {
             stockMinimo:         0,
             stockMaximo:         undefined,
             estado,
-            condicion:           condicionMap[t.condition] || 'BUENO',
-            requiresCalibration: !!t.requires_calibration,
-            fechaCalibracion:    t.last_calibration_date  ? new Date(t.last_calibration_date)  : undefined,
-            proximaCalibracion:  t.next_calibration_date  ? new Date(t.next_calibration_date)  : undefined,
+            condicion:            condicionMap[t.condition] || 'BUENO',
+            requiresCalibration:  !!t.requires_calibration,
+            fechaCalibracion:     t.last_calibration_date  ? new Date(t.last_calibration_date)  : undefined,
+            proximaCalibracion:   t.next_calibration_date  ? new Date(t.next_calibration_date)  : undefined,
+            estadoFisico:         estadoFisicoMap[t.condition] || undefined,
+            nivelCriticidad:      t.criticality_level        || undefined,
+            fabricacion:          t.manufacture_origin        || undefined,
+            intervaloCalibracion: t.calibration_interval      ?? undefined,
+            nroCertificado:       t.calibration_certificate   || undefined,
             imagen,
             valorUnitario:       t.purchase_price  ?? undefined,
             proveedor:           t.supplier         || undefined,
@@ -580,18 +602,19 @@ export class ConsultarInventarioComponent implements OnInit {
         const estadoMatch = cmd.match(/estado:(\w+)/i);
         if (estadoMatch) {
             const estadoMap: Record<string, UnifiedStatus> = {
-                disponible:  'DISPONIBLE',
-                prestado:    'EN PRESTAMO',
-                uso:         'EN USO',
-                agotado:     'SIN STOCK',
-                sinstock:    'SIN STOCK',
-                critico:     'SIN STOCK',
-                calibracion: 'EN CALIBRACION',
-                cuarentena:  'CUARENTENA',
-                completo:    'COMPLETO',
-                incompleto:  'INCOMPLETO',
-                baja:        'BAJA',
-                bajostock:   'BAJO STOCK',
+                disponible:    'DISPONIBLE',
+                prestado:      'EN PRESTAMO',
+                uso:           'EN USO',
+                agotado:       'SIN STOCK',
+                sinstock:      'SIN STOCK',
+                critico:       'SIN STOCK',
+                calibracion:   'EN CALIBRACION',
+                mantenimiento: 'EN MANTENIMIENTO',
+                cuarentena:    'CUARENTENA',
+                completo:      'COMPLETO',
+                incompleto:    'INCOMPLETO',
+                baja:          'BAJA',
+                bajostock:     'BAJO STOCK',
             };
             result.estado = estadoMap[estadoMatch[1].toLowerCase()];
         }
@@ -690,16 +713,17 @@ export class ConsultarInventarioComponent implements OnInit {
             MISCELANEO:  '#c2410c',   // orange-700
         };
         const estadoColors: Record<string, string> = {
-            'DISPONIBLE':     '#065f46',
-            'BAJO STOCK':     '#854d0e',
-            'SIN STOCK':      '#991b1b',
-            'EN CALIBRACION': '#581c87',
-            'EN PRESTAMO':    '#1e40af',
-            'CUARENTENA':     '#9a3412',
-            'EN USO':         '#1e40af',
-            'COMPLETO':       '#065f46',
-            'INCOMPLETO':     '#854d0e',
-            'BAJA':           '#44403c',
+            'DISPONIBLE':       '#065f46',
+            'BAJO STOCK':       '#854d0e',
+            'SIN STOCK':        '#991b1b',
+            'EN CALIBRACION':   '#581c87',
+            'EN PRESTAMO':      '#1e40af',
+            'EN USO':           '#0e7490',
+            'EN MANTENIMIENTO': '#92400e',
+            'CUARENTENA':       '#9a3412',
+            'COMPLETO':         '#065f46',
+            'INCOMPLETO':       '#854d0e',
+            'BAJA':             '#44403c',
         };
 
         const rows = data.map((i, idx) => {
@@ -900,27 +924,34 @@ export class ConsultarInventarioComponent implements OnInit {
 
     getStatusBadgeClass(estado: string): string {
         const m: Record<string, string> = {
-            'DISPONIBLE':     'bg-green-700   text-white        border-green-900',
-            'BAJO STOCK':     'bg-yellow-100  text-yellow-800   border-yellow-300',
-            'SIN STOCK':      'bg-red-100     text-red-800      border-red-300',
-            'EN CALIBRACION': 'bg-purple-100  text-purple-800   border-purple-300',
-            'EN PRESTAMO':    'bg-blue-100    text-blue-800     border-blue-300',
-            'CUARENTENA':     'bg-orange-100  text-orange-800   border-orange-300',
-            'EN USO':         'bg-blue-100    text-blue-800     border-blue-300',
-            'COMPLETO':       'bg-green-700   text-white        border-green-900',
-            'INCOMPLETO':     'bg-yellow-100  text-yellow-800   border-yellow-300',
-            'BAJA':           'bg-stone-200   text-stone-600    border-stone-400',
+            'DISPONIBLE':       'bg-green-700   text-white        border-green-900',
+            'BAJO STOCK':       'bg-yellow-100  text-yellow-800   border-yellow-300',
+            'SIN STOCK':        'bg-red-100     text-red-800      border-red-300',
+            'EN CALIBRACION':   'bg-purple-100  text-purple-800   border-purple-300',
+            'EN PRESTAMO':      'bg-blue-100    text-blue-800     border-blue-300',
+            'EN USO':           'bg-cyan-100    text-cyan-800     border-cyan-300',
+            'EN MANTENIMIENTO': 'bg-amber-100   text-amber-800    border-amber-400',
+            'CUARENTENA':       'bg-orange-100  text-orange-800   border-orange-300',
+            'COMPLETO':         'bg-green-700   text-white        border-green-900',
+            'INCOMPLETO':       'bg-yellow-100  text-yellow-800   border-yellow-300',
+            'BAJA':             'bg-stone-200   text-stone-600    border-stone-400',
         };
         return m[estado] || 'bg-stone-100 text-stone-600 border-stone-300';
     }
 
     getStatusDotClass(estado: string): string {
         const m: Record<string, string> = {
-            'DISPONIBLE': 'bg-emerald-500', 'BAJO STOCK': 'bg-yellow-500',
-            'SIN STOCK':  'bg-red-500',     'EN CALIBRACION': 'bg-purple-500',
-            'EN PRESTAMO':'bg-blue-500',    'CUARENTENA': 'bg-orange-500',
-            'EN USO':     'bg-blue-500',    'COMPLETO':   'bg-emerald-500',
-            'INCOMPLETO': 'bg-yellow-500',  'BAJA':       'bg-stone-400',
+            'DISPONIBLE':       'bg-emerald-500',
+            'BAJO STOCK':       'bg-yellow-500',
+            'SIN STOCK':        'bg-red-500',
+            'EN CALIBRACION':   'bg-purple-500',
+            'EN PRESTAMO':      'bg-blue-500',
+            'EN USO':           'bg-cyan-500',
+            'EN MANTENIMIENTO': 'bg-amber-500',
+            'CUARENTENA':       'bg-orange-500',
+            'COMPLETO':         'bg-emerald-500',
+            'INCOMPLETO':       'bg-yellow-500',
+            'BAJA':             'bg-stone-400',
         };
         return m[estado] || 'bg-stone-400';
     }

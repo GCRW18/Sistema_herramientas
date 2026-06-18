@@ -140,28 +140,28 @@
 </div>
 
 <ng-template #calibracionesRecientesDialog>
-    <div class="overflow-hidden flex flex-col relative font-sans h-full max-h-[90vh]">
+    <div class="overflow-hidden flex flex-col relative font-sans" style="max-height:80vh">
 
         <!-- Header -->
-        <div class="bg-[#0F172AFF] px-5 py-3.5 flex items-center justify-between shrink-0 border-b-[3px] border-black"
+        <div class="bg-[#0F172AFF] px-4 py-2.5 flex items-center justify-between shrink-0 border-b-[2px] border-black"
              cdkDrag cdkDragRootElement=".cdk-overlay-pane" cdkDragHandle style="cursor:grab">
-            <div class="flex items-center gap-3">
-                <div class="w-9 h-9 rounded-xl bg-[#FFC501FF] border-2 border-black flex items-center justify-center shadow-[2px_2px_0_#000] shrink-0">
-                    <mat-icon class="!text-lg text-black">history</mat-icon>
+            <div class="flex items-center gap-2.5">
+                <div class="w-7 h-7 rounded-lg bg-[#FFC501FF] border-2 border-black flex items-center justify-center shadow-[2px_2px_0_#000] shrink-0">
+                    <mat-icon class="!text-base text-black">history</mat-icon>
                 </div>
                 <div>
-                    <p class="text-[9px] text-slate-400 font-bold uppercase tracking-[0.18em] leading-none mb-0.5">Calibraciones</p>
-                    <h2 class="text-sm text-white font-black uppercase tracking-tight leading-none">Registros Recientes</h2>
+                    <p class="text-[8px] text-slate-400 font-bold uppercase tracking-widest leading-none mb-0.5">Calibraciones</p>
+                    <h2 class="text-xs text-white font-black uppercase tracking-tight leading-none">Registros Recientes</h2>
                 </div>
             </div>
-            <div class="flex items-center gap-2">
+            <div class="flex items-center gap-1.5">
                 <button (click)="loadRecentCalibrations()"
-                        class="flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 border-[2px] border-black rounded-full text-[10px] font-black text-[#FFC501FF] uppercase shadow-[2px_2px_0_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all">
-                    <mat-icon class="!text-sm">refresh</mat-icon>
-                    <span class="hidden sm:inline">Actualizar</span>
+                        class="flex items-center gap-1 px-2.5 py-1 bg-slate-800 border-[2px] border-black rounded-full text-[9px] font-black text-[#FFC501FF] uppercase shadow-[2px_2px_0_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all">
+                    <mat-icon class="!text-xs">refresh</mat-icon>
+                    <span>Actualizar</span>
                 </button>
                 <button mat-dialog-close
-                        class="w-8 h-8 flex items-center justify-center bg-[#FF1414FF] border-[2px] border-black rounded-full text-white shadow-[2px_2px_0_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all"
+                        class="w-7 h-7 flex items-center justify-center bg-[#FF1414FF] border-[2px] border-black rounded-full text-white shadow-[2px_2px_0_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all"
                         matTooltip="Cerrar">
                     <mat-icon class="!text-sm">close</mat-icon>
                 </button>
@@ -170,51 +170,43 @@
 
         <!-- Loading overlay -->
         <div *ngIf="isLoading" class="absolute inset-0 bg-white/70 dark:bg-slate-900/70 z-[9999] flex flex-col items-center justify-center backdrop-blur-sm">
-            <mat-spinner diameter="40"></mat-spinner>
-            <span class="font-black text-black dark:text-white uppercase mt-4 text-xs tracking-widest">Cargando historial...</span>
+            <mat-spinner diameter="32"></mat-spinner>
+            <span class="font-black text-black dark:text-white uppercase mt-3 text-[10px] tracking-widest">Cargando...</span>
         </div>
 
         <!-- Vista lista -->
-        <div *ngIf="!selectedEntry" class="flex flex-col flex-1 overflow-hidden p-3 bg-[#f8f9fc] dark:bg-[#0F172AFF]">
-            <div class="flex-1 border-[3px] border-black rounded-2xl overflow-hidden flex flex-col bg-white dark:bg-slate-800 shadow-[6px_6px_0px_0px_#000]">
+        <div *ngIf="!selectedEntry" class="flex flex-col overflow-hidden p-2 bg-[#f8f9fc] dark:bg-[#0F172AFF]">
+            <div class="border-[2px] border-black rounded-xl overflow-hidden flex flex-col bg-white dark:bg-slate-800 shadow-[4px_4px_0px_0px_#000]">
 
-                <div class="overflow-auto flex-1 custom-scrollbar-cal">
-                    <table class="w-full text-sm">
-                        <thead class="bg-stone-200 dark:bg-[#020617] sticky top-0 z-10 border-b-[3px] border-black text-[11px] font-black uppercase">
+                <div class="overflow-auto custom-scrollbar-cal" style="max-height:52vh">
+                    <table class="w-full min-w-[550px]">
+                        <thead class="bg-stone-200 dark:bg-[#020617] sticky top-0 z-10 border-b-[2px] border-black text-[10px] font-black uppercase">
                         <tr>
-                            <th class="py-3 px-4 text-left text-black dark:text-amber-400 w-28">Fecha</th>
-                            <th class="py-3 px-4 text-left text-black dark:text-amber-400">Tipo</th>
-                            <th class="py-3 px-4 text-left text-black dark:text-amber-400">Nro. Registro</th>
-                            <th class="py-3 px-4 text-center text-black dark:text-amber-400 w-44">Estado</th>
-                            <th class="py-3 px-4 text-left text-black dark:text-amber-400">Responsable</th>
-                            <th class="py-3 px-4 text-center text-black dark:text-amber-400 w-16">Acc.</th>
+                            <th class="py-2 px-3 text-left text-black dark:text-amber-400 w-24">Fecha</th>
+                            <th class="py-2 px-3 text-left text-black dark:text-amber-400">Tipo</th>
+                            <th class="py-2 px-3 text-left text-black dark:text-amber-400">Nro. Registro</th>
+                            <th class="py-2 px-3 text-center text-black dark:text-amber-400">Estado</th>
+                            <th class="py-2 px-3 text-left text-black dark:text-amber-400">Responsable</th>
                         </tr>
                         </thead>
                         <tbody class="bg-white dark:bg-slate-800">
                         <tr *ngFor="let element of recentCalibrations"
                             class="border-b border-gray-200 dark:border-slate-700 hover:bg-stone-50 dark:hover:bg-slate-700/50 transition-colors cursor-pointer"
                             (click)="verDetalle(element)">
-                            <td class="py-3 px-4 font-mono text-xs font-bold text-gray-900 dark:text-white whitespace-nowrap">{{ element.fecha }}</td>
-                            <td class="py-3 px-4">
-                                <span class="px-2 py-0.5 rounded text-[9px] font-black border-2 border-black bg-[#0F172AFF] text-white uppercase">{{ element.tipo }}</span>
+                            <td class="py-2 px-3 font-mono text-[10px] font-bold text-gray-900 dark:text-white whitespace-nowrap">{{ element.fecha }}</td>
+                            <td class="py-2 px-3">
+                                <span class="px-1.5 py-0.5 rounded text-[9px] font-black border border-black bg-[#0F172AFF] text-white uppercase">{{ element.tipo }}</span>
                             </td>
-                            <td class="py-3 px-4 text-xs font-black font-mono text-gray-900 dark:text-white">{{ element.nroComprobante }}</td>
-                            <td class="py-3 px-4 text-center">
-                                <span class="px-3 py-1 rounded-full text-[10px] font-black uppercase border" [ngClass]="getStatusClass(element.estado)">{{ element.estado }}</span>
+                            <td class="py-2 px-3 text-[10px] font-black font-mono text-gray-900 dark:text-white">{{ element.nroComprobante }}</td>
+                            <td class="py-2 px-3 text-center">
+                                <span class="px-2 py-0.5 rounded-full text-[9px] font-black uppercase border" [ngClass]="getStatusClass(element.estado)">{{ element.estado }}</span>
                             </td>
-                            <td class="py-3 px-4 text-xs font-bold text-gray-700 dark:text-gray-300">{{ element.responsable }}</td>
-                            <td class="py-3 px-4 text-center">
-                                <button (click)="$event.stopPropagation(); verDetalle(element)"
-                                        class="w-7 h-7 bg-white dark:bg-slate-700 border-2 border-black rounded-full shadow-[2px_2px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all flex items-center justify-center mx-auto"
-                                        matTooltip="Ver detalle">
-                                    <mat-icon class="!text-sm text-black dark:text-white">visibility</mat-icon>
-                                </button>
-                            </td>
+                            <td class="py-2 px-3 text-[10px] font-bold text-gray-700 dark:text-gray-300">{{ element.responsable }}</td>
                         </tr>
                         <tr *ngIf="recentCalibrations.length === 0 && !isLoading">
-                            <td colspan="6" class="py-16 text-center text-gray-400 dark:text-slate-500 font-black uppercase tracking-wider">
+                            <td colspan="5" class="py-10 text-center text-gray-400 dark:text-slate-500 font-black uppercase tracking-wider text-xs">
                                 <div class="flex flex-col items-center mx-auto">
-                                    <mat-icon class="!text-5xl mb-2 text-gray-300 dark:text-slate-600">science</mat-icon>
+                                    <mat-icon class="!text-4xl mb-1.5 text-gray-300 dark:text-slate-600">science</mat-icon>
                                     No hay registros de calibración
                                 </div>
                             </td>
@@ -223,22 +215,22 @@
                     </table>
                 </div>
 
-                <!-- Paginador custom -->
-                <div class="flex items-center justify-between px-4 py-2 border-t-[3px] border-black bg-stone-200 dark:bg-[#020617] shrink-0">
-                    <span class="text-[11px] font-black text-black dark:text-slate-300 uppercase">
+                <!-- Paginador -->
+                <div class="flex items-center justify-between px-3 py-1.5 border-t-[2px] border-black bg-stone-200 dark:bg-[#020617] shrink-0">
+                    <span class="text-[10px] font-black text-black dark:text-slate-300 uppercase">
                         {{ recentsStart }}–{{ recentsEnd }} de {{ totalRecords }}
                     </span>
                     <div class="flex items-center gap-1">
                         <button (click)="prevRecentsPage()" [disabled]="pageIndex === 0"
-                                class="w-7 h-7 flex items-center justify-center border-[2px] border-black rounded-full bg-white dark:bg-slate-800 shadow-[2px_2px_0px_0px_#000] hover:translate-y-[1px] hover:translate-x-[1px] hover:shadow-none transition-all disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:translate-x-0 disabled:hover:translate-y-0 disabled:hover:shadow-[2px_2px_0px_0px_#000]">
-                            <mat-icon class="!text-sm text-black dark:text-white">chevron_left</mat-icon>
+                                class="w-6 h-6 flex items-center justify-center border-[2px] border-black rounded-full bg-white dark:bg-slate-800 shadow-[2px_2px_0px_0px_#000] hover:translate-y-[1px] hover:translate-x-[1px] hover:shadow-none transition-all disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:translate-x-0 disabled:hover:translate-y-0 disabled:hover:shadow-[2px_2px_0px_0px_#000]">
+                            <mat-icon class="!text-xs text-black dark:text-white">chevron_left</mat-icon>
                         </button>
-                        <span class="text-[11px] font-black text-black dark:text-slate-300 px-2 uppercase">
+                        <span class="text-[10px] font-black text-black dark:text-slate-300 px-1.5 uppercase">
                             {{ pageIndex + 1 }} / {{ totalPagesRecents }}
                         </span>
                         <button (click)="nextRecentsPage()" [disabled]="pageIndex >= totalPagesRecents - 1"
-                                class="w-7 h-7 flex items-center justify-center border-[2px] border-black rounded-full bg-white dark:bg-slate-800 shadow-[2px_2px_0px_0px_#000] hover:translate-y-[1px] hover:translate-x-[1px] hover:shadow-none transition-all disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:translate-x-0 disabled:hover:translate-y-0 disabled:hover:shadow-[2px_2px_0px_0px_#000]">
-                            <mat-icon class="!text-sm text-black dark:text-white">chevron_right</mat-icon>
+                                class="w-6 h-6 flex items-center justify-center border-[2px] border-black rounded-full bg-white dark:bg-slate-800 shadow-[2px_2px_0px_0px_#000] hover:translate-y-[1px] hover:translate-x-[1px] hover:shadow-none transition-all disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:translate-x-0 disabled:hover:translate-y-0 disabled:hover:shadow-[2px_2px_0px_0px_#000]">
+                            <mat-icon class="!text-xs text-black dark:text-white">chevron_right</mat-icon>
                         </button>
                     </div>
                 </div>
@@ -246,37 +238,37 @@
         </div>
 
         <!-- Vista detalle -->
-        <div *ngIf="selectedEntry" class="flex flex-col flex-1 overflow-hidden p-3 bg-[#f8f9fc] dark:bg-[#0F172AFF]">
-            <div class="flex justify-between items-center mb-3 px-1">
+        <div *ngIf="selectedEntry" class="flex flex-col overflow-hidden p-2 bg-[#f8f9fc] dark:bg-[#0F172AFF]">
+            <div class="flex justify-between items-center mb-2 px-1">
                 <button (click)="cerrarDetalle()"
-                        class="px-4 py-2 bg-white dark:bg-slate-800 text-black dark:text-white border-2 border-black rounded-full shadow-[2px_2px_0px_0px_#000] text-[10px] font-black uppercase flex items-center gap-1.5 hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all">
-                    <mat-icon class="!text-sm">arrow_back</mat-icon> Volver a la lista
+                        class="px-3 py-1.5 bg-white dark:bg-slate-800 text-black dark:text-white border-2 border-black rounded-full shadow-[2px_2px_0px_0px_#000] text-[9px] font-black uppercase flex items-center gap-1 hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all">
+                    <mat-icon class="!text-xs">arrow_back</mat-icon> Volver
                 </button>
-                <span class="font-mono text-sm font-black border-b-2 border-black dark:text-white dark:border-white">{{ selectedEntry?.nroComprobante }}</span>
+                <span class="font-mono text-xs font-black border-b-2 border-black dark:text-white dark:border-white">{{ selectedEntry?.nroComprobante }}</span>
             </div>
 
-            <div class="flex-1 overflow-y-auto custom-scrollbar-cal flex flex-col gap-3">
-                <div class="bg-white dark:bg-slate-800 border-[3px] border-black rounded-2xl shadow-[4px_4px_0px_0px_#000] overflow-hidden">
-                    <div class="bg-[#0F172AFF] px-4 py-2.5 border-b-[3px] border-black flex items-center gap-2">
-                        <mat-icon class="!text-base text-[#FFC501FF]">info</mat-icon>
-                        <span class="text-[10px] font-black uppercase text-white tracking-widest">Información del Registro</span>
+            <div class="overflow-y-auto custom-scrollbar-cal">
+                <div class="bg-white dark:bg-slate-800 border-[2px] border-black rounded-xl shadow-[3px_3px_0px_0px_#000] overflow-hidden">
+                    <div class="bg-[#0F172AFF] px-3 py-2 border-b-[2px] border-black flex items-center gap-2">
+                        <mat-icon class="!text-sm text-[#FFC501FF]">info</mat-icon>
+                        <span class="text-[9px] font-black uppercase text-white tracking-widest">Información del Registro</span>
                     </div>
-                    <div class="p-4 grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div class="p-3 grid grid-cols-2 gap-3">
                         <div>
-                            <label class="text-[9px] font-black uppercase text-stone-400 dark:text-slate-400 block mb-1">Fecha</label>
-                            <div class="font-bold text-xs text-black dark:text-white">{{ selectedEntry?.fecha }}</div>
+                            <label class="text-[8px] font-black uppercase text-stone-400 dark:text-slate-400 block mb-0.5">Fecha</label>
+                            <div class="font-bold text-[10px] text-black dark:text-white">{{ selectedEntry?.fecha }}</div>
                         </div>
                         <div>
-                            <label class="text-[9px] font-black uppercase text-stone-400 dark:text-slate-400 block mb-1">Tipo</label>
-                            <span class="px-2 py-0.5 rounded text-[9px] font-black border-2 border-black bg-[#0F172AFF] text-white uppercase">{{ selectedEntry?.tipo }}</span>
+                            <label class="text-[8px] font-black uppercase text-stone-400 dark:text-slate-400 block mb-0.5">Tipo</label>
+                            <span class="px-1.5 py-0.5 rounded text-[9px] font-black border border-black bg-[#0F172AFF] text-white uppercase">{{ selectedEntry?.tipo }}</span>
                         </div>
                         <div>
-                            <label class="text-[9px] font-black uppercase text-stone-400 dark:text-slate-400 block mb-1">Estado</label>
-                            <span class="font-black text-[10px] px-2 py-0.5 border-2 rounded-full inline-block" [ngClass]="getStatusClass(selectedEntry?.estado || '')">{{ selectedEntry?.estado }}</span>
+                            <label class="text-[8px] font-black uppercase text-stone-400 dark:text-slate-400 block mb-0.5">Estado</label>
+                            <span class="font-black text-[9px] px-2 py-0.5 border rounded-full inline-block" [ngClass]="getStatusClass(selectedEntry?.estado || '')">{{ selectedEntry?.estado }}</span>
                         </div>
                         <div>
-                            <label class="text-[9px] font-black uppercase text-stone-400 dark:text-slate-400 block mb-1">Responsable</label>
-                            <div class="font-bold text-xs text-black dark:text-white">{{ selectedEntry?.responsable || '-' }}</div>
+                            <label class="text-[8px] font-black uppercase text-stone-400 dark:text-slate-400 block mb-0.5">Responsable</label>
+                            <div class="font-bold text-[10px] text-black dark:text-white">{{ selectedEntry?.responsable || '-' }}</div>
                         </div>
                     </div>
                 </div>

@@ -167,24 +167,26 @@ export class DashboardComponent implements OnInit, AfterViewInit {
             { icon: 'heroicons_outline:document-text',   label: 'Reportes',  description: 'Ver',      variant: 'default', route: '/reportes' }
         ]);
 
-        // Revisar dashboard-alertas de calibración al cargar (una sola vez por sesión)
-        setTimeout(() => this.checkCalibrationAlerts(), 1200);
-
         forkJoin({
-            tools:     this.toolService.getTools(),
-            movements: this.movService.getMovements({ limit: 500 })
+            tools:      this.toolService.getTools(),
+            movements:  this.movService.getMovements({ limit: 500 }),
+            calibAlerts: this.calibrationService.getCalibrationAlertsPxp({ limit: 100 })
         }).subscribe({
-            next: ({ tools, movements }) => {
+            next: ({ tools, movements, calibAlerts }) => {
+                const alertsArr: any[] = Array.isArray(calibAlerts) ? calibAlerts : (calibAlerts as any)?.data || [];
                 this.allTools        = tools;
                 this.recentMovements = movements;
-                this.buildKPIs();
-                this.buildActivities();
+                this.buildKPIs(alertsArr);
+                this.buildActivities(alertsArr);
                 this.isLoading.set(false);
                 setTimeout(() => this.initCharts(), 100);
+                setTimeout(() => this.checkCalibrationAlerts(), 1200);
             },
             error: () => {
-                this.buildKPIs();
+                this.buildKPIs([]);
+                this.buildActivities([]);
                 this.isLoading.set(false);
+                setTimeout(() => this.checkCalibrationAlerts(), 1200);
             }
         });
     }
@@ -192,40 +194,66 @@ export class DashboardComponent implements OnInit, AfterViewInit {
     ngAfterViewInit(): void {}
 
     // ── KPIs ────────────────────────────────────────────────────────────────────
-    private buildKPIs(): void {
+    private buildKPIs(calibAlerts: any[] = []): void {
         const tools      = this.allTools;
-        const total      = tools.length;
-        const available  = tools.filter(t => t.status === 'available').length;
-        const inUse      = tools.filter(t => t.status === 'in_use').length;
-        const inCalib    = tools.filter(t => t.status === 'in_calibration').length;
-        const quarantine = tools.filter(t => t.status === 'quarantine').length;
-        const decomm     = tools.filter(t => t.status === 'decommissioned').length;
+        const total      = tools.filter((t: any) => t.status !== 'decommissioned').length;
+        const available  = tools.filter((t: any) => t.status === 'available').length;
+        const inUse      = tools.filter((t: any) => t.status === 'in_use').length;
+        const inCalib    = tools.filter((t: any) => t.status === 'in_calibration').length;
+        const quarantine = tools.filter((t: any) => t.status === 'quarantine').length;
+        const decomm     = tools.filter((t: any) => t.status === 'decommissioned').length;
         const pct        = total ? Math.round(available / total * 100) : 0;
+        const expired    = calibAlerts.filter(a => a.alert_type === 'EXPIRED').length;
+        const critical   = calibAlerts.filter(a => ['EXPIRED', 'CRITICAL_7D', 'URGENT_15D'].includes(a.alert_type)).length;
 
         this.kpiCardsData.set([
             { title: 'Total Herramientas', value: total.toLocaleString(),     subtitle: 'INVENTARIO', icon: 'heroicons_outline:wrench-screwdriver', variant: 'info' },
             { title: 'Disponibles',         value: available.toLocaleString(), subtitle: `${pct}% TOTAL`, icon: 'heroicons_outline:check-circle',       variant: 'success', trend: { value: pct, isPositive: true } },
-            { title: 'Alertas Críticas',    value: inCalib + quarantine,       subtitle: 'ATENCIÓN',   icon: 'heroicons_outline:exclamation-triangle', variant: 'danger' },
+            { title: 'Alertas Críticas',    value: critical,                   subtitle: 'ATENCIÓN',   icon: 'heroicons_outline:exclamation-triangle', variant: 'danger' },
             { title: 'En Calibración',      value: inCalib,                    subtitle: 'EXTERNO',    icon: 'heroicons_outline:wrench',               variant: 'warning' },
-            { title: 'Calib. Vencida',      value: 0,                          subtitle: 'BLOQUEADAS', icon: 'heroicons_outline:clock',                variant: 'danger' },
+            { title: 'Calib. Vencida',      value: expired,                    subtitle: 'BLOQUEADAS', icon: 'heroicons_outline:clock',                variant: 'danger' },
             { title: 'En Cuarentena',       value: quarantine,                 subtitle: 'REVISIÓN',   icon: 'heroicons_outline:shield-exclamation',   variant: 'warning' },
             { title: 'En Uso',              value: inUse.toLocaleString(),     subtitle: 'PRÉSTAMOS',  icon: 'heroicons_outline:arrow-path',           variant: 'info' },
             { title: 'Dados de Baja',       value: decomm.toLocaleString(),    subtitle: 'HISTÓRICO',  icon: 'heroicons_outline:trash',                variant: 'default' }
         ]);
     }
 
-    // ── Actividades recientes ────────────────────────────────────────────────────
-    private buildActivities(): void {
-        const items = this.recentMovements.slice(0, 5).map((m: any, i: number) => ({
-            id:          String(m.id_movement || i),
-            type:        m.movement_type || m.type || 'movimiento',
-            title:       m.movement_type_label || m.type || 'Movimiento',
-            description: m.notes || m.description || m.tool_name || '',
-            user:        m.created_by || m.user_name || 'Sistema',
-            time:        m.date ? new Date(m.date).toLocaleDateString('es-BO') : ''
-        }));
+    // ── Actividades recientes + Alertas panel ────────────────────────────────────
+    private buildActivities(calibAlerts: any[] = []): void {
+        const TYPE_LABELS: Record<string, string> = {
+            entry: 'Entrada', exit: 'Salida', loan: 'Préstamo',
+            return: 'Devolución', transfer: 'Traspaso', adjustment: 'Ajuste'
+        };
+        const items = this.recentMovements.slice(0, 8).map((m: any, i: number) => {
+            const rawType = m.type || m.movement_type || '';
+            return {
+                id:          String(m.id_movement || i),
+                type:        rawType,
+                title:       TYPE_LABELS[rawType] || rawType || 'Movimiento',
+                description: m.notes || m.tool_name || m.movement_number || '',
+                user:        m.requested_by_name || m.created_by || 'Sistema',
+                time:        m.date ? new Date(m.date).toLocaleDateString('es-BO') : (m.fecha_reg ? new Date(m.fecha_reg).toLocaleDateString('es-BO') : '')
+            };
+        });
         this.activitiesData.set(items);
-        this.alertsData.set([]);
+
+        // Poblar panel de alertas con calibraciones críticas
+        const alertItems: Alert[] = calibAlerts
+            .filter(a => ['EXPIRED', 'CRITICAL_7D', 'URGENT_15D'].includes(a.alert_type))
+            .slice(0, 6)
+            .map((a, i) => ({
+                id:          String(a.id_calibration || i),
+                type:        a.alert_type === 'EXPIRED' ? 'error' : 'warning' as any,
+                title:       a.tool_name || a.tool_code || 'Herramienta',
+                description: a.alert_type === 'EXPIRED'
+                    ? 'Calibración VENCIDA'
+                    : `Vence en ${a.days_until_calibration ?? a.days_remaining ?? '?'} días`,
+                time:        a.next_calibration_date || a.calibration_expiry || '',
+                icon:        a.alert_type === 'EXPIRED'
+                    ? 'heroicons_outline:exclamation-circle'
+                    : 'heroicons_outline:clock'
+            }));
+        this.alertsData.set(alertItems);
     }
 
     // ── Gráficas ─────────────────────────────────────────────────────────────────
@@ -252,11 +280,13 @@ export class DashboardComponent implements OnInit, AfterViewInit {
             const mes = d.getMonth();
             const anio = d.getFullYear();
             const movMes = this.recentMovements.filter((m: any) => {
-                const md = new Date(m.date || m.created_at || '');
+                const md = new Date(m.date || m.fecha || m.fecha_reg || '');
                 return md.getMonth() === mes && md.getFullYear() === anio;
             });
-            entradas.push(movMes.filter((m: any) => m.movement_type === 'entry' || m.type === 'entry').length);
-            salidas.push(movMes.filter((m: any) => m.movement_type === 'exit' || m.type === 'exit' || m.movement_type === 'loan' || m.type === 'loan').length);
+            const isEntrada = (m: any) => m.entry_reason != null || ['entry', 'return', 'adjustment'].includes(m.type || m.movement_type || '');
+            const isSalida  = (m: any) => m.exit_reason  != null || ['exit', 'loan', 'transfer'].includes(m.type || m.movement_type || '');
+            entradas.push(movMes.filter(isEntrada).length);
+            salidas.push(movMes.filter(isSalida).length);
         }
 
         new Chart(ctx, {
@@ -279,7 +309,7 @@ export class DashboardComponent implements OnInit, AfterViewInit {
         // Contar préstamos por herramienta desde movimientos reales
         const counts: Record<string, number> = {};
         this.recentMovements
-            .filter((m: any) => m.movement_type === 'loan' || m.type === 'loan')
+            .filter((m: any) => m.type === 'loan' || m.movement_type === 'loan' || m.exit_reason === 'loan')
             .forEach((m: any) => {
                 const name = m.tool_name || m.tool_code || String(m.tool_id || 'Sin nombre');
                 counts[name] = (counts[name] || 0) + 1;
@@ -322,37 +352,32 @@ export class DashboardComponent implements OnInit, AfterViewInit {
 
     // ── Alertas de calibración al login ──────────────────────────────────────────
     private checkCalibrationAlerts(): void {
-        // Mostrar solo una vez por sesión de navegador
-        if (sessionStorage.getItem('calib_alert_shown')) return;
-
         this.calibrationService.getCalibrationAlertsPxp({ limit: 100 }).subscribe({
             next: (alerts: any) => {
                 const all: any[] = Array.isArray(alerts) ? alerts : (alerts?.data || []);
                 const critical = all.filter(a =>
-                    ['EXPIRED', 'CRITICAL_7D', 'URGENT_15D'].includes(a.urgency)
+                    ['EXPIRED', 'CRITICAL_7D', 'URGENT_15D'].includes(a.alert_type)
                 );
                 if (critical.length === 0) return;
-
-                sessionStorage.setItem('calib_alert_shown', '1');
 
                 const data: CalibrationAlertDialogData = {
                     alerts: critical.slice(0, 10).map(a => ({
                         tool_code:          a.tool_code   || a.codigo  || '',
                         tool_name:          a.tool_name   || a.nombre  || '',
                         calibration_expiry: this.formatAlertDate(a.next_calibration_date || a.calibration_expiry),
-                        days_remaining:     a.days_remaining ?? 0,
-                        urgency:            a.urgency || '',
+                        days_remaining:     a.days_until_calibration ?? a.days_remaining ?? 0,
+                        urgency:            a.alert_type || '',
                         warehouse:          a.warehouse   || a.almacen || 'CBB'
                     })),
-                    expiredCount:    all.filter(a => a.urgency === 'EXPIRED').length,
-                    critical7dCount: all.filter(a => a.urgency === 'CRITICAL_7D').length,
-                    urgent15dCount:  all.filter(a => a.urgency === 'URGENT_15D').length
+                    expiredCount:    all.filter(a => a.alert_type === 'EXPIRED').length,
+                    critical7dCount: all.filter(a => a.alert_type === 'CRITICAL_7D').length,
+                    urgent15dCount:  all.filter(a => a.alert_type === 'URGENT_15D').length
                 };
 
                 this._dialog.open(CalibrationAlertDialogComponent, {
                     data,
-                    panelClass: 'neo-dialog',
-                    maxWidth:   '660px',
+                    panelClass: 'neo-dialog-calibration',
+                    maxWidth:   '580px',
                     width:      '95vw'
                 });
             },

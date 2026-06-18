@@ -1,115 +1,224 @@
-<div class="bg-stone-100 dark:bg-slate-900 border-2 border-black overflow-hidden flex flex-col"
+﻿<div class="bg-stone-100 dark:bg-[#0F172A] border-2 border-black flex flex-col overflow-hidden"
      cdkDrag cdkDragRootElement=".cdk-overlay-pane"
-     style="width:580px; max-width:95vw; max-height:90vh; box-shadow: 6px 6px 0 #000">
+     style="width:min(1000px,98vw); max-height:92vh; box-shadow:6px 6px 0 #000">
 
-    <!-- Header (drag handle) -->
-    <div class="bg-[#0F172A] px-5 py-3.5 flex items-center gap-3 shrink-0 select-none"
+    <!-- Header -->
+    <div class="bg-[#0F172A] px-4 py-3 flex items-center gap-3 shrink-0 select-none"
          cdkDragHandle style="cursor:grab">
-        <div class="w-9 h-9 rounded bg-amber-400 border-2 border-black flex items-center justify-center shadow-[2px_2px_0_#fbbf24] shrink-0">
-            <mat-icon class="!text-lg text-black">handshake</mat-icon>
+        <div class="w-8 h-8 rounded bg-[#7113CF] border-2 border-black flex items-center justify-center shadow-[2px_2px_0_#000] shrink-0">
+            <mat-icon class="!text-base text-white">image_search</mat-icon>
         </div>
         <div>
-            <p class="text-[9px] text-slate-400 font-bold uppercase tracking-[0.18em] leading-none mb-0.5">Préstamo Terceros</p>
-            <h2 class="text-sm text-white font-black uppercase tracking-tight leading-none">Agregar a Terceros</h2>
+            <p class="text-[8px] text-slate-400 font-bold uppercase tracking-[0.18em] leading-none mb-0.5">Búsqueda Avanzada · Terceros</p>
+            <h2 class="text-xs text-white font-black uppercase tracking-tight leading-none">Seleccionar Herramienta</h2>
         </div>
+        <span *ngIf="coincidencias() > 0"
+              class="ml-auto px-2 py-0.5 bg-[#7113CF] text-white font-black text-[9px] border-2 border-black rounded-lg shrink-0">
+            {{ coincidencias() }} resultado{{ coincidencias() !== 1 ? 's' : '' }}
+        </span>
     </div>
 
-    <!-- Body: una sola columna -->
-    <div class="flex-1 overflow-y-auto px-5 py-5 flex flex-col gap-4 custom-scrollbar">
-
-        <!-- Sección: Búsqueda de ítem -->
-        <div class="flex items-center gap-2 pb-1.5 border-b-2 border-black">
-            <div class="w-6 h-6 rounded bg-amber-400 border-2 border-black flex items-center justify-center">
-                <mat-icon class="!text-xs text-black">search</mat-icon>
-            </div>
-            <p class="text-[9px] font-black uppercase tracking-[0.18em] text-black dark:text-white">Búsqueda de Ítem</p>
-        </div>
-
-        <form [formGroup]="prestarForm" class="flex flex-col gap-4">
-
-            <!-- Buscar herramienta -->
+    <!-- BUSCADOR -->
+    <div class="px-4 pt-3 pb-3 border-b-2 border-black/20 dark:border-slate-600 bg-white dark:bg-slate-900 shrink-0">
+        <form [formGroup]="prestarForm">
             <div class="relative">
+                <mat-icon class="absolute left-3 top-2.5 text-stone-400 !text-base z-10">search</mat-icon>
                 <input type="text" formControlName="buscar"
                        (input)="onBuscarChange($any($event.target).value)"
                        (blur)="hideToolsSuggestions()"
-                       placeholder="Código, Nombre o P/N..."
-                       class="w-full h-10 text-sm font-bold bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-xl px-3 outline-none transition-all duration-150 placeholder:text-stone-300 hover:border-stone-400 focus:border-black focus:shadow-[3px_3px_0_#000] uppercase">
+                       placeholder="Código, nombre o P/N..."
+                       class="w-full h-10 pl-10 pr-8 text-sm font-bold bg-stone-50 dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-500 rounded-xl outline-none transition-all placeholder:text-stone-300 dark:placeholder:text-slate-600 hover:border-stone-400 focus:border-black focus:shadow-[3px_3px_0_#000] uppercase">
+                <mat-spinner *ngIf="isSearching()" diameter="14" class="absolute right-3 top-3"></mat-spinner>
+
+                <!-- Dropdown sugerencias -->
                 <div *ngIf="showToolsSuggestions && filteredHerramientas.length > 0"
-                     class="absolute z-50 w-full mt-1 bg-white dark:bg-slate-800 border-2 border-black rounded-xl overflow-hidden max-h-48 overflow-y-auto divide-y divide-stone-100 dark:divide-slate-700"
-                     style="box-shadow: 4px 4px 0 #000">
+                     class="absolute z-50 w-full mt-1 bg-white dark:bg-slate-800 border-2 border-black rounded-xl overflow-hidden max-h-56 overflow-y-auto divide-y divide-stone-100 dark:divide-slate-700 custom-scrollbar"
+                     style="box-shadow:4px 4px 0 #000">
                     <button type="button" *ngFor="let h of filteredHerramientas"
                             (mousedown)="selectHerramienta(h)"
-                            class="w-full text-left px-3 py-2 hover:bg-purple-50 dark:hover:bg-slate-700 transition-colors">
-                        <p class="text-[10px] font-black text-black dark:text-white">{{ h.codigo || h.code }} — {{ h.nombre || h.name }}</p>
+                            class="w-full text-left px-3 py-2 hover:bg-purple-50 dark:hover:bg-slate-700 transition-colors flex items-center gap-2.5">
+                        <div class="w-9 h-9 rounded-lg border-2 border-black bg-stone-100 dark:bg-slate-700 overflow-hidden shrink-0 flex items-center justify-center">
+                            <img *ngIf="h.image_url || h.foto" [src]="h.image_url || h.foto" class="w-full h-full object-contain p-0.5">
+                            <mat-icon *ngIf="!h.image_url && !h.foto" class="!text-base text-stone-300">handyman</mat-icon>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <p class="text-[10px] font-black text-black dark:text-white uppercase truncate">{{ h.code || h.codigo }} — {{ h.name || h.nombre }}</p>
+                            <p class="text-[9px] text-stone-400 font-mono truncate">{{ h.part_number || h.pn || '—' }} · Stock: {{ h.quantity_in_stock || h.existencia || 0 }}</p>
+                        </div>
+                        <mat-icon class="!text-sm text-[#7113CF] shrink-0">chevron_right</mat-icon>
                     </button>
                 </div>
-            </div>
-
-            <!-- Código + Descripción -->
-            <div class="grid grid-cols-3 gap-3">
-                <div>
-                    <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1.5 block">Código</label>
-                    <input formControlName="codigo" type="text" readonly
-                           class="w-full h-10 text-[10px] font-bold bg-stone-200 dark:bg-slate-700 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-xl px-2 outline-none cursor-not-allowed uppercase">
-                </div>
-                <div class="col-span-2">
-                    <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1.5 block">Descripción</label>
-                    <input formControlName="nombre" type="text" readonly
-                           class="w-full h-10 text-[10px] font-bold bg-stone-200 dark:bg-slate-700 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-xl px-2 outline-none cursor-not-allowed uppercase">
-                </div>
-            </div>
-
-            <!-- Sección: Tarifas y cantidad -->
-            <div class="flex items-center gap-2 pb-1.5 border-b-2 border-black mt-1">
-                <div class="w-6 h-6 rounded bg-amber-400 border-2 border-black flex items-center justify-center">
-                    <mat-icon class="!text-xs text-black">monetization_on</mat-icon>
-                </div>
-                <p class="text-[9px] font-black uppercase tracking-[0.18em] text-black dark:text-white">Tarifas y Cantidad</p>
-            </div>
-
-            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                <div>
-                    <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1.5 block">Cantidad *</label>
-                    <input formControlName="cantidad" type="number" min="1"
-                           class="w-full h-10 text-sm font-bold bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-xl px-3 outline-none transition-all text-center hover:border-stone-400 focus:border-black focus:shadow-[3px_3px_0_#000]">
-                </div>
-                <div>
-                    <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1.5 block">Horas *</label>
-                    <input formControlName="horas" type="number" min="1"
-                           class="w-full h-10 text-sm font-bold text-blue-600 dark:text-blue-400 bg-white dark:bg-slate-800 border-2 border-stone-300 dark:border-slate-600 rounded-xl px-3 outline-none transition-all text-center hover:border-stone-400 focus:border-black focus:shadow-[3px_3px_0_#000]">
-                </div>
-                <div>
-                    <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1.5 block">Costo/Hr $ *</label>
-                    <input formControlName="costoHora" type="number" min="0" step="0.5"
-                           class="w-full h-10 text-sm font-bold text-green-600 dark:text-green-400 bg-white dark:bg-slate-800 border-2 border-stone-300 dark:border-slate-600 rounded-xl px-3 outline-none transition-all text-center hover:border-stone-400 focus:border-black focus:shadow-[3px_3px_0_#000]">
-                </div>
-                <div>
-                    <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1.5 block">Estado</label>
-                    <select formControlName="estado"
-                            class="w-full h-10 px-3 bg-white dark:bg-slate-800 text-black dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-xl text-sm font-bold outline-none transition-all cursor-pointer hover:border-stone-400 focus:border-black">
-                        <option *ngFor="let est of estados" [value]="est.value">{{ est.label }}</option>
-                    </select>
-                </div>
-            </div>
-
-            <!-- Observaciones -->
-            <div>
-                <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1.5 block">Observaciones</label>
-                <textarea formControlName="observacion" rows="3"
-                          class="w-full text-sm font-normal bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-xl px-3 py-2.5 outline-none transition-all resize-none hover:border-stone-400 focus:border-black focus:shadow-[3px_3px_0_#000]"></textarea>
             </div>
         </form>
     </div>
 
+    <!-- BODY: dos columnas, overflow-hidden en ambas -->
+    <div class="flex flex-1 overflow-hidden min-h-0">
+
+        <!-- IZQUIERDA: foto + badge + total -->
+        <div class="w-64 shrink-0 border-r-2 border-black/20 dark:border-slate-600
+                    bg-white dark:bg-slate-800/40 flex flex-col items-center justify-start gap-3 p-4 overflow-hidden">
+
+            <!-- Foto -->
+            <div class="w-full bg-stone-50 dark:bg-slate-800 border-2 border-black rounded-2xl overflow-hidden
+                        flex items-center justify-center aspect-square"
+                 style="box-shadow:4px 4px 0 #000">
+                <img *ngIf="selectedImage() || imagenOriginal()"
+                     [src]="selectedImage() || imagenOriginal()"
+                     class="w-full h-full object-contain p-3">
+                <div *ngIf="!selectedImage() && !imagenOriginal()"
+                     class="flex flex-col items-center justify-center gap-2">
+                    <mat-icon class="!text-6xl text-stone-200 dark:text-slate-700">image_not_supported</mat-icon>
+                    <span class="text-[8px] font-black uppercase text-stone-300 dark:text-slate-600 tracking-wider">Sin imagen</span>
+                </div>
+            </div>
+
+            <!-- Código badge -->
+            <div class="w-full text-center">
+                <span *ngIf="prestarForm.get('codigo')?.value"
+                      class="font-mono font-black text-[10px] bg-[#7113CF] text-white px-2.5 py-1 rounded-xl border-2 border-black inline-block truncate max-w-full"
+                      style="box-shadow:2px 2px 0 #000">
+                    {{ prestarForm.get('codigo')?.value }}
+                </span>
+                <span *ngIf="!prestarForm.get('codigo')?.value"
+                      class="text-[9px] font-bold text-stone-300 dark:text-slate-600 uppercase tracking-wider">
+                    Sin selección
+                </span>
+            </div>
+
+            <!-- Total $US -->
+            <div *ngIf="totalMonto() > 0"
+                 class="w-full bg-green-50 dark:bg-green-900/20 border-2 border-green-400 rounded-xl px-3 py-2 text-center">
+                <p class="text-[7px] font-black uppercase tracking-wider text-green-600 leading-none mb-0.5">Total $US</p>
+                <p class="text-xl font-black text-green-700 dark:text-green-300 leading-none">
+                    ${{ totalMonto() | number:'1.2-2' }}
+                </p>
+                <p class="text-[7px] text-green-500 mt-0.5">
+                    {{ prestarForm.get('horas')?.value || 0 }} hr × ${{ prestarForm.get('costoHora')?.value || 0 }}
+                </p>
+            </div>
+        </div>
+
+        <!-- DERECHA: datos + formulario -->
+        <div class="flex-1 min-w-0 overflow-y-auto custom-scrollbar">
+            <form [formGroup]="prestarForm">
+
+                <!-- Vacío -->
+                <div *ngIf="!prestarForm.get('codigo')?.value"
+                     class="flex flex-col items-center justify-center h-full py-12 gap-2 text-center px-6">
+                    <mat-icon class="!text-4xl text-stone-200 dark:text-slate-700">touch_app</mat-icon>
+                    <p class="text-xs font-black uppercase text-stone-300 dark:text-slate-600">Busca y selecciona una herramienta</p>
+                </div>
+
+                <div *ngIf="prestarForm.get('codigo')?.value" class="p-4 flex flex-col gap-3">
+
+                    <!-- Descripción -->
+                    <div class="bg-[#0F172A] border-2 border-black rounded-xl px-3 py-2" style="box-shadow:2px 2px 0 #000">
+                        <p class="text-[6.5px] font-black uppercase tracking-[0.15em] text-slate-400 leading-none mb-0.5">Descripción</p>
+                        <p class="text-xs font-black text-white uppercase leading-snug">{{ prestarForm.get('nombre')?.value || '—' }}</p>
+                    </div>
+
+                    <!-- P/N · S/N · Marca -->
+                    <div class="grid grid-cols-3 gap-1.5">
+                        <div class="bg-white dark:bg-slate-800 border border-stone-200 dark:border-slate-600 rounded-lg px-2 py-1.5 min-w-0">
+                            <p class="text-[6px] font-black uppercase tracking-widest text-stone-400 leading-none mb-0.5">P/N</p>
+                            <p class="text-[9px] font-black text-black dark:text-white font-mono truncate">{{ prestarForm.get('pn')?.value || '—' }}</p>
+                        </div>
+                        <div class="bg-white dark:bg-slate-800 border border-stone-200 dark:border-slate-600 rounded-lg px-2 py-1.5 min-w-0">
+                            <p class="text-[6px] font-black uppercase tracking-widest text-stone-400 leading-none mb-0.5">S/N</p>
+                            <p class="text-[9px] font-black text-black dark:text-white font-mono truncate">{{ prestarForm.get('sn')?.value || '—' }}</p>
+                        </div>
+                        <div class="bg-white dark:bg-slate-800 border border-stone-200 dark:border-slate-600 rounded-lg px-2 py-1.5 min-w-0">
+                            <p class="text-[6px] font-black uppercase tracking-widest text-stone-400 leading-none mb-0.5">Marca</p>
+                            <p class="text-[9px] font-black text-black dark:text-white truncate">{{ prestarForm.get('marca')?.value || '—' }}</p>
+                        </div>
+                    </div>
+
+                    <!-- Stock · F.Calibración -->
+                    <div class="grid grid-cols-2 gap-1.5">
+                        <div class="bg-purple-50 dark:bg-purple-900/20 border border-purple-300 dark:border-purple-700 rounded-lg px-2 py-1.5">
+                            <p class="text-[6px] font-black uppercase tracking-widest text-purple-500 leading-none mb-0.5">Stock disponible</p>
+                            <p class="text-xs font-black text-purple-700 dark:text-purple-300 leading-none">
+                                {{ prestarForm.getRawValue().existencia || 0 }}
+                                <span class="text-[7px] font-bold ml-0.5">{{ prestarForm.get('unidad')?.value || 'UND' }}</span>
+                            </p>
+                        </div>
+                        <div class="bg-white dark:bg-slate-800 border border-stone-200 dark:border-slate-600 rounded-lg px-2 py-1.5">
+                            <p class="text-[6px] font-black uppercase tracking-widest text-stone-400 leading-none mb-0.5">F. Calibración</p>
+                            <p class="text-[9px] font-black text-black dark:text-white font-mono">{{ prestarForm.get('fechaVencimiento')?.value || '—' }}</p>
+                        </div>
+                    </div>
+
+                    <!-- Lista contenido -->
+                    <div *ngIf="prestarForm.get('content_list')?.value"
+                         class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg px-2.5 py-1.5">
+                        <p class="text-[6px] font-black uppercase tracking-widest text-blue-400 leading-none mb-0.5">Lista de Contenido</p>
+                        <p class="text-[9px] font-bold text-blue-800 dark:text-blue-200 font-mono">{{ prestarForm.get('content_list')?.value }}</p>
+                    </div>
+
+                    <div class="border-t-2 border-dashed border-black/20 dark:border-slate-600"></div>
+
+                    <p class="text-[7px] font-black uppercase tracking-[0.18em] text-stone-400 flex items-center gap-1">
+                        <mat-icon class="!text-[10px] text-[#7113CF]">edit_note</mat-icon> Datos del Préstamo Externo
+                    </p>
+
+                    <!-- Cantidad + Estado -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        <div>
+                            <label class="text-[7px] font-black uppercase tracking-[0.15em] text-stone-500 dark:text-slate-300 mb-1 block">
+                                Cantidad <span class="text-red-500">*</span>
+                                <span class="text-stone-400 font-normal normal-case ml-1">(máx {{ prestarForm.getRawValue().existencia }})</span>
+                            </label>
+                            <input formControlName="cantidad" type="number" min="1"
+                                   class="w-full h-9 text-sm font-bold bg-white dark:bg-slate-800 dark:text-white border-2 rounded-xl px-3 outline-none transition-all text-center"
+                                   [ngClass]="prestarForm.get('cantidad')?.errors?.['excedeStock'] || hasError('cantidad','required')
+                                       ? 'border-red-400' : 'border-stone-300 dark:border-slate-500 hover:border-stone-400 focus:border-black focus:shadow-[3px_3px_0_#000]'">
+                            <p *ngIf="prestarForm.get('cantidad')?.errors?.['excedeStock']"
+                               class="text-[8px] font-bold text-red-500 mt-0.5">Supera el stock disponible.</p>
+                        </div>
+                        <div>
+                            <label class="text-[7px] font-black uppercase tracking-[0.15em] text-stone-500 dark:text-slate-300 mb-1 block">Estado <span class="text-red-500">*</span></label>
+                            <select formControlName="estado"
+                                    class="w-full h-9 px-2 bg-white dark:bg-slate-800 text-black dark:text-white border-2 border-stone-300 dark:border-slate-500 rounded-xl text-xs font-bold outline-none transition-all cursor-pointer hover:border-stone-400 focus:border-black appearance-none">
+                                <option *ngFor="let est of estados" [value]="est.value">{{ est.label }}</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Horas + Costo/Hr -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        <div>
+                            <label class="text-[7px] font-black uppercase tracking-[0.15em] text-stone-500 dark:text-slate-300 mb-1 block">Horas <span class="text-red-500">*</span></label>
+                            <input formControlName="horas" type="number" min="1"
+                                   class="w-full h-9 text-sm font-bold text-blue-600 dark:text-blue-400 bg-white dark:bg-slate-800 border-2 border-stone-300 dark:border-slate-500 rounded-xl px-3 outline-none transition-all text-center hover:border-stone-400 focus:border-black focus:shadow-[3px_3px_0_#000]">
+                        </div>
+                        <div>
+                            <label class="text-[7px] font-black uppercase tracking-[0.15em] text-stone-500 dark:text-slate-300 mb-1 block">Costo/Hr $US <span class="text-red-500">*</span></label>
+                            <input formControlName="costoHora" type="number" min="0" step="0.5"
+                                   class="w-full h-9 text-sm font-bold text-green-600 dark:text-green-400 bg-white dark:bg-slate-800 border-2 border-stone-300 dark:border-slate-500 rounded-xl px-3 outline-none transition-all text-center hover:border-stone-400 focus:border-black focus:shadow-[3px_3px_0_#000]">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="text-[7px] font-black uppercase tracking-[0.15em] text-stone-500 dark:text-slate-300 mb-1 block">Observaciones</label>
+                        <textarea formControlName="observacion" rows="2"
+                                  placeholder="Detalles adicionales..."
+                                  class="w-full text-xs font-normal bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-500 rounded-xl px-3 py-2 outline-none transition-all resize-none placeholder:text-stone-300 dark:placeholder:text-slate-600 hover:border-stone-400 focus:border-black focus:shadow-[3px_3px_0_#000]"></textarea>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- Footer -->
-    <div class="border-t-2 border-black bg-stone-200 dark:bg-slate-800 px-5 py-3 flex justify-between items-center shrink-0">
+    <div class="border-t-2 border-black bg-stone-200 dark:bg-slate-800 px-4 py-2.5 flex justify-between items-center shrink-0">
         <button type="button" (click)="cerrar()"
                 class="px-4 py-2 bg-[#FF1414] text-white font-black text-[10px] border-2 border-black rounded-xl shadow-[2px_2px_0_#000] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all uppercase">
             Cancelar
         </button>
         <button type="button" (click)="agregar()"
                 [disabled]="!prestarForm.get('codigo')?.value || !validarCantidadState()"
-                class="flex items-center gap-2 px-5 py-2 bg-amber-400 text-black font-black text-[10px] border-2 border-black rounded-xl shadow-[3px_3px_0_#000] hover:shadow-none hover:translate-x-[3px] hover:translate-y-[3px] transition-all uppercase disabled:opacity-40 disabled:cursor-not-allowed disabled:translate-x-0 disabled:translate-y-0 disabled:shadow-[3px_3px_0_#000]">
+                class="flex items-center gap-2 px-5 py-2 bg-[#7113CF] text-white font-black text-[10px] border-2 border-black rounded-xl shadow-[3px_3px_0_#000] hover:shadow-none hover:translate-x-[3px] hover:translate-y-[3px] transition-all uppercase disabled:opacity-40 disabled:cursor-not-allowed disabled:translate-x-0 disabled:translate-y-0 disabled:shadow-[3px_3px_0_#000]">
             <mat-icon class="!text-sm">add_circle</mat-icon>
             Agregar a Lista
         </button>

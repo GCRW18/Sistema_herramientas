@@ -63,6 +63,11 @@ export class FormPrestamoDialogComponent implements OnInit, OnDestroy {
     tecnicoLoading      = false;
     showTecnicoDropdown = false;
 
+    private _entregadorSearch$ = new Subject<string>();
+    entregadoresFiltrados:  any[] = [];
+    entregadorLoading      = false;
+    showEntregadorDropdown = false;
+
     aeronaves: { matricula: string; tipo: string }[] = [];
     destinos:        string[] = [];
     loadingDestinos          = false;
@@ -91,6 +96,7 @@ export class FormPrestamoDialogComponent implements OnInit, OnDestroy {
     ngOnInit(): void {
         this.initInternalForm();
         this._setupTecnicoSearch();
+        this._setupEntregadorSearch();
         this._setupToolSearchPt();
         this.cargarAeronaves();
         this.cargarDestinos();
@@ -110,6 +116,11 @@ export class FormPrestamoDialogComponent implements OnInit, OnDestroy {
     private initInternalForm(): void {
         const today = this._localDateStr();
         const now   = new Date();
+        let defaultEntregador = '';
+        try {
+            const auth = JSON.parse(localStorage.getItem('aut') || '{}');
+            if (auth.nombre_usuario) defaultEntregador = auth.nombre_usuario;
+        } catch { /* ignore */ }
         this.internalForm = this.fb.group({
             buscarTecnico:     [''],
             nombreCompleto:    ['', Validators.required],
@@ -121,7 +132,8 @@ export class FormPrestamoDialogComponent implements OnInit, OnDestroy {
             ordenTrabajo:      [''],
             destino:           [''],
             trabajoEspecial:   [false],
-            observaciones:     ['']
+            observaciones:     [''],
+            nombreEntregador:  [defaultEntregador, Validators.required]
         });
     }
 
@@ -157,10 +169,43 @@ export class FormPrestamoDialogComponent implements OnInit, OnDestroy {
     }
     hideTecnicoSuggestions(): void { setTimeout(() => this.showTecnicoDropdown = false, 200); }
 
+    private _setupEntregadorSearch(): void {
+        this._entregadorSearch$.pipe(
+            debounceTime(200), distinctUntilChanged(),
+            switchMap(t => {
+                if (t.length < 2) { this.showEntregadorDropdown = false; return of([]); }
+                this.entregadorLoading = true;
+                const q = t.toLowerCase();
+                return this.movementSvc.getPersonal().pipe(
+                    map(lista => (lista as any[])
+                        .filter(f => [f.nombreCompleto, f.nombre, f.apellido_paterno, f.apellido_materno]
+                            .filter(Boolean).join(' ').toLowerCase().includes(q))
+                        .slice(0, 10)
+                        .map(f => ({ id: f.id_employee || f.id, nombre: f.nombreCompleto || f.nombre, cargo: f.cargo || '' }))
+                    ),
+                    finalize(() => this.entregadorLoading = false),
+                    catchError(() => of([]))
+                );
+            }),
+            takeUntil(this.destroy$)
+        ).subscribe(res => { this.entregadoresFiltrados = res || []; this.showEntregadorDropdown = (res || []).length > 0; });
+    }
+
+    onEntregadorInput(v: string): void {
+        this.internalForm.patchValue({ nombreEntregador: v }, { emitEvent: false });
+        if (v.length >= 2) this._entregadorSearch$.next(v); else this.showEntregadorDropdown = false;
+    }
+    selectEntregador(e: any): void {
+        this.internalForm.patchValue({ nombreEntregador: e.nombre });
+        this.showEntregadorDropdown = false;
+    }
+    hideEntregadorSuggestions(): void { setTimeout(() => this.showEntregadorDropdown = false, 200); }
+
     private cargarDestinos(): void {
         this.loadingDestinos = true;
+        this.internalForm.get('destino')?.disable();
         this.movementSvc.getParametrosPorCategoria('AREA_DESTINO')
-            .pipe(takeUntil(this.destroy$), finalize(() => this.loadingDestinos = false))
+            .pipe(takeUntil(this.destroy$), finalize(() => { this.loadingDestinos = false; this.internalForm.get('destino')?.enable(); }))
             .subscribe({
                 next: (vals) => { this.destinos = vals.length ? vals : ['Servicios', 'Línea', 'Taller', 'Hangar', 'Rampa']; },
                 error: () => { this.destinos = ['Servicios', 'Línea', 'Taller', 'Hangar', 'Rampa']; }
@@ -357,7 +402,7 @@ export class FormPrestamoDialogComponent implements OnInit, OnDestroy {
         });
     }
 
-    limpiarPrestamo(): void { this.internalDataSource.set([]); this.initInternalForm(); }
+    limpiarPrestamo(): void { this.internalDataSource.set([]); this.initInternalForm(); this._fetchPtCorrelativoPreview(); }
 
     hasErrorInternal(field: string, error: string): boolean {
         const c = this.internalForm.get(field);
@@ -389,17 +434,19 @@ export class FormPrestamoDialogComponent implements OnInit, OnDestroy {
             tool_id: i.toolId, quantity: i.cantidad, notes: i.contenido || '',
             condition: this.conditionMap[i.estado?.toUpperCase()] || 'good'
         })));
+        const responsiblePerson = fv.nombreEntregador || 'ALMACÉN';
         this.movementSvc.registrarPrestamoMultiple({
             type: 'PRESTAMO_INTERNO', date: fv.fecha, time: fv.hora,
             requested_by_name: fv.nombreCompleto, technician: fv.nombreCompleto,
             authorized_by: fv.nroLicencia, department: fv.destino || '',
             aircraft: fv.matriculaAeronave || '', work_order_number: fv.ordenTrabajo || '',
-            special_work: fv.trabajoEspecial || false, notes: fv.observaciones || '', items_json: itemsJson
+            special_work: fv.trabajoEspecial || false, notes: fv.observaciones || '',
+            responsible_person: responsiblePerson, items_json: itemsJson
         }).pipe(finalize(() => this.isSaving = false), takeUntil(this.destroy$)).subscribe({
             next: (result: any) => {
                 const nro = result?.movement_number || '---';
                 this.nroNotaInterno = nro;
-                this._imprimirPrestamoInterno(nro, fv, items);
+                this._imprimirPrestamoInterno(nro, fv, items, responsiblePerson);
                 this.showMsg('success', `Préstamo registrado: ${nro}`);
                 this.internalDataSource.set([]);
                 this.initInternalForm();
@@ -409,9 +456,13 @@ export class FormPrestamoDialogComponent implements OnInit, OnDestroy {
         });
     }
 
-    cerrar(): void { this.dialogRef.close(); }
+    cerrar(): void {
+        if (this.internalDataSource().length > 0 &&
+            !confirm(`¿Cancelar el préstamo? Se perderán los ${this.internalDataSource().length} ítem(s) agregado(s).`)) return;
+        this.dialogRef.close();
+    }
 
-    private _imprimirPrestamoInterno(nro: string, fv: any, items: InternalLoanItem[]): void {
+    private _imprimirPrestamoInterno(nro: string, fv: any, items: InternalLoanItem[], entregadoPor: string = 'ALMACÉN'): void {
         const w = window.open('', '_blank');
         if (!w) return;
         const now  = new Date().toLocaleString('es-BO');
@@ -421,9 +472,9 @@ export class FormPrestamoDialogComponent implements OnInit, OnDestroy {
 <div class="top"><div style="font-weight:900;font-size:11px">BoAMM &nbsp; OAM145#114 &nbsp; N-114</div><div style="text-align:right"><div class="code-box">MGH-100</div><br><span style="font-size:9px">REV. 0 &nbsp; 2016-10-13</span></div></div>
 <h1>NOTA DE PRÉSTAMO - DEVOLUCIÓN<br><span style="font-size:10px;font-weight:400">HERRAMIENTAS, BANCOS DE PRUEBA Y EQUIPOS DE APOYO</span></h1>
 <table class="info-tbl">
-<tr><td class="lbl">NOMBRE SOLICITANTE:</td><td>${fv.nombreCompleto||''}</td><td class="lbl">UNIDAD DESTINO:</td><td>${fv.destino||''}</td><td class="nro-cell" rowspan="4"><div style="font-size:8px;font-weight:400">N° NOTA</div>${nro}</td></tr>
+<tr><td class="lbl">RECIBIDO POR (TÉC./INSP.):</td><td style="font-weight:700">${fv.nombreCompleto||''}</td><td class="lbl">UNIDAD DESTINO:</td><td>${fv.destino||''}</td><td class="nro-cell" rowspan="4"><div style="font-size:8px;font-weight:400">N° NOTA</div>${nro}</td></tr>
 <tr><td class="lbl">LICENCIA:</td><td>${fv.nroLicencia||''}</td><td class="lbl">ORDEN DE TRABAJO:</td><td>${fv.ordenTrabajo||''}</td></tr>
-<tr><td class="lbl">MATRÍCULA AERONAVE:</td><td>${fv.matriculaAeronave||''}</td><td class="lbl">TRABAJO ESPECIAL:</td><td>${fv.trabajoEspecial?'SÍ':'NO'}</td></tr>
+<tr><td class="lbl">MATRÍCULA AERONAVE:</td><td>${fv.matriculaAeronave||''}</td><td class="lbl">ENTREGADO POR (ALMACÉN):</td><td style="font-weight:700">${entregadoPor}</td></tr>
 <tr><td class="lbl">FECHA Y HORA:</td><td>${fv.fecha||''} ${fv.hora||''}</td><td class="lbl">OBSERVACIONES:</td><td>${fv.observaciones||''}</td></tr>
 </table>
 <div class="sec">DATOS PRÉSTAMO</div>
@@ -431,7 +482,7 @@ export class FormPrestamoDialogComponent implements OnInit, OnDestroy {
 <div class="sec" style="margin-top:6px">DATOS DEVOLUCIÓN</div>
 <table class="det"><thead><tr><th>FECHA/HORA</th><th colspan="2">ENTREGUE CONFORME (NOMBRE/FIRMA)</th><th colspan="2">RECIBI CONFORME (NOMBRE/FIRMA)</th><th>CONDICIÓN DEVOLUCIÓN</th><th>NRO. REPORTE AVERÍA</th><th>OBS</th></tr></thead><tbody>${items.map(()=>`<tr><td style="height:28px">&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>`).join('')}</tbody></table>
 <div class="nota"><strong>NOTA IMPORTANTE:</strong><br>- Para cada herramienta prestada, se encuentra detallada la condición en la que se esta prestando.<br>- Las herramientas deben devolverse en las mismas condiciones en las que fueron prestadas.<br>- En caso de avería, registrar en el formulario REPORTE DE DISCREPANCIA.</div>
-<div class="sigs"><div class="sig"><div class="sig-ttl">ENTREGADO POR<br>FIRMA ALMACÉN HERRAMIENTAS</div><div style="font-size:9px;margin-bottom:20px">${fv.nombreCompleto}</div><div class="sig-line">&nbsp;</div></div><div class="sig"><div class="sig-ttl">RECIBIDO POR<br>FIRMA TÉC. O INSP.</div><div class="sig-line">&nbsp;</div></div><div class="sig"><div class="sig-ttl">AUTORIZADO</div><div class="sig-line">&nbsp;</div></div></div>
+<div class="sigs"><div class="sig"><div class="sig-ttl">ENTREGADO POR<br>FIRMA ALMACÉN HERRAMIENTAS</div><div style="font-size:9px;margin-bottom:20px">${entregadoPor}</div><div class="sig-line">&nbsp;</div></div><div class="sig"><div class="sig-ttl">RECIBIDO POR<br>FIRMA TÉC. O INSP.</div><div style="font-size:9px;margin-bottom:20px">${fv.nombreCompleto||''}</div><div class="sig-line">&nbsp;</div></div><div class="sig"><div class="sig-ttl">AUTORIZADO</div><div class="sig-line">&nbsp;</div></div></div>
 <div class="footer">Sistema de Gestión de Herramientas - BOA &nbsp;|&nbsp; ${now}</div>
 <script>window.onload=function(){setTimeout(function(){window.print();},500);};<\/script>
 </body></html>`);

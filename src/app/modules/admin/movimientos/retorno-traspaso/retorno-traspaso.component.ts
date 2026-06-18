@@ -20,6 +20,14 @@ import {
 import { MovementService } from '../../../../core/services/movement.service';
 import { ToolService } from '../../../../core/services/tool.service';
 
+// Dialog components (standalone subfolders)
+import { EnvioDialogComponent } from './dialogs/envio/envio-dialog.component';
+import { TraspasoDialogComponent } from './dialogs/traspaso/traspaso-dialog.component';
+import { RetornoDialogComponent } from './dialogs/retorno/retorno-dialog.component';
+import { TraspasoTecnicoDialogComponent } from './dialogs/traspaso-tecnico/traspaso-tecnico-dialog.component';
+import { DevolucionTecnicoDialogComponent } from './dialogs/devolucion-tecnico/devolucion-tecnico-dialog.component';
+import { RetornoAreaDialogComponent } from './dialogs/retorno-area/retorno-area-dialog.component';
+
 // ── Types ─────────────────────────────────────────────────────────────────────
 type ActiveTab    = 'envio' | 'traspaso' | 'retorno' | 'activos' | 'traspaso-tecnico';
 type TipoOrigen   = 'BASE' | 'TRASPASO';
@@ -134,7 +142,7 @@ interface HistorialRecord {
         CommonModule, ReactiveFormsModule, FormsModule,
         MatIconModule, MatButtonModule, MatTableModule,
         MatPaginatorModule, MatDialogModule, MatSnackBarModule,
-        MatProgressSpinnerModule, MatCheckboxModule, MatTooltipModule
+        MatProgressSpinnerModule, MatCheckboxModule, MatTooltipModule,
     ],
     templateUrl: './retorno-traspaso.component.html',
     styles: [`
@@ -192,6 +200,7 @@ export class RetornoTraspasoComponent implements OnInit, OnDestroy {
     // ── ENVÍO tab ─────────────────────────────────────────────────────────────
     envioForm!: FormGroup;
     itemsEnvio: ToolEnvioItem[]  = [];
+    activeEnvioChip: number | null = null;
     toolSearchEnvio              = '';
     toolResultsEnvio: any[]      = [];
     showToolDropEnvio            = false;
@@ -204,6 +213,7 @@ export class RetornoTraspasoComponent implements OnInit, OnDestroy {
     // ── TRASPASO tab ──────────────────────────────────────────────────────────
     traspasoForm!: FormGroup;
     itemsTraspaso: ToolEnvioItem[] = [];
+    activeTraspasoChip: number | null = null;
     toolSearchTraspaso             = '';
     toolResultsTraspaso: any[]     = [];
     showToolDropTraspaso           = false;
@@ -294,6 +304,7 @@ export class RetornoTraspasoComponent implements OnInit, OnDestroy {
     // ── TRASPASO TÉCNICO tab ──────────────────────────────────────────────────
     traspasoTecnicoForm!: FormGroup;
     itemsTraspasoTecnico: ToolEnvioItem[] = [];
+    activeTecnicoChip: number | null = null;
     toolSearchTecnico                     = '';
     toolResultsTecnico: any[]             = [];
     showToolDropTecnico                   = false;
@@ -382,12 +393,14 @@ export class RetornoTraspasoComponent implements OnInit, OnDestroy {
     // ── Open / close form dialogs ─────────────────────────────────────────────
 
     abrirFormEnvio(): void {
-        this._resetEnvioTab();
-        this._envioDialogRef = this.dialog.open(this.envioFormDialog, {
-            width: 'min(1040px, 100vw)', maxWidth: '100vw', maxHeight: '100dvh',
-            panelClass: 'neo-dialog-transparent', disableClose: false, autoFocus: false
+        this._envioDialogRef = this.dialog.open(EnvioDialogComponent, {
+            width: 'min(780px, 100vw)', maxWidth: '100vw', maxHeight: '100dvh',
+            panelClass: 'neo-dialog-transparent', disableClose: false, autoFocus: false,
+            data: { almacenes: this.almacenes, bases: this.bases }
         });
-        this._fetchEnvCorrelativoPreview();
+        this._envioDialogRef.afterClosed().subscribe((r: any) => {
+            if (r?.refreshActivos) this.loadMovActivos();
+        });
     }
 
     private _fetchEnvCorrelativoPreview(): void {
@@ -416,36 +429,26 @@ export class RetornoTraspasoComponent implements OnInit, OnDestroy {
     cerrarFormEnvio(): void { this._envioDialogRef?.close(); }
 
     abrirFormTraspaso(): void {
-        this._resetTraspasoTab();
-        this._traspasoDialogRef = this.dialog.open(this.traspasoFormDialog, {
-            width: 'min(1040px, 100vw)', maxWidth: '100vw', maxHeight: '100dvh',
-            panelClass: 'neo-dialog-transparent', disableClose: false, autoFocus: false
+        const defaultAlmacen = this.almacenes.find(u => u.nombre.toLowerCase().includes('cochabamba')) ?? this.almacenes[0] ?? null;
+        this._traspasoDialogRef = this.dialog.open(TraspasoDialogComponent, {
+            width: 'min(860px, 100vw)', maxWidth: '100vw', maxHeight: '100dvh',
+            panelClass: 'neo-dialog-transparent', disableClose: false, autoFocus: false,
+            data: { almacenes: this.almacenes, bases: this.bases, defaultAlmacen }
         });
-        this._fetchTrpCorrelativoPreview();
+        this._traspasoDialogRef.afterClosed().subscribe((r: any) => {
+            if (r?.refreshActivos) this.loadMovActivos();
+        });
     }
     cerrarFormTraspaso(): void { this._traspasoDialogRef?.close(); }
 
-    private _fetchTrpCorrelativoPreview(): void {
-        this.loadingCorrelativoTrp = true;
-        this.trpCorrelativoPreview = '';
-        this.movSvc.getSiguienteCorrelativoPreview('TRP')
-            .pipe(takeUntil(this._unsub$), finalize(() => this.loadingCorrelativoTrp = false))
-            .subscribe({
-                next: (nro) => {
-                    this.trpCorrelativoPreview = nro;
-                    this.traspasoForm.patchValue({ nroDocumento: nro }, { emitEvent: false });
-                }
-            });
-    }
-
     abrirFormRetorno(): void {
-        this.allData = []; this.dataSource = [];
-        this.retornoForm.patchValue({ ubicacionOrigen: null, searchText: '' });
-        this.tipoOrigenActivo = 'BASE';
-        this.movSeleccionadoParaRetorno = null;
-        this._retornoDialogRef = this.dialog.open(this.retornoFormDialog, {
-            width: 'min(1100px, 100vw)', maxWidth: '100vw', maxHeight: '100dvh',
-            panelClass: 'neo-dialog-transparent', disableClose: false, autoFocus: false
+        this._retornoDialogRef = this.dialog.open(RetornoDialogComponent, {
+            width: 'min(700px, 100vw)', maxWidth: '100vw', maxHeight: '100dvh',
+            panelClass: 'neo-dialog-transparent', disableClose: false, autoFocus: false,
+            data: { almacenes: this.almacenes, bases: this.bases }
+        });
+        this._retornoDialogRef.afterClosed().subscribe((r: any) => {
+            if (r?.refreshActivos) this.loadMovActivos();
         });
     }
     cerrarFormRetorno(): void { this._retornoDialogRef?.close(); }
@@ -1308,7 +1311,7 @@ export class RetornoTraspasoComponent implements OnInit, OnDestroy {
                     if (movOrigen?.id_movement) {
                         this.movSvc.cerrarMovimiento(movOrigen.id_movement)
                             .pipe(takeUntil(this._unsub$))
-                            .subscribe({ next: () => { this.loadMovActivos(); this.movCompletados = []; }, error: () => this.loadMovActivos() });
+                            .subscribe({ next: () => { this.loadMovActivos(); }, error: () => this.loadMovActivos() });
                     } else {
                         this.loadMovActivos();
                     }
@@ -1328,16 +1331,21 @@ export class RetornoTraspasoComponent implements OnInit, OnDestroy {
     // ── ACTIVOS tab ───────────────────────────────────────────────────────────
 
     loadMovActivos(): void {
-        this.loadingActivos = true;
-        this.movSvc.listarEnviosActivos({ limit: 200 }).pipe(
-            takeUntil(this._unsub$), finalize(() => this.loadingActivos = false)
+        this.loadingActivos    = true;
+        this.loadingCompletados = true;
+        forkJoin({
+            activos:     this.movSvc.listarEnviosActivos({ limit: 200 }),
+            completados: this.movSvc.listarMovimientosCompletados({ limit: 200 })
+        }).pipe(
+            takeUntil(this._unsub$),
+            finalize(() => { this.loadingActivos = false; this.loadingCompletados = false; })
         ).subscribe({
-            next: (data: any[]) => {
-                this.movActivos = data.map((m: any) => {
+            next: ({ activos, completados }) => {
+                this.movActivos = (activos || []).map((m: any) => {
                     const isMgh109 = !!(m.specific_observations?.includes('MGH109'));
                     const rawType  = m.movement_type_label || m.type || '';
                     return {
-                        id_movement:                m.id_movement,
+                        id_movement:                Number(m.id_movement),
                         movement_number:            m.movement_number  || '',
                         movement_type_label:        isMgh109 ? 'MGH_109' : rawType,
                         transfer_type:              m.transfer_type    || '',
@@ -1349,19 +1357,51 @@ export class RetornoTraspasoComponent implements OnInit, OnDestroy {
                         destination_warehouse_id:   m.destination_warehouse_id,
                         source_warehouse_name:      m.source_warehouse_name      || '',
                         destination_warehouse_name: m.destination_warehouse_name || '',
-                        requested_by_name:          m.requested_by_name  || '',
+                        requested_by_name:          m.requested_by_name  || m.responsible_person || '',
                         received_by_name:           m.received_by_name   || '',
                         department:                 m.department         || '',
                         document_number:            m.document_number    || '',
                         notes:                      m.notes              || '',
                         specific_observations:      m.specific_observations      || '',
                         items_count:                Number(m.items_count) || 0,
-                        expanded: false
+                        expanded:                   false,
+                        isCompleted:                m.status === 'returned',
+                        return_movement_number:     m.return_movement_number || '',
+                        return_id_movement:         Number(m.return_id_movement) || 0,
+                    };
+                });
+                this.movCompletados = (completados || []).map((m: any) => {
+                    const isMgh109 = !!(m.specific_observations?.includes('MGH109'));
+                    const rawType  = m.movement_type_label || m.type || '';
+                    return {
+                        id_movement:                Number(m.id_movement),
+                        movement_number:            m.movement_number  || '',
+                        movement_type_label:        isMgh109 ? 'MGH_109' : rawType,
+                        transfer_type:              m.transfer_type    || '',
+                        send_date:                  m.send_date  || m.date  || '',
+                        expected_return_date:       m.expected_return_date || null,
+                        days_remaining:             null,
+                        alert_status:               'DEVUELTO',
+                        source_warehouse_id:        m.source_warehouse_id,
+                        destination_warehouse_id:   m.destination_warehouse_id,
+                        source_warehouse_name:      m.source_warehouse_name      || '',
+                        destination_warehouse_name: m.destination_warehouse_name || '',
+                        requested_by_name:          m.requested_by_name  || m.responsible_person || '',
+                        received_by_name:           m.received_by_name   || '',
+                        department:                 m.department         || '',
+                        document_number:            m.document_number    || '',
+                        notes:                      m.notes              || '',
+                        specific_observations:      m.specific_observations || '',
+                        items_count:                Number(m.items_count) || 0,
+                        expanded:                   false,
+                        isCompleted:                true,
+                        return_movement_number:     m.return_movement_number || '',
+                        return_id_movement:         Number(m.return_id_movement) || 0,
                     };
                 });
                 this._applyFilterActivos();
             },
-            error: () => this._showMsg('Error al cargar movimientos activos', 'error')
+            error: () => this._showMsg('Error al cargar movimientos', 'error')
         });
     }
 
@@ -1390,12 +1430,7 @@ export class RetornoTraspasoComponent implements OnInit, OnDestroy {
         if (this.filterActivos === 'COMPLETADOS') {
             this.movActivosFiltrados = [...this.movCompletados];
         } else if (this.filterActivos === 'TODOS') {
-            // TODOS = pendientes de retorno + ya retornados (completados)
             this.movActivosFiltrados = [...this.movActivos, ...this.movCompletados];
-            // Carga automática de completados si aún no se han traído
-            if (this.movCompletados.length === 0 && !this.loadingCompletados) {
-                this.loadMovCompletados();
-            }
         } else if (this.filterActivos === 'TRASPASO') {
             // MGH-109 es un subtipo de TRASPASO → incluirlo en este filtro
             this.movActivosFiltrados = this.movActivos.filter(m =>
@@ -1467,10 +1502,10 @@ export class RetornoTraspasoComponent implements OnInit, OnDestroy {
     /** Etiqueta corta del tipo de traspaso */
     getTransferTypeLabel(tt: string): string {
         const map: Record<string, string> = {
-            'TEMPORAL':     'TEMPORAL',
-            'PERMANENTE':   'PERM.',
-            'REASIGNACION': 'REASIG.',
-            'PRESTAMO':     'PRÉSTAMO',
+            'TEMPORAL':     'Temporal',
+            'PERMANENTE':   'Permanente',
+            'REASIGNACION': 'Reasignación',
+            'PRESTAMO':     'Préstamo',
         };
         return map[tt] || tt;
     }
@@ -1491,23 +1526,14 @@ export class RetornoTraspasoComponent implements OnInit, OnDestroy {
         }
 
         // Flujo BASE (ENVIO_BASE)
-        this.tipoOrigenActivo = 'BASE';
-        this.movSeleccionadoParaRetorno = mov;
-        const ubicacion = this.getAllUbicaciones().find(u =>
-            u.nombre === mov.destination_warehouse_name ||
-            String(u.id) === String(mov.destination_warehouse_id)
-        ) || null;
-
-        this.retornoForm.patchValue({
-            tipoOrigen: 'BASE',
-            ubicacionOrigen: ubicacion,
-            fechaRetorno: new Date().toISOString().split('T')[0]
-        });
-        this.allData = []; this.dataSource = [];
         this._showMsg(`Registrando retorno de ${mov.movement_number}`, 'info');
-        this._retornoDialogRef = this.dialog.open(this.retornoFormDialog, {
-            width: 'min(1100px, 100vw)', maxWidth: '100vw', maxHeight: '100dvh',
-            panelClass: 'neo-dialog-transparent', disableClose: false, autoFocus: false
+        this._retornoDialogRef = this.dialog.open(RetornoDialogComponent, {
+            width: 'min(700px, 100vw)', maxWidth: '100vw', maxHeight: '100dvh',
+            panelClass: 'neo-dialog-transparent', disableClose: false, autoFocus: false,
+            data: { almacenes: this.almacenes, bases: this.bases, movimiento: mov, tipoOrigen: 'BASE' as const }
+        });
+        this._retornoDialogRef.afterClosed().subscribe((r: any) => {
+            if (r?.refreshActivos) this.loadMovActivos();
         });
     }
 
@@ -1569,7 +1595,7 @@ export class RetornoTraspasoComponent implements OnInit, OnDestroy {
                         destination_warehouse_id:   m.destination_warehouse_id,
                         source_warehouse_name:      m.source_warehouse_name      || '',
                         destination_warehouse_name: m.destination_warehouse_name || '',
-                        requested_by_name:          m.requested_by_name  || '',
+                        requested_by_name:          m.requested_by_name  || m.responsible_person || '',
                         received_by_name:           m.received_by_name   || '',
                         department:                 m.department         || '',
                         document_number:            m.document_number    || '',
@@ -1826,10 +1852,14 @@ export class RetornoTraspasoComponent implements OnInit, OnDestroy {
     hideFuncEntregaTecnicoDropdown(): void { setTimeout(() => this.showFuncEntregaTecnicoDropdown = false, 150); }
 
     abrirFormTraspasoTecnico(): void {
-        this.resetTraspasoTecnicoTab();
-        this._tecnicoDialogRef = this.dialog.open(this.traspasoTecnicoFormDialog, {
-            width: 'min(1040px, 100vw)', maxWidth: '100vw', maxHeight: '100dvh',
-            panelClass: 'neo-dialog-transparent', disableClose: false, autoFocus: false
+        const defaultAlmacen = this.almacenes.find(u => u.nombre.toLowerCase().includes('cochabamba')) ?? this.almacenes[0] ?? null;
+        this._tecnicoDialogRef = this.dialog.open(TraspasoTecnicoDialogComponent, {
+            width: 'min(860px, 100vw)', maxWidth: '100vw', maxHeight: '100dvh',
+            panelClass: 'neo-dialog-transparent', disableClose: false, autoFocus: false,
+            data: { almacenes: this.almacenes, bases: this.bases, defaultAlmacen }
+        });
+        this._tecnicoDialogRef.afterClosed().subscribe((r: any) => {
+            if (r?.refreshActivos) this.loadMovActivos();
         });
     }
 
@@ -2049,18 +2079,13 @@ export class RetornoTraspasoComponent implements OnInit, OnDestroy {
     }
 
     abrirFormDevolucionTecnico(): void {
-        this.movTecnicoSeleccionado = null;
-        this.devolucionTecnicoItems = [];
-        this.searchTecnicoNombre    = '';
-        this.devolucionTecnicoForm.reset({
-            fechaDevolucion: new Date().toISOString().split('T')[0],
-            recibeAlmacen:   this._getUsuarioActual() || '',
-            nroDocumento:    '',
-            observaciones:   ''
+        this._devTecnicoDialogRef = this.dialog.open(DevolucionTecnicoDialogComponent, {
+            width: 'min(900px, 100vw)', maxWidth: '100vw', maxHeight: '100dvh',
+            panelClass: 'neo-dialog-transparent', disableClose: false, autoFocus: false,
+            data: { movTecnicosActivos: this.movTecnicosActivos }
         });
-        this._devTecnicoDialogRef = this.dialog.open(this.devolucionTecnicoFormDialog, {
-            width: 'min(1200px, 100vw)', maxWidth: '100vw', maxHeight: '100dvh',
-            panelClass: 'neo-dialog-transparent', disableClose: false, autoFocus: false
+        this._devTecnicoDialogRef.afterClosed().subscribe((r: any) => {
+            if (r?.refreshActivos) this.loadMovActivos();
         });
     }
 
@@ -2186,7 +2211,7 @@ export class RetornoTraspasoComponent implements OnInit, OnDestroy {
                     // Todos los ítems devueltos → marcar movimiento original como 'returned'
                     this.movSvc.cerrarMovimiento(mov.id_movement)
                         .pipe(takeUntil(this._unsub$))
-                        .subscribe({ next: () => { this.loadMovActivos(); this.movCompletados = []; }, error: () => this.loadMovActivos() });
+                        .subscribe({ next: () => { this.loadMovActivos(); }, error: () => this.loadMovActivos() });
                 } else {
                     this.loadMovActivos();
                 }
@@ -2493,14 +2518,13 @@ export class RetornoTraspasoComponent implements OnInit, OnDestroy {
     }
 
     abrirFormRetornoArea(): void {
-        this.movAreaSeleccionado  = null;
-        this.retornoAreaItems     = [];
-        this.searchAreaMovimiento = '';
-        this.showRetornoAreaConfirm = false;
-        this.retornoAreaForm.reset({ fechaRetorno: new Date().toISOString().slice(0, 10) });
-        this._retornoAreaDialogRef = this.dialog.open(this.retornoAreaFormDialog, {
-            width: 'min(1200px, 100vw)', maxWidth: '100vw', maxHeight: '100dvh',
-            panelClass: 'neo-dialog-transparent', disableClose: false, autoFocus: false
+        this._retornoAreaDialogRef = this.dialog.open(RetornoAreaDialogComponent, {
+            width: 'min(820px, 100vw)', maxWidth: '100vw', maxHeight: '100dvh',
+            panelClass: 'neo-dialog-transparent', disableClose: false, autoFocus: false,
+            data: { movTraspasosActivos: this.movTraspasosActivos }
+        });
+        this._retornoAreaDialogRef.afterClosed().subscribe((r: any) => {
+            if (r?.refreshActivos) this.loadMovActivos();
         });
     }
 
@@ -2611,7 +2635,7 @@ export class RetornoTraspasoComponent implements OnInit, OnDestroy {
                     this.cerrarFormRetornoArea();
                     this.movSvc.cerrarMovimiento(mov.id_movement)
                         .pipe(takeUntil(this._unsub$))
-                        .subscribe({ next: () => { this.loadMovActivos(); this.movCompletados = []; }, error: () => this.loadMovActivos() });
+                        .subscribe({ next: () => { this.loadMovActivos(); }, error: () => this.loadMovActivos() });
                 } else {
                     this.loadMovActivos();
                 }

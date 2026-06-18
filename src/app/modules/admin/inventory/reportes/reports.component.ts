@@ -242,6 +242,43 @@ export class ReportsComponent implements OnInit {
         return col.badge?.[row[col.key]] ?? 'bg-stone-100 text-stone-600 border-stone-400';
     }
 
+    private readonly STATUS_LABELS: Record<string, string> = {
+        // mayúsculas (herramientas/préstamos desde el visor dialog)
+        AVAILABLE:        'Disponible',
+        IN_USE:           'En uso',
+        MAINTENANCE:      'Mantenimiento',
+        QUARANTINE:       'Cuarentena',
+        DECOMMISSIONED:   'De baja',
+        NEW:              'Nuevo',
+        USED:             'Usado',
+        RECONDITIONED:    'Reacondicionado',
+        ACTIVE:           'Activo',
+        RETURNED:         'Devuelto',
+        OVERDUE:          'Con mora',
+        // minúsculas (valores reales del API según el JSON)
+        available:        'Disponible',
+        in_use:           'En uso',
+        in_maintenance:   'Mantenimiento',
+        in_calibration:   'En calibración',
+        quarantine:       'Cuarentena',
+        decommissioned:   'De baja',
+        new:              'Nuevo',
+        used:             'Usado',
+        reconditioned:    'Reacondicionado',
+        good:             'Bueno',
+        // Kits
+        complete:         'Completo',
+        incomplete:       'Incompleto',
+        // Préstamos minúsculas
+        active:           'Activo',
+        returned:         'Devuelto',
+        overdue:          'Con mora',
+    };
+
+    getStatusLabel(value: string): string {
+        return this.STATUS_LABELS[value] ?? value;
+    }
+
     getDaysClass(val: any): string {
         const n = Number(val);
         if (val == null || isNaN(n)) return 'bg-stone-100 text-stone-500 border-stone-400';

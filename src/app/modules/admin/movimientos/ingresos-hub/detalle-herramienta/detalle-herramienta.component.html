@@ -1,218 +1,421 @@
-<div class="bg-stone-100 dark:bg-slate-900 border-2 border-black overflow-hidden flex flex-col h-full"
-     style="box-shadow: 6px 6px 0 #000">
+﻿<div class="bg-stone-100 dark:bg-slate-900 border-2 border-black overflow-hidden flex flex-col w-full h-full">
 
-    <!-- Header -->
-    <div class="bg-[#0F172A] px-5 py-3.5 flex items-center gap-3 shrink-0 select-none"
+    <!-- HEADER -->
+    <div class="bg-[#0F172A] px-4 sm:px-5 py-3 flex items-center gap-3 shrink-0 select-none flex-wrap sm:flex-nowrap"
          cdkDrag cdkDragRootElement=".cdk-overlay-pane" cdkDragHandle style="cursor:grab">
-        <div class="w-9 h-9 rounded bg-amber-400 border-2 border-black flex items-center justify-center shadow-[2px_2px_0_#fbbf24] shrink-0">
-            <mat-icon class="!text-lg text-black">{{ isEditMode() ? 'edit' : 'add_box' }}</mat-icon>
+
+        <div class="w-8 h-8 rounded bg-amber-400 border-2 border-black flex items-center justify-center shadow-[2px_2px_0_#fbbf24] shrink-0">
+            <mat-icon class="!text-base text-black">{{ isEditMode() ? 'edit' : 'add_box' }}</mat-icon>
         </div>
-        <div>
-            <p class="text-[9px] text-slate-400 font-bold uppercase tracking-[0.18em] leading-none mb-0.5">Ajuste Ingreso · Ítems</p>
-            <h2 class="text-sm text-white font-black uppercase tracking-tight leading-none">
-                {{ isEditMode() ? 'Editar Ítem de Ajuste' : 'Añadir Ítem al Ajuste' }}
+        <div class="flex-1 min-w-0">
+            <p class="text-[9px] text-slate-400 font-bold uppercase tracking-[0.15em] leading-none mb-0.5 hidden sm:block">Ajuste Ingreso · Ítem</p>
+            <h2 class="text-xs text-white font-black uppercase tracking-tight leading-none">
+                {{ isEditMode() ? 'Editar Ítem de Ajuste' : 'Añadir Herramienta al Ajuste' }}
             </h2>
+        </div>
+
+        <!-- Buscador herramienta existente -->
+        <div class="relative w-full sm:w-auto sm:shrink-0">
+            <input type="text"
+                   [value]="buscarValue"
+                   (input)="onBuscarInput($any($event.target).value)"
+                   (blur)="hideBuscarDropdown()"
+                   (focus)="onBuscarInput(buscarValue)"
+                   autocomplete="off"
+                   placeholder="Buscar por código, nombre, P/N..."
+                   class="w-full sm:w-64 md:w-72 h-8 text-xs font-bold border-2 border-white/20 rounded-xl px-3 pr-8 uppercase bg-white/10 text-white placeholder:text-white/40 placeholder:normal-case focus:outline-none focus:border-amber-400 focus:bg-white/20 transition-all">
+            <mat-spinner *ngIf="toolSearchLoading" diameter="12" class="absolute right-2 top-2"></mat-spinner>
+            <mat-icon *ngIf="!toolSearchLoading && !detalleForm.get('toolId')?.value"
+                      class="absolute right-2 top-1.5 text-white/40 !text-base pointer-events-none">search</mat-icon>
+            <button *ngIf="detalleForm.get('toolId')?.value" type="button" (click)="limpiarBuscar()"
+                    class="absolute right-1.5 top-1 w-6 h-6 flex items-center justify-center rounded hover:bg-white/20 transition-colors">
+                <mat-icon class="!text-sm text-white/60">close</mat-icon>
+            </button>
+
+            <!-- Dropdown resultados -->
+            <div *ngIf="showToolDropdown"
+                 class="absolute z-[300] w-80 bg-white dark:bg-slate-800 border-2 border-black dark:border-slate-600 rounded-xl shadow-[4px_4px_0_#000] max-h-60 overflow-y-auto mt-1 top-full right-0 custom-scrollbar divide-y divide-stone-100 dark:divide-slate-700">
+                <div *ngFor="let tool of toolSuggestions"
+                     (mousedown)="seleccionarHerramienta(tool)"
+                     class="px-3 py-2 hover:bg-amber-50 dark:hover:bg-slate-700 cursor-pointer transition-colors">
+                    <div class="flex items-center gap-2">
+                        <span class="font-mono font-black text-[10px] text-black dark:text-white bg-stone-100 dark:bg-slate-700 px-1.5 py-0.5 rounded">{{ tool.codigo }}</span>
+                        <span class="text-[9px] font-bold text-stone-500 dark:text-slate-400 uppercase truncate">{{ tool.nombre }}</span>
+                    </div>
+                    <div class="flex gap-3 mt-0.5">
+                        <span class="text-[9px] text-stone-400" *ngIf="tool.pn">P/N: <strong>{{ tool.pn }}</strong></span>
+                        <span class="text-[9px] text-stone-400" *ngIf="tool.sn">S/N: {{ tool.sn }}</span>
+                        <span class="text-[9px] font-bold px-1 rounded"
+                              [ngClass]="{
+                                'bg-green-100 text-green-800':  tool.estado === 'SERVICEABLE',
+                                'bg-red-100 text-red-800':      tool.estado === 'UNSERVICEABLE',
+                                'bg-blue-100 text-blue-800':    tool.estado === 'EN_CALIBRACION',
+                                'bg-amber-100 text-amber-800':  tool.estado === 'REPARACION'
+                              }">{{ tool.estado }}</span>
+                    </div>
+                    <div *ngIf="tool.ubicacion" class="text-[8px] text-stone-400 mt-0.5 font-mono">
+                        <mat-icon class="!text-[8px] align-middle">location_on</mat-icon> {{ tool.ubicacion }}
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
-    <!-- Body -->
-    <div class="flex-1 overflow-y-auto px-5 py-5 custom-scrollbar">
-        <form [formGroup]="detalleForm" class="grid grid-cols-1 md:grid-cols-12 gap-4">
+    <!-- BODY -->
+    <div class="flex-1 overflow-hidden">
+        <form [formGroup]="detalleForm" class="h-full flex flex-col sm:flex-row overflow-hidden min-h-0">
 
-            <!-- Columna izquierda: búsqueda + datos fijos + configuración -->
-            <div class="md:col-span-7 flex flex-col gap-4">
+            <!-- ── COLUMNA IZQUIERDA: Foto ── -->
+            <div class="w-2/5 shrink-0 flex flex-col items-center justify-center px-4 py-4">
 
-                <!-- Buscador herramienta -->
-                <div>
-                    <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1.5 flex items-center justify-between">
-                        <span>Buscar Herramienta <span class="text-red-500">*</span></span>
-                        <span *ngIf="isSearching()" class="flex items-center gap-1 text-stone-400">
-                            <mat-spinner diameter="10"></mat-spinner>
-                        </span>
-                    </label>
-                    <div class="relative flex items-center gap-2">
-                        <div class="relative flex-1">
-                            <input type="text" formControlName="buscar" [matAutocomplete]="autoHerramienta"
-                                   (input)="onBuscarChange($any($event.target).value)"
-                                   class="w-full h-10 text-sm font-black uppercase bg-white dark:bg-slate-800 dark:text-white border-2 rounded-xl px-3 pl-9 outline-none transition-all duration-150 placeholder:text-stone-300 dark:placeholder:text-slate-600"
-                                   [class]="!detalleForm.get('toolId')?.value && detalleForm.get('buscar')?.touched
-                                       ? 'border-red-400 focus:shadow-[2px_2px_0_#f87171]'
-                                       : 'border-stone-300 dark:border-slate-600 hover:border-stone-400 dark:hover:border-slate-500 focus:border-black dark:focus:border-slate-400 focus:shadow-[3px_3px_0_#000]'">
-                            <mat-icon class="absolute left-2.5 top-1/2 -translate-y-1/2 text-stone-400 dark:text-slate-500 !text-base pointer-events-none">search</mat-icon>
-
-                            <mat-autocomplete #autoHerramienta="matAutocomplete" [displayWith]="displayHerramienta"
-                                              (optionSelected)="selectHerramienta($event.option.value)">
-                                <mat-option *ngFor="let h of filteredHerramientas" [value]="h">
-                                    <div class="flex flex-col py-0.5 leading-tight">
-                                        <span class="font-black text-xs text-black dark:text-white">{{ h.codigo }}</span>
-                                        <span class="text-[9px] text-stone-500 dark:text-slate-400 font-bold">{{ h.nombre }} | P/N: {{ h.pn }}</span>
-                                    </div>
-                                </mat-option>
-                            </mat-autocomplete>
-                        </div>
-                        <button type="button" *ngIf="detalleForm.get('toolId')?.value" (click)="clearSearch()"
-                                class="w-10 h-10 bg-white dark:bg-slate-800 border-2 border-stone-300 dark:border-slate-600 rounded-xl shadow-[2px_2px_0_#000] hover:shadow-none hover:translate-x-px hover:translate-y-px flex items-center justify-center shrink-0 transition-all">
-                            <mat-icon class="!text-sm text-black dark:text-white">close</mat-icon>
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Datos Fijos -->
-                <div class="border-2 border-black rounded-xl overflow-hidden shadow-[3px_3px_0_#000]">
-                    <div class="bg-[#0F172A] px-4 py-2 flex items-center gap-2">
-                        <mat-icon class="!text-sm text-amber-400">info</mat-icon>
-                        <span class="text-[9px] font-black uppercase tracking-[0.18em] text-slate-300">Datos Fijos de la Herramienta</span>
-                    </div>
-                    <div class="bg-white dark:bg-slate-800 px-4 py-3 grid grid-cols-2 gap-x-6 gap-y-1.5">
-                        <div class="flex items-start gap-1.5">
-                            <span class="text-[8px] font-black uppercase tracking-wider text-stone-400 dark:text-slate-400 w-14 shrink-0 pt-px">Código:</span>
-                            <span class="text-[10px] font-black text-black dark:text-white font-mono">{{ detalleForm.value.codigo || '—' }}</span>
-                        </div>
-                        <div class="flex items-start gap-1.5">
-                            <span class="text-[8px] font-black uppercase tracking-wider text-stone-400 dark:text-slate-400 w-14 shrink-0 pt-px">P/N:</span>
-                            <span class="text-[10px] font-black text-black dark:text-white font-mono">{{ detalleForm.value.pn || '—' }}</span>
-                        </div>
-                        <div class="flex items-start gap-1.5">
-                            <span class="text-[8px] font-black uppercase tracking-wider text-stone-400 dark:text-slate-400 w-14 shrink-0 pt-px">S/N:</span>
-                            <span class="text-[10px] font-black text-black dark:text-white font-mono">{{ detalleForm.value.sn || '—' }}</span>
-                        </div>
-                        <div class="flex items-start gap-1.5">
-                            <span class="text-[8px] font-black uppercase tracking-wider text-stone-400 dark:text-slate-400 w-14 shrink-0 pt-px">Marca:</span>
-                            <span class="text-[10px] font-black text-black dark:text-white">{{ detalleForm.value.marca || '—' }}</span>
-                        </div>
-                        <div class="flex items-start gap-1.5 col-span-2">
-                            <span class="text-[8px] font-black uppercase tracking-wider text-stone-400 dark:text-slate-400 w-14 shrink-0 pt-px">Descrip:</span>
-                            <span class="text-[10px] font-black text-black dark:text-white truncate">{{ detalleForm.value.nombre || '—' }}</span>
+                <!-- Zona foto -->
+                <div class="w-72 h-72 border-2 border-dashed border-stone-300 dark:border-slate-600 rounded-xl bg-stone-50 dark:bg-slate-900 flex flex-col items-center justify-center relative overflow-hidden cursor-pointer hover:border-amber-400 transition-colors group"
+                     (click)="fileInput.click()">
+                    <div *ngIf="imagenNueva() || imagenOriginal(); else noImg" class="w-full h-full p-2 relative">
+                        <img [src]="imagenNueva() || imagenOriginal()" class="w-full h-full object-contain rounded" alt="Foto">
+                        <div class="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                            <span class="text-white text-[9px] font-black uppercase bg-black/60 px-2 py-1 border border-white rounded-lg">Cambiar foto</span>
                         </div>
                     </div>
-                </div>
-
-                <!-- Configuración Ajuste -->
-                <div class="border-2 border-black rounded-xl overflow-hidden shadow-[3px_3px_0_#000]">
-                    <div class="bg-[#0F172A] px-4 py-2 flex items-center gap-2">
-                        <mat-icon class="!text-sm text-amber-400">tune</mat-icon>
-                        <span class="text-[9px] font-black uppercase tracking-[0.18em] text-slate-300">Configuración del Ajuste</span>
-                    </div>
-                    <div class="bg-white dark:bg-slate-800 p-4 flex flex-col gap-3">
-
-                        <div class="grid grid-cols-3 gap-3">
-                            <div>
-                                <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1.5 block">Cant. <span class="text-red-500">*</span></label>
-                                <input type="number" formControlName="cantidad" min="1"
-                                       class="w-full h-10 text-sm text-center font-black bg-white dark:bg-slate-800 dark:text-white border-2 rounded-xl px-1 outline-none transition-all duration-150"
-                                       [class]="hasError('cantidad','required')
-                                           ? 'border-red-400 focus:shadow-[2px_2px_0_#f87171]'
-                                           : 'border-stone-300 dark:border-slate-600 hover:border-stone-400 dark:hover:border-slate-500 focus:border-black dark:focus:border-slate-400 focus:shadow-[3px_3px_0_#000]'">
-                            </div>
-                            <div>
-                                <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1.5 block">Unidad <span class="text-red-500">*</span></label>
-                                <select formControlName="um"
-                                        class="w-full h-10 text-sm font-bold bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-xl px-2 outline-none transition-all duration-150 cursor-pointer hover:border-stone-400 dark:hover:border-slate-500 focus:border-black dark:focus:border-slate-400 focus:shadow-[3px_3px_0_#000]">
-                                    <option *ngFor="let u of unidades" [value]="u.value">{{ u.label }}</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1.5 block">Estado <span class="text-red-500">*</span></label>
-                                <select formControlName="estado"
-                                        class="w-full h-10 text-sm font-bold bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-xl px-2 outline-none transition-all duration-150 cursor-pointer hover:border-stone-400 dark:hover:border-slate-500 focus:border-black dark:focus:border-slate-400 focus:shadow-[3px_3px_0_#000]">
-                                    <option *ngFor="let e of estados" [value]="e.value">{{ e.value }}</option>
-                                </select>
-                            </div>
-                        </div>
-
-                        <div class="grid grid-cols-2 gap-3">
-                            <div>
-                                <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1.5 block">Estante</label>
-                                <input type="text" formControlName="estante" placeholder="A-1"
-                                       class="w-full h-10 text-sm font-bold uppercase bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-xl px-3 outline-none transition-all duration-150 placeholder:text-stone-300 dark:placeholder:text-slate-600 hover:border-stone-400 dark:hover:border-slate-500 focus:border-black dark:focus:border-slate-400 focus:shadow-[3px_3px_0_#000]">
-                            </div>
-                            <div>
-                                <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1.5 block">Nivel</label>
-                                <input type="text" formControlName="nivelUbicacion" placeholder="Niv 2"
-                                       class="w-full h-10 text-sm font-bold uppercase bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-xl px-3 outline-none transition-all duration-150 placeholder:text-stone-300 dark:placeholder:text-slate-600 hover:border-stone-400 dark:hover:border-slate-500 focus:border-black dark:focus:border-slate-400 focus:shadow-[3px_3px_0_#000]">
-                            </div>
-                        </div>
-
-                        <div>
-                            <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1.5 block">Observaciones</label>
-                            <textarea formControlName="observaciones" rows="2" placeholder="Detalles extra..."
-                                      class="w-full text-sm font-normal bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-xl px-3 py-2 outline-none transition-all duration-150 resize-none placeholder:text-stone-300 dark:placeholder:text-slate-600 hover:border-stone-400 dark:hover:border-slate-500 focus:border-black dark:focus:border-slate-400 focus:shadow-[3px_3px_0_#000]"></textarea>
-                        </div>
-
-                    </div>
-                </div>
-
-            </div>
-
-            <!-- Columna derecha: foto + preview resumen -->
-            <div class="md:col-span-5 flex flex-col gap-4">
-
-                <!-- Foto -->
-                <div>
-                    <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1.5 block text-center">Fotografía de Evidencia</label>
-                    <div class="w-full aspect-square bg-white dark:bg-slate-800 border-2 border-stone-300 dark:border-slate-600 rounded-xl flex flex-col items-center justify-center relative overflow-hidden group cursor-pointer hover:border-black transition-all duration-150 shadow-[3px_3px_0_#000]"
-                         (click)="fileInput.click()">
-                        <img *ngIf="imagenNueva() || imagenOriginal()"
-                             [src]="imagenNueva() || imagenOriginal()"
-                             class="w-full h-full object-contain p-2">
-                        <div *ngIf="!imagenNueva() && !imagenOriginal()"
-                             class="flex flex-col items-center justify-center text-stone-300 dark:text-slate-600">
-                            <mat-icon class="!text-5xl mb-2">image_search</mat-icon>
-                            <span class="text-[9px] font-black uppercase text-center px-4">Sin Imagen</span>
-                        </div>
-                        <div class="absolute inset-0 bg-black/70 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center text-white">
-                            <mat-icon class="!text-3xl mb-1">add_a_photo</mat-icon>
-                            <span class="text-[10px] font-black uppercase">{{ imagenNueva() ? 'Cambiar Foto' : 'Subir Evidencia' }}</span>
-                        </div>
-                    </div>
+                    <ng-template #noImg>
+                        <mat-icon class="!text-5xl text-stone-300 dark:text-slate-600 mb-1">add_photo_alternate</mat-icon>
+                        <span class="text-[9px] font-black uppercase text-stone-400">Click para subir</span>
+                    </ng-template>
                     <input type="file" #fileInput (change)="onImageSelected($event)" accept="image/*" class="hidden">
-                    <p class="text-[8px] font-bold text-stone-400 dark:text-slate-500 uppercase mt-1.5 text-center">
-                        Clic para subir evidencia fotográfica del ajuste.
-                    </p>
+                </div>
+            </div>
+
+            <!-- ── COLUMNA DERECHA: Campos ── -->
+            <div class="flex-1 overflow-y-auto custom-scrollbar px-4 py-3 flex flex-col gap-2">
+
+                <!-- Fila 1: Código BOA · P/N · S/N -->
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                    <div>
+                        <label class="text-[9px] font-black uppercase tracking-wider text-stone-400 dark:text-slate-400 mb-1 block">Código BOA <span class="text-red-500">*</span></label>
+                        <input type="text" formControlName="codigo" placeholder="BOA-H-001"
+                               class="w-full h-8 text-xs font-black uppercase bg-white dark:bg-slate-900 dark:text-white border-2 rounded-lg px-2.5 outline-none transition-all placeholder:text-stone-300 placeholder:font-normal placeholder:normal-case"
+                               [class]="hasError('codigo','required') ? 'border-red-400' : 'border-stone-300 dark:border-slate-600 hover:border-stone-400 focus:border-black focus:shadow-[2px_2px_0_#000]'">
+                        <p *ngIf="hasError('codigo','required')" class="text-[8px] text-red-500 font-bold mt-0.5">Requerido.</p>
+                    </div>
+                    <div>
+                        <label class="text-[9px] font-black uppercase tracking-wider text-stone-400 dark:text-slate-400 mb-1 block">P/N <span class="text-red-500">*</span></label>
+                        <input type="text" formControlName="pn" placeholder="ABC-12345"
+                               class="w-full h-8 text-xs font-black uppercase bg-white dark:bg-slate-900 dark:text-white border-2 rounded-lg px-2.5 outline-none transition-all placeholder:text-stone-300 placeholder:font-normal placeholder:normal-case"
+                               [class]="hasError('pn','required') ? 'border-red-400' : 'border-stone-300 dark:border-slate-600 hover:border-stone-400 focus:border-black focus:shadow-[2px_2px_0_#000]'">
+                        <p *ngIf="hasError('pn','required')" class="text-[8px] text-red-500 font-bold mt-0.5">Requerido.</p>
+                    </div>
+                    <div>
+                        <label class="text-[9px] font-black uppercase tracking-wider text-stone-400 dark:text-slate-400 mb-1 block">S/N</label>
+                        <input type="text" formControlName="sn" placeholder="Opcional"
+                               class="w-full h-8 text-xs font-bold uppercase bg-white dark:bg-slate-900 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-lg px-2.5 outline-none transition-all placeholder:text-stone-300 placeholder:font-normal placeholder:normal-case hover:border-stone-400 focus:border-black focus:shadow-[2px_2px_0_#000]">
+                    </div>
                 </div>
 
-                <!-- Resumen del ajuste -->
-                <div class="border-2 border-black rounded-xl overflow-hidden shadow-[3px_3px_0_#000]">
-                    <div class="bg-[#0F172A] px-4 py-2 flex items-center gap-2">
-                        <mat-icon class="!text-sm text-amber-400">receipt_long</mat-icon>
-                        <span class="text-[9px] font-black uppercase tracking-[0.18em] text-slate-300">Resumen del Ajuste</span>
+                <!-- Fila 2: Nombre -->
+                <div>
+                    <label class="text-[9px] font-black uppercase tracking-wider text-stone-400 dark:text-slate-400 mb-1 block">Nombre / Descripción <span class="text-red-500">*</span></label>
+                    <input type="text" formControlName="nombre" placeholder="Descripción completa de la herramienta"
+                           class="w-full h-8 text-xs font-bold bg-white dark:bg-slate-900 dark:text-white border-2 rounded-lg px-2.5 outline-none transition-all placeholder:text-stone-300 placeholder:font-normal"
+                           [class]="hasError('nombre','required') ? 'border-red-400' : 'border-stone-300 dark:border-slate-600 hover:border-stone-400 focus:border-black focus:shadow-[2px_2px_0_#000]'">
+                    <p *ngIf="hasError('nombre','required')" class="text-[8px] text-red-500 font-bold mt-0.5">Requerido.</p>
+                </div>
+
+                <!-- Fila 3: Marca · Tipo -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <div>
+                        <label class="text-[9px] font-black uppercase tracking-wider text-stone-400 dark:text-slate-400 mb-1 block">Marca</label>
+                        <input type="text" formControlName="marca" placeholder="FLUKE, SNAP-ON..."
+                               class="w-full h-8 text-xs font-bold uppercase bg-white dark:bg-slate-900 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-lg px-2.5 outline-none transition-all placeholder:text-stone-300 placeholder:font-normal placeholder:normal-case hover:border-stone-400 focus:border-black focus:shadow-[2px_2px_0_#000]">
                     </div>
-                    <div class="bg-white dark:bg-slate-800 px-4 py-3 flex flex-col gap-2">
-                        <div class="flex items-center gap-2">
-                            <mat-icon class="!text-sm text-stone-400 dark:text-slate-500 shrink-0">add</mat-icon>
-                            <span class="text-[9px] font-bold text-stone-400 dark:text-slate-400 uppercase">Ingreso:</span>
-                            <span class="text-[10px] font-black text-black dark:text-white">{{ detalleForm.value.cantidad || 0 }} {{ detalleForm.value.um }}</span>
-                        </div>
-                        <div class="flex items-center gap-2">
-                            <mat-icon class="!text-sm text-stone-400 dark:text-slate-500 shrink-0">sell</mat-icon>
-                            <span class="text-[9px] font-bold text-stone-400 dark:text-slate-400 uppercase">Condición:</span>
-                            <span class="text-[10px] font-black text-black dark:text-white">{{ detalleForm.value.estado }}</span>
-                        </div>
-                        <div class="flex items-center gap-2">
-                            <mat-icon class="!text-sm text-stone-400 dark:text-slate-500 shrink-0">place</mat-icon>
-                            <span class="text-[9px] font-bold text-stone-400 dark:text-slate-400 uppercase">Destino:</span>
-                            <span class="text-[10px] font-black text-black dark:text-white truncate">
-                                {{ detalleForm.value.estante || '—' }} / {{ detalleForm.value.nivelUbicacion || '—' }}
-                            </span>
-                        </div>
+                    <div>
+                        <label class="text-[9px] font-black uppercase tracking-wider text-stone-400 dark:text-slate-400 mb-1 block">Tipo</label>
+                        <select formControlName="tipo"
+                                class="w-full h-8 text-xs font-bold bg-white dark:bg-slate-900 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-lg px-2.5 outline-none transition-all cursor-pointer hover:border-stone-400 focus:border-black focus:shadow-[2px_2px_0_#000]">
+                            <option *ngFor="let t of tiposHerramienta" [value]="t.value">{{ t.label }}</option>
+                        </select>
                     </div>
+                </div>
+
+                <!-- Fila 4: Estado · Criticidad · Fabricación · Cant. · Unidad -->
+                <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2 items-end">
+                    <div>
+                        <label class="text-[9px] font-black uppercase tracking-wider text-stone-400 dark:text-slate-400 mb-1 block">Estado <span class="text-red-500">*</span></label>
+                        <select formControlName="estado"
+                                class="w-full h-8 text-xs font-bold bg-white dark:bg-slate-900 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-lg px-1.5 outline-none transition-all cursor-pointer hover:border-stone-400 focus:border-black focus:shadow-[2px_2px_0_#000]">
+                            <option *ngFor="let e of estados" [value]="e.value">{{ e.label }}</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="text-[9px] font-black uppercase tracking-wider text-stone-400 dark:text-slate-400 mb-1 block">Criticidad</label>
+                        <select formControlName="nivelCriticidad"
+                                class="w-full h-8 text-xs font-bold bg-white dark:bg-slate-900 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-lg px-1.5 outline-none transition-all cursor-pointer hover:border-stone-400 focus:border-black focus:shadow-[2px_2px_0_#000]">
+                            <option value="A">A — Crítico</option>
+                            <option value="B">B — Normal</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="text-[9px] font-black uppercase tracking-wider text-stone-400 dark:text-slate-400 mb-1 block">Fabricación</label>
+                        <select formControlName="fabricacion"
+                                class="w-full h-8 text-xs font-bold bg-white dark:bg-slate-900 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-lg px-1.5 outline-none transition-all cursor-pointer hover:border-stone-400 focus:border-black focus:shadow-[2px_2px_0_#000]">
+                            <option value="INTERNACIONAL">Intl.</option>
+                            <option value="LOCAL">Local</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="text-[9px] font-black uppercase tracking-wider text-stone-400 dark:text-slate-400 mb-1 block">Cant. <span class="text-red-500">*</span></label>
+                        <input type="number" formControlName="cantidad" min="1"
+                               class="w-full h-8 text-xs text-center font-black bg-white dark:bg-slate-900 dark:text-white border-2 rounded-lg px-1.5 outline-none transition-all"
+                               [class]="hasError('cantidad','min') ? 'border-red-400' : 'border-stone-300 dark:border-slate-600 hover:border-stone-400 focus:border-black focus:shadow-[2px_2px_0_#000]'">
+                    </div>
+                    <div>
+                        <label class="text-[9px] font-black uppercase tracking-wider text-stone-400 dark:text-slate-400 mb-1 block">Unidad</label>
+                        <select formControlName="um"
+                                class="w-full h-8 text-xs font-bold bg-white dark:bg-slate-900 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-lg px-1.5 outline-none transition-all cursor-pointer hover:border-stone-400 focus:border-black focus:shadow-[2px_2px_0_#000]">
+                            <option *ngFor="let u of unidades" [value]="u.value">{{ u.label }}</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Fila 5: Ubicación — picker MatDialog -->
+                <div>
+                    <!-- Trigger button -->
+                    <button type="button" (click)="openUbicacionDialog()"
+                            class="w-full flex items-center justify-between px-3 py-2 border-2 border-black rounded-lg bg-white dark:bg-slate-800 select-none transition-all"
+                            [ngClass]="showUbicacionPanel ? 'shadow-none ring-2 ring-amber-400' : 'shadow-[2px_2px_0_#000] hover:shadow-[1px_1px_0_#000]'">
+                        <div class="flex items-center gap-2 min-w-0">
+                            <div class="flex items-center gap-0.5 shrink-0">
+                                <span class="w-4 h-4 rounded border-2 flex items-center justify-center text-[8px] font-black transition-all"
+                                      [ngClass]="ubSelectedWarehouse ? 'border-black bg-black text-white' : 'border-stone-300 text-stone-400'">
+                                    {{ ubSelectedWarehouse ? '✓' : '1' }}
+                                </span>
+                                <span class="w-2.5 h-px" [ngClass]="ubSelectedWarehouse ? 'bg-black dark:bg-white' : 'bg-stone-300'"></span>
+                                <span class="w-4 h-4 rounded border-2 flex items-center justify-center text-[8px] font-black transition-all"
+                                      [ngClass]="ubSelectedRack ? 'border-black bg-black text-white' : 'border-stone-300 text-stone-400'">
+                                    {{ ubSelectedRack ? '✓' : '2' }}
+                                </span>
+                                <span class="w-2.5 h-px" [ngClass]="ubSelectedRack ? 'bg-black dark:bg-white' : 'bg-stone-300'"></span>
+                                <span class="w-4 h-4 rounded border-2 flex items-center justify-center text-[8px] font-black transition-all"
+                                      [ngClass]="ubSelectedLevel ? 'border-black bg-black text-white' : 'border-stone-300 text-stone-400'">
+                                    {{ ubSelectedLevel ? '✓' : '3' }}
+                                </span>
+                            </div>
+                            <div class="min-w-0">
+                                <p class="text-[8px] font-black uppercase tracking-wider text-stone-400 dark:text-slate-500 leading-none mb-0.5">Ubicación en Inventario</p>
+                                <p class="text-[10px] font-black font-mono text-black dark:text-white truncate">{{ getUbicacionLabel() }}</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-1 shrink-0">
+                            <button *ngIf="ubSelectedWarehouse" type="button"
+                                    (click)="limpiarUbicacion(); $event.stopPropagation()"
+                                    class="w-5 h-5 flex items-center justify-center rounded hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors">
+                                <mat-icon class="!text-xs text-red-400">close</mat-icon>
+                            </button>
+                            <mat-icon class="!text-sm text-stone-400 transition-transform duration-200"
+                                      [ngClass]="showUbicacionPanel ? 'rotate-180' : ''">expand_more</mat-icon>
+                        </div>
+                    </button>
+
+                    <!-- Mini ventana (MatDialog) -->
+                    <ng-template #ubicDialogTpl>
+                        <div class="bg-white dark:bg-slate-800 border-2 border-black rounded-xl overflow-hidden flex flex-col"
+                             style="max-height: 88vh;">
+
+                            <!-- Title bar -->
+                            <div class="bg-[#0F172A] px-3 py-2 flex items-center justify-between shrink-0 select-none">
+                                <div class="flex items-center gap-2.5">
+                                    <div class="flex items-center gap-1">
+                                        <div class="w-5 h-5 rounded-full border-2 flex items-center justify-center text-[9px] font-black transition-all"
+                                             [ngClass]="ubSelectedWarehouse ? 'border-amber-400 bg-amber-400 text-black' : 'border-white/20 text-white/30'">
+                                            {{ ubSelectedWarehouse ? '✓' : '1' }}
+                                        </div>
+                                        <div class="w-4 h-px" [ngClass]="ubSelectedWarehouse ? 'bg-amber-400' : 'bg-white/20'"></div>
+                                        <div class="w-5 h-5 rounded-full border-2 flex items-center justify-center text-[9px] font-black transition-all"
+                                             [ngClass]="ubSelectedRack ? 'border-amber-400 bg-amber-400 text-black' : 'border-white/20 text-white/30'">
+                                            {{ ubSelectedRack ? '✓' : '2' }}
+                                        </div>
+                                        <div class="w-4 h-px" [ngClass]="ubSelectedRack ? 'bg-amber-400' : 'bg-white/20'"></div>
+                                        <div class="w-5 h-5 rounded-full border-2 flex items-center justify-center text-[9px] font-black transition-all"
+                                             [ngClass]="ubSelectedLevel ? 'border-amber-400 bg-amber-400 text-black' : 'border-white/20 text-white/30'">
+                                            {{ ubSelectedLevel ? '✓' : '3' }}
+                                        </div>
+                                    </div>
+                                    <span class="text-white text-[10px] font-black uppercase tracking-wider">Seleccionar Ubicación</span>
+                                </div>
+                                <button type="button" (click)="closeUbicacionDialog()"
+                                        class="w-6 h-6 flex items-center justify-center rounded hover:bg-white/10 transition-colors">
+                                    <mat-icon class="!text-sm text-white/70 hover:text-white">close</mat-icon>
+                                </button>
+                            </div>
+
+                            <!-- Content scrollable -->
+                            <div class="overflow-y-auto flex-1 divide-y divide-stone-100 dark:divide-slate-700 custom-scrollbar">
+
+                                <!-- ─ PASO 1: ALMACÉN ─ -->
+                                <div class="px-3 py-2.5">
+                                    <div class="flex items-center gap-1.5 mb-2">
+                                        <span class="w-4 h-4 rounded border-2 flex items-center justify-center text-[8px] font-black shrink-0 transition-all"
+                                              [ngClass]="ubSelectedWarehouse ? 'border-black bg-black text-white' : 'border-stone-300 text-stone-400'">
+                                            {{ ubSelectedWarehouse ? '✓' : '1' }}
+                                        </span>
+                                        <span class="text-[8px] font-black uppercase tracking-widest text-stone-400">Almacén</span>
+                                        <div class="flex-1 h-px bg-stone-200 dark:bg-slate-700"></div>
+                                        <button *ngIf="ubSelectedWarehouse && !showUbAlmacenGrid" type="button"
+                                                (click)="showUbAlmacenGrid = true"
+                                                class="flex items-center gap-0.5 text-[8px] font-black uppercase text-stone-500 hover:text-black transition-colors">
+                                            <mat-icon class="!text-[10px]">edit</mat-icon> cambiar
+                                        </button>
+                                        <button *ngIf="showUbAlmacenGrid && ubSelectedWarehouse" type="button"
+                                                (click)="showUbAlmacenGrid = false"
+                                                class="flex items-center gap-0.5 text-[8px] font-black uppercase text-stone-400 hover:text-stone-600 transition-colors">
+                                            <mat-icon class="!text-[10px]">close</mat-icon> cerrar
+                                        </button>
+                                    </div>
+                                    <div *ngIf="ubSelectedWarehouse && !showUbAlmacenGrid"
+                                         class="flex items-center gap-2 bg-stone-50 dark:bg-slate-700 border-2 border-black rounded-lg px-2.5 py-2 shadow-[2px_2px_0_#000]">
+                                        <mat-icon class="!text-sm text-black dark:text-white shrink-0">warehouse</mat-icon>
+                                        <div class="flex-1 min-w-0">
+                                            <p class="text-[7px] text-stone-400 font-bold uppercase tracking-widest leading-none mb-0.5">{{ ubSelectedWarehouse.tipo }}</p>
+                                            <p class="text-xs font-black text-black dark:text-white truncate">{{ ubSelectedWarehouse.codigo }} · {{ ubSelectedWarehouse.nombre }}</p>
+                                        </div>
+                                        <mat-icon class="!text-sm text-black dark:text-white shrink-0">check_circle</mat-icon>
+                                    </div>
+                                    <div *ngIf="!ubSelectedWarehouse || showUbAlmacenGrid">
+                                        <div *ngIf="loadingAlmacenes" class="grid grid-cols-2 gap-2">
+                                            <div *ngFor="let _ of [1,2]" class="h-10 rounded-lg border-2 border-stone-200 bg-stone-100 animate-pulse"></div>
+                                        </div>
+                                        <div *ngIf="!loadingAlmacenes" class="grid grid-cols-2 gap-2">
+                                            <button *ngFor="let w of ubAlmacenes" type="button"
+                                                    (click)="seleccionarAlmacen(w)"
+                                                    class="flex items-center gap-2 border-2 rounded-lg px-2.5 py-2 text-left transition-all"
+                                                    [ngClass]="ubSelectedWarehouse?.id === w.id
+                                                        ? 'border-black bg-white dark:bg-slate-700 shadow-[2px_2px_0_#000]'
+                                                        : 'border-stone-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:border-black hover:shadow-[2px_2px_0_#000]'">
+                                                <mat-icon class="!text-sm text-stone-400 shrink-0">warehouse</mat-icon>
+                                                <div class="flex-1 min-w-0">
+                                                    <p class="text-[10px] font-black uppercase text-black dark:text-white leading-none">{{ w.codigo }}</p>
+                                                    <p class="text-[8px] text-stone-400 truncate">{{ w.nombre }}</p>
+                                                </div>
+                                                <mat-icon *ngIf="ubSelectedWarehouse?.id === w.id" class="!text-xs text-black dark:text-white shrink-0">check</mat-icon>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- ─ PASO 2: ESTANTE ─ -->
+                                <ng-container *ngIf="ubSelectedWarehouse">
+                                    <div class="px-3 py-2.5">
+                                        <div class="flex items-center gap-1.5 mb-2">
+                                            <span class="w-4 h-4 rounded border-2 flex items-center justify-center text-[8px] font-black shrink-0 transition-all"
+                                                  [ngClass]="ubSelectedRack ? 'border-black bg-black text-white' : 'border-stone-300 text-stone-400'">
+                                                {{ ubSelectedRack ? '✓' : '2' }}
+                                            </span>
+                                            <span class="text-[8px] font-black uppercase tracking-widest text-stone-400">Estante / Rack</span>
+                                            <span *ngIf="loadingRacks" class="text-[8px] text-stone-400 italic animate-pulse ml-auto">cargando…</span>
+                                        </div>
+                                        <div *ngIf="loadingRacks" class="grid grid-cols-3 gap-2">
+                                            <div *ngFor="let _ of [1,2,3]" class="h-14 rounded-lg border-2 border-stone-200 bg-stone-100 animate-pulse"></div>
+                                        </div>
+                                        <div *ngIf="!loadingRacks && ubRacks.length" class="grid grid-cols-3 gap-2">
+                                            <button *ngFor="let r of ubRacks" type="button"
+                                                    (click)="seleccionarRack(r)"
+                                                    class="flex flex-col items-center border-2 rounded-lg px-1 py-2 text-center transition-all"
+                                                    [ngClass]="ubSelectedRack?.id === r.id
+                                                        ? 'border-black bg-white dark:bg-slate-700 shadow-[2px_2px_0_#000]'
+                                                        : 'border-stone-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:border-stone-400 hover:shadow-[2px_2px_0_#ccc]'">
+                                                <mat-icon class="!text-xl mb-1 text-stone-400">view_column</mat-icon>
+                                                <p class="text-[9px] font-black text-black dark:text-white uppercase leading-none">{{ r.codigo }}</p>
+                                                <p class="text-[7px] text-stone-400 truncate w-full text-center mt-0.5">{{ r.nombre }}</p>
+                                            </button>
+                                        </div>
+                                        <p *ngIf="!loadingRacks && !ubRacks.length"
+                                           class="text-[9px] text-stone-400 italic text-center py-3">Sin estantes disponibles.</p>
+                                    </div>
+
+                                    <!-- ─ PASO 3: NIVEL ─ -->
+                                    <div class="px-3 py-2.5">
+                                        <div class="flex items-center gap-1.5 mb-2">
+                                            <span class="w-4 h-4 rounded border-2 flex items-center justify-center text-[8px] font-black shrink-0 transition-all"
+                                                  [ngClass]="ubSelectedLevel ? 'border-black bg-black text-white' : 'border-stone-300 text-stone-400'">
+                                                {{ ubSelectedLevel ? '✓' : '3' }}
+                                            </span>
+                                            <span class="text-[8px] font-black uppercase tracking-widest text-stone-400">Nivel</span>
+                                            <span *ngIf="loadingLevels" class="text-[8px] text-stone-400 italic animate-pulse ml-auto">cargando…</span>
+                                        </div>
+                                        <div *ngIf="!ubSelectedRack" class="flex items-center justify-center py-4 gap-2 opacity-40">
+                                            <mat-icon class="!text-xl text-stone-400">layers</mat-icon>
+                                            <p class="text-[9px] text-stone-400 font-bold uppercase tracking-widest">Elige un estante</p>
+                                        </div>
+                                        <div *ngIf="ubSelectedRack && !loadingLevels"
+                                             class="border-2 border-black dark:border-slate-600 rounded-lg overflow-hidden divide-y divide-stone-100 dark:divide-slate-700 shadow-[2px_2px_0_#000]">
+                                            <button *ngFor="let l of ubLevels" type="button"
+                                                    (click)="seleccionarLevel(l)"
+                                                    class="w-full flex items-center gap-2.5 px-3 py-2 text-left transition-colors"
+                                                    [ngClass]="ubSelectedLevel?.id === l.id
+                                                        ? 'bg-stone-100 dark:bg-slate-700'
+                                                        : 'bg-white dark:bg-slate-800 hover:bg-stone-50 dark:hover:bg-slate-700/50'">
+                                                <div class="w-5 h-5 rounded border-2 flex items-center justify-center shrink-0 transition-all"
+                                                     [ngClass]="ubSelectedLevel?.id === l.id ? 'border-black bg-black' : 'border-stone-200 dark:border-slate-600 bg-white dark:bg-slate-700'">
+                                                    <mat-icon *ngIf="ubSelectedLevel?.id === l.id" class="!text-xs text-white">check</mat-icon>
+                                                </div>
+                                                <div class="flex-1 min-w-0">
+                                                    <p class="text-[10px] font-black text-black dark:text-white">
+                                                        {{ l.isFloor ? 'Suelo' : 'N° ' + l.numero }} · {{ l.codigo }}
+                                                    </p>
+                                                    <p class="text-[8px] text-stone-400 dark:text-slate-500 truncate">{{ l.nombre }}</p>
+                                                </div>
+                                                <mat-icon *ngIf="ubSelectedLevel?.id === l.id" class="!text-sm text-amber-500 shrink-0">where_to_vote</mat-icon>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </ng-container>
+
+                            </div><!-- /content scrollable -->
+                        </div><!-- /mini ventana -->
+                    </ng-template>
+                </div>
+
+                <!-- Fila 6: Doc. Referencia -->
+                <div>
+                    <label class="text-[9px] font-black uppercase tracking-wider text-stone-400 dark:text-slate-400 mb-1 block">Doc. Referencia</label>
+                    <input type="text" formControlName="documento" placeholder="AI-001 / REF-..."
+                           class="w-full h-8 text-xs font-black uppercase bg-white dark:bg-slate-900 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-lg px-2.5 outline-none transition-all placeholder:text-stone-300 placeholder:font-normal placeholder:normal-case hover:border-stone-400 focus:border-black focus:shadow-[2px_2px_0_#000]">
+                </div>
+
+                <!-- Fila 7: Observaciones -->
+                <div>
+                    <label class="text-[9px] font-black uppercase tracking-wider text-stone-400 dark:text-slate-400 mb-1 block">Observaciones</label>
+                    <textarea formControlName="observaciones" rows="2"
+                              placeholder="Daño físico, accesorios faltantes, condición especial..."
+                              class="w-full text-xs font-normal bg-white dark:bg-slate-900 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-lg px-2.5 py-2 outline-none transition-all resize-none placeholder:text-stone-300 placeholder:font-normal hover:border-stone-400 focus:border-black focus:shadow-[2px_2px_0_#000]"></textarea>
                 </div>
 
             </div>
-
         </form>
     </div>
 
-    <!-- Footer -->
-    <div class="border-t-2 border-black bg-stone-200 dark:bg-slate-800 px-5 py-3 flex justify-between items-center shrink-0">
+    <!-- FOOTER -->
+    <div class="border-t-2 border-black bg-stone-200 dark:bg-slate-800 px-4 py-2 flex justify-between items-center shrink-0">
         <button type="button" (click)="cerrar()"
-                class="px-4 py-2 bg-[#FF1414] text-white font-black text-[10px] border-2 border-black rounded-xl shadow-[2px_2px_0_#000] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all uppercase">
-            Cancelar
+                class="flex items-center gap-1 px-3 py-1.5 bg-red-500 text-white font-black text-[10px] border-2 border-black rounded-lg shadow-[2px_2px_0_#000] hover:shadow-none hover:translate-x-[1px] hover:translate-y-[1px] transition-all uppercase">
+            <mat-icon class="!text-xs">close</mat-icon>Cancelar
         </button>
-        <button type="button" (click)="procesar()" [disabled]="!detalleForm.get('toolId')?.value"
-                class="flex items-center gap-2 px-5 py-2 bg-amber-400 text-black font-black text-[10px] border-2 border-black rounded-xl shadow-[3px_3px_0_#000] hover:shadow-none hover:translate-x-[3px] hover:translate-y-[3px] transition-all uppercase disabled:opacity-40 disabled:cursor-not-allowed disabled:translate-x-0 disabled:translate-y-0 disabled:shadow-[3px_3px_0_#000]">
-            <mat-icon class="!text-sm">done</mat-icon>
-            {{ isEditMode() ? 'Actualizar' : 'Agregar Ítem' }}
+
+        <!-- Indicador de herramienta seleccionada -->
+        <div class="hidden sm:flex items-center gap-1 text-[9px] font-bold">
+            <ng-container *ngIf="detalleForm.get('toolId')?.value; else sinSeleccion">
+                <mat-icon class="!text-sm" style="color:#22c55e">check_circle</mat-icon>
+                <span class="text-stone-500 dark:text-slate-400">Del inventario</span>
+            </ng-container>
+            <ng-template #sinSeleccion>
+                <mat-icon class="!text-sm" style="color:#f59e0b">warning</mat-icon>
+                <span class="text-stone-400 dark:text-slate-500">Busque la herramienta arriba</span>
+            </ng-template>
+        </div>
+
+        <button type="button" (click)="procesar()"
+                class="flex items-center gap-1.5 px-3 py-1.5 bg-amber-400 text-black font-black text-[10px] border-2 border-black rounded-lg shadow-[2px_2px_0_#000] hover:shadow-none hover:translate-x-[1px] hover:translate-y-[1px] transition-all uppercase">
+            <mat-icon class="!text-xs">done</mat-icon>
+            {{ isEditMode() ? 'Actualizar Ítem' : 'Agregar Ítem' }}
         </button>
     </div>
 </div>

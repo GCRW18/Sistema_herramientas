@@ -182,10 +182,10 @@ export class AdministrationDashboardComponent implements OnInit {
 
     getTipoBgColor(tipo: string): string {
         switch (tipo) {
-            case 'CREAR': return 'bg-green-300 text-black border-green-600';
-            case 'EDITAR': return 'bg-blue-300 text-black border-blue-600';
-            case 'ELIMINAR': return 'bg-red-300 text-black border-red-600';
-            default: return 'bg-gray-200';
+            case 'CREAR':    return 'bg-green-600 text-white';
+            case 'EDITAR':   return 'bg-blue-700 text-white';
+            case 'ELIMINAR': return 'bg-red-600 text-white';
+            default:         return 'bg-[#0F172A] text-white';
         }
     }
 }

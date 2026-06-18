@@ -22,6 +22,7 @@ interface HerramientaOption {
     base: string;
     existencia: number;
     estadoFisico: string;
+    rawStatus?: string;
     imagen?: string;
 }
 
@@ -73,6 +74,7 @@ export class HerramientaABajaComponent implements OnInit, OnDestroy {
     isLoading = false;
     showSuggestions = false;
     private id_tool_actual = 0;
+    private rawStatusActual = '';
 
     herramientas: HerramientaOption[] = [];
     herramientasFiltradas = signal<HerramientaOption[]>(this.herramientas);
@@ -110,12 +112,13 @@ export class HerramientaABajaComponent implements OnInit, OnDestroy {
                             return {
                                 id_tool:          t.id_tool ?? 0,
                                 codigo:           t.code          ?? t.codigo        ?? '',
-                                nombre:           t.name          ?? t.nombre        ?? '',
+                                nombre:           t.name          || t.description   || t.nombre || '',
                                 pn:               t.part_number   ?? t.pn            ?? '',
                                 sn:               t.serial_number ?? t.sn            ?? '',
                                 base:             t.warehouse_name ?? t.base_code ?? t.base ?? '',
                                 existencia:       t.quantity_in_stock ?? t.existencia ?? 0,
                                 estadoFisico:     conditionMap[rawCond] ?? 'REGULAR',
+                                rawStatus:        t.condition ?? t.status ?? '',
                             };
                         });
                         this.herramientasFiltradas.set(this.herramientas);
@@ -170,6 +173,7 @@ export class HerramientaABajaComponent implements OnInit, OnDestroy {
 
     selectHerramienta(herramienta: HerramientaOption): void {
         this.id_tool_actual = herramienta.id_tool ?? 0;
+        this.rawStatusActual = herramienta.rawStatus ?? '';
         this.loadHerramientaData(herramienta);
         this.buscarTermino.set(`${herramienta.codigo} - ${herramienta.nombre}`);
         this.showSuggestions = false;
@@ -185,6 +189,7 @@ export class HerramientaABajaComponent implements OnInit, OnDestroy {
         this.showSuggestions = false;
         this.bajaForm.reset({ cantidad: 1, estadoFisico: 'INSERVIBLE', existencia: 0 });
         this.id_tool_actual = 0;
+        this.rawStatusActual = '';
         this.selectedImage.set(null);
     }
 

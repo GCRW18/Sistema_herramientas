@@ -1,0 +1,298 @@
+﻿<div class="bg-stone-100 dark:bg-[#0F172A] sm:border-2 border-black rounded-2xl flex flex-col overflow-hidden relative w-full"
+     style="box-shadow:6px 6px 0 #000; height:430px">
+
+  <!-- Saving overlay -->
+  <div *ngIf="isSavingRetorno" class="absolute inset-0 bg-black/60 flex items-center justify-center z-50">
+    <div class="bg-stone-100 dark:bg-slate-800 border-2 border-black rounded-xl shadow-[4px_4px_0_#000] px-8 py-6 flex flex-col items-center gap-4">
+      <div class="w-10 h-10 border-4 border-[#FFC501FF] border-t-transparent rounded-full animate-spin"></div>
+      <span class="font-black text-black dark:text-white uppercase tracking-widest text-sm animate-pulse">Registrando retorno…</span>
+    </div>
+  </div>
+
+  <!-- Header -->
+  <div class="bg-[#0F172A] px-4 py-2 flex items-center gap-3 shrink-0">
+    <div class="w-6 h-6 rounded bg-green-500 border-2 border-black flex items-center justify-center shadow-[2px_2px_0_#16a34a] shrink-0">
+      <mat-icon class="!text-sm text-white">move_to_inbox</mat-icon>
+    </div>
+    <div>
+      <p class="text-[8px] text-slate-400 font-bold uppercase tracking-[0.15em] leading-none mb-0.5">Entradas · Retorno de Base — RB</p>
+      <h2 class="text-xs text-white font-black uppercase tracking-tight leading-none">Registrar Retorno de Base</h2>
+    </div>
+    <div class="ml-auto flex items-center gap-2 shrink-0">
+      <span *ngIf="getSelectedCount()>0"
+            class="px-1.5 py-0.5 bg-green-500 text-white font-black text-[9px] border border-black rounded">
+        {{getSelectedCount()}} sel.
+      </span>
+    </div>
+  </div>
+
+  <!-- Body: 2 panels -->
+  <div class="flex flex-col sm:flex-row flex-1 overflow-hidden min-h-0">
+
+    <!-- LEFT: form + query -->
+    <div class="sm:basis-[44%] shrink-0 flex flex-col overflow-hidden border-b-2 sm:border-b-0 sm:border-r-2 border-black/20 dark:border-slate-600">
+      <!-- form area scrollable -->
+      <div class="flex-1 min-h-0 overflow-y-auto custom-scrollbar">
+        <form [formGroup]="retornoForm" class="px-3 py-2 grid grid-cols-1 sm:grid-cols-2 gap-x-2 gap-y-1.5 content-start">
+
+          <div class="col-span-2 flex items-center gap-1 mt-1">
+            <mat-icon class="!text-[10px] text-green-500 shrink-0">how_to_reg</mat-icon>
+            <span class="text-[9px] font-black uppercase text-stone-400 dark:text-slate-500 whitespace-nowrap">Datos de Recepción</span>
+            <div class="flex-1 h-px bg-stone-200 dark:bg-slate-600 ml-0.5"></div>
+          </div>
+
+          <div class="col-span-2">
+            <label class="text-[9px] font-black uppercase tracking-tight text-stone-500 dark:text-slate-400 mb-1 block">{{getTipoOrigenLabel()}} Origen <span class="text-red-500">*</span></label>
+            <select formControlName="ubicacionOrigen"
+                    class="w-full h-7 text-xs font-bold bg-white dark:bg-slate-800 dark:text-white border-2rounded-lg px-2 outline-none appearance-none cursor-pointer focus:border-black transition-colors"
+                    [ngClass]="retornoForm.get('ubicacionOrigen')?.touched && retornoForm.get('ubicacionOrigen')?.invalid ? 'border-red-500' : 'border-stone-300 dark:border-slate-500'">
+              <option [ngValue]="null" disabled>Seleccionar {{getTipoOrigenLabel()}}…</option>
+              <option *ngFor="let u of getUbicacionesFiltradas()" [ngValue]="u">{{u.nombre}}</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="text-[9px] font-black uppercase tracking-tight text-stone-500 dark:text-slate-400 mb-1 block">{{getDocumentoLabel()}} <span class="text-red-500">*</span></label>
+            <input type="text" formControlName="nroDocumento" placeholder="Nro. de nota…"
+                   class="w-full h-7 text-xs font-bold bg-white dark:bg-slate-800 dark:text-white border-2rounded-lg px-2 outline-none transition-colors placeholder:text-stone-300 focus:border-black"
+                   [ngClass]="retornoForm.get('nroDocumento')?.touched && retornoForm.get('nroDocumento')?.invalid ? 'border-red-500' : 'border-stone-300 dark:border-slate-500'" />
+          </div>
+
+          <div>
+            <label class="text-[9px] font-black uppercase tracking-tight text-stone-500 dark:text-slate-400 mb-1 block">Fecha Retorno <span class="text-red-500">*</span></label>
+            <input type="date" formControlName="fechaRetorno"
+                   class="w-full h-7 text-xs font-bold bg-white dark:bg-slate-800 dark:text-white border-2border-stone-300 dark:border-slate-500 rounded-lg px-2 outline-none transition-colors focus:border-black" />
+          </div>
+
+          <div class="col-span-2 relative">
+            <label class="text-[9px] font-black uppercase tracking-tight text-stone-500 dark:text-slate-400 mb-1 flex justify-between items-center">
+              <span class="flex items-center gap-1">
+                <mat-icon class="!text-[10px] text-green-500">how_to_reg</mat-icon>Responsable Recibe <span class="text-red-500 ml-0.5">*</span>
+              </span>
+              <div *ngIf="funcionariosLoading" class="w-3 h-3 border-2 border-[#FFC501FF] border-t-transparent rounded-full animate-spin"></div>
+            </label>
+            <input type="text" formControlName="responsableRecibe"
+                   (blur)="hideFuncDropdown()" placeholder="Nombre o buscar funcionario…"
+                   class="w-full h-7 text-xs font-bold bg-white dark:bg-slate-800 dark:text-white border-2rounded-lg px-2 outline-none transition-colors placeholder:text-stone-300 focus:border-black"
+                   [ngClass]="retornoForm.get('responsableRecibe')?.touched && retornoForm.get('responsableRecibe')?.invalid ? 'border-red-500' : 'border-stone-300 dark:border-slate-500'" />
+            <div *ngIf="showFuncDropdown && funcionarios.length"
+                 class="absolute left-0 right-0 top-full mt-0.5 z-50 bg-white dark:bg-slate-800 border-2 border-black rounded-xl shadow-[3px_3px_0_#000] overflow-hidden max-h-36 overflow-y-auto custom-scrollbar divide-y divide-stone-100 dark:divide-slate-700">
+              <div *ngFor="let f of funcionarios" (mousedown)="selectFuncionario(f)"
+                   class="px-2 py-1.5 hover:bg-stone-50 dark:hover:bg-slate-700 cursor-pointer transition-colors">
+                <div class="text-[10px] font-black text-black dark:text-white uppercase">{{f.nombre}}</div>
+                <div *ngIf="f.cargo" class="text-[8px] font-bold text-stone-400 uppercase">{{f.cargo}}</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-span-2">
+            <label class="text-[9px] font-black uppercase tracking-tight text-stone-500 dark:text-slate-400 mb-1 block">Transportista</label>
+            <input type="text" formControlName="transportista" placeholder="Nombre del transportista…"
+                   class="w-full h-7 text-xs font-bold bg-white dark:bg-slate-800 dark:text-white border-2border-stone-300 dark:border-slate-500 rounded-lg px-2 outline-none transition-colors placeholder:text-stone-300 focus:border-black" />
+          </div>
+
+          <div class="col-span-2">
+            <label class="text-[9px] font-black uppercase tracking-tight text-stone-500 dark:text-slate-400 mb-1 block">Observaciones</label>
+            <textarea formControlName="observaciones" rows="1" placeholder="Observaciones generales…"
+                      class="w-full text-xs font-bold bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-500 rounded-lg px-2 py-1.5 outline-none transition-colors placeholder:text-stone-300 resize-none focus:border-black"></textarea>
+          </div>
+        </form>
+      </div><!-- /scroll form area -->
+
+      <!-- Consultar button -->
+      <div class="shrink-0 px-3 pt-1 pb-1.5">
+        <button type="button" (click)="consultarRetorno()" [disabled]="isSearching"
+                class="w-full h-7 flex items-center justify-center gap-1.5 bg-[#0F172A] text-white font-black text-[9px] uppercase border-2 border-black rounded-lg shadow-[2px_2px_0_#16a34a] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all disabled:opacity-40 disabled:cursor-not-allowed disabled:translate-x-0 disabled:shadow-none">
+          <div *ngIf="isSearching" class="w-3.5 h-3.5 border-2 border-[#FFC501FF] border-t-transparent rounded-full animate-spin"></div>
+          <mat-icon *ngIf="!isSearching" class="!text-xs text-[#FFC501FF]">search</mat-icon>
+          {{isSearching ? 'Buscando…' : 'Consultar Envíos Activos'}}
+        </button>
+      </div>
+
+      <!-- Resumen -->
+      <div *ngIf="getSelectedCount()>0"
+           class="shrink-0 mx-3 mb-2 bg-green-50 dark:bg-green-900/20 border-2 border-green-400 rounded-xl p-2">
+        <p class="text-[7px] font-black uppercase tracking-widest text-green-700 dark:text-green-400 mb-1">Resumen del Retorno</p>
+        <div class="flex flex-wrap gap-1 mb-1">
+          <span *ngIf="getResumenCondicion().buenos>0"    class="text-[8px] font-black px-1.5 py-0.5 bg-green-100 text-green-800 border border-green-400 rounded">✓ {{getResumenCondicion().buenos}} Buenos</span>
+          <span *ngIf="getResumenCondicion().danados>0"   class="text-[8px] font-black px-1.5 py-0.5 bg-red-100 text-red-800 border border-red-400 rounded">⚠ {{getResumenCondicion().danados}} Dañados</span>
+          <span *ngIf="getResumenCondicion().calibracion>0" class="text-[8px] font-black px-1.5 py-0.5 bg-yellow-100 text-yellow-800 border border-yellow-400 rounded">⚙ {{getResumenCondicion().calibracion}} Cal.</span>
+          <span *ngIf="getResumenCondicion().faltantes>0" class="text-[8px] font-black px-1.5 py-0.5 bg-red-100 text-red-900 border border-red-600 rounded">✗ {{getResumenCondicion().faltantes}} Faltantes</span>
+          <span *ngIf="getResumenCondicion().pendientes>0" class="text-[8px] font-black px-1.5 py-0.5 bg-gray-100 text-gray-600 border border-gray-400 rounded">? {{getResumenCondicion().pendientes}} Pend.</span>
+        </div>
+        <span class="text-[9px] font-bold text-green-700 dark:text-green-400">{{getTotalRetornado()}} / {{getTotalEnviado()}} uds.</span>
+      </div>
+    </div>
+
+    <!-- RIGHT: items list -->
+    <div class="flex-1 min-h-0 flex flex-col overflow-hidden">
+
+      <div *ngIf="isSearching" class="flex-1 flex flex-col items-center justify-center gap-3">
+        <div class="w-8 h-8 border-4 border-[#FFC501FF] border-t-transparent rounded-full animate-spin"></div>
+        <p class="text-[10px] font-black uppercase text-stone-400">Buscando herramientas…</p>
+      </div>
+
+      <div *ngIf="!isSearching && dataSource.length===0"
+           class="flex-1 flex flex-col items-center justify-center gap-2 px-4 text-center">
+        <mat-icon class="!text-4xl text-stone-300 dark:text-slate-600">flight_land</mat-icon>
+        <p class="text-[10px] font-black uppercase text-stone-400">Sin herramientas cargadas</p>
+        <p class="text-[9px] text-stone-400">Selecciona origen y pulsa "Consultar Envíos Activos"</p>
+      </div>
+
+      <ng-container *ngIf="!isSearching && dataSource.length>0">
+
+        <div class="px-3 py-1.5 border-b-2 border-black/20 dark:border-slate-600 flex items-center gap-2 flex-wrap shrink-0">
+          <mat-checkbox [checked]="isAllSelected()" [indeterminate]="isSomeSelected()"
+                        (change)="toggleAllSelection($event)" color="primary" class="scale-90">
+          </mat-checkbox>
+          <span class="text-[9px] font-black uppercase text-stone-500 dark:text-slate-300">
+            {{getSelectedCount()}} / {{dataSource.length}} sel.
+          </span>
+          <div class="flex-1"></div>
+          <div class="relative">
+            <mat-icon class="absolute left-2 top-1/2 -translate-y-1/2 !text-[11px] !w-[11px] !h-[11px] !leading-[11px] text-stone-400 pointer-events-none">search</mat-icon>
+            <input type="text" [formControl]="$any(retornoForm.get('searchText'))" placeholder="Filtrar…"
+                   class="h-6 pl-7 pr-2 text-[10px] font-bold bg-stone-50 dark:bg-slate-700 dark:text-white border-2 border-stone-300 dark:border-slate-500 rounded-lg outline-none transition-colors focus:border-black placeholder:text-stone-300 w-32" />
+          </div>
+        </div>
+
+        <div class="flex-1 overflow-y-auto custom-scrollbar">
+          <div *ngFor="let item of dataSource"
+               class="border-b border-stone-100 dark:border-slate-700 last:border-0 transition-all"
+               [ngClass]="getRowClass(item)">
+            <div class="flex items-center gap-2 px-3 py-2 cursor-pointer hover:bg-stone-50 dark:hover:bg-slate-700/50 transition-colors"
+                 (click)="toggleSelection(item)">
+              <mat-checkbox [checked]="item.selected" (change)="toggleSelection(item)"
+                            (click)="$event.stopPropagation()" color="primary" class="shrink-0 scale-90">
+              </mat-checkbox>
+              <div class="flex-1 min-w-0 grid grid-cols-2 sm:grid-cols-4 gap-1">
+                <div class="col-span-2 sm:col-span-1">
+                  <span class="font-mono font-black text-[9px] bg-[#FFC501FF] text-black px-1 rounded border border-black block w-fit mb-0.5">{{item.codigo}}</span>
+                  <p class="text-[10px] font-black text-black dark:text-white truncate" [title]="item.descripcion">{{item.descripcion}}</p>
+                </div>
+                <div><p class="text-[7px] text-stone-400 uppercase font-black">P/N</p><p class="text-[9px] font-mono text-black dark:text-white truncate">{{item.pn||'—'}}</p></div>
+                <div><p class="text-[7px] text-stone-400 uppercase font-black">S/N</p><p class="text-[9px] font-mono text-black dark:text-white truncate">{{item.sn||'—'}}</p></div>
+                <div><p class="text-[7px] text-stone-400 uppercase font-black">Nota salida</p><p class="text-[9px] font-black text-black dark:text-white">{{item.nroNotaSalida}}</p></div>
+              </div>
+              <span class="shrink-0 text-[9px] font-black px-1 py-0.5 rounded border border-black"
+                    [ngClass]="getDiasFueraClass(item.diasFuera)">{{item.diasFuera||0}}d</span>
+              <button *ngIf="item.selected" type="button"
+                      (click)="toggleExpand(item); $event.stopPropagation()"
+                      class="shrink-0 w-5 h-5 flex items-center justify-center border border-stone-300 rounded bg-white dark:bg-slate-700 hover:border-black transition-all">
+                <mat-icon class="!text-[10px] transition-transform duration-200" [class.rotate-180]="item.expanded">expand_more</mat-icon>
+              </button>
+            </div>
+
+            <div *ngIf="item.selected && item.expanded"
+                 class="px-3 pb-2 bg-stone-50 dark:bg-slate-800/80 border-t border-black/10 animate-fadeIn">
+              <div class="flex flex-wrap items-start gap-2 mt-1.5">
+                <div class="flex flex-col gap-1">
+                  <p class="text-[7px] font-black uppercase tracking-tight text-stone-500">Condición <span class="text-red-500">*</span></p>
+                  <div class="flex flex-wrap gap-1">
+                    <button type="button" *ngFor="let cond of condiciones" (click)="onCondicionChange(item, cond.value)"
+                            class="flex items-center gap-0.5 px-1.5 py-0.5 border-2 border-black rounded-lg text-[8px] font-black text-white shadow-[1px_1px_0_#000] hover:shadow-none hover:translate-x-[1px] hover:translate-y-[1px] transition-all"
+                            [ngClass]="[cond.bgColor, item.condicion===cond.value ? 'ring-2 ring-black ring-offset-1' : '']">
+                      <mat-icon class="!text-[9px] !w-[9px] !h-[9px]">{{cond.icon}}</mat-icon>{{cond.label}}
+                    </button>
+                  </div>
+                </div>
+                <div *ngIf="item.condicion!=='FALTANTE'" class="flex flex-col gap-1">
+                  <p class="text-[7px] font-black uppercase tracking-tight text-stone-500">Cant. Retorna</p>
+                  <div class="flex items-center gap-1">
+                    <button type="button" (click)="item.cantidadRetorna=item.cantidadRetorna>0?item.cantidadRetorna-1:0"
+                            class="w-6 h-6 border-2 border-stone-300 rounded-lg bg-white dark:bg-slate-700 font-black text-[10px] flex items-center justify-center hover:border-black transition-all">−</button>
+                    <input type="number" [(ngModel)]="item.cantidadRetorna" (change)="validateCantidadRetorna(item)"
+                           [min]="0" [max]="item.cantidadEnviada"
+                           class="w-12 h-6 text-center border-2 border-stone-300 dark:border-slate-500 rounded-lg text-[10px] font-black bg-white dark:bg-slate-800 dark:text-white outline-none focus:border-black transition-all" />
+                    <button type="button" (click)="item.cantidadRetorna=item.cantidadRetorna<item.cantidadEnviada?item.cantidadRetorna+1:item.cantidadRetorna"
+                            class="w-6 h-6 border-2 border-stone-300 rounded-lg bg-white dark:bg-slate-700 font-black text-[10px] flex items-center justify-center hover:border-black transition-all">+</button>
+                    <span class="text-[8px] text-stone-400 font-bold">/ {{item.cantidadEnviada}}</span>
+                  </div>
+                </div>
+                <div class="flex-1 min-w-[160px] flex flex-col gap-1">
+                  <p class="text-[7px] font-black uppercase tracking-tight text-stone-500">
+                    Observación<span *ngIf="item.condicion==='DAÑADO'||item.condicion==='FALTANTE'" class="text-red-500">*</span>
+                  </p>
+                  <input type="text" [(ngModel)]="item.observacionItem" placeholder="Descripción del estado…"
+                         class="h-6 px-2 w-full bg-white dark:bg-slate-800 dark:text-white border-2 rounded-lg font-bold text-[10px] outline-none focus:border-black transition-colors placeholder:text-stone-300 placeholder:font-normal"
+                         [ngClass]="(item.condicion==='DAÑADO'||item.condicion==='FALTANTE')&&!item.observacionItem.trim() ? 'border-red-500' : 'border-stone-300 dark:border-slate-500'" />
+                </div>
+              </div>
+              <div *ngIf="getItemErrors(item).length" class="flex flex-wrap gap-1 mt-1">
+                <span *ngFor="let e of getItemErrors(item)"
+                      class="text-[8px] font-black text-red-700 bg-red-50 border border-red-300 px-1 py-0.5 rounded">⚠ {{e}}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </ng-container>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="border-t-2 border-black bg-stone-200 dark:bg-slate-800 px-4 py-1.5 flex items-center justify-between shrink-0">
+    <div class="flex items-center gap-1 shrink-0">
+      <button type="button" (click)="cerrarFormRetorno()"
+              class="flex items-center gap-1 px-3 py-1.5 bg-red-500 text-white font-black text-[10px] uppercase border-2 border-black rounded-lg shadow-[2px_2px_0_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all">
+        <mat-icon class="!text-[10px]">close</mat-icon>Cerrar
+      </button>
+    </div>
+    <div class="flex items-center gap-1 shrink-0">
+      <span *ngIf="getSelectedCount()>0" class="text-[7px] text-stone-500 dark:text-slate-400 font-bold">{{getSelectedCount()}} ítem(s) seleccionados</span>
+      <button type="button" (click)="openConfirmModal()" [disabled]="!canProceedRetorno()"
+              class="flex items-center gap-1 px-3 py-1.5 bg-green-600 text-white font-black text-[10px] uppercase border-2 border-black rounded-lg shadow-[2px_2px_0_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all disabled:opacity-40 disabled:cursor-not-allowed disabled:translate-x-0 disabled:shadow-none">
+        <mat-icon class="!text-[10px]">check_circle</mat-icon>Confirmar
+      </button>
+    </div>
+  </div>
+
+  <!-- Confirm overlay -->
+  <div *ngIf="showConfirmModal"
+       class="absolute inset-0 z-[100] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm"
+       (click)="closeConfirmModal()">
+    <div class="bg-white dark:bg-slate-800 border-[3px] border-black rounded-2xl shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] w-full max-w-lg animate-fadeIn"
+         (click)="$event.stopPropagation()">
+      <div class="bg-[#0F172AFF] px-5 py-4 rounded-t-xl flex items-center gap-3">
+        <div class="w-9 h-9 rounded-xl bg-green-500 border-2 border-black flex items-center justify-center shadow-[2px_2px_0_#000] shrink-0">
+          <mat-icon class="!text-lg text-white">check_circle</mat-icon>
+        </div>
+        <div>
+          <p class="text-[9px] text-white/60 font-bold uppercase tracking-widest leading-none mb-0.5">CONFIRMAR OPERACIÓN</p>
+          <h3 class="text-sm text-white font-black uppercase leading-none">Confirmar Retorno</h3>
+        </div>
+        <button type="button" (click)="closeConfirmModal()" class="ml-auto w-7 h-7 flex items-center justify-center bg-white/10 hover:bg-red-500 text-white rounded-lg transition-all">
+          <mat-icon class="!text-sm">close</mat-icon>
+        </button>
+      </div>
+      <div class="px-5 py-4">
+        <p class="text-sm font-bold text-black dark:text-white mb-4">
+          ¿Confirmas el retorno de <span class="font-black text-green-600">{{getSelectedCount()}}</span> herramienta(s)?
+        </p>
+        <div class="flex flex-wrap gap-2 mb-4">
+          <span *ngIf="getResumenCondicion().buenos>0" class="flex items-center gap-1 px-2 py-1.5 bg-green-50 border-2 border-green-400 rounded-xl text-xs font-black text-green-800"><mat-icon class="!text-sm">check_circle</mat-icon>{{getResumenCondicion().buenos}} Bueno(s)</span>
+          <span *ngIf="getResumenCondicion().danados>0" class="flex items-center gap-1 px-2 py-1.5 bg-red-50 border-2 border-red-400 rounded-xl text-xs font-black text-red-800"><mat-icon class="!text-sm">report_problem</mat-icon>{{getResumenCondicion().danados}} Dañado(s)</span>
+          <span *ngIf="getResumenCondicion().calibracion>0" class="flex items-center gap-1 px-2 py-1.5 bg-yellow-50 border-2 border-yellow-400 rounded-xl text-xs font-black text-yellow-800"><mat-icon class="!text-sm">speed</mat-icon>{{getResumenCondicion().calibracion}} Req. Cal.</span>
+          <span *ngIf="getResumenCondicion().faltantes>0" class="flex items-center gap-1 px-2 py-1.5 bg-red-100 border-2 border-red-500 rounded-xl text-xs font-black text-red-900"><mat-icon class="!text-sm">help_outline</mat-icon>{{getResumenCondicion().faltantes}} Faltante(s)</span>
+        </div>
+        <div class="flex items-center justify-between bg-gray-50 dark:bg-slate-700 border-2 border-black/10 rounded-xl px-4 py-3 mb-4">
+          <span class="text-xs font-bold uppercase text-gray-500 tracking-wider">Total retorna</span>
+          <span class="text-base font-black text-black dark:text-white">{{getTotalRetornado()}} <span class="text-xs font-normal text-gray-400">/ {{getTotalEnviado()}} enviadas</span></span>
+        </div>
+        <p class="text-[10px] font-bold text-gray-600 dark:text-gray-300 bg-[#FFC501FF]/10 border border-[#FFC501FF] rounded-lg px-3 py-2">
+          ⚠ Esta acción incrementará el stock, actualizará el estado y marcará el movimiento como RETORNADO.
+        </p>
+      </div>
+      <div class="flex items-center justify-end gap-2 px-5 py-3 border-t-2 border-black/10">
+        <button type="button" (click)="closeConfirmModal()"
+                class="h-9 px-4 rounded-xl border-[2px] border-black bg-white dark:bg-slate-700 text-black dark:text-white font-black text-xs uppercase shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all">
+          Cancelar
+        </button>
+        <button type="button" (click)="finalizarRetorno()"
+                class="h-9 px-5 rounded-xl border-[2px] border-black bg-green-600 hover:bg-green-700 text-white font-black text-xs uppercase shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all flex items-center gap-1.5">
+          <mat-icon class="!text-sm">check_circle</mat-icon>
+          Sí, Confirmar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

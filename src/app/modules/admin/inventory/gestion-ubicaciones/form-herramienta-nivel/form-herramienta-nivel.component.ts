@@ -11,6 +11,7 @@ import { debounceTime, distinctUntilChanged, finalize, switchMap, takeUntil } fr
 
 import { Level, LevelTool, Rack, ToolEstado } from '../interfaces';
 import { CalibrationService } from 'app/core/services/calibration.service';
+import { MovementService } from 'app/core/services/movement.service';
 
 type Mode = 'new' | 'edit';
 
@@ -45,12 +46,13 @@ interface DialogData {
 })
 export class FormHerramientaNivelComponent implements OnInit, OnDestroy {
 
-    public dialogRef  = inject(MatDialogRef<FormHerramientaNivelComponent>);
-    private fb        = inject(FormBuilder);
-    private data      = inject<DialogData>(MAT_DIALOG_DATA);
-    private calibSvc  = inject(CalibrationService);
-    private _destroy$ = new Subject<void>();
-    private _search$  = new Subject<string>();
+    public dialogRef    = inject(MatDialogRef<FormHerramientaNivelComponent>);
+    private fb          = inject(FormBuilder);
+    private data        = inject<DialogData>(MAT_DIALOG_DATA);
+    private calibSvc    = inject(CalibrationService);
+    private movementSvc = inject(MovementService);
+    private _destroy$   = new Subject<void>();
+    private _search$    = new Subject<string>();
 
     mode: Mode = this.data.mode;
     rack:  Rack  = this.data.rack;
@@ -78,20 +80,61 @@ export class FormHerramientaNivelComponent implements OnInit, OnDestroy {
         { value: 'USADO',           label: 'USADO'           },
     ];
 
+    tiposHerramienta: { value: string; label: string }[] = [];
+
+    nivelesCriticidad = [
+        { value: 'A', label: 'A — Crítico'   },
+        { value: 'B', label: 'B — Importante' },
+        { value: 'C', label: 'C — Menor'      },
+    ];
+
+    origenesFabricacion = [
+        { value: 'INTERNACIONAL', label: 'Internacional' },
+        { value: 'NACIONAL',      label: 'Nacional'      },
+    ];
+
     ngOnInit(): void {
         const t = this.data.tool;
         if (t?.imagenBase64) this.selectedImage.set(t.imagenBase64);
 
         this.form = this.fb.group({
-            codigo:        [t?.codigo        ?? 'BOA-H-', [Validators.required, Validators.maxLength(40)]],
-            pn:            [t?.pn            ?? '',        [Validators.required, Validators.maxLength(60)]],
-            sn:            [t?.sn            ?? ''],
-            nombre:        [t?.nombre        ?? '',        [Validators.required, Validators.maxLength(150)]],
-            marca:         [t?.marca         ?? '',        Validators.maxLength(60)],
-            estado:        [t?.estado        ?? 'NUEVO',   Validators.required],
-            um:            [t?.um            ?? 'UNIDAD',  Validators.required],
-            cantidad:      [t?.cantidad      ?? 1,         [Validators.required, Validators.min(1)]],
-            observaciones: [t?.observaciones ?? ''],
+            codigo:               [t?.codigo             ?? 'BOA-H-',       [Validators.required, Validators.maxLength(40)]],
+            pn:                   [t?.pn                 ?? '',               [Validators.required, Validators.maxLength(60)]],
+            sn:                   [t?.sn                 ?? ''],
+            nombre:               [t?.nombre             ?? '',               [Validators.required, Validators.maxLength(150)]],
+            marca:                [t?.marca              ?? '',               Validators.maxLength(60)],
+            tipo:                 [t?.tipo               ?? 'HERRAMIENTA',   Validators.required],
+            estado:               [t?.estado             ?? 'NUEVO',         Validators.required],
+            um:                   [t?.um                 ?? 'UNIDAD',        Validators.required],
+            cantidad:             [t?.cantidad           ?? 1,               [Validators.required, Validators.min(1)]],
+            nivelCriticidad:      [t?.nivelCriticidad    ?? 'B',             Validators.required],
+            fabricacion:          [t?.fabricacion        ?? 'INTERNACIONAL', Validators.required],
+            requiereCalibracion:  [t?.requiereCalibracion ?? false],
+            intervaloCalibracion: [t?.intervaloCalibracion ?? null],
+            fechaCalibracion:     [t?.fechaCalibracion   ?? null],
+            nroCertificado:       [t?.nroCertificado     ?? ''],
+            observaciones:        [t?.observaciones      ?? ''],
+        });
+
+        this.movementSvc.getIngresosCategories().pipe(
+            takeUntil(this._destroy$)
+        ).subscribe(cats => {
+            this.tiposHerramienta = cats
+                .filter(c => c.active)
+                .map(c => ({ value: c.code, label: c.name }));
+        });
+
+        this.form.get('requiereCalibracion')?.valueChanges.pipe(
+            takeUntil(this._destroy$)
+        ).subscribe(requiere => {
+            const ctrl = this.form.get('intervaloCalibracion');
+            if (requiere) {
+                ctrl?.setValidators([Validators.required, Validators.min(1)]);
+            } else {
+                ctrl?.clearValidators();
+                this.form.patchValue({ intervaloCalibracion: null, fechaCalibracion: null, nroCertificado: '' });
+            }
+            ctrl?.updateValueAndValidity();
         });
 
         this._setupSearch();
@@ -173,22 +216,29 @@ export class FormHerramientaNivelComponent implements OnInit, OnDestroy {
         }
         const v = this.form.getRawValue();
         const out: LevelTool = {
-            id:            this.data.tool?.id ?? 0,
-            levelId:       this.level.id,
-            rackId:        this.rack.id,
-            rackCodigo:    this.rack.codigo,
-            levelNumero:   this.level.numero,
-            levelCodigo:   this.level.codigo,
-            codigo:        v.codigo.trim(),
-            pn:            v.pn.trim(),
-            sn:            v.sn?.trim()            || undefined,
-            nombre:        v.nombre.trim(),
-            marca:         v.marca?.trim()         || undefined,
-            estado:        v.estado,
-            cantidad:      Number(v.cantidad),
-            um:            v.um,
-            imagenBase64:  this.selectedImage()    ?? undefined,
-            observaciones: v.observaciones?.trim() || undefined,
+            id:                   this.data.tool?.id ?? 0,
+            levelId:              this.level.id,
+            rackId:               this.rack.id,
+            rackCodigo:           this.rack.codigo,
+            levelNumero:          this.level.numero,
+            levelCodigo:          this.level.codigo,
+            codigo:               v.codigo.trim(),
+            pn:                   v.pn.trim(),
+            sn:                   v.sn?.trim()            || undefined,
+            nombre:               v.nombre.trim(),
+            marca:                v.marca?.trim()         || undefined,
+            tipo:                 v.tipo,
+            estado:               v.estado,
+            cantidad:             Number(v.cantidad),
+            um:                   v.um,
+            nivelCriticidad:      v.nivelCriticidad,
+            fabricacion:          v.fabricacion,
+            requiereCalibracion:  v.requiereCalibracion ?? false,
+            intervaloCalibracion: v.requiereCalibracion ? v.intervaloCalibracion : null,
+            fechaCalibracion:     v.requiereCalibracion ? v.fechaCalibracion     : null,
+            nroCertificado:       v.requiereCalibracion ? v.nroCertificado       : '',
+            imagenBase64:         this.selectedImage()    ?? undefined,
+            observaciones:        v.observaciones?.trim() || undefined,
         };
         this.dialogRef.close(out);
     }

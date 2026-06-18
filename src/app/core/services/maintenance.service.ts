@@ -427,15 +427,15 @@ export class MaintenanceService {
      * @param pdfBase64 - String en base64 del PDF
      * @param filename - Nombre del archivo (opcional)
      */
-    private abrirPdf(base64OrHtml: string, filename?: string): void {
+    private abrirPdf(base64OrHtml: string, _filename?: string): void {
         if (!base64OrHtml) return;
 
         const trimmed = base64OrHtml.trimStart();
+
+        // Already raw HTML
         if (trimmed.startsWith('<')) {
-            const blob = new Blob([base64OrHtml], { type: 'text/html; charset=utf-8' });
-            const url  = window.URL.createObjectURL(blob);
-            window.open(url, '_blank');
-            setTimeout(() => window.URL.revokeObjectURL(url), 100);
+            const win = window.open('', '_blank');
+            if (win) { win.document.write(base64OrHtml); win.document.close(); }
             return;
         }
 
@@ -443,22 +443,24 @@ export class MaintenanceService {
         try {
             decoded = atob(base64OrHtml);
         } catch {
-            const blob = new Blob([base64OrHtml], { type: 'text/plain; charset=utf-8' });
-            const url  = window.URL.createObjectURL(blob);
-            window.open(url, '_blank');
-            setTimeout(() => window.URL.revokeObjectURL(url), 100);
+            const win = window.open('', '_blank');
+            if (win) { win.document.write(base64OrHtml); win.document.close(); }
             return;
         }
 
-        const mimeType = decoded.trimStart().startsWith('<')
-            ? 'text/html; charset=utf-8'
-            : 'application/pdf';
+        if (decoded.trimStart().startsWith('<')) {
+            // Base64-encoded HTML — use document.write to avoid blob URL revocation issues
+            const win = window.open('', '_blank');
+            if (win) { win.document.write(decoded); win.document.close(); }
+            return;
+        }
 
+        // Binary PDF
         const bytes = new Uint8Array(decoded.split('').map(c => c.charCodeAt(0)));
-        const blob  = new Blob([bytes], { type: mimeType });
+        const blob  = new Blob([bytes], { type: 'application/pdf' });
         const url   = window.URL.createObjectURL(blob);
         window.open(url, '_blank');
-        setTimeout(() => window.URL.revokeObjectURL(url), 100);
+        setTimeout(() => window.URL.revokeObjectURL(url), 30000);
     }
 
     /**

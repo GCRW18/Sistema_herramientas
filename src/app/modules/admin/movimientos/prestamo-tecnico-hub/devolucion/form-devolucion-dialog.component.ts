@@ -300,10 +300,10 @@ export class FormDevolucionDialogComponent implements OnInit, OnDestroy {
                 if (!loans?.length) { this.sinResultados = true; return; }
                 const loan0 = loans[0] || {};
                 this.loanNotes    = (loan0.loan_notes  || loan0.notes || '').trim();
-                this._loanNumber  = loan0.loan_number  || '';
+                this._loanNumber  = (loans as any[]).map((l: any) => l.loan_number).filter(Boolean).join(' / ');
                 this._loanDate    = loan0.loan_date    || '';
-                this._aircraft    = loan0.aircraft     || '';
-                this._department  = loan0.department   || '';
+                this._aircraft    = [...new Set((loans as any[]).map((l: any) => l.aircraft).filter(Boolean))].join(' / ');
+                this._department  = [...new Set((loans as any[]).map((l: any) => l.department).filter(Boolean))].join(' / ');
                 this._deliveredBy = loan0.delivered_by_name || '';
                 let resultado: DevolucionItem[] = loans.flatMap((loan: any) => {
                     const loanItems = (items || []).filter((i: any) => String(i.loan_id) === String(loan.id_loan));

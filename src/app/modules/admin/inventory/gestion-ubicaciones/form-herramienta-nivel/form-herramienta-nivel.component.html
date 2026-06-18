@@ -1,5 +1,5 @@
 <div class="bg-stone-100 dark:bg-slate-900 border-2 border-black overflow-hidden flex flex-col"
-     style="width:720px; max-width:95vw; max-height:90vh; box-shadow: 6px 6px 0 #000">
+     style="width:600px; max-width:96vw; height:480px">
 
     <!-- HEADER -->
     <div class="bg-[#0F172A] px-3 sm:px-5 py-3 sm:py-3.5 flex items-center gap-2 sm:gap-3 shrink-0 select-none flex-wrap sm:flex-nowrap"
@@ -55,147 +55,154 @@
     </div>
 
     <!-- BODY -->
-    <div class="flex-1 overflow-y-auto px-3 sm:px-5 py-4 sm:py-5 flex flex-col gap-4 custom-scrollbar">
+    <div class="flex-1 overflow-hidden">
 
         <!-- Grid principal -->
-        <form [formGroup]="form" class="grid grid-cols-1 md:grid-cols-12 gap-4 sm:gap-5">
+        <form [formGroup]="form" class="h-full flex flex-col sm:flex-row overflow-hidden min-h-0">
 
-            <!-- LEFT: Foto + Preview -->
-            <div class="md:col-span-5 flex flex-col gap-4">
-
-                <!-- Foto -->
-                <div>
-                    <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1.5 block">Fotografía Física (Opcional)</label>
-                    <div class="border-2 border-dashed border-stone-300 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-800 h-44 flex flex-col items-center justify-center relative overflow-hidden cursor-pointer hover:border-stone-400 dark:hover:border-slate-500 transition-colors group"
-                         (click)="fileInput.click()">
-                        <div *ngIf="selectedImage(); else noImageTemplate" class="w-full h-full p-2 relative">
-                            <img [src]="selectedImage()" class="w-full h-full object-contain rounded" alt="Foto">
-                            <div class="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                                <span class="text-white text-[10px] font-black uppercase bg-black/60 px-3 py-1 border-2 border-white rounded-xl">Cambiar Foto</span>
-                            </div>
-                        </div>
-                        <ng-template #noImageTemplate>
-                            <mat-icon class="!text-4xl text-stone-300 dark:text-slate-500 mb-1">add_photo_alternate</mat-icon>
-                            <span class="text-[10px] font-black uppercase text-stone-400 dark:text-slate-500">Click para subir foto</span>
-                        </ng-template>
-                        <input type="file" #fileInput (change)="onImageSelected($event)" accept="image/*" class="hidden">
-                    </div>
-                </div>
-
-                <!-- Vista previa etiqueta -->
-                <div class="bg-white dark:bg-slate-800 border-2 border-black rounded-xl p-4 shadow-[3px_3px_0_#000] overflow-hidden">
-                    <span class="text-[8px] font-black text-stone-400 dark:text-slate-400 uppercase tracking-[0.18em] mb-3 border-b-2 border-black/10 pb-1.5 w-full block">Vista Previa Etiqueta</span>
-                    <div class="flex flex-col gap-1.5">
-                        <p class="font-black text-lg text-black dark:text-white leading-none font-mono">
-                            {{ form.get('codigo')?.value || 'BOA-H-' }}
-                        </p>
-                        <p class="text-xs font-bold text-stone-700 dark:text-stone-300 leading-tight line-clamp-2 min-h-[34px]">
-                            {{ form.get('nombre')?.value || 'Nombre de la herramienta...' }}
-                        </p>
-                        <div class="flex flex-wrap gap-1.5 mt-1">
-                            <span class="px-2 py-0.5 bg-stone-100 dark:bg-slate-700 border-2 border-black rounded text-[9px] font-black uppercase text-black dark:text-white">
-                                P/N: {{ form.get('pn')?.value || 'N/A' }}
-                            </span>
-                            <span *ngIf="form.get('sn')?.value"
-                                  class="px-2 py-0.5 bg-stone-800 dark:bg-slate-600 border-2 border-black rounded text-[9px] font-black uppercase text-white">
-                                S/N: {{ form.get('sn')?.value }}
-                            </span>
-                        </div>
-                        <div class="flex justify-between items-end mt-2 pt-2 border-t-2 border-black/10">
-                            <span class="px-2 py-1 bg-[#0F172A] text-white border-2 border-black rounded-lg text-[10px] font-black shadow-[2px_2px_0_#000]">
-                                {{ form.get('cantidad')?.value || 0 }} {{ form.get('um')?.value }}
-                            </span>
-                            <span class="px-2 py-0.5 text-[9px] font-black uppercase border-2 border-black rounded bg-stone-50 dark:bg-slate-700 text-black dark:text-white">
-                                {{ rack.codigo }} / N{{ level.numero }}
-                            </span>
+            <!-- LEFT: Foto -->
+            <div class="w-1/2 shrink-0 flex flex-col items-center justify-center px-2 py-2">
+                <div class="w-60 h-60 border-2 border-dashed border-stone-300 dark:border-slate-600 rounded-xl bg-stone-50 dark:bg-slate-900 flex flex-col items-center justify-center relative overflow-hidden cursor-pointer hover:border-amber-400 transition-colors group"
+                     (click)="fileInput.click()">
+                    <div *ngIf="selectedImage(); else noImageTemplate" class="w-full h-full p-2 relative">
+                        <img [src]="selectedImage()" class="w-full h-full object-contain rounded" alt="Foto">
+                        <div class="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                            <span class="text-white text-[9px] font-black uppercase bg-black/60 px-2 py-1 border border-white rounded-lg">Cambiar foto</span>
                         </div>
                     </div>
+                    <ng-template #noImageTemplate>
+                        <mat-icon class="!text-4xl text-stone-300 dark:text-slate-600 mb-1">add_photo_alternate</mat-icon>
+                        <span class="text-[9px] font-black uppercase text-stone-400">Click para subir</span>
+                    </ng-template>
+                    <input type="file" #fileInput (change)="onImageSelected($event)" accept="image/*" class="hidden">
                 </div>
             </div>
 
             <!-- RIGHT: Campos -->
-            <div class="md:col-span-7 flex flex-col gap-4">
+            <div class="w-1/2 overflow-y-auto custom-scrollbar px-2 py-2 flex flex-col gap-1">
 
-                <!-- Código + P/N -->
-                <div class="flex flex-col sm:flex-row gap-3">
-                    <div class="flex-1">
-                        <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1.5 block">Código BOA *</label>
+                <!-- Fila 1: Código · P/N · S/N -->
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-1.5">
+                    <div>
+                        <label class="text-[7px] font-black uppercase tracking-wider text-stone-400 dark:text-slate-400 mb-0.5 block">Código BOA <span class="text-red-500">*</span></label>
                         <input type="text" formControlName="codigo" placeholder="BOA-H-001"
-                               class="w-full h-10 text-sm font-black uppercase bg-white dark:bg-slate-800 dark:text-white border-2 rounded-xl px-3 outline-none transition-all duration-150 placeholder:text-stone-300 dark:placeholder:text-slate-600"
-                               [class]="hasError('codigo','required')
-                                   ? 'border-red-400 focus:shadow-[2px_2px_0_#f87171]'
-                                   : 'border-stone-300 dark:border-slate-600 hover:border-stone-400 dark:hover:border-slate-500 focus:border-black dark:focus:border-slate-400 focus:shadow-[3px_3px_0_#000]'">
-                        <p *ngIf="hasError('codigo','required')" class="text-[8px] font-bold text-red-500 mt-1">Campo requerido.</p>
+                               class="w-full h-7 text-xs font-black uppercase bg-white dark:bg-slate-800 dark:text-white border-2 rounded-lg px-2 outline-none transition-all placeholder:text-stone-300 placeholder:font-normal placeholder:normal-case"
+                               [class]="hasError('codigo','required') ? 'border-red-400' : 'border-stone-300 dark:border-slate-600 hover:border-stone-400 focus:border-black focus:shadow-[2px_2px_0_#000]'">
+                        <p *ngIf="hasError('codigo','required')" class="text-[7px] text-red-500 font-bold mt-0.5">Requerido.</p>
                     </div>
-                    <div class="flex-1">
-                        <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1.5 block">P/N (Part Number) *</label>
+                    <div>
+                        <label class="text-[7px] font-black uppercase tracking-wider text-stone-400 dark:text-slate-400 mb-0.5 block">P/N <span class="text-red-500">*</span></label>
                         <input type="text" formControlName="pn" placeholder="10M123"
-                               class="w-full h-10 text-sm font-bold uppercase bg-white dark:bg-slate-800 dark:text-white border-2 rounded-xl px-3 outline-none transition-all duration-150 placeholder:text-stone-300 dark:placeholder:text-slate-600"
-                               [class]="hasError('pn','required')
-                                   ? 'border-red-400 focus:shadow-[2px_2px_0_#f87171]'
-                                   : 'border-stone-300 dark:border-slate-600 hover:border-stone-400 dark:hover:border-slate-500 focus:border-black dark:focus:border-slate-400 focus:shadow-[3px_3px_0_#000]'">
-                        <p *ngIf="hasError('pn','required')" class="text-[8px] font-bold text-red-500 mt-1">Campo requerido.</p>
+                               class="w-full h-7 text-xs font-bold uppercase bg-white dark:bg-slate-800 dark:text-white border-2 rounded-lg px-2 outline-none transition-all placeholder:text-stone-300 placeholder:font-normal placeholder:normal-case"
+                               [class]="hasError('pn','required') ? 'border-red-400' : 'border-stone-300 dark:border-slate-600 hover:border-stone-400 focus:border-black focus:shadow-[2px_2px_0_#000]'">
+                        <p *ngIf="hasError('pn','required')" class="text-[7px] text-red-500 font-bold mt-0.5">Requerido.</p>
                     </div>
-                </div>
-
-                <!-- Nombre -->
-                <div>
-                    <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1.5 block">Nombre / Descripción *</label>
-                    <input type="text" formControlName="nombre" placeholder="Descripción detallada"
-                           class="w-full h-10 text-sm font-bold bg-white dark:bg-slate-800 dark:text-white border-2 rounded-xl px-3 outline-none transition-all duration-150 placeholder:text-stone-300 dark:placeholder:text-slate-600"
-                           [class]="hasError('nombre','required')
-                               ? 'border-red-400 focus:shadow-[2px_2px_0_#f87171]'
-                               : 'border-stone-300 dark:border-slate-600 hover:border-stone-400 dark:hover:border-slate-500 focus:border-black dark:focus:border-slate-400 focus:shadow-[3px_3px_0_#000]'">
-                    <p *ngIf="hasError('nombre','required')" class="text-[8px] font-bold text-red-500 mt-1">Campo requerido.</p>
-                </div>
-
-                <!-- S/N + Marca -->
-                <div class="flex flex-col sm:flex-row gap-3">
-                    <div class="flex-1">
-                        <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1.5 block">S/N (Serial)</label>
+                    <div>
+                        <label class="text-[7px] font-black uppercase tracking-wider text-stone-400 dark:text-slate-400 mb-0.5 block">S/N</label>
                         <input type="text" formControlName="sn" placeholder="Opcional"
-                               class="w-full h-10 text-sm font-bold uppercase bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-xl px-3 outline-none transition-all duration-150 placeholder:text-stone-300 dark:placeholder:text-slate-600 hover:border-stone-400 dark:hover:border-slate-500 focus:border-black dark:focus:border-slate-400 focus:shadow-[3px_3px_0_#000]">
-                    </div>
-                    <div class="flex-1">
-                        <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1.5 block">Marca</label>
-                        <input type="text" formControlName="marca" placeholder="FLUKE"
-                               class="w-full h-10 text-sm font-bold uppercase bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-xl px-3 outline-none transition-all duration-150 placeholder:text-stone-300 dark:placeholder:text-slate-600 hover:border-stone-400 dark:hover:border-slate-500 focus:border-black dark:focus:border-slate-400 focus:shadow-[3px_3px_0_#000]">
+                               class="w-full h-7 text-xs font-bold uppercase bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-lg px-2 outline-none transition-all placeholder:text-stone-300 placeholder:font-normal placeholder:normal-case hover:border-stone-400 focus:border-black focus:shadow-[2px_2px_0_#000]">
                     </div>
                 </div>
 
-                <!-- Cantidad + UM + Estado -->
-                <div class="flex flex-col sm:flex-row gap-3">
-                    <div class="sm:w-24">
-                        <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1.5 block">Cantidad *</label>
-                        <input type="number" formControlName="cantidad" min="1"
-                               class="w-full h-10 text-sm font-black text-center bg-white dark:bg-slate-800 dark:text-white border-2 rounded-xl px-2 outline-none transition-all duration-150"
-                               [class]="hasError('cantidad','required') || hasError('cantidad','min')
-                                   ? 'border-red-400 focus:shadow-[2px_2px_0_#f87171]'
-                                   : 'border-stone-300 dark:border-slate-600 hover:border-stone-400 dark:hover:border-slate-500 focus:border-black dark:focus:border-slate-400 focus:shadow-[3px_3px_0_#000]'">
-                        <p *ngIf="hasError('cantidad','min')" class="text-[8px] font-bold text-red-500 mt-1">Mínimo 1.</p>
+                <!-- Fila 2: Nombre -->
+                <div>
+                    <label class="text-[7px] font-black uppercase tracking-wider text-stone-400 dark:text-slate-400 mb-0.5 block">Nombre / Descripción <span class="text-red-500">*</span></label>
+                    <input type="text" formControlName="nombre" placeholder="Descripción detallada"
+                           class="w-full h-7 text-xs font-bold bg-white dark:bg-slate-800 dark:text-white border-2 rounded-lg px-2 outline-none transition-all placeholder:text-stone-300 placeholder:font-normal"
+                           [class]="hasError('nombre','required') ? 'border-red-400' : 'border-stone-300 dark:border-slate-600 hover:border-stone-400 focus:border-black focus:shadow-[2px_2px_0_#000]'">
+                    <p *ngIf="hasError('nombre','required')" class="text-[7px] text-red-500 font-bold mt-0.5">Requerido.</p>
+                </div>
+
+                <!-- Fila 3: Marca · Tipo -->
+                <div class="grid grid-cols-2 gap-1.5">
+                    <div>
+                        <label class="text-[7px] font-black uppercase tracking-wider text-stone-400 dark:text-slate-400 mb-0.5 block">Marca</label>
+                        <input type="text" formControlName="marca" placeholder="FLUKE"
+                               class="w-full h-7 text-xs font-bold uppercase bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-lg px-2 outline-none transition-all placeholder:text-stone-300 placeholder:font-normal placeholder:normal-case hover:border-stone-400 focus:border-black focus:shadow-[2px_2px_0_#000]">
                     </div>
-                    <div class="flex-1">
-                        <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1.5 block">Unidad *</label>
-                        <select formControlName="um"
-                                class="w-full h-10 text-sm font-bold bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-xl px-3 outline-none transition-all duration-150 hover:border-stone-400 dark:hover:border-slate-500 focus:border-black dark:focus:border-slate-400 focus:shadow-[3px_3px_0_#000]">
-                            <option *ngFor="let u of unidadesMedida" [value]="u.value">{{ u.label }}</option>
+                    <div>
+                        <label class="text-[7px] font-black uppercase tracking-wider text-stone-400 dark:text-slate-400 mb-0.5 block">Tipo <span class="text-red-500">*</span></label>
+                        <select formControlName="tipo"
+                                class="w-full h-7 text-xs font-bold bg-white dark:bg-slate-800 dark:text-white border-2 rounded-lg px-1 outline-none transition-all cursor-pointer hover:border-stone-400 focus:border-black focus:shadow-[2px_2px_0_#000]"
+                                [class]="hasError('tipo','required') ? 'border-red-400' : 'border-stone-300 dark:border-slate-600'">
+                            <option *ngFor="let t of tiposHerramienta" [value]="t.value">{{ t.label }}</option>
                         </select>
                     </div>
-                    <div class="flex-1">
-                        <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1.5 block">Estado *</label>
+                </div>
+
+                <!-- Fila 4: Estado · Criticidad · Fabricación · Cant · Unidad -->
+                <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-1.5 items-end">
+                    <div>
+                        <label class="text-[7px] font-black uppercase tracking-wider text-stone-400 dark:text-slate-400 mb-0.5 block">Estado <span class="text-red-500">*</span></label>
                         <select formControlName="estado"
-                                class="w-full h-10 text-sm font-bold bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-xl px-3 outline-none transition-all duration-150 hover:border-stone-400 dark:hover:border-slate-500 focus:border-black dark:focus:border-slate-400 focus:shadow-[3px_3px_0_#000]">
+                                class="w-full h-7 text-xs font-bold bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-lg px-1 outline-none transition-all cursor-pointer hover:border-stone-400 focus:border-black focus:shadow-[2px_2px_0_#000]">
                             <option *ngFor="let e of estados" [value]="e.value">{{ e.label }}</option>
                         </select>
                     </div>
+                    <div>
+                        <label class="text-[7px] font-black uppercase tracking-wider text-stone-400 dark:text-slate-400 mb-0.5 block">Criticidad</label>
+                        <select formControlName="nivelCriticidad"
+                                class="w-full h-7 text-xs font-bold bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-lg px-1 outline-none transition-all cursor-pointer hover:border-stone-400 focus:border-black focus:shadow-[2px_2px_0_#000]">
+                            <option *ngFor="let n of nivelesCriticidad" [value]="n.value">{{ n.label }}</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="text-[7px] font-black uppercase tracking-wider text-stone-400 dark:text-slate-400 mb-0.5 block">Fabricación</label>
+                        <select formControlName="fabricacion"
+                                class="w-full h-7 text-xs font-bold bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-lg px-1 outline-none transition-all cursor-pointer hover:border-stone-400 focus:border-black focus:shadow-[2px_2px_0_#000]">
+                            <option *ngFor="let o of origenesFabricacion" [value]="o.value">{{ o.label }}</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="text-[7px] font-black uppercase tracking-wider text-stone-400 dark:text-slate-400 mb-0.5 block">Cant. <span class="text-red-500">*</span></label>
+                        <input type="number" formControlName="cantidad" min="1"
+                               class="w-full h-7 text-xs text-center font-black bg-white dark:bg-slate-800 dark:text-white border-2 rounded-lg px-1 outline-none transition-all"
+                               [class]="hasError('cantidad','min') ? 'border-red-400' : 'border-stone-300 dark:border-slate-600 hover:border-stone-400 focus:border-black focus:shadow-[2px_2px_0_#000]'">
+                    </div>
+                    <div>
+                        <label class="text-[7px] font-black uppercase tracking-wider text-stone-400 dark:text-slate-400 mb-0.5 block">Unidad</label>
+                        <select formControlName="um"
+                                class="w-full h-7 text-xs font-bold bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-lg px-1 outline-none transition-all cursor-pointer hover:border-stone-400 focus:border-black focus:shadow-[2px_2px_0_#000]">
+                            <option *ngFor="let u of unidadesMedida" [value]="u.value">{{ u.label }}</option>
+                        </select>
+                    </div>
                 </div>
 
-                <!-- Observaciones -->
+                <!-- Fila 5: Toggle calibración -->
+                <div class="flex items-center gap-2 py-0.5">
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" formControlName="requiereCalibracion" class="sr-only peer">
+                        <div class="w-8 h-4 bg-stone-200 dark:bg-slate-700 rounded-full border-2 border-stone-300 dark:border-slate-600 peer-checked:bg-amber-400 peer-checked:border-amber-500 transition-all after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:after:translate-x-4"></div>
+                    </label>
+                    <span class="text-[9px] font-black uppercase tracking-widest text-stone-600 dark:text-slate-300">Requiere Calibración</span>
+                </div>
+
+                <!-- Campos calibración (condicional) -->
+                <div *ngIf="form.get('requiereCalibracion')?.value" class="grid grid-cols-1 sm:grid-cols-3 gap-1.5 bg-amber-50 dark:bg-amber-900/20 border-2 border-amber-300 dark:border-amber-700 rounded-lg p-2">
+                    <div>
+                        <label class="text-[7px] font-black uppercase tracking-wider text-stone-400 dark:text-slate-400 mb-0.5 block">Intervalo (días) <span class="text-red-500">*</span></label>
+                        <input type="number" formControlName="intervaloCalibracion" min="1" placeholder="365"
+                               class="w-full h-7 text-xs font-black text-center bg-white dark:bg-slate-800 dark:text-white border-2 rounded-lg px-1 outline-none transition-all"
+                               [class]="hasError('intervaloCalibracion','required') || hasError('intervaloCalibracion','min') ? 'border-red-400' : 'border-stone-300 dark:border-slate-600 hover:border-stone-400 focus:border-black focus:shadow-[2px_2px_0_#000]'">
+                    </div>
+                    <div>
+                        <label class="text-[7px] font-black uppercase tracking-wider text-stone-400 dark:text-slate-400 mb-0.5 block">Últ. Calibración</label>
+                        <input type="date" formControlName="fechaCalibracion"
+                               class="w-full h-7 text-xs font-bold bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-lg px-2 outline-none transition-all cursor-pointer hover:border-stone-400 focus:border-black focus:shadow-[2px_2px_0_#000]">
+                    </div>
+                    <div>
+                        <label class="text-[7px] font-black uppercase tracking-wider text-stone-400 dark:text-slate-400 mb-0.5 block">N° Certificado</label>
+                        <input type="text" formControlName="nroCertificado" placeholder="CERT-001"
+                               class="w-full h-7 text-xs font-bold uppercase bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-lg px-2 outline-none transition-all placeholder:text-stone-300 placeholder:font-normal placeholder:normal-case hover:border-stone-400 focus:border-black focus:shadow-[2px_2px_0_#000]">
+                    </div>
+                </div>
+
+                <!-- Fila 6: Observaciones -->
                 <div>
-                    <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1.5 block">Observaciones <span class="font-normal normal-case">(opcional)</span></label>
-                    <textarea formControlName="observaciones" rows="3"
+                    <label class="text-[7px] font-black uppercase tracking-wider text-stone-400 dark:text-slate-400 mb-0.5 block">Observaciones</label>
+                    <textarea formControlName="observaciones" rows="2"
                               placeholder="Daño, falta accesorio, etc..."
-                              class="w-full text-sm font-normal bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-xl px-3 py-2.5 outline-none transition-all duration-150 resize-none placeholder:text-stone-300 dark:placeholder:text-slate-600 hover:border-stone-400 dark:hover:border-slate-500 focus:border-black dark:focus:border-slate-400 focus:shadow-[3px_3px_0_#000] custom-scrollbar"></textarea>
+                              class="w-full h-12 text-xs font-normal bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-lg px-2 py-1.5 outline-none transition-all resize-none placeholder:text-stone-300 placeholder:font-normal hover:border-stone-400 focus:border-black focus:shadow-[2px_2px_0_#000] custom-scrollbar"></textarea>
                 </div>
 
             </div>
@@ -203,14 +210,14 @@
     </div>
 
     <!-- FOOTER -->
-    <div class="border-t-2 border-black bg-stone-200 dark:bg-slate-800 px-3 sm:px-5 py-3 flex justify-between items-center shrink-0">
+    <div class="border-t-2 border-black bg-stone-200 dark:bg-slate-800 px-3 py-1.5 flex justify-between items-center shrink-0">
         <button type="button" (click)="cerrar()"
-                class="px-4 py-2 bg-[#FF1414] text-white font-black text-[10px] border-2 border-black rounded-xl shadow-[2px_2px_0_#000] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all uppercase">
+                class="px-3 py-1 bg-[#FF1414] text-white font-black text-[9px] border-2 border-black rounded-lg shadow-[2px_2px_0_#000] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all uppercase">
             Cancelar
         </button>
         <button type="button" (click)="procesar()"
-                class="flex items-center gap-2 px-5 py-2 bg-amber-400 text-black font-black text-[10px] border-2 border-black rounded-xl shadow-[3px_3px_0_#000] hover:shadow-none hover:translate-x-[3px] hover:translate-y-[3px] transition-all uppercase">
-            <mat-icon class="!text-sm">save</mat-icon>
+                class="flex items-center gap-1.5 px-3 py-1 bg-amber-400 text-black font-black text-[9px] border-2 border-black rounded-lg shadow-[2px_2px_0_#000] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all uppercase">
+            <mat-icon class="!text-xs">save</mat-icon>
             {{ mode === 'new' ? 'Agregar Herramienta' : 'Guardar Cambios' }}
         </button>
     </div>

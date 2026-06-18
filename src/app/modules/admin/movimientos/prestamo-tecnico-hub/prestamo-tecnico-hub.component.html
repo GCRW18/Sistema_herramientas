@@ -1,4 +1,4 @@
-<div class="flex flex-col w-full h-full bg-[#f8f9fc] dark:bg-[#0F172AFF] transition-colors duration-300 font-sans overflow-hidden">
+﻿<div class="flex flex-col w-full h-full bg-[#f8f9fc] dark:bg-[#0F172AFF] transition-colors duration-300 font-sans overflow-hidden">
 
   <div class="fixed top-20 right-10 w-40 h-40 bg-[#0F172AFF] rounded-full border-[3px] border-black opacity-5 pointer-events-none hidden lg:block"></div>
   <div class="fixed bottom-10 left-10 w-24 h-24 bg-[#FFC501FF] rotate-12 border-[3px] border-black opacity-5 pointer-events-none hidden lg:block"></div>
@@ -24,10 +24,10 @@
 
       <div class="flex items-center gap-2 flex-wrap">
         <!-- Búsqueda -->
-        <div class="relative">
+        <div class="relative flex-1 min-w-[140px] sm:flex-none">
           <input type="text" [formControl]="searchControl"
                  placeholder="Buscar técnico, nota, herramienta..."
-                 class="w-44 h-9 pl-9 pr-3 bg-white dark:bg-slate-800 text-black dark:text-white
+                 class="w-full h-9 pl-9 pr-3 bg-white dark:bg-slate-800 text-black dark:text-white
                         border-[2px] border-black dark:border-slate-500 rounded-lg font-black text-xs uppercase
                         focus:outline-none focus:shadow-[3px_3px_0px_0px_#000] focus:-translate-y-[1px] transition-all
                         placeholder:font-bold placeholder:normal-case dark:placeholder:text-slate-500">
@@ -159,8 +159,13 @@
                   [ngClass]="idx % 2 === 0 ? 'bg-white dark:bg-slate-800/60' : 'bg-gray-50 dark:bg-slate-800/40'">
 
                 <td class="px-3 py-2.5">
-                  <span class="font-mono font-black text-[10px] bg-[#FFC501FF] text-black px-1.5 py-0.5 rounded border-2 border-black">
+                  <span class="font-mono font-black text-[10px] px-1.5 py-0.5 rounded border-2 border-black"
+                        [ngClass]="mov.loan_type === 'external' ? 'bg-[#FFC501FF] text-black' : 'bg-blue-600 text-white'">
                     {{ mov.loan_number }}
+                  </span>
+                  <span class="block mt-0.5 text-[8px] font-black uppercase"
+                        [ngClass]="mov.loan_type === 'external' ? 'text-purple-600' : 'text-blue-500'">
+                    {{ mov.loan_type === 'external' ? 'Externo' : 'Interno' }}
                   </span>
                 </td>
 
@@ -180,19 +185,18 @@
                 </td>
 
                 <td class="px-3 py-2.5 text-xs font-bold text-black dark:text-white whitespace-nowrap">
-                  {{ mov.loan_date | date:'dd/MM/yy HH:mm' }}
+                  {{ formatFecha(mov.loan_date, mov.loan_time) }}
                 </td>
 
                 <td class="px-3 py-2.5 text-center">
-                  <span class="text-xs font-black px-1.5 py-0.5 rounded border"
-                        [ngClass]="getDiasFueraClass(mov.diasFuera)">
+                  <span class="text-xs font-black text-black dark:text-white">
                     {{ mov.diasFuera }}d
                   </span>
                 </td>
 
                 <td class="px-3 py-2.5 text-center">
-                  <span class="px-1.5 py-0.5 text-[9px] font-black uppercase border-2 border-black rounded inline-flex items-center gap-1"
-                        [ngClass]="mov.status === 'active' ? 'bg-green-500 text-white' : 'bg-stone-300 text-black'">
+                  <span class="px-1.5 py-0.5 text-[9px] font-black uppercase border-2 border-black rounded inline-flex items-center gap-1 text-black"
+                        style="background-color: #22C55E">
                     {{ mov.status === 'active' ? 'ACTIVO' : 'DEVUELTO' }}
                   </span>
                 </td>

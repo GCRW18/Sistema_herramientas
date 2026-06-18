@@ -37,15 +37,15 @@ export class QuarantineService {
     getQuarantines(filters?: any): Observable<QuarantineRecord[]> {
         const params: any = {
             start: 0,
-            limit: 50,
-            sort: 'entry_date',
+            limit: 100,
+            sort: 'id_quarantine',
             dir: 'desc',
             ...filters
         };
 
         return from(this._api.post('herramientas/quarantines/listQuarantines', params)).pipe(
             switchMap((response: any) => {
-                const quarantines = response?.data || [];
+                const quarantines = response?.datos || response?.data || [];
                 this._quarantines.next(quarantines);
                 return of(quarantines);
             })
@@ -82,13 +82,17 @@ export class QuarantineService {
     /**
      * Update quarantine record
      */
-    updateQuarantine(id: string, record: Partial<QuarantineRecord>): Observable<QuarantineRecord> {
+    updateQuarantine(id: string | number, record: any): Observable<any> {
         return from(this._api.post('herramientas/quarantines/updateCuarentena', {
             ...record,
             id_quarantine: id
         })).pipe(
             switchMap((response: any) => {
-                return of(response?.data || record);
+                const root = response?.ROOT || response;
+                if (root?.error === true || root?.error === 'true') {
+                    throw new Error(root?.detalle?.mensaje || root?.mensaje || 'Error al actualizar cuarentena');
+                }
+                return of(root?.datos?.[0] || root?.datos || root?.data || {});
             })
         );
     }
@@ -127,7 +131,7 @@ export class QuarantineService {
     getActiveQuarantines(): Observable<QuarantineRecord[]> {
         return from(this._api.post('herramientas/quarantines/listActiveQuarantines', {})).pipe(
             switchMap((response: any) => {
-                return of(response?.data || []);
+                return of(response?.datos || response?.data || []);
             })
         );
     }
@@ -142,15 +146,15 @@ export class QuarantineService {
     getDecommissions(filters?: any): Observable<DecommissionRecord[]> {
         const params: any = {
             start: 0,
-            limit: 50,
-            sort: 'entry_date',
+            limit: 100,
+            sort: 'id_decommission',
             dir: 'desc',
             ...filters
         };
 
         return from(this._api.post('herramientas/decommissions/listDecommissions', params)).pipe(
             switchMap((response: any) => {
-                const decommissions = response?.data || [];
+                const decommissions = response?.datos || response?.data || [];
                 this._decommissions.next(decommissions);
                 return of(decommissions);
             })
@@ -187,13 +191,17 @@ export class QuarantineService {
     /**
      * Update decommission record
      */
-    updateDecommission(id: string, record: Partial<DecommissionRecord>): Observable<DecommissionRecord> {
+    updateDecommission(id: string | number, record: any): Observable<any> {
         return from(this._api.post('herramientas/decommissions/updateBaja', {
             ...record,
-            id_baja: id
+            id_decommission: id
         })).pipe(
             switchMap((response: any) => {
-                return of(response?.data || record);
+                const root = response?.ROOT || response;
+                if (root?.error === true || root?.error === 'true') {
+                    throw new Error(root?.detalle?.mensaje || root?.mensaje || 'Error al actualizar baja');
+                }
+                return of(root?.datos?.[0] || root?.datos || root?.data || {});
             })
         );
     }

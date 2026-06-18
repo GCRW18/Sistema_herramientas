@@ -1,181 +1,174 @@
-<div class="bg-stone-100 dark:bg-slate-900 border-2 border-black overflow-hidden flex flex-col h-full"
-     style="box-shadow: 6px 6px 0 #000">
+﻿<div class="bg-stone-100 dark:bg-slate-900 border-2 border-black rounded-xl overflow-hidden flex flex-col w-full h-full">
 
     <!-- Header -->
-    <div class="bg-[#0F172A] px-5 py-3.5 flex items-center gap-3 shrink-0 select-none"
+    <div class="bg-[#0F172A] px-4 sm:px-5 py-3 flex items-center gap-3 shrink-0 select-none flex-wrap sm:flex-nowrap"
          cdkDrag cdkDragRootElement=".cdk-overlay-pane" cdkDragHandle style="cursor:grab">
-        <div class="w-9 h-9 rounded bg-amber-400 border-2 border-black flex items-center justify-center shadow-[2px_2px_0_#fbbf24] shrink-0">
-            <mat-icon class="!text-lg text-black">delete_sweep</mat-icon>
+        <div class="w-8 h-8 rounded bg-amber-400 border-2 border-black flex items-center justify-center shadow-[2px_2px_0_#fbbf24] shrink-0">
+            <mat-icon class="!text-base text-black">delete_sweep</mat-icon>
         </div>
-        <div>
-            <p class="text-[9px] text-slate-400 font-bold uppercase tracking-[0.18em] leading-none mb-0.5">Baja de Activo · Ítems</p>
-            <h2 class="text-sm text-white font-black uppercase tracking-tight leading-none">Agregar Ítem a Baja</h2>
+        <div class="flex-1 min-w-0">
+            <p class="text-[9px] text-slate-400 font-bold uppercase tracking-[0.15em] leading-none mb-0.5 hidden sm:block">Baja de Activo · Ítems</p>
+            <h2 class="text-xs text-white font-black uppercase tracking-tight leading-none">Agregar Ítem a Baja</h2>
+        </div>
+
+        <!-- Buscador en header -->
+        <div class="relative w-full sm:w-auto sm:shrink-0">
+            <input type="text"
+                   [value]="buscarTermino()"
+                   (input)="onBuscarChange($any($event.target).value)"
+                   (blur)="ocultarSugerencias()"
+                   autocomplete="off"
+                   placeholder="Buscar por código o nombre..."
+                   class="w-full sm:w-64 md:w-72 h-8 text-xs font-bold border-2 border-white/20 rounded-xl px-3 pr-8 uppercase bg-white/10 text-white placeholder:text-white/40 placeholder:normal-case focus:outline-none focus:border-amber-400 focus:bg-white/20 transition-all">
+            <mat-icon *ngIf="!buscarTermino()"
+                      class="absolute right-2 top-1.5 text-white/40 !text-base pointer-events-none">search</mat-icon>
+            <button *ngIf="buscarTermino()" type="button" (click)="limpiarBusqueda()"
+                    class="absolute right-1.5 top-1 w-6 h-6 flex items-center justify-center rounded hover:bg-white/20 transition-colors">
+                <mat-icon class="!text-sm text-white/60">close</mat-icon>
+            </button>
+            <!-- Dropdown -->
+            <div *ngIf="showSuggestions && herramientasFiltradas().length > 0"
+                 class="absolute z-[300] w-80 bg-white dark:bg-slate-800 border-2 border-black dark:border-slate-600 rounded-xl shadow-[4px_4px_0_#000] max-h-60 overflow-y-auto mt-1 top-full right-0 custom-scrollbar divide-y divide-stone-100 dark:divide-slate-700">
+                <div *ngFor="let t of herramientasFiltradas()"
+                     (mousedown)="selectHerramienta(t)"
+                     class="px-3 py-2 hover:bg-amber-50 dark:hover:bg-slate-700 cursor-pointer transition-colors">
+                    <div class="flex items-center gap-2">
+                        <span class="font-mono font-black text-[10px] text-black dark:text-white bg-stone-100 dark:bg-slate-700 px-1.5 py-0.5 rounded">{{ t.codigo }}</span>
+                        <span class="text-[9px] font-bold text-stone-500 dark:text-slate-400 uppercase truncate">{{ t.nombre }}</span>
+                    </div>
+                    <div class="flex gap-3 mt-0.5">
+                        <span *ngIf="t.pn" class="text-[9px] text-stone-400">P/N: <strong>{{ t.pn }}</strong></span>
+                        <span *ngIf="t.sn" class="text-[9px] text-stone-400">S/N: {{ t.sn }}</span>
+                        <span *ngIf="t.existencia != null" class="text-[9px] text-stone-400">Stock: <strong>{{ t.existencia }}</strong></span>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
     <!-- Body -->
-    <div class="flex-1 overflow-y-auto px-5 py-5 custom-scrollbar">
-        <form [formGroup]="bajaForm" class="flex flex-col md:flex-row gap-4 h-full">
+    <div class="flex-1 overflow-hidden">
+        <form [formGroup]="bajaForm" class="h-full flex flex-col sm:flex-row overflow-hidden min-h-0">
 
-            <!-- Columna izquierda: Buscar + Detalles -->
-            <div class="w-full md:w-[55%] flex flex-col gap-4">
+            <!-- Columna izquierda -->
+            <div class="flex-1 overflow-y-auto custom-scrollbar px-4 py-3 flex flex-col gap-2">
 
-                <!-- Buscador -->
+                <!-- Código · Base · Stock -->
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                    <div>
+                        <label class="text-[9px] font-black uppercase tracking-wider text-stone-400 dark:text-slate-400 mb-1 block">Código</label>
+                        <input formControlName="codigo" type="text" readonly
+                               class="w-full h-8 text-xs font-black uppercase bg-stone-100 dark:bg-slate-700 dark:text-slate-300 border-2 border-stone-200 dark:border-slate-600 rounded-lg px-2.5 outline-none cursor-not-allowed">
+                    </div>
+                    <div>
+                        <label class="text-[9px] font-black uppercase tracking-wider text-stone-400 dark:text-slate-400 mb-1 block">Base</label>
+                        <input formControlName="base" type="text" readonly
+                               class="w-full h-8 text-xs font-black uppercase bg-stone-100 dark:bg-slate-700 dark:text-slate-300 border-2 border-stone-200 dark:border-slate-600 rounded-lg px-2.5 outline-none cursor-not-allowed">
+                    </div>
+                    <div>
+                        <label class="text-[9px] font-black uppercase tracking-wider text-stone-400 dark:text-slate-400 mb-1 block">Stock</label>
+                        <input type="number" formControlName="existencia" readonly
+                               class="w-full h-8 text-xs font-black text-center bg-amber-50 dark:bg-amber-900/20 border-2 border-amber-400 rounded-lg px-2 outline-none cursor-not-allowed dark:text-amber-300">
+                    </div>
+                </div>
+
+                <!-- P/N · S/N -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <div>
+                        <label class="text-[9px] font-black uppercase tracking-wider text-stone-400 dark:text-slate-400 mb-1 block">P/N</label>
+                        <input type="text" formControlName="pn" readonly
+                               class="w-full h-8 text-xs font-black bg-stone-100 dark:bg-slate-700 dark:text-slate-300 border-2 border-stone-200 dark:border-slate-600 rounded-lg px-2.5 outline-none cursor-not-allowed">
+                    </div>
+                    <div>
+                        <label class="text-[9px] font-black uppercase tracking-wider text-stone-400 dark:text-slate-400 mb-1 block">S/N</label>
+                        <input type="text" formControlName="sn" readonly
+                               class="w-full h-8 text-xs font-black bg-stone-100 dark:bg-slate-700 dark:text-slate-300 border-2 border-stone-200 dark:border-slate-600 rounded-lg px-2.5 outline-none cursor-not-allowed">
+                    </div>
+                </div>
+
+                <!-- Nombre -->
                 <div>
-                    <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1.5 block">Código o Nombre <span class="text-red-500">*</span></label>
-                    <div class="relative">
-                        <input type="text"
-                               [value]="buscarTermino()"
-                               (input)="onBuscarChange($any($event.target).value)"
-                               (blur)="ocultarSugerencias()"
-                               placeholder="Escriba para buscar..." autocomplete="off"
-                               class="w-full h-10 text-sm font-black uppercase bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-xl pl-9 pr-9 outline-none transition-all duration-150 placeholder:text-stone-300 hover:border-stone-400 focus:border-black focus:shadow-[3px_3px_0_#000]">
-                        <mat-icon class="absolute left-2.5 top-1/2 -translate-y-1/2 text-stone-400 !text-base pointer-events-none">search</mat-icon>
-                        <button *ngIf="buscarTermino()" type="button" (click)="limpiarBusqueda()"
-                                class="absolute right-2.5 top-1/2 -translate-y-1/2 text-stone-400 hover:text-red-500 transition-colors">
-                            <mat-icon class="!text-base">close</mat-icon>
-                        </button>
-                        <div *ngIf="showSuggestions && herramientasFiltradas().length > 0"
-                             class="absolute z-50 w-full mt-1 top-full border-2 border-black rounded-xl bg-white dark:bg-slate-800 shadow-[4px_4px_0_#000] overflow-hidden max-h-48 overflow-y-auto divide-y divide-stone-100 dark:divide-slate-700">
-                            <button type="button" *ngFor="let t of herramientasFiltradas()"
-                                    (mousedown)="selectHerramienta(t)"
-                                    class="w-full text-left px-3 py-2.5 hover:bg-amber-50 dark:hover:bg-slate-700 cursor-pointer transition-colors flex flex-col">
-                                <span class="text-xs font-black uppercase text-black dark:text-white">{{ t.codigo }}</span>
-                                <span class="text-[9px] font-bold text-stone-400 dark:text-slate-400 mt-0.5">{{ t.nombre }}</span>
-                            </button>
-                        </div>
+                    <label class="text-[9px] font-black uppercase tracking-wider text-stone-400 dark:text-slate-400 mb-1 block">Nombre / Descripción</label>
+                    <input type="text" formControlName="nombre" readonly
+                           class="w-full h-8 text-xs font-black uppercase bg-stone-100 dark:bg-slate-700 dark:text-slate-300 border-2 border-stone-200 dark:border-slate-600 rounded-lg px-2.5 outline-none cursor-not-allowed truncate">
+                </div>
+
+                <!-- Separador -->
+                <div class="flex items-center gap-1.5 mt-1">
+                    <span class="text-[8px] font-black uppercase tracking-widest text-stone-400 dark:text-slate-500">Baja</span>
+                    <div class="flex-1 h-px bg-stone-200 dark:bg-slate-700"></div>
+                </div>
+
+                <!-- Cantidad · Estado -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <div>
+                        <label class="text-[9px] font-black uppercase tracking-wider text-stone-400 dark:text-slate-400 mb-1 block">Cantidad <span class="text-red-500">*</span></label>
+                        <input type="number" formControlName="cantidad" min="1"
+                               class="w-full h-8 text-xs font-black text-center bg-white dark:bg-slate-800 dark:text-white border-2 rounded-lg px-2.5 outline-none transition-all"
+                               [class]="hasError('cantidad','required') ? 'border-red-400' : 'border-stone-300 dark:border-slate-600 hover:border-stone-400 focus:border-black focus:shadow-[2px_2px_0_#000]'">
+                        <p *ngIf="bajaForm.get('existencia')?.value && bajaForm.get('cantidad')?.value > bajaForm.get('existencia')?.value"
+                           class="text-[8px] font-black text-red-500 mt-0.5">Excede stock.</p>
+                    </div>
+                    <div>
+                        <label class="text-[9px] font-black uppercase tracking-wider text-stone-400 dark:text-slate-400 mb-1 block">Estado Actual <span class="text-red-500">*</span></label>
+                        <select formControlName="estadoFisico"
+                                class="w-full h-8 text-xs font-bold bg-white dark:bg-slate-800 dark:text-white border-2 rounded-lg px-2.5 outline-none transition-all cursor-pointer hover:border-stone-400 focus:border-black focus:shadow-[2px_2px_0_#000]"
+                                [class]="hasError('estadoFisico','required') ? 'border-red-400' : 'border-stone-300 dark:border-slate-600'">
+                            <option value="BUENO">BUENO</option>
+                            <option value="REGULAR">REGULAR</option>
+                            <option value="MALO">MALO</option>
+                            <option value="INSERVIBLE">INSERVIBLE</option>
+                        </select>
                     </div>
                 </div>
 
-                <!-- Datos fijos de la herramienta -->
-                <div class="border-2 border-black rounded-xl overflow-hidden shadow-[3px_3px_0_#000]">
-                    <div class="bg-[#0F172A] px-4 py-2 flex items-center gap-2">
-                        <mat-icon class="!text-sm text-amber-400">build</mat-icon>
-                        <span class="text-[9px] font-black uppercase tracking-[0.18em] text-slate-300">Detalles del Ítem</span>
-                    </div>
-                    <div class="bg-white dark:bg-slate-800 p-4 flex flex-col gap-3">
-                        <div class="grid grid-cols-3 gap-3">
-                            <div>
-                                <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1.5 block">Código</label>
-                                <input formControlName="codigo" type="text" readonly
-                                       class="w-full h-9 text-sm font-black uppercase bg-stone-100 dark:bg-slate-700 dark:text-slate-300 border-2 border-stone-200 dark:border-slate-600 rounded-xl px-3 outline-none cursor-not-allowed">
-                            </div>
-                            <div>
-                                <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1.5 block">Base</label>
-                                <input formControlName="base" type="text" readonly
-                                       class="w-full h-9 text-sm font-black uppercase bg-stone-100 dark:bg-slate-700 dark:text-slate-300 border-2 border-stone-200 dark:border-slate-600 rounded-xl px-3 outline-none cursor-not-allowed">
-                            </div>
-                            <div>
-                                <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1.5 block">Stock</label>
-                                <input type="number" formControlName="existencia" readonly
-                                       class="w-full h-9 text-base font-black text-center bg-amber-50 dark:bg-amber-900/20 border-2 border-amber-400 rounded-xl px-2 outline-none cursor-not-allowed dark:text-amber-300">
-                            </div>
-                        </div>
-                        <div class="grid grid-cols-2 gap-3">
-                            <div>
-                                <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1.5 block">P/N</label>
-                                <input type="text" formControlName="pn" readonly
-                                       class="w-full h-9 text-sm font-black uppercase bg-stone-100 dark:bg-slate-700 dark:text-slate-300 border-2 border-stone-200 dark:border-slate-600 rounded-xl px-3 outline-none cursor-not-allowed">
-                            </div>
-                            <div>
-                                <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1.5 block">S/N</label>
-                                <input type="text" formControlName="sn" readonly
-                                       class="w-full h-9 text-sm font-black uppercase bg-stone-100 dark:bg-slate-700 dark:text-slate-300 border-2 border-stone-200 dark:border-slate-600 rounded-xl px-3 outline-none cursor-not-allowed">
-                            </div>
-                        </div>
-                        <div>
-                            <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1.5 block">Nombre / Descripción</label>
-                            <input type="text" formControlName="nombre" readonly
-                                   class="w-full h-9 text-sm font-black uppercase bg-stone-100 dark:bg-slate-700 dark:text-slate-300 border-2 border-stone-200 dark:border-slate-600 rounded-xl px-3 outline-none cursor-not-allowed truncate">
-                        </div>
-                    </div>
+                <!-- Motivo -->
+                <div>
+                    <label class="text-[9px] font-black uppercase tracking-wider text-stone-400 dark:text-slate-400 mb-1 block">Motivo de Baja <span class="text-red-500">*</span></label>
+                    <textarea formControlName="observacion" rows="2" placeholder="Explique brevemente..."
+                              class="w-full text-xs font-normal bg-white dark:bg-slate-800 dark:text-white border-2 rounded-lg px-2.5 py-1.5 outline-none transition-all resize-none placeholder:text-stone-300 hover:border-stone-400 focus:border-black focus:shadow-[2px_2px_0_#000]"
+                              [class]="hasError('observacion','required') ? 'border-red-400' : 'border-stone-300 dark:border-slate-600'"></textarea>
+                    <p *ngIf="hasError('observacion','required')" class="text-[8px] font-bold text-red-500 mt-0.5">Campo requerido.</p>
                 </div>
 
             </div>
 
-            <!-- Columna derecha: Configuración + Imagen -->
-            <div class="w-full md:w-[45%] flex flex-col gap-4">
-
-                <div class="border-2 border-black rounded-xl overflow-hidden shadow-[3px_3px_0_#000] flex-1 flex flex-col">
-                    <div class="bg-[#0F172A] px-4 py-2 flex items-center gap-2">
-                        <mat-icon class="!text-sm text-amber-400">assignment_late</mat-icon>
-                        <span class="text-[9px] font-black uppercase tracking-[0.18em] text-slate-300">Configuración de Baja</span>
+            <!-- Columna derecha: Foto -->
+            <div class="w-2/5 flex flex-col items-center justify-center border-t-2 sm:border-t-0 sm:border-l-2 border-stone-200 dark:border-slate-700 px-4 py-4">
+                <label class="text-[9px] font-black uppercase tracking-wider text-stone-400 dark:text-slate-400 mb-2 block text-center">
+                    Imagen Referencial
+                    <span *ngIf="selectedImage()" (click)="selectedImage.set(null)"
+                          class="ml-2 text-red-500 cursor-pointer hover:underline normal-case">(Quitar)</span>
+                </label>
+                <div class="w-72 h-72 border-2 border-dashed border-stone-300 dark:border-slate-600 rounded-xl bg-stone-50 dark:bg-slate-900 flex flex-col items-center justify-center relative overflow-hidden cursor-pointer hover:border-amber-400 transition-colors group"
+                     (click)="fileInputTool.click()">
+                    <img *ngIf="selectedImage()" [src]="selectedImage()"
+                         class="w-full h-full object-contain p-2 absolute inset-0 z-10 bg-white dark:bg-slate-800">
+                    <div *ngIf="!selectedImage()"
+                         class="flex flex-col items-center text-stone-300 dark:text-slate-600 gap-1">
+                        <mat-icon class="!text-5xl">add_photo_alternate</mat-icon>
+                        <span class="text-[9px] font-black uppercase text-stone-400">Click para subir</span>
                     </div>
-                    <div class="bg-white dark:bg-slate-800 p-4 flex flex-col gap-3 flex-1">
-
-                        <div class="grid grid-cols-2 gap-3">
-                            <div>
-                                <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1.5 block">Cantidad <span class="text-red-500">*</span></label>
-                                <input type="number" formControlName="cantidad" min="1"
-                                       class="w-full h-10 text-base font-black text-center bg-white dark:bg-slate-800 dark:text-white border-2 rounded-xl px-3 outline-none transition-all duration-150"
-                                       [class]="hasError('cantidad','required')
-                                           ? 'border-red-400 focus:shadow-[2px_2px_0_#f87171]'
-                                           : 'border-stone-300 dark:border-slate-600 hover:border-stone-400 focus:border-black focus:shadow-[3px_3px_0_#000]'">
-                                <p *ngIf="bajaForm.get('existencia')?.value && bajaForm.get('cantidad')?.value > bajaForm.get('existencia')?.value"
-                                   class="text-[8px] font-black text-red-500 mt-1">Excede stock.</p>
-                            </div>
-                            <div>
-                                <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1.5 block">Estado Actual <span class="text-red-500">*</span></label>
-                                <select formControlName="estadoFisico"
-                                        class="w-full h-10 text-sm font-bold bg-white dark:bg-slate-800 dark:text-white border-2 rounded-xl px-3 outline-none transition-all duration-150 cursor-pointer hover:border-stone-400 focus:border-black focus:shadow-[3px_3px_0_#000]"
-                                        [class]="hasError('estadoFisico','required') ? 'border-red-400' : 'border-stone-300 dark:border-slate-600'">
-                                    <option value="BUENO">BUENO</option>
-                                    <option value="REGULAR">REGULAR</option>
-                                    <option value="MALO">MALO</option>
-                                    <option value="INSERVIBLE">INSERVIBLE</option>
-                                </select>
-                            </div>
-                        </div>
-
-                        <div>
-                            <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1.5 block">Motivo de Baja <span class="text-red-500">*</span></label>
-                            <textarea formControlName="observacion" rows="2" placeholder="Explique brevemente..."
-                                      class="w-full text-sm font-normal bg-white dark:bg-slate-800 dark:text-white border-2 rounded-xl px-3 py-2 outline-none transition-all duration-150 resize-none placeholder:text-stone-300 hover:border-stone-400 focus:border-black focus:shadow-[3px_3px_0_#000]"
-                                      [class]="hasError('observacion','required') ? 'border-red-400' : 'border-stone-300 dark:border-slate-600'"></textarea>
-                            <p *ngIf="hasError('observacion','required')" class="text-[8px] font-bold text-red-500 mt-1">Campo requerido.</p>
-                        </div>
-
-                        <!-- Imagen Referencial -->
-                        <div class="flex-1 flex flex-col">
-                            <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1.5 flex justify-between">
-                                <span>Imagen Referencial (Opcional)</span>
-                                <span *ngIf="selectedImage()" (click)="selectedImage.set(null)"
-                                      class="text-red-500 cursor-pointer hover:underline">Quitar</span>
-                            </label>
-                            <div class="flex-1 min-h-[100px] border-2 border-dashed border-stone-400 dark:border-slate-600 rounded-xl flex flex-col items-center justify-center relative overflow-hidden bg-white dark:bg-slate-800 group cursor-pointer hover:border-black transition-all duration-150"
-                                 (click)="fileInputTool.click()">
-                                <img *ngIf="selectedImage()" [src]="selectedImage()"
-                                     class="w-full h-full object-contain p-1 absolute inset-0 z-10 bg-white dark:bg-slate-800">
-                                <div *ngIf="!selectedImage()"
-                                     class="flex flex-col items-center text-stone-300 dark:text-slate-600">
-                                    <mat-icon class="!text-4xl mb-1">add_a_photo</mat-icon>
-                                    <span class="text-[9px] font-black uppercase">Click para subir foto</span>
-                                </div>
-                                <div *ngIf="selectedImage()"
-                                     class="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center z-20">
-                                    <span class="bg-white text-black text-[9px] font-black border-2 border-black px-3 py-1 rounded-xl uppercase shadow-[2px_2px_0_#000]">Cambiar</span>
-                                </div>
-                            </div>
-                            <input type="file" #fileInputTool (change)="onImageSelected($event)" accept="image/*" class="hidden">
-                        </div>
-
+                    <div *ngIf="selectedImage()"
+                         class="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center z-20">
+                        <span class="text-white text-[9px] font-black uppercase bg-black/60 px-2 py-1 border border-white rounded-lg">Cambiar foto</span>
                     </div>
                 </div>
-
+                <input type="file" #fileInputTool (change)="onImageSelected($event)" accept="image/*" class="hidden">
             </div>
+
         </form>
     </div>
 
     <!-- Footer -->
-    <div class="border-t-2 border-black bg-stone-200 dark:bg-slate-800 px-5 py-3 flex justify-between items-center shrink-0">
+    <div class="border-t-2 border-black bg-stone-200 dark:bg-slate-800 px-4 py-2 flex justify-between items-center shrink-0">
         <button type="button" (click)="cerrar()"
-                class="px-4 py-2 bg-[#FF1414] text-white font-black text-[10px] border-2 border-black rounded-xl shadow-[2px_2px_0_#000] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all uppercase">
-            Cancelar
+                class="flex items-center gap-1 px-3 py-1.5 bg-[#FF1414] text-white font-black text-[10px] border-2 border-black rounded-lg shadow-[2px_2px_0_#000] hover:shadow-none hover:translate-x-[1px] hover:translate-y-[1px] transition-all uppercase">
+            <mat-icon class="!text-xs">close</mat-icon>Cancelar
         </button>
         <button type="button" (click)="agregar()" [disabled]="!isFormValid()"
-                class="flex items-center gap-2 px-5 py-2 bg-amber-400 text-black font-black text-[10px] border-2 border-black rounded-xl shadow-[3px_3px_0_#000] hover:shadow-none hover:translate-x-[3px] hover:translate-y-[3px] transition-all uppercase disabled:opacity-40 disabled:cursor-not-allowed disabled:translate-x-0 disabled:translate-y-0 disabled:shadow-[3px_3px_0_#000]">
-            <mat-icon class="!text-sm">check_circle</mat-icon>
-            Confirmar y Agregar
+                class="flex items-center gap-1.5 px-3 py-1.5 bg-amber-400 text-black font-black text-[10px] border-2 border-black rounded-lg shadow-[2px_2px_0_#000] hover:shadow-none hover:translate-x-[1px] hover:translate-y-[1px] transition-all uppercase disabled:opacity-40 disabled:cursor-not-allowed disabled:translate-x-0 disabled:translate-y-0 disabled:shadow-[2px_2px_0_#000]">
+            <mat-icon class="!text-xs">check_circle</mat-icon>Confirmar y Agregar
         </button>
     </div>
 </div>

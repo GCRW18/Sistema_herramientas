@@ -1,0 +1,170 @@
+<div class="bg-stone-100 dark:bg-slate-900 border-2 border-black flex flex-col w-full max-h-[90vh] rounded-2xl overflow-hidden">
+
+    <!-- HEADER -->
+    <div class="bg-[#0F172A] px-5 py-3 flex items-center gap-3 shrink-0 select-none"
+         cdkDrag cdkDragRootElement=".cdk-overlay-pane" cdkDragHandle style="cursor:grab">
+        <div class="w-9 h-9 rounded bg-amber-500 border-2 border-black flex items-center justify-center shadow-[2px_2px_0_#000] shrink-0">
+            <mat-icon class="!text-lg text-white">badge</mat-icon>
+        </div>
+        <div class="flex-1 min-w-0">
+            <p class="text-[9px] text-slate-400 font-bold uppercase tracking-[0.18em] leading-none mb-0.5">Administración · Personal</p>
+            <h2 class="text-sm text-white font-black uppercase tracking-tight leading-none">
+                {{ isEditMode ? 'Editar Funcionario' : 'Nuevo Funcionario' }}
+            </h2>
+        </div>
+        <button type="button" (click)="onCancel()" (mousedown)="$event.stopPropagation()"
+                class="w-8 h-8 flex items-center justify-center rounded-lg bg-white/10 hover:bg-white/20 transition-colors border border-white/10 shrink-0">
+            <mat-icon class="text-white !text-base">close</mat-icon>
+        </button>
+    </div>
+
+    <!-- FORM -->
+    <form [formGroup]="form" class="flex-1 overflow-y-auto px-5 py-4 flex flex-col gap-3">
+
+        <!-- Info del funcionario segu (solo lectura) -->
+        <div class="bg-[#0F172A] rounded-xl px-4 py-2.5 flex items-center gap-3">
+            <div class="w-9 h-9 rounded-lg bg-amber-500 border-2 border-black flex items-center justify-center text-white font-black text-base flex-shrink-0">
+                {{ (data?.empleado?.full_name || '?').charAt(0).toUpperCase() }}
+            </div>
+            <div class="min-w-0">
+                <p class="text-white font-black text-sm leading-tight truncate">{{ data?.empleado?.full_name || '—' }}</p>
+                <p class="text-slate-400 text-[9px] font-mono leading-tight">Usuario PXP: {{ data?.empleado?.cuenta || '—' }}</p>
+            </div>
+        </div>
+
+        <!-- Licencia + Sello -->
+        <div class="grid grid-cols-2 gap-3">
+            <div>
+                <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1 block">
+                    Nro. Licencia *
+                </label>
+                <input formControlName="license_number" type="text" placeholder="LIC-0001"
+                       class="w-full h-9 text-sm font-bold bg-white dark:bg-slate-800 dark:text-white border-2 rounded-xl px-3 outline-none transition-all placeholder:text-stone-300 placeholder:font-normal dark:placeholder:text-slate-600 hover:border-stone-400 focus:border-black focus:shadow-[3px_3px_0_#000] uppercase"
+                       [ngClass]="form.get('license_number')?.invalid && form.get('license_number')?.touched ? 'border-red-400' : 'border-stone-300 dark:border-slate-600'">
+                <p *ngIf="form.get('license_number')?.invalid && form.get('license_number')?.touched"
+                   class="text-[8px] font-bold text-red-500 mt-0.5">Campo requerido.</p>
+            </div>
+            <div>
+                <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1 block">
+                    Nro. Sello
+                </label>
+                <input formControlName="seal_number" type="text" placeholder="SELLO-001"
+                       class="w-full h-9 text-sm font-bold bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-xl px-3 outline-none transition-all placeholder:text-stone-300 placeholder:font-normal dark:placeholder:text-slate-600 hover:border-stone-400 focus:border-black focus:shadow-[3px_3px_0_#000] uppercase">
+            </div>
+        </div>
+
+        <!-- CI + Cargo -->
+        <div class="grid grid-cols-2 gap-3">
+            <div>
+                <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1 block">
+                    CI / Cédula
+                </label>
+                <input formControlName="ci" type="text" placeholder="12345678"
+                       class="w-full h-9 text-sm font-bold font-mono bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-xl px-3 outline-none transition-all placeholder:text-stone-300 placeholder:font-normal dark:placeholder:text-slate-600 hover:border-stone-400 focus:border-black focus:shadow-[3px_3px_0_#000]">
+            </div>
+            <div>
+                <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1 block">
+                    Cargo
+                </label>
+                <input formControlName="cargo" type="text" placeholder="Técnico MM I"
+                       class="w-full h-9 text-sm font-bold bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-xl px-3 outline-none transition-all placeholder:text-stone-300 placeholder:font-normal dark:placeholder:text-slate-600 hover:border-stone-400 focus:border-black focus:shadow-[3px_3px_0_#000] uppercase">
+            </div>
+        </div>
+
+        <!-- Tipo + Área + Base -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+            <div>
+                <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1 block">
+                    Tipo *
+                </label>
+                <select formControlName="employee_type"
+                        class="w-full h-9 text-sm font-bold bg-white dark:bg-slate-800 dark:text-white border-2 rounded-xl px-3 outline-none transition-all hover:border-stone-400 focus:border-black focus:shadow-[3px_3px_0_#000] appearance-auto"
+                        [ngClass]="form.get('employee_type')?.invalid && form.get('employee_type')?.touched ? 'border-red-400' : 'border-stone-300 dark:border-slate-600'">
+                    <option value="">Seleccionar...</option>
+                    <option *ngFor="let t of tipos" [value]="t">{{ t }}</option>
+                </select>
+                <p *ngIf="form.get('employee_type')?.invalid && form.get('employee_type')?.touched"
+                   class="text-[8px] font-bold text-red-500 mt-0.5">Campo requerido.</p>
+            </div>
+            <div>
+                <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1 block">
+                    Área *
+                </label>
+                <select formControlName="area"
+                        class="w-full h-9 text-sm font-bold bg-white dark:bg-slate-800 dark:text-white border-2 rounded-xl px-3 outline-none transition-all hover:border-stone-400 focus:border-black focus:shadow-[3px_3px_0_#000] appearance-auto"
+                        [ngClass]="form.get('area')?.invalid && form.get('area')?.touched ? 'border-red-400' : 'border-stone-300 dark:border-slate-600'">
+                    <option value="">Seleccionar...</option>
+                    <option *ngFor="let a of areas" [value]="a">{{ a }}</option>
+                </select>
+                <p *ngIf="form.get('area')?.invalid && form.get('area')?.touched"
+                   class="text-[8px] font-bold text-red-500 mt-0.5">Campo requerido.</p>
+            </div>
+            <div>
+                <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1 block">
+                    Base *
+                </label>
+                <select formControlName="id_base"
+                        class="w-full h-9 text-sm font-bold bg-white dark:bg-slate-800 dark:text-white border-2 rounded-xl px-3 outline-none transition-all hover:border-stone-400 focus:border-black focus:shadow-[3px_3px_0_#000] appearance-auto"
+                        [attr.disabled]="basesLoading ? '' : null"
+                        [ngClass]="form.get('id_base')?.invalid && form.get('id_base')?.touched ? 'border-red-400' : 'border-stone-300 dark:border-slate-600'">
+                    <option [ngValue]="null">{{ basesLoading ? 'Cargando...' : 'Seleccionar...' }}</option>
+                    <option *ngFor="let b of bases" [ngValue]="b.value">{{ b.label }}</option>
+                </select>
+                <p *ngIf="form.get('id_base')?.invalid && form.get('id_base')?.touched"
+                   class="text-[8px] font-bold text-red-500 mt-0.5">Campo requerido.</p>
+            </div>
+        </div>
+
+        <!-- Email + Teléfono -->
+        <div class="grid grid-cols-2 gap-3">
+            <div>
+                <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1 block">
+                    Email
+                </label>
+                <input formControlName="email" type="email" placeholder="juan@boa.bo"
+                       class="w-full h-9 text-sm font-bold bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-xl px-3 outline-none transition-all placeholder:text-stone-300 placeholder:font-normal dark:placeholder:text-slate-600 hover:border-stone-400 focus:border-black focus:shadow-[3px_3px_0_#000]">
+                <p *ngIf="form.get('email')?.invalid && form.get('email')?.touched"
+                   class="text-[8px] font-bold text-red-500 mt-0.5">Email inválido.</p>
+            </div>
+            <div>
+                <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1 block">
+                    Teléfono
+                </label>
+                <input formControlName="phone" type="text" placeholder="70000000"
+                       class="w-full h-9 text-sm font-bold font-mono bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-xl px-3 outline-none transition-all placeholder:text-stone-300 placeholder:font-normal dark:placeholder:text-slate-600 hover:border-stone-400 focus:border-black focus:shadow-[3px_3px_0_#000]">
+            </div>
+        </div>
+
+        <!-- Estado activo -->
+        <div class="flex items-center gap-3 bg-white dark:bg-slate-800 border-2 border-stone-300 dark:border-slate-600 rounded-xl px-3 py-2">
+            <label class="relative inline-flex items-center cursor-pointer shrink-0">
+                <input type="checkbox" formControlName="active" class="sr-only peer">
+                <div class="w-10 h-6 bg-stone-300 peer-focus:outline-none rounded-full peer dark:bg-slate-600 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[3px] after:left-[3px] after:bg-white after:border after:rounded-full after:h-[18px] after:w-[18px] after:transition-all peer-checked:bg-amber-500 border-2 border-black"></div>
+            </label>
+            <div>
+                <p class="text-[10px] font-black uppercase leading-none"
+                   [ngClass]="form.get('active')?.value ? 'text-green-700 dark:text-green-400' : 'text-stone-500 dark:text-slate-400'">
+                    {{ form.get('active')?.value ? 'Funcionario Activo' : 'Funcionario Inactivo' }}
+                </p>
+                <p class="text-[9px] text-stone-400 dark:text-slate-500 mt-0.5">
+                    {{ form.get('active')?.value ? 'Disponible para asignaciones y movimientos' : 'No aparecerá en búsquedas de asignación' }}
+                </p>
+            </div>
+        </div>
+
+    </form>
+
+    <!-- FOOTER -->
+    <div class="border-t-2 border-black bg-stone-200 dark:bg-slate-800 px-4 py-2.5 flex justify-between items-center gap-2 shrink-0">
+        <button type="button" (click)="onCancel()"
+                class="px-4 py-2 bg-[#FF1414] text-white font-black text-[10px] border-2 border-black rounded-xl shadow-[2px_2px_0_#000] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all uppercase">
+            Cancelar
+        </button>
+        <button type="button" (click)="onSubmit()" [disabled]="!form.valid"
+                class="flex items-center gap-2 px-5 py-2 bg-[#0F172A] text-white font-black text-[10px] border-2 border-black rounded-xl shadow-[3px_3px_0_#000] hover:shadow-none hover:translate-x-[3px] hover:translate-y-[3px] transition-all uppercase disabled:opacity-40 disabled:cursor-not-allowed disabled:pointer-events-none">
+            <mat-icon class="!text-white !text-base">{{ isEditMode ? 'save' : 'person_add' }}</mat-icon>
+            {{ isEditMode ? 'Guardar Cambios' : 'Registrar Funcionario' }}
+        </button>
+    </div>
+
+</div>

@@ -1,54 +1,58 @@
-<div class="bg-stone-100 dark:bg-slate-900 border-2 border-black overflow-hidden flex flex-col"
-     style="width:720px; max-width:95vw; max-height:90vh; box-shadow: 6px 6px 0 #000">
+<div class="bg-stone-100 dark:bg-slate-900 border-2 border-black rounded-2xl overflow-hidden flex flex-col"
+     style="width:720px; max-width:95vw; max-height:90vh">
 
     <!-- HEADER -->
-    <div class="bg-[#0F172A] px-3 sm:px-5 py-3 sm:py-3.5 flex items-center gap-3 shrink-0 select-none"
+    <div class="bg-[#0F172A] px-5 py-3 flex items-center gap-3 shrink-0 select-none"
          cdkDrag cdkDragRootElement=".cdk-overlay-pane" cdkDragHandle style="cursor:grab">
-        <div class="w-9 h-9 rounded bg-amber-400 border-2 border-black flex items-center justify-center shadow-[2px_2px_0_#fbbf24] shrink-0">
-            <mat-icon class="!text-lg text-black">warehouse</mat-icon>
+        <div class="w-9 h-9 rounded-lg bg-amber-500 border-2 border-black flex items-center justify-center shadow-[2px_2px_0_#000] shrink-0">
+            <mat-icon class="!text-lg text-white">warehouse</mat-icon>
         </div>
-        <div>
-            <p class="text-[9px] text-slate-400 font-bold uppercase tracking-[0.18em] leading-none mb-0.5">{{ subtitulo }}</p>
+        <div class="flex-1 min-w-0">
+            <p class="text-[9px] text-slate-400 font-bold uppercase tracking-[0.18em] leading-none mb-0.5">Inventario · Ubicaciones</p>
             <h2 class="text-sm text-white font-black uppercase tracking-tight leading-none">{{ titulo }}</h2>
         </div>
+        <button type="button" (click)="dialogRef.close(false)" (mousedown)="$event.stopPropagation()"
+                class="w-8 h-8 flex items-center justify-center rounded-lg bg-white/10 hover:bg-white/20 transition-colors border border-white/10 shrink-0">
+            <mat-icon class="text-white !text-base">close</mat-icon>
+        </button>
     </div>
 
     <!-- BODY -->
-    <div class="flex-1 overflow-y-auto px-3 sm:px-5 py-4 sm:py-5 custom-scrollbar">
-        <form [formGroup]="form" class="grid grid-cols-1 md:grid-cols-12 gap-4 sm:gap-5">
+    <div class="flex-1 overflow-y-auto px-5 py-5 custom-scrollbar">
+        <form [formGroup]="form" class="grid grid-cols-12 gap-5">
 
             <!-- LEFT: Preview + Estado + Descripción -->
-            <div class="md:col-span-5 flex flex-col gap-4">
+            <div class="col-span-5 flex flex-col gap-4">
 
                 <!-- Vista previa -->
-                <div class="bg-white dark:bg-slate-800 border-2 border-black rounded-xl p-4 shadow-[3px_3px_0_#000] overflow-hidden">
-                    <span class="text-[8px] font-black text-stone-400 dark:text-slate-400 uppercase tracking-[0.18em] mb-3 border-b-2 border-black/10 pb-1.5 w-full block">
+                <div class="bg-white dark:bg-slate-800 border-2 border-black rounded-xl p-4 shadow-[3px_3px_0_#000]">
+                    <p class="text-[8px] font-black text-stone-400 dark:text-slate-400 uppercase tracking-[0.18em] mb-3 pb-2 border-b-2 border-black/10">
                         Vista Previa
-                    </span>
-                    <div class="flex flex-col gap-1.5">
-                        <p class="font-black text-lg text-black dark:text-white leading-none font-mono">
+                    </p>
+                    <div class="flex flex-col gap-2">
+                        <p class="font-black text-base text-black dark:text-white leading-none font-mono tracking-tight">
                             {{ form.get('codigo')?.value || 'ALM-XXX-00' }}
                         </p>
-                        <p class="text-xs font-bold text-stone-700 dark:text-stone-300 leading-tight line-clamp-2 min-h-[34px]">
+                        <p class="text-xs font-bold text-stone-600 dark:text-stone-300 leading-snug min-h-[32px] line-clamp-2">
                             {{ form.get('nombre')?.value || 'Nombre del almacén...' }}
                         </p>
-                        <div class="flex flex-wrap gap-1.5 mt-1">
+                        <div class="flex flex-wrap gap-1.5">
                             <span *ngIf="form.get('ciudad')?.value"
                                   class="px-2 py-0.5 bg-stone-100 dark:bg-slate-700 border-2 border-black rounded text-[9px] font-black uppercase text-black dark:text-white">
                                 {{ form.get('ciudad')?.value }}
                             </span>
-                            <span class="px-2 py-0.5 bg-stone-800 dark:bg-slate-600 border-2 border-black rounded text-[9px] font-black uppercase text-white">
+                            <span class="px-2 py-0.5 bg-[#0F172A] border-2 border-black rounded text-[9px] font-black uppercase text-white">
                                 {{ form.get('tipo')?.value }}
                             </span>
                         </div>
-                        <div class="flex justify-between items-end mt-2 pt-2 border-t-2 border-black/10">
+                        <div class="flex justify-between items-end pt-2 border-t-2 border-black/10">
                             <span class="px-2 py-1 border-2 border-black rounded-lg text-[9px] font-black shadow-[2px_2px_0_#000]"
-                                  [ngClass]="form.get('estado')?.value === 'ACTIVO' ? 'bg-emerald-500 text-white' : 'bg-stone-700 text-white'">
+                                  [ngClass]="form.get('estado')?.value === 'ACTIVO' ? 'bg-emerald-500 text-white' : 'bg-stone-600 text-white'">
                                 {{ form.get('estado')?.value }}
                             </span>
-                            <div *ngIf="nombreOficinaPreview" class="text-right">
-                                <p class="text-[8px] font-bold uppercase text-stone-400 dark:text-slate-400">Oficina</p>
-                                <p class="text-[10px] font-black uppercase text-black dark:text-white border-2 border-stone-300 dark:border-slate-600 bg-stone-50 dark:bg-slate-700 px-1.5 rounded">
+                            <div *ngIf="nombreOficinaPreview" class="text-right max-w-[55%]">
+                                <p class="text-[8px] font-bold uppercase text-stone-400 dark:text-slate-400 mb-0.5">Oficina</p>
+                                <p class="text-[9px] font-black uppercase text-black dark:text-white border-2 border-stone-300 dark:border-slate-600 bg-stone-50 dark:bg-slate-700 px-1.5 py-0.5 rounded truncate">
                                     {{ nombreOficinaPreview }}
                                 </p>
                             </div>
@@ -56,150 +60,230 @@
                     </div>
                 </div>
 
-                <!-- Estado toggle pill -->
+                <!-- Estado toggle -->
                 <div>
                     <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1.5 block">Estado</label>
                     <button *ngIf="!readOnly" type="button" (click)="toggleEstado()"
-                            class="flex items-center gap-2 h-10 px-3 border-2 rounded-xl font-black text-[10px] uppercase transition-all duration-150"
-                            [class]="form.get('estado')?.value === 'ACTIVO'
+                            class="flex items-center gap-2.5 h-10 px-3 w-full border-2 rounded-xl font-black text-[10px] uppercase transition-all duration-150"
+                            [ngClass]="form.get('estado')?.value === 'ACTIVO'
                                 ? 'border-black bg-white dark:bg-slate-700 shadow-[2px_2px_0_#000] text-black dark:text-white'
                                 : 'border-stone-300 dark:border-slate-600 bg-stone-50 dark:bg-slate-800 text-stone-400 dark:text-slate-500'">
                         <div class="w-8 h-4 rounded-full border-2 relative transition-all duration-200 shrink-0"
-                             [class]="form.get('estado')?.value === 'ACTIVO'
-                                 ? 'border-black bg-black dark:border-slate-400 dark:bg-slate-400'
+                             [ngClass]="form.get('estado')?.value === 'ACTIVO'
+                                 ? 'border-black bg-black'
                                  : 'border-stone-300 dark:border-slate-600 bg-stone-200 dark:bg-slate-600'">
                             <div class="absolute top-px w-2.5 h-2.5 rounded-full bg-white transition-all duration-200"
-                                 [class]="form.get('estado')?.value === 'ACTIVO' ? 'left-4' : 'left-px'"></div>
+                                 [ngClass]="form.get('estado')?.value === 'ACTIVO' ? 'left-4' : 'left-px'"></div>
                         </div>
-                        {{ form.get('estado')?.value === 'ACTIVO' ? 'Activo' : 'Inactivo' }}
+                        <span>{{ form.get('estado')?.value === 'ACTIVO' ? 'Activo' : 'Inactivo' }}</span>
                     </button>
                     <div *ngIf="readOnly"
-                         class="flex items-center gap-2 h-10 px-3 border-2 rounded-xl font-black text-[10px] uppercase border-stone-200 dark:border-slate-700 bg-stone-50 dark:bg-slate-800 text-stone-400 dark:text-slate-500">
+                         class="flex items-center h-10 px-3 border-2 rounded-xl font-black text-[10px] uppercase border-stone-200 dark:border-slate-700 bg-stone-50 dark:bg-slate-800 text-stone-400 dark:text-slate-500">
                         {{ form.get('estado')?.value }}
                     </div>
                 </div>
 
                 <!-- Descripción -->
-                <div>
-                    <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1.5 block">Descripción / Observaciones</label>
-                    <textarea formControlName="descripcion" rows="3" placeholder="Notas sobre el almacén..."
-                              class="w-full text-sm font-normal bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-xl px-3 py-2.5 outline-none transition-all duration-150 resize-none placeholder:text-stone-300 dark:placeholder:text-slate-600 hover:border-stone-400 dark:hover:border-slate-500 focus:border-black dark:focus:border-slate-400 focus:shadow-[3px_3px_0_#000] custom-scrollbar"></textarea>
+                <div class="flex-1 flex flex-col">
+                    <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1.5 block">
+                        Descripción / Observaciones
+                    </label>
+                    <textarea formControlName="descripcion" rows="4" placeholder="Notas sobre el almacén..."
+                              class="flex-1 text-sm font-normal bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-xl px-3 py-2.5 outline-none transition-all duration-150 resize-none placeholder:text-stone-300 dark:placeholder:text-slate-600 hover:border-stone-400 focus:border-black focus:shadow-[3px_3px_0_#000] custom-scrollbar"></textarea>
                 </div>
             </div>
 
             <!-- RIGHT: Campos -->
-            <div class="md:col-span-7 flex flex-col gap-4">
+            <div class="col-span-7 flex flex-col gap-4">
 
                 <!-- BASE AERONÁUTICA -->
-                <div>
-                    <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1.5 block">Base Asignada *</label>
+                <div class="relative">
+                    <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1.5 block">
+                        Base Aeronáutica *
+                    </label>
                     <button type="button"
                             (click)="baseDropOpen.set(!baseDropOpen())"
-                            class="w-full flex items-center justify-between border-2 rounded-xl px-3 py-2.5 transition-all duration-150"
-                            [class]="hasError('id_base','required')
-                                ? 'border-red-400 focus:shadow-[2px_2px_0_#f87171] bg-white dark:bg-slate-800'
+                            class="w-full flex items-center justify-between border-2 rounded-xl px-3 h-10 transition-all duration-150 bg-white dark:bg-slate-800"
+                            [ngClass]="hasError('id_base','required')
+                                ? 'border-red-400'
                                 : baseDropOpen()
-                                    ? 'border-black dark:border-slate-400 shadow-[3px_3px_0_#000] bg-white dark:bg-slate-800'
-                                    : 'border-stone-300 dark:border-slate-600 hover:border-stone-400 dark:hover:border-slate-500 bg-white dark:bg-slate-800'"
+                                    ? 'border-black shadow-[3px_3px_0_#000]'
+                                    : 'border-stone-300 dark:border-slate-600 hover:border-stone-400'"
                             [disabled]="readOnly">
-                        <span class="text-sm font-bold truncate"
-                              [class]="nombreBasePreview ? 'text-black dark:text-white' : 'text-stone-300 dark:text-slate-600'">
-                            {{ nombreBasePreview || '— Seleccione una Base —' }}
-                        </span>
-                        <mat-icon class="!text-sm text-stone-400 shrink-0 transition-transform duration-200"
-                                  [class]="baseDropOpen() ? 'rotate-180' : ''">expand_more</mat-icon>
+                        <div class="flex items-center gap-2 min-w-0">
+                            <span *ngIf="selectedBaseCode" class="px-1.5 py-0.5 bg-[#0F172A] text-white text-[9px] font-black rounded border border-black shrink-0 font-mono">
+                                {{ selectedBaseCode }}
+                            </span>
+                            <span class="text-sm font-bold truncate"
+                                  [ngClass]="nombreBasePreview ? 'text-black dark:text-white' : 'text-stone-300 dark:text-slate-600'">
+                                {{ selectedBaseName || '— Seleccione una Base —' }}
+                            </span>
+                        </div>
+                        <mat-icon class="!text-sm text-stone-400 shrink-0 transition-transform duration-200 ml-2"
+                                  [ngClass]="baseDropOpen() ? 'rotate-180' : ''">expand_more</mat-icon>
                     </button>
+
+                    <!-- Panel de tarjetas -->
                     <div *ngIf="baseDropOpen()"
-                         class="mt-1 border-2 border-black dark:border-slate-600 rounded-xl bg-white dark:bg-slate-800 max-h-48 overflow-y-auto custom-scrollbar shadow-[3px_3px_0_#000] divide-y divide-stone-100 dark:divide-slate-700">
-                        <button type="button" (click)="form.patchValue({id_base: null}); baseDropOpen.set(false)"
-                                class="w-full flex items-center px-3 py-2.5 text-left transition-colors duration-100 hover:bg-stone-50 dark:hover:bg-slate-700/50">
-                            <span class="text-sm font-bold text-stone-300 dark:text-slate-600">— Seleccione una Base —</span>
-                        </button>
-                        <button *ngFor="let base of basesAeronauticas()" type="button"
-                                (click)="form.patchValue({id_base: base.id_base}); baseDropOpen.set(false)"
-                                class="w-full flex items-center px-3 py-2.5 text-left transition-colors duration-100"
-                                [class]="form.get('id_base')?.value == base.id_base ? 'bg-stone-100 dark:bg-slate-700' : 'hover:bg-stone-50 dark:hover:bg-slate-700/50'">
-                            <span class="text-sm font-bold text-black dark:text-white">{{ base.name }} ({{ base.code }})</span>
-                        </button>
+                         class="absolute top-full left-0 right-0 mt-1 z-50 border-2 border-black rounded-xl bg-white dark:bg-slate-800 shadow-[4px_4px_0_#000] overflow-hidden">
+                        <div class="px-3 pt-3 pb-1">
+                            <p class="text-[8px] font-black uppercase tracking-[0.15em] text-stone-400 dark:text-slate-400 mb-2">
+                                Seleccione la base aeronáutica
+                            </p>
+                            <div class="grid grid-cols-2 gap-2 max-h-52 overflow-y-auto custom-scrollbar pb-2">
+                                <button *ngFor="let base of basesAeronauticas()" type="button"
+                                        (click)="form.patchValue({id_base: base.id_base}); baseDropOpen.set(false)"
+                                        class="flex flex-col items-start gap-0.5 px-3 py-2.5 border-2 rounded-xl text-left transition-all duration-100"
+                                        [ngClass]="form.get('id_base')?.value == base.id_base
+                                            ? 'border-black bg-amber-400 shadow-[2px_2px_0_#000]'
+                                            : 'border-stone-200 dark:border-slate-600 bg-stone-50 dark:bg-slate-700 hover:border-black hover:shadow-[2px_2px_0_#000]'">
+                                    <span class="text-[11px] font-black font-mono leading-none"
+                                          [ngClass]="form.get('id_base')?.value == base.id_base ? 'text-black' : 'text-black dark:text-white'">
+                                        {{ base.code }}
+                                    </span>
+                                    <span class="text-[9px] font-bold leading-tight line-clamp-2"
+                                          [ngClass]="form.get('id_base')?.value == base.id_base ? 'text-black/70' : 'text-stone-500 dark:text-slate-400'">
+                                        {{ base.name }}
+                                    </span>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="border-t-2 border-stone-100 dark:border-slate-700 px-3 py-2">
+                            <button type="button" (click)="form.patchValue({id_base: null}); baseDropOpen.set(false)"
+                                    class="text-[9px] font-bold text-stone-400 dark:text-slate-500 hover:text-red-500 transition-colors">
+                                Limpiar selección
+                            </button>
+                        </div>
                     </div>
+
                     <p *ngIf="hasError('id_base','required')" class="text-[8px] font-bold text-red-500 mt-1">Seleccione una base.</p>
                 </div>
 
                 <!-- OFICINA -->
-                <div>
-                    <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1.5 block">Oficina *</label>
+                <div class="relative">
+                    <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1.5 block">
+                        Oficina *
+                    </label>
                     <div *ngIf="readOnly"
-                         class="w-full h-10 text-sm font-bold bg-stone-50 dark:bg-slate-800 border-2 border-stone-200 dark:border-slate-700 rounded-xl px-3 flex items-center text-black dark:text-white opacity-60 cursor-not-allowed">
+                         class="w-full h-10 text-sm font-bold bg-stone-50 dark:bg-slate-800 border-2 border-stone-200 dark:border-slate-700 rounded-xl px-3 flex items-center text-black dark:text-white opacity-60">
                         {{ nombreOficinaPreview || '—' }}
                     </div>
                     <div *ngIf="!readOnly">
-                        <button type="button"
-                                (click)="ofiDropOpen.set(!ofiDropOpen())"
-                                class="w-full flex items-center justify-between border-2 rounded-xl px-3 py-2.5 transition-all duration-150"
-                                [class]="hasError('id_oficina','required')
-                                    ? 'border-red-400 bg-white dark:bg-slate-800'
-                                    : ofiDropOpen()
-                                        ? 'border-black dark:border-slate-400 shadow-[3px_3px_0_#000] bg-white dark:bg-slate-800'
-                                        : 'border-stone-300 dark:border-slate-600 hover:border-stone-400 dark:hover:border-slate-500 bg-white dark:bg-slate-800'">
-                            <span class="text-sm font-bold truncate"
-                                  [class]="nombreOficinaPreview ? 'text-black dark:text-white' : 'text-stone-300 dark:text-slate-600'">
-                                {{ nombreOficinaPreview || '— Seleccione una Oficina —' }}
-                            </span>
-                            <mat-icon class="!text-sm text-stone-400 shrink-0 transition-transform duration-200"
-                                      [class]="ofiDropOpen() ? 'rotate-180' : ''">expand_more</mat-icon>
-                        </button>
-                        <div *ngIf="ofiDropOpen()"
-                             class="mt-1 border-2 border-black dark:border-slate-600 rounded-xl bg-white dark:bg-slate-800 max-h-48 overflow-y-auto custom-scrollbar shadow-[3px_3px_0_#000] divide-y divide-stone-100 dark:divide-slate-700">
-                            <button type="button" (click)="form.patchValue({id_oficina: null}); ofiDropOpen.set(false)"
-                                    class="w-full flex items-center px-3 py-2.5 text-left transition-colors duration-100 hover:bg-stone-50 dark:hover:bg-slate-700/50">
-                                <span class="text-sm font-bold text-stone-300 dark:text-slate-600">— Seleccione una Oficina —</span>
+                        <!-- Backdrop para cerrar al click fuera -->
+                        <div *ngIf="ofiDropOpen()" class="fixed inset-0 z-40"
+                             (click)="ofiDropOpen.set(false); ofiSearch.set(nombreOficinaPreview)"></div>
+
+                        <!-- Campo buscador -->
+                        <div class="relative flex items-center border-2 rounded-xl px-3 h-10 bg-white dark:bg-slate-800 transition-all duration-150"
+                             [ngClass]="hasError('id_oficina','required')
+                                 ? 'border-red-400'
+                                 : ofiDropOpen()
+                                     ? 'border-black shadow-[3px_3px_0_#000]'
+                                     : 'border-stone-300 dark:border-slate-600 hover:border-stone-400'">
+                            <mat-icon class="!text-sm text-stone-400 shrink-0 mr-2">search</mat-icon>
+                            <input type="text"
+                                   [value]="ofiDropOpen() ? ofiSearch() : nombreOficinaPreview"
+                                   (focus)="ofiSearch.set('')"
+                                   (input)="ofiSearch.set($any($event.target).value); ofiDropOpen.set($any($event.target).value.length > 0)"
+                                   placeholder="Buscar oficina..."
+                                   [ngClass]="nombreOficinaPreview && !ofiDropOpen() ? 'text-black dark:text-white font-bold' : 'text-stone-500 dark:text-slate-400 font-normal'"
+                                   class="flex-1 text-sm bg-transparent outline-none placeholder:text-stone-300 dark:placeholder:text-slate-500 min-w-0">
+                            <button *ngIf="nombreOficinaPreview && !ofiDropOpen()" type="button"
+                                    (click)="form.patchValue({id_oficina: null}); ofiSearch.set('')"
+                                    class="text-stone-300 hover:text-red-500 transition-colors shrink-0 ml-1">
+                                <mat-icon class="!text-sm">close</mat-icon>
                             </button>
-                            <button *ngFor="let o of oficinas()" type="button"
-                                    (click)="form.patchValue({id_oficina: o.id_oficina}); ofiDropOpen.set(false)"
-                                    class="w-full flex items-center px-3 py-2.5 text-left transition-colors duration-100"
-                                    [class]="form.get('id_oficina')?.value == o.id_oficina ? 'bg-stone-100 dark:bg-slate-700' : 'hover:bg-stone-50 dark:hover:bg-slate-700/50'">
-                                <span class="text-sm font-bold text-black dark:text-white">{{ o.nombre_oficina }}</span>
-                            </button>
+                            <mat-icon *ngIf="!nombreOficinaPreview || ofiDropOpen()"
+                                      class="!text-sm text-stone-400 shrink-0 transition-transform duration-200 ml-1"
+                                      [ngClass]="ofiDropOpen() ? 'rotate-180' : ''">expand_more</mat-icon>
                         </div>
+
+                        <!-- Panel de resultados -->
+                        <div *ngIf="ofiDropOpen()"
+                             class="absolute top-full left-0 right-0 mt-1 z-50 border-2 border-black rounded-xl bg-white dark:bg-slate-800 shadow-[4px_4px_0_#000] overflow-hidden">
+                            <div class="px-3 py-2.5 max-h-52 overflow-y-auto custom-scrollbar">
+                                <ng-container *ngIf="oficinasFiltered().length > 0; else sinResultados">
+                                    <div class="divide-y divide-stone-100 dark:divide-slate-700">
+                                        <button *ngFor="let o of oficinasFiltered()" type="button"
+                                                (mousedown)="$event.preventDefault()"
+                                                (click)="form.patchValue({id_oficina: o.id_oficina}); ofiDropOpen.set(false); ofiSearch.set(o.nombre_oficina)"
+                                                class="w-full flex items-center gap-2 px-1 py-2.5 text-left transition-colors duration-100"
+                                                [ngClass]="form.get('id_oficina')?.value == o.id_oficina
+                                                    ? 'bg-amber-50 dark:bg-slate-700'
+                                                    : 'hover:bg-stone-50 dark:hover:bg-slate-700/50'">
+                                            <mat-icon *ngIf="form.get('id_oficina')?.value == o.id_oficina"
+                                                      class="!text-sm text-amber-500 shrink-0">check</mat-icon>
+                                            <mat-icon *ngIf="form.get('id_oficina')?.value != o.id_oficina"
+                                                      class="!text-sm text-stone-300 dark:text-slate-600 shrink-0">business</mat-icon>
+                                            <span class="text-sm font-bold text-black dark:text-white">{{ o.nombre_oficina }}</span>
+                                        </button>
+                                    </div>
+                                </ng-container>
+                                <ng-template #sinResultados>
+                                    <div class="flex flex-col items-center py-4 gap-1">
+                                        <mat-icon class="!text-2xl text-stone-300 dark:text-slate-600">search_off</mat-icon>
+                                        <p class="text-[10px] font-bold text-stone-400 dark:text-slate-500">Sin resultados para "{{ ofiSearch() }}"</p>
+                                    </div>
+                                </ng-template>
+                            </div>
+                        </div>
+
                         <p *ngIf="hasError('id_oficina','required')" class="text-[8px] font-bold text-red-500 mt-1">Seleccione una oficina.</p>
                     </div>
                 </div>
 
+                <!-- NOMBRE DEL ALMACÉN -->
+                <div>
+                    <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1.5 block">
+                        Nombre del Almacén *
+                    </label>
+                    <input type="text" formControlName="nombre" placeholder="Almacén Central de Mantenimiento"
+                           class="w-full h-10 text-sm font-bold bg-white dark:bg-slate-800 dark:text-white border-2 rounded-xl px-3 outline-none transition-all placeholder:text-stone-300 dark:placeholder:text-slate-600"
+                           [ngClass]="hasError('nombre','required')
+                               ? 'border-red-400 focus:shadow-[2px_2px_0_#f87171]'
+                               : 'border-stone-300 dark:border-slate-600 hover:border-stone-400 focus:border-black focus:shadow-[3px_3px_0_#000]'">
+                    <p *ngIf="hasError('nombre','required')" class="text-[8px] font-bold text-red-500 mt-1">Campo requerido.</p>
+                </div>
+
                 <!-- CÓDIGO + TIPO -->
-                <div class="flex flex-col sm:flex-row gap-4">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
 
                     <!-- Código -->
-                    <div class="flex-1">
-                        <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1.5 block">Código *</label>
+                    <div>
+                        <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1.5 block">
+                            Código *
+                        </label>
                         <input type="text" formControlName="codigo" placeholder="ALM-CBBA-01"
-                               class="w-full h-10 text-sm font-bold bg-white dark:bg-slate-800 dark:text-white border-2 rounded-xl px-3 outline-none transition-all duration-150 placeholder:text-stone-300 dark:placeholder:text-slate-600 uppercase"
-                               [class]="hasError('codigo','required')
+                               class="w-full h-10 text-sm font-bold bg-white dark:bg-slate-800 dark:text-white border-2 rounded-xl px-3 outline-none transition-all placeholder:text-stone-300 dark:placeholder:text-slate-600 uppercase font-mono"
+                               [ngClass]="hasError('codigo','required')
                                    ? 'border-red-400 focus:shadow-[2px_2px_0_#f87171]'
-                                   : 'border-stone-300 dark:border-slate-600 hover:border-stone-400 dark:hover:border-slate-500 focus:border-black dark:focus:border-slate-400 focus:shadow-[3px_3px_0_#000]'">
+                                   : 'border-stone-300 dark:border-slate-600 hover:border-stone-400 focus:border-black focus:shadow-[3px_3px_0_#000]'">
                         <p *ngIf="hasError('codigo','required')" class="text-[8px] font-bold text-red-500 mt-1">Campo requerido.</p>
                     </div>
 
                     <!-- Tipo -->
-                    <div class="w-36">
-                        <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1.5 block">Tipo *</label>
+                    <div>
+                        <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1.5 block">
+                            Tipo *
+                        </label>
                         <div class="relative">
                             <button type="button"
                                     (click)="tipoDropOpen.set(!tipoDropOpen())"
-                                    class="w-full flex items-center justify-between border-2 rounded-xl px-3 py-2.5 transition-all duration-150 bg-white dark:bg-slate-800"
-                                    [class]="tipoDropOpen()
-                                        ? 'border-black dark:border-slate-400 shadow-[3px_3px_0_#000]'
-                                        : 'border-stone-300 dark:border-slate-600 hover:border-stone-400 dark:hover:border-slate-500'"
+                                    class="w-full flex items-center justify-between border-2 rounded-xl px-3 h-10 transition-all bg-white dark:bg-slate-800"
+                                    [ngClass]="tipoDropOpen()
+                                        ? 'border-black shadow-[3px_3px_0_#000]'
+                                        : 'border-stone-300 dark:border-slate-600 hover:border-stone-400'"
                                     [disabled]="readOnly">
                                 <span class="text-sm font-bold text-black dark:text-white truncate">{{ form.get('tipo')?.value }}</span>
                                 <mat-icon class="!text-sm text-stone-400 shrink-0 transition-transform duration-200"
-                                          [class]="tipoDropOpen() ? 'rotate-180' : ''">expand_more</mat-icon>
+                                          [ngClass]="tipoDropOpen() ? 'rotate-180' : ''">expand_more</mat-icon>
                             </button>
                             <div *ngIf="tipoDropOpen()"
-                                 class="absolute left-0 top-full mt-1 w-full z-50 border-2 border-black dark:border-slate-600 rounded-xl bg-white dark:bg-slate-800 overflow-hidden shadow-[3px_3px_0_#000] divide-y divide-stone-100 dark:divide-slate-700">
+                                 class="absolute left-0 top-full mt-1 w-full z-50 border-2 border-black rounded-xl bg-white dark:bg-slate-800 overflow-hidden shadow-[3px_3px_0_#000] divide-y divide-stone-100 dark:divide-slate-700">
                                 <button *ngFor="let t of tipos" type="button"
                                         (click)="form.patchValue({tipo: t}); tipoDropOpen.set(false)"
-                                        class="w-full flex items-center px-3 py-2.5 text-left transition-colors duration-100"
-                                        [class]="form.get('tipo')?.value === t ? 'bg-stone-100 dark:bg-slate-700' : 'hover:bg-stone-50 dark:hover:bg-slate-700/50'">
+                                        class="w-full flex items-center px-3 py-2.5 text-left transition-colors"
+                                        [ngClass]="form.get('tipo')?.value === t ? 'bg-amber-50 dark:bg-slate-700' : 'hover:bg-stone-50 dark:hover:bg-slate-700/50'">
                                     <span class="text-sm font-bold text-black dark:text-white">{{ t }}</span>
                                 </button>
                             </div>
@@ -209,48 +293,39 @@
 
                 <!-- CIUDAD -->
                 <div>
-                    <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1.5 block">Ciudad *</label>
+                    <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1.5 block">
+                        Ciudad *
+                    </label>
                     <button type="button"
                             (click)="ciudadDropOpen.set(!ciudadDropOpen())"
-                            class="w-full flex items-center justify-between border-2 rounded-xl px-3 py-2.5 transition-all duration-150"
-                            [class]="hasError('ciudad','required')
-                                ? 'border-red-400 bg-white dark:bg-slate-800'
+                            class="w-full flex items-center justify-between border-2 rounded-xl px-3 h-10 transition-all bg-white dark:bg-slate-800"
+                            [ngClass]="hasError('ciudad','required')
+                                ? 'border-red-400'
                                 : ciudadDropOpen()
-                                    ? 'border-black dark:border-slate-400 shadow-[3px_3px_0_#000] bg-white dark:bg-slate-800'
-                                    : 'border-stone-300 dark:border-slate-600 hover:border-stone-400 dark:hover:border-slate-500 bg-white dark:bg-slate-800'"
+                                    ? 'border-black shadow-[3px_3px_0_#000]'
+                                    : 'border-stone-300 dark:border-slate-600 hover:border-stone-400'"
                             [disabled]="readOnly">
                         <span class="text-sm font-bold truncate"
-                              [class]="form.get('ciudad')?.value ? 'text-black dark:text-white' : 'text-stone-300 dark:text-slate-600'">
+                              [ngClass]="form.get('ciudad')?.value ? 'text-black dark:text-white' : 'text-stone-300 dark:text-slate-600'">
                             {{ form.get('ciudad')?.value || '— Seleccione una Ciudad —' }}
                         </span>
                         <mat-icon class="!text-sm text-stone-400 shrink-0 transition-transform duration-200"
-                                  [class]="ciudadDropOpen() ? 'rotate-180' : ''">expand_more</mat-icon>
+                                  [ngClass]="ciudadDropOpen() ? 'rotate-180' : ''">expand_more</mat-icon>
                     </button>
                     <div *ngIf="ciudadDropOpen()"
-                         class="mt-1 border-2 border-black dark:border-slate-600 rounded-xl bg-white dark:bg-slate-800 max-h-48 overflow-y-auto custom-scrollbar shadow-[3px_3px_0_#000] divide-y divide-stone-100 dark:divide-slate-700">
+                         class="mt-1 border-2 border-black rounded-xl bg-white dark:bg-slate-800 max-h-44 overflow-y-auto custom-scrollbar shadow-[3px_3px_0_#000] divide-y divide-stone-100 dark:divide-slate-700">
                         <button type="button" (click)="form.patchValue({ciudad: ''}); ciudadDropOpen.set(false)"
-                                class="w-full flex items-center px-3 py-2.5 text-left transition-colors duration-100 hover:bg-stone-50 dark:hover:bg-slate-700/50">
+                                class="w-full flex items-center px-3 py-2.5 text-left hover:bg-stone-50 dark:hover:bg-slate-700/50 transition-colors">
                             <span class="text-sm font-bold text-stone-300 dark:text-slate-600">— Seleccione una Ciudad —</span>
                         </button>
                         <button *ngFor="let c of ciudades()" type="button"
                                 (click)="form.patchValue({ciudad: c.nombre}); ciudadDropOpen.set(false)"
-                                class="w-full flex items-center px-3 py-2.5 text-left transition-colors duration-100"
-                                [class]="form.get('ciudad')?.value === c.nombre ? 'bg-stone-100 dark:bg-slate-700' : 'hover:bg-stone-50 dark:hover:bg-slate-700/50'">
+                                class="w-full flex items-center px-3 py-2.5 text-left transition-colors"
+                                [ngClass]="form.get('ciudad')?.value === c.nombre ? 'bg-amber-50 dark:bg-slate-700' : 'hover:bg-stone-50 dark:hover:bg-slate-700/50'">
                             <span class="text-sm font-bold text-black dark:text-white">{{ c.nombre }}</span>
                         </button>
                     </div>
                     <p *ngIf="hasError('ciudad','required')" class="text-[8px] font-bold text-red-500 mt-1">Seleccione una ciudad.</p>
-                </div>
-
-                <!-- NOMBRE -->
-                <div>
-                    <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1.5 block">Nombre del Almacén *</label>
-                    <input type="text" formControlName="nombre" placeholder="Almacén Central"
-                           class="w-full h-10 text-sm font-bold bg-white dark:bg-slate-800 dark:text-white border-2 rounded-xl px-3 outline-none transition-all duration-150 placeholder:text-stone-300 dark:placeholder:text-slate-600"
-                           [class]="hasError('nombre','required')
-                               ? 'border-red-400 focus:shadow-[2px_2px_0_#f87171]'
-                               : 'border-stone-300 dark:border-slate-600 hover:border-stone-400 dark:hover:border-slate-500 focus:border-black dark:focus:border-slate-400 focus:shadow-[3px_3px_0_#000]'">
-                    <p *ngIf="hasError('nombre','required')" class="text-[8px] font-bold text-red-500 mt-1">Campo requerido.</p>
                 </div>
 
             </div>
@@ -258,14 +333,15 @@
     </div>
 
     <!-- FOOTER -->
-    <div class="border-t-2 border-black bg-stone-200 dark:bg-slate-800 px-3 sm:px-5 py-3 flex justify-between items-center shrink-0">
+    <div class="border-t-2 border-black bg-stone-200 dark:bg-slate-800 px-5 py-3 flex justify-between items-center shrink-0">
         <button type="button" (click)="dialogRef.close(false)"
                 class="px-4 py-2 bg-[#FF1414] text-white font-black text-[10px] border-2 border-black rounded-xl shadow-[2px_2px_0_#000] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all uppercase">
             {{ readOnly ? 'Cerrar' : 'Cancelar' }}
         </button>
         <button *ngIf="!readOnly" type="button" (click)="save()"
-                class="flex items-center gap-2 px-5 py-2 bg-amber-400 text-black font-black text-[10px] border-2 border-black rounded-xl shadow-[3px_3px_0_#000] hover:shadow-none hover:translate-x-[3px] hover:translate-y-[3px] transition-all uppercase">
-            <mat-icon class="!text-sm">save</mat-icon>
+                class="flex items-center gap-2 px-5 py-2 bg-[#0F172A] text-white font-black text-[10px] border-2 border-black rounded-xl shadow-[3px_3px_0_#000] hover:shadow-none hover:translate-x-[3px] hover:translate-y-[3px] transition-all uppercase disabled:opacity-40 disabled:cursor-not-allowed"
+                [disabled]="form.invalid">
+            <mat-icon class="!text-white !text-base">save</mat-icon>
             Guardar Almacén
         </button>
     </div>

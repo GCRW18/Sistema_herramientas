@@ -1,87 +1,142 @@
-<button
-    class="neo-bell-button"
-    (click)="openDialog()"
-    [class.has-critical]="criticalCount() > 0"
-    [matTooltip]="'Alertas'">
-
-    <mat-icon [svgIcon]="'heroicons_outline:bell'"></mat-icon>
-
+<!-- ── BOTÓN CAMPANA ── -->
+<button class="notif-trigger" (click)="openDialog()"
+        [class.has-critical]="criticalCount() > 0"
+        matTooltip="Centro de alertas">
+    <mat-icon svgIcon="heroicons_outline:bell"></mat-icon>
     @if (unreadCount() > 0) {
-        <span class="neo-badge" [class.critical-pulse]="criticalCount() > 0">
+        <span class="notif-badge" [class.critical-pulse]="criticalCount() > 0">
             {{ unreadCount() }}
         </span>
     }
 </button>
 
+<!-- ── DIALOG ── -->
 <ng-template #dialogTemplate>
-    <div class="neo-window-wrapper">
+    <div class="bg-stone-100 dark:bg-slate-900 border-2 border-black overflow-hidden flex flex-col"
+         style="width:480px; max-width:95vw; max-height:82vh; box-shadow:6px 6px 0 #000">
 
-        <div class="neo-header">
-            <div class="neo-header-content">
-                <mat-icon class="neo-header-icon">error</mat-icon>
-                <h3 class="neo-header-title">CENTRO DE ALERTAS</h3>
-
-                @if (criticalCount() > 0) {
-                    <div class="critical-badge">
-                        <span class="critical-count">{{ criticalCount() }}</span>
-                        <span class="critical-label">URGENTE</span>
-                    </div>
-                }
+        <!-- Header -->
+        <div class="bg-[#0F172A] px-5 py-3.5 flex items-center gap-3 shrink-0">
+            <div class="w-9 h-9 rounded bg-amber-400 border-2 border-black flex items-center justify-center shadow-[2px_2px_0_#fbbf24] shrink-0">
+                <mat-icon class="!text-lg text-black">notifications_active</mat-icon>
             </div>
-
-            <div class="neo-header-actions">
-                @if (unreadCount() > 0) {
-                    <button mat-icon-button class="neo-action-btn" (click)="markAllAsRead()" matTooltip="Limpiar">
-                        <mat-icon>delete_sweep</mat-icon>
-                    </button>
-                }
-                <button mat-icon-button class="neo-action-btn" (click)="closeDialog()" matTooltip="Cerrar">
-                    <mat-icon>close</mat-icon>
+            <div class="flex-1 min-w-0">
+                <p class="text-[9px] text-slate-400 font-bold uppercase tracking-[0.18em] leading-none mb-0.5">Sistema Herramientas</p>
+                <h2 class="text-sm text-white font-black uppercase tracking-tight leading-none">Centro de alertas</h2>
+            </div>
+            @if (criticalCount() > 0) {
+                <span class="shrink-0 text-[8px] font-black uppercase px-2 py-1 bg-red-600 text-white border-2 border-red-800 rounded-lg">
+                    {{ criticalCount() }} urgente{{ criticalCount() > 1 ? 's' : '' }}
+                </span>
+            }
+            <div class="flex items-center gap-1 shrink-0 ml-1">
+                <button mat-icon-button class="!w-8 !h-8 text-slate-400 hover:text-white transition-colors"
+                        (click)="loadAlerts()" [disabled]="loading()" matTooltip="Actualizar">
+                    <mat-icon class="!text-base" [class.spin]="loading()">refresh</mat-icon>
+                </button>
+                <button mat-icon-button class="!w-8 !h-8 text-slate-400 hover:text-white transition-colors"
+                        (click)="closeDialog()" matTooltip="Cerrar">
+                    <mat-icon class="!text-base">close</mat-icon>
                 </button>
             </div>
         </div>
 
-        <div class="neo-alerts-container">
-            @if (alerts().length > 0) {
-                @for (alert of alerts(); track alert.id) {
-                    <div class="neo-alert-item" [ngClass]="getPriorityClass(alert.priority)" (click)="navigateToAlert(alert)">
+        <!-- Body -->
+        <div class="flex-1 overflow-y-auto px-4 py-4 flex flex-col gap-2.5 notif-scroll">
 
-                        <div class="priority-stripe"></div>
-
-                        <div class="alert-icon-container">
-                            <mat-icon [svgIcon]="alert.icon" class="alert-icon"></mat-icon>
+            <!-- Skeleton -->
+            @if (loading()) {
+                @for (i of [1,2,3]; track i) {
+                    <div class="bg-white dark:bg-slate-800 border-2 border-stone-200 dark:border-slate-700 rounded-xl p-3 flex items-center gap-3 notif-skeleton">
+                        <div class="w-10 h-10 rounded-lg bg-stone-200 dark:bg-slate-700 shrink-0"></div>
+                        <div class="flex-1 flex flex-col gap-2">
+                            <div class="h-2.5 rounded bg-stone-200 dark:bg-slate-700 w-3/5"></div>
+                            <div class="h-2 rounded bg-stone-100 dark:bg-slate-700/60 w-2/5"></div>
                         </div>
-
-                        <div class="alert-content">
-                            <div class="alert-header">
-                                <h4 class="alert-title">{{ alert.title }}</h4>
-                                <span class="alert-priority-label">{{ getPriorityLabel(alert.priority) }}</span>
-                            </div>
-                            <p class="alert-description">{{ alert.description }}</p>
-                            <div class="alert-footer">
-                                <span class="alert-time">{{ alert.time }}</span>
-                            </div>
-                        </div>
-
-                        <button mat-icon-button class="alert-close-btn" (click)="dismissAlert($event, alert.id)">
-                            <mat-icon>close</mat-icon>
-                        </button>
                     </div>
                 }
-            } @else {
-                <div class="neo-empty-state">
-                    <div class="empty-icon-wrapper">
-                        <mat-icon class="empty-icon">check_circle</mat-icon>
+            }
+
+            <!-- Alertas -->
+            @if (!loading()) {
+                @for (alert of alerts(); track alert.id) {
+                    <div class="relative bg-white dark:bg-slate-800 border-2 border-stone-200 dark:border-slate-700 rounded-xl
+                                overflow-hidden cursor-pointer transition-all duration-150
+                                hover:border-black dark:hover:border-slate-400 hover:shadow-[3px_3px_0_#000] hover:-translate-y-px"
+                         (click)="navigateToAlert(alert)">
+
+                        <!-- Stripe lateral -->
+                        <div class="absolute left-0 top-3 bottom-3 w-1 rounded-r-sm" [ngClass]="{
+                            'bg-red-500':    alert.priority === 'critical',
+                            'bg-amber-400':  alert.priority === 'high',
+                            'bg-blue-400':   alert.priority === 'medium',
+                            'bg-green-400':  alert.priority === 'low'
+                        }"></div>
+
+                        <div class="pl-4 pr-3 py-3 flex items-center gap-3">
+                            <!-- Ícono -->
+                            <div class="w-10 h-10 rounded-lg border-2 flex items-center justify-center shrink-0" [ngClass]="{
+                                'border-red-200 bg-red-50 dark:border-red-900 dark:bg-red-950':     alert.priority === 'critical',
+                                'border-amber-200 bg-amber-50 dark:border-amber-900 dark:bg-amber-950': alert.priority === 'high',
+                                'border-blue-200 bg-blue-50 dark:border-blue-900 dark:bg-blue-950':   alert.priority === 'medium',
+                                'border-green-200 bg-green-50 dark:border-green-900 dark:bg-green-950': alert.priority === 'low'
+                            }">
+                                <mat-icon [svgIcon]="alert.icon" class="!text-lg" [ngClass]="{
+                                    'text-red-500':    alert.priority === 'critical',
+                                    'text-amber-500':  alert.priority === 'high',
+                                    'text-blue-500':   alert.priority === 'medium',
+                                    'text-green-500':  alert.priority === 'low'
+                                }"></mat-icon>
+                            </div>
+
+                            <!-- Texto -->
+                            <div class="flex-1 min-w-0">
+                                <div class="flex items-center gap-2 mb-0.5">
+                                    <p class="text-[10px] font-black uppercase tracking-wide text-black dark:text-white leading-none truncate">
+                                        {{ alert.title }}
+                                    </p>
+                                    @if (alert.count) {
+                                        <span class="shrink-0 text-[8px] font-black px-1.5 py-0.5 rounded border border-stone-300 dark:border-slate-600 text-stone-500 dark:text-slate-400">
+                                            ×{{ alert.count }}
+                                        </span>
+                                    }
+                                </div>
+                                <p class="text-[11px] text-stone-500 dark:text-slate-400 leading-snug">{{ alert.description }}</p>
+                            </div>
+
+                            <!-- Cerrar -->
+                            <button mat-icon-button class="!w-7 !h-7 shrink-0 opacity-30 hover:opacity-100 transition-opacity"
+                                    (click)="dismissAlert($event, alert.id)">
+                                <mat-icon class="!text-sm">close</mat-icon>
+                            </button>
+                        </div>
                     </div>
-                    <h3 class="empty-title">¡TODO LIMPIO!</h3>
-                    <p class="empty-subtitle">No hay alertas pendientes.</p>
-                </div>
+                }
+
+                <!-- Vacío -->
+                @if (alerts().length === 0) {
+                    <div class="flex flex-col items-center justify-center py-10 gap-3">
+                        <div class="w-14 h-14 rounded-full bg-green-100 dark:bg-green-950 border-2 border-green-300 dark:border-green-800 flex items-center justify-center">
+                            <mat-icon class="!text-3xl text-green-500">check_circle</mat-icon>
+                        </div>
+                        <div class="text-center">
+                            <p class="text-sm font-black uppercase text-black dark:text-white">¡Todo limpio!</p>
+                            <p class="text-[11px] text-stone-400 dark:text-slate-500 mt-0.5">No hay alertas pendientes</p>
+                        </div>
+                    </div>
+                }
             }
         </div>
 
-        <div class="neo-footer">
-            <button mat-button class="neo-footer-btn" (click)="goToNotificationCenter()">
-                IR AL DASHBOARD
+        <!-- Footer -->
+        <div class="border-t-2 border-black bg-stone-200 dark:bg-slate-800 px-4 py-2.5 flex items-center justify-between shrink-0">
+            <span class="text-[9px] font-bold uppercase tracking-widest text-stone-400 dark:text-slate-500">
+                {{ alerts().length }} alerta{{ alerts().length !== 1 ? 's' : '' }} activa{{ alerts().length !== 1 ? 's' : '' }}
+            </span>
+            <button (click)="goToNotificationCenter()"
+                    class="flex items-center gap-1.5 px-3 py-1.5 bg-amber-400 text-black font-black text-[9px] border-2 border-black rounded-lg shadow-[2px_2px_0_#000] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all uppercase">
+                <mat-icon class="!text-xs">dashboard</mat-icon>
+                Ir al dashboard
             </button>
         </div>
     </div>

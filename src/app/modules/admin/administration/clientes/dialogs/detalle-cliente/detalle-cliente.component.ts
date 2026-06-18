@@ -33,11 +33,12 @@ export class DetalleClienteComponent {
         this.dialogRef.close();
         const { FormClienteComponent } = await import('../form-cliente/form-cliente.component');
         this.dialog.open(FormClienteComponent, {
-            width: '1200px',
+            width: '560px',
             maxWidth: '95vw',
             height: 'auto',
             maxHeight: '90vh',
             panelClass: 'neo-dialog',
+            hasBackdrop: false,
             data: { cliente: this.data.cliente, mode: 'edit' }
         });
     }

@@ -1,0 +1,306 @@
+﻿<div class="bg-stone-100 dark:bg-[#0F172A] sm:border-2 border-black rounded-2xl flex flex-col overflow-hidden relative w-full"
+     style="box-shadow:6px 6px 0 #000; height:510px">
+
+  <!-- Saving overlay -->
+  <div *ngIf="isSavingTraspaso" class="absolute inset-0 bg-black/60 flex items-center justify-center z-50">
+    <div class="bg-stone-100 dark:bg-slate-800 border-2 border-black rounded-xl shadow-[4px_4px_0_#000] px-8 py-6 flex flex-col items-center gap-4">
+      <div class="w-10 h-10 border-4 border-[#FFC501FF] border-t-transparent rounded-full animate-spin"></div>
+      <span class="font-black text-black dark:text-white uppercase tracking-widest text-sm animate-pulse">Registrando…</span>
+    </div>
+  </div>
+
+  <!-- Header -->
+  <div class="bg-[#0F172A] px-4 py-2 flex items-center gap-3 shrink-0">
+    <div class="w-6 h-6 rounded bg-amber-400 border-2 border-black flex items-center justify-center shadow-[2px_2px_0_#fbbf24] shrink-0">
+      <mat-icon class="!text-sm text-black">transform</mat-icon>
+    </div>
+    <div>
+      <p class="text-[8px] text-slate-400 font-bold uppercase tracking-[0.15em] leading-none mb-0.5">Salidas · Transferencia Definitiva</p>
+      <h2 class="text-xs text-white font-black uppercase tracking-tight leading-none">Nuevo Traspaso — TRP</h2>
+    </div>
+    <div class="ml-auto flex items-center gap-2 shrink-0">
+      <div class="flex items-center gap-1 bg-white/10 rounded-lg px-2 py-0.5 border border-white/20">
+        <div *ngIf="loadingCorrelativoTrp" class="w-2.5 h-2.5 border-2 border-[#FFC501FF] border-t-transparent rounded-full animate-spin"></div>
+        <mat-icon *ngIf="!loadingCorrelativoTrp" class="!text-[10px] text-amber-300">tag</mat-icon>
+        <span class="font-mono text-[10px] font-black text-[#FFC501FF]">{{loadingCorrelativoTrp ? '...' : (trpCorrelativoPreview || 'TRP-?')}}</span>
+      </div>
+      <span *ngIf="itemsTraspaso.length>0" class="px-1.5 py-0.5 bg-amber-400 text-black font-black text-[9px] border border-black rounded">
+        {{itemsTraspaso.length}} ítem{{itemsTraspaso.length!==1?'s':''}}
+      </span>
+    </div>
+  </div>
+
+  <!-- Body -->
+  <div class="flex flex-col sm:flex-row flex-1 overflow-hidden min-h-0">
+
+    <!-- LEFT: form fields -->
+    <div class="sm:basis-[46%] shrink-0 overflow-y-auto custom-scrollbar border-b-2 sm:border-b-0 sm:border-r-2 border-black/20 dark:border-slate-600">
+      <form [formGroup]="traspasoForm" class="px-3 py-2 grid grid-cols-1 sm:grid-cols-2 gap-x-2 gap-y-1.5 content-start">
+
+        <div class="col-span-2 flex items-center gap-1 mt-1">
+          <mat-icon class="!text-[10px] text-amber-500 shrink-0">settings</mat-icon>
+          <span class="text-[9px] font-black uppercase text-stone-400 dark:text-slate-500 whitespace-nowrap">Datos del Traspaso</span>
+          <div class="flex-1 h-px bg-stone-200 dark:bg-slate-600 ml-0.5"></div>
+        </div>
+
+        <div class="col-span-2">
+          <label class="text-[9px] font-black uppercase tracking-tight text-stone-500 dark:text-slate-400 mb-1 block">Almacén Origen</label>
+          <select formControlName="baseOrigen"
+                  class="w-full h-7 text-xs font-bold bg-white dark:bg-slate-800 dark:text-white border-2border-stone-300 dark:border-slate-500 rounded-lg px-2 outline-none appearance-none cursor-pointer focus:border-black transition-colors">
+            <option [ngValue]="null">— Almacén actual —</option>
+            <option *ngFor="let a of almacenes" [ngValue]="a">{{a.nombre}}</option>
+          </select>
+        </div>
+
+        <div class="col-span-2 relative">
+          <label class="text-[9px] font-black uppercase tracking-tight text-stone-500 dark:text-slate-400 mb-1 block">Área / Base Destino <span class="text-red-500">*</span></label>
+          <input type="text" formControlName="areaDepartamento"
+                 (input)="onDeptChangeTraspaso($any($event.target).value)"
+                 (blur)="hideDeptDropTraspaso()"
+                 placeholder="Base, almacén o área destino…"
+                 class="w-full h-7 text-xs font-bold bg-white dark:bg-slate-800 dark:text-white border-2rounded-lg px-2 outline-none transition-colors placeholder:text-stone-300 focus:border-black"
+                 [ngClass]="traspasoForm.get('areaDepartamento')?.touched && traspasoForm.get('areaDepartamento')?.invalid ? 'border-red-500' : 'border-stone-300 dark:border-slate-500'" />
+          <div *ngIf="showDeptDropTraspaso && deptUbicacionesTraspaso.length"
+               class="absolute left-0 right-0 top-full mt-0.5 z-50 bg-white dark:bg-slate-800 border-2 border-black rounded-xl shadow-[3px_3px_0_#000] overflow-hidden max-h-36 overflow-y-auto custom-scrollbar divide-y divide-stone-100 dark:divide-slate-700">
+            <div *ngFor="let u of deptUbicacionesTraspaso" (mousedown)="selectDeptTraspaso(u.nombre)"
+                 class="px-2 py-1.5 hover:bg-stone-50 dark:hover:bg-slate-700 cursor-pointer flex items-center gap-1.5">
+              <mat-icon class="!text-[10px] text-stone-400 shrink-0">place</mat-icon>
+              <span class="text-[10px] font-black text-black dark:text-white uppercase truncate">{{u.nombre}}</span>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <label class="text-[9px] font-black uppercase tracking-tight text-stone-500 dark:text-slate-400 mb-1 block">Fecha Traspaso <span class="text-red-500">*</span></label>
+          <input type="date" formControlName="fechaTraspaso"
+                 class="w-full h-7 text-xs font-bold bg-white dark:bg-slate-800 dark:text-white border-2border-stone-300 dark:border-slate-500 rounded-lg px-2 outline-none transition-colors focus:border-black" />
+        </div>
+        <div>
+          <label class="text-[9px] font-black uppercase tracking-tight text-stone-500 dark:text-slate-400 mb-1 block">Hora</label>
+          <input type="time" formControlName="horaTraspaso"
+                 class="w-full h-7 text-xs font-bold bg-white dark:bg-slate-800 dark:text-white border-2border-stone-300 dark:border-slate-500 rounded-lg px-2 outline-none transition-colors focus:border-black" />
+        </div>
+
+        <div class="col-span-2 relative">
+          <label class="text-[9px] font-black uppercase tracking-tight text-stone-500 dark:text-slate-400 mb-1 flex justify-between items-center">
+            <span class="flex items-center gap-1"><mat-icon class="!text-[10px] text-blue-500">person</mat-icon>Responsable / Envía <span class="text-red-500 ml-0.5">*</span></span>
+            <div *ngIf="funcTraspasoRespLoading" class="w-3 h-3 border-2 border-blue-400 border-t-transparent rounded-full animate-spin"></div>
+          </label>
+          <input type="text" [value]="traspasoForm.get('responsableTraspaso')?.value || ''"
+                 (input)="onResponsableTraspasoInput($any($event.target).value)"
+                 (blur)="hideFuncTraspasoRespDropdown()" placeholder="Buscar por nombre…" autocomplete="off"
+                 class="w-full h-7 text-xs font-bold bg-white dark:bg-slate-800 dark:text-white border-2rounded-lg px-2 outline-none transition-colors placeholder:text-stone-300 focus:border-black"
+                 [ngClass]="traspasoForm.get('responsableTraspaso')?.touched && traspasoForm.get('responsableTraspaso')?.invalid ? 'border-red-500' : 'border-stone-300 dark:border-slate-500'" />
+          <div *ngIf="showFuncTraspasoRespDropdown && funcionariosTraspasoResp.length"
+               class="absolute left-0 right-0 top-full mt-0.5 z-50 bg-white dark:bg-slate-800 border-2 border-black rounded-xl shadow-[3px_3px_0_#000] overflow-hidden max-h-36 overflow-y-auto custom-scrollbar divide-y divide-stone-100 dark:divide-slate-700">
+            <div *ngFor="let f of funcionariosTraspasoResp" (mousedown)="selectFuncionarioTraspasoResp(f)"
+                 class="px-2 py-1.5 hover:bg-blue-50 dark:hover:bg-slate-700 cursor-pointer">
+              <p class="text-[10px] font-black text-black dark:text-white uppercase">{{ f.nombre }}</p>
+              <p class="text-[8px] font-bold text-stone-400 uppercase">{{ f.cargo }}</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-span-2 relative">
+          <label class="text-[9px] font-black uppercase tracking-tight text-stone-500 dark:text-slate-400 mb-1 flex justify-between items-center">
+            <span class="flex items-center gap-1"><mat-icon class="!text-[10px] text-green-500">how_to_reg</mat-icon>Recibe en Destino <span class="text-red-500 ml-0.5">*</span></span>
+            <div *ngIf="funcTraspasoRecibeLoading" class="w-3 h-3 border-2 border-green-400 border-t-transparent rounded-full animate-spin"></div>
+          </label>
+          <input type="text" [value]="traspasoForm.get('recibeEnDestino')?.value || ''"
+                 (input)="onRecibeTraspasoInput($any($event.target).value)"
+                 (blur)="hideFuncTraspasoRecibeDropdown()" placeholder="Buscar por nombre…" autocomplete="off"
+                 class="w-full h-7 text-xs font-bold bg-white dark:bg-slate-800 dark:text-white border-2rounded-lg px-2 outline-none transition-colors placeholder:text-stone-300 focus:border-black"
+                 [ngClass]="traspasoForm.get('recibeEnDestino')?.touched && traspasoForm.get('recibeEnDestino')?.invalid ? 'border-red-500' : 'border-stone-300 dark:border-slate-500'" />
+          <div *ngIf="showFuncTraspasoRecibeDropdown && funcionariosTraspasoRecibe.length"
+               class="absolute left-0 right-0 top-full mt-0.5 z-50 bg-white dark:bg-slate-800 border-2 border-black rounded-xl shadow-[3px_3px_0_#000] overflow-hidden max-h-36 overflow-y-auto custom-scrollbar divide-y divide-stone-100 dark:divide-slate-700">
+            <div *ngFor="let f of funcionariosTraspasoRecibe" (mousedown)="selectFuncionarioTraspasoRecibe(f)"
+                 class="px-2 py-1.5 hover:bg-green-50 dark:hover:bg-slate-700 cursor-pointer">
+              <p class="text-[10px] font-black text-black dark:text-white uppercase">{{ f.nombre }}</p>
+              <p class="text-[8px] font-bold text-stone-400 uppercase">{{ f.cargo }}</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-span-2 relative">
+          <label class="text-[9px] font-black uppercase tracking-tight text-stone-500 dark:text-slate-400 mb-1 flex justify-between items-center">
+            <span class="flex items-center gap-1"><mat-icon class="!text-[10px] text-amber-500">verified_user</mat-icon>Autorizado por <span class="text-red-500 ml-0.5">*</span></span>
+            <div *ngIf="funcTraspasoAutLoading" class="w-3 h-3 border-2 border-amber-400 border-t-transparent rounded-full animate-spin"></div>
+          </label>
+          <input type="text" [value]="traspasoForm.get('autorizadoPor')?.value || ''"
+                 (input)="onAutorizadoTraspasoInput($any($event.target).value)"
+                 (blur)="hideFuncTraspasoAutDropdown()" placeholder="Buscar por nombre…" autocomplete="off"
+                 class="w-full h-7 text-xs font-bold bg-white dark:bg-slate-800 dark:text-white border-2rounded-lg px-2 outline-none transition-colors placeholder:text-stone-300 focus:border-black"
+                 [ngClass]="traspasoForm.get('autorizadoPor')?.touched && traspasoForm.get('autorizadoPor')?.invalid ? 'border-red-500' : 'border-stone-300 dark:border-slate-500'" />
+          <div *ngIf="showFuncTraspasoAutDropdown && funcionariosTraspasoAut.length"
+               class="absolute left-0 right-0 top-full mt-0.5 z-50 bg-white dark:bg-slate-800 border-2 border-black rounded-xl shadow-[3px_3px_0_#000] overflow-hidden max-h-36 overflow-y-auto custom-scrollbar divide-y divide-stone-100 dark:divide-slate-700">
+            <div *ngFor="let f of funcionariosTraspasoAut" (mousedown)="selectFuncionarioTraspasoAut(f)"
+                 class="px-2 py-1.5 hover:bg-amber-50 dark:hover:bg-slate-700 cursor-pointer">
+              <p class="text-[10px] font-black text-black dark:text-white uppercase">{{ f.nombre }}</p>
+              <p class="text-[8px] font-bold text-stone-400 uppercase">{{ f.cargo }}</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-span-2">
+          <label class="text-[9px] font-black uppercase tracking-tight text-stone-500 dark:text-slate-400 mb-1 block">Tipo Traspaso <span class="text-red-500">*</span></label>
+          <div class="flex flex-wrap gap-1">
+            <label *ngFor="let t of tiposTraspaso" class="cursor-pointer">
+              <input type="radio" formControlName="tipoTraspaso" [value]="t.value" class="sr-only" />
+              <span class="px-2 py-0.5 rounded-lg border-2 font-black text-[9px] uppercase transition-all cursor-pointer"
+                    [ngClass]="traspasoForm.get('tipoTraspaso')?.value === t.value
+                      ? 'bg-amber-400 text-black border-black shadow-[1px_1px_0_#000]'
+                      : 'bg-white dark:bg-slate-800 text-stone-500 dark:text-slate-400 border-stone-300 dark:border-slate-500'"
+                    (click)="traspasoForm.patchValue({tipoTraspaso: t.value})">
+                {{t.label}}
+              </span>
+            </label>
+          </div>
+        </div>
+
+        <div class="col-span-2" *ngIf="requiereFechaRetornoTrp()">
+          <label class="text-[9px] font-black uppercase tracking-tight text-blue-500 mb-1 block">Fecha Retorno Esperada <span class="text-red-500">*</span></label>
+          <input type="date" formControlName="fechaRetornoEsperada"
+                 class="w-full h-8 text-xs font-bold bg-blue-50 dark:bg-slate-800 dark:text-white border-2 border-blue-400 rounded-lg px-2 outline-none transition-colors focus:border-blue-600" />
+        </div>
+
+        <div class="col-span-2">
+          <label class="text-[9px] font-black uppercase tracking-tight text-stone-500 dark:text-slate-400 mb-1 block">Justificación / Notas</label>
+          <textarea formControlName="notas" rows="1" placeholder="Motivo del traspaso…"
+                    class="w-full text-xs font-bold bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-500 rounded-lg px-2 py-1.5 outline-none transition-colors placeholder:text-stone-300 resize-none focus:border-black"></textarea>
+        </div>
+
+        <div class="col-span-2" *ngIf="traspasoForm.get('tipoTraspaso')?.value === 'PERMANENTE' || traspasoForm.get('tipoTraspaso')?.value === 'REASIGNACION'">
+          <div class="flex items-start gap-1.5 bg-amber-50 dark:bg-amber-900/20 border border-amber-400 rounded-lg px-2 py-1.5">
+            <mat-icon class="!text-[10px] text-amber-600 shrink-0 mt-0.5">warning</mat-icon>
+            <p class="text-[8px] font-bold text-amber-700 dark:text-amber-400">Traspaso <strong>definitivo</strong>. Las herramientas no retornarán al origen.</p>
+          </div>
+        </div>
+        <div class="col-span-2" *ngIf="traspasoForm.get('tipoTraspaso')?.value === 'TEMPORAL' || traspasoForm.get('tipoTraspaso')?.value === 'PRESTAMO'">
+          <div class="flex items-start gap-1.5 bg-blue-50 dark:bg-blue-900/20 border border-blue-300 rounded-lg px-2 py-1.5">
+            <mat-icon class="!text-[10px] text-blue-500 shrink-0 mt-0.5">info</mat-icon>
+            <p class="text-[8px] font-bold text-blue-700 dark:text-blue-400">Traspaso <strong>temporal</strong>. Deberán retornar en la fecha indicada.</p>
+          </div>
+        </div>
+      </form>
+    </div>
+
+    <!-- RIGHT: tool search + list -->
+    <div class="flex-1 min-h-0 flex flex-col overflow-hidden">
+
+      <div class="px-3 pt-2 pb-1.5 border-b-2 border-black/20 dark:border-slate-600 shrink-0">
+        <div class="flex items-center gap-1 mb-1">
+          <mat-icon class="!text-xs text-amber-500">search</mat-icon>
+          <span class="text-[7px] font-black uppercase text-stone-400 dark:text-slate-500 tracking-tight">Herramientas a Traspasar</span>
+        </div>
+        <div class="relative">
+          <mat-icon class="absolute left-2 top-1/2 -translate-y-1/2 !text-[11px] !w-[11px] !h-[11px] !leading-[11px] text-stone-400 pointer-events-none">build</mat-icon>
+          <input type="text" [ngModel]="toolSearchTraspaso" [ngModelOptions]="{standalone:true}"
+                 (ngModelChange)="onToolSearchTraspaso($event)" (blur)="hideToolDropTraspaso()"
+                 placeholder="Código, nombre, S/N, P/N…"
+                 class="w-full h-6 text-[10px] font-bold bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-500 rounded-lg pl-7 pr-7 outline-none transition-colors placeholder:text-stone-300 focus:border-black" />
+          <div *ngIf="searchingToolsTraspaso" class="absolute right-2 top-1/2 -translate-y-1/2">
+            <div class="w-3.5 h-3.5 border-2 border-[#FFC501FF] border-t-transparent rounded-full animate-spin"></div>
+          </div>
+          <div *ngIf="showToolDropTraspaso && toolResultsTraspaso.length"
+               class="absolute left-0 right-0 top-full mt-1 z-50 bg-white dark:bg-slate-800 border-2 border-black rounded-xl shadow-[3px_3px_0_#000] overflow-hidden max-h-52 overflow-y-auto custom-scrollbar divide-y divide-stone-100 dark:divide-slate-700">
+            <div *ngFor="let tool of toolResultsTraspaso" (mousedown)="addToolTraspaso(tool)"
+                 class="px-3 py-2.5 hover:bg-stone-50 dark:hover:bg-slate-700 cursor-pointer transition-colors">
+              <div class="flex items-center gap-2">
+                <span class="font-mono text-xs font-black text-black dark:text-white uppercase">{{tool.code || tool.codigo}}</span>
+                <span *ngIf="tool.serial_number" class="text-[9px] font-bold text-stone-400">S/N: {{tool.serial_number}}</span>
+              </div>
+              <div class="text-[10px] font-bold text-stone-400 truncate uppercase mt-0.5">{{tool.description || tool.name}}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Chips de herramientas -->
+      <div class="flex-1 p-2.5 relative" style="overflow:visible">
+        <div *ngIf="activeTraspasoChip !== null" class="fixed inset-0 z-30" (click)="activeTraspasoChip = null"></div>
+
+        <div *ngIf="itemsTraspaso.length === 0" class="flex flex-col items-center justify-center gap-2 h-full text-center">
+          <mat-icon class="!text-3xl text-stone-300 dark:text-slate-600">move_down</mat-icon>
+          <p class="text-[9px] font-black uppercase text-stone-400 dark:text-slate-500">Busca y agrega herramientas arriba</p>
+        </div>
+
+        <div *ngIf="itemsTraspaso.length > 0" class="flex flex-wrap gap-1.5 content-start">
+          <div *ngFor="let item of itemsTraspaso; let i = index" class="relative"
+               [style.z-index]="activeTraspasoChip === i ? 40 : 10">
+
+            <button type="button"
+                    (click)="activeTraspasoChip = activeTraspasoChip === i ? null : i"
+                    class="relative w-16 h-16 flex flex-col items-center justify-center border-2 border-black rounded-xl transition-all select-none overflow-hidden"
+                    [ngClass]="activeTraspasoChip === i
+                      ? 'bg-[#FFC501] shadow-none translate-x-[1px] translate-y-[1px]'
+                      : 'bg-white dark:bg-slate-700 shadow-[2px_2px_0_#000] hover:shadow-none hover:translate-x-[1px] hover:translate-y-[1px]'">
+              <span class="font-mono text-[7px] font-black text-black uppercase text-center leading-tight px-1 w-full truncate">{{item.codigo}}</span>
+              <span class="absolute bottom-0.5 right-0.5 min-w-[14px] h-3.5 rounded-full bg-black text-white text-[7px] font-black flex items-center justify-center px-0.5 leading-none">{{item.cantidad}}</span>
+            </button>
+
+            <div *ngIf="activeTraspasoChip === i"
+                 class="absolute top-full left-0 mt-1 z-50 bg-white dark:bg-slate-800 border-2 border-black rounded-xl shadow-[4px_4px_0_#000] p-2.5 w-52 flex flex-col gap-1.5">
+              <div class="flex items-start justify-between gap-1 pb-1.5 border-b border-stone-200 dark:border-slate-600">
+                <div class="min-w-0 flex-1">
+                  <span class="font-mono text-[9px] font-black bg-[#FFC501] text-black px-1.5 py-0.5 rounded border border-black inline-block mb-0.5">{{item.codigo}}</span>
+                  <p class="text-[9px] font-bold text-black dark:text-white uppercase leading-tight" [title]="item.nombre">{{item.nombre | slice:0:32}}{{item.nombre?.length > 32 ? '…' : ''}}</p>
+                  <p *ngIf="item.pn || item.sn" class="font-mono text-[8px] text-stone-400 mt-0.5">
+                    {{item.pn ? 'P/N: '+item.pn : ''}}{{item.pn && item.sn ? ' · ' : ''}}{{item.sn ? 'S/N: '+item.sn : ''}}
+                  </p>
+                </div>
+                <div class="flex gap-1 shrink-0">
+                  <button type="button" (click)="removeToolTraspaso(i); activeTraspasoChip = null"
+                          class="w-5 h-5 flex items-center justify-center bg-red-50 hover:bg-red-500 text-red-400 hover:text-white border border-red-300 hover:border-red-500 rounded transition-all">
+                    <mat-icon class="!text-[11px]">delete</mat-icon>
+                  </button>
+                  <button type="button" (click)="activeTraspasoChip = null"
+                          class="w-5 h-5 flex items-center justify-center bg-stone-100 dark:bg-slate-700 text-stone-500 hover:bg-stone-200 border border-stone-300 dark:border-slate-500 rounded transition-all">
+                    <mat-icon class="!text-[11px]">close</mat-icon>
+                  </button>
+                </div>
+              </div>
+              <div>
+                <label class="text-[7px] font-black uppercase text-stone-400 dark:text-slate-400 mb-0.5 block">Cantidad</label>
+                <input type="number" [(ngModel)]="item.cantidad" [ngModelOptions]="{standalone:true}" min="1"
+                       class="w-full h-6 text-center px-1 border-2 border-stone-300 dark:border-slate-500 rounded-lg text-xs font-black bg-white dark:bg-slate-800 dark:text-white outline-none focus:border-black focus:shadow-[2px_2px_0_#000] transition-all" />
+              </div>
+              <div>
+                <label class="text-[7px] font-black uppercase text-stone-400 dark:text-slate-400 mb-0.5 block">Condición</label>
+                <select [(ngModel)]="item.condicion" [ngModelOptions]="{standalone:true}"
+                        class="w-full h-6 px-2 bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-500 rounded-lg font-black text-[9px] uppercase outline-none focus:border-black cursor-pointer">
+                  <option *ngFor="let c of condicionesEnvio" [value]="c.value">{{c.label}}</option>
+                </select>
+              </div>
+              <div>
+                <label class="text-[7px] font-black uppercase text-stone-400 dark:text-slate-400 mb-0.5 block">Notas</label>
+                <input type="text" [(ngModel)]="item.notas" [ngModelOptions]="{standalone:true}" placeholder="Opcional…"
+                       class="w-full h-6 px-2 bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-500 rounded-lg font-bold text-[9px] outline-none focus:border-black transition-all placeholder:text-stone-300 dark:placeholder:text-slate-500 placeholder:font-normal" />
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="border-t-2 border-black bg-stone-200 dark:bg-slate-800 px-4 py-1.5 flex items-center justify-between shrink-0">
+    <div class="flex items-center gap-1 shrink-0">
+      <button type="button" (click)="cerrarFormTraspaso()"
+              class="flex items-center gap-1 px-3 py-1.5 bg-red-500 text-white font-black text-[10px] uppercase border-2 border-black rounded-lg shadow-[2px_2px_0_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all">
+        <mat-icon class="!text-[10px]">close</mat-icon>Cancelar
+      </button>
+    </div>
+    <div class="flex items-center gap-1 shrink-0">
+      <span *ngIf="traspasoForm.get('areaDepartamento')?.value" class="text-[7px] text-stone-500 dark:text-slate-400 font-bold truncate max-w-[120px]">→ {{traspasoForm.get('areaDepartamento')?.value}}</span>
+      <button type="button" (click)="_resetTraspasoTab()"
+              class="px-3 py-1.5 bg-stone-300 dark:bg-slate-600 text-black dark:text-white font-black text-[10px] uppercase border-2 border-black rounded-lg shadow-[2px_2px_0_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all">
+        Limpiar
+      </button>
+      <button type="button" (click)="guardarTraspaso()" [disabled]="!canSaveTraspaso()"
+              class="flex items-center gap-1 px-3 py-1.5 bg-black text-white font-black text-[10px] uppercase border-2 border-black rounded-lg shadow-[2px_2px_0_#fbbf24] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all disabled:opacity-40 disabled:cursor-not-allowed disabled:translate-x-0 disabled:shadow-none">
+        <mat-icon class="!text-[10px]">transform</mat-icon>Registrar TRP
+      </button>
+    </div>
+  </div>
+</div>

@@ -40,7 +40,7 @@ export class UsuariosService {
         };
         return from(this._api.post('herramientas/usuarios/listarUsuarios', params)).pipe(
             switchMap((response: any) => {
-                const usuarios = response?.data || [];
+                const usuarios = response?.datos || response?.data || [];
                 this._usuarios.next(usuarios);
                 return of(usuarios);
             })

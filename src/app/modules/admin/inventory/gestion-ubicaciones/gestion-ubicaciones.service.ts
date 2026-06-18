@@ -373,18 +373,25 @@ export class GestionUbicacionesService {
 
     private fromLevelTool(t: LevelTool): any {
         return {
-            rack_id:           t.rackId,
-            level_id:          t.levelId,
-            code:              t.codigo,
-            name:              t.nombre,
-            brand:             t.marca ?? '',
-            part_number:       t.pn,
-            serial_number:     t.sn ?? '',
-            location_state:    t.estado,
-            unit_of_measure:   t.um,
-            quantity_in_stock: t.cantidad,
-            image_base64:      t.imagenBase64 ?? '',
-            notes:             t.observaciones ?? '',
+            rack_id:              t.rackId,
+            level_id:             t.levelId,
+            code:                 t.codigo,
+            name:                 t.nombre,
+            brand:                t.marca ?? '',
+            part_number:          t.pn,
+            serial_number:        t.sn ?? '',
+            location_state:       t.estado,
+            unit_of_measure:      t.um,
+            quantity_in_stock:    t.cantidad,
+            image_base64:         t.imagenBase64 ?? '',
+            notes:                t.observaciones ?? '',
+            tool_type:            t.tipo ?? 'HERRAMIENTA',
+            criticality_level:    t.nivelCriticidad ?? 'B',
+            manufacture_origin:   t.fabricacion ?? 'INTERNACIONAL',
+            requires_calibration: t.requiereCalibracion ?? false,
+            calibration_interval: t.intervaloCalibracion != null ? String(t.intervaloCalibracion) : '',
+            calibration_date:     t.fechaCalibracion     ?? '',
+            certificate_number:   t.nroCertificado ?? '',
         };
     }
 }

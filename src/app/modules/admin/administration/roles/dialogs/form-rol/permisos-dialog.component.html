@@ -1,0 +1,133 @@
+<div class="bg-stone-100 dark:bg-slate-900 border-2 border-black flex flex-col rounded-2xl overflow-hidden">
+
+    <!-- HEADER -->
+    <div class="bg-[#0F172A] px-5 py-3 flex items-center gap-3 shrink-0 select-none"
+         cdkDrag cdkDragRootElement=".cdk-overlay-pane" cdkDragHandle style="cursor:grab">
+        <div class="w-9 h-9 rounded bg-amber-500 border-2 border-black flex items-center justify-center shadow-[2px_2px_0_#000] shrink-0">
+            <mat-icon class="!text-lg text-white">lock_person</mat-icon>
+        </div>
+        <div class="flex-1 min-w-0">
+            <p class="text-[9px] text-slate-400 font-bold uppercase tracking-[0.18em] leading-none mb-0.5">Gestión de Accesos</p>
+            <h2 class="text-sm text-white font-black uppercase tracking-tight leading-none">Permisos del Rol</h2>
+        </div>
+        <span class="px-2 py-0.5 bg-amber-500 text-black font-black text-[9px] border border-black rounded-lg shrink-0">
+            {{ selectedCount }} / {{ totalCount }}
+        </span>
+        <button type="button" (click)="cancel()" (mousedown)="$event.stopPropagation()"
+                class="w-8 h-8 flex items-center justify-center rounded-lg bg-white/10 hover:bg-white/20 transition-colors border border-white/10 shrink-0">
+            <mat-icon class="text-white !text-base">close</mat-icon>
+        </button>
+    </div>
+
+    <!-- TOOLBAR -->
+    <div class="px-4 py-2.5 bg-white dark:bg-slate-800 border-b-2 border-stone-200 dark:border-slate-700 flex items-center gap-2 shrink-0">
+        <div class="relative flex-1">
+            <mat-icon class="absolute left-2.5 top-[7px] text-stone-400 !text-sm pointer-events-none">search</mat-icon>
+            <input [(ngModel)]="searchTerm" placeholder="Buscar permiso..."
+                   class="w-full h-8 pl-8 pr-3 bg-stone-100 dark:bg-slate-700 border-2 border-stone-300 dark:border-slate-600 rounded-lg text-xs font-bold outline-none focus:border-black dark:text-white placeholder:font-normal placeholder:text-stone-400 dark:placeholder:text-slate-500 transition-all">
+        </div>
+        <button type="button" (click)="selectAll()"
+                class="h-8 px-3 bg-[#0F172A] text-white font-black text-[9px] uppercase border-2 border-black rounded-lg shadow-[2px_2px_0_#000] hover:shadow-none hover:translate-x-[1px] hover:translate-y-[1px] transition-all whitespace-nowrap">
+            Todos
+        </button>
+        <button type="button" (click)="clearAll()"
+                class="h-8 px-3 bg-stone-200 dark:bg-slate-700 text-black dark:text-white font-black text-[9px] uppercase border-2 border-black rounded-lg shadow-[2px_2px_0_#000] hover:shadow-none hover:translate-x-[1px] hover:translate-y-[1px] transition-all whitespace-nowrap">
+            Limpiar
+        </button>
+    </div>
+
+    <!-- BODY -->
+    <div class="p-4" style="scrollbar-width:thin">
+
+        <!-- ══ BÚSQUEDA activa ══ -->
+        <ng-container *ngIf="isSearching">
+            <div *ngIf="filteredPermissions.length > 0" class="flex flex-col gap-1.5">
+                <div *ngFor="let item of filteredPermissions"
+                     (click)="toggleInline(item.perm.id)"
+                     class="flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer transition-all border-2 select-none"
+                     [ngClass]="isSelected(item.perm.id)
+                         ? 'bg-amber-50 dark:bg-amber-900/20 border-black shadow-[2px_2px_0_#000]'
+                         : 'bg-white dark:bg-slate-800 border-stone-200 dark:border-slate-600 hover:border-stone-400'">
+                    <div class="w-5 h-5 rounded-lg border-2 flex-shrink-0 flex items-center justify-center transition-all"
+                         [ngClass]="isSelected(item.perm.id) ? 'bg-[#FFC501FF] border-black' : 'bg-stone-100 dark:bg-slate-600 border-stone-300 dark:border-slate-500'">
+                        <mat-icon *ngIf="isSelected(item.perm.id)" class="!text-[11px] text-black">check</mat-icon>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <p class="text-[10px] font-black uppercase leading-tight"
+                           [ngClass]="isSelected(item.perm.id) ? 'text-black dark:text-white' : 'text-stone-600 dark:text-slate-300'">
+                            {{ item.perm.name }}
+                        </p>
+                        <p class="text-[9px] text-stone-400 mt-0.5">{{ item.perm.description }}</p>
+                    </div>
+                    <span class="text-[8px] font-black uppercase px-1.5 py-0.5 bg-stone-100 dark:bg-slate-700 border border-stone-300 dark:border-slate-600 rounded text-stone-400 shrink-0">
+                        {{ item.mod }}
+                    </span>
+                </div>
+            </div>
+            <div *ngIf="filteredPermissions.length === 0" class="py-10 text-center flex flex-col items-center gap-2">
+                <mat-icon class="!text-4xl text-stone-300 dark:text-slate-600">search_off</mat-icon>
+                <p class="text-xs font-bold text-stone-400 uppercase">Sin resultados para "{{ searchTerm }}"</p>
+            </div>
+        </ng-container>
+
+        <!-- ══ GRID DE MÓDULOS ══ -->
+        <ng-container *ngIf="!isSearching">
+
+            <!-- Hint -->
+            <p class="text-[9px] font-bold text-stone-400 dark:text-slate-500 uppercase tracking-wide text-center mb-3">
+                Presiona un módulo para gestionar sus permisos
+            </p>
+
+            <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2.5">
+                <button *ngFor="let mod of modules" type="button"
+                        (click)="openModuloDialog(mod)"
+                        class="flex flex-col items-center justify-center gap-2 py-3.5 px-1.5 border-2 rounded-2xl transition-all duration-200 select-none cursor-pointer"
+                        [ngClass]="getModuleClass(mod.name)">
+
+                    <!-- Icono -->
+                    <div class="w-9 h-9 rounded-xl flex items-center justify-center border-2 transition-all"
+                         [ngClass]="isModuleFullySelected(mod.name)
+                             ? 'bg-amber-300 border-amber-500'
+                             : isModulePartiallySelected(mod.name)
+                             ? 'bg-amber-100 border-amber-300'
+                             : 'bg-stone-100 dark:bg-slate-700 border-stone-200 dark:border-slate-600'">
+                        <mat-icon class="!text-lg transition-all"
+                                  [ngClass]="isModuleFullySelected(mod.name) || isModulePartiallySelected(mod.name)
+                                      ? 'text-amber-700'
+                                      : 'text-stone-400 dark:text-slate-400'">
+                            {{ moduleIcons[mod.name] || 'lock' }}
+                        </mat-icon>
+                    </div>
+
+                    <!-- Nombre -->
+                    <span class="text-[8px] font-black uppercase text-center leading-tight">{{ mod.name }}</span>
+
+                    <!-- Badge -->
+                    <span class="text-[7px] font-black px-1.5 py-0.5 rounded-full border transition-all"
+                          [ngClass]="getModuleSelectedCount(mod.name) > 0
+                              ? 'bg-amber-200 dark:bg-amber-800 border-amber-400 text-amber-900 dark:text-amber-100'
+                              : 'bg-stone-100 dark:bg-slate-700 border-stone-300 dark:border-slate-600 text-stone-400'">
+                        {{ getModuleSelectedCount(mod.name) }}/{{ mod.permissions.length }}
+                    </span>
+
+                </button>
+            </div>
+
+        </ng-container>
+
+    </div>
+
+    <!-- FOOTER -->
+    <div class="border-t-2 border-black bg-stone-200 dark:bg-slate-800 px-4 py-2.5 flex justify-between items-center gap-2 shrink-0">
+        <button type="button" (click)="cancel()"
+                class="px-4 py-2 bg-[#FF1414] text-white font-black text-[10px] border-2 border-black rounded-xl shadow-[2px_2px_0_#000] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all uppercase">
+            Cancelar
+        </button>
+        <button type="button" (click)="apply()"
+                class="flex items-center gap-2 px-5 py-2 bg-[#0F172A] text-white font-black text-[10px] border-2 border-black rounded-xl shadow-[3px_3px_0_#000] hover:shadow-none hover:translate-x-[3px] hover:translate-y-[3px] transition-all uppercase">
+            <mat-icon class="!text-white !text-base">check_circle</mat-icon>
+            Aplicar ({{ selectedCount }} permisos)
+        </button>
+    </div>
+
+</div>
