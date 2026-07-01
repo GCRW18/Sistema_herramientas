@@ -22,7 +22,7 @@
         </div>
       </div>
 
-      <div class="flex items-center gap-2 flex-wrap w-full sm:w-auto">
+      <div class="flex items-center gap-2 flex-wrap w-full sm:w-auto justify-end">
         <!-- Búsqueda -->
         <div class="relative flex-1 min-w-[140px] sm:flex-none">
           <input type="text"
@@ -96,12 +96,12 @@
               <th class="px-3 py-2.5 w-16">Base</th>
               <th class="px-3 py-2.5 w-24">Sello</th>
               <th class="px-3 py-2.5 text-center w-24">Estado</th>
-              <th class="px-3 py-2.5 text-center w-20">Acción</th>
             </tr>
           </thead>
           <tbody>
             <tr *ngFor="let emp of pagedEmpleados; trackBy: trackByEmp; let idx = index"
-                class="border-b border-gray-200 dark:border-slate-700 transition-all"
+                (click)="verFuncionario(emp)"
+                class="border-b border-gray-200 dark:border-slate-700 transition-all cursor-pointer hover:bg-amber-50 dark:hover:bg-slate-700/60"
                 [ngClass]="idx % 2 === 0 ? 'bg-white dark:bg-slate-800/60' : 'bg-gray-50 dark:bg-slate-800/40'">
 
               <td class="px-3 py-2.5">
@@ -119,6 +119,7 @@
                   <div>
                     <p class="font-black text-black dark:text-white text-xs leading-tight">{{ emp.full_name }}</p>
                     <p class="text-[9px] text-gray-400 leading-tight font-mono">{{ emp.cuenta }}</p>
+                    <p class="text-[8px] text-amber-500 font-bold leading-none mt-0.5">Ver ficha →</p>
                   </div>
                 </div>
               </td>
@@ -160,19 +161,12 @@
                 </span>
               </td>
 
-              <td class="px-3 py-2.5 text-center">
-                <button (click)="editarFuncionario(emp)"
-                        class="w-7 h-7 flex items-center justify-center bg-[#FFC501FF] border-2 border-black rounded-lg shadow-[2px_2px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all mx-auto"
-                        [title]="emp.id_employee ? 'Editar datos' : 'Agregar datos'">
-                  <mat-icon class="text-black !text-sm">{{ emp.id_employee ? 'edit' : 'add' }}</mat-icon>
-                </button>
-              </td>
 
             </tr>
 
             <!-- Sin resultados -->
             <tr *ngIf="pagedEmpleados.length === 0 && !isLoading">
-              <td colspan="8" class="p-10 text-center bg-white dark:bg-slate-800/60">
+              <td colspan="7" class="p-10 text-center bg-white dark:bg-slate-800/60">
                 <mat-icon class="!text-5xl text-gray-300 dark:text-gray-600">badge</mat-icon>
                 <p class="text-xs font-bold uppercase text-gray-500 mt-2">
                   {{ empleados.length === 0 ? 'No hay funcionarios registrados' : 'No se encontraron resultados' }}

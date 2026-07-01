@@ -15,6 +15,7 @@ import { KitsService }        from 'app/core/services/kits.service';
 import { MiscelaneosService } from 'app/core/services/miscelaneos.service';
 import { WarehouseService }   from 'app/core/services/warehouse.service';
 import { MovementService }    from 'app/core/services/movement.service';
+import { GestionUbicacionesService } from '../gestion-ubicaciones/gestion-ubicaciones.service';
 import { FichaInventarioDialogComponent } from './ficha-inventario-dialog/ficha-inventario-dialog.component';
 
 // ─── Tipos ────────────────────────────────────────────────────────────────────
@@ -123,6 +124,7 @@ export class ConsultarInventarioComponent implements OnInit {
     private miscelaneosService = inject(MiscelaneosService);
     private warehouseService  = inject(WarehouseService);
     private movementService   = inject(MovementService);
+    private ubicacionesService = inject(GestionUbicacionesService);
     public  dialogRef         = inject(MatDialogRef<ConsultarInventarioComponent>, { optional: true });
 
     // ── Estado principal ──────────────────────────────────────────────────────
@@ -364,8 +366,9 @@ export class ConsultarInventarioComponent implements OnInit {
             warehouses: this.warehouseService.getWarehouses().pipe(catchError(() => of([]))),
             locations:  this.warehouseService.getAllLocations().pipe(catchError(() => of([]))),
             categories: this.movementService.getIngresosCategories().pipe(catchError(() => of([]))),
+            toolLocations: this.ubicacionesService.getToolLocationsMap().pipe(catchError(() => of(new Map()))),
         }).subscribe({
-            next: ({ tools, kits, miscs, warehouses, locations, categories }) => {
+            next: ({ tools, kits, miscs, warehouses, locations, categories, toolLocations }) => {
                 // Maps para resolución rápida de nombres
                 const warehouseMap: Record<number, string> = {};
                 for (const w of warehouses as any[]) {
@@ -380,8 +383,9 @@ export class ConsultarInventarioComponent implements OnInit {
                     categoryMap[c.id_category] = c.name;
                 }
 
+                const toolLocMap = toolLocations as Map<number, { warehouseId: number; rackName: string; levelLabel: string }>;
                 const items: UnifiedItem[] = [
-                    ...(tools as any[]).map(t => this.mapTool(t, warehouseMap, locationMap, categoryMap)),
+                    ...(tools as any[]).map(t => this.mapTool(t, warehouseMap, locationMap, categoryMap, toolLocMap)),
                     ...(kits  as any[]).map(k => this.mapKit(k)),
                     ...(miscs as any[]).map(m => this.mapMisc(m)),
                 ];
@@ -408,10 +412,18 @@ export class ConsultarInventarioComponent implements OnInit {
         t: any,
         wMap: Record<number, string>,
         lMap: Record<number, string>,
-        catMap: Record<number, string> = {}
+        catMap: Record<number, string> = {},
+        toolLocMap: Map<number, { warehouseId: number; rackName: string; levelLabel: string }> = new Map()
     ): UnifiedItem {
-        const wName = t.warehouse_id ? wMap[t.warehouse_id] : undefined;
-        const lName  = t.location_id  ? lMap[t.location_id]   : undefined;
+        // Ubicación real (rack/nivel), la misma que gestion-ubicaciones — tiene
+        // prioridad porque es lo que mover-herramientas efectivamente actualiza.
+        // ttools.location_id (lMap) es un esquema paralelo que nunca se sincroniza
+        // con los movimientos de estante/nivel, así que solo se usa como fallback.
+        const realLoc = toolLocMap.get(Number(t.id_tool));
+        const wName = (realLoc ? wMap[realLoc.warehouseId] : undefined) ?? (t.warehouse_id ? wMap[t.warehouse_id] : undefined);
+        const lName  = realLoc
+            ? [realLoc.rackName, realLoc.levelLabel].filter(Boolean).join(' · ')
+            : (t.location_id ? lMap[t.location_id] : undefined);
 
         let ubicacion = 'Sin ubicación';
         if (wName && lName)  ubicacion = `${wName} / ${lName}`;

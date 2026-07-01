@@ -485,7 +485,7 @@ export class MovementService {
         if (!this._personalPromise) {
             this._personalPromise = (this._api.post('herramientas/employees/listarFuncionarios', {
                 start: 0,
-                limit: 2000,
+                limit: 5000,
                 sort: 'full_name',
                 dir: 'asc'
             }) as Promise<any>).then((response: any) => {
@@ -533,18 +533,21 @@ export class MovementService {
      * Get bases operativas list
      */
     getBases(): Observable<any[]> {
-        return from(this._api.post('herramientas/bases/listarBases', {
+        return from(this._api.post('parametros/Lugar/listarLugar', {
             start: 0,
-            limit: 100
+            limit: 100,
+            par_filtro: 'lug.codigo#lug.nombre',
+            es_regional: 'si',
+            query: ''
         })).pipe(
             switchMap((response: any) => {
                 const rows = response?.ROOT?.datos || response?.datos || response?.data || (Array.isArray(response) ? response : []);
                 const mapped = rows.map((b: any) => ({
                     ...b,
-                    id: b.id ?? b.id_base,
-                    nombre: b.nombre ?? b.name,
-                    codigo: b.codigo ?? b.code,
-                    ciudad: b.ciudad ?? b.city
+                    id:      b.id_lugar,
+                    id_lugar: b.id_lugar,
+                    nombre:  b.nombre,
+                    codigo:  b.codigo,
                 }));
                 const seen = new Set();
                 return of(mapped.filter((b: any) => {

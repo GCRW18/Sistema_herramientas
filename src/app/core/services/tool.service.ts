@@ -140,21 +140,6 @@ export class ToolService {
     }
 
     /**
-     * Update tool location
-     */
-    updateToolLocation(id: string, locationId: string, warehouseId: string): Observable<Tool> {
-        return from(this._api.post('herramientas/tools/updateToolLocation', {
-            id_tool: id,
-            location_id: locationId,
-            warehouse_id: warehouseId
-        })).pipe(
-            switchMap((response: any) => {
-                return of(response?.data || {});
-            })
-        );
-    }
-
-    /**
      * Delete tool
      */
     deleteTool(id: string): Observable<void> {

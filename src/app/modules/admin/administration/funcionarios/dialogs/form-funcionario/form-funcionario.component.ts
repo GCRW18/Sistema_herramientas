@@ -54,7 +54,7 @@ export class FormFuncionarioComponent implements OnInit {
             cargo:              [''],
             employee_type:      ['', Validators.required],
             area:               ['', Validators.required],
-            id_base:            [null, Validators.required],
+            id_lugar:           [null, Validators.required],
             email:              ['', Validators.email],
             phone:              [''],
             active:             [true]
@@ -77,7 +77,7 @@ export class FormFuncionarioComponent implements OnInit {
                 cargo:              emp.cargo              || '',
                 employee_type:      emp.employee_type      || '',
                 area:               emp.area               || '',
-                id_base:            emp.id_base            ?? null,
+                id_lugar:           emp.id_lugar ?? emp.id_base ?? null,
                 email:              emp.email              || '',
                 phone:              emp.phone              || '',
                 active:             emp.active !== false
@@ -90,8 +90,8 @@ export class FormFuncionarioComponent implements OnInit {
         this.empService.getBases().subscribe({
             next: (data) => {
                 this.bases = data.map(b => ({
-                    value: b.id_base,
-                    label: `${b.code} - ${b.name}`
+                    value: b.id_lugar ?? b.id_base,
+                    label: `${b.codigo ?? b.code} - ${b.nombre ?? b.name}`
                 }));
                 this.basesLoading = false;
             },

@@ -8,7 +8,7 @@ export class EmployeeService {
     private _api = inject(ErpApiService);
 
     getFuncionarios(filters?: { search?: string }): Observable<any[]> {
-        const params: any = { start: 0, limit: 2000, sort: 'full_name', dir: 'asc' };
+        const params: any = { start: 0, limit: 5000, sort: 'full_name', dir: 'asc' };
 
         if (filters?.search) {
             const s = filters.search.replace(/'/g, "''");
@@ -34,14 +34,29 @@ export class EmployeeService {
                     area:               e.area          || null,
                     base_code:          e.base_code     || null,
                     ci:                 e.ci            || null,
-                    active:             e.active === true || e.active === 't' || e.active === 'true' || e.active == null
+                    active:             e.active === true || e.active === 't' || e.active === 'true' || e.active == null,
+                    codigo_funcionario: e.codigo_funcionario || null,
+                    fecha_ingreso:      e.fecha_ingreso      || null,
+                    email_empresa:      e.email_empresa      || null,
+                    interno:            e.interno            || null,
+                    telefono_ofi:       e.telefono_ofi       || null,
+                    role:               e.role               || null,
+                    email_personal:     e.email_personal     || null,
+                    phone:              e.phone              || null,
+                    base_name:          e.base_name          || null
                 })));
             })
         );
     }
 
     getBases(): Observable<any[]> {
-        return from(this._api.post('herramientas/bases/listarBases', { start: 0, limit: 50, sort: 'code', dir: 'asc' })).pipe(
+        return from(this._api.post('parametros/Lugar/listarLugar', {
+            start: 0,
+            limit: 50,
+            par_filtro: 'lug.codigo#lug.nombre',
+            es_regional: 'si',
+            query: ''
+        })).pipe(
             switchMap((response: any) => of(response?.datos || response?.data || []))
         );
     }

@@ -149,37 +149,6 @@ export class WarehouseService {
     // LOCATIONS CRUD
     // ============================================
 
-    getLocations(warehouseId: string): Observable<Location[]> {
-        console.log(' Obteniendo ubicaciones del almacén:', warehouseId);
-
-        return from(
-            PxpClient.doRequest({
-                url: 'herramientas/locations/listLocations',
-                params: {
-                    start: 0,
-                    limit: 1000,
-                    filtro: `loc.warehouse_id = ${warehouseId}`
-                }
-            })
-        ).pipe(
-            map((response: any) => {
-                console.log(' Respuesta getLocations:', response);
-
-                if (response?.data) {
-                    return response.data;
-                }
-                if (response?.data) {
-                    return response.data;
-                }
-                return [];
-            }),
-            catchError((error) => {
-                console.error(' Error en getLocations:', error);
-                return throwError(() => error);
-            })
-        );
-    }
-
     getLocationById(id: string): Observable<Location> {
         console.log(' Obteniendo ubicación por ID:', id);
 

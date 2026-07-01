@@ -2,18 +2,19 @@ export type AlmacenTipo   = 'Principal' | 'Secundario';
 export type AlmacenEstado = 'ACTIVO' | 'INACTIVO';
 
 export interface Ciudad {
-    id_ciudad: number;
-    nombre:    string;
+    id_lugar: number;
+    nombre:   string;
 }
 
 export interface Oficina {
     id_oficina:     number;
     nombre_oficina: string;
+    id_lugar?:      number;
 }
 
 export interface Warehouse {
     id:            number;
-    id_base:       number;
+    id_lugar:      number;
     codigo:        string;
     nombre:        string;
     ciudad:        string;

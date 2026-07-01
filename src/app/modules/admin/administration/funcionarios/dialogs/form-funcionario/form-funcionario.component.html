@@ -103,14 +103,14 @@
                 <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1 block">
                     Base *
                 </label>
-                <select formControlName="id_base"
+                <select formControlName="id_lugar"
                         class="w-full h-9 text-sm font-bold bg-white dark:bg-slate-800 dark:text-white border-2 rounded-xl px-3 outline-none transition-all hover:border-stone-400 focus:border-black focus:shadow-[3px_3px_0_#000] appearance-auto"
                         [attr.disabled]="basesLoading ? '' : null"
-                        [ngClass]="form.get('id_base')?.invalid && form.get('id_base')?.touched ? 'border-red-400' : 'border-stone-300 dark:border-slate-600'">
+                        [ngClass]="form.get('id_lugar')?.invalid && form.get('id_lugar')?.touched ? 'border-red-400' : 'border-stone-300 dark:border-slate-600'">
                     <option [ngValue]="null">{{ basesLoading ? 'Cargando...' : 'Seleccionar...' }}</option>
                     <option *ngFor="let b of bases" [ngValue]="b.value">{{ b.label }}</option>
                 </select>
-                <p *ngIf="form.get('id_base')?.invalid && form.get('id_base')?.touched"
+                <p *ngIf="form.get('id_lugar')?.invalid && form.get('id_lugar')?.touched"
                    class="text-[8px] font-bold text-red-500 mt-0.5">Campo requerido.</p>
             </div>
         </div>

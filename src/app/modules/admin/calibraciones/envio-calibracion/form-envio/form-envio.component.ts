@@ -152,9 +152,9 @@ export class FormEnvioComponent implements OnInit, OnDestroy {
         this.movementService.getBases().pipe(takeUntil(this._destroy$)).subscribe({
             next: (rows: any[]) => {
                 this.bases = (rows || []).map(b => ({
-                    id:   b.id_base || b.id,
-                    name: b.nombre  || b.codigo,
-                    code: b.codigo  || 'BASE'
+                    id:   b.id_lugar ?? b.id,
+                    name: b.nombre   || b.codigo,
+                    code: b.codigo   || 'BASE'
                 }));
                 const wh = this.warehouses.find(w => w.name === this.almacen);
                 if (wh) this._autoSelectBase(wh.code);
@@ -341,6 +341,7 @@ export class FormEnvioComponent implements OnInit, OnDestroy {
                     almacen:              this.almacen,
                     base:                 this.base,
                     base_id:              this.baseId ?? 0,
+                    id_lugar:             this.baseId ?? null,
                     notes:                item.notes,
                     record_number:        notaCompartida,
                     requested_by_name:    this.requestedByName,

@@ -7,7 +7,7 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { DragDropModule } from '@angular/cdk/drag-drop';
 
-import { Warehouse, Ciudad, Oficina } from '../interfaces';
+import { Warehouse, Oficina } from '../interfaces';
 import { GestionUbicacionesService } from '../gestion-ubicaciones.service';
 
 type DialogMode = 'new' | 'edit' | 'view';
@@ -43,12 +43,10 @@ export class FormAlmacenComponent implements OnInit {
     mode: DialogMode = this.data?.mode ?? 'new';
 
     basesAeronauticas = signal<any[]>([]);
-    ciudades          = signal<Ciudad[]>([]);
     oficinas          = signal<Oficina[]>([]);
     ofiDropOpen       = signal(false);
     ofiSearch         = signal('');
     baseDropOpen      = signal(false);
-    ciudadDropOpen    = signal(false);
     tipoDropOpen      = signal(false);
 
     tipos = ['Principal', 'Secundario'];
@@ -62,7 +60,7 @@ export class FormAlmacenComponent implements OnInit {
     });
 
     form: FormGroup = this.fb.group({
-        id_base:     [null, Validators.required],
+        id_lugar:    [null, Validators.required],
         codigo:      ['',   [Validators.required, Validators.maxLength(40)]],
         nombre:      ['',   [Validators.required, Validators.maxLength(120)]],
         ciudad:      ['',   Validators.required],
@@ -78,6 +76,7 @@ export class FormAlmacenComponent implements OnInit {
         }
         this.cargarCatalogos();
         this.inicializarFormulario();
+        this.escucharCambioBase();
     }
 
     private cargarCatalogos(): void {
@@ -86,14 +85,32 @@ export class FormAlmacenComponent implements OnInit {
             error: () => this.mostrarError('Error al cargar bases aeronáuticas')
         });
 
-        this.svc.getCiudades().subscribe({
-            next: (ciudades: Ciudad[]) => this.ciudades.set(ciudades ?? []),
-            error: () => this.mostrarError('Error al cargar catálogo de ciudades')
-        });
+        const idLugarInicial = this.data?.almacen?.id_lugar;
+        if (this.mode !== 'view' && idLugarInicial != null) {
+            this.cargarOficinas(Number(idLugarInicial));
+        }
+    }
 
-        this.svc.getOficinas().subscribe({
+    private cargarOficinas(idLugar: number | null): void {
+        this.svc.getOficinas(idLugar).subscribe({
             next: (oficinas: Oficina[]) => this.oficinas.set(oficinas ?? []),
             error: () => this.mostrarError('Error al cargar catálogo de oficinas')
+        });
+    }
+
+    /** Al cambiar la Base Aeronáutica, autocompleta la ciudad, recarga las oficinas de esa base y limpia la oficina ya seleccionada */
+    private escucharCambioBase(): void {
+        if (this.readOnly) return;
+        this.form.get('id_lugar')?.valueChanges.subscribe((idLugar) => {
+            const id = idLugar != null && idLugar !== '' ? Number(idLugar) : null;
+            const base = id != null ? this.basesAeronauticas().find(b => Number(b.id_lugar) === id) : null;
+
+            this.form.patchValue({ id_oficina: null, ciudad: base?.nombre ?? '' }, { emitEvent: false });
+            this.ofiSearch.set('');
+            this.oficinas.set([]);
+            if (id != null) {
+                this.cargarOficinas(id);
+            }
         });
     }
 
@@ -101,7 +118,7 @@ export class FormAlmacenComponent implements OnInit {
         if (this.data?.almacen) {
             const a = this.data.almacen;
             this.form.patchValue({
-                id_base:     a.id_base,
+                id_lugar:    a.id_lugar,
                 codigo:      a.codigo,
                 nombre:      a.nombre,
                 ciudad:      a.ciudad,
@@ -131,17 +148,17 @@ export class FormAlmacenComponent implements OnInit {
     get readOnly(): boolean { return this.mode === 'view'; }
 
     get selectedBase(): any {
-        const id = this.form.get('id_base')?.value;
+        const id = this.form.get('id_lugar')?.value;
         if (id == null || id === '') return null;
-        return this.basesAeronauticas().find(b => Number(b.id_base) === Number(id)) ?? null;
+        return this.basesAeronauticas().find(b => Number(b.id_lugar) === Number(id)) ?? null;
     }
 
-    get selectedBaseCode(): string { return this.selectedBase?.code ?? ''; }
-    get selectedBaseName(): string { return this.selectedBase?.name ?? ''; }
+    get selectedBaseCode(): string { return this.selectedBase?.codigo ?? ''; }
+    get selectedBaseName(): string { return this.selectedBase?.nombre ?? ''; }
 
     get nombreBasePreview(): string {
         const b = this.selectedBase;
-        return b ? `${b.name} (${b.code})` : '';
+        return b ? `${b.nombre} (${b.codigo})` : '';
     }
 
     get nombreOficinaPreview(): string {
@@ -171,7 +188,7 @@ export class FormAlmacenComponent implements OnInit {
         const v = this.form.getRawValue();
         const out: Warehouse = {
             id:            this.data.almacen?.id ?? 0,
-            id_base:       Number(v.id_base),
+            id_lugar:      Number(v.id_lugar),
             codigo:        v.codigo.trim(),
             nombre:        v.nombre.trim(),
             ciudad:        v.ciudad,

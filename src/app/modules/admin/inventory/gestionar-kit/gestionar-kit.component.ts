@@ -1,8 +1,8 @@
-import { Component, inject, OnInit, OnDestroy } from '@angular/core';
+import { Component, inject, OnInit, OnDestroy, TemplateRef, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, FormArray, Validators, ReactiveFormsModule } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
-import { MatDialogRef, MatDialogModule, MAT_DIALOG_DATA } from '@angular/material/dialog';
+import { MatDialog, MatDialogRef, MatDialogModule, MAT_DIALOG_DATA } from '@angular/material/dialog';
 import { DragDropModule } from '@angular/cdk/drag-drop';
 import { Subject, Subscription, of, forkJoin } from 'rxjs';
 import { debounceTime, distinctUntilChanged, switchMap, catchError, finalize, mergeMap, map } from 'rxjs/operators';
@@ -71,7 +71,9 @@ export class GestionarKitComponent implements OnInit, OnDestroy {
     showToolDropdown  = false;
     private _toolSearch$ = new Subject<string>();
 
-    // ── Picker de ubicación ────────────────────────────────────────────
+    // ── Picker de ubicación (mini ventana / MatDialog anidado) ──────────
+    @ViewChild('ubicacionPickerTpl') ubicacionPickerTpl!: TemplateRef<any>;
+    private ubicacionPickerRef: MatDialogRef<any> | null = null;
     pickerExpanded    = false;
     showAlmacenGrid   = false;
     showNivelDropdown = false;
@@ -95,6 +97,7 @@ export class GestionarKitComponent implements OnInit, OnDestroy {
     private calibrationService = inject(CalibrationService);
     private ubicSvc          = inject(GestionUbicacionesService);
     private kitsService      = inject(KitsService);
+    private dialog           = inject(MatDialog);
 
     constructor() {
         this.kitForm = this.fb.group({
@@ -265,10 +268,11 @@ export class GestionarKitComponent implements OnInit, OnDestroy {
         setTimeout(() => this.showToolDropdown = false, 150);
     }
 
-    // ── Picker de ubicación ────────────────────────────────────────────
-    togglePicker(): void {
-        this.pickerExpanded = !this.pickerExpanded;
-        if (this.pickerExpanded && !this.warehouses.length) {
+    // ── Picker de ubicación (mini ventana) ───────────────────────────────
+    openUbicacionPicker(): void {
+        if (this.ubicacionPickerRef) { this.closeUbicacionPicker(); return; }
+
+        if (!this.warehouses.length) {
             this.loadingWarehouses = true;
             this._subs.add(
                 this.ubicSvc.getWarehouses().pipe(
@@ -285,6 +289,23 @@ export class GestionarKitComponent implements OnInit, OnDestroy {
                 })
             );
         }
+
+        this.pickerExpanded     = true;
+        this.ubicacionPickerRef = this.dialog.open(this.ubicacionPickerTpl, {
+            width: 'min(380px, 94vw)',
+            maxHeight: '86vh',
+            panelClass: 'no-padding-dialog',
+            hasBackdrop: true,
+            autoFocus: false,
+        });
+        this.ubicacionPickerRef.afterClosed().subscribe(() => {
+            this.ubicacionPickerRef = null;
+            this.pickerExpanded     = false;
+        });
+    }
+
+    closeUbicacionPicker(): void {
+        this.ubicacionPickerRef?.close();
     }
 
     toggleAlmacenGrid(): void { this.showAlmacenGrid = !this.showAlmacenGrid; }
@@ -330,7 +351,7 @@ export class GestionarKitComponent implements OnInit, OnDestroy {
         const etiqueta = `${this.selWarehouse!.nombre} › ${this.selRack!.nombre} › ${l.nombre}`;
         this.kitForm.patchValue({ ubicacion: etiqueta });
         this.showNivelDropdown = false;
-        this.pickerExpanded    = false;
+        this.closeUbicacionPicker();
     }
 
     clearUbicacion(): void {
@@ -339,7 +360,7 @@ export class GestionarKitComponent implements OnInit, OnDestroy {
         this.selRack         = null;
         this.racksFull       = [];
         this.selectedLevelId = null;
-        this.pickerExpanded  = false;
+        this.closeUbicacionPicker();
     }
 
     // ── Submit ─────────────────────────────────────────────────────────

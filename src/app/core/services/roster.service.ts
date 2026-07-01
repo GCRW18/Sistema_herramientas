@@ -23,25 +23,50 @@ export class RosterService {
     // @ Accessors
     // -----------------------------------------------------------------------------------------------------
 
-    /**
-     * Getter for assignments
-     */
     get assignments$(): Observable<RosterAssignment[]> {
         return this._assignments.asObservable();
     }
 
-    /**
-     * Getter for assignment
-     */
     get assignment$(): Observable<RosterAssignment> {
         return this._assignment.asObservable();
     }
 
-    /**
-     * Getter for stats
-     */
     get stats$(): Observable<RosterStats> {
         return this._stats.asObservable();
+    }
+
+    // -----------------------------------------------------------------------------------------------------
+    // @ Private helpers — mapeo de payloads al contrato del backend (he.troster_assignments)
+    // -----------------------------------------------------------------------------------------------------
+
+    private _fromForm(data: Partial<RosterAssignmentForm>): any {
+        return {
+            assignment_type: data.assignmentType,
+            tool_id: data.toolId,
+            kit_id: data.kitId,
+            employee_id: data.employeeId,
+            aircraft_id: data.aircraftId,
+            assignment_date: data.assignmentDate,
+            expected_return_date: data.expectedReturnDate,
+            shift: data.shift,
+            purpose: data.purpose,
+            work_order_number: data.workOrderNumber,
+            notes: data.notes
+        };
+    }
+
+    private _fromFilters(filters?: RosterFilters): any {
+        if (!filters) return {};
+        const params: any = {};
+        if (filters.search) params.search = filters.search;
+        if (filters.employeeId) params.employee_id = filters.employeeId;
+        if (filters.aircraftId) params.aircraft_id = filters.aircraftId;
+        if (filters.status) params.status = filters.status;
+        if (filters.shift) params.shift = filters.shift;
+        if (filters.assignmentType) params.assignment_type = filters.assignmentType;
+        if (filters.dateFrom) params.date_from = filters.dateFrom;
+        if (filters.dateTo) params.date_to = filters.dateTo;
+        return params;
     }
 
     // -----------------------------------------------------------------------------------------------------
@@ -57,7 +82,7 @@ export class RosterService {
             limit: 50,
             sort: 'assignment_date',
             dir: 'desc',
-            ...filters
+            ...this._fromFilters(filters)
         };
 
         return from(this._api.post('herramientas/roster_assignments/listAssignments', params)).pipe(
@@ -76,7 +101,7 @@ export class RosterService {
         return from(this._api.post('herramientas/roster_assignments/listAssignments', {
             start: 0,
             limit: 1,
-            id_asignacion: id
+            id_assignment: id
         })).pipe(
             switchMap((response: any) => {
                 const assignment = response?.data?.[0] || null;
@@ -92,7 +117,7 @@ export class RosterService {
      * Create assignment
      */
     createAssignment(data: RosterAssignmentForm): Observable<RosterAssignment> {
-        return from(this._api.post('herramientas/roster_assignments/insertAssignment', data)).pipe(
+        return from(this._api.post('herramientas/roster_assignments/insertAssignment', this._fromForm(data))).pipe(
             switchMap((response: any) => {
                 const assignment = response?.data || data;
                 this._assignment.next(assignment as RosterAssignment);
@@ -106,8 +131,8 @@ export class RosterService {
      */
     updateAssignment(id: string, data: Partial<RosterAssignmentForm>): Observable<RosterAssignment> {
         return from(this._api.post('herramientas/roster_assignments/updateAssignment', {
-            ...data,
-            id_asignacion: id
+            ...this._fromForm(data),
+            id_assignment: id
         })).pipe(
             switchMap((response: any) => {
                 const updatedAssignment = response?.data || data;
@@ -122,7 +147,7 @@ export class RosterService {
      */
     deleteAssignment(id: string): Observable<void> {
         return from(this._api.post('herramientas/roster_assignments/deleteAssignment', {
-            id_asignacion: id
+            id_assignment: id
         })).pipe(
             switchMap(() => {
                 return of(undefined);
@@ -134,7 +159,11 @@ export class RosterService {
      * Return assignment (mark as returned)
      */
     returnAssignment(data: RosterReturnForm): Observable<RosterAssignment> {
-        return from(this._api.post('herramientas/roster_assignments/returnAssignment', data)).pipe(
+        return from(this._api.post('herramientas/roster_assignments/returnAssignment', {
+            id_assignment: data.assignmentId,
+            actual_return_date: data.actualReturnDate,
+            return_notes: data.returnNotes
+        })).pipe(
             switchMap((response: any) => {
                 const assignment = response?.data || {};
                 this._assignment.next(assignment);
@@ -148,7 +177,7 @@ export class RosterService {
      */
     extendAssignment(id: string, newExpectedReturnDate: string, notes?: string): Observable<RosterAssignment> {
         return from(this._api.post('herramientas/roster_assignments/extendAssignment', {
-            id_asignacion: id,
+            id_assignment: id,
             expected_return_date: newExpectedReturnDate,
             notes: notes
         })).pipe(
@@ -165,7 +194,9 @@ export class RosterService {
      */
     getEmployeeActiveAssignments(employeeId: string): Observable<RosterAssignment[]> {
         return from(this._api.post('herramientas/roster_assignments/listActiveAssignments', {
-            id_funcionario: employeeId
+            start: 0,
+            limit: 100,
+            employee_id: employeeId
         })).pipe(
             switchMap((response: any) => {
                 return of(response?.data || []);
@@ -180,7 +211,7 @@ export class RosterService {
         return from(this._api.post('herramientas/roster_assignments/listAssignments', {
             start: 0,
             limit: 100,
-            id_funcionario: employeeId,
+            employee_id: employeeId,
             sort: 'assignment_date',
             dir: 'desc'
         })).pipe(
@@ -195,7 +226,7 @@ export class RosterService {
      */
     getAssignmentHistory(assignmentId: string): Observable<AssignmentHistory[]> {
         return from(this._api.post('herramientas/roster_assignments/getAssignmentHistory', {
-            id_asignacion: assignmentId
+            id_assignment: assignmentId
         })).pipe(
             switchMap((response: any) => {
                 return of(response?.data || []);
@@ -209,7 +240,7 @@ export class RosterService {
     getStats(): Observable<RosterStats> {
         return from(this._api.post('herramientas/roster_assignments/getAssignmentStats', {})).pipe(
             switchMap((response: any) => {
-                const stats = response?.data || {};
+                const stats = response?.data?.[0] || response?.data || {};
                 this._stats.next(stats);
                 return of(stats);
             })
@@ -220,7 +251,10 @@ export class RosterService {
      * Get overdue assignments
      */
     getOverdueAssignments(): Observable<RosterAssignment[]> {
-        return from(this._api.post('herramientas/roster_assignments/listOverdueAssignments', {})).pipe(
+        return from(this._api.post('herramientas/roster_assignments/listOverdueAssignments', {
+            start: 0,
+            limit: 100
+        })).pipe(
             switchMap((response: any) => {
                 return of(response?.data || []);
             })
@@ -228,15 +262,16 @@ export class RosterService {
     }
 
     /**
-     * Check availability of tool or kit
+     * Check availability of a specific tool or kit
      */
     checkAvailability(type: 'tool' | 'kit', id: string): Observable<AvailabilityStatus> {
+        const param = type === 'kit' ? { kit_id: id } : { tool_id: id };
         return from(this._api.post('herramientas/roster_assignments/getAvailability', {
-            tipo: type,
-            id_item: id
+            assignment_type: type,
+            ...param
         })).pipe(
             switchMap((response: any) => {
-                return of(response?.data || {});
+                return of(response?.data?.[0] || response?.data || {});
             })
         );
     }
@@ -246,7 +281,7 @@ export class RosterService {
      */
     getAvailableTools(): Observable<AvailabilityStatus[]> {
         return from(this._api.post('herramientas/roster_assignments/getAvailability', {
-            tipo: 'tool'
+            assignment_type: 'tool'
         })).pipe(
             switchMap((response: any) => {
                 return of(response?.data || []);
@@ -259,7 +294,7 @@ export class RosterService {
      */
     getAvailableKits(): Observable<AvailabilityStatus[]> {
         return from(this._api.post('herramientas/roster_assignments/getAvailability', {
-            tipo: 'kit'
+            assignment_type: 'kit'
         })).pipe(
             switchMap((response: any) => {
                 return of(response?.data || []);
@@ -272,10 +307,10 @@ export class RosterService {
      */
     getEmployeeRosterSummary(employeeId: string): Observable<EmployeeRosterSummary> {
         return from(this._api.post('herramientas/roster_assignments/getEmployeeSummary', {
-            id_funcionario: employeeId
+            employee_id: employeeId
         })).pipe(
             switchMap((response: any) => {
-                return of(response?.data || {});
+                return of(response?.data?.[0] || response?.data || {});
             })
         );
     }
@@ -284,7 +319,10 @@ export class RosterService {
      * Get all employees roster summaries
      */
     getAllEmployeesSummaries(): Observable<EmployeeRosterSummary[]> {
-        return from(this._api.post('herramientas/roster_assignments/getAllEmployeesSummaries', {})).pipe(
+        return from(this._api.post('herramientas/roster_assignments/getAllEmployeesSummaries', {
+            start: 0,
+            limit: 200
+        })).pipe(
             switchMap((response: any) => {
                 return of(response?.data || []);
             })
@@ -298,7 +336,7 @@ export class RosterService {
         return from(this._api.post('herramientas/roster_assignments/listAssignments', {
             start: 0,
             limit: 100,
-            id_aircraft: aircraftId
+            aircraft_id: aircraftId
         })).pipe(
             switchMap((response: any) => {
                 return of(response?.data || []);
@@ -313,7 +351,7 @@ export class RosterService {
         return from(this._api.post('herramientas/roster_assignments/listAssignments', {
             start: 0,
             limit: 100,
-            nro_orden_trabajo: workOrderNumber
+            work_order_number: workOrderNumber
         })).pipe(
             switchMap((response: any) => {
                 return of(response?.data || []);
@@ -328,10 +366,10 @@ export class RosterService {
         const params: any = {
             start: 0,
             limit: 100,
-            turno: shift
+            shift: shift
         };
         if (date) {
-            params.fecha = date;
+            params.assignment_date = date;
         }
 
         return from(this._api.post('herramientas/roster_assignments/listAssignments', params)).pipe(
@@ -343,19 +381,21 @@ export class RosterService {
 
     /**
      * Export assignments to CSV/Excel
+     *
+     * NOTA: el backend hoy no genera un archivo — esto reutiliza el listado
+     * (alias `exportAssignments` -> `listarRosterAssignments`) hasta que se
+     * construya la pantalla y se decida un formato real de exportación.
      */
-    exportAssignments(filters?: RosterFilters, format: 'csv' | 'excel' = 'csv'): Observable<Blob> {
+    exportAssignments(filters?: RosterFilters): Observable<RosterAssignment[]> {
         const params: any = {
-            formato: format,
-            ...filters
+            start: 0,
+            limit: 1000,
+            ...this._fromFilters(filters)
         };
 
-        // This would need to be handled differently - PXP might not support blob responses
-        // You might need to return a file URL instead
         return from(this._api.post('herramientas/roster_assignments/exportAssignments', params)).pipe(
             switchMap((response: any) => {
-                // Handle file download URL from response
-                return of(new Blob());
+                return of(response?.data || []);
             })
         );
     }

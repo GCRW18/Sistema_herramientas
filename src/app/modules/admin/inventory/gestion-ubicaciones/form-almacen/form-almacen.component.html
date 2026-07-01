@@ -19,10 +19,10 @@
 
     <!-- BODY -->
     <div class="flex-1 overflow-y-auto px-5 py-5 custom-scrollbar">
-        <form [formGroup]="form" class="grid grid-cols-12 gap-5">
+        <form [formGroup]="form" class="grid grid-cols-1 sm:grid-cols-12 gap-5">
 
-            <!-- LEFT: Preview + Estado + Descripción -->
-            <div class="col-span-5 flex flex-col gap-4">
+            <!-- LEFT: Preview + Estado -->
+            <div class="sm:col-span-5 flex flex-col justify-center gap-4">
 
                 <!-- Vista previa -->
                 <div class="bg-white dark:bg-slate-800 border-2 border-black rounded-xl p-4 shadow-[3px_3px_0_#000]">
@@ -82,19 +82,10 @@
                         {{ form.get('estado')?.value }}
                     </div>
                 </div>
-
-                <!-- Descripción -->
-                <div class="flex-1 flex flex-col">
-                    <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1.5 block">
-                        Descripción / Observaciones
-                    </label>
-                    <textarea formControlName="descripcion" rows="4" placeholder="Notas sobre el almacén..."
-                              class="flex-1 text-sm font-normal bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-xl px-3 py-2.5 outline-none transition-all duration-150 resize-none placeholder:text-stone-300 dark:placeholder:text-slate-600 hover:border-stone-400 focus:border-black focus:shadow-[3px_3px_0_#000] custom-scrollbar"></textarea>
-                </div>
             </div>
 
             <!-- RIGHT: Campos -->
-            <div class="col-span-7 flex flex-col gap-4">
+            <div class="sm:col-span-7 flex flex-col gap-4">
 
                 <!-- BASE AERONÁUTICA -->
                 <div class="relative">
@@ -104,7 +95,7 @@
                     <button type="button"
                             (click)="baseDropOpen.set(!baseDropOpen())"
                             class="w-full flex items-center justify-between border-2 rounded-xl px-3 h-10 transition-all duration-150 bg-white dark:bg-slate-800"
-                            [ngClass]="hasError('id_base','required')
+                            [ngClass]="hasError('id_lugar','required')
                                 ? 'border-red-400'
                                 : baseDropOpen()
                                     ? 'border-black shadow-[3px_3px_0_#000]'
@@ -132,31 +123,31 @@
                             </p>
                             <div class="grid grid-cols-2 gap-2 max-h-52 overflow-y-auto custom-scrollbar pb-2">
                                 <button *ngFor="let base of basesAeronauticas()" type="button"
-                                        (click)="form.patchValue({id_base: base.id_base}); baseDropOpen.set(false)"
+                                        (click)="form.patchValue({id_lugar: base.id_lugar}); baseDropOpen.set(false)"
                                         class="flex flex-col items-start gap-0.5 px-3 py-2.5 border-2 rounded-xl text-left transition-all duration-100"
-                                        [ngClass]="form.get('id_base')?.value == base.id_base
+                                        [ngClass]="form.get('id_lugar')?.value == base.id_lugar
                                             ? 'border-black bg-amber-400 shadow-[2px_2px_0_#000]'
                                             : 'border-stone-200 dark:border-slate-600 bg-stone-50 dark:bg-slate-700 hover:border-black hover:shadow-[2px_2px_0_#000]'">
                                     <span class="text-[11px] font-black font-mono leading-none"
-                                          [ngClass]="form.get('id_base')?.value == base.id_base ? 'text-black' : 'text-black dark:text-white'">
-                                        {{ base.code }}
+                                          [ngClass]="form.get('id_lugar')?.value == base.id_lugar ? 'text-black' : 'text-black dark:text-white'">
+                                        {{ base.codigo }}
                                     </span>
                                     <span class="text-[9px] font-bold leading-tight line-clamp-2"
-                                          [ngClass]="form.get('id_base')?.value == base.id_base ? 'text-black/70' : 'text-stone-500 dark:text-slate-400'">
-                                        {{ base.name }}
+                                          [ngClass]="form.get('id_lugar')?.value == base.id_lugar ? 'text-black/70' : 'text-stone-500 dark:text-slate-400'">
+                                        {{ base.nombre }}
                                     </span>
                                 </button>
                             </div>
                         </div>
                         <div class="border-t-2 border-stone-100 dark:border-slate-700 px-3 py-2">
-                            <button type="button" (click)="form.patchValue({id_base: null}); baseDropOpen.set(false)"
+                            <button type="button" (click)="form.patchValue({id_lugar: null}); baseDropOpen.set(false)"
                                     class="text-[9px] font-bold text-stone-400 dark:text-slate-500 hover:text-red-500 transition-colors">
                                 Limpiar selección
                             </button>
                         </div>
                     </div>
 
-                    <p *ngIf="hasError('id_base','required')" class="text-[8px] font-bold text-red-500 mt-1">Seleccione una base.</p>
+                    <p *ngIf="hasError('id_lugar','required')" class="text-[8px] font-bold text-red-500 mt-1">Seleccione una base.</p>
                 </div>
 
                 <!-- OFICINA -->
@@ -291,43 +282,15 @@
                     </div>
                 </div>
 
-                <!-- CIUDAD -->
-                <div>
-                    <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1.5 block">
-                        Ciudad *
-                    </label>
-                    <button type="button"
-                            (click)="ciudadDropOpen.set(!ciudadDropOpen())"
-                            class="w-full flex items-center justify-between border-2 rounded-xl px-3 h-10 transition-all bg-white dark:bg-slate-800"
-                            [ngClass]="hasError('ciudad','required')
-                                ? 'border-red-400'
-                                : ciudadDropOpen()
-                                    ? 'border-black shadow-[3px_3px_0_#000]'
-                                    : 'border-stone-300 dark:border-slate-600 hover:border-stone-400'"
-                            [disabled]="readOnly">
-                        <span class="text-sm font-bold truncate"
-                              [ngClass]="form.get('ciudad')?.value ? 'text-black dark:text-white' : 'text-stone-300 dark:text-slate-600'">
-                            {{ form.get('ciudad')?.value || '— Seleccione una Ciudad —' }}
-                        </span>
-                        <mat-icon class="!text-sm text-stone-400 shrink-0 transition-transform duration-200"
-                                  [ngClass]="ciudadDropOpen() ? 'rotate-180' : ''">expand_more</mat-icon>
-                    </button>
-                    <div *ngIf="ciudadDropOpen()"
-                         class="mt-1 border-2 border-black rounded-xl bg-white dark:bg-slate-800 max-h-44 overflow-y-auto custom-scrollbar shadow-[3px_3px_0_#000] divide-y divide-stone-100 dark:divide-slate-700">
-                        <button type="button" (click)="form.patchValue({ciudad: ''}); ciudadDropOpen.set(false)"
-                                class="w-full flex items-center px-3 py-2.5 text-left hover:bg-stone-50 dark:hover:bg-slate-700/50 transition-colors">
-                            <span class="text-sm font-bold text-stone-300 dark:text-slate-600">— Seleccione una Ciudad —</span>
-                        </button>
-                        <button *ngFor="let c of ciudades()" type="button"
-                                (click)="form.patchValue({ciudad: c.nombre}); ciudadDropOpen.set(false)"
-                                class="w-full flex items-center px-3 py-2.5 text-left transition-colors"
-                                [ngClass]="form.get('ciudad')?.value === c.nombre ? 'bg-amber-50 dark:bg-slate-700' : 'hover:bg-stone-50 dark:hover:bg-slate-700/50'">
-                            <span class="text-sm font-bold text-black dark:text-white">{{ c.nombre }}</span>
-                        </button>
-                    </div>
-                    <p *ngIf="hasError('ciudad','required')" class="text-[8px] font-bold text-red-500 mt-1">Seleccione una ciudad.</p>
-                </div>
+            </div>
 
+            <!-- OBSERVACIONES: ancho completo, debajo de todos los campos -->
+            <div class="sm:col-span-12">
+                <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1.5 block">
+                    Descripción / Observaciones
+                </label>
+                <textarea formControlName="descripcion" rows="3" placeholder="Notas sobre el almacén..."
+                          class="w-full text-sm font-normal bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-xl px-3 py-2.5 outline-none transition-all duration-150 resize-none placeholder:text-stone-300 dark:placeholder:text-slate-600 hover:border-stone-400 focus:border-black focus:shadow-[3px_3px_0_#000] custom-scrollbar"></textarea>
             </div>
         </form>
     </div>

@@ -10,6 +10,7 @@ import {
 interface BackendWarehouse {
     id_warehouse:    number;
     id_base:         number;
+    id_lugar:        number;
     code:            string;
     name:            string;
     description?:    string;
@@ -74,9 +75,10 @@ interface BackendLevelTool {
     level_name:        string;
 }
 
-interface BackendCiudad {
-    id_ciudad: number;
-    nombre:    string;
+interface BackendLugar {
+    id_lugar: number;
+    nombre:   string;
+    codigo:   string;
 }
 
 
@@ -88,31 +90,50 @@ export class GestionUbicacionesService {
     /* ════════ Paramétricas ════════ */
 
     getBasesAeronauticas(): Observable<any> {
-        return from(this._api.post('herramientas/bases/listarBases', { start: 0, limit: 100 }));
+        return from(this._api.post('parametros/Lugar/listarLugar', {
+            start: 0, limit: 100,
+            par_filtro: 'lug.codigo#lug.nombre',
+            es_regional: 'si',
+            query: ''
+        }));
     }
 
-    getOficinas(): Observable<Oficina[]> {
-        return from(this._api.post('herramientas/warehouses/listarOficinas', { start: 0, limit: 500 }))
-            .pipe(
-                map((r: any) => (r?.datos || r?.data || [])
-                    .map((o: BackendOficina) => ({
-                        id_oficina:     Number(o.id_oficina),
-                        nombre_oficina: o.nombre_oficina,
-                    } as Oficina))
-                )
-            );
+    getOficinas(idLugar?: number | null): Observable<Oficina[]> {
+        const params = {
+            start: 0, limit: 500,
+            sort: 'nombre', dir: 'DESC',
+            par_filtro: 'ofi.nombre#ofi.codigo#lug.nombre',
+            query: ''
+        };
+        return from(this._api.post('organigrama/Oficina/listarOficina', params)).pipe(
+            map((r: any) => (r?.datos || r?.data || [])
+                .map((o: any) => ({
+                    id_oficina:     Number(o.id_oficina),
+                    nombre_oficina: o.nombre || o.nombre_oficina || '',
+                    id_lugar:       o.id_lugar != null ? Number(o.id_lugar) : undefined,
+                } as Oficina))
+            ),
+            map((oficinas: Oficina[]) => idLugar != null
+                ? oficinas.filter(o => o.id_lugar === Number(idLugar))
+                : oficinas
+            )
+        );
     }
 
     getCiudades(): Observable<Ciudad[]> {
-        return from(this._api.post('herramientas/warehouses/listarCiudades', { start: 0, limit: 200 }))
-            .pipe(
-                map((r: any) => (r?.datos || r?.data || [])
-                    .map((c: BackendCiudad) => ({
-                        id_ciudad: c.id_ciudad,
-                        nombre:    c.nombre,
-                    } as Ciudad))
-                )
-            );
+        return from(this._api.post('parametros/Lugar/listarLugar', {
+            start: 0, limit: 200,
+            par_filtro: 'lug.codigo#lug.nombre',
+            es_regional: 'si',
+            query: ''
+        })).pipe(
+            map((r: any) => (r?.datos || r?.data || [])
+                .map((c: BackendLugar) => ({
+                    id_lugar: Number(c.id_lugar),
+                    nombre:   c.nombre,
+                } as Ciudad))
+            )
+        );
     }
 
     /* ════════ Warehouses ════════ */
@@ -216,6 +237,33 @@ export class GestionUbicacionesService {
         );
     }
 
+    /**
+     * Mapa id_tool → ubicación real (rack/nivel) para TODAS las herramientas con
+     * rack/nivel asignado. Usado por consultar-inventario para mostrar la misma
+     * ubicación que gestion-ubicaciones (antes dependía de ttools.location_id,
+     * que mover-herramientas nunca actualiza — quedaba desincronizado).
+     */
+    getToolLocationsMap(): Observable<Map<number, { warehouseId: number; rackName: string; levelLabel: string }>> {
+        const params = {
+            start: 0, limit: 5000, sort: 'tl.id_tool', dir: 'asc',
+            filtro_adicional: 'tl.level_id is not null',
+        };
+        return from(this._api.post('herramientas/leveltools/listarLevelTools', params)).pipe(
+            map((r: any) => {
+                const raw: BackendLevelTool[] = r?.datos || r?.data || [];
+                const out = new Map<number, { warehouseId: number; rackName: string; levelLabel: string }>();
+                raw.forEach(x => {
+                    out.set(Number(x.id_tool), {
+                        warehouseId: Number(x.warehouse_id),
+                        rackName:    x.rack_name || x.rack_code || '',
+                        levelLabel:  x.level_name || (x.level_number != null ? `N°${x.level_number}` : x.level_code) || '',
+                    });
+                });
+                return out;
+            })
+        );
+    }
+
     findToolByCode(codigo: string): Observable<LevelTool | null> {
         const safe = codigo.replace(/'/g, "''");
         const params = {
@@ -267,7 +315,7 @@ export class GestionUbicacionesService {
         const estado: AlmacenEstado = this._parseBool(b.active) ? 'ACTIVO' : 'INACTIVO';
         return {
             id:            Number(b.id_warehouse),
-            id_base:       Number(b.id_base),
+            id_lugar:      Number(b.id_lugar) || Number(b.id_base) || 0,
             codigo:        b.code,
             nombre:        b.name,
             ciudad:        b.city || '',
@@ -283,7 +331,7 @@ export class GestionUbicacionesService {
 
     private fromWarehouse(w: Warehouse): any {
         return {
-            id_base:        w.id_base,
+            id_lugar:       w.id_lugar,
             code:           w.codigo,
             name:           w.nombre,
             description:    w.descripcion ?? '',

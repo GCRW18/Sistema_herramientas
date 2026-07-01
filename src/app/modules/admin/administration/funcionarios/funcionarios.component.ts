@@ -7,7 +7,6 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { debounceTime, distinctUntilChanged, combineLatest, startWith, Subscription } from 'rxjs';
 import { EmployeeService } from '../../../../core/services/employee.service';
-import { MovementService } from '../../../../core/services/movement.service';
 
 @Component({
     selector: 'app-funcionarios',
@@ -29,11 +28,10 @@ import { MovementService } from '../../../../core/services/movement.service';
     `]
 })
 export class FuncionariosComponent implements OnInit, OnDestroy {
-    private dialog          = inject(MatDialog);
-    private snackBar        = inject(MatSnackBar);
-    private empService      = inject(EmployeeService);
-    private movementService = inject(MovementService);
-    private sub             = new Subscription();
+    private dialog     = inject(MatDialog);
+    private snackBar   = inject(MatSnackBar);
+    private empService = inject(EmployeeService);
+    private sub        = new Subscription();
 
     searchControl = new FormControl('');
     filterArea    = new FormControl('');
@@ -142,45 +140,11 @@ export class FuncionariosComponent implements OnInit, OnDestroy {
     getActivos(): number   { return this.filteredEmpleados.filter(e => e.active).length; }
     getInactivos(): number { return this.filteredEmpleados.filter(e => !e.active).length; }
 
-    async nuevoFuncionario(): Promise<void> {
-        const { FormFuncionarioComponent } = await import('./dialogs/form-funcionario/form-funcionario.component');
-        this.dialog.open(FormFuncionarioComponent, {
-            width: '520px', maxWidth: '95vw', maxHeight: '90vh', panelClass: 'neo-dialog'
-        }).afterClosed().subscribe(result => {
-            if (result) {
-                this.empService.createEmployee(result).subscribe({
-                    next: () => { this.movementService.clearPersonalCache(); this.showSuccess('Funcionario creado exitosamente'); this.recargar(); },
-                    error: () => this.showError('Error al crear funcionario')
-                });
-            }
-        });
-    }
-
-    async editarFuncionario(emp: any): Promise<void> {
-        const { FormFuncionarioComponent } = await import('./dialogs/form-funcionario/form-funcionario.component');
-        const isNew = !emp.id_employee;
-        this.dialog.open(FormFuncionarioComponent, {
-            width: '520px', maxWidth: '95vw', maxHeight: '90vh',
-            data: { empleado: emp, mode: isNew ? 'create' : 'edit' }, panelClass: 'neo-dialog'
-        }).afterClosed().subscribe(result => {
-            if (result) {
-                const op$ = isNew
-                    ? this.empService.createEmployee(result)
-                    : this.empService.updateEmployee(emp.id_employee, result);
-                op$.subscribe({
-                    next: () => { this.movementService.clearPersonalCache(); this.showSuccess(isNew ? 'Datos registrados' : 'Funcionario actualizado'); this.recargar(); },
-                    error: () => this.showError('Error al guardar funcionario')
-                });
-            }
-        });
-    }
-
-    async toggleEstado(emp: any): Promise<void> {
-        const accion = emp.active ? 'desactivar' : 'activar';
-        if (!confirm(`¿Está seguro de ${accion} a ${emp.full_name}?`)) return;
-        this.empService.updateEmployee(emp.id_employee, { ...emp, active: !emp.active }).subscribe({
-            next: () => { this.movementService.clearPersonalCache(); this.showSuccess(`Funcionario ${emp.active ? 'desactivado' : 'activado'}`); this.recargar(); },
-            error: () => this.showError('Error al cambiar estado')
+    async verFuncionario(emp: any): Promise<void> {
+        const { VerFuncionarioComponent } = await import('./dialogs/ver-funcionario/ver-funcionario.component');
+        this.dialog.open(VerFuncionarioComponent, {
+            width: '480px', maxWidth: '95vw', maxHeight: '90vh',
+            data: emp, panelClass: 'neo-dialog'
         });
     }
 
