@@ -710,7 +710,6 @@ export class IngresosHubComponent implements OnInit, OnDestroy {
                     this.proveedorInput = '';
                     this.proveedorSeleccionado = null;
                     this.loadHistorial();
-                    if (this.dialogRefComponent) this.dialogRefComponent.close({ success: true });
                 },
                 error: (err: any) => this._showMsg(err?.message || 'Error al registrar', 'error')
             });
@@ -1290,7 +1289,6 @@ export class IngresosHubComponent implements OnInit, OnDestroy {
                 this.dataSourceAjuste = [];
                 this.ajusteForm.reset({ tipoAjuste: 'INVENTARIO', fecha: new Date().toISOString().split('T')[0] });
                 this.loadHistorial();
-                if (this.dialogRefComponent) this.dialogRefComponent.close({ success: true, data: result });
             },
             error: (err: any) => this._showMsg('Error al registrar el ajuste: ' + (err?.message || ''), 'error')
         });

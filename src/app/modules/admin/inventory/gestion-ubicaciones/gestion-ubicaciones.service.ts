@@ -156,6 +156,29 @@ export class GestionUbicacionesService {
         return from(this._api.post('herramientas/warehouses/eliminarWarehouses', { id_warehouse: id }));
     }
 
+    /**
+     * Siguiente código correlativo para un almacén nuevo, formato ALM-<codigoBase>-NNNN.
+     * Contador perpetuo e independiente por base (nunca se mezcla ni se reinicia por año).
+     */
+    getNextWarehouseCode(codigoBase: string): Observable<string> {
+        return from(this._api.post('herramientas/correlativos/siguienteCorrelativoSinAnio', {
+            prefijo: `ALM-${codigoBase}`
+        })).pipe(
+            map((r: any) => {
+                if (r?.error === true || r?.ROOT?.error === true) {
+                    throw new Error(r?.mensaje ?? r?.ROOT?.mensaje ?? 'Error del servidor al generar correlativo');
+                }
+                let datos = r?.ROOT?.datos ?? r?.datos ?? r?.data ?? r;
+                if (typeof datos === 'string') {
+                    try { datos = JSON.parse(datos); } catch { /* mantener como string */ }
+                }
+                const numero = datos?.numero;
+                if (!numero) throw new Error('Correlativo de almacén no recibido del servidor');
+                return numero as string;
+            })
+        );
+    }
+
     /* ════════ Racks ════════ */
 
     getRacks(warehouseId: number): Observable<Rack[]> {

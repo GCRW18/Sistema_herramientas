@@ -52,6 +52,7 @@ interface QuickAction {
     description: string;
     variant: string;
     route: string;
+    queryParams?: Record<string, string>;
 }
 
 @Component({
@@ -153,6 +154,7 @@ export class DashboardComponent implements OnInit, AfterViewInit {
     // Datos calculados desde el backend
     private allTools: any[]     = [];
     private recentMovements: any[] = [];
+    private calibAlerts: any[]  = [];
 
     kpiCardsData    = signal<KPI[]>([]);
     alertsData      = signal<Alert[]>([]);
@@ -161,10 +163,10 @@ export class DashboardComponent implements OnInit, AfterViewInit {
 
     ngOnInit(): void {
         this.quickActionsData.set([
-            { icon: 'heroicons_outline:arrow-down-tray', label: 'Entrada',   description: 'Nueva',    variant: 'success', route: '/entradas' },
-            { icon: 'heroicons_outline:arrow-up-tray',   label: 'Salida',    description: 'Préstamo', variant: 'info',    route: '/salidas' },
-            { icon: 'heroicons_outline:wrench',           label: 'Calibrar',  description: 'Enviar',   variant: 'warning', route: '/salidas' },
-            { icon: 'heroicons_outline:document-text',   label: 'Reportes',  description: 'Ver',      variant: 'default', route: '/reportes' }
+            { icon: 'heroicons_outline:arrow-path',      label: 'Movimientos',   description: 'Entradas/Salidas', variant: 'success', route: '/movimientos' },
+            { icon: 'heroicons_outline:wrench',          label: 'Calibraciones', description: 'Gestionar',        variant: 'warning', route: '/calibraciones' },
+            { icon: 'heroicons_outline:archive-box',     label: 'Inventario',    description: 'Ver stock',        variant: 'info',     route: '/inventario' },
+            { icon: 'heroicons_outline:document-text',   label: 'Reportes',      description: 'Ver',              variant: 'default',  route: '/inventario', queryParams: { tab: 'reportes' } }
         ]);
 
         forkJoin({
@@ -176,6 +178,7 @@ export class DashboardComponent implements OnInit, AfterViewInit {
                 const alertsArr: any[] = Array.isArray(calibAlerts) ? calibAlerts : (calibAlerts as any)?.data || [];
                 this.allTools        = tools;
                 this.recentMovements = movements;
+                this.calibAlerts     = alertsArr;
                 this.buildKPIs(alertsArr);
                 this.buildActivities(alertsArr);
                 this.isLoading.set(false);
@@ -337,8 +340,8 @@ export class DashboardComponent implements OnInit, AfterViewInit {
         const tools     = this.allTools;
         const vigente   = tools.filter(t => t.status === 'available').length;
         const enCalib   = tools.filter(t => t.status === 'in_calibration').length;
-        const vencida   = 0; // requiere campo calibration_expiry_date
-        const porVencer = 0;
+        const vencida   = this.calibAlerts.filter(a => a.alert_type === 'EXPIRED').length;
+        const porVencer = this.calibAlerts.filter(a => ['CRITICAL_7D', 'URGENT_15D'].includes(a.alert_type)).length;
 
         new Chart(ctx, {
             type: 'doughnut',
@@ -402,7 +405,7 @@ export class DashboardComponent implements OnInit, AfterViewInit {
         return colors[type] || 'text-gray-500';
     }
 
-    navigateTo(route: string) {
-        this.router.navigate([route]);
+    navigateTo(action: QuickAction) {
+        this.router.navigate([action.route], { queryParams: action.queryParams });
     }
 }
