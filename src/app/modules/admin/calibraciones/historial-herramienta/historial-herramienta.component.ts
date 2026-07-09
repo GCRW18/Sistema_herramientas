@@ -1,11 +1,20 @@
-import { Component, OnInit, OnDestroy, inject } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject, Optional, Inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MAT_DIALOG_DATA, MatDialogRef, MatDialogModule } from '@angular/material/dialog';
+import { DragDropModule } from '@angular/cdk/drag-drop';
 import { Subject } from 'rxjs';
 import { takeUntil, finalize } from 'rxjs/operators';
 import { CalibrationService } from '../../../../core/services/calibration.service';
+
+/** Datos opcionales cuando el historial se abre como miniventana (MatDialog) */
+export interface HistorialHerramientaData {
+    toolId: string;
+    code?:  string;
+    name?:  string;
+}
 
 interface HistorialRecord {
     id: string | number;
@@ -20,7 +29,7 @@ interface HistorialRecord {
 @Component({
     selector: 'app-historial-herramienta',
     standalone: true,
-    imports: [CommonModule, MatIconModule, MatProgressSpinnerModule],
+    imports: [CommonModule, MatIconModule, MatProgressSpinnerModule, MatDialogModule, DragDropModule],
     templateUrl: './historial-herramienta.component.html'
 })
 export class HistorialHerramientaComponent implements OnInit, OnDestroy {
@@ -34,10 +43,24 @@ export class HistorialHerramientaComponent implements OnInit, OnDestroy {
     records: HistorialRecord[] = [];
     isLoading = false;
 
+    constructor(
+        @Optional() private dialogRef: MatDialogRef<HistorialHerramientaComponent>,
+        @Optional() @Inject(MAT_DIALOG_DATA) private dialogData: HistorialHerramientaData | null,
+    ) {}
+
+    /** true cuando se abrió como miniventana (dialog) en vez de página/ruta */
+    get esDialog(): boolean { return !!this.dialogRef; }
+
     ngOnInit(): void {
-        this.toolId   = this.route.snapshot.paramMap.get('toolId') ?? '';
-        this.toolCode = this.route.snapshot.queryParamMap.get('code') ?? '—';
-        this.toolName = this.route.snapshot.queryParamMap.get('name') ?? '—';
+        if (this.dialogData) {
+            this.toolId   = this.dialogData.toolId ?? '';
+            this.toolCode = this.dialogData.code   ?? '—';
+            this.toolName = this.dialogData.name   ?? '—';
+        } else {
+            this.toolId   = this.route.snapshot.paramMap.get('toolId') ?? '';
+            this.toolCode = this.route.snapshot.queryParamMap.get('code') ?? '—';
+            this.toolName = this.route.snapshot.queryParamMap.get('name') ?? '—';
+        }
         this.loadHistorial();
     }
 
@@ -54,15 +77,20 @@ export class HistorialHerramientaComponent implements OnInit, OnDestroy {
             finalize(() => this.isLoading = false)
         ).subscribe({
             next: (records: any[]) => {
-                this.records = records.map(r => ({
-                    id: r.id_calibration ?? r.id ?? 0,
-                    fecha: r.calibration_date ?? r.return_date ?? r.date ?? '—',
-                    certificado: r.certificate_number ?? r.record_number ?? '—',
-                    resultado: r.result ?? r.status ?? '—',
-                    laboratorio: r.supplier_name ?? r.laboratory_name ?? '—',
-                    tipo: (r.internal_notes ?? '').includes('[TRANSCRIPCIÓN HISTÓRICA]') ? 'transcripcion' : 'calibracion',
-                    proxima: r.next_calibration_date ?? '—'
-                }));
+                this.records = records.map(r => {
+                    const notes = r.internal_notes ?? '';
+                    const esTranscripcion = notes.includes('[TRANSCRIPCIÓN HISTÓRICA')
+                        || notes.includes('[TRANSCRIPCION HISTORICA');
+                    return {
+                        id: r.id_calibration ?? r.id ?? 0,
+                        fecha: r.calibration_date ?? r.return_date ?? r.date ?? '—',
+                        certificado: r.certificate_number ?? r.record_number ?? '—',
+                        resultado: r.result ?? r.status ?? '—',
+                        laboratorio: r.supplier_name ?? r.laboratory_name ?? '—',
+                        tipo: esTranscripcion ? 'transcripcion' as const : 'calibracion' as const,
+                        proxima: r.next_calibration_date ?? '—'
+                    };
+                });
             }
         });
     }
@@ -73,7 +101,8 @@ export class HistorialHerramientaComponent implements OnInit, OnDestroy {
     }
 
     cerrar(): void {
-        window.close();
+        if (this.dialogRef) this.dialogRef.close();
+        else window.close();
     }
 
     getResultClass(estado: string): string {

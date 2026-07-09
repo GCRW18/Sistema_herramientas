@@ -1,43 +1,45 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
-import { MatTableModule } from '@angular/material/table';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatInputModule } from '@angular/material/input';
-import { MatSelectModule } from '@angular/material/select';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { debounceTime, startWith } from 'rxjs/operators';
-import { combineLatest } from 'rxjs';
 import { SupplierService } from '../../../../core/services/supplier.service';
-import { Supplier } from '../../../../core/models/user.types';
+import { ErpApiService } from '../../../../core/api/api.service';
 
+/**
+ * Módulo Proveedores — dos fuentes conmutables:
+ *  · 'modulo': CRUD completo contra he.tsuppliers (herramientas/suppliers/*),
+ *    los mismos proveedores que consume ingresos-hub para las compras.
+ *  · 'erp': catálogo corporativo del ERP (param.tproveedor) vía
+ *    parametros/Proveedor/listarProveedorV2 — SOLO LECTURA (endpoint provisto
+ *    por el equipo del framework; la administración de ese catálogo es del ERP).
+ * El conmutador existe para comparar ambos catálogos y decidir la fuente definitiva.
+ */
+type FuenteProveedores = 'modulo' | 'erp';
 interface ProveedorDisplay {
     id: string;
     codigo: string;
-    nombre_comercial: string;
-    razon_social: string;
+    tipo: string;        // valor backend: tools|calibration|maintenance|general
+    tipoLabel: string;
+    nombre: string;
     nit: string;
-    tipo_proveedor: string;
-    contacto_principal: string;
+    ciudad: string;
     telefono: string;
     email: string;
-    direccion: string;
-    ciudad: string;
-    pais: string;
-    sitio_web: string;
-    telefono_contacto: string;
-    email_contacto: string;
-    calificacion: number;
-    condiciones_pago: string;
-    tiempo_entrega_dias: number;
-    observaciones: string;
-    estado: string;
-    active: boolean;
+    activo: boolean;
+    raw: any;
 }
+
+const TYPE_LABELS: Record<string, string> = {
+    tools:       'HERRAMIENTAS',
+    calibration: 'CALIBRACIÓN',
+    maintenance: 'REPARACIÓN',
+    general:     'MIXTO',
+};
 
 @Component({
     selector: 'app-proveedores',
@@ -46,9 +48,9 @@ interface ProveedorDisplay {
         CommonModule,
         MatIconModule,
         MatButtonModule,
-        MatTableModule,
         MatDialogModule,
         MatSnackBarModule,
+        MatTooltipModule,
         ReactiveFormsModule
     ],
     templateUrl: './proveedores.component.html',
@@ -60,289 +62,327 @@ interface ProveedorDisplay {
     `]
 })
 export class ProveedoresComponent implements OnInit {
-    private router = inject(Router);
-    private dialog = inject(MatDialog);
-    private snackBar = inject(MatSnackBar);
-    private supplierService = inject(SupplierService);
+    private snackBar    = inject(MatSnackBar);
+    private dialog      = inject(MatDialog);
+    private supplierSvc = inject(SupplierService);
+    private api         = inject(ErpApiService);
 
     searchControl = new FormControl('');
-    filterTipo = new FormControl('');
-
-    displayedColumns: string[] = ['codigo', 'nombre', 'tipo', 'contacto', 'telefono', 'email', 'ciudad', 'calificacion', 'estado', 'acciones'];
 
     proveedores: ProveedorDisplay[] = [];
     filteredProveedores: ProveedorDisplay[] = [];
+    isLoading = false;
 
-    tiposProveedor = [
-        { value: '', label: 'Todos los tipos' },
-        { value: 'HERRAMIENTAS', label: 'Herramientas' },
-        { value: 'CALIBRACION', label: 'Calibración' },
-        { value: 'REPARACION', label: 'Reparación' },
-        { value: 'MIXTO', label: 'Mixto' }
-    ];
+    /** Fuente activa: catálogo propio del módulo (CRUD) o corporativo ERP (solo lectura) */
+    fuente = signal<FuenteProveedores>('modulo');
+
+    /* ── Paginación ── */
+    readonly pageSize = 10;
+    pagina = signal(1);
 
     ngOnInit(): void {
         this.loadProveedores();
         this.setupFilters();
     }
 
+    get esERP(): boolean { return this.fuente() === 'erp'; }
+
+    cambiarFuente(f: FuenteProveedores): void {
+        if (this.fuente() === f) return;
+        this.fuente.set(f);
+        this.searchControl.setValue('', { emitEvent: false });
+        this.loadProveedores();
+    }
+
     loadProveedores(): void {
-        this.supplierService.getSuppliers().subscribe({
-            next: (data) => {
-                this.proveedores = this.mapToDisplay(data);
+        if (this.esERP) { this.loadProveedoresERP(); return; }
+        this.isLoading = true;
+        this.supplierSvc.getSuppliers({ limit: 1000 }).subscribe({
+            next: (rows: any[]) => {
+                this.proveedores = (rows || []).map(s => this.mapToDisplay(s));
                 this.applyFilters();
+                this.isLoading = false;
             },
-            error: (err) => this.handleError(err)
+            error: () => {
+                this.proveedores = [];
+                this.applyFilters();
+                this.isLoading = false;
+                this.snackBar.open('Error al cargar proveedores', 'Cerrar', { duration: 5000, verticalPosition: 'top' });
+            }
         });
     }
 
-    private mapToDisplay(suppliers: any[]): ProveedorDisplay[] {
-        return suppliers.map(s => ({
-            id:                  s.id_supplier?.toString() || s.id?.toString() || '',
-            codigo:              s.code           || '',
-            nombre_comercial:    s.name           || '',
-            razon_social:        s.name           || '',
-            nit:                 s.tax_id         || '',
-            tipo_proveedor:      this.mapType(s.type),
-            contacto_principal:  s.contact_person || '',
-            telefono:            s.phone          || '',
-            email:               s.email          || '',
-            direccion:           s.address        || '',
-            ciudad:              s.city           || '',
-            pais:                'Bolivia',
-            sitio_web:           s.website        || '',
-            telefono_contacto:   s.phone_contact  || '',
-            email_contacto:      s.email_contact  || '',
-            calificacion:        parseFloat(s.rating)      || 0,
-            condiciones_pago:    s.payment_terms  || '',
-            tiempo_entrega_dias: parseInt(s.delivery_days) || 0,
-            observaciones:       s.notes          || '',
-            estado:              (s.active === true || s.active === 'true' || s.active === 't') ? 'ACTIVO' : 'INACTIVO',
-            active:              s.active === true || s.active === 'true' || s.active === 't'
-        }));
+    /** Catálogo corporativo del ERP (param.tproveedor) — payload provisto por el framework */
+    private async loadProveedoresERP(): Promise<void> {
+        this.isLoading = true;
+        try {
+            const r: any = await this.api.post('parametros/Proveedor/listarProveedorV2', {
+                start: 0, limit: 50, sort: 'tipo', dir: 'ASC', tipo: 'institucion'
+            });
+            const raw: any[] = r?.datos || r?.data || [];
+            this.proveedores = raw.map(p => this.mapERPToDisplay(p));
+            this.applyFilters();
+        } catch {
+            this.proveedores = [];
+            this.applyFilters();
+            this.snackBar.open('Error al cargar proveedores del ERP', 'Cerrar', { duration: 5000, verticalPosition: 'top' });
+        } finally {
+            this.isLoading = false;
+        }
     }
 
-    private mapType(type: string | undefined): string {
-        const typeMap: any = {
-            'tools': 'HERRAMIENTAS',
-            'calibration': 'CALIBRACION',
-            'maintenance': 'REPARACION',
-            'general': 'MIXTO'
+    private mapERPToDisplay(p: any): ProveedorDisplay {
+        const tipo = (p.tipo || '').toLowerCase();
+        return {
+            id:        String(p.id_proveedor ?? ''),
+            codigo:    p.codigo || p.codigo_alkym || '',
+            tipo,
+            tipoLabel: (p.tipo || 'INSTITUCIÓN').toUpperCase(),
+            nombre:    p.nombre || p.nombre_proveedor || p.rotulo_comercial || '',
+            nit:       p.nit || '',
+            ciudad:    p.lugar || '',
+            telefono:  p.telefono1_institucion || p.telefono1 || '',
+            email:     p.email1_institucion || p.correo || '',
+            activo:    this.parseActivo(p.estado_reg),
+            raw:       p
         };
-        return typeMap[type || ''] || 'MIXTO';
+    }
+
+    private mapToDisplay(s: any): ProveedorDisplay {
+        const tipo = (s.type || 'general').toLowerCase();
+        return {
+            id:        String(s.id_supplier ?? ''),
+            codigo:    s.code || '',
+            tipo,
+            tipoLabel: TYPE_LABELS[tipo] || tipo.toUpperCase(),
+            nombre:    s.name || '',
+            nit:       s.tax_id || '',
+            ciudad:    s.city || '',
+            telefono:  s.phone || '',
+            email:     s.email || '',
+            activo:    this.parseActivo(s.active),
+            raw:       s
+        };
+    }
+
+    private parseActivo(val: any): boolean {
+        if (typeof val === 'boolean') return val;
+        if (typeof val === 'string') return ['true', 't', '1', 'activo', 'si'].includes(val.toLowerCase());
+        return !!val;
+    }
+
+    /* ── Mapeos form (español) ↔ backend (he.tsuppliers, inglés) ── */
+
+    private mapToForm(p: ProveedorDisplay): any {
+        const s = p.raw;
+        return {
+            id:                 p.id,
+            codigo:             s.code || '',
+            nombre_comercial:   s.name || '',
+            razon_social:       s.name || '',
+            nit:                s.tax_id || '',
+            tipo_proveedor:     TYPE_LABELS[p.tipo] || 'MIXTO',
+            direccion:          s.address || '',
+            ciudad:             s.city || '',
+            pais:               'Bolivia',
+            telefono:           s.phone || '',
+            email:              s.email || '',
+            contacto_principal: s.contact_person || '',
+            telefono_contacto:  s.phone_contact || '',
+            email_contacto:     s.email_contact || '',
+            sitio_web:          s.website || '',
+            calificacion:       Number(s.rating ?? 0),
+            condiciones_pago:   s.payment_terms || '',
+            tiempo_entrega_dias: Number(s.delivery_days ?? 0),
+            observaciones:      s.notes || '',
+            active:             p.activo,
+            // alias en inglés que usa detalle-proveedor.html
+            name:               s.name || '',
+            type:               p.tipoLabel,
+            tax:                s.tax_id || '',
+            contact:            s.contact_person || '',
+            phone:              s.phone || '',
+            address:            s.address || '',
+            notes:              s.notes || '',
+            estado:             p.activo ? 'ACTIVO' : 'INACTIVO',
+        };
     }
 
     private mapFormToBackend(formData: any): any {
-        const typeReverseMap: any = {
+        const typeReverseMap: Record<string, string> = {
             'HERRAMIENTAS': 'tools',
-            'CALIBRACION': 'calibration',
-            'REPARACION': 'maintenance',
-            'MIXTO': 'general'
+            'CALIBRACION':  'calibration',
+            'CALIBRACIÓN':  'calibration',
+            'REPARACION':   'maintenance',
+            'REPARACIÓN':   'maintenance',
+            'MIXTO':        'general'
         };
         return {
-            code:          formData.codigo,
-            name:          formData.nombre_comercial,
-            contact_person:formData.contacto_principal,
-            email:         formData.email,
-            phone:         formData.telefono,
-            address:       formData.direccion,
-            city:          formData.ciudad,
-            website:       formData.sitio_web,
-            type:          typeReverseMap[formData.tipo_proveedor] || 'general',
-            tax_id:        formData.nit,
-            notes:         formData.observaciones,
-            phone_contact: formData.telefono_contacto,
-            email_contact: formData.email_contacto,
-            delivery_days: formData.tiempo_entrega_dias || 0,
-            payment_terms: formData.condiciones_pago,
-            rating:        formData.calificacion || 0,
-            active:        true
+            code:           formData.codigo || '',
+            name:           formData.nombre_comercial,
+            contact_person: formData.contacto_principal || '',
+            email:          formData.email,
+            phone:          formData.telefono,
+            address:        formData.direccion || '',
+            city:           formData.ciudad || '',
+            website:        formData.sitio_web || '',
+            type:           typeReverseMap[formData.tipo_proveedor] || 'general',
+            tax_id:         formData.nit,
+            notes:          formData.observaciones || '',
+            phone_contact:  formData.telefono_contacto || '',
+            email_contact:  formData.email_contacto || '',
+            delivery_days:  formData.tiempo_entrega_dias || 0,
+            payment_terms:  formData.condiciones_pago || '',
+            rating:         formData.calificacion || 0,
+            active:         formData.active !== undefined ? formData.active : true
         };
     }
 
-    setupFilters(): void {
-        combineLatest([
-            this.searchControl.valueChanges.pipe(startWith('')),
-            this.filterTipo.valueChanges.pipe(startWith(''))
-        ]).pipe(
-            debounceTime(300)
-        ).subscribe(() => this.applyFilters());
-    }
-
-    applyFilters(): void {
-        let filtered = [...this.proveedores];
-
-        // Filtro de búsqueda
-        const searchTerm = this.searchControl.value?.toLowerCase() || '';
-        if (searchTerm) {
-            filtered = filtered.filter(p =>
-                p.nombre_comercial.toLowerCase().includes(searchTerm) ||
-                p.codigo.toLowerCase().includes(searchTerm) ||
-                p.contacto_principal?.toLowerCase().includes(searchTerm) ||
-                p.email?.toLowerCase().includes(searchTerm)
-            );
-        }
-
-        // Filtro por tipo
-        const tipo = this.filterTipo.value;
-        if (tipo) {
-            filtered = filtered.filter(p => p.tipo_proveedor === tipo);
-        }
-
-        this.filteredProveedores = filtered;
-    }
+    /* ── Acciones CRUD ── */
 
     async nuevoProveedor(): Promise<void> {
+        if (this.esERP) return;
         const { FormProveedorComponent } = await import('./dialogs/form-proveedor/form-proveedor.component');
-        const dialogRef = this.dialog.open(FormProveedorComponent, {
-            width: '560px',
-            maxWidth: '95vw',
-            height: 'auto',
-            maxHeight: '90vh',
+        const ref = this.dialog.open(FormProveedorComponent, {
+            width: '560px', maxWidth: '95vw', maxHeight: '90vh',
             panelClass: 'neo-dialog',
-            hasBackdrop: false,
-            disableClose: false
+            data: { mode: 'create' }
         });
-
-        dialogRef.afterClosed().subscribe(result => {
-            if (result) {
-                this.createProveedor(result);
-            }
+        ref.afterClosed().subscribe(result => {
+            if (!result) return;
+            this.supplierSvc.createSupplier(this.mapFormToBackend(result)).subscribe({
+                next: () => {
+                    this.snackBar.open('Proveedor creado', 'Cerrar', { duration: 2500 });
+                    this.loadProveedores();
+                },
+                error: () => this.snackBar.open('Error al crear proveedor', 'Cerrar', { duration: 4000 }),
+            });
         });
     }
 
-    async editarProveedor(proveedor: ProveedorDisplay): Promise<void> {
+    async editarProveedor(p: ProveedorDisplay, ev: Event): Promise<void> {
+        ev.stopPropagation();
+        if (this.esERP) return;
         const { FormProveedorComponent } = await import('./dialogs/form-proveedor/form-proveedor.component');
-        const dialogRef = this.dialog.open(FormProveedorComponent, {
-            width: '560px',
-            maxWidth: '95vw',
-            height: 'auto',
-            maxHeight: '90vh',
-            data: { proveedor, mode: 'edit' },
+        const ref = this.dialog.open(FormProveedorComponent, {
+            width: '560px', maxWidth: '95vw', maxHeight: '90vh',
             panelClass: 'neo-dialog',
-            hasBackdrop: false
+            data: { mode: 'edit', proveedor: this.mapToForm(p) }
         });
-
-        dialogRef.afterClosed().subscribe(result => {
-            if (result) {
-                this.updateProveedor(proveedor.id, result);
-            }
+        ref.afterClosed().subscribe(result => {
+            if (!result) return;
+            this.supplierSvc.updateSupplier(p.id, this.mapFormToBackend({ ...result, active: p.activo })).subscribe({
+                next: () => {
+                    this.snackBar.open('Proveedor actualizado', 'Cerrar', { duration: 2500 });
+                    this.loadProveedores();
+                },
+                error: () => this.snackBar.open('Error al actualizar proveedor', 'Cerrar', { duration: 4000 }),
+            });
         });
     }
 
-    async verDetalles(proveedor: ProveedorDisplay): Promise<void> {
+    async verDetalle(p: ProveedorDisplay): Promise<void> {
+        if (this.esERP) {
+            // El detalle/edición aplica solo al catálogo del módulo (he.tsuppliers)
+            this.snackBar.open('Catálogo ERP corporativo: solo lectura', 'Cerrar', { duration: 2500 });
+            return;
+        }
         const { DetalleProveedorComponent } = await import('./dialogs/detalle-proveedor/detalle-proveedor.component');
         const ref = this.dialog.open(DetalleProveedorComponent, {
-            width: '560px',
-            maxWidth: '95vw',
-            height: 'auto',
-            maxHeight: '90vh',
-            data: { proveedor },
-            panelClass: 'neo-dialog'
+            width: '560px', maxWidth: '95vw', maxHeight: '90vh',
+            panelClass: 'neo-dialog',
+            data: { proveedor: this.mapToForm(p) }
         });
         ref.afterClosed().subscribe(result => {
             if (result === 'updated') this.loadProveedores();
         });
     }
 
-    async toggleEstado(proveedor: ProveedorDisplay): Promise<void> {
-        const nuevoEstado = !proveedor.active;
-
+    async toggleEstado(p: ProveedorDisplay, ev: Event): Promise<void> {
+        ev.stopPropagation();
+        if (this.esERP) return;
         const { ConfirmToggleDialogComponent } = await import('./dialogs/confirm-toggle-dialog.component');
         const ref = this.dialog.open(ConfirmToggleDialogComponent, {
-            panelClass: 'neo-mini-dialog',
-            hasBackdrop: true,
-            backdropClass: 'bg-black/20',
-            data: { nombre: proveedor.nombre_comercial, activar: nuevoEstado }
+            maxWidth: '95vw',
+            panelClass: 'no-padding-dialog',
+            data: { nombre: p.nombre, activar: !p.activo }
         });
-
-        ref.afterClosed().subscribe(confirmed => {
-            if (confirmed) {
-                this.supplierService.updateSupplier(proveedor.id, { active: nuevoEstado }).subscribe({
-                    next: () => {
-                        this.showSuccess(`Proveedor ${nuevoEstado ? 'activado' : 'desactivado'} exitosamente`);
-                        this.loadProveedores();
-                    },
-                    error: (err) => this.handleError(err)
-                });
-            }
-        });
-    }
-
-    createProveedor(formData: any): void {
-        const supplierData = this.mapFormToBackend(formData);
-        this.supplierService.createSupplier(supplierData).subscribe({
-            next: () => {
-                this.showSuccess('Proveedor creado exitosamente');
-                this.loadProveedores();
-            },
-            error: (err) => this.handleError(err)
+        ref.afterClosed().subscribe(ok => {
+            if (!ok) return;
+            // HE_SUP_MOD sobrescribe todos los campos: enviar el registro completo
+            const payload = this.mapFormToBackend({ ...this.mapToForm(p), active: !p.activo });
+            this.supplierSvc.updateSupplier(p.id, payload).subscribe({
+                next: () => {
+                    this.snackBar.open(`Proveedor ${!p.activo ? 'activado' : 'desactivado'}`, 'Cerrar', { duration: 2500 });
+                    this.loadProveedores();
+                },
+                error: () => this.snackBar.open('Error al cambiar estado', 'Cerrar', { duration: 4000 }),
+            });
         });
     }
 
-    updateProveedor(id: string, formData: any): void {
-        const supplierData = this.mapFormToBackend(formData);
-        this.supplierService.updateSupplier(id, supplierData).subscribe({
-            next: () => {
-                this.showSuccess('Proveedor actualizado exitosamente');
-                this.loadProveedores();
-            },
-            error: (err) => this.handleError(err)
-        });
+    /* ── Filtros ── */
+
+    setupFilters(): void {
+        this.searchControl.valueChanges.pipe(
+            startWith(''),
+            debounceTime(300)
+        ).subscribe(() => this.applyFilters());
     }
 
-    volver(): void {
-        this.router.navigate(['/administration']);
+    applyFilters(): void {
+        const term = this.searchControl.value?.toLowerCase() || '';
+        this.filteredProveedores = term
+            ? this.proveedores.filter(p =>
+                p.nombre.toLowerCase().includes(term) ||
+                p.codigo.toLowerCase().includes(term) ||
+                p.nit.toLowerCase().includes(term) ||
+                p.email?.toLowerCase().includes(term))
+            : [...this.proveedores];
+        this.pagina.set(1);
     }
+
+    /* ── Paginación ── */
+
+    get totalPaginas(): number {
+        return Math.max(1, Math.ceil(this.filteredProveedores.length / this.pageSize));
+    }
+
+    get proveedoresPagina(): ProveedorDisplay[] {
+        const p = Math.min(this.pagina(), this.totalPaginas);
+        const inicio = (p - 1) * this.pageSize;
+        return this.filteredProveedores.slice(inicio, inicio + this.pageSize);
+    }
+
+    get rangoPagina(): { desde: number; hasta: number } {
+        const total = this.filteredProveedores.length;
+        if (!total) return { desde: 0, hasta: 0 };
+        const p = Math.min(this.pagina(), this.totalPaginas);
+        const desde = (p - 1) * this.pageSize + 1;
+        return { desde, hasta: Math.min(p * this.pageSize, total) };
+    }
+
+    paginasVisibles(): number[] {
+        const total  = this.totalPaginas;
+        const actual = Math.min(this.pagina(), total);
+        const inicio = Math.max(1, Math.min(actual - 2, total - 4));
+        const fin    = Math.min(total, inicio + 4);
+        const out: number[] = [];
+        for (let i = inicio; i <= fin; i++) out.push(i);
+        return out;
+    }
+
+    irAPagina(p: number): void {
+        this.pagina.set(Math.min(Math.max(1, p), this.totalPaginas));
+    }
+
+    /* ── KPIs ── */
 
     getProveedoresActivos(): number {
-        return this.proveedores.filter(p => p.active).length;
+        return this.proveedores.filter(p => p.activo).length;
     }
 
     getProveedoresInactivos(): number {
-        return this.proveedores.filter(p => !p.active).length;
-    }
-
-    getEstrellas(calificacion: number): string {
-        return '⭐'.repeat(Math.floor(calificacion));
-    }
-
-    private showSuccess(message: string): void {
-        this.snackBar.open(message, 'Cerrar', {
-            duration: 3000,
-            horizontalPosition: 'end',
-            verticalPosition: 'top',
-            panelClass: ['snackbar-success']
-        });
-    }
-
-    private showWarning(message: string): void {
-        this.snackBar.open(message, 'Entendido', {
-            duration: 4000,
-            horizontalPosition: 'end',
-            verticalPosition: 'top',
-            panelClass: ['snackbar-warning']
-        });
-    }
-
-    private handleError(error: any): void {
-        let message = 'Ocurrió un error inesperado';
-
-        if (error.error?.message) {
-            message = error.error.message;
-        } else if (error.status === 404) {
-            message = 'El recurso no fue encontrado';
-        } else if (error.status === 403) {
-            message = 'No tiene permisos para realizar esta acción';
-        } else if (error.status === 500) {
-            message = 'Error en el servidor. Intente nuevamente';
-        }
-
-        this.snackBar.open(message, 'Cerrar', {
-            duration: 5000,
-            horizontalPosition: 'end',
-            verticalPosition: 'top',
-            panelClass: ['snackbar-error']
-        });
+        return this.proveedores.filter(p => !p.activo).length;
     }
 }

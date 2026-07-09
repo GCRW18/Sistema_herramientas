@@ -56,6 +56,10 @@ export class GestionUbicacionesComponent implements OnInit, OnDestroy {
     filteredAlmacenes: Warehouse[] = [];
     racksByWarehouse: Record<number, Rack[]> = {};
 
+    /* ── Paginación ── */
+    readonly pageSize = 10;
+    pagina = signal(1);
+
     /** Almacén abierto en la vista de estantes. null = se muestra la lista. */
     almacenActivo = signal<Warehouse | null>(null);
 
@@ -136,6 +140,42 @@ export class GestionUbicacionesComponent implements OnInit, OnDestroy {
             }
             return true;
         });
+        this.pagina.set(1);
+    }
+
+    /* ── Paginación ── */
+
+    get totalPaginas(): number {
+        return Math.max(1, Math.ceil(this.filteredAlmacenes.length / this.pageSize));
+    }
+
+    get almacenesPagina(): Warehouse[] {
+        const p = Math.min(this.pagina(), this.totalPaginas);
+        const inicio = (p - 1) * this.pageSize;
+        return this.filteredAlmacenes.slice(inicio, inicio + this.pageSize);
+    }
+
+    get rangoPagina(): { desde: number; hasta: number } {
+        const total = this.filteredAlmacenes.length;
+        if (!total) return { desde: 0, hasta: 0 };
+        const p = Math.min(this.pagina(), this.totalPaginas);
+        const desde = (p - 1) * this.pageSize + 1;
+        return { desde, hasta: Math.min(p * this.pageSize, total) };
+    }
+
+    /** Ventana de hasta 5 números de página centrada en la actual */
+    paginasVisibles(): number[] {
+        const total  = this.totalPaginas;
+        const actual = Math.min(this.pagina(), total);
+        const inicio = Math.max(1, Math.min(actual - 2, total - 4));
+        const fin    = Math.min(total, inicio + 4);
+        const out: number[] = [];
+        for (let i = inicio; i <= fin; i++) out.push(i);
+        return out;
+    }
+
+    irAPagina(p: number): void {
+        this.pagina.set(Math.min(Math.max(1, p), this.totalPaginas));
     }
 
     countActivos()   { return this.almacenes.filter(a => a.estado === 'ACTIVO').length; }

@@ -294,7 +294,7 @@ export class CuarentenaBajaHubComponent implements OnInit, OnDestroy {
             nombre:           [''],
             partNumber:       [''],
             serialNumber:     [''],
-            base:             ['ALM-CBB', Validators.required],
+            base:             ['ALM-CBB-0001', Validators.required],
             fechaInicio:      [today, Validators.required],
             fechaVencimiento: [''],
             existencia:       [0],
@@ -339,7 +339,7 @@ export class CuarentenaBajaHubComponent implements OnInit, OnDestroy {
 
     abrirModalHerramientaCuarentena(): void {
         const today = this._today();
-        this.toolCuarentenaForm.reset({ existencia: 0, cantidad: 1, estadoFisico: 'BUENO', base: 'ALM-CBB', fechaInicio: today, motivoItem: '', observaciones: '' });
+        this.toolCuarentenaForm.reset({ existencia: 0, cantidad: 1, estadoFisico: 'BUENO', base: 'ALM-CBB-0001', fechaInicio: today, motivoItem: '', observaciones: '' });
         this.selectedToolImage.set(null);
         this.showToolDropdown = false;
         this.buscarValueC     = '';

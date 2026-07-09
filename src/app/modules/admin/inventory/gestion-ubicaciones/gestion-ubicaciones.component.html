@@ -190,7 +190,7 @@
                     </tr>
                     </thead>
                     <tbody>
-                    <tr *ngFor="let a of filteredAlmacenes"
+                    <tr *ngFor="let a of almacenesPagina"
                         (click)="abrirEstantes(a)"
                         class="border-b border-gray-200 dark:border-slate-700 hover:bg-gray-300 dark:hover:bg-slate-800 cursor-pointer transition-all">
 
@@ -250,6 +250,31 @@
                     </tr>
                     </tbody>
                 </table>
+            </div>
+
+            <!-- PAGINADOR -->
+            <div *ngIf="filteredAlmacenes.length > pageSize"
+                 class="shrink-0 border-t-2 border-black bg-white dark:bg-slate-800 px-3 sm:px-4 py-2 flex items-center justify-between gap-2 flex-wrap">
+                <span class="text-[9px] sm:text-[10px] font-black uppercase text-gray-500">
+                    {{ rangoPagina.desde }}–{{ rangoPagina.hasta }} de {{ filteredAlmacenes.length }} almacenes
+                </span>
+                <div class="flex items-center gap-1">
+                    <button (click)="irAPagina(pagina() - 1)" [disabled]="pagina() <= 1" matTooltip="Anterior"
+                            class="w-7 h-7 flex items-center justify-center bg-white dark:bg-slate-700 border-2 border-black rounded-lg shadow-[2px_2px_0px_0px_#000] hover:translate-y-[1px] hover:shadow-none transition-all disabled:opacity-30 disabled:cursor-not-allowed disabled:translate-y-0 disabled:shadow-[2px_2px_0px_0px_#000]">
+                        <mat-icon class="!text-sm text-black dark:text-white">chevron_left</mat-icon>
+                    </button>
+                    <button *ngFor="let p of paginasVisibles()" (click)="irAPagina(p)"
+                            class="w-7 h-7 flex items-center justify-center border-2 border-black rounded-lg text-[10px] font-black transition-all"
+                            [ngClass]="p === pagina()
+                                ? 'bg-amber-400 text-black shadow-none translate-y-[1px]'
+                                : 'bg-white dark:bg-slate-700 text-black dark:text-white shadow-[2px_2px_0px_0px_#000] hover:translate-y-[1px] hover:shadow-none'">
+                        {{ p }}
+                    </button>
+                    <button (click)="irAPagina(pagina() + 1)" [disabled]="pagina() >= totalPaginas" matTooltip="Siguiente"
+                            class="w-7 h-7 flex items-center justify-center bg-white dark:bg-slate-700 border-2 border-black rounded-lg shadow-[2px_2px_0px_0px_#000] hover:translate-y-[1px] hover:shadow-none transition-all disabled:opacity-30 disabled:cursor-not-allowed disabled:translate-y-0 disabled:shadow-[2px_2px_0px_0px_#000]">
+                        <mat-icon class="!text-sm text-black dark:text-white">chevron_right</mat-icon>
+                    </button>
+                </div>
             </div>
         </div>
     </div>

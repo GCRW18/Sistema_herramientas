@@ -1,11 +1,10 @@
-import { Component, OnDestroy, inject, ViewChild, TemplateRef, Type, Injector, TrackByFunction } from '@angular/core';
+import { Component, OnDestroy, inject, Type, Injector, TrackByFunction } from '@angular/core';
 import { CommonModule, NgComponentOutlet } from '@angular/common';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
-import { MatDialog, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
+import { MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { MatTableModule } from '@angular/material/table';
 import { DragDropModule } from '@angular/cdk/drag-drop';
 import { Subject, of } from 'rxjs';
 
@@ -31,13 +30,6 @@ interface ModuleDef {
     loader: () => Promise<Type<any>>;
 }
 
-interface AdminRecord {
-    fecha: string;
-    tipo: string;
-    entidad: string;
-    usuario: string;
-}
-
 @Component({
     selector: 'app-administration',
     standalone: true,
@@ -49,7 +41,6 @@ interface AdminRecord {
         MatDialogModule,
         MatSnackBarModule,
         MatProgressSpinnerModule,
-        MatTableModule,
         DragDropModule
     ],
     templateUrl: './administration.component.html',
@@ -115,12 +106,9 @@ interface AdminRecord {
     `]
 })
 export class AdministrationComponent implements OnDestroy {
-    private dialog   = inject(MatDialog);
     private injector = inject(Injector);
 
     private _unsubscribeAll = new Subject<void>();
-
-    @ViewChild('actividadRecienteDialog') actividadRecienteDialog!: TemplateRef<any>;
 
     // ── Tab system ───────────────────────────────────────────────────────────
     openTabs: OpenTab[] = [];
@@ -142,36 +130,11 @@ export class AdministrationComponent implements OnDestroy {
             loader: async () => (await import('./proveedores/proveedores.component')).ProveedoresComponent
         },
         {
-            type: 3, label: 'CLIENTES', sublabel: '',
-            color: '#1AAA1F', textColor: '#fff',
-            svgIcon: 'heroicons_outline:users',
-            loader: async () => (await import('./clientes/clientes.component')).ClientesComponent
-        },
-        {
-            type: 4, label: 'ROLES Y', sublabel: 'PERMISOS',
+            type: 3, label: 'ROLES Y', sublabel: 'PERMISOS',
             color: '#7113CF', textColor: '#fff',
             svgIcon: 'heroicons_outline:shield-check',
             loader: async () => (await import('./roles/roles.component')).RolesComponent
         },
-        {
-            type: 5, label: 'FUNCIONARIOS', sublabel: 'Y TÉCNICOS',
-            color: '#111A43', textColor: '#fff',
-            svgIcon: 'heroicons_outline:identification',
-            loader: async () => (await import('./funcionarios/funcionarios.component')).FuncionariosComponent
-        },
-        {
-            type: 6, label: 'CONFIGURACIÓN', sublabel: 'PARÁMETROS · ALERTAS',
-            color: '#F59E0B', textColor: '#000',
-            svgIcon: 'heroicons_outline:adjustments-horizontal',
-            loader: async () => (await import('./parametros/parametros.component')).ParametrosComponent
-        },
-    ];
-
-    displayedColumns: string[] = ['fecha', 'tipo', 'entidad', 'usuario', 'acciones'];
-    recentRecords: AdminRecord[] = [
-        { fecha: '04/01/2026', tipo: 'CREAR USUARIO',    entidad: 'Carlos Mendoza',  usuario: 'ADMIN' },
-        { fecha: '03/01/2026', tipo: 'EDITAR PROVEEDOR', entidad: 'Ferreteria BOA',  usuario: 'SUPERVISOR' },
-        { fecha: '02/01/2026', tipo: 'ASIGNAR ROL',      entidad: 'Tecnico Senior',  usuario: 'ADMIN' }
     ];
 
     // ── Tab system methods ───────────────────────────────────────────────────
@@ -241,21 +204,6 @@ export class AdministrationComponent implements OnDestroy {
     }
 
     trackByTabId: TrackByFunction<OpenTab> = (_index, tab) => tab.id;
-
-    // ── Actividad Reciente (dialog desde header) ─────────────────────────────
-
-    openActividadReciente(): void {
-        this.dialog.open(this.actividadRecienteDialog, {
-            width: '700px',
-            maxWidth: '95vw',
-            height: 'auto',
-            maxHeight: '80vh',
-            panelClass: 'neo-dialog',
-            hasBackdrop: true,
-            disableClose: false,
-            autoFocus: false
-        });
-    }
 
     ngOnDestroy(): void {
         this._unsubscribeAll.next();

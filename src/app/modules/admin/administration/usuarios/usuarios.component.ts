@@ -1,28 +1,34 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
-import { MatTableModule } from '@angular/material/table';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatInputModule } from '@angular/material/input';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
-import { FormUsuarioComponent } from './dialogs/form-usuario/form-usuario.component';
-import { UsuariosService, UsuarioHE } from '../../../../core/services/usuarios.service';
-import { RoleService } from '../../../../core/services/role.service';
+import { EmployeeService } from '../../../../core/services/employee.service';
+import { ErpApiService } from '../../../../core/api/api.service';
 
+/**
+ * Módulo Usuarios — patrón "Funcionarios" (solo consulta), con dos fuentes conmutables:
+ *  · 'modulo': herramientas/employees/listarFuncionarios (he.ft_funcionarios_segu_sel,
+ *    une segu.tusuario + he.temployees → cargo/área/base/licencia y ficha completa).
+ *  · 'erp': seguridad/Usuario/listarUsuario — endpoint oficial del framework (payload
+ *    provisto por el equipo ERP). Solo devuelve cuenta/nombre/estado, sin datos técnicos.
+ * Ambas son SOLO LECTURA: las cuentas de login pertenecen al framework (schema segu).
+ * Click en fila (solo fuente módulo) → ficha VerUsuarioComponent.
+ */
+type FuenteUsuarios = 'modulo' | 'erp';
 interface UsuarioTabla {
     id: number;
-    nombre: string;
-    email: string;
-    rol: string;
-    departamento: string;
+    cuenta: string;
+    nombreCompleto: string;
+    cargo: string;
+    area: string;
+    base: string;
     estado: 'ACTIVO' | 'INACTIVO';
-    ultimoAcceso: string;
-    _raw: UsuarioHE;
+    raw: any;
 }
 
 @Component({
@@ -32,12 +38,10 @@ interface UsuarioTabla {
         CommonModule,
         MatIconModule,
         MatButtonModule,
-        MatTableModule,
         MatDialogModule,
-        MatFormFieldModule,
-        MatInputModule,
         MatProgressSpinnerModule,
         MatSnackBarModule,
+        MatTooltipModule,
         ReactiveFormsModule
     ],
     templateUrl: './usuarios.component.html',
@@ -49,168 +53,167 @@ interface UsuarioTabla {
     `]
 })
 export class UsuariosComponent implements OnInit {
-    private router          = inject(Router);
-    private dialog          = inject(MatDialog);
-    private snackBar        = inject(MatSnackBar);
-    private usuariosService = inject(UsuariosService);
-    private roleService     = inject(RoleService);
+    private snackBar    = inject(MatSnackBar);
+    private dialog      = inject(MatDialog);
+    private employeeSvc = inject(EmployeeService);
+    private api         = inject(ErpApiService);
 
     searchControl = new FormControl('');
-    displayedColumns: string[] = ['nombre', 'email', 'rol', 'departamento', 'estado', 'ultimoAcceso', 'acciones'];
 
     usuarios: UsuarioTabla[] = [];
     filteredUsuarios: UsuarioTabla[] = [];
-    rolesList: any[] = [];
     isLoading = false;
 
+    /** Fuente activa: módulo (segu + he.temployees, con ficha) o endpoint oficial del ERP */
+    fuente = signal<FuenteUsuarios>('modulo');
+
+    /* ── Paginación ── */
+    readonly pageSize = 10;
+    pagina = signal(1);
+
     ngOnInit(): void {
-        this.cargarRoles();
         this.cargarUsuarios();
         this.searchControl.valueChanges.subscribe(value => {
             this.filterUsuarios(value || '');
         });
     }
 
-    private cargarRoles(): void {
-        this.roleService.getRoles().subscribe({
-            next: (roles) => { this.rolesList = roles; },
-            error: () => { this.rolesList = []; }
-        });
+    get esERP(): boolean { return this.fuente() === 'erp'; }
+
+    cambiarFuente(f: FuenteUsuarios): void {
+        if (this.fuente() === f) return;
+        this.fuente.set(f);
+        this.searchControl.setValue('', { emitEvent: false });
+        this.cargarUsuarios();
     }
 
     cargarUsuarios(): void {
+        if (this.esERP) { this.cargarUsuariosERP(); return; }
         this.isLoading = true;
-        this.usuariosService.getUsuarios().subscribe({
-            next: (data: UsuarioHE[]) => {
-                this.usuarios = data.map(u => this.mapearUsuario(u));
-                this.filteredUsuarios = [...this.usuarios];
+        this.employeeSvc.getFuncionarios().subscribe({
+            next: (rows: any[]) => {
+                this.usuarios = rows.map(f => this.mapearUsuario(f));
+                this.filterUsuarios(this.searchControl.value || '');
                 this.isLoading = false;
             },
-            error: () => { this.isLoading = false; }
+            error: () => {
+                this.usuarios = [];
+                this.filterUsuarios('');
+                this.isLoading = false;
+                this.snackBar.open('Error al cargar usuarios', 'Cerrar', { duration: 5000, verticalPosition: 'top' });
+            }
         });
     }
 
-    private mapearUsuario(u: UsuarioHE): UsuarioTabla {
-        const rol = this.rolesList.find(r => r.id_role === u.id_role);
+    /** Endpoint oficial del framework (segu.tusuario) — payload provisto por el equipo ERP */
+    private async cargarUsuariosERP(): Promise<void> {
+        this.isLoading = true;
+        try {
+            const r: any = await this.api.post('seguridad/Usuario/listarUsuario', {
+                start: 0, limit: 50, sort: 'desc_person', dir: 'ASC', usuarios_activo: 'si'
+            });
+            const raw: any[] = r?.datos || r?.data || [];
+            this.usuarios = raw.map(u => ({
+                id: Number(u.id_usuario ?? 0),
+                cuenta: u.cuenta || '',
+                nombreCompleto: u.desc_person || u.cuenta || '',
+                cargo: '',
+                area: '',
+                base: '',
+                estado: (this.parseActivo(u.estado_reg) ? 'ACTIVO' : 'INACTIVO') as 'ACTIVO' | 'INACTIVO',
+                raw: u
+            }));
+            this.filterUsuarios(this.searchControl.value || '');
+        } catch {
+            this.usuarios = [];
+            this.filterUsuarios('');
+            this.snackBar.open('Error al cargar usuarios del ERP', 'Cerrar', { duration: 5000, verticalPosition: 'top' });
+        } finally {
+            this.isLoading = false;
+        }
+    }
+
+    private parseActivo(val: any): boolean {
+        if (typeof val === 'boolean') return val;
+        if (typeof val === 'string') return ['true', 't', '1', 'activo', 'si'].includes(val.toLowerCase());
+        return !!val;
+    }
+
+    private mapearUsuario(f: any): UsuarioTabla {
         return {
-            id: u.id_usuario_he,
-            nombre: `${u.nombres} ${u.apellidos}`,
-            email: u.email,
-            rol: rol ? rol.name : 'Sin rol',
-            departamento: u.departamento || 'Sin asignar',
-            estado: u.active ? 'ACTIVO' : 'INACTIVO',
-            ultimoAcceso: u.ultimo_acceso
-                ? new Date(u.ultimo_acceso).toLocaleDateString('es-BO', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })
-                : 'Nunca',
-            _raw: u
+            id: Number(f.id_usuario ?? 0),
+            cuenta: f.cuenta || '',
+            nombreCompleto: f.full_name || f.cuenta || '',
+            cargo: f.cargo || '',
+            area: f.area || '',
+            base: f.base_code || '',
+            estado: f.active ? 'ACTIVO' : 'INACTIVO',
+            raw: f
         };
     }
 
     filterUsuarios(searchTerm: string): void {
         const term = searchTerm.toLowerCase();
         this.filteredUsuarios = this.usuarios.filter(u =>
-            u.nombre.toLowerCase().includes(term) ||
-            u.email.toLowerCase().includes(term) ||
-            u.rol.toLowerCase().includes(term) ||
-            u.departamento.toLowerCase().includes(term)
+            u.nombreCompleto.toLowerCase().includes(term) ||
+            u.cuenta.toLowerCase().includes(term) ||
+            u.cargo.toLowerCase().includes(term) ||
+            u.area.toLowerCase().includes(term)
         );
+        this.pagina.set(1);
     }
 
-    volver(): void {
-        this.router.navigate(['/administration']);
-    }
+    /* ── Ficha de solo lectura ── */
 
-    nuevoUsuario(): void {
-        const dialogRef = this.dialog.open(FormUsuarioComponent, {
-            width: '480px',
-            maxWidth: '95vw',
-            maxHeight: '90vh',
-            panelClass: 'neo-dialog',
-            data: { mode: 'create', rolesList: this.rolesList }
-        });
-
-        dialogRef.afterClosed().subscribe(result => {
-            if (!result) return;
-            this.usuariosService.createUsuario({
-                username:     result.username,
-                nombres:      result.nombres,
-                apellidos:    result.apellidos,
-                ci:           result.ci || '',
-                telefono:     result.telefono || '',
-                email:        result.email,
-                password:     result.password,
-                id_role:      result.role_id,
-                departamento: result.departamento || 'Sin asignar',
-                active:       result.active ? 'true' : 'false'
-            }).subscribe({
-                next: () => {
-                    this.snackBar.open('Usuario creado exitosamente', 'OK', { duration: 3000, verticalPosition: 'top' });
-                    this.cargarUsuarios();
-                },
-                error: (err) => {
-                    const msg = err?.error?.datos?.[0]?.mensaje || err?.message || 'Error al crear usuario';
-                    this.snackBar.open(msg, 'Cerrar', { duration: 7000, verticalPosition: 'top' });
-                }
-            });
-        });
-    }
-
-    editarUsuario(usuario: UsuarioTabla): void {
-        const dialogRef = this.dialog.open(FormUsuarioComponent, {
-            width: '480px',
-            maxWidth: '95vw',
-            maxHeight: '90vh',
-            panelClass: 'neo-dialog',
-            data: {
-                mode: 'edit',
-                rolesList: this.rolesList,
-                usuario: {
-                    username:     usuario._raw.username,
-                    nombres:      usuario._raw.nombres,
-                    apellidos:    usuario._raw.apellidos,
-                    ci:           usuario._raw.ci,
-                    telefono:     usuario._raw.telefono,
-                    email:        usuario._raw.email,
-                    role_id:      usuario._raw.id_role,
-                    departamento: usuario._raw.departamento,
-                    active:       usuario._raw.active
-                }
-            }
-        });
-
-        dialogRef.afterClosed().subscribe(result => {
-            if (!result) return;
-            this.usuariosService.updateUsuario(usuario.id, {
-                username:     result.username,
-                nombres:      result.nombres,
-                apellidos:    result.apellidos,
-                ci:           result.ci || '',
-                telefono:     result.telefono || '',
-                email:        result.email,
-                password:     result.password || '',
-                id_role:      result.role_id,
-                departamento: result.departamento || 'Sin asignar',
-                active:       result.active ? 'true' : 'false'
-            }).subscribe({
-                next: () => {
-                    this.snackBar.open('Usuario actualizado exitosamente', 'OK', { duration: 3000, verticalPosition: 'top' });
-                    this.cargarUsuarios();
-                },
-                error: (err) => {
-                    const msg = err?.error?.datos?.[0]?.mensaje || err?.message || 'Error al actualizar usuario';
-                    this.snackBar.open(msg, 'Cerrar', { duration: 7000, verticalPosition: 'top' });
-                }
-            });
-        });
-    }
-
-    eliminarUsuario(usuario: UsuarioTabla): void {
-        if (confirm(`¿Está seguro de eliminar al usuario ${usuario.nombre}?`)) {
-            this.usuariosService.deleteUsuario(usuario.id).subscribe({
-                next: () => this.cargarUsuarios()
-            });
+    async verFicha(u: UsuarioTabla): Promise<void> {
+        if (this.esERP) {
+            // El endpoint del ERP no trae datos técnicos: la ficha solo aplica a la fuente módulo
+            this.snackBar.open('Fuente ERP: listado simple sin ficha técnica', 'Cerrar', { duration: 2500 });
+            return;
         }
+        const { VerUsuarioComponent } = await import('./dialogs/ver-usuario/ver-usuario.component');
+        this.dialog.open(VerUsuarioComponent, {
+            width: '520px', maxWidth: '95vw', maxHeight: '90vh',
+            panelClass: 'no-padding-dialog',
+            data: { funcionario: u.raw }
+        });
     }
+
+    /* ── Paginación ── */
+
+    get totalPaginas(): number {
+        return Math.max(1, Math.ceil(this.filteredUsuarios.length / this.pageSize));
+    }
+
+    get usuariosPagina(): UsuarioTabla[] {
+        const p = Math.min(this.pagina(), this.totalPaginas);
+        const inicio = (p - 1) * this.pageSize;
+        return this.filteredUsuarios.slice(inicio, inicio + this.pageSize);
+    }
+
+    get rangoPagina(): { desde: number; hasta: number } {
+        const total = this.filteredUsuarios.length;
+        if (!total) return { desde: 0, hasta: 0 };
+        const p = Math.min(this.pagina(), this.totalPaginas);
+        const desde = (p - 1) * this.pageSize + 1;
+        return { desde, hasta: Math.min(p * this.pageSize, total) };
+    }
+
+    paginasVisibles(): number[] {
+        const total  = this.totalPaginas;
+        const actual = Math.min(this.pagina(), total);
+        const inicio = Math.max(1, Math.min(actual - 2, total - 4));
+        const fin    = Math.min(total, inicio + 4);
+        const out: number[] = [];
+        for (let i = inicio; i <= fin; i++) out.push(i);
+        return out;
+    }
+
+    irAPagina(p: number): void {
+        this.pagina.set(Math.min(Math.max(1, p), this.totalPaginas));
+    }
+
+    /* ── KPIs ── */
 
     getUsuariosActivos(): number {
         return this.usuarios.filter(u => u.estado === 'ACTIVO').length;

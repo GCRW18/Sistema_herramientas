@@ -21,6 +21,23 @@
       </div>
 
       <div class="flex items-center gap-2 flex-wrap w-full sm:w-auto">
+        <!-- Conmutador de fuente -->
+        <div class="flex items-center border-[2px] border-black rounded-xl overflow-hidden shrink-0 shadow-[2px_2px_0px_0px_#000]">
+          <button (click)="cambiarFuente('modulo')"
+                  matTooltip="Roles propios del módulo (he.roles) con matriz de permisos"
+                  class="px-2.5 sm:px-3 py-2 font-black text-[10px] uppercase transition-all flex items-center gap-1"
+                  [ngClass]="!esERP ? 'bg-[#0F172AFF] text-[#FFC501FF]' : 'bg-white dark:bg-slate-800 text-gray-500 hover:text-black dark:hover:text-white'">
+            <mat-icon class="!text-[12px] !w-3 !h-3">handyman</mat-icon>
+            Módulo
+          </button>
+          <button (click)="cambiarFuente('erp')"
+                  matTooltip="Roles reales del framework (seguridad/Rol/listarRol) — solo lectura"
+                  class="px-2.5 sm:px-3 py-2 font-black text-[10px] uppercase transition-all flex items-center gap-1 border-l-2 border-black"
+                  [ngClass]="esERP ? 'bg-[#0F172AFF] text-[#FFC501FF]' : 'bg-white dark:bg-slate-800 text-gray-500 hover:text-black dark:hover:text-white'">
+            <mat-icon class="!text-[12px] !w-3 !h-3">corporate_fare</mat-icon>
+            ERP
+          </button>
+        </div>
         <!-- Búsqueda -->
         <div class="relative flex-1 min-w-[140px] sm:flex-none">
           <input type="text" [formControl]="searchControl"
@@ -31,15 +48,27 @@
                         placeholder:font-bold placeholder:normal-case dark:placeholder:text-slate-500">
           <mat-icon class="absolute left-2.5 top-2 text-black dark:text-white !text-sm">search</mat-icon>
         </div>
-
-        <!-- Nuevo rol -->
-        <button (click)="nuevoRol()"
-                class="h-9 px-3 flex items-center gap-1.5 rounded-lg border-[2px] border-black font-black text-[10px] uppercase transition-all
-                       bg-[#FFC501FF] text-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none">
-          <mat-icon class="!text-sm">add_circle</mat-icon>
+        <!-- Nuevo Rol (solo fuente módulo) -->
+        <button *ngIf="!esERP" (click)="nuevoRol()"
+                class="shrink-0 px-3 sm:px-4 py-2 bg-[#FFC501FF] text-black font-black text-xs
+                       border-[2px] border-black rounded-xl shadow-[3px_3px_0px_0px_#000]
+                       hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all
+                       uppercase flex items-center gap-1.5">
+          <mat-icon class="!text-sm text-black">add_circle</mat-icon>
           <span class="hidden sm:inline">Nuevo Rol</span>
         </button>
       </div>
+    </div>
+
+    <!-- Banner modo ERP -->
+    <div *ngIf="esERP"
+         class="shrink-0 flex items-center gap-2 px-3 py-2 bg-blue-50 dark:bg-blue-900/20 border-[2px] border-blue-600 rounded-xl">
+      <mat-icon class="!text-base text-blue-600 shrink-0">info</mat-icon>
+      <p class="text-[10px] sm:text-[11px] font-bold text-blue-800 dark:text-blue-300 leading-snug">
+        Roles reales del framework (<span class="font-mono font-black">seguridad/Rol/listarRol</span>) —
+        <span class="font-black uppercase">solo lectura</span>. Su administración es del ERP.
+        La matriz de permisos del módulo vive en la fuente "Módulo".
+      </p>
     </div>
 
     <!-- ── CARD PRINCIPAL ──────────────────────────────────────────── -->
@@ -66,127 +95,152 @@
           </div>
 
           <div class="flex items-center gap-1.5 bg-white/10 rounded-lg px-2.5 py-1.5 border border-white/20 shrink-0">
-            <mat-icon class="!text-[10px] text-yellow-300">star</mat-icon>
+            <mat-icon class="!text-[10px] text-red-300">block</mat-icon>
             <div>
-              <div class="text-[8px] font-black uppercase text-white/70 leading-none">Sistema</div>
-              <div class="text-sm font-black text-white leading-none">{{ getRolesSistema() }}</div>
+              <div class="text-[8px] font-black uppercase text-white/70 leading-none">Inactivos</div>
+              <div class="text-sm font-black text-white leading-none">{{ getRolesInactivos() }}</div>
             </div>
           </div>
 
           <div class="ml-auto flex items-center gap-1.5 shrink-0">
             <button (click)="loadRoles()"
-                    class="flex items-center gap-1.5 h-7 px-2.5 rounded-lg border border-white/30 text-white hover:bg-white/20 transition-all font-black text-[10px] uppercase shrink-0">
-              <mat-icon class="!text-sm !w-4 !h-4 text-[#FFC501FF]">refresh</mat-icon>
+                    [disabled]="isLoading"
+                    class="flex items-center gap-1.5 h-7 px-2.5 rounded-lg border border-white/30 text-white hover:bg-white/20 transition-all disabled:opacity-40 font-black text-[10px] uppercase shrink-0">
+              <mat-icon class="!text-sm !w-4 !h-4 text-[#FFC501FF]" [class.animate-spin]="isLoading">refresh</mat-icon>
               Actualizar
             </button>
           </div>
         </div>
       </div>
 
+      <!-- Loading -->
+      <div *ngIf="isLoading" class="flex-1 flex flex-col items-center justify-center gap-4">
+        <div class="w-12 h-12 border-4 border-[#FFC501FF] border-t-transparent rounded-full animate-spin"></div>
+        <p class="text-sm font-black uppercase text-gray-500 dark:text-gray-400">Cargando roles…</p>
+      </div>
+
       <!-- Tabla -->
-      <div class="flex-1 overflow-auto custom-scrollbar bg-gray-50 dark:bg-[#0F172AFF]">
+      <div *ngIf="!isLoading" class="flex-1 overflow-auto custom-scrollbar bg-gray-50 dark:bg-[#0F172AFF]">
         <table class="w-full min-w-[600px]">
           <thead class="bg-gray-100 dark:bg-slate-800 border-b-[2px] border-black sticky top-0 z-10">
             <tr class="text-left text-[10px] font-black uppercase tracking-wider text-black dark:text-white">
               <th class="px-3 py-2.5">NOMBRE</th>
-              <th class="px-3 py-2.5">DESCRIPCIÓN</th>
-              <th class="px-3 py-2.5 text-center w-36">PERMISOS</th>
-              <th class="px-3 py-2.5 text-center w-28">USUARIOS</th>
-              <th class="px-3 py-2.5 text-center w-28">ESTADO</th>
-              <th class="px-3 py-2.5 text-center w-44">ACCIONES</th>
+              <th class="hidden md:table-cell px-3 py-2.5">DESCRIPCIÓN</th>
+              <th *ngIf="esERP" class="hidden sm:table-cell px-3 py-2.5 w-40">SUBSISTEMA</th>
+              <th *ngIf="!esERP" class="px-3 py-2.5 text-center w-24">PERMISOS</th>
+              <th *ngIf="!esERP" class="hidden sm:table-cell px-3 py-2.5 text-center w-24">USUARIOS</th>
+              <th class="px-3 py-2.5 text-center w-24">ESTADO</th>
+              <th *ngIf="!esERP" class="px-3 py-2.5 text-center w-28">ACCIONES</th>
             </tr>
           </thead>
           <tbody>
-            <tr *ngFor="let rol of filteredRoles; let idx = index"
+            <tr *ngFor="let rol of rolesPagina; let idx = index"
+                (click)="verDetalle(rol)"
                 class="border-b border-gray-200 dark:border-slate-700 transition-all"
-                [ngClass]="idx % 2 === 0 ? 'bg-white dark:bg-slate-800/60' : 'bg-gray-50 dark:bg-slate-800/40'">
+                [ngClass]="[
+                    idx % 2 === 0 ? 'bg-white dark:bg-slate-800/60' : 'bg-gray-50 dark:bg-slate-800/40',
+                    !esERP ? 'cursor-pointer hover:bg-amber-50 dark:hover:bg-amber-900/10' : ''
+                ]">
 
               <td class="px-3 py-2.5">
                 <div class="flex items-center gap-2">
+                  <div class="w-7 h-7 bg-[#7113CF] border-2 border-black rounded-lg flex items-center justify-center shrink-0">
+                    <mat-icon class="!text-[13px] !w-3.5 !h-3.5 text-white">shield</mat-icon>
+                  </div>
                   <span class="text-xs font-bold text-black dark:text-white">{{ rol.nombre }}</span>
-                  <span *ngIf="rol.es_sistema"
-                        class="inline-block px-1.5 py-0.5 bg-[#FFC501FF] border border-black rounded text-black font-black text-[9px] uppercase">
-                    SISTEMA
-                  </span>
                 </div>
               </td>
 
-              <td class="px-3 py-2.5">
-                <span class="text-xs font-bold text-black dark:text-white">{{ rol.descripcion || '—' }}</span>
+              <td class="hidden md:table-cell px-3 py-2.5">
+                <span class="text-xs font-bold text-gray-600 dark:text-gray-300">{{ rol.descripcion || '—' }}</span>
               </td>
 
-              <td class="px-3 py-2.5 text-center">
-                <span class="font-mono font-black text-[10px] bg-[#0F172AFF] text-white px-1.5 py-0.5 rounded border border-black">
-                  {{ rol.permissions?.length || 0 }} permisos
+              <td *ngIf="esERP" class="hidden sm:table-cell px-3 py-2.5">
+                <span class="text-xs font-bold text-gray-500 dark:text-gray-400">{{ rol.subsistema || '—' }}</span>
+              </td>
+
+              <td *ngIf="!esERP" class="px-3 py-2.5 text-center">
+                <span class="inline-flex items-center justify-center gap-1 font-black text-[10px] border-2 border-black rounded-lg px-2 py-0.5 bg-white dark:bg-slate-700 text-black dark:text-white">
+                  <mat-icon class="!text-[11px] !w-3 !h-3 text-[#7113CF]">key</mat-icon>
+                  {{ rol.permissions.length }}
+                </span>
+              </td>
+
+              <td *ngIf="!esERP" class="hidden sm:table-cell px-3 py-2.5 text-center">
+                <span class="inline-flex items-center justify-center gap-1 font-black text-[10px] border-2 border-black rounded-lg px-2 py-0.5 bg-white dark:bg-slate-700 text-black dark:text-white">
+                  <mat-icon class="!text-[11px] !w-3 !h-3 text-blue-600">group</mat-icon>
+                  {{ rol.userCount }}
                 </span>
               </td>
 
               <td class="px-3 py-2.5 text-center">
-                <div class="flex items-center justify-center gap-1">
-                  <mat-icon class="!text-xs text-gray-500 dark:text-gray-400">group</mat-icon>
-                  <span class="text-xs font-black text-black dark:text-white">{{ rol.userCount }}</span>
-                </div>
-              </td>
-
-              <td class="px-3 py-2.5 text-center">
-                <span *ngIf="rol.active"
+                <span *ngIf="rol.activo"
                       class="px-1.5 py-0.5 text-[9px] font-black uppercase border-2 border-black rounded inline-flex items-center gap-1 bg-green-500 text-white">
                   ACTIVO
                 </span>
-                <span *ngIf="!rol.active"
+                <span *ngIf="!rol.activo"
                       class="px-1.5 py-0.5 text-[9px] font-black uppercase border-2 border-black rounded inline-flex items-center gap-1 bg-stone-300 text-black">
                   INACTIVO
                 </span>
               </td>
 
-              <td class="px-3 py-2.5">
-                <div class="flex gap-1.5 justify-center">
-                  <button (click)="verDetalles(rol)"
-                          matTooltip="Ver detalles"
-                          class="w-7 h-7 flex items-center justify-center bg-blue-600 border-2 border-black rounded-lg shadow-[2px_2px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all">
-                    <mat-icon class="!text-sm text-white">visibility</mat-icon>
-                  </button>
-                  <button (click)="editarRol(rol)"
-                          [disabled]="rol.es_sistema"
-                          [matTooltip]="rol.es_sistema ? 'No se puede editar un rol del sistema' : 'Editar'"
-                          class="w-7 h-7 flex items-center justify-center bg-[#FFC501FF] border-2 border-black rounded-lg shadow-[2px_2px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all disabled:opacity-50 disabled:cursor-not-allowed">
+              <td *ngIf="!esERP" class="px-3 py-2.5 text-center" (click)="$event.stopPropagation()">
+                <div class="flex items-center justify-center gap-1.5">
+                  <button (click)="editarRol(rol, $event)" matTooltip="Editar"
+                          class="w-7 h-7 flex items-center justify-center bg-[#FFC501FF] border-2 border-black rounded-lg shadow-[2px_2px_0px_0px_#000] hover:translate-y-[1px] hover:shadow-none transition-all">
                     <mat-icon class="!text-sm text-black">edit</mat-icon>
                   </button>
-                  <button (click)="toggleEstado(rol)"
-                          [disabled]="rol.es_sistema"
-                          [matTooltip]="rol.es_sistema ? 'No se puede cambiar el estado' : (rol.active ? 'Desactivar' : 'Activar')"
-                          class="w-7 h-7 flex items-center justify-center border-2 border-black rounded-lg shadow-[2px_2px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                          [ngClass]="rol.active ? 'bg-red-50' : 'bg-white dark:bg-slate-700'">
-                    <mat-icon class="!text-sm" [class.text-red-600]="rol.active" [class.text-green-600]="!rol.active">
-                      {{ rol.active ? 'block' : 'check_circle' }}
-                    </mat-icon>
-                  </button>
-                  <button (click)="eliminarRol(rol)"
-                          [disabled]="rol.es_sistema || rol.userCount > 0"
-                          [matTooltip]="rol.es_sistema ? 'No se puede eliminar un rol del sistema' : (rol.userCount > 0 ? 'Tiene usuarios asignados' : 'Eliminar')"
-                          class="w-7 h-7 flex items-center justify-center bg-white dark:bg-slate-700 border-2 border-black rounded-lg shadow-[2px_2px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all disabled:opacity-50 disabled:cursor-not-allowed">
-                    <mat-icon class="!text-sm text-red-600">delete</mat-icon>
+                  <button (click)="toggleEstado(rol, $event)" matTooltip="Cambiar estado"
+                          [ngClass]="rol.activo ? 'bg-gray-400' : 'bg-green-600'"
+                          class="w-7 h-7 flex items-center justify-center border-2 border-black rounded-lg shadow-[2px_2px_0px_0px_#000] hover:translate-y-[1px] hover:shadow-none transition-all">
+                    <mat-icon class="!text-sm text-white">{{ rol.activo ? 'pause' : 'play_arrow' }}</mat-icon>
                   </button>
                 </div>
               </td>
             </tr>
 
             <tr *ngIf="filteredRoles.length === 0">
-              <td colspan="6" class="py-12 text-center">
+              <td [attr.colspan]="esERP ? 4 : 6" class="py-12 text-center">
                 <div class="flex flex-col items-center gap-3">
                   <mat-icon class="!text-5xl text-gray-300 dark:text-gray-600">shield_off</mat-icon>
                   <p class="text-xs font-bold uppercase text-gray-500 mt-2">
                     {{ searchControl.value ? 'No se encontraron roles' : 'No hay roles registrados' }}
                   </p>
-                  <button (click)="nuevoRol()"
-                          class="h-8 px-4 rounded-xl border-[2px] border-black bg-[#FFC501FF] text-black font-black text-xs uppercase shadow-[2px_2px_0_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all mt-1 flex items-center gap-1.5">
-                    <mat-icon class="!text-sm">add_circle</mat-icon>Nuevo Rol
+                  <button *ngIf="!searchControl.value && !esERP" (click)="nuevoRol()"
+                          class="mt-2 px-4 py-2 bg-[#FFC501FF] text-black font-black text-[10px] border-2 border-black rounded-lg shadow-[2px_2px_0px_0px_#000] hover:translate-y-[1px] hover:shadow-none transition-all uppercase inline-flex items-center gap-1.5">
+                    <mat-icon class="!text-base text-black">add</mat-icon>
+                    Crear el primero
                   </button>
                 </div>
               </td>
             </tr>
           </tbody>
         </table>
+      </div>
+
+      <!-- PAGINADOR -->
+      <div *ngIf="!isLoading && filteredRoles.length > pageSize"
+           class="shrink-0 border-t-2 border-black bg-white dark:bg-slate-800 px-3 sm:px-4 py-2 flex items-center justify-between gap-2 flex-wrap">
+        <span class="text-[9px] sm:text-[10px] font-black uppercase text-gray-500">
+          {{ rangoPagina.desde }}–{{ rangoPagina.hasta }} de {{ filteredRoles.length }} roles
+        </span>
+        <div class="flex items-center gap-1">
+          <button (click)="irAPagina(pagina() - 1)" [disabled]="pagina() <= 1"
+                  class="w-7 h-7 flex items-center justify-center bg-white dark:bg-slate-700 border-2 border-black rounded-lg shadow-[2px_2px_0px_0px_#000] hover:translate-y-[1px] hover:shadow-none transition-all disabled:opacity-30 disabled:cursor-not-allowed disabled:translate-y-0 disabled:shadow-[2px_2px_0px_0px_#000]">
+            <mat-icon class="!text-sm text-black dark:text-white">chevron_left</mat-icon>
+          </button>
+          <button *ngFor="let p of paginasVisibles()" (click)="irAPagina(p)"
+                  class="w-7 h-7 flex items-center justify-center border-2 border-black rounded-lg text-[10px] font-black transition-all"
+                  [ngClass]="p === pagina()
+                      ? 'bg-amber-400 text-black shadow-none translate-y-[1px]'
+                      : 'bg-white dark:bg-slate-700 text-black dark:text-white shadow-[2px_2px_0px_0px_#000] hover:translate-y-[1px] hover:shadow-none'">
+            {{ p }}
+          </button>
+          <button (click)="irAPagina(pagina() + 1)" [disabled]="pagina() >= totalPaginas"
+                  class="w-7 h-7 flex items-center justify-center bg-white dark:bg-slate-700 border-2 border-black rounded-lg shadow-[2px_2px_0px_0px_#000] hover:translate-y-[1px] hover:shadow-none transition-all disabled:opacity-30 disabled:cursor-not-allowed disabled:translate-y-0 disabled:shadow-[2px_2px_0px_0px_#000]">
+            <mat-icon class="!text-sm text-black dark:text-white">chevron_right</mat-icon>
+          </button>
+        </div>
       </div>
 
     </div><!-- /card -->

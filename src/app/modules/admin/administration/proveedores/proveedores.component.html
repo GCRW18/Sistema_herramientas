@@ -21,6 +21,23 @@
       </div>
 
       <div class="flex items-center gap-2 flex-wrap w-full sm:w-auto">
+        <!-- Conmutador de fuente: catálogo del módulo vs corporativo ERP -->
+        <div class="flex items-center border-[2px] border-black rounded-xl overflow-hidden shrink-0 shadow-[2px_2px_0px_0px_#000]">
+          <button (click)="cambiarFuente('modulo')"
+                  matTooltip="Catálogo propio del módulo (he.tsuppliers) — el que usan las compras"
+                  class="px-2.5 sm:px-3 py-2 font-black text-[10px] uppercase transition-all flex items-center gap-1"
+                  [ngClass]="!esERP ? 'bg-[#0F172AFF] text-[#FFC501FF]' : 'bg-white dark:bg-slate-800 text-gray-500 hover:text-black dark:hover:text-white'">
+            <mat-icon class="!text-[12px] !w-3 !h-3">handyman</mat-icon>
+            Módulo
+          </button>
+          <button (click)="cambiarFuente('erp')"
+                  matTooltip="Catálogo corporativo del ERP (param.tproveedor) — solo lectura"
+                  class="px-2.5 sm:px-3 py-2 font-black text-[10px] uppercase transition-all flex items-center gap-1 border-l-2 border-black"
+                  [ngClass]="esERP ? 'bg-[#0F172AFF] text-[#FFC501FF]' : 'bg-white dark:bg-slate-800 text-gray-500 hover:text-black dark:hover:text-white'">
+            <mat-icon class="!text-[12px] !w-3 !h-3">corporate_fare</mat-icon>
+            ERP
+          </button>
+        </div>
         <!-- Búsqueda -->
         <div class="relative flex-1 min-w-[140px] sm:flex-none">
           <input type="text" [formControl]="searchControl"
@@ -31,23 +48,27 @@
                         placeholder:font-bold placeholder:normal-case dark:placeholder:text-slate-500">
           <mat-icon class="absolute left-2.5 top-2 text-black dark:text-white !text-sm">search</mat-icon>
         </div>
-
-        <!-- Filtro tipo -->
-        <select [formControl]="filterTipo"
-                class="h-9 px-2 bg-white dark:bg-slate-800 text-black dark:text-white
-                       border-[2px] border-black dark:border-slate-500 rounded-lg font-black text-xs uppercase
-                       focus:outline-none transition-all cursor-pointer">
-          <option *ngFor="let tipo of tiposProveedor" [value]="tipo.value">{{ tipo.label }}</option>
-        </select>
-
-        <!-- Nuevo proveedor -->
-        <button (click)="nuevoProveedor()"
-                class="h-9 px-3 flex items-center gap-1.5 rounded-lg border-[2px] border-black font-black text-[10px] uppercase transition-all
-                       bg-[#FFC501FF] text-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none">
-          <mat-icon class="!text-sm">add_circle</mat-icon>
+        <!-- Nuevo Proveedor (solo catálogo del módulo) -->
+        <button *ngIf="!esERP" (click)="nuevoProveedor()"
+                class="shrink-0 px-3 sm:px-4 py-2 bg-[#FFC501FF] text-black font-black text-xs
+                       border-[2px] border-black rounded-xl shadow-[3px_3px_0px_0px_#000]
+                       hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all
+                       uppercase flex items-center gap-1.5">
+          <mat-icon class="!text-sm text-black">add_circle</mat-icon>
           <span class="hidden sm:inline">Nuevo Proveedor</span>
         </button>
       </div>
+    </div>
+
+    <!-- Banner modo ERP (solo lectura) -->
+    <div *ngIf="esERP"
+         class="shrink-0 flex items-center gap-2 px-3 py-2 bg-blue-50 dark:bg-blue-900/20 border-[2px] border-blue-600 rounded-xl">
+      <mat-icon class="!text-base text-blue-600 shrink-0">info</mat-icon>
+      <p class="text-[10px] sm:text-[11px] font-bold text-blue-800 dark:text-blue-300 leading-snug">
+        Catálogo corporativo del ERP (<span class="font-mono font-black">parametros/Proveedor/listarProveedorV2</span>) —
+        <span class="font-black uppercase">solo lectura</span>. La administración de estos proveedores es del ERP.
+        Las compras del módulo usan el catálogo "Módulo".
+      </p>
     </div>
 
     <!-- ── CARD PRINCIPAL ──────────────────────────────────────────── -->
@@ -83,121 +104,146 @@
 
           <div class="ml-auto flex items-center gap-1.5 shrink-0">
             <button (click)="loadProveedores()"
-                    class="flex items-center gap-1.5 h-7 px-2.5 rounded-lg border border-white/30 text-white hover:bg-white/20 transition-all font-black text-[10px] uppercase shrink-0">
-              <mat-icon class="!text-sm !w-4 !h-4 text-[#FFC501FF]">refresh</mat-icon>
+                    [disabled]="isLoading"
+                    class="flex items-center gap-1.5 h-7 px-2.5 rounded-lg border border-white/30 text-white hover:bg-white/20 transition-all disabled:opacity-40 font-black text-[10px] uppercase shrink-0">
+              <mat-icon class="!text-sm !w-4 !h-4 text-[#FFC501FF]" [class.animate-spin]="isLoading">refresh</mat-icon>
               Actualizar
             </button>
           </div>
         </div>
       </div>
 
+      <!-- Loading -->
+      <div *ngIf="isLoading" class="flex-1 flex flex-col items-center justify-center gap-4">
+        <div class="w-12 h-12 border-4 border-[#FFC501FF] border-t-transparent rounded-full animate-spin"></div>
+        <p class="text-sm font-black uppercase text-gray-500 dark:text-gray-400">Cargando proveedores…</p>
+      </div>
+
       <!-- Tabla -->
-      <div class="flex-1 overflow-auto custom-scrollbar bg-gray-50 dark:bg-[#0F172AFF]">
+      <div *ngIf="!isLoading" class="flex-1 overflow-auto custom-scrollbar bg-gray-50 dark:bg-[#0F172AFF]">
         <table class="w-full min-w-[700px]">
           <thead class="bg-gray-100 dark:bg-slate-800 border-b-[2px] border-black sticky top-0 z-10">
             <tr class="text-left text-[10px] font-black uppercase tracking-wider text-black dark:text-white">
               <th class="px-3 py-2.5 w-24">CÓDIGO</th>
-              <th class="px-3 py-2.5">NOMBRE COMERCIAL</th>
-              <th class="px-3 py-2.5 w-36">TIPO</th>
-              <th class="px-3 py-2.5 w-40">CONTACTO</th>
-              <th class="px-3 py-2.5 w-36">TELÉFONO</th>
-              <th class="px-3 py-2.5 w-48">EMAIL</th>
-              <th class="px-3 py-2.5 text-center w-28">ESTADO</th>
-              <th class="px-3 py-2.5 text-center w-32">ACCIONES</th>
+              <th class="hidden md:table-cell px-3 py-2.5 w-32">TIPO</th>
+              <th class="px-3 py-2.5">NOMBRE</th>
+              <th class="hidden sm:table-cell px-3 py-2.5 w-32">NIT</th>
+              <th class="hidden lg:table-cell px-3 py-2.5 w-32">CIUDAD</th>
+              <th class="hidden lg:table-cell px-3 py-2.5 w-32">TELÉFONO</th>
+              <th class="hidden xl:table-cell px-3 py-2.5 w-48">EMAIL</th>
+              <th class="px-3 py-2.5 text-center w-24">ESTADO</th>
+              <th *ngIf="!esERP" class="px-3 py-2.5 text-center w-28">ACCIONES</th>
             </tr>
           </thead>
           <tbody>
-            <tr *ngFor="let proveedor of filteredProveedores; let idx = index"
+            <tr *ngFor="let proveedor of proveedoresPagina; let idx = index"
+                (click)="verDetalle(proveedor)"
                 class="border-b border-gray-200 dark:border-slate-700 transition-all"
-                [ngClass]="idx % 2 === 0 ? 'bg-white dark:bg-slate-800/60' : 'bg-gray-50 dark:bg-slate-800/40'">
+                [ngClass]="[
+                    idx % 2 === 0 ? 'bg-white dark:bg-slate-800/60' : 'bg-gray-50 dark:bg-slate-800/40',
+                    !esERP ? 'cursor-pointer hover:bg-amber-50 dark:hover:bg-amber-900/10' : ''
+                ]">
 
               <td class="px-3 py-2.5">
                 <span class="font-mono font-black text-[10px] bg-[#FFC501FF] text-black px-1.5 py-0.5 rounded border-2 border-black">
-                  {{ proveedor.codigo }}
+                  {{ proveedor.codigo || '—' }}
+                </span>
+              </td>
+
+              <td class="hidden md:table-cell px-3 py-2.5">
+                <span class="inline-block px-1.5 py-0.5 border-2 border-black rounded text-[9px] font-black uppercase bg-blue-100 text-blue-800">
+                  {{ proveedor.tipoLabel }}
                 </span>
               </td>
 
               <td class="px-3 py-2.5">
-                <span class="text-xs font-bold text-black dark:text-white">{{ proveedor.nombre_comercial }}</span>
+                <span class="text-xs font-bold text-black dark:text-white">{{ proveedor.nombre }}</span>
               </td>
 
-              <td class="px-3 py-2.5">
-                <span class="inline-block px-1.5 py-0.5 border-2 border-black rounded text-[9px] font-black uppercase"
-                      [class.bg-blue-100]="proveedor.tipo_proveedor === 'HERRAMIENTAS'"
-                      [class.text-blue-800]="proveedor.tipo_proveedor === 'HERRAMIENTAS'"
-                      [class.bg-green-100]="proveedor.tipo_proveedor === 'CALIBRACION'"
-                      [class.text-green-800]="proveedor.tipo_proveedor === 'CALIBRACION'"
-                      [class.bg-orange-100]="proveedor.tipo_proveedor === 'REPARACION'"
-                      [class.text-orange-800]="proveedor.tipo_proveedor === 'REPARACION'"
-                      [class.bg-purple-100]="proveedor.tipo_proveedor === 'MIXTO'"
-                      [class.text-purple-800]="proveedor.tipo_proveedor === 'MIXTO'">
-                  {{ proveedor.tipo_proveedor }}
-                </span>
+              <td class="hidden sm:table-cell px-3 py-2.5">
+                <span class="font-mono text-xs font-bold text-black dark:text-white">{{ proveedor.nit }}</span>
               </td>
 
-              <td class="px-3 py-2.5">
-                <span class="text-xs font-bold text-black dark:text-white">{{ proveedor.contacto_principal }}</span>
+              <td class="hidden lg:table-cell px-3 py-2.5">
+                <span class="text-xs font-bold text-black dark:text-white">{{ proveedor.ciudad }}</span>
               </td>
 
-              <td class="px-3 py-2.5">
+              <td class="hidden lg:table-cell px-3 py-2.5">
                 <span class="text-xs font-bold text-black dark:text-white">{{ proveedor.telefono }}</span>
               </td>
 
-              <td class="px-3 py-2.5">
+              <td class="hidden xl:table-cell px-3 py-2.5">
                 <span class="text-xs font-bold text-black dark:text-white">{{ proveedor.email }}</span>
               </td>
 
               <td class="px-3 py-2.5 text-center">
-                <span *ngIf="proveedor.active"
+                <span *ngIf="proveedor.activo"
                       class="px-1.5 py-0.5 text-[9px] font-black uppercase border-2 border-black rounded inline-flex items-center gap-1 bg-green-500 text-white">
                   ACTIVO
                 </span>
-                <span *ngIf="!proveedor.active"
+                <span *ngIf="!proveedor.activo"
                       class="px-1.5 py-0.5 text-[9px] font-black uppercase border-2 border-black rounded inline-flex items-center gap-1 bg-stone-300 text-black">
                   INACTIVO
                 </span>
               </td>
 
-              <td class="px-3 py-2.5">
-                <div class="flex gap-1.5 justify-center">
-                  <button (click)="verDetalles(proveedor)"
-                          matTooltip="Ver detalles"
-                          class="w-7 h-7 flex items-center justify-center bg-blue-600 border-2 border-black rounded-lg shadow-[2px_2px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all">
-                    <mat-icon class="!text-sm text-white">visibility</mat-icon>
-                  </button>
-                  <button (click)="editarProveedor(proveedor)"
-                          matTooltip="Editar"
-                          class="w-7 h-7 flex items-center justify-center bg-[#FFC501FF] border-2 border-black rounded-lg shadow-[2px_2px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all">
+              <td *ngIf="!esERP" class="px-3 py-2.5 text-center" (click)="$event.stopPropagation()">
+                <div class="flex items-center justify-center gap-1.5">
+                  <button (click)="editarProveedor(proveedor, $event)" matTooltip="Editar"
+                          class="w-7 h-7 flex items-center justify-center bg-[#FFC501FF] border-2 border-black rounded-lg shadow-[2px_2px_0px_0px_#000] hover:translate-y-[1px] hover:shadow-none transition-all">
                     <mat-icon class="!text-sm text-black">edit</mat-icon>
                   </button>
-                  <button (click)="toggleEstado(proveedor)"
-                          [matTooltip]="proveedor.active ? 'Desactivar' : 'Activar'"
-                          class="w-7 h-7 flex items-center justify-center border-2 border-black rounded-lg shadow-[2px_2px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all"
-                          [ngClass]="proveedor.active ? 'bg-red-50' : 'bg-white dark:bg-slate-700'">
-                    <mat-icon class="!text-sm" [class.text-red-600]="proveedor.active" [class.text-green-600]="!proveedor.active">
-                      {{ proveedor.active ? 'block' : 'check_circle' }}
-                    </mat-icon>
+                  <button (click)="toggleEstado(proveedor, $event)" matTooltip="Cambiar estado"
+                          [ngClass]="proveedor.activo ? 'bg-gray-400' : 'bg-green-600'"
+                          class="w-7 h-7 flex items-center justify-center border-2 border-black rounded-lg shadow-[2px_2px_0px_0px_#000] hover:translate-y-[1px] hover:shadow-none transition-all">
+                    <mat-icon class="!text-sm text-white">{{ proveedor.activo ? 'pause' : 'play_arrow' }}</mat-icon>
                   </button>
                 </div>
               </td>
             </tr>
 
             <tr *ngIf="filteredProveedores.length === 0">
-              <td colspan="8" class="py-12 text-center">
+              <td [attr.colspan]="esERP ? 8 : 9" class="py-12 text-center">
                 <div class="flex flex-col items-center gap-3">
                   <mat-icon class="!text-5xl text-gray-300 dark:text-gray-600">store_mall_directory</mat-icon>
                   <p class="text-xs font-bold uppercase text-gray-500 mt-2">
-                    {{ searchControl.value || filterTipo.value ? 'No se encontraron proveedores' : 'No hay proveedores registrados' }}
+                    {{ searchControl.value ? 'No se encontraron proveedores' : 'No hay proveedores registrados' }}
                   </p>
-                  <button (click)="nuevoProveedor()"
-                          class="h-8 px-4 rounded-xl border-[2px] border-black bg-[#FFC501FF] text-black font-black text-xs uppercase shadow-[2px_2px_0_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all mt-1 flex items-center gap-1.5">
-                    <mat-icon class="!text-sm">add_circle</mat-icon>Nuevo Proveedor
+                  <button *ngIf="!searchControl.value && !esERP" (click)="nuevoProveedor()"
+                          class="mt-2 px-4 py-2 bg-[#FFC501FF] text-black font-black text-[10px] border-2 border-black rounded-lg shadow-[2px_2px_0px_0px_#000] hover:translate-y-[1px] hover:shadow-none transition-all uppercase inline-flex items-center gap-1.5">
+                    <mat-icon class="!text-base text-black">add</mat-icon>
+                    Registrar el primero
                   </button>
                 </div>
               </td>
             </tr>
           </tbody>
         </table>
+      </div>
+
+      <!-- PAGINADOR -->
+      <div *ngIf="!isLoading && filteredProveedores.length > pageSize"
+           class="shrink-0 border-t-2 border-black bg-white dark:bg-slate-800 px-3 sm:px-4 py-2 flex items-center justify-between gap-2 flex-wrap">
+        <span class="text-[9px] sm:text-[10px] font-black uppercase text-gray-500">
+          {{ rangoPagina.desde }}–{{ rangoPagina.hasta }} de {{ filteredProveedores.length }} proveedores
+        </span>
+        <div class="flex items-center gap-1">
+          <button (click)="irAPagina(pagina() - 1)" [disabled]="pagina() <= 1"
+                  class="w-7 h-7 flex items-center justify-center bg-white dark:bg-slate-700 border-2 border-black rounded-lg shadow-[2px_2px_0px_0px_#000] hover:translate-y-[1px] hover:shadow-none transition-all disabled:opacity-30 disabled:cursor-not-allowed disabled:translate-y-0 disabled:shadow-[2px_2px_0px_0px_#000]">
+            <mat-icon class="!text-sm text-black dark:text-white">chevron_left</mat-icon>
+          </button>
+          <button *ngFor="let p of paginasVisibles()" (click)="irAPagina(p)"
+                  class="w-7 h-7 flex items-center justify-center border-2 border-black rounded-lg text-[10px] font-black transition-all"
+                  [ngClass]="p === pagina()
+                      ? 'bg-amber-400 text-black shadow-none translate-y-[1px]'
+                      : 'bg-white dark:bg-slate-700 text-black dark:text-white shadow-[2px_2px_0px_0px_#000] hover:translate-y-[1px] hover:shadow-none'">
+            {{ p }}
+          </button>
+          <button (click)="irAPagina(pagina() + 1)" [disabled]="pagina() >= totalPaginas"
+                  class="w-7 h-7 flex items-center justify-center bg-white dark:bg-slate-700 border-2 border-black rounded-lg shadow-[2px_2px_0px_0px_#000] hover:translate-y-[1px] hover:shadow-none transition-all disabled:opacity-30 disabled:cursor-not-allowed disabled:translate-y-0 disabled:shadow-[2px_2px_0px_0px_#000]">
+            <mat-icon class="!text-sm text-black dark:text-white">chevron_right</mat-icon>
+          </button>
+        </div>
       </div>
 
     </div><!-- /card -->

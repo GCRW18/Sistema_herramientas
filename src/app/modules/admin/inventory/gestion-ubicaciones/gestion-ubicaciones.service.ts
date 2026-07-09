@@ -219,6 +219,24 @@ export class GestionUbicacionesService {
         );
     }
 
+    /**
+     * Todos los niveles de un almacén en una sola llamada (ft_levels_sel ya expone
+     * rk.warehouse_id). Evita el N+1 de pedir los niveles estante por estante.
+     */
+    getLevelsByWarehouse(warehouseId: number): Observable<Level[]> {
+        const params = {
+            start: 0, limit: 5000, sort: 'lv.number', dir: 'asc',
+            filtro_adicional: `rk.warehouse_id = ${warehouseId}`,
+            warehouse_id: warehouseId
+        };
+        return from(this._api.post('herramientas/levels/listarLevels', params)).pipe(
+            map((r: any) => (r?.datos || r?.data || [])
+                .filter((x: BackendLevel) => Number(x.warehouse_id) === warehouseId)
+                .map((x: BackendLevel) => this.toLevel(x))
+            )
+        );
+    }
+
     insertLevel(l: Level): Observable<any> {
         return from(this._api.post('herramientas/levels/insertarLevels', this.fromLevel(l)));
     }

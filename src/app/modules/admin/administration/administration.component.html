@@ -25,13 +25,6 @@
             <mat-icon class="!text-sm transition-transform duration-200 !text-white dark:!text-white" [class.rotate-180]="showBandeja">expand_more</mat-icon>
         </button>
 
-        <div class="w-px h-8 bg-black/20 dark:bg-white/20 mx-1"></div>
-
-        <button (click)="openActividadReciente()"
-                class="header-btn flex items-center gap-2 px-5 py-2 bg-black dark:bg-slate-700 border-[2px] border-black font-black text-xs uppercase rounded-xl shadow-[3px_3px_0px_0px_rgba(0,0,0,0.5)] hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,0.5)] hover:translate-x-[2px] hover:translate-y-[2px] transition-all text-white">
-            <mat-icon class="header-btn-icon !text-base !text-white dark:!text-white">history</mat-icon>
-            <span class="hidden sm:inline">Actividad Reciente</span>
-        </button>
     </div>
 
     <!-- ===== BANDEJA: backdrop ===== -->
@@ -69,36 +62,9 @@
                     class="group relative flex flex-col items-center gap-1.5 p-3 rounded-xl border-[2px] border-black transition-all hover:-translate-y-1 w-[120px] shrink-0"
                     [style.background-color]="isTabOpen(3) ? '#FBBF24' : '#f8f9fc'"
                     [style.box-shadow]="'3px 3px 0px 0px rgba(0,0,0,1)'">
-                <mat-icon svgIcon="heroicons_outline:users" class="!w-8 !h-8 !text-3xl shrink-0 text-black"></mat-icon>
-                <p class="text-[10px] font-black uppercase leading-tight text-center w-full text-black">CLIENTES</p>
-                <p class="text-[9px] font-bold uppercase leading-tight text-center w-full truncate text-gray-700">&nbsp;</p>
-            </button>
-
-            <button (click)="openModule(4)"
-                    class="group relative flex flex-col items-center gap-1.5 p-3 rounded-xl border-[2px] border-black transition-all hover:-translate-y-1 w-[120px] shrink-0"
-                    [style.background-color]="isTabOpen(4) ? '#FBBF24' : '#f8f9fc'"
-                    [style.box-shadow]="'3px 3px 0px 0px rgba(0,0,0,1)'">
                 <mat-icon svgIcon="heroicons_outline:shield-check" class="!w-8 !h-8 !text-3xl shrink-0 text-black"></mat-icon>
                 <p class="text-[10px] font-black uppercase leading-tight text-center w-full text-black">ROLES Y</p>
-                <p class="text-[9px] font-bold uppercase leading-tight text-center w-full truncate" [class.text-black]="isTabOpen(4)" [class.text-gray-700]="!isTabOpen(4)">PERMISOS</p>
-            </button>
-
-            <button (click)="openModule(5)"
-                    class="group relative flex flex-col items-center gap-1.5 p-3 rounded-xl border-[2px] border-black transition-all hover:-translate-y-1 w-[120px] shrink-0"
-                    [style.background-color]="isTabOpen(5) ? '#FBBF24' : '#f8f9fc'"
-                    [style.box-shadow]="'3px 3px 0px 0px rgba(0,0,0,1)'">
-                <mat-icon svgIcon="heroicons_outline:identification" class="!w-8 !h-8 !text-3xl shrink-0 text-black"></mat-icon>
-                <p class="text-[10px] font-black uppercase leading-tight text-center w-full text-black">FUNCIONARIOS</p>
-                <p class="text-[9px] font-bold uppercase leading-tight text-center w-full truncate" [class.text-black]="isTabOpen(5)" [class.text-gray-700]="!isTabOpen(5)">Y TÉCNICOS</p>
-            </button>
-
-            <button (click)="openModule(6)"
-                    class="group relative flex flex-col items-center gap-1.5 p-3 rounded-xl border-[2px] border-black transition-all hover:-translate-y-1 w-[120px] shrink-0"
-                    [style.background-color]="isTabOpen(6) ? '#FBBF24' : '#f8f9fc'"
-                    [style.box-shadow]="'3px 3px 0px 0px rgba(0,0,0,1)'">
-                <mat-icon svgIcon="heroicons_outline:adjustments-horizontal" class="!w-8 !h-8 !text-3xl shrink-0 text-black"></mat-icon>
-                <p class="text-[10px] font-black uppercase leading-tight text-center w-full text-black">CONFIGURACIÓN</p>
-                <p class="text-[9px] font-bold uppercase leading-tight text-center w-full truncate" [class.text-black]="isTabOpen(6)" [class.text-gray-700]="!isTabOpen(6)">PARÁMETROS · ALERTAS</p>
+                <p class="text-[9px] font-bold uppercase leading-tight text-center w-full truncate" [class.text-black]="isTabOpen(3)" [class.text-gray-700]="!isTabOpen(3)">PERMISOS</p>
             </button>
 
         </div>
@@ -168,81 +134,3 @@
     </div>
 
 </div>
-
-<!-- ========== DIALOG: ACTIVIDAD RECIENTE (ng-template) ========== -->
-<ng-template #actividadRecienteDialog>
-    <div class="overflow-hidden flex flex-col relative font-sans" style="max-height:80vh">
-
-        <!-- Header -->
-        <div class="bg-[#0F172A] px-4 py-2.5 flex items-center justify-between shrink-0 border-b-[2px] border-black"
-             cdkDrag cdkDragRootElement=".cdk-overlay-pane" cdkDragHandle style="cursor:grab">
-            <div class="flex items-center gap-2.5">
-                <div class="w-7 h-7 rounded-lg bg-[#FFC501] border-2 border-black flex items-center justify-center shadow-[2px_2px_0_#000] shrink-0">
-                    <mat-icon class="!text-base text-black">history</mat-icon>
-                </div>
-                <div>
-                    <p class="text-[8px] text-slate-400 font-bold uppercase tracking-widest leading-none mb-0.5">Administración</p>
-                    <h2 class="text-xs text-white font-black uppercase tracking-tight leading-none">Actividad Reciente</h2>
-                </div>
-            </div>
-            <div class="flex items-center gap-1.5">
-                <span class="text-[9px] font-black border-2 border-black bg-[#FFC501] text-black px-2 py-0.5 rounded-full uppercase">
-                    {{ recentRecords.length }} registros
-                </span>
-                <button mat-dialog-close
-                        class="w-7 h-7 flex items-center justify-center bg-[#FF1414] border-[2px] border-black rounded-full text-white shadow-[2px_2px_0_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all">
-                    <mat-icon class="!text-sm">close</mat-icon>
-                </button>
-            </div>
-        </div>
-
-        <!-- Table -->
-        <div class="flex flex-col overflow-hidden p-2 bg-[#f8f9fc] dark:bg-[#0F172A]">
-            <div class="border-[2px] border-black rounded-xl overflow-hidden flex flex-col bg-white dark:bg-slate-800 shadow-[4px_4px_0px_0px_#000]">
-
-                <div class="overflow-auto custom-scrollbar-admin" style="max-height:52vh">
-                    <table class="w-full">
-                        <thead class="bg-stone-200 dark:bg-[#020617] sticky top-0 z-10 border-b-[2px] border-black text-[10px] font-black uppercase">
-                        <tr>
-                            <th class="py-2 px-3 text-left text-black dark:text-amber-400 w-24">Fecha</th>
-                            <th class="py-2 px-3 text-left text-black dark:text-amber-400">Tipo</th>
-                            <th class="py-2 px-3 text-left text-black dark:text-amber-400">Entidad</th>
-                            <th class="py-2 px-3 text-left text-black dark:text-amber-400 w-28">Usuario</th>
-                        </tr>
-                        </thead>
-                        <tbody>
-                        <tr *ngFor="let element of recentRecords"
-                            class="border-b border-gray-200 dark:border-slate-700 hover:bg-stone-50 dark:hover:bg-slate-700/50 transition-colors">
-                            <td class="py-2 px-3 font-mono text-[10px] font-bold text-gray-900 dark:text-white whitespace-nowrap">{{ element.fecha }}</td>
-                            <td class="py-2 px-3">
-                                <span class="px-1.5 py-0.5 rounded text-[9px] font-black border border-black bg-[#0F172A] text-white uppercase">
-                                    {{ element.tipo }}
-                                </span>
-                            </td>
-                            <td class="py-2 px-3 text-[10px] font-black text-gray-900 dark:text-white uppercase">{{ element.entidad }}</td>
-                            <td class="py-2 px-3">
-                                <span class="text-[9px] font-bold bg-[#0F172A] text-white px-2 py-0.5 rounded font-mono uppercase">{{ element.usuario }}</span>
-                            </td>
-                        </tr>
-                        <tr *ngIf="recentRecords.length === 0">
-                            <td colspan="4" class="py-10 text-center text-gray-400 dark:text-slate-500 font-black uppercase tracking-wider text-xs">
-                                <div class="flex flex-col items-center mx-auto">
-                                    <mat-icon class="!text-4xl mb-1.5 text-gray-300 dark:text-slate-600">history</mat-icon>
-                                    Sin actividad reciente
-                                </div>
-                            </td>
-                        </tr>
-                        </tbody>
-                    </table>
-                </div>
-
-                <!-- Footer -->
-                <div class="flex items-center justify-between px-3 py-1.5 border-t-[2px] border-black bg-stone-200 dark:bg-[#020617] shrink-0">
-                    <span class="text-[10px] font-black text-black dark:text-slate-300 uppercase">Registro del sistema</span>
-                    <span class="text-[9px] font-black text-gray-500 uppercase tracking-wider">Tiempo real</span>
-                </div>
-            </div>
-        </div>
-
-    </div>
-</ng-template>

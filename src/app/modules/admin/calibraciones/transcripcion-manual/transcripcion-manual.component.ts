@@ -9,7 +9,6 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { DragDropModule } from '@angular/cdk/drag-drop';
-import { Router } from '@angular/router';
 import { Subject } from 'rxjs';
 import { takeUntil, finalize, debounceTime, distinctUntilChanged, switchMap, startWith } from 'rxjs/operators';
 import { CalibrationService } from '../../../../core/services/calibration.service';
@@ -44,7 +43,6 @@ export class TranscripcionManualComponent implements OnInit, OnDestroy {
     private calibrationService = inject(CalibrationService);
     private dialog             = inject(MatDialog);
     private snackBar           = inject(MatSnackBar);
-    private router             = inject(Router);
 
     private _destroy$      = new Subject<void>();
     private _toolSearch$   = new Subject<string>();
@@ -112,7 +110,18 @@ export class TranscripcionManualComponent implements OnInit, OnDestroy {
     // ── Métodos de Tabla y Filtros ────────────────────────────────────────────
     loadTranscriptions(): void {
         this.isLoading = true;
-        this.calibrationService.getCalibrations({ limit: 200, filtro: "cls.internal_notes = '[TRANSCRIPCIÓN HISTÓRICA]' and cls.estado_reg = 'activo'" }).pipe(
+        // Transcripciones históricas = flag is_historical o cualquiera de los dos
+        // marcadores de internal_notes (form manual y baseline DAT-10/MGH-102).
+        // El filtro anterior (igualdad exacta con el marcador acentuado) dejaba
+        // fuera las 487 transcripciones del baseline.
+        this.calibrationService.getCalibrations({
+            limit: 1000,
+            sort: 'id_calibration', dir: 'desc',
+            filtro: "(COALESCE(cls.is_historical, false) = true"
+                + " OR cls.internal_notes LIKE '[TRANSCRIPCION HISTORICA%'"
+                + " OR cls.internal_notes LIKE '[TRANSCRIPCIÓN HISTÓRICA%')"
+                + " and cls.estado_reg = 'activo'",
+        }).pipe(
             takeUntil(this._destroy$),
             finalize(() => this.isLoading = false)
         ).subscribe({
@@ -366,15 +375,15 @@ export class TranscripcionManualComponent implements OnInit, OnDestroy {
 
     cancelConfirm(): void { this.showConfirm.set(false); }
 
-    // ── Historial de Herramienta ──────────────────────────────────────────────
-    openHistorial(record: TranscriptionRecord): void {
-        const url = this.router.serializeUrl(
-            this.router.createUrlTree(
-                ['/calibraciones/historial', record.tool_id],
-                { queryParams: { code: record.codigo, name: record.nombre } }
-            )
-        );
-        window.open(url, '_blank');
+    // ── Historial de Herramienta (miniventana) ────────────────────────────────
+    async openHistorial(record: TranscriptionRecord): Promise<void> {
+        const { HistorialHerramientaComponent } = await import('../historial-herramienta/historial-herramienta.component');
+        this.dialog.open(HistorialHerramientaComponent, {
+            width: '640px', maxWidth: '95vw', maxHeight: '85vh',
+            panelClass: 'no-padding-dialog',
+            autoFocus: false,
+            data: { toolId: String(record.tool_id), code: record.codigo, name: record.nombre },
+        });
     }
 
     private showMessage(message: string, type: 'success' | 'error' | 'warning'): void {

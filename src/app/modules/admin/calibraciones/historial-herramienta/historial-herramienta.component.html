@@ -1,30 +1,34 @@
-<div class="w-full h-full bg-stone-100 dark:bg-slate-900 p-6 flex flex-col gap-6 overflow-hidden">
+<div class="w-full h-full bg-stone-100 dark:bg-slate-900 flex flex-col gap-6 overflow-hidden"
+     [ngClass]="esDialog ? 'border-2 border-black rounded-2xl shadow-[6px_6px_0_#000] p-4 max-h-[85vh]' : 'p-6'">
     <div class="flex flex-col gap-6 flex-1 min-h-0">
 
-        <!-- Header de página -->
-        <div class="flex items-center justify-between flex-wrap gap-3">
+        <!-- Header de página / miniventana (arrastrable en modo dialog) -->
+        <div class="flex items-center justify-between flex-wrap gap-3"
+             cdkDrag cdkDragRootElement=".cdk-overlay-pane" [cdkDragDisabled]="!esDialog"
+             [style.cursor]="esDialog ? 'grab' : 'default'">
             <div class="flex items-center gap-4">
-                <div class="w-12 h-12 rounded bg-amber-400 border-2 border-black flex items-center justify-center shadow-[3px_3px_0_#000] shrink-0">
+                <div class="w-12 h-12 rounded-lg bg-amber-400 border-2 border-black flex items-center justify-center shadow-[3px_3px_0_#000] shrink-0">
                     <mat-icon class="!text-2xl text-black">manage_search</mat-icon>
                 </div>
                 <div>
                     <p class="text-[9px] text-stone-400 dark:text-slate-400 font-bold uppercase tracking-[0.18em] leading-none mb-1">
                         Calibraciones — Historial completo
                     </p>
-                    <h1 class="text-xl font-black text-black dark:text-white uppercase tracking-tighter leading-none">
+                    <h1 class="font-black text-black dark:text-white uppercase tracking-tighter leading-none"
+                        [ngClass]="esDialog ? 'text-sm' : 'text-xl'">
                         {{ toolCode }} — {{ toolName }}
                     </h1>
                 </div>
             </div>
             <div class="flex items-center gap-2 shrink-0">
-                <button (click)="reload()" [disabled]="isLoading"
+                <button (click)="reload()" [disabled]="isLoading" (mousedown)="$event.stopPropagation()"
                         class="inline-flex items-center gap-1.5 px-3 py-2 bg-white dark:bg-slate-800 text-black dark:text-white font-black text-[10px] border-2 border-black rounded-xl shadow-[2px_2px_0_#000] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all uppercase disabled:opacity-40">
                     <mat-icon class="!text-sm">refresh</mat-icon>
                     Actualizar
                 </button>
-                <button (click)="cerrar()"
+                <button (click)="cerrar()" (mousedown)="$event.stopPropagation()"
                         class="px-4 py-2 bg-[#FF1414] text-white font-black text-[10px] border-2 border-black rounded-xl shadow-[2px_2px_0_#000] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all uppercase">
-                    Cerrar pestaña
+                    {{ esDialog ? 'Cerrar' : 'Cerrar pestaña' }}
                 </button>
             </div>
         </div>

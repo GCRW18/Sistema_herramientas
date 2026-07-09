@@ -21,6 +21,23 @@
       </div>
 
       <div class="flex items-center gap-2 flex-wrap w-full sm:w-auto">
+        <!-- Conmutador de fuente -->
+        <div class="flex items-center border-[2px] border-black rounded-xl overflow-hidden shrink-0 shadow-[2px_2px_0px_0px_#000]">
+          <button (click)="cambiarFuente('modulo')"
+                  matTooltip="segu + registro técnico (he.temployees) — con ficha completa"
+                  class="px-2.5 sm:px-3 py-2 font-black text-[10px] uppercase transition-all flex items-center gap-1"
+                  [ngClass]="!esERP ? 'bg-[#0F172AFF] text-[#FFC501FF]' : 'bg-white dark:bg-slate-800 text-gray-500 hover:text-black dark:hover:text-white'">
+            <mat-icon class="!text-[12px] !w-3 !h-3">handyman</mat-icon>
+            Módulo
+          </button>
+          <button (click)="cambiarFuente('erp')"
+                  matTooltip="Endpoint oficial del framework (seguridad/Usuario/listarUsuario) — listado simple"
+                  class="px-2.5 sm:px-3 py-2 font-black text-[10px] uppercase transition-all flex items-center gap-1 border-l-2 border-black"
+                  [ngClass]="esERP ? 'bg-[#0F172AFF] text-[#FFC501FF]' : 'bg-white dark:bg-slate-800 text-gray-500 hover:text-black dark:hover:text-white'">
+            <mat-icon class="!text-[12px] !w-3 !h-3">corporate_fare</mat-icon>
+            ERP
+          </button>
+        </div>
         <!-- Búsqueda -->
         <div class="relative flex-1 min-w-[140px] sm:flex-none">
           <input type="text" [formControl]="searchControl"
@@ -31,15 +48,18 @@
                         placeholder:font-bold placeholder:normal-case dark:placeholder:text-slate-500">
           <mat-icon class="absolute left-2.5 top-2 text-black dark:text-white !text-sm">search</mat-icon>
         </div>
-
-        <!-- Nuevo usuario -->
-        <button (click)="nuevoUsuario()"
-                class="h-9 px-3 flex items-center gap-1.5 rounded-lg border-[2px] border-black font-black text-[10px] uppercase transition-all
-                       bg-[#FFC501FF] text-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none">
-          <mat-icon class="!text-sm">add_circle</mat-icon>
-          <span class="hidden sm:inline">Nuevo Usuario</span>
-        </button>
       </div>
+    </div>
+
+    <!-- Banner modo ERP -->
+    <div *ngIf="esERP"
+         class="shrink-0 flex items-center gap-2 px-3 py-2 bg-blue-50 dark:bg-blue-900/20 border-[2px] border-blue-600 rounded-xl">
+      <mat-icon class="!text-base text-blue-600 shrink-0">info</mat-icon>
+      <p class="text-[10px] sm:text-[11px] font-bold text-blue-800 dark:text-blue-300 leading-snug">
+        Endpoint oficial del framework (<span class="font-mono font-black">seguridad/Usuario/listarUsuario</span>) —
+        listado simple sin datos técnicos (cargo, área, base, licencia) ni ficha.
+        La fuente "Módulo" lee los mismos usuarios de segu más su registro técnico.
+      </p>
     </div>
 
     <!-- ── CARD PRINCIPAL ──────────────────────────────────────────── -->
@@ -96,40 +116,53 @@
           <thead class="bg-gray-100 dark:bg-slate-800 border-b-[2px] border-black sticky top-0 z-10">
             <tr class="text-left text-[10px] font-black uppercase tracking-wider text-black dark:text-white">
               <th class="px-3 py-2.5">NOMBRE</th>
-              <th class="px-3 py-2.5">EMAIL</th>
-              <th class="px-3 py-2.5 w-36">ROL</th>
-              <th class="px-3 py-2.5 w-36">DEPARTAMENTO</th>
+              <th class="px-3 py-2.5 w-36">CUENTA</th>
+              <th *ngIf="!esERP" class="hidden md:table-cell px-3 py-2.5 w-44">CARGO</th>
+              <th *ngIf="!esERP" class="hidden lg:table-cell px-3 py-2.5 w-36">ÁREA</th>
+              <th *ngIf="!esERP" class="hidden sm:table-cell px-3 py-2.5 text-center w-24">BASE</th>
               <th class="px-3 py-2.5 text-center w-28">ESTADO</th>
-              <th class="px-3 py-2.5 w-40">ÚLTIMO ACCESO</th>
-              <th class="px-3 py-2.5 text-center w-28">ACCIONES</th>
             </tr>
           </thead>
           <tbody>
-            @for (usuario of filteredUsuarios; track usuario.id; let idx = $index; let last = $last) {
-            <tr class="border-b border-gray-200 dark:border-slate-700 transition-all"
-                [ngClass]="idx % 2 === 0 ? 'bg-white dark:bg-slate-800/60' : 'bg-gray-50 dark:bg-slate-800/40'">
+            @for (usuario of usuariosPagina; track usuario.id; let idx = $index) {
+            <tr (click)="verFicha(usuario)"
+                class="border-b border-gray-200 dark:border-slate-700 transition-all group"
+                [ngClass]="[
+                    idx % 2 === 0 ? 'bg-white dark:bg-slate-800/60' : 'bg-gray-50 dark:bg-slate-800/40',
+                    !esERP ? 'cursor-pointer hover:bg-amber-50 dark:hover:bg-amber-900/10' : ''
+                ]">
 
               <td class="px-3 py-2.5">
                 <div class="flex items-center gap-2">
                   <div class="w-7 h-7 bg-[#0F172AFF] border-2 border-black rounded-lg flex items-center justify-center shrink-0">
-                    <span class="text-[#FFC501FF] font-black text-[10px]">{{ usuario.nombre.charAt(0) }}</span>
+                    <span class="text-[#FFC501FF] font-black text-[10px]">{{ (usuario.nombreCompleto || '?').charAt(0) }}</span>
                   </div>
-                  <span class="text-xs font-bold text-black dark:text-white">{{ usuario.nombre }}</span>
+                  <div class="min-w-0">
+                    <span class="text-xs font-bold text-black dark:text-white block truncate">{{ usuario.nombreCompleto }}</span>
+                    <span *ngIf="!esERP" class="text-[9px] font-black text-amber-600 dark:text-amber-400 group-hover:underline flex items-center gap-0.5">
+                      Ver ficha <mat-icon class="!text-[10px] !w-2.5 !h-2.5">arrow_forward</mat-icon>
+                    </span>
+                  </div>
                 </div>
               </td>
 
               <td class="px-3 py-2.5">
-                <span class="text-xs font-bold text-black dark:text-white">{{ usuario.email }}</span>
-              </td>
-
-              <td class="px-3 py-2.5">
                 <span class="font-mono font-black text-[10px] bg-[#0F172AFF] text-white px-1.5 py-0.5 rounded border border-black">
-                  {{ usuario.rol }}
+                  {{ usuario.cuenta }}
                 </span>
               </td>
 
-              <td class="px-3 py-2.5">
-                <span class="text-xs font-bold text-black dark:text-white">{{ usuario.departamento }}</span>
+              <td *ngIf="!esERP" class="hidden md:table-cell px-3 py-2.5">
+                <span class="text-[11px] font-bold text-black dark:text-white">{{ usuario.cargo || '—' }}</span>
+              </td>
+
+              <td *ngIf="!esERP" class="hidden lg:table-cell px-3 py-2.5">
+                <span class="text-[11px] font-bold text-gray-600 dark:text-gray-300">{{ usuario.area || '—' }}</span>
+              </td>
+
+              <td *ngIf="!esERP" class="hidden sm:table-cell px-3 py-2.5 text-center">
+                <span *ngIf="usuario.base" class="px-1.5 py-0.5 text-[9px] font-black uppercase border-2 border-black rounded bg-amber-400 text-black">{{ usuario.base }}</span>
+                <span *ngIf="!usuario.base" class="text-[10px] text-gray-400">—</span>
               </td>
 
               <td class="px-3 py-2.5 text-center">
@@ -139,42 +172,44 @@
                   <span class="px-1.5 py-0.5 text-[9px] font-black uppercase border-2 border-black rounded inline-flex items-center gap-1 bg-stone-300 text-black">INACTIVO</span>
                 }
               </td>
-
-              <td class="px-3 py-2.5">
-                <span class="text-[9px] font-bold font-mono text-gray-500 dark:text-gray-400">{{ usuario.ultimoAcceso }}</span>
-              </td>
-
-              <td class="px-3 py-2.5">
-                <div class="flex gap-1.5 justify-center">
-                  <button (click)="editarUsuario(usuario)"
-                          matTooltip="Editar"
-                          class="w-7 h-7 flex items-center justify-center bg-[#FFC501FF] border-2 border-black rounded-lg shadow-[2px_2px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all">
-                    <mat-icon class="!text-sm text-black">edit</mat-icon>
-                  </button>
-                  <button (click)="eliminarUsuario(usuario)"
-                          matTooltip="Eliminar"
-                          class="w-7 h-7 flex items-center justify-center bg-white dark:bg-slate-700 border-2 border-black rounded-lg shadow-[2px_2px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all">
-                    <mat-icon class="!text-sm text-red-600">delete</mat-icon>
-                  </button>
-                </div>
-              </td>
             </tr>
             } @empty {
             <tr>
-              <td colspan="7" class="py-12 text-center">
+              <td [attr.colspan]="esERP ? 3 : 6" class="py-12 text-center">
                 <div class="flex flex-col items-center gap-3">
                   <mat-icon class="!text-5xl text-gray-300 dark:text-gray-600">person_off</mat-icon>
                   <p class="text-xs font-bold uppercase text-gray-500 mt-2">No se encontraron usuarios</p>
-                  <button (click)="nuevoUsuario()"
-                          class="h-8 px-4 rounded-xl border-[2px] border-black bg-[#FFC501FF] text-black font-black text-xs uppercase shadow-[2px_2px_0_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all mt-1 flex items-center gap-1.5">
-                    <mat-icon class="!text-sm">add_circle</mat-icon>Nuevo Usuario
-                  </button>
                 </div>
               </td>
             </tr>
             }
           </tbody>
         </table>
+      </div>
+
+      <!-- PAGINADOR -->
+      <div *ngIf="!isLoading && filteredUsuarios.length > pageSize"
+           class="shrink-0 border-t-2 border-black bg-white dark:bg-slate-800 px-3 sm:px-4 py-2 flex items-center justify-between gap-2 flex-wrap">
+        <span class="text-[9px] sm:text-[10px] font-black uppercase text-gray-500">
+          {{ rangoPagina.desde }}–{{ rangoPagina.hasta }} de {{ filteredUsuarios.length }} usuarios
+        </span>
+        <div class="flex items-center gap-1">
+          <button (click)="irAPagina(pagina() - 1)" [disabled]="pagina() <= 1"
+                  class="w-7 h-7 flex items-center justify-center bg-white dark:bg-slate-700 border-2 border-black rounded-lg shadow-[2px_2px_0px_0px_#000] hover:translate-y-[1px] hover:shadow-none transition-all disabled:opacity-30 disabled:cursor-not-allowed disabled:translate-y-0 disabled:shadow-[2px_2px_0px_0px_#000]">
+            <mat-icon class="!text-sm text-black dark:text-white">chevron_left</mat-icon>
+          </button>
+          <button *ngFor="let p of paginasVisibles()" (click)="irAPagina(p)"
+                  class="w-7 h-7 flex items-center justify-center border-2 border-black rounded-lg text-[10px] font-black transition-all"
+                  [ngClass]="p === pagina()
+                      ? 'bg-amber-400 text-black shadow-none translate-y-[1px]'
+                      : 'bg-white dark:bg-slate-700 text-black dark:text-white shadow-[2px_2px_0px_0px_#000] hover:translate-y-[1px] hover:shadow-none'">
+            {{ p }}
+          </button>
+          <button (click)="irAPagina(pagina() + 1)" [disabled]="pagina() >= totalPaginas"
+                  class="w-7 h-7 flex items-center justify-center bg-white dark:bg-slate-700 border-2 border-black rounded-lg shadow-[2px_2px_0px_0px_#000] hover:translate-y-[1px] hover:shadow-none transition-all disabled:opacity-30 disabled:cursor-not-allowed disabled:translate-y-0 disabled:shadow-[2px_2px_0px_0px_#000]">
+            <mat-icon class="!text-sm text-black dark:text-white">chevron_right</mat-icon>
+          </button>
+        </div>
       </div>
 
     </div><!-- /card -->

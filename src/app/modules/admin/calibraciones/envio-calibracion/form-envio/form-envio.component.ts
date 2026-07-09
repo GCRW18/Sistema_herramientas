@@ -1,7 +1,7 @@
 import { Component, OnInit, OnDestroy, inject, signal, ViewChild, ElementRef, ChangeDetectorRef } from '@angular/core';
 import { CommonModule }                                                              from '@angular/common';
 import { FormsModule }                                                               from '@angular/forms';
-import { MatDialogModule, MatDialogRef }                                             from '@angular/material/dialog';
+import { MatDialog, MatDialogModule, MatDialogRef }                                  from '@angular/material/dialog';
 import { MatButtonModule }                                                           from '@angular/material/button';
 import { MatIconModule }                                                             from '@angular/material/icon';
 import { MatProgressSpinnerModule }                                                  from '@angular/material/progress-spinner';
@@ -62,6 +62,10 @@ export class FormEnvioComponent implements OnInit, OnDestroy {
     public  dialogRef          = inject(MatDialogRef<FormEnvioComponent>);
     private snackBar           = inject(MatSnackBar);
     private cdr                = inject(ChangeDetectorRef);
+    private dialog             = inject(MatDialog);
+
+    /** Miniventana del lote (una sola instancia) */
+    private loteRef: MatDialogRef<any> | null = null;
 
     private _destroy$    = new Subject<void>();
     private _toolSearch$ = new Subject<string>();
@@ -119,6 +123,7 @@ export class FormEnvioComponent implements OnInit, OnDestroy {
     }
 
     ngOnDestroy(): void {
+        this.loteRef?.close();
         this._destroy$.next();
         this._destroy$.complete();
     }
@@ -138,7 +143,8 @@ export class FormEnvioComponent implements OnInit, OnDestroy {
                     name: w.nombre       || w.name,
                     code: w.codigo       || w.code || 'ALM'
                 }));
-                const def = this.warehouses.find(w => w.code === 'ALM-CBB');
+                const def = this.warehouses.find(w => w.code === 'ALM-CBB-0001')
+                    ?? this.warehouses.find(w => (w.code || '').startsWith('ALM-CBB'));
                 if (def) {
                     this.almacen = def.name;
                     this._autoSelectBase(def.code);
@@ -169,7 +175,9 @@ export class FormEnvioComponent implements OnInit, OnDestroy {
     }
 
     private _autoSelectBase(warehouseCode: string): void {
-        const baseCode = warehouseCode.split('-').pop() ?? '';
+        // Formato de almacén: ALM-<BASE>-NNNN (ej. ALM-CBB-0001) → la base es el segmento 2
+        const parts    = warehouseCode.split('-');
+        const baseCode = parts.length > 1 ? parts[1] : (parts[0] ?? '');
         const matched  = this.bases.find(b => b.code === baseCode);
         if (matched) {
             this.base   = matched.code;
@@ -279,8 +287,33 @@ export class FormEnvioComponent implements OnInit, OnDestroy {
                 this.showToolDropdown = false;
                 this.cdr.detectChanges();
                 this.scanInputRef.nativeElement.focus();
+                // Al agregar la primera herramienta, abrir la miniventana del lote
+                // para que el usuario configure el laboratorio (requerido)
+                if (this.toolList.length === 1) this.abrirLote();
             }
         });
+    }
+
+    /**
+     * Abre el lote en una miniventana independiente (sin backdrop, arrastrable).
+     * Se pasa el propio componente: toolList se muta in-place, así que la
+     * miniventana refleja en vivo lo que se agrega/quita desde el form.
+     */
+    async abrirLote(): Promise<void> {
+        if (this.loteRef) return;
+        const { LoteEnvioDialogComponent } = await import('./lote-envio-dialog.component');
+        this.loteRef = this.dialog.open(LoteEnvioDialogComponent, {
+            width: '560px', maxWidth: '95vw',
+            panelClass: 'no-padding-dialog',
+            hasBackdrop: false,
+            autoFocus: false, restoreFocus: false,
+            // El form principal ahora se abre centrado (640px). La miniventana se
+            // posiciona a su derecha, más cerca del form (menor offset desde el
+            // centro del viewport que la mitad de su ancho + separación).
+            position: { top: '8vh', left: 'calc(50vw + 260px)' },
+            data: { host: this },
+        });
+        this.loteRef.afterClosed().subscribe(() => this.loteRef = null);
     }
 
     removeTool(index: number): void { if (!this.isProcessing()) this.toolList.splice(index, 1); }

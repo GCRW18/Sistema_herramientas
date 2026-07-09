@@ -8,14 +8,14 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { DragDropModule } from '@angular/cdk/drag-drop';
 
 import { forkJoin, of, Subject } from 'rxjs';
-import { catchError, map, takeUntil } from 'rxjs/operators';
+import { catchError, takeUntil } from 'rxjs/operators';
 
 import { CalibrationService } from 'app/core/services/calibration.service';
 
 import { Warehouse, Rack, Level, LevelTool } from '../interfaces';
 import { ConfirmDeleteComponent, ConfirmDeleteData } from '../confirm-delete/confirm-delete.component';
-import { MoverResult } from '../mover-herramientas/mover-herramientas.component';
 import { GestionUbicacionesService } from '../gestion-ubicaciones.service';
+import { NivelHerramientasDialogComponent, NivelHerramientasData } from '../nivel-herramientas/nivel-herramientas-dialog.component';
 
 @Component({
     selector: 'app-gestion-estantes',
@@ -39,23 +39,36 @@ import { GestionUbicacionesService } from '../gestion-ubicaciones.service';
         @keyframes spin { to { transform: rotate(360deg); } }
 
         /* Estante 3D */
-        .estante-3d { perspective: 1000px; overflow: hidden; }
+        .estante-3d { perspective: 1200px; }
         .estante-3d-inner {
-            transform: rotateX(8deg) rotateY(-8deg);
+            transform: rotateX(4deg) rotateY(-5deg);
             transform-style: preserve-3d;
             transition: transform 0.3s ease;
         }
-        .estante-3d-inner:hover { transform: rotateX(5deg) rotateY(-5deg); }
+        .estante-3d-inner:hover { transform: rotateX(2deg) rotateY(-3deg); }
         .nivel-3d {
             transform: translateZ(0);
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            transition: transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease;
         }
-        .nivel-3d:hover { transform: translateZ(10px); }
-        .nivel-3d.activo { transform: translateZ(16px); }
+        .nivel-3d:hover { transform: translateZ(12px); }
         /* En móvil, desactivar 3D para evitar overflow */
         @media (max-width: 1023px) {
             .estante-3d-inner { transform: none !important; }
             .nivel-3d:hover { transform: none; }
+        }
+
+        /* Pared de fondo del área del estante: grilla sutil sobre degradado */
+        .estante-wall {
+            background:
+                linear-gradient(rgba(15,23,42,0.045) 1px, transparent 1px) 0 0 / 32px 32px,
+                linear-gradient(90deg, rgba(15,23,42,0.045) 1px, transparent 1px) 0 0 / 32px 32px,
+                linear-gradient(135deg, #f3f4f6, #e2e5ea);
+        }
+        :host-context(.dark) .estante-wall {
+            background:
+                linear-gradient(rgba(255,255,255,0.05) 1px, transparent 1px) 0 0 / 32px 32px,
+                linear-gradient(90deg, rgba(255,255,255,0.05) 1px, transparent 1px) 0 0 / 32px 32px,
+                linear-gradient(135deg, #1e293b, #0f172a);
         }
     `]
 })
@@ -74,13 +87,14 @@ export class GestionEstantesComponent implements OnInit, OnChanges, OnDestroy {
     vistaActiva = signal<'tabla' | 'detalle'>('tabla');
 
     estantes: Rack[] = [];
+    loadingEstantes = signal(false);
     estanteActivoId = signal<number | null>(null);
-    nivelActivoId   = signal<number | null>(null);
 
-    selectedToolIds = signal<Set<number>>(new Set());
+    searchControl = new FormControl('');
 
-    searchControl     = new FormControl('');
-    toolSearchControl = new FormControl('');
+    /* ── Paginación tabla de estantes ── */
+    readonly pageSize = 10;
+    pagina = signal(1);
 
     /* ════════ Buscador Global ════════ */
     buscarVisible      = signal(false);
@@ -93,14 +107,11 @@ export class GestionEstantesComponent implements OnInit, OnChanges, OnDestroy {
         return this.estantes.find(r => r.id === this.estanteActivoId());
     }
 
-    get nivelActivo(): Level | undefined {
-        const estante = this.estanteActivo;
-        if (!estante || !this.nivelActivoId()) return undefined;
-        return estante.niveles.find(n => n.id === this.nivelActivoId());
-    }
-
     ngOnInit() {
         if (!this.todosLosAlmacenes.length) this.todosLosAlmacenes = [this.almacen];
+        this.searchControl.valueChanges
+            .pipe(takeUntil(this._destroy$))
+            .subscribe(() => this.pagina.set(1));
         this.cargarEstantes();
     }
 
@@ -109,44 +120,40 @@ export class GestionEstantesComponent implements OnInit, OnChanges, OnDestroy {
             this.estantes = [];
             this.vistaActiva.set('tabla');
             this.estanteActivoId.set(null);
-            this.nivelActivoId.set(null);
-            this.selectedToolIds.set(new Set());
             this.cargarEstantes();
         }
     }
 
     cargarEstantes() {
-        this.svc.getRacks(this.almacen.id).subscribe({
-            next: (racks) => {
-                if (!racks || racks.length === 0) {
-                    this.estantes = [];
-                    return;
-                }
-                forkJoin(racks.map(r =>
-                    this.svc.getLevels(r.id).pipe(
-                        map(levels => ({ ...r, niveles: levels })),
-                        catchError(() => of({ ...r, niveles: [] as Level[] })),
-                    )
-                )).subscribe(racksFull => {
-                    forkJoin(racksFull.map(r =>
-                        this.svc.getLevelTools(r.id).pipe(
-                            map(tools => {
-                                const niveles = r.niveles.map(lv => ({
-                                    ...lv,
-                                    tools: tools.filter(t => t.levelId === lv.id),
-                                }));
-                                return { ...r, niveles };
-                            }),
-                            catchError(() => of({ ...r, niveles: r.niveles.map(lv => ({ ...lv, tools: [] as LevelTool[] })) })),
-                        )
-                    )).subscribe(racksWithTools => {
-                        this.estantes = racksWithTools;
-                    });
+        // 3 requests fijos (estantes + niveles + herramientas del almacén completo)
+        // en lugar de 1 + 2 por estante: con los 34 estantes reales de CBB el patrón
+        // anterior disparaba ~69 llamadas al backend y tardaba varios segundos.
+        this.loadingEstantes.set(true);
+        forkJoin({
+            racks:  this.svc.getRacks(this.almacen.id),
+            levels: this.svc.getLevelsByWarehouse(this.almacen.id).pipe(catchError(() => of([] as Level[]))),
+            tools:  this.svc.getLevelToolsByWarehouse(this.almacen.id).pipe(catchError(() => of([] as LevelTool[]))),
+        }).subscribe({
+            next: ({ racks, levels, tools }) => {
+                const toolsPorNivel = new Map<number, LevelTool[]>();
+                tools.forEach(t => {
+                    const arr = toolsPorNivel.get(t.levelId) ?? [];
+                    arr.push(t);
+                    toolsPorNivel.set(t.levelId, arr);
                 });
+                const nivelesPorEstante = new Map<number, Level[]>();
+                levels.forEach(lv => {
+                    const arr = nivelesPorEstante.get(lv.rackId) ?? [];
+                    arr.push({ ...lv, tools: toolsPorNivel.get(lv.id) ?? [] });
+                    nivelesPorEstante.set(lv.rackId, arr);
+                });
+                this.estantes = racks.map(r => ({ ...r, niveles: nivelesPorEstante.get(r.id) ?? [] }));
+                this.loadingEstantes.set(false);
             },
             error: (err) => {
                 console.error('Error cargando estantes', err);
                 this.estantes = [];
+                this.loadingEstantes.set(false);
                 this.snackBar.open('No se pudieron cargar los estantes', 'Cerrar', { duration: 3500 });
             }
         });
@@ -158,190 +165,70 @@ export class GestionEstantesComponent implements OnInit, OnChanges, OnDestroy {
         return this.estantes.filter(r => `${r.codigo} ${r.nombre} ${r.descripcion}`.toLowerCase().includes(q));
     }
 
+    /* ── Paginación ── */
+
+    get totalPaginas(): number {
+        return Math.max(1, Math.ceil(this.estantesFiltrados.length / this.pageSize));
+    }
+
+    get estantesPagina(): Rack[] {
+        const p = Math.min(this.pagina(), this.totalPaginas);
+        const inicio = (p - 1) * this.pageSize;
+        return this.estantesFiltrados.slice(inicio, inicio + this.pageSize);
+    }
+
+    get rangoPagina(): { desde: number; hasta: number } {
+        const total = this.estantesFiltrados.length;
+        if (!total) return { desde: 0, hasta: 0 };
+        const p = Math.min(this.pagina(), this.totalPaginas);
+        const desde = (p - 1) * this.pageSize + 1;
+        return { desde, hasta: Math.min(p * this.pageSize, total) };
+    }
+
+    /** Ventana de hasta 5 números de página centrada en la actual */
+    paginasVisibles(): number[] {
+        const total  = this.totalPaginas;
+        const actual = Math.min(this.pagina(), total);
+        const inicio = Math.max(1, Math.min(actual - 2, total - 4));
+        const fin    = Math.min(total, inicio + 4);
+        const out: number[] = [];
+        for (let i = inicio; i <= fin; i++) out.push(i);
+        return out;
+    }
+
+    irAPagina(p: number): void {
+        this.pagina.set(Math.min(Math.max(1, p), this.totalPaginas));
+    }
+
     verDetalleEstante(r: Rack) {
         this.estanteActivoId.set(r.id);
-        this.nivelActivoId.set(null);
-        this.selectedToolIds.set(new Set());
         this.vistaActiva.set('detalle');
     }
 
     volverAEstantes() {
         this.vistaActiva.set('tabla');
         this.estanteActivoId.set(null);
-        this.nivelActivoId.set(null);
-        this.selectedToolIds.set(new Set());
     }
 
-    seleccionarNivel(l: Level) {
-        this.nivelActivoId.set(this.nivelActivoId() === l.id ? null : l.id);
-        this.selectedToolIds.set(new Set());
-    }
+    /* ════════ Miniventana de herramientas del nivel ════════ */
 
-    get herramientasVisibles(): LevelTool[] {
-        const r = this.estanteActivo;
-        if (!r) return [];
-        const niveles = this.nivelActivoId()
-            ? r.niveles.filter(n => n.id === this.nivelActivoId())
-            : r.niveles;
-        const all = niveles.flatMap(n => n.tools ?? []);
-        const q = (this.toolSearchControl.value ?? '').toString().trim().toLowerCase();
-        if (!q) return all;
-        return all.filter(t => `${t.codigo} ${t.pn} ${t.sn ?? ''} ${t.nombre} ${t.marca ?? ''}`.toLowerCase().includes(q));
-    }
-
-    /* ════════ Acciones Inline Herramientas ════════ */
-
-    canAdd(): boolean { return !!this.nivelActivoId(); }
-
-    async agregarHerramienta() {
-        const r = this.estanteActivo;
-        const lvl = r?.niveles.find(n => n.id === this.nivelActivoId());
-        if (!r || !lvl) return;
-
-        const { FormHerramientaNivelComponent } = await import('../form-herramienta-nivel/form-herramienta-nivel.component');
-        const ref = this.dialog.open(FormHerramientaNivelComponent, {
-            width: '720px', maxWidth: '95vw', panelClass: 'no-padding-dialog',
-            data: { mode: 'new', rack: r, level: lvl }
-        });
-        ref.afterClosed().subscribe((tool: LevelTool | null) => {
-            if (!tool) return;
-            this.svc.findToolByCode(tool.codigo).subscribe({
-                next: (existing) => {
-                    if (existing?.levelId) {
-                        const rack  = existing.rackCodigo  ?? `#${existing.rackId}`;
-                        const nivel = existing.levelCodigo ?? `#${existing.levelId}`;
-                        this.snackBar.open(
-                            `"${tool.codigo}" ya está asignada en Estante ${rack} · Nivel ${nivel}. Desasígnala primero o usa Traspaso.`,
-                            'Cerrar',
-                            { duration: 7000 }
-                        );
-                        return;
-                    }
-                    this.doInsertTool(tool);
-                },
-                error: () => this.doInsertTool(tool),
-            });
-        });
-    }
-
-    private doInsertTool(tool: LevelTool): void {
-        this.svc.insertLevelTool(tool, this.almacen.id).subscribe({
-            next: (res: any) => {
-                if (res?.error) {
-                    this.snackBar.open(res.message ?? 'Error al agregar herramienta', 'Cerrar', { duration: 6000 });
-                    return;
-                }
-                this.snackBar.open('Herramienta agregada al nivel', 'Cerrar', { duration: 2500 });
-                this.cargarEstantes();
-            },
-            error: (err: any) => {
-                const msg = typeof err === 'string' ? err
-                    : err?.message ?? err?.error?.message ?? 'Error al agregar herramienta';
-                this.snackBar.open(msg, 'Cerrar', { duration: 6000 });
-            },
-        });
-    }
-
-    async editarHerramientaInline(tool: LevelTool, ev: Event) {
-        ev.stopPropagation();
-        const found = this.findToolById(tool.id);
-        if (!found) return;
-        const { rack, level } = found;
-
-        const { FormHerramientaNivelComponent } = await import('../form-herramienta-nivel/form-herramienta-nivel.component');
-        const ref = this.dialog.open(FormHerramientaNivelComponent, {
-            width: '720px', maxWidth: '95vw', panelClass: 'no-padding-dialog',
-            data: { mode: 'edit', rack, level, tool }
-        });
-        ref.afterClosed().subscribe((updated: LevelTool | null) => {
-            if (!updated) return;
-            const payload: LevelTool = { ...updated, id: tool.id, levelId: tool.levelId, rackId: tool.rackId };
-            this.svc.updateLevelTool(payload).subscribe({
-                next: () => {
-                    Object.assign(tool, payload);
-                    this.snackBar.open('Herramienta actualizada', 'Cerrar', { duration: 2500 });
-                },
-                error: () => this.snackBar.open('Error al actualizar herramienta', 'Cerrar', { duration: 3500 }),
-            });
-        });
-    }
-
-    async moverHerramientaInline(tool: LevelTool, ev: Event) {
-        ev.stopPropagation();
-
-        const racksByAlmacen: Record<number, Rack[]> = {};
-        racksByAlmacen[this.almacen.id] = this.estantes;
-
-        const { MoverHerramientasComponent } = await import('../mover-herramientas/mover-herramientas.component');
-        const ref = this.dialog.open(MoverHerramientasComponent, {
-            width: '600px', maxWidth: '95vw', panelClass: 'no-padding-dialog',
-            data: {
-                count: 1,
-                almacenes: this.todosLosAlmacenes,
-                racksByAlmacen,
-                currentLevelId:    tool.levelId,
-                currentRackCode:   tool.rackCodigo,
-                currentAlmacenId:  this.almacen.id,
-            }
-        });
-        ref.afterClosed().subscribe((res: MoverResult | undefined) => {
-            if (!res) return;
-            this.svc.moveLevelTool(tool.id, res.rackId, res.levelId).subscribe({
-                next: () => {
-                    this.snackBar.open(`Herramienta movida a ${res.levelCodigo}`, 'Cerrar', { duration: 3000 });
-                    if (res.warehouseId === this.almacen.id) {
-                        this.cargarEstantes();
-                    }
-                },
-                error: () => this.snackBar.open('Error al mover herramienta', 'Cerrar', { duration: 3500 }),
-            });
-        });
-    }
-
-    quitarHerramientaInline(tool: LevelTool, ev: Event) {
-        ev.stopPropagation();
-
-        const data: ConfirmDeleteData = {
-            itemKind: 'herramienta',
-            itemCode: tool.codigo,
-            itemName: 'Será desasignada del nivel actual',
-            warning: 'La herramienta seguirá existiendo en inventario sin ubicación asignada.',
+    abrirNivel(r: Rack, l: Level, highlightToolId?: number) {
+        const data: NivelHerramientasData = {
+            almacen:           this.almacen,
+            todosLosAlmacenes: this.todosLosAlmacenes,
+            estantes:          this.estantes,
+            rack:              r,
+            level:             l,
+            highlightToolId,
         };
-        this.dialog.open(ConfirmDeleteComponent, { width: '420px', maxWidth: '95vw', panelClass: 'no-padding-dialog', data, hasBackdrop: true })
-            .afterClosed().subscribe(ok => {
-            if (!ok) return;
-            this.svc.unassignLevelTool(tool.id).subscribe({
-                next: () => {
-                    const f = this.findToolById(tool.id);
-                    if (f) f.level.tools = (f.level.tools ?? []).filter(t => t.id !== tool.id);
-                    this.snackBar.open('Herramienta desasignada', 'Cerrar', { duration: 2500 });
-                },
-                error: () => this.snackBar.open('Error al desasignar', 'Cerrar', { duration: 3500 }),
-            });
+        this.dialog.open(NivelHerramientasDialogComponent, {
+            width: '640px', maxWidth: '95vw', panelClass: 'no-padding-dialog', data,
+        }).afterClosed().subscribe((changed: boolean) => {
+            if (changed) this.cargarEstantes();
         });
     }
 
     /* ════════ Helpers ════════ */
-
-    private nextToolId(): number {
-        let max = 0;
-        this.estantes.forEach(r => r.niveles.forEach(n => (n.tools ?? []).forEach(t => { if (t.id > max) max = t.id; })));
-        return max + 1;
-    }
-
-    private findToolById(id: number): { tool: LevelTool; level: Level; rack: Rack } | null {
-        for (const rack of this.estantes) {
-            for (const level of rack.niveles) {
-                const tool = (level.tools ?? []).find(t => t.id === id);
-                if (tool) return { tool, level, rack };
-            }
-        }
-        return null;
-    }
-
-    nivelClass(l: Level): string {
-        return this.nivelActivoId() === l.id ? 'activo' : '';
-    }
 
     contarHerramientas(r: Rack): number {
         return r.niveles.reduce((acc, n) => acc + (n.tools?.length ?? 0), 0);
@@ -364,7 +251,7 @@ export class GestionEstantesComponent implements OnInit, OnChanges, OnDestroy {
 
     async nuevoEstante() {
         const { FormEstanteComponent } = await import('../form-estante/form-estante.component');
-        const ref = this.dialog.open(FormEstanteComponent, { width: '560px', maxWidth: '95vw', panelClass: 'no-padding-dialog', data: { mode: 'new', warehouse: this.almacen } });
+        const ref = this.dialog.open(FormEstanteComponent, { width: '560px', maxWidth: '95vw', panelClass: 'no-padding-dialog', data: { mode: 'new', warehouse: this.almacen, racksExistentes: this.estantes } });
         ref.afterClosed().subscribe((rack: Rack | null) => {
             if (!rack) return;
             rack.warehouseId = this.almacen.id;
@@ -469,7 +356,6 @@ export class GestionEstantesComponent implements OnInit, OnChanges, OnDestroy {
             this.svc.deleteLevel(l.id).subscribe({
                 next: () => {
                     r.niveles = r.niveles.filter(n => n.id !== l.id);
-                    if (this.nivelActivoId() === l.id) this.nivelActivoId.set(null);
                     this.snackBar.open('Nivel eliminado', 'Cerrar', { duration: 2500 });
                 },
                 error: () => this.snackBar.open('Error al eliminar nivel', 'Cerrar', { duration: 3500 }),
@@ -525,15 +411,17 @@ export class GestionEstantesComponent implements OnInit, OnChanges, OnDestroy {
 
     irAlEstante(t: LevelTool): void {
         const rack = this.estantes.find(r => r.id === t.rackId);
-        if (!rack) {
+        const nivel = rack?.niveles.find(n => n.id === t.levelId);
+        if (!rack || !nivel) {
             this.snackBar.open('Recarga los estantes para navegar a este resultado', 'Cerrar', { duration: 2500 });
             return;
         }
+        // Navegar al detalle del estante como contexto y abrir directo la
+        // miniventana del nivel con la herramienta resaltada
         this.cerrarBusqueda();
         this.estanteActivoId.set(rack.id);
-        this.nivelActivoId.set(t.levelId);
-        this.selectedToolIds.set(new Set());
         this.vistaActiva.set('detalle');
+        this.abrirNivel(rack, nivel, t.id);
     }
 
     cerrar() { this.volver.emit(); }

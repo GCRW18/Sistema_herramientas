@@ -93,12 +93,12 @@
                     </div>
 
                     <!-- Ubicación + navegación -->
-                    <div class="shrink-0 text-right border-l-2 border-gray-200 dark:border-slate-700 pl-3 min-w-[72px]">
-                        <p class="font-mono text-[10px] font-black text-black dark:text-white">{{ t.rackCodigo }}</p>
-                        <p class="text-[9px] font-bold text-gray-500 uppercase">{{ t.levelCodigo }}</p>
+                    <div class="shrink-0 text-right border-l-2 border-gray-200 dark:border-slate-700 pl-2 sm:pl-3 min-w-[64px] max-w-[96px] sm:max-w-[130px]">
+                        <p class="font-mono text-[9px] sm:text-[10px] font-black text-black dark:text-white truncate" [matTooltip]="t.rackCodigo">{{ t.rackCodigo }}</p>
+                        <p class="text-[8px] sm:text-[9px] font-bold text-gray-500 uppercase truncate" [matTooltip]="t.levelCodigo">{{ t.levelCodigo }}</p>
                         <p class="text-[9px] font-black text-amber-600 dark:text-amber-400 mt-1 flex items-center gap-0.5 justify-end group-hover:underline">
                             <mat-icon class="!text-[10px] !w-2.5 !h-2.5">open_in_new</mat-icon>
-                            Ir al estante
+                            Ver nivel
                         </p>
                     </div>
                 </div>
@@ -179,7 +179,7 @@
                     </tr>
                     </thead>
                     <tbody>
-                    <tr *ngFor="let r of estantesFiltrados"
+                    <tr *ngFor="let r of estantesPagina"
                         (click)="verDetalleEstante(r)"
                         class="border-b border-black last:border-0 hover:bg-gray-300 dark:hover:bg-amber-900/20 cursor-pointer transition-colors group">
 
@@ -228,7 +228,13 @@
                             </div>
                         </td>
                     </tr>
-                    <tr *ngIf="!estantesFiltrados.length">
+                    <tr *ngIf="loadingEstantes()">
+                        <td colspan="6" class="text-center py-16">
+                            <div class="w-12 h-12 mx-auto border-4 border-amber-400 border-t-transparent rounded-full" style="animation: spin 0.8s linear infinite"></div>
+                            <p class="text-sm font-black uppercase text-gray-500 mt-4">Cargando estantes...</p>
+                        </td>
+                    </tr>
+                    <tr *ngIf="!loadingEstantes() && !estantesFiltrados.length">
                         <td colspan="6" class="text-center py-16">
                             <mat-icon class="!text-6xl text-gray-300">shelves</mat-icon>
                             <p class="text-sm font-black uppercase text-gray-500 mt-4">No se encontraron estantes</p>
@@ -237,12 +243,38 @@
                     </tbody>
                 </table>
                 </div>
+
+                <!-- PAGINADOR -->
+                <div *ngIf="estantesFiltrados.length > pageSize"
+                     class="border-t-2 border-black bg-gray-50 dark:bg-slate-900 px-3 sm:px-4 py-2 flex items-center justify-between gap-2 flex-wrap">
+                    <span class="text-[9px] sm:text-[10px] font-black uppercase text-gray-500">
+                        {{ rangoPagina.desde }}–{{ rangoPagina.hasta }} de {{ estantesFiltrados.length }} estantes
+                    </span>
+                    <div class="flex items-center gap-1">
+                        <button (click)="irAPagina(pagina() - 1)" [disabled]="pagina() <= 1" matTooltip="Anterior"
+                                class="w-7 h-7 flex items-center justify-center bg-white dark:bg-slate-700 border-2 border-black rounded-lg shadow-[2px_2px_0px_0px_#000] hover:translate-y-[1px] hover:shadow-none transition-all disabled:opacity-30 disabled:cursor-not-allowed disabled:translate-y-0 disabled:shadow-[2px_2px_0px_0px_#000]">
+                            <mat-icon class="!text-sm text-black dark:text-white">chevron_left</mat-icon>
+                        </button>
+                        <button *ngFor="let p of paginasVisibles()" (click)="irAPagina(p)"
+                                class="w-7 h-7 flex items-center justify-center border-2 border-black rounded-lg text-[10px] font-black transition-all"
+                                [ngClass]="p === pagina()
+                                    ? 'bg-amber-400 text-black shadow-none translate-y-[1px]'
+                                    : 'bg-white dark:bg-slate-700 text-black dark:text-white shadow-[2px_2px_0px_0px_#000] hover:translate-y-[1px] hover:shadow-none'">
+                            {{ p }}
+                        </button>
+                        <button (click)="irAPagina(pagina() + 1)" [disabled]="pagina() >= totalPaginas" matTooltip="Siguiente"
+                                class="w-7 h-7 flex items-center justify-center bg-white dark:bg-slate-700 border-2 border-black rounded-lg shadow-[2px_2px_0px_0px_#000] hover:translate-y-[1px] hover:shadow-none transition-all disabled:opacity-30 disabled:cursor-not-allowed disabled:translate-y-0 disabled:shadow-[2px_2px_0px_0px_#000]">
+                            <mat-icon class="!text-sm text-black dark:text-white">chevron_right</mat-icon>
+                        </button>
+                    </div>
+                </div>
             </div>
         </div>
     </ng-container>
 
     <!-- ======================================================= -->
-    <!-- VISTA 2: DETALLE DEL ESTANTE -->
+    <!-- VISTA 2: DETALLE DEL ESTANTE (a pantalla completa)      -->
+    <!-- Clic en un nivel → miniventana con sus herramientas     -->
     <!-- ======================================================= -->
     <ng-container *ngIf="!buscarVisible() && vistaActiva() === 'detalle' && estanteActivo as r">
 
@@ -263,243 +295,193 @@
                     <p class="text-[10px] text-gray-300 font-bold uppercase mt-0.5 truncate">{{ r.nombre }}</p>
                 </div>
             </div>
+            <div class="flex items-center gap-1.5 sm:gap-2 shrink-0 ml-auto">
+                <button (click)="cargarEstantes()" matTooltip="Recargar datos del estante"
+                        class="w-9 h-9 flex items-center justify-center bg-white/10 border-2 border-black rounded-lg shadow-[2px_2px_0px_0px_#000] hover:translate-y-[1px] hover:shadow-none transition-all">
+                    <mat-icon class="text-white !text-base">refresh</mat-icon>
+                </button>
+                <button (click)="nuevoNivel(r, $event)" matTooltip="Agregar nuevo nivel"
+                        class="px-2.5 sm:px-3 py-2 flex items-center gap-1 sm:gap-1.5 bg-amber-400 font-black text-[10px] uppercase border-2 border-black rounded-lg shadow-[2px_2px_0px_0px_#000] hover:translate-y-[1px] hover:shadow-none transition-all text-black">
+                    <mat-icon class="!text-black !text-sm">add</mat-icon>
+                    <span class="hidden sm:inline">Nivel</span>
+                </button>
+            </div>
         </div>
 
-        <div class="flex-1 flex flex-col md:flex-row overflow-hidden min-h-0">
+        <!-- ESTANTE A PANTALLA COMPLETA: los niveles se reparten la altura -->
+        <div class="flex-1 min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar estante-wall p-3 sm:p-5">
 
-            <!-- IZQUIERDA: Modelo 3D -->
-            <div class="h-[36vh] sm:h-[42vh] md:h-auto md:w-1/2 border-b-2 md:border-b-0 md:border-r-2 border-black flex flex-col overflow-hidden bg-gradient-to-br from-gray-100 to-gray-200 dark:from-slate-800 dark:to-slate-900">
+            <!-- Estante vacío -->
+            <div *ngIf="!r.niveles.length" class="min-h-full flex flex-col items-center justify-center text-center py-12">
+                <mat-icon class="!text-6xl text-gray-300">layers_clear</mat-icon>
+                <p class="text-sm font-black uppercase text-gray-500 mt-3">Estante Vacío</p>
+                <button (click)="nuevoNivel(r, $event)"
+                        class="mt-5 px-4 py-2 bg-amber-400 text-black font-black text-[10px] border-2 border-black rounded-lg shadow-[2px_2px_0px_0px_#000] hover:translate-y-[1px] hover:shadow-none transition-all uppercase inline-flex items-center gap-1.5">
+                    <mat-icon class="!text-base text-black">add</mat-icon>
+                    Agregar el primer nivel
+                </button>
+            </div>
 
-                <div class="px-3 sm:px-5 py-2 border-b-2 border-black bg-white dark:bg-slate-800 flex items-center justify-between shrink-0 gap-2 min-h-[44px] sm:min-h-[56px]">
-                    <div class="min-w-0 flex-1">
-                        <p class="font-mono text-[11px] sm:text-[13px] font-black text-black dark:text-white truncate">Vista del Estante</p>
-                        <p class="text-[9px] sm:text-[10px] font-bold text-gray-500 uppercase mt-0.5 hidden sm:block">Selecciona un nivel para filtrar</p>
+            <div *ngIf="r.niveles.length" class="min-h-full flex items-stretch justify-center gap-5 xl:gap-8">
+
+                <!-- Panel lateral de información (pantallas grandes) -->
+                <aside class="hidden lg:flex w-64 xl:w-72 shrink-0 flex-col justify-center gap-3">
+                    <div class="bg-white dark:bg-slate-800 border-2 border-black rounded-xl shadow-[4px_4px_0px_0px_#000] p-4">
+                        <div class="flex items-center justify-between gap-2">
+                            <p class="text-[9px] font-black uppercase tracking-wider text-gray-500">Estante</p>
+                            <span class="px-2 py-0.5 text-[8px] font-black uppercase border-2 border-black rounded shadow-[1px_1px_0px_0px_#000]"
+                                  [ngClass]="r.activo ? 'bg-green-600 text-white' : 'bg-[#FF1414FF] text-white'">
+                                {{ r.activo ? 'Activo' : 'Inactivo' }}
+                            </span>
+                        </div>
+                        <h3 class="text-lg font-black text-black dark:text-white leading-tight mt-1.5">{{ r.nombre }}</h3>
+                        <p class="font-mono text-[9px] font-black mt-2 px-2 py-1 bg-gray-100 dark:bg-slate-700 border border-black rounded inline-block text-black dark:text-white break-all">{{ r.codigo }}</p>
+                        <p class="text-[11px] font-bold text-gray-500 mt-3 leading-snug">{{ r.descripcion || 'Sin descripción' }}</p>
                     </div>
-                    <div class="flex items-center gap-1.5 sm:gap-2 shrink-0">
-                        <button (click)="cargarEstantes()" matTooltip="Recargar datos del estante"
-                                class="w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center bg-gray-100 dark:bg-slate-700 border-2 border-black rounded-lg shadow-[2px_2px_0px_0px_#000] hover:translate-y-[1px] hover:shadow-none transition-all">
-                            <mat-icon class="!text-black dark:text-white !text-base">refresh</mat-icon>
-                        </button>
-                        <button (click)="nuevoNivel(r, $event)" matTooltip="Agregar nuevo nivel"
-                                class="px-2 sm:px-3 py-1.5 flex items-center gap-1 sm:gap-1.5 bg-amber-400 font-black text-[10px] uppercase border-2 border-black rounded-lg shadow-[2px_2px_0px_0px_#000] hover:translate-y-[1px] hover:shadow-none transition-all text-black">
-                            <mat-icon class="!text-black !text-sm">add</mat-icon>
-                            <span class="hidden sm:inline">Nivel</span>
-                        </button>
-                    </div>
-                </div>
 
-                <div class="flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar p-4 sm:p-6 estante-3d flex flex-col items-center justify-center">
-
-                    <div *ngIf="!r.niveles.length" class="text-center py-12">
-                        <mat-icon class="!text-5xl text-gray-300">layers_clear</mat-icon>
-                        <p class="text-xs font-bold uppercase text-gray-500 mt-2">Estante Vacío</p>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div class="bg-amber-400 border-2 border-black rounded-xl shadow-[4px_4px_0px_0px_#000] p-3 text-center">
+                            <p class="text-2xl font-black text-black leading-none">{{ r.niveles.length }}</p>
+                            <p class="text-[9px] font-black uppercase text-black/70 mt-1.5">Niveles</p>
+                        </div>
+                        <div class="bg-[#0F172AFF] border-2 border-black rounded-xl shadow-[4px_4px_0px_0px_#000] p-3 text-center">
+                            <p class="text-2xl font-black text-amber-400 leading-none">{{ contarHerramientas(r) }}</p>
+                            <p class="text-[9px] font-black uppercase text-gray-300 mt-1.5">Herramientas</p>
+                        </div>
                     </div>
 
-                    <div *ngIf="r.niveles.length" class="estante-3d-inner w-full max-w-[380px] sm:max-w-[400px] flex">
+                    <div class="border-2 border-dashed border-gray-400 dark:border-gray-600 rounded-xl p-3 flex items-start gap-2 bg-white/50 dark:bg-slate-800/50">
+                        <mat-icon class="!text-base text-amber-500 shrink-0">touch_app</mat-icon>
+                        <p class="text-[10px] font-bold text-gray-500 leading-snug">Haz clic en un nivel del estante para ver y gestionar sus herramientas.</p>
+                    </div>
+                </aside>
 
-                        <!-- Pata Izquierda -->
-                        <div class="w-4 sm:w-5 bg-gray-800 border-2 border-black rounded-t-sm shadow-[inset_-4px_0_0_rgba(0,0,0,0.5)] z-0 relative">
-                            <div class="absolute inset-0 flex flex-col gap-2 p-1.5 opacity-20">
-                                <div class="w-full h-1 bg-black rounded-full" *ngFor="let _ of [].constructor(15)"></div>
-                            </div>
+                <!-- Estante (proporción vertical, angosto) -->
+                <div class="estante-3d flex flex-col w-full max-w-[440px] sm:max-w-[470px] min-w-0">
+                    <div class="estante-3d-inner flex flex-1 min-h-0 w-full">
+
+                    <!-- Pata Izquierda -->
+                    <div class="w-4 sm:w-5 bg-gray-800 border-2 border-black rounded-t-sm shadow-[inset_-4px_0_0_rgba(0,0,0,0.5)] z-0 relative">
+                        <div class="absolute inset-0 flex flex-col gap-2 p-1.5 opacity-20">
+                            <div class="w-full h-1 bg-black rounded-full" *ngFor="let _ of [].constructor(15)"></div>
+                        </div>
+                    </div>
+
+                    <!-- Estructura Central -->
+                    <div class="flex-1 flex flex-col py-2.5 z-20 min-h-0">
+
+                        <!-- Placa identificadora -->
+                        <div class="shrink-0 self-center z-40 -mb-2 px-3 py-1 bg-amber-400 border-2 border-black rounded shadow-[2px_2px_0px_0px_#000]">
+                            <span class="text-[9px] font-black uppercase tracking-wider text-black">{{ r.nombre }}</span>
                         </div>
 
-                        <!-- Estructura Central -->
-                        <div class="flex-1 flex flex-col gap-0 py-3 z-20">
+                        <!-- Techo Superior -->
+                        <div class="h-3.5 shrink-0 bg-gradient-to-b from-amber-600 to-amber-800 border-2 border-black shadow-[0_4px_0px_0px_rgba(0,0,0,1)] rounded-sm -mx-2 z-30 mb-3"></div>
 
-                            <!-- Techo Superior -->
-                            <div class="h-4 bg-gradient-to-b from-amber-600 to-amber-800 border-2 border-black shadow-[0_5px_0px_0px_rgba(0,0,0,1)] rounded-sm -mx-2 z-30 mb-5"></div>
+                        <!-- NIVELES REGULARES: cada uno es una repisa clicable -->
+                        <ng-container *ngFor="let l of r.niveles">
+                            <div *ngIf="!l.isFloor" class="flex-1 min-h-[46px] flex flex-col relative z-20 group/nivel">
 
-                            <!-- NIVELES REGULARES + REPISAS -->
+                                <div (click)="abrirNivel(r, l)"
+                                     matTooltip="Ver herramientas del nivel"
+                                     class="nivel-3d flex-1 min-h-0 bg-gradient-to-b from-amber-100 to-amber-200 dark:from-amber-900/40 dark:to-amber-900/20 hover:from-amber-200 hover:to-amber-300 border-2 border-black rounded cursor-pointer flex items-stretch overflow-hidden mx-1 shadow-[0_3px_0px_0px_rgba(0,0,0,1)] transition-all">
+
+                                    <div class="w-9 sm:w-12 bg-[#0F172AFF] flex items-center justify-center border-r-2 border-black shrink-0">
+                                        <span class="text-amber-400 font-black text-xs sm:text-sm">N{{ l.numero }}</span>
+                                    </div>
+                                    <div class="flex-1 min-w-0 px-2 sm:px-3 flex items-center">
+                                        <p class="text-[10px] sm:text-[11px] font-bold truncate text-black dark:text-white">{{ l.nombre }}</p>
+                                    </div>
+                                    <div class="flex items-center gap-1 sm:gap-1.5 px-1.5 sm:px-2 shrink-0">
+                                        <span class="px-1.5 py-0.5 text-[9px] sm:text-[10px] font-black border border-black rounded bg-white text-black flex items-center gap-1"
+                                              matTooltip="Herramientas en este nivel">
+                                            <mat-icon class="!text-[12px] !w-3 !h-3 text-black">handyman</mat-icon>{{ l.tools?.length || 0 }}
+                                        </span>
+                                        <button (click)="editarNivel(r, l, $event)" matTooltip="Editar Nivel"
+                                                class="w-6 h-6 sm:w-7 sm:h-7 flex justify-center items-center bg-amber-400 border-2 border-black rounded shadow-[1px_1px_0px_0px_#000] hover:scale-105">
+                                            <mat-icon class="!text-[13px] !w-[13px] !h-[13px] text-black">edit</mat-icon>
+                                        </button>
+                                        <button (click)="eliminarNivel(r, l, $event)" matTooltip="Eliminar Nivel"
+                                                class="w-6 h-6 sm:w-7 sm:h-7 flex justify-center items-center bg-[#FF1414FF] border-2 border-black rounded shadow-[1px_1px_0px_0px_#000] hover:scale-105">
+                                            <mat-icon class="!text-[13px] !w-[13px] !h-[13px] text-white">delete</mat-icon>
+                                        </button>
+                                        <mat-icon class="!text-base text-black/30 dark:text-white/30 group-hover/nivel:text-black dark:group-hover/nivel:text-white transition-colors hidden sm:block">open_in_full</mat-icon>
+                                    </div>
+                                </div>
+
+                                <!-- Viga / Repisa Metálica debajo del nivel -->
+                                <div class="h-2.5 shrink-0 bg-gradient-to-b from-amber-700 to-amber-900 border-2 border-black shadow-[0_3px_0px_0px_rgba(0,0,0,1)] rounded-sm -mx-2 mt-1 mb-2 z-10 transition-colors group-hover/nivel:from-amber-600 group-hover/nivel:to-amber-800"></div>
+                            </div>
+                        </ng-container>
+
+                        <!-- SEPARADOR Y NIVELES PISO -->
+                        <ng-container *ngIf="tieneSuelo(r)">
+
+                            <div class="shrink-0 w-full flex items-center justify-center my-1.5 relative z-0 px-2">
+                                <div class="absolute w-full border-t-[3px] border-dashed border-stone-400 dark:border-stone-600"></div>
+                                <div class="relative bg-stone-200 dark:bg-stone-800 px-3 py-1 border-[2px] border-stone-500 dark:border-stone-400 rounded-full shadow-[2px_2px_0px_0px_rgba(120,113,108,1)] flex items-center gap-2">
+                                    <mat-icon class="!text-[12px] !w-3 !h-3 text-stone-700 dark:text-stone-300">south</mat-icon>
+                                    <span class="text-[8px] sm:text-[9px] font-black uppercase text-stone-700 dark:text-stone-300 tracking-[0.2em]">Suelo de Almacén</span>
+                                    <mat-icon class="!text-[12px] !w-3 !h-3 text-stone-700 dark:text-stone-300">south</mat-icon>
+                                </div>
+                            </div>
+
                             <ng-container *ngFor="let l of r.niveles">
-                                <div *ngIf="!l.isFloor" class="flex flex-col relative z-20 mb-5 group/nivel">
+                                <div *ngIf="l.isFloor" class="flex-1 min-h-[46px] max-h-[72px] flex flex-col relative z-20 group/piso">
 
-                                    <!-- Tarjeta del Nivel -->
-                                    <div (click)="seleccionarNivel(l)"
-                                         [ngClass]="[
-                                            nivelClass(l),
-                                            nivelActivoId() === l.id
-                                                ? 'bg-amber-300 border-black ring-4 ring-amber-400/50 shadow-[0_8px_0px_0px_rgba(0,0,0,1)]'
-                                                : 'bg-gradient-to-b from-amber-100 to-amber-200 dark:from-amber-900/40 dark:to-amber-900/20 border-black hover:from-amber-200 hover:to-amber-300 shadow-[0_4px_0px_0px_rgba(0,0,0,1)]'
-                                         ]"
-                                         class="nivel-3d border-2 rounded cursor-pointer flex items-stretch overflow-hidden mx-1 mb-1.5 relative z-20">
+                                    <div (click)="abrirNivel(r, l)"
+                                         matTooltip="Ver herramientas del nivel suelo"
+                                         class="nivel-3d flex-1 min-h-0 border-2 border-dashed border-stone-500 rounded cursor-pointer flex items-stretch overflow-hidden mx-1 bg-gradient-to-b from-stone-200 to-stone-300 dark:from-stone-700 dark:to-stone-800 shadow-[0_3px_0px_0px_rgba(0,0,0,1)] hover:brightness-105 transition-all">
 
-                                        <div class="w-10 sm:w-12 bg-[#0F172AFF] flex items-center justify-center border-r-2 border-black shrink-0">
-                                            <span class="text-amber-400 font-black text-sm sm:text-base">N{{ l.numero }}</span>
+                                        <div class="w-9 sm:w-12 bg-stone-700 dark:bg-stone-900 flex items-center justify-center border-r-2 border-stone-500 shrink-0">
+                                            <mat-icon class="text-amber-400 !text-lg">foundation</mat-icon>
                                         </div>
-                                        <div class="flex-1 px-2 sm:px-3 py-2 min-w-0">
-                                            <div class="flex items-center justify-between gap-2">
-                                                <p class="font-mono text-[10px] sm:text-[11px] font-black truncate text-black dark:text-white">{{ l.codigo }}</p>
-                                                <span class="px-1.5 py-0.5 text-[10px] font-black uppercase border border-black rounded bg-white text-black flex items-center gap-1 shrink-0">
-                                                    <mat-icon class="!text-[12px] text-black !w-3 !h-3">handyman</mat-icon> {{ (l.tools?.length || 0) }}
-                                                </span>
-                                            </div>
-                                            <p class="text-[11px] font-bold truncate text-black dark:text-white mt-0.5">{{ l.nombre }}</p>
+                                        <div class="flex-1 min-w-0 px-2 sm:px-3 flex items-center gap-2 sm:gap-3">
+                                            <p class="font-black text-[10px] sm:text-[11px] uppercase text-stone-700 dark:text-stone-200 shrink-0">Nivel Suelo</p>
+                                            <p class="text-[10px] sm:text-[11px] font-bold text-stone-500 dark:text-stone-400 truncate hidden sm:block">{{ l.descripcion || 'Posición de suelo' }}</p>
                                         </div>
-                                        <div class="flex items-center gap-1 sm:gap-1.5 px-1.5 sm:px-2 border-l-2 border-black bg-white/40 dark:bg-black/20 shrink-0">
-                                            <button (click)="editarNivel(r, l, $event)" matTooltip="Editar Nivel" class="w-6 h-6 sm:w-7 sm:h-7 flex justify-center items-center bg-amber-400 border-2 border-black rounded shadow-[1px_1px_0px_0px_#000] hover:scale-105">
+                                        <div class="flex items-center gap-1 sm:gap-1.5 px-1.5 sm:px-2 shrink-0">
+                                            <span class="px-1.5 py-0.5 text-[9px] sm:text-[10px] font-black border border-stone-500 rounded bg-white text-black flex items-center gap-1"
+                                                  matTooltip="Herramientas en este nivel">
+                                                <mat-icon class="!text-[12px] !w-3 !h-3 text-black">handyman</mat-icon>{{ l.tools?.length || 0 }}
+                                            </span>
+                                            <button (click)="editarNivel(r, l, $event)" matTooltip="Editar Nivel Suelo"
+                                                    class="w-6 h-6 sm:w-7 sm:h-7 flex justify-center items-center bg-amber-400 border-2 border-black rounded shadow-[1px_1px_0px_0px_#000] hover:scale-105">
                                                 <mat-icon class="!text-[13px] !w-[13px] !h-[13px] text-black">edit</mat-icon>
                                             </button>
-                                            <button (click)="eliminarNivel(r, l, $event)" matTooltip="Eliminar Nivel" class="w-6 h-6 sm:w-7 sm:h-7 flex justify-center items-center bg-[#FF1414FF] border-2 border-black rounded shadow-[1px_1px_0px_0px_#000] hover:scale-105">
+                                            <button (click)="eliminarNivel(r, l, $event)" matTooltip="Eliminar Nivel Suelo"
+                                                    class="w-6 h-6 sm:w-7 sm:h-7 flex justify-center items-center bg-[#FF1414FF] border-2 border-black rounded shadow-[1px_1px_0px_0px_#000] hover:scale-105">
                                                 <mat-icon class="!text-[13px] !w-[13px] !h-[13px] text-white">delete</mat-icon>
                                             </button>
+                                            <mat-icon class="!text-base text-stone-500/50 dark:text-stone-300/40 group-hover/piso:text-stone-700 dark:group-hover/piso:text-stone-200 transition-colors hidden sm:block">open_in_full</mat-icon>
                                         </div>
                                     </div>
 
-                                    <!-- Viga / Repisa Metálica debajo del nivel -->
-                                    <div class="h-3.5 bg-gradient-to-b from-amber-700 to-amber-900 border-2 border-black shadow-[0_4px_0px_0px_rgba(0,0,0,1)] rounded-sm -mx-2 z-10 transition-colors group-hover/nivel:from-amber-600 group-hover/nivel:to-amber-800"></div>
+                                    <!-- Base de Concreto -->
+                                    <div class="h-3 shrink-0 bg-gradient-to-b from-stone-400 to-stone-600 border-2 border-black shadow-[0_3px_0px_0px_rgba(0,0,0,1)] rounded-sm -mx-3 mt-1 z-10 transition-colors group-hover/piso:from-stone-300 group-hover/piso:to-stone-500"></div>
                                 </div>
                             </ng-container>
+                        </ng-container>
+                    </div>
 
-                            <!-- SEPARADOR Y NIVELES PISO -->
-                            <ng-container *ngIf="tieneSuelo(r)">
-
-                                <div class="w-full flex items-center justify-center mt-1 mb-6 relative z-0 px-2">
-                                    <div class="absolute w-full border-t-[3px] border-dashed border-stone-400 dark:border-stone-600"></div>
-                                    <div class="relative bg-stone-200 dark:bg-stone-800 px-3 sm:px-4 py-1.5 border-[2px] border-stone-500 dark:border-stone-400 rounded-full shadow-[3px_3px_0px_0px_rgba(120,113,108,1)] flex items-center gap-2">
-                                        <mat-icon class="!text-[14px] text-stone-700 dark:text-stone-300">south</mat-icon>
-                                        <span class="text-[9px] sm:text-[10px] font-black uppercase text-stone-700 dark:text-stone-300 tracking-[0.2em]">Suelo de Almacén</span>
-                                        <mat-icon class="!text-[14px] text-stone-700 dark:text-stone-300">south</mat-icon>
-                                    </div>
-                                </div>
-
-                                <ng-container *ngFor="let l of r.niveles">
-                                    <div *ngIf="l.isFloor" class="flex flex-col relative z-20 mb-2 group/piso">
-
-                                        <!-- Tarjeta Nivel Piso -->
-                                        <div (click)="seleccionarNivel(l)"
-                                             [ngClass]="nivelActivoId() === l.id
-                                                 ? 'ring-4 ring-amber-400/50 shadow-[0_8px_0px_0px_rgba(0,0,0,1)]'
-                                                 : 'shadow-[0_4px_0px_0px_rgba(0,0,0,1)] hover:brightness-105'"
-                                             class="nivel-3d border-2 border-dashed border-stone-500 rounded cursor-pointer flex items-stretch overflow-hidden mx-1 mb-1.5 relative z-20 bg-gradient-to-b from-stone-200 to-stone-300 dark:from-stone-700 dark:to-stone-800">
-
-                                            <div class="w-10 sm:w-12 bg-stone-700 dark:bg-stone-900 flex items-center justify-center border-r-2 border-stone-500 shrink-0">
-                                                <mat-icon class="text-amber-400 !text-xl">foundation</mat-icon>
-                                            </div>
-                                            <div class="flex-1 px-2 sm:px-3 py-2 min-w-0">
-                                                <div class="flex items-center justify-between gap-2">
-                                                    <p class="font-black text-[10px] sm:text-[11px] uppercase text-stone-700 dark:text-stone-200">Nivel Suelo</p>
-                                                    <span class="px-1.5 py-0.5 text-[10px] font-black uppercase border border-stone-500 rounded bg-white text-black flex items-center gap-1 shrink-0">
-                                                        <mat-icon class="!text-[12px] text-black !w-3 !h-3">handyman</mat-icon> {{ (l.tools?.length || 0) }}
-                                                    </span>
-                                                </div>
-                                                <p class="text-[10px] sm:text-[11px] font-bold text-stone-500 dark:text-stone-400 mt-0.5">{{ l.descripcion || 'Posición de suelo' }}</p>
-                                            </div>
-                                            <div class="flex items-center gap-1 sm:gap-1.5 px-1.5 sm:px-2 border-l-2 border-stone-500 bg-white/40 dark:bg-black/20 shrink-0">
-                                                <button (click)="editarNivel(r, l, $event)" matTooltip="Editar Nivel Suelo" class="w-6 h-6 sm:w-7 sm:h-7 flex justify-center items-center bg-amber-400 border-2 border-black rounded shadow-[1px_1px_0px_0px_#000] hover:scale-105">
-                                                    <mat-icon class="!text-[13px] !w-[13px] !h-[13px] text-black">edit</mat-icon>
-                                                </button>
-                                                <button (click)="eliminarNivel(r, l, $event)" matTooltip="Eliminar Nivel Suelo" class="w-6 h-6 sm:w-7 sm:h-7 flex justify-center items-center bg-[#FF1414FF] border-2 border-black rounded shadow-[1px_1px_0px_0px_#000] hover:scale-105">
-                                                    <mat-icon class="!text-[13px] !w-[13px] !h-[13px] text-white">delete</mat-icon>
-                                                </button>
-                                            </div>
-                                        </div>
-
-                                        <!-- Base de Concreto -->
-                                        <div class="h-4 bg-gradient-to-b from-stone-400 to-stone-600 border-2 border-black shadow-[0_4px_0px_0px_rgba(0,0,0,1)] rounded-sm -mx-3 z-10 transition-colors group-hover/piso:from-stone-300 group-hover/piso:to-stone-500"></div>
-                                    </div>
-                                </ng-container>
-                            </ng-container>
-                        </div>
-
-                        <!-- Pata Derecha -->
-                        <div class="w-4 sm:w-5 bg-gray-800 border-2 border-black rounded-t-sm shadow-[inset_4px_0_0_rgba(255,255,255,0.15)] z-0 relative">
-                            <div class="absolute inset-0 flex flex-col gap-2 p-1.5 opacity-20">
-                                <div class="w-full h-1 bg-black rounded-full" *ngFor="let _ of [].constructor(15)"></div>
-                            </div>
+                    <!-- Pata Derecha -->
+                    <div class="w-4 sm:w-5 bg-gray-800 border-2 border-black rounded-t-sm shadow-[inset_4px_0_0_rgba(255,255,255,0.15)] z-0 relative">
+                        <div class="absolute inset-0 flex flex-col gap-2 p-1.5 opacity-20">
+                            <div class="w-full h-1 bg-black rounded-full" *ngFor="let _ of [].constructor(15)"></div>
                         </div>
                     </div>
+                    </div>
+
+                    <!-- Sombra al piso -->
+                    <div class="h-2.5 mx-3 mt-1.5 rounded-[50%] bg-black/25 dark:bg-black/60 blur-[3px] shrink-0"></div>
                 </div>
             </div>
+        </div>
 
-            <!-- DERECHA: Listado de Herramientas -->
-            <div class="flex-1 min-h-[240px] sm:min-h-[280px] md:min-h-0 md:w-1/2 flex flex-col overflow-hidden bg-gray-100 dark:bg-slate-900">
-
-                <div class="px-3 sm:px-5 py-2 border-b-2 border-black bg-white dark:bg-slate-800 shrink-0 flex flex-wrap items-center justify-between gap-2 z-10 shadow-sm min-h-[44px] sm:min-h-[56px]">
-                    <div class="min-w-0 flex-1">
-                        <p class="text-[9px] sm:text-[10px] font-black uppercase text-gray-500">Filtrando en</p>
-                        <p class="text-[12px] sm:text-[15px] leading-tight font-black uppercase text-black dark:text-white mt-0.5 truncate">
-                            <ng-container *ngIf="nivelActivo as n; else todoEstante">
-                                {{ n.isFloor ? 'Nivel Suelo' : 'Nivel ' + n.numero }} · <span class="text-blue-600">{{ n.nombre }}</span>
-                            </ng-container>
-                            <ng-template #todoEstante>Todo el Estante</ng-template>
-                        </p>
-                    </div>
-                    <div class="flex items-center gap-2 shrink-0">
-                        <div class="relative w-28 sm:w-40 md:w-36 lg:w-48">
-                            <input type="text" [formControl]="toolSearchControl" placeholder="Buscar..."
-                                   class="w-full h-8 sm:h-9 pl-7 sm:pl-8 pr-2 bg-white dark:bg-slate-900 text-black dark:text-white border-2 border-black rounded-lg font-bold text-[10px] sm:text-[11px] focus:outline-none focus:shadow-[2px_2px_0px_0px_#000] transition-all">
-                            <mat-icon class="absolute left-1.5 sm:left-2 top-[7px] sm:top-2 text-black dark:text-white !text-base">search</mat-icon>
-                        </div>
-                        <button (click)="agregarHerramienta()" [disabled]="!canAdd()"
-                                matTooltip="Selecciona un nivel para agregar"
-                                [matTooltipDisabled]="canAdd()"
-                                class="px-2 sm:px-3 py-2 bg-amber-400 text-black font-black text-[10px] border-2 border-black rounded-lg shadow-[2px_2px_0px_0px_#000] hover:translate-y-[1px] hover:shadow-none transition-all uppercase flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed">
-                            <mat-icon class="!text-sm text-black">add</mat-icon>
-                            <span class="hidden sm:inline">Agregar</span>
-                        </button>
-                    </div>
-                </div>
-
-                <div class="flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar p-3 sm:p-5">
-                    <div class="flex flex-col gap-2 sm:gap-3">
-
-                        <div *ngFor="let t of herramientasVisibles"
-                             class="group relative bg-white dark:bg-slate-800 border-2 border-black rounded-xl p-2 sm:p-3 shadow-[3px_3px_0px_0px_#000] hover:-translate-y-[1px] hover:shadow-[4px_4px_0px_0px_#000] transition-all flex items-center gap-2">
-
-                            <div class="w-8 h-8 sm:w-10 sm:h-10 shrink-0 bg-[#0F172AFF] text-amber-400 border-2 border-black rounded-lg flex items-center justify-center font-black text-[10px] sm:text-sm shadow-[2px_2px_0px_0px_#000]">
-                                <ng-container *ngIf="t.levelNumero !== undefined && t.levelNumero !== null; else floorIcon">
-                                    N{{ t.levelNumero }}
-                                </ng-container>
-                                <ng-template #floorIcon>
-                                    <mat-icon class="!text-base sm:!text-[20px]">foundation</mat-icon>
-                                </ng-template>
-                            </div>
-
-                            <div class="flex-1 min-w-0">
-                                <div class="flex items-center gap-1 sm:gap-2 mb-0.5 flex-wrap">
-                                    <span class="font-mono text-[8px] sm:text-[9px] font-black px-1 sm:px-1.5 py-0.5 bg-gray-200 dark:bg-slate-700 border border-black rounded text-black dark:text-white">
-                                        {{ t.codigo }}
-                                    </span>
-                                    <span [ngClass]="[estadoBadge(t.estado).bg, estadoBadge(t.estado).tx]" class="px-1 sm:px-1.5 py-0.5 text-[7px] sm:text-[8px] font-black uppercase border border-black rounded hidden sm:inline">
-                                        {{ t.estado }}
-                                    </span>
-                                </div>
-                                <p class="font-black text-[10px] sm:text-[12px] leading-tight text-black dark:text-white truncate mt-0.5">{{ t.nombre }}</p>
-                                <p class="text-[9px] sm:text-[10px] font-bold text-gray-500 truncate mt-0.5 hidden sm:block">
-                                    PN: <span class="text-gray-700 dark:text-gray-300">{{ t.pn }}</span>
-                                    <span *ngIf="t.sn"> | SN: <span class="text-gray-700 dark:text-gray-300">{{ t.sn }}</span></span>
-                                    <span *ngIf="t.marca"> | <span class="text-gray-700 dark:text-gray-300">{{ t.marca }}</span></span>
-                                </p>
-                            </div>
-
-                            <div class="text-right shrink-0 px-2 sm:px-3 border-r-2 border-gray-200 dark:border-slate-700">
-                                <p class="text-sm sm:text-lg font-black text-black dark:text-white leading-none">{{ t.cantidad }}</p>
-                                <p class="text-[7px] sm:text-[8px] font-bold text-gray-500 uppercase mt-0.5">{{ t.um }}</p>
-                            </div>
-
-                            <div class="flex items-center justify-center gap-1 shrink-0">
-                                <button (click)="editarHerramientaInline(t, $event)" matTooltip="Editar" class="w-6 h-6 sm:w-7 sm:h-7 flex items-center justify-center bg-amber-400 border-2 border-black rounded shadow-[2px_2px_0px_0px_#000] hover:translate-y-[1px] hover:shadow-none transition-all">
-                                    <mat-icon class="!text-[12px] sm:!text-[14px] text-black">edit</mat-icon>
-                                </button>
-                                <button (click)="moverHerramientaInline(t, $event)" matTooltip="Mover" class="w-6 h-6 sm:w-7 sm:h-7 flex items-center justify-center bg-blue-500 border-2 border-black rounded shadow-[2px_2px_0px_0px_#000] hover:translate-y-[1px] hover:shadow-none transition-all">
-                                    <mat-icon class="!text-[12px] sm:!text-[14px] text-white">swap_horiz</mat-icon>
-                                </button>
-                                <button (click)="quitarHerramientaInline(t, $event)" matTooltip="Quitar del nivel" class="w-6 h-6 sm:w-7 sm:h-7 flex items-center justify-center bg-[#FF1414FF] border-2 border-black rounded shadow-[2px_2px_0px_0px_#000] hover:translate-y-[1px] hover:shadow-none transition-all">
-                                    <mat-icon class="!text-[12px] sm:!text-[14px] text-white">remove_circle</mat-icon>
-                                </button>
-                            </div>
-                        </div>
-
-                        <div *ngIf="!herramientasVisibles.length" class="text-center py-10 sm:py-12 bg-white dark:bg-slate-800 border-2 border-dashed border-gray-400 dark:border-gray-600 rounded-xl">
-                            <mat-icon class="!text-5xl text-gray-300 dark:text-gray-600">handyman</mat-icon>
-                            <p class="text-xs font-black uppercase text-gray-500 mt-3">
-                                {{ canAdd() ? 'Nivel sin herramientas' : 'Selecciona un nivel o busca algo' }}
-                            </p>
-                        </div>
-                    </div>
-                </div>
-            </div>
+        <!-- Hint inferior (en pantallas grandes lo muestra el panel lateral) -->
+        <div class="lg:hidden shrink-0 px-3 sm:px-5 py-1.5 bg-white dark:bg-slate-800 border-t-2 border-black flex items-center justify-center gap-1.5">
+            <mat-icon class="!text-[14px] !w-3.5 !h-3.5 text-amber-500">touch_app</mat-icon>
+            <span class="text-[9px] sm:text-[10px] font-black uppercase text-gray-500">Haz clic en un nivel para ver y gestionar sus herramientas</span>
         </div>
     </ng-container>
 

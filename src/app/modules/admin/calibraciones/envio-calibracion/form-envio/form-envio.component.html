@@ -13,14 +13,14 @@
         </div>
     </div>
 
-    <!-- CUERPO -->
-    <div class="flex flex-col md:flex-row flex-1 overflow-hidden min-h-0 p-2 gap-2">
+    <!-- CUERPO (columna única: los items del lote viven en su miniventana) -->
+    <div class="flex-1 min-h-0 p-3">
 
-        <!-- ── PANEL IZQUIERDO: CAMPOS COMPARTIDOS ── -->
-        <div class="basis-[38%] shrink-0 flex flex-col bg-white dark:bg-slate-800 border-2 border-black rounded-xl overflow-y-auto custom-scrollbar"
+        <!-- ── CAMPOS COMPARTIDOS + BUSCADOR + BOTÓN LOTE ── -->
+        <div class="flex flex-col bg-white dark:bg-slate-800 border-2 border-black rounded-xl"
              style="box-shadow: 3px 3px 0 #000">
 
-            <div class="flex flex-col gap-4 p-4">
+            <div class="flex flex-col gap-3 p-4">
 
                 <h3 class="text-[9px] font-black uppercase text-stone-400 dark:text-slate-300 border-b-2 border-black pb-1.5 flex items-center gap-1.5">
                     <mat-icon class="!text-sm text-amber-500">settings</mat-icon> Datos Comunes de la Nota
@@ -46,32 +46,78 @@
                     </div>
                 </div>
 
-                <!-- FECHA ENVÍO -->
-                <div class="bg-white dark:bg-slate-800 border-2 border-stone-300 dark:border-slate-500 rounded-xl px-3 py-2 hover:border-stone-400 dark:hover:border-slate-400 transition-all duration-150">
-                    <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-300 leading-none block mb-1">Fecha Envío</label>
-                    <input type="date" [(ngModel)]="sendDate" [ngModelOptions]="{standalone:true}"
-                           class="w-full text-xs font-black bg-transparent text-black dark:text-white outline-none border-none cursor-pointer">
+                <!-- FECHA ENVÍO + SOLICITADO POR -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                        <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-300 mb-1.5 block">Fecha Envío</label>
+                        <div class="bg-white dark:bg-slate-800 border-2 border-stone-300 dark:border-slate-500 rounded-xl h-10 px-3 flex items-center hover:border-stone-400 dark:hover:border-slate-400 transition-all duration-150">
+                            <input type="date" [(ngModel)]="sendDate" [ngModelOptions]="{standalone:true}"
+                                   class="w-full text-xs font-black bg-transparent text-black dark:text-white outline-none border-none cursor-pointer">
+                        </div>
+                    </div>
+
+                    <!-- SOLICITADO POR -->
+                    <div class="relative">
+                        <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-300 mb-1.5 flex justify-between items-center">
+                            <span class="flex items-center gap-1">
+                                <mat-icon class="!text-[12px] text-amber-500">how_to_reg</mat-icon> Solicitado Por
+                            </span>
+                            <mat-spinner *ngIf="requestedByLoading" diameter="14"></mat-spinner>
+                        </label>
+                        <input type="text" [(ngModel)]="requestedByName" [ngModelOptions]="{standalone:true}"
+                               (input)="onReqInput($any($event.target).value)" (blur)="hideReqDropdown()"
+                               placeholder="Buscar funcionario..." autocomplete="off"
+                               class="w-full h-10 text-sm font-bold bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-500 rounded-xl px-3 outline-none transition-all duration-150 placeholder:text-stone-300 dark:placeholder:text-slate-500 hover:border-stone-400 dark:hover:border-slate-400 focus:border-black dark:focus:border-white focus:shadow-[3px_3px_0_#000] dark:focus:shadow-[3px_3px_0_#FFC501]">
+                        <div *ngIf="showRequestedByDropdown"
+                             class="absolute z-50 w-full mt-1 border-2 border-black dark:border-slate-500 rounded-xl bg-white dark:bg-slate-800 overflow-hidden shadow-[3px_3px_0_#000] dark:shadow-[3px_3px_0_#FFC501] divide-y divide-stone-100 dark:divide-slate-600">
+                            <div *ngFor="let f of requestedByFuncionarios" (mousedown)="selectReq(f)"
+                                 class="px-3 py-2.5 hover:bg-stone-50 dark:hover:bg-slate-700 cursor-pointer transition-colors dark:text-white">
+                                <div class="text-xs font-black text-black dark:text-white uppercase leading-tight">{{ f.nombre }}</div>
+                                <div class="text-[9px] font-bold text-stone-400 uppercase tracking-tighter">{{ f.cargo }}</div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
-                <!-- SOLICITADO POR -->
+                <!-- BUSCADOR HERRAMIENTA -->
                 <div class="relative">
-                    <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-300 mb-1.5 flex justify-between items-center">
-                        <span class="flex items-center gap-1">
-                            <mat-icon class="!text-[12px] text-amber-500">how_to_reg</mat-icon> Solicitado Por
-                        </span>
-                        <mat-spinner *ngIf="requestedByLoading" diameter="14"></mat-spinner>
+                    <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-300 mb-1.5 flex items-center gap-1">
+                        <mat-icon class="!text-[12px] text-amber-500">search</mat-icon> Añadir Herramienta al Lote
                     </label>
-                    <input type="text" [(ngModel)]="requestedByName" [ngModelOptions]="{standalone:true}"
-                           (input)="onReqInput($any($event.target).value)" (blur)="hideReqDropdown()"
-                           placeholder="Buscar funcionario..." autocomplete="off"
-                           class="w-full h-10 text-sm font-bold bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-500 rounded-xl px-3 outline-none transition-all duration-150 placeholder:text-stone-300 dark:placeholder:text-slate-500 hover:border-stone-400 dark:hover:border-slate-400 focus:border-black dark:focus:border-white focus:shadow-[3px_3px_0_#000] dark:focus:shadow-[3px_3px_0_#FFC501]">
-                    <div *ngIf="showRequestedByDropdown"
-                         class="absolute z-50 w-full mt-1 border-2 border-black dark:border-slate-500 rounded-xl bg-white dark:bg-slate-800 overflow-hidden shadow-[3px_3px_0_#000] dark:shadow-[3px_3px_0_#FFC501] divide-y divide-stone-100 dark:divide-slate-600">
-                        <div *ngFor="let f of requestedByFuncionarios" (mousedown)="selectReq(f)"
-                             class="px-3 py-2.5 hover:bg-stone-50 dark:hover:bg-slate-700 cursor-pointer transition-colors dark:text-white">
-                            <div class="text-xs font-black text-black dark:text-white uppercase leading-tight">{{ f.nombre }}</div>
-                            <div class="text-[9px] font-bold text-stone-400 uppercase tracking-tighter">{{ f.cargo }}</div>
+                    <div class="relative flex gap-2">
+                        <div class="relative flex-1 min-w-0">
+                            <input type="text" #scanInput
+                                   [(ngModel)]="barcodeValue" [ngModelOptions]="{standalone:true}"
+                                   (keydown.enter)="scanAndAdd()"
+                                   (input)="onToolInput($any($event.target).value)"
+                                   (blur)="hideToolDropdown()"
+                                   [disabled]="isScanning() || isProcessing()"
+                                   placeholder="Código o nombre..."
+                                   autocomplete="off"
+                                   class="w-full h-10 text-sm font-bold bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-500 rounded-xl px-3 outline-none transition-all duration-150 placeholder:text-stone-300 dark:placeholder:text-slate-500 hover:border-stone-400 dark:hover:border-slate-400 focus:border-black dark:focus:border-white focus:shadow-[3px_3px_0_#000] dark:focus:shadow-[3px_3px_0_#FFC501] disabled:opacity-50">
+                            <mat-spinner *ngIf="toolSearchLoading" diameter="16" class="absolute right-3 top-2.5"></mat-spinner>
+
+                            <div *ngIf="showToolDropdown"
+                                 class="absolute z-50 w-full mt-1 top-full left-0 border-2 border-black dark:border-slate-500 rounded-xl bg-white dark:bg-slate-800 overflow-hidden shadow-[3px_3px_0_#000] dark:shadow-[3px_3px_0_#FFC501] divide-y divide-stone-100 dark:divide-slate-600 max-h-48 overflow-y-auto custom-scrollbar">
+                                <div *ngFor="let tool of toolSuggestions" (mousedown)="selectToolSuggestion(tool)"
+                                     class="px-3 py-2.5 hover:bg-stone-50 dark:hover:bg-slate-700 cursor-pointer transition-colors dark:text-white">
+                                    <div class="flex items-center gap-2">
+                                        <span class="text-xs font-black text-black dark:text-white">{{ tool.code ?? tool.tool_code }}</span>
+                                        <span *ngIf="tool.sent_to_calibration === true || tool.sent_to_calibration === 't'"
+                                              class="text-[8px] font-black px-1.5 py-0.5 bg-amber-100 text-amber-800 border-2 border-amber-400 rounded uppercase">EN CALIB</span>
+                                    </div>
+                                    <div class="text-[10px] font-bold text-stone-400 truncate mt-0.5 uppercase">{{ tool.name ?? tool.tool_name }}</div>
+                                </div>
+                            </div>
                         </div>
+
+                        <button (click)="scanAndAdd()"
+                                [disabled]="isScanning() || !barcodeValue.trim() || isProcessing()"
+                                class="h-10 px-3 bg-amber-400 text-black font-black text-xs border-2 border-black rounded-xl shadow-[2px_2px_0_#000] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all flex items-center justify-center shrink-0 gap-1.5 disabled:opacity-50">
+                            <mat-spinner *ngIf="isScanning()" diameter="16"></mat-spinner>
+                            <mat-icon *ngIf="!isScanning()" class="!text-base text-black">add_circle</mat-icon>
+                            <span *ngIf="!isScanning()" class="hidden sm:inline">AGREGAR</span>
+                        </button>
                     </div>
                 </div>
 
@@ -84,209 +130,29 @@
                 </div>
             </div>
 
-            <!-- BUSCADOR HERRAMIENTA -->
-            <div class="border-t-2 border-dashed border-stone-300 dark:border-slate-600 mx-4 pt-4 pb-3 flex flex-col gap-2">
-                <h3 class="text-[9px] font-black uppercase text-stone-400 dark:text-slate-300 flex items-center gap-1.5 mb-1">
-                    <mat-icon class="!text-sm text-amber-500">search</mat-icon> Añadir Herramienta al Lote
-                </h3>
-
-                <div class="relative flex gap-2">
-                    <div class="relative flex-1 min-w-0">
-                        <input type="text" #scanInput
-                               [(ngModel)]="barcodeValue" [ngModelOptions]="{standalone:true}"
-                               (keydown.enter)="scanAndAdd()"
-                               (input)="onToolInput($any($event.target).value)"
-                               (blur)="hideToolDropdown()"
-                               [disabled]="isScanning() || isProcessing()"
-                               placeholder="Código o nombre..."
-                               autocomplete="off"
-                               class="w-full h-10 text-sm font-bold bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-500 rounded-xl px-3 outline-none transition-all duration-150 placeholder:text-stone-300 dark:placeholder:text-slate-500 hover:border-stone-400 dark:hover:border-slate-400 focus:border-black dark:focus:border-white focus:shadow-[3px_3px_0_#000] dark:focus:shadow-[3px_3px_0_#FFC501] disabled:opacity-50">
-                        <mat-spinner *ngIf="toolSearchLoading" diameter="16" class="absolute right-3 top-2.5"></mat-spinner>
-
-                        <div *ngIf="showToolDropdown"
-                             class="absolute z-50 w-full mt-1 top-full left-0 border-2 border-black dark:border-slate-500 rounded-xl bg-white dark:bg-slate-800 overflow-hidden shadow-[3px_3px_0_#000] dark:shadow-[3px_3px_0_#FFC501] divide-y divide-stone-100 dark:divide-slate-600 max-h-48 overflow-y-auto custom-scrollbar">
-                            <div *ngFor="let tool of toolSuggestions" (mousedown)="selectToolSuggestion(tool)"
-                                 class="px-3 py-2.5 hover:bg-stone-50 dark:hover:bg-slate-700 cursor-pointer transition-colors dark:text-white">
-                                <div class="flex items-center gap-2">
-                                    <span class="text-xs font-black text-black dark:text-white">{{ tool.code ?? tool.tool_code }}</span>
-                                    <span *ngIf="tool.sent_to_calibration === true || tool.sent_to_calibration === 't'"
-                                          class="text-[8px] font-black px-1.5 py-0.5 bg-amber-100 text-amber-800 border-2 border-amber-400 rounded uppercase">EN CALIB</span>
-                                </div>
-                                <div class="text-[10px] font-bold text-stone-400 truncate mt-0.5 uppercase">{{ tool.name ?? tool.tool_name }}</div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <button (click)="scanAndAdd()"
-                            [disabled]="isScanning() || !barcodeValue.trim() || isProcessing()"
-                            class="h-10 px-3 bg-amber-400 text-black font-black text-xs border-2 border-black rounded-xl shadow-[2px_2px_0_#000] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all flex items-center justify-center shrink-0 gap-1.5 disabled:opacity-50">
-                        <mat-spinner *ngIf="isScanning()" diameter="16"></mat-spinner>
-                        <mat-icon *ngIf="!isScanning()" class="!text-base text-black">add_circle</mat-icon>
-                        <span *ngIf="!isScanning()" class="hidden sm:inline">AGREGAR</span>
-                    </button>
-                </div>
+            <!-- ── BOTÓN: VER / CONFIGURAR LOTE (miniventana) ── -->
+            <div class="border-t-2 border-dashed border-stone-300 dark:border-slate-600 mx-4 pt-3 pb-4">
+                <button type="button" (click)="abrirLote()"
+                        class="w-full flex items-center justify-between gap-2 px-4 py-3 bg-[#0F172A] border-2 border-black rounded-xl shadow-[3px_3px_0_#000] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all group">
+                    <span class="flex items-center gap-2 text-[11px] font-black uppercase text-white tracking-widest">
+                        <mat-icon class="!text-base text-amber-400">list</mat-icon>
+                        Ver / Configurar Lote
+                    </span>
+                    <span class="flex items-center gap-2">
+                        <span *ngIf="getPendingWithoutLab() > 0"
+                              class="text-[9px] font-black text-amber-400 flex items-center gap-1">
+                            <mat-icon class="!text-sm">warning</mat-icon>
+                            {{ getPendingWithoutLab() }} sin lab
+                        </span>
+                        <span class="px-2 py-0.5 bg-amber-400 text-black border-2 border-black rounded font-mono text-[11px] font-black shadow-[1px_1px_0_#000]">
+                            {{ toolList.length }}
+                        </span>
+                        <mat-icon class="!text-sm text-white/50 group-hover:text-white transition-colors">open_in_new</mat-icon>
+                    </span>
+                </button>
             </div>
         </div>
 
-        <!-- ── PANEL DERECHO: LOTE CON CONFIG POR HERRAMIENTA ── -->
-        <div class="flex-1 min-h-0 flex flex-col bg-white dark:bg-slate-800 border-2 border-black rounded-xl overflow-hidden"
-             style="box-shadow: 3px 3px 0 #000">
-
-            <div class="flex items-center justify-between px-4 py-3 shrink-0 border-b-2 border-black bg-[#0F172A]">
-                <h3 class="text-[11px] font-black uppercase text-white flex items-center gap-2 tracking-widest">
-                    <mat-icon class="!text-sm text-amber-400">list</mat-icon>
-                    Lote a Enviar
-                    <span class="px-2 py-0.5 bg-amber-400 text-black border-2 border-black rounded font-mono text-[10px] shadow-[1px_1px_0_#000]">{{ toolList.length }}</span>
-                </h3>
-                <span *ngIf="getPendingWithoutLab() > 0"
-                      class="text-[9px] font-black text-amber-400 flex items-center gap-1">
-                    <mat-icon class="!text-sm">warning</mat-icon>
-                    {{ getPendingWithoutLab() }} sin lab
-                </span>
-            </div>
-
-            <!-- Listado Items -->
-            <div *ngIf="toolList.length > 0" class="flex-1 overflow-y-auto custom-scrollbar p-3 flex flex-col gap-3">
-
-                <div *ngFor="let item of toolList; let i = index"
-                     class="border-2 transition-all duration-150 rounded-sm"
-                     [ngClass]="{
-                         'border-stone-300 bg-stone-50 dark:bg-slate-800': item.status === 'pending',
-                         'border-amber-400 bg-amber-50 dark:bg-amber-900/20 animate-pulse': item.status === 'sending',
-                         'border-green-500 bg-green-50 dark:bg-green-900/20': item.status === 'done',
-                         'border-red-400 bg-red-50 dark:bg-red-900/20': item.status === 'error'
-                     }">
-
-                    <!-- Cabecera del item -->
-                    <div class="flex items-start gap-2 p-2.5">
-                        <div class="shrink-0 flex items-center justify-center w-6 h-6 rounded-full border-2 border-stone-300 dark:border-slate-500 bg-stone-100 dark:bg-slate-700 text-[10px] font-black text-stone-500 dark:text-slate-300 mt-0.5">
-                            {{ i + 1 }}
-                        </div>
-                        <div class="flex-1 min-w-0">
-                            <div class="flex items-center gap-2 mb-0.5 flex-wrap">
-                                <span class="font-black text-xs text-black dark:text-white font-mono">{{ item.tool.code ?? item.tool.tool_code }}</span>
-                                <span *ngIf="item.status === 'done'" class="text-[8px] font-black px-1.5 py-0.5 bg-green-500 text-white rounded uppercase">✓ REGISTRADO</span>
-                                <span *ngIf="item.status === 'error'" class="text-[8px] font-black px-1.5 py-0.5 bg-red-500 text-white rounded uppercase">✗ ERROR</span>
-                                <span *ngIf="item.status === 'sending'" class="text-[8px] font-black px-1.5 py-0.5 bg-amber-400 text-black border border-black rounded uppercase">ENVIANDO…</span>
-                            </div>
-                            <div class="text-[10px] font-bold text-stone-400 dark:text-slate-300 leading-tight truncate uppercase">{{ item.tool.name ?? item.tool.tool_name }}</div>
-                            <!-- Ubicación -->
-                            <div class="flex items-center flex-wrap gap-1 mt-1">
-                                <span *ngIf="item.tool.location"
-                                      class="flex items-center gap-0.5 px-1.5 py-0.5 border border-stone-200 dark:border-slate-600 rounded text-[8px] font-black text-stone-400 dark:text-slate-400 uppercase">
-                                    <mat-icon class="!text-[10px] w-3 h-3 leading-none">place</mat-icon> {{ item.tool.location }}
-                                </span>
-                                <span *ngIf="item.tool.shelf"
-                                      class="flex items-center gap-0.5 px-1.5 py-0.5 border border-stone-200 dark:border-slate-600 rounded text-[8px] font-black text-stone-400 dark:text-slate-400 uppercase">
-                                    <mat-icon class="!text-[10px] w-3 h-3 leading-none">shelves</mat-icon> {{ item.tool.shelf }}
-                                </span>
-                            </div>
-                        </div>
-                        <div class="flex items-center gap-1.5 shrink-0">
-                            <button (click)="viewToolPhoto(item, i)"
-                                    class="w-7 h-7 flex items-center justify-center bg-white dark:bg-slate-700 border-2 border-stone-300 dark:border-slate-500 rounded shadow-[1px_1px_0_#000] hover:border-black dark:hover:border-slate-300 hover:shadow-[2px_2px_0_#000] hover:-translate-y-px transition-all">
-                                <mat-icon class="!text-xs text-stone-500 dark:text-slate-300">photo_camera</mat-icon>
-                            </button>
-                            <button (click)="removeTool(i)" [disabled]="isProcessing()"
-                                    class="w-7 h-7 flex items-center justify-center bg-[#FF1414] text-white border-2 border-black rounded shadow-[2px_2px_0_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all disabled:opacity-40">
-                                <mat-icon class="!text-xs">close</mat-icon>
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- Config por herramienta (solo editable cuando pending/error) -->
-                    <div *ngIf="item.status === 'pending' || item.status === 'error'"
-                         class="border-t-2 border-dashed border-stone-200 dark:border-slate-600 mx-2.5 pt-2.5 pb-2.5 flex flex-col gap-2">
-
-                        <!-- Laboratorio -->
-                        <div class="flex items-center gap-2">
-                            <label class="text-[8px] font-black uppercase tracking-wider text-stone-400 w-16 shrink-0">Lab *</label>
-                            <select [(ngModel)]="item.supplierId" [ngModelOptions]="{standalone:true}"
-                                    (ngModelChange)="onItemLabChange(item, $event)"
-                                    class="flex-1 h-8 text-xs font-bold bg-white dark:bg-slate-800 dark:text-white border-2 rounded-lg px-2 outline-none transition-all duration-150"
-                                    [ngClass]="item.supplierId ? 'border-stone-300 dark:border-slate-500 focus:border-black dark:focus:border-white' : 'border-amber-400 focus:border-amber-500'">
-                                <option [ngValue]="null">-- Seleccionar laboratorio --</option>
-                                <option *ngFor="let lab of laboratories" [ngValue]="lab.id_laboratory">{{ lab.name }}</option>
-                            </select>
-                        </div>
-
-                        <!-- Tipo de trabajo -->
-                        <div class="flex items-center gap-2">
-                            <label class="text-[8px] font-black uppercase tracking-wider text-stone-400 w-16 shrink-0">Trabajo</label>
-                            <div class="flex gap-1 flex-1">
-                                <button *ngFor="let opt of workTypeOptions" type="button"
-                                        (click)="item.workType = opt.value"
-                                        class="flex-1 h-7 text-[8px] font-black border-2 rounded-lg transition-all duration-150"
-                                        [ngClass]="item.workType === opt.value
-                                            ? (opt.value === 'calibration_repair' ? 'bg-[#FF1414] text-white border-black shadow-[1px_1px_0_#000]' : 'bg-amber-400 text-black border-black shadow-[1px_1px_0_#000]')
-                                            : 'bg-white dark:bg-slate-700 border-stone-300 dark:border-slate-500 text-stone-400 dark:text-slate-300 hover:border-stone-400 dark:hover:border-slate-400'">
-                                    {{ opt.label }}
-                                </button>
-                            </div>
-                        </div>
-
-                        <!-- Retorno + Notas en grilla -->
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                            <div class="flex flex-col gap-1">
-                                <label class="text-[8px] font-black uppercase tracking-wider text-stone-400">Retorno Est.</label>
-                                <input type="date" [(ngModel)]="item.expectedReturnDate" [ngModelOptions]="{standalone:true}"
-                                       class="h-8 text-xs font-black bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-500 rounded-lg px-2 outline-none focus:border-black dark:focus:border-white cursor-pointer">
-                            </div>
-                            <div class="flex flex-col gap-1">
-                                <label class="text-[8px] font-black uppercase tracking-wider text-stone-400">Notas</label>
-                                <input type="text" [(ngModel)]="item.notes" [ngModelOptions]="{standalone:true}"
-                                       placeholder="Notas opcionales..."
-                                       class="h-8 text-xs font-bold bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-500 rounded-lg px-2 outline-none focus:border-black dark:focus:border-white placeholder:text-stone-300 dark:placeholder:text-slate-500">
-                            </div>
-                        </div>
-
-                        <!-- Campos adicionales para CAL/REP -->
-                        <ng-container *ngIf="item.workType === 'calibration_repair'">
-                            <div class="flex flex-col gap-1">
-                                <label class="text-[8px] font-black uppercase tracking-wider text-red-500">Descripción de Reparación *</label>
-                                <textarea [(ngModel)]="item.repairDescription" [ngModelOptions]="{standalone:true}" rows="2"
-                                          placeholder="Describa el problema de esta herramienta..."
-                                          class="text-xs font-normal bg-white dark:bg-slate-800 dark:text-white border-2 border-red-400 rounded-lg px-2 py-1.5 outline-none resize-none focus:border-red-500 focus:shadow-[2px_2px_0_#f87171] placeholder:text-red-300 dark:placeholder:text-slate-600 custom-scrollbar"></textarea>
-                            </div>
-                            <div class="flex flex-col gap-1">
-                                <label class="text-[8px] font-black uppercase tracking-wider text-red-500 flex items-center gap-1">
-                                    <mat-icon class="!text-[10px]">report_problem</mat-icon> Rep. Discrepancia
-                                </label>
-                                <textarea [(ngModel)]="item.discrepancyReport" [ngModelOptions]="{standalone:true}" rows="2"
-                                          placeholder="Descripción de discrepancia..."
-                                          class="text-xs font-normal bg-red-50 dark:bg-slate-800 dark:text-white border-2 border-red-400 rounded-lg px-2 py-1.5 outline-none resize-none focus:border-red-500 focus:shadow-[2px_2px_0_#f87171] placeholder:text-red-300 dark:placeholder:text-slate-600 custom-scrollbar"></textarea>
-                            </div>
-                        </ng-container>
-                    </div>
-
-                    <!-- Resumen cuando está registrado -->
-                    <div *ngIf="item.status === 'done'"
-                         class="border-t border-green-200 dark:border-green-800 mx-2.5 py-2 flex items-center gap-2 flex-wrap">
-                        <span class="text-[9px] font-black text-green-700 dark:text-green-400">{{ item.nota }}</span>
-                        <span class="text-[8px] font-bold text-stone-400">·</span>
-                        <span class="text-[9px] font-bold text-stone-500 dark:text-slate-300 uppercase">{{ item.supplierName }}</span>
-                        <span class="text-[8px] font-bold text-stone-400">·</span>
-                        <span class="text-[9px] font-bold text-stone-500 dark:text-slate-300 uppercase">{{ item.workType }}</span>
-                    </div>
-
-                    <!-- Error -->
-                    <div *ngIf="item.status === 'error'"
-                         class="border-t border-red-200 dark:border-red-800 mx-2.5 py-1.5">
-                        <span class="text-[9px] font-black text-red-500">✗ {{ item.error }}</span>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Estado vacío -->
-            <div *ngIf="toolList.length === 0" class="flex-1 flex flex-col items-center justify-center text-center p-8 gap-3">
-                <div class="w-16 h-16 border-2 border-dashed border-stone-300 dark:border-slate-500 flex items-center justify-center">
-                    <mat-icon class="!text-3xl text-stone-300 dark:text-slate-500">add_box</mat-icon>
-                </div>
-                <p class="text-[9px] font-black uppercase text-stone-400 dark:text-slate-400 tracking-[0.18em]">
-                    Busca y agrega herramientas al lote
-                </p>
-            </div>
-        </div>
     </div>
 
     <!-- FOOTER -->

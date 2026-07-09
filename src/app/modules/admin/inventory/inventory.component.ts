@@ -164,12 +164,8 @@ export class InventoryComponent implements OnInit, OnDestroy {
             svgIcon: 'heroicons_outline:chart-bar',
             loader: async () => (await import('./reportes/reports.component')).ReportsComponent
         },
-        {
-            type: 9, label: 'REGISTRAR', sublabel: 'HERRAMIENTA',
-            color: '#0F172A', textColor: '#FFC501',
-            svgIcon: 'heroicons_outline:wrench-screwdriver',
-            loader: async () => (await import('./registrar-herramienta/registrar-herramienta.component')).RegistrarHerramientaComponent
-        },
+        // type 9 (REGISTRAR HERRAMIENTA) eliminado: era un mock sin persistencia y el
+        // registro real de herramientas ocurre en Movimientos → Ingresos (nueva compra)
         {
             type: 10, label: 'CONSULTAR', sublabel: 'INVENTARIO',
             color: '#1a3edc', textColor: '#fff',

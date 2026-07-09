@@ -1,24 +1,32 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
-import { MatTableModule } from '@angular/material/table';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { debounceTime, startWith } from 'rxjs/operators';
 import { RoleService } from '../../../../core/services/role.service';
-import { AVAILABLE_PERMISSIONS } from '../../../../core/models/role.types';
+import { ErpApiService } from '../../../../core/api/api.service';
+
+/**
+ * Módulo Roles y Permisos — dos fuentes conmutables:
+ *  · 'modulo': CRUD completo contra he.roles (herramientas/roles/*), con la matriz
+ *    de permisos serializada en he.roles.permissions como JSON de ids.
+ *  · 'erp': seguridad/Rol/listarRol — roles reales del framework (segu.trol), SOLO
+ *    LECTURA (su administración es del ERP; regla del proyecto: no tocar segu).
+ */
+type FuenteRoles = 'modulo' | 'erp';
 
 interface RoleDisplay {
     id: string;
     nombre: string;
     descripcion: string;
+    subsistema: string;
     permissions: string[];
     userCount: number;
-    active: boolean;
-    es_sistema: boolean;
+    activo: boolean;
 }
 
 @Component({
@@ -28,9 +36,9 @@ interface RoleDisplay {
         CommonModule,
         MatIconModule,
         MatButtonModule,
-        MatTableModule,
         MatDialogModule,
         MatSnackBarModule,
+        MatTooltipModule,
         ReactiveFormsModule
     ],
     templateUrl: './roles.component.html',
@@ -42,59 +50,214 @@ interface RoleDisplay {
     `]
 })
 export class RolesComponent implements OnInit {
-    private router = inject(Router);
-    private dialog = inject(MatDialog);
     private snackBar = inject(MatSnackBar);
-    private roleService = inject(RoleService);
+    private dialog   = inject(MatDialog);
+    private roleSvc  = inject(RoleService);
+    private api      = inject(ErpApiService);
 
     searchControl = new FormControl('');
-    displayedColumns: string[] = ['nombre', 'descripcion', 'permisos', 'usuarios', 'estado', 'acciones'];
 
     roles: RoleDisplay[] = [];
     filteredRoles: RoleDisplay[] = [];
-    availablePermissions = AVAILABLE_PERMISSIONS;
+    isLoading = false;
+
+    /** Fuente activa: roles del módulo (he.roles, CRUD) o roles del framework (solo lectura) */
+    fuente = signal<FuenteRoles>('modulo');
+
+    /* ── Paginación ── */
+    readonly pageSize = 10;
+    pagina = signal(1);
 
     ngOnInit(): void {
         this.loadRoles();
         this.setupSearch();
     }
 
+    get esERP(): boolean { return this.fuente() === 'erp'; }
+
+    cambiarFuente(f: FuenteRoles): void {
+        if (this.fuente() === f) return;
+        this.fuente.set(f);
+        this.searchControl.setValue('', { emitEvent: false });
+        this.loadRoles();
+    }
+
     loadRoles(): void {
-        this.roleService.getRoles().subscribe({
-            next: (data) => {
-                this.roles = this.mapToDisplay(data);
+        if (this.esERP) { this.loadRolesERP(); return; }
+        this.isLoading = true;
+        this.roleSvc.getRoles().subscribe({
+            next: (rows: any[]) => {
+                this.roles = (rows || []).map((x: any) => this.mapToDisplay(x));
                 this.applyFilters();
+                this.isLoading = false;
             },
-            error: (err) => this.handleError(err)
+            error: () => {
+                this.roles = [];
+                this.applyFilters();
+                this.isLoading = false;
+                this.snackBar.open('Error al cargar roles', 'Cerrar', { duration: 5000, verticalPosition: 'top' });
+            }
         });
     }
 
-    private mapToDisplay(roles: any[]): RoleDisplay[] {
-        return roles.map(r => ({
-            id:          r.id_role?.toString() || r.id?.toString() || '',
-            nombre:      r.name        || '',
+    /** Roles reales del framework (segu.trol) — payload provisto por el equipo ERP */
+    private async loadRolesERP(): Promise<void> {
+        this.isLoading = true;
+        try {
+            const r: any = await this.api.post('seguridad/Rol/listarRol', {
+                start: 0, limit: 50, sort: 'rol', dir: 'ASC'
+            });
+            const raw: any[] = r?.datos || r?.data || [];
+            this.roles = raw.map((x: any) => ({
+                id:          String(x.id_rol ?? ''),
+                nombre:      x.rol || '',
+                descripcion: x.descripcion || '',
+                subsistema:  (x.desc_subsis || '').trim(),
+                permissions: [],
+                userCount:   0,
+                activo:      this.parseActivo(x.estado_reg)
+            }));
+            this.applyFilters();
+        } catch {
+            this.roles = [];
+            this.applyFilters();
+            this.snackBar.open('Error al cargar roles del ERP', 'Cerrar', { duration: 5000, verticalPosition: 'top' });
+        } finally {
+            this.isLoading = false;
+        }
+    }
+
+    private mapToDisplay(r: any): RoleDisplay {
+        return {
+            id:          String(r.id_role ?? r.id ?? ''),
+            nombre:      r.name || '',
             descripcion: r.description || '',
+            subsistema:  '',
             permissions: this.parsePermissions(r.permissions),
-            userCount:   parseInt(r.user_count, 10) || 0,
-            active:      r.active === true || r.active === 'true' || r.active === 't',
-            es_sistema:  false
-        }));
+            userCount:   Number(r.user_count ?? 0),
+            activo:      this.parseActivo(r.active)
+        };
     }
 
     private parsePermissions(raw: any): string[] {
-        if (!raw) return [];
         if (Array.isArray(raw)) return raw;
-        try { return JSON.parse(raw); } catch { return []; }
+        if (typeof raw === 'string' && raw.trim()) {
+            try {
+                const parsed = JSON.parse(raw);
+                return Array.isArray(parsed) ? parsed : [];
+            } catch { return []; }
+        }
+        return [];
     }
 
-    private mapFormToBackend(data: any): any {
+    private parseActivo(val: any): boolean {
+        if (typeof val === 'boolean') return val;
+        if (typeof val === 'string') return ['true', 't', '1', 'activo', 'si'].includes(val.toLowerCase());
+        return !!val;
+    }
+
+    /* ── Acciones CRUD ── */
+
+    private buildPayload(formValue: any, activo: boolean): any {
         return {
-            name:        data.nombre,
-            description: data.descripcion,
-            permissions: JSON.stringify(data.permissions || []),
-            active:      data.active
+            name:        formValue.nombre,
+            description: formValue.descripcion || '',
+            active:      formValue.active !== undefined ? formValue.active : activo,
+            permissions: JSON.stringify(formValue.permissions || []),
         };
     }
+
+    async nuevoRol(): Promise<void> {
+        if (this.esERP) return;
+        const { FormRolComponent } = await import('./dialogs/form-rol/form-rol.component');
+        const ref = this.dialog.open(FormRolComponent, {
+            width: '460px', maxWidth: '95vw', maxHeight: '90vh',
+            panelClass: 'neo-dialog',
+            data: { mode: 'create' }
+        });
+        ref.afterClosed().subscribe(result => {
+            if (!result) return;
+            this.roleSvc.createRole(this.buildPayload(result, true)).subscribe({
+                next: () => {
+                    this.snackBar.open('Rol creado', 'Cerrar', { duration: 2500 });
+                    this.loadRoles();
+                },
+                error: () => this.snackBar.open('Error al crear rol', 'Cerrar', { duration: 4000 }),
+            });
+        });
+    }
+
+    async editarRol(r: RoleDisplay, ev?: Event): Promise<void> {
+        ev?.stopPropagation();
+        if (this.esERP) return;
+        const { FormRolComponent } = await import('./dialogs/form-rol/form-rol.component');
+        const ref = this.dialog.open(FormRolComponent, {
+            width: '460px', maxWidth: '95vw', maxHeight: '90vh',
+            panelClass: 'neo-dialog',
+            data: {
+                mode: 'edit',
+                rol: { nombre: r.nombre, descripcion: r.descripcion, permissions: r.permissions, active: r.activo }
+            }
+        });
+        ref.afterClosed().subscribe(result => {
+            if (!result) return;
+            this.roleSvc.updateRole(r.id, this.buildPayload(result, r.activo)).subscribe({
+                next: () => {
+                    this.snackBar.open('Rol actualizado', 'Cerrar', { duration: 2500 });
+                    this.loadRoles();
+                },
+                error: () => this.snackBar.open('Error al actualizar rol', 'Cerrar', { duration: 4000 }),
+            });
+        });
+    }
+
+    async verDetalle(r: RoleDisplay): Promise<void> {
+        if (this.esERP) {
+            // Los roles del framework se administran desde el ERP, no desde este modulo
+            this.snackBar.open('Roles del framework: solo lectura', 'Cerrar', { duration: 2500 });
+            return;
+        }
+        const { DetalleRolComponent } = await import('./dialogs/detalle-rol/detalle-rol.component');
+        const ref = this.dialog.open(DetalleRolComponent, {
+            width: '520px', maxWidth: '95vw', maxHeight: '90vh',
+            panelClass: 'neo-dialog',
+            data: {
+                rol: {
+                    nombre: r.nombre, name: r.nombre,
+                    descripcion: r.descripcion, description: r.descripcion,
+                    permissions: r.permissions,
+                    user_count: r.userCount,
+                    active: r.activo,
+                },
+                permissions: null
+            }
+        });
+        ref.afterClosed().subscribe(result => {
+            if (result?.action === 'edit') this.editarRol(r);
+        });
+    }
+
+    toggleEstado(r: RoleDisplay, ev: Event): void {
+        ev.stopPropagation();
+        if (this.esERP) return;
+        // HE_ROL_MOD sobrescribe todos los campos: enviar el registro completo
+        // (permissions viaja serializado como JSON text, igual que en buildPayload)
+        const payload: any = {
+            name:        r.nombre,
+            description: r.descripcion,
+            active:      !r.activo,
+            permissions: JSON.stringify(r.permissions),
+        };
+        this.roleSvc.updateRole(r.id, payload).subscribe({
+            next: () => {
+                this.snackBar.open(`Rol ${!r.activo ? 'activado' : 'desactivado'}`, 'Cerrar', { duration: 2500 });
+                this.loadRoles();
+            },
+            error: () => this.snackBar.open('Error al cambiar estado', 'Cerrar', { duration: 4000 }),
+        });
+    }
+
+    /* ── Filtros ── */
 
     setupSearch(): void {
         this.searchControl.valueChanges.pipe(
@@ -104,190 +267,56 @@ export class RolesComponent implements OnInit {
     }
 
     applyFilters(): void {
-        const searchTerm = this.searchControl.value?.toLowerCase() || '';
-        if (searchTerm) {
-            this.filteredRoles = this.roles.filter(r =>
-                r.nombre.toLowerCase().includes(searchTerm) ||
-                r.descripcion?.toLowerCase().includes(searchTerm)
-            );
-        } else {
-            this.filteredRoles = [...this.roles];
-        }
+        const term = this.searchControl.value?.toLowerCase() || '';
+        this.filteredRoles = term
+            ? this.roles.filter(r =>
+                r.nombre.toLowerCase().includes(term) ||
+                r.descripcion?.toLowerCase().includes(term))
+            : [...this.roles];
+        this.pagina.set(1);
     }
 
-    async nuevoRol(): Promise<void> {
-        const { FormRolComponent } = await import('./dialogs/form-rol/form-rol.component');
-        const dialogRef = this.dialog.open(FormRolComponent, {
-            width: '460px',
-            maxWidth: '95vw',
-            height: 'auto',
-            maxHeight: '90vh',
-            panelClass: 'neo-dialog',
-            disableClose: true
-        });
+    /* ── Paginación ── */
 
-        dialogRef.afterClosed().subscribe(result => {
-            if (result) {
-                this.createRol(result);
-            }
-        });
+    get totalPaginas(): number {
+        return Math.max(1, Math.ceil(this.filteredRoles.length / this.pageSize));
     }
 
-    async editarRol(rol: RoleDisplay): Promise<void> {
-        if (rol.es_sistema) {
-            this.showWarning('No se puede editar un rol del sistema');
-            return;
-        }
-
-        const { FormRolComponent } = await import('./dialogs/form-rol/form-rol.component');
-        const dialogRef = this.dialog.open(FormRolComponent, {
-            width: '460px',
-            maxWidth: '95vw',
-            height: 'auto',
-            maxHeight: '90vh',
-            data: { rol, mode: 'edit' },
-            panelClass: 'neo-dialog',
-            disableClose: true
-        });
-
-        dialogRef.afterClosed().subscribe(result => {
-            if (result) {
-                this.updateRol(rol.id, result);
-            }
-        });
+    get rolesPagina(): RoleDisplay[] {
+        const p = Math.min(this.pagina(), this.totalPaginas);
+        const inicio = (p - 1) * this.pageSize;
+        return this.filteredRoles.slice(inicio, inicio + this.pageSize);
     }
 
-    async verDetalles(rol: RoleDisplay): Promise<void> {
-        const { DetalleRolComponent } = await import('./dialogs/detalle-rol/detalle-rol.component');
-        this.dialog.open(DetalleRolComponent, {
-            width: '680px',
-            maxWidth: '95vw',
-            height: 'auto',
-            maxHeight: '90vh',
-            data: { rol, permissions: this.availablePermissions },
-            panelClass: 'neo-dialog'
-        });
+    get rangoPagina(): { desde: number; hasta: number } {
+        const total = this.filteredRoles.length;
+        if (!total) return { desde: 0, hasta: 0 };
+        const p = Math.min(this.pagina(), this.totalPaginas);
+        const desde = (p - 1) * this.pageSize + 1;
+        return { desde, hasta: Math.min(p * this.pageSize, total) };
     }
 
-    async eliminarRol(rol: RoleDisplay): Promise<void> {
-        if (rol.es_sistema) {
-            this.showWarning('No se puede eliminar un rol del sistema');
-            return;
-        }
-
-        if (rol.userCount > 0) {
-            this.showWarning(`No se puede eliminar el rol porque tiene ${rol.userCount} usuarios asignados`);
-            return;
-        }
-
-        if (confirm(`¿Está seguro de eliminar el rol "${rol.nombre}"?`)) {
-            this.roleService.deleteRole(rol.id).subscribe({
-                next: () => {
-                    this.showSuccess('Rol eliminado exitosamente');
-                    this.loadRoles();
-                },
-                error: (err) => this.handleError(err)
-            });
-        }
+    paginasVisibles(): number[] {
+        const total  = this.totalPaginas;
+        const actual = Math.min(this.pagina(), total);
+        const inicio = Math.max(1, Math.min(actual - 2, total - 4));
+        const fin    = Math.min(total, inicio + 4);
+        const out: number[] = [];
+        for (let i = inicio; i <= fin; i++) out.push(i);
+        return out;
     }
 
-    async toggleEstado(rol: RoleDisplay): Promise<void> {
-        if (rol.es_sistema) {
-            this.showWarning('No se puede cambiar el estado de un rol del sistema');
-            return;
-        }
-        const nuevoEstado = !rol.active;
-        const backendData = this.mapFormToBackend({
-            nombre:      rol.nombre,
-            descripcion: rol.descripcion,
-            permissions: rol.permissions,
-            active:      nuevoEstado
-        });
-        this.roleService.updateRole(rol.id, backendData).subscribe({
-            next: () => {
-                this.showSuccess(`Rol ${nuevoEstado ? 'activado' : 'desactivado'} exitosamente`);
-                this.loadRoles();
-            },
-            error: (err) => this.handleError(err)
-        });
+    irAPagina(p: number): void {
+        this.pagina.set(Math.min(Math.max(1, p), this.totalPaginas));
     }
 
-    createRol(data: any): void {
-        this.roleService.createRole(this.mapFormToBackend(data)).subscribe({
-            next: () => {
-                this.showSuccess('Rol creado exitosamente');
-                this.loadRoles();
-            },
-            error: (err) => this.handleError(err)
-        });
-    }
-
-    updateRol(id: string, data: any): void {
-        this.roleService.updateRole(id, this.mapFormToBackend(data)).subscribe({
-            next: () => {
-                this.showSuccess('Rol actualizado exitosamente');
-                this.loadRoles();
-            },
-            error: (err) => this.handleError(err)
-        });
-    }
-
-    volver(): void {
-        this.router.navigate(['/administration']);
-    }
+    /* ── KPIs ── */
 
     getRolesActivos(): number {
-        return this.roles.filter(r => r.active).length;
+        return this.roles.filter(r => r.activo).length;
     }
 
     getRolesInactivos(): number {
-        return this.roles.filter(r => !r.active).length;
-    }
-
-    getRolesSistema(): number {
-        return this.roles.filter(r => r.es_sistema).length;
-    }
-
-    getRolesPersonalizados(): number {
-        return this.roles.filter(r => !r.es_sistema).length;
-    }
-
-    private showSuccess(message: string): void {
-        this.snackBar.open(message, 'Cerrar', {
-            duration: 3000,
-            horizontalPosition: 'end',
-            verticalPosition: 'top',
-            panelClass: ['snackbar-success']
-        });
-    }
-
-    private showWarning(message: string): void {
-        this.snackBar.open(message, 'Entendido', {
-            duration: 4000,
-            horizontalPosition: 'end',
-            verticalPosition: 'top',
-            panelClass: ['snackbar-warning']
-        });
-    }
-
-    private handleError(error: any): void {
-        let message = 'Ocurrió un error inesperado';
-
-        if (error.error?.message) {
-            message = error.error.message;
-        } else if (error.status === 404) {
-            message = 'El recurso no fue encontrado';
-        } else if (error.status === 403) {
-            message = 'No tiene permisos para realizar esta acción';
-        } else if (error.status === 500) {
-            message = 'Error en el servidor. Intente nuevamente';
-        }
-
-        this.snackBar.open(message, 'Cerrar', {
-            duration: 5000,
-            horizontalPosition: 'end',
-            verticalPosition: 'top',
-            panelClass: ['snackbar-error']
-        });
+        return this.roles.filter(r => !r.activo).length;
     }
 }

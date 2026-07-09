@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, signal, computed } from '@angular/core';
+import { Component, OnInit, inject, signal, computed, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
@@ -195,7 +195,7 @@ interface KitItem {
                         </tr>
                         </thead>
                         <tbody>
-                        <tr *ngFor="let kit of (isLoading() ? [] : kitsFiltrados())"
+                        <tr *ngFor="let kit of (isLoading() ? [] : kitsPagina())"
                             (click)="verDetalle(kit)"
                             class="border-b border-gray-200 dark:border-slate-700 hover:bg-gray-100 dark:hover:bg-slate-800 cursor-pointer transition-all">
 
@@ -294,6 +294,31 @@ interface KitItem {
                         </tbody>
                     </table>
                 </div>
+
+                <!-- PAGINADOR -->
+                <div *ngIf="!isLoading() && kitsFiltrados().length > pageSize"
+                     class="shrink-0 border-t-2 border-black bg-white dark:bg-slate-800 px-3 sm:px-4 py-2 flex items-center justify-between gap-2 flex-wrap">
+                    <span class="text-[9px] sm:text-[10px] font-black uppercase text-gray-500">
+                        {{ rangoPagina().desde }}–{{ rangoPagina().hasta }} de {{ kitsFiltrados().length }} kits
+                    </span>
+                    <div class="flex items-center gap-1">
+                        <button (click)="irAPagina(pagina() - 1)" [disabled]="pagina() <= 1"
+                                class="w-7 h-7 flex items-center justify-center bg-white dark:bg-slate-700 border-2 border-black rounded-lg shadow-[2px_2px_0px_0px_#000] hover:translate-y-[1px] hover:shadow-none transition-all disabled:opacity-30 disabled:cursor-not-allowed disabled:translate-y-0 disabled:shadow-[2px_2px_0px_0px_#000]">
+                            <mat-icon class="!text-sm text-black dark:text-white">chevron_left</mat-icon>
+                        </button>
+                        <button *ngFor="let p of paginasVisibles()" (click)="irAPagina(p)"
+                                class="w-7 h-7 flex items-center justify-center border-2 border-black rounded-lg text-[10px] font-black transition-all"
+                                [ngClass]="p === pagina()
+                                    ? 'bg-amber-400 text-black shadow-none translate-y-[1px]'
+                                    : 'bg-white dark:bg-slate-700 text-black dark:text-white shadow-[2px_2px_0px_0px_#000] hover:translate-y-[1px] hover:shadow-none'">
+                            {{ p }}
+                        </button>
+                        <button (click)="irAPagina(pagina() + 1)" [disabled]="pagina() >= totalPaginas()"
+                                class="w-7 h-7 flex items-center justify-center bg-white dark:bg-slate-700 border-2 border-black rounded-lg shadow-[2px_2px_0px_0px_#000] hover:translate-y-[1px] hover:shadow-none transition-all disabled:opacity-30 disabled:cursor-not-allowed disabled:translate-y-0 disabled:shadow-[2px_2px_0px_0px_#000]">
+                            <mat-icon class="!text-sm text-black dark:text-white">chevron_right</mat-icon>
+                        </button>
+                    </div>
+                </div>
             </div>
 
         </div>
@@ -346,6 +371,47 @@ export class ListaKitsComponent implements OnInit {
             totalItems:    data.reduce((s, k) => s + k.cantidadItems, 0)
         };
     });
+
+    /* ── Paginación ── */
+    readonly pageSize = 10;
+    pagina = signal(1);
+
+    totalPaginas = computed(() => Math.max(1, Math.ceil(this.kitsFiltrados().length / this.pageSize)));
+
+    kitsPagina = computed(() => {
+        const p = Math.min(this.pagina(), this.totalPaginas());
+        const inicio = (p - 1) * this.pageSize;
+        return this.kitsFiltrados().slice(inicio, inicio + this.pageSize);
+    });
+
+    rangoPagina = computed(() => {
+        const total = this.kitsFiltrados().length;
+        if (!total) return { desde: 0, hasta: 0 };
+        const p = Math.min(this.pagina(), this.totalPaginas());
+        return { desde: (p - 1) * this.pageSize + 1, hasta: Math.min(p * this.pageSize, total) };
+    });
+
+    paginasVisibles(): number[] {
+        const total  = this.totalPaginas();
+        const actual = Math.min(this.pagina(), total);
+        const inicio = Math.max(1, Math.min(actual - 2, total - 4));
+        const fin    = Math.min(total, inicio + 4);
+        const out: number[] = [];
+        for (let i = inicio; i <= fin; i++) out.push(i);
+        return out;
+    }
+
+    irAPagina(p: number): void {
+        this.pagina.set(Math.min(Math.max(1, p), this.totalPaginas()));
+    }
+
+    constructor() {
+        // Cualquier cambio de filtro vuelve a la página 1
+        effect(() => {
+            this.searchTerm(); this.selectedCategoria(); this.selectedEstado();
+            Promise.resolve().then(() => this.pagina.set(1));
+        }, { allowSignalWrites: true });
+    }
 
     private readonly _statusMap: Record<string, string> = {
         complete:       'COMPLETO',

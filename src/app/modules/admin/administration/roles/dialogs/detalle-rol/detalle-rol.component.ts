@@ -47,22 +47,13 @@ export class DetalleRolComponent {
         });
     }
 
-    async editarRol(): Promise<void> {
+    editarRol(): void {
         if (this.data.rol.es_sistema) {
             alert('No se puede editar un rol del sistema');
             return;
         }
-
-        this.dialogRef.close();
-        const { FormRolComponent } = await import('../form-rol/form-rol.component');
-        this.dialog.open(FormRolComponent, {
-            width: '460px',
-            maxWidth: '95vw',
-            height: 'auto',
-            maxHeight: '90vh',
-            panelClass: 'neo-dialog',
-            data: { rol: this.data.rol, mode: 'edit' }
-        });
+        // La lista (roles.component) abre el form de edición y persiste vía RoleService
+        this.dialogRef.close({ action: 'edit' });
     }
 
     cerrar(): void {

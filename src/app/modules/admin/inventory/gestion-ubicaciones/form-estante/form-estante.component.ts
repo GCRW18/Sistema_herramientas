@@ -23,7 +23,7 @@ export class FormEstanteComponent {
     dialogRef = inject(MatDialogRef<FormEstanteComponent>);
     private fb       = inject(FormBuilder);
     private snackBar = inject(MatSnackBar);
-    private data     = inject<{ mode: Mode; warehouse: Warehouse; rack?: Rack }>(MAT_DIALOG_DATA);
+    private data     = inject<{ mode: Mode; warehouse: Warehouse; rack?: Rack; racksExistentes?: Rack[] }>(MAT_DIALOG_DATA);
 
     mode: Mode = this.data.mode;
     warehouse  = this.data.warehouse;
@@ -37,7 +37,12 @@ export class FormEstanteComponent {
 
     constructor() {
         if (this.mode === 'new') {
-            const next = (this.warehouse?.estantesCount ?? 0) + 1;
+            // Siguiente número libre a partir de los códigos existentes (no del conteo:
+            // el catálogo migrado tiene numeración física con huecos, ej. CBB llega a
+            // EST-39 con 34 estantes — count+1 sugeriría EST-35, que ya existe).
+            const usados = (this.data.racksExistentes ?? [])
+                .map(r => { const m = /(\d+)\s*$/.exec(r.codigo ?? ''); return m ? parseInt(m[1], 10) : 0; });
+            const next = Math.max(this.warehouse?.estantesCount ?? 0, 0, ...usados) + 1;
             const pad  = String(next).padStart(2, '0');
             const codigoSugerido = `${this.warehouse.codigo}-EST-${pad}`.slice(0, 40);
             this.form.patchValue({

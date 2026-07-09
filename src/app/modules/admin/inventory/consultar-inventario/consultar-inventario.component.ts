@@ -64,6 +64,12 @@ export interface UnifiedItem {
     fabricacion?:         string;
     intervaloCalibracion?: number;
     nroCertificado?:      string;
+    enLaboratorio?:       boolean;   // sent_to_calibration
+    modelo?:              string;
+    activoFijo?:          string;    // fixed_asset_code
+    garantia?:            string;
+    garantiaVence?:       Date;
+    registradoPor?:       string;    // usr_reg
     imagen?:              string;
     valorUnitario?:       number;
     proveedor?:           string;
@@ -450,17 +456,32 @@ export class ConsultarInventarioComponent implements OnInit {
         let estado: UnifiedStatus = statusMap[t.status] || 'DISPONIBLE';
         if (estado === 'DISPONIBLE' && (t.quantity_in_stock ?? 0) <= 0) estado = 'SIN STOCK';
 
+        // Valores reales del CHECK de he.ttools.condition:
+        // new | excellent | good | fair | poor | damaged | reconditioned
         const condicionMap: Record<string, string> = {
-            new: 'EXCELENTE', excellent: 'EXCELENTE',
+            new: 'EXCELENTE', excellent: 'EXCELENTE', reconditioned: 'BUENO',
             good: 'BUENO', fair: 'REGULAR', poor: 'MALO', damaged: 'MALO',
         };
         const estadoFisicoMap: Record<string, string> = {
-            new: 'NUEVO', reconditioned: 'REACONDICIONADO', good: 'USADO',
+            new: 'NUEVO', excellent: 'NUEVO', reconditioned: 'REACONDICIONADO',
+            good: 'USADO', fair: 'USADO', poor: 'USADO', damaged: 'USADO',
         };
 
+        // listTools devuelve ttools.images (text[]); la foto principal suele vivir en
+        // he.ttool_files (la ficha la completa vía findToolByCodeAny). Aquí se toma el
+        // primer elemento del array si existe (llega como '{a,b}' o como array).
         let imagen: string | undefined;
-        if (t.image_url)     imagen = t.image_url;
-        else if (t.image_base64) imagen = `data:image/jpeg;base64,${t.image_base64}`;
+        const rawImgs = t.images;
+        let primera: string | undefined;
+        if (Array.isArray(rawImgs) && rawImgs.length) primera = rawImgs[0];
+        else if (typeof rawImgs === 'string' && rawImgs.length > 2 && rawImgs.startsWith('{')) {
+            primera = rawImgs.slice(1, -1).split(',')[0]?.replace(/^"|"$/g, '') || undefined;
+        }
+        if (primera) {
+            imagen = (primera.startsWith('data:') || primera.startsWith('http'))
+                ? primera
+                : `data:image/jpeg;base64,${primera}`;
+        }
 
         return {
             internalId:          `HERRAMIENTA-${t.id_tool}`,
@@ -490,6 +511,12 @@ export class ConsultarInventarioComponent implements OnInit {
             fabricacion:          t.manufacture_origin        || undefined,
             intervaloCalibracion: t.calibration_interval      ?? undefined,
             nroCertificado:       t.calibration_certificate   || undefined,
+            enLaboratorio:        t.sent_to_calibration === true || t.sent_to_calibration === 't',
+            modelo:               t.model            || undefined,
+            activoFijo:           t.fixed_asset_code || undefined,
+            garantia:             t.warranty         || undefined,
+            garantiaVence:        t.warranty_expiration ? new Date(t.warranty_expiration) : undefined,
+            registradoPor:        t.usr_reg          || undefined,
             imagen,
             valorUnitario:       t.purchase_price  ?? undefined,
             proveedor:           t.supplier         || undefined,

@@ -184,7 +184,7 @@
                     </tr>
                     </thead>
                     <tbody>
-                    <tr *ngFor="let m of filteredMateriales"
+                    <tr *ngFor="let m of materialesPagina"
                         (click)="verCatalogo(m)"
                         class="border-b border-gray-200 dark:border-slate-700 hover:bg-amber-50 dark:hover:bg-slate-800 cursor-pointer transition-all">
 
@@ -296,7 +296,7 @@
                     </tr>
                     </thead>
                     <tbody>
-                    <tr *ngFor="let e of filteredEntradas"
+                    <tr *ngFor="let e of entradasPagina"
                         (click)="verEntrada(e)"
                         class="border-b border-gray-200 dark:border-slate-700 hover:bg-green-50 dark:hover:bg-slate-800 cursor-pointer transition-all">
 
@@ -390,7 +390,7 @@
                     </tr>
                     </thead>
                     <tbody>
-                    <tr *ngFor="let s of filteredSalidas"
+                    <tr *ngFor="let s of salidasPagina"
                         (click)="verSalida(s)"
                         class="border-b border-gray-200 dark:border-slate-700 hover:bg-orange-50 dark:hover:bg-slate-800 cursor-pointer transition-all">
 
@@ -551,6 +551,31 @@
                         </div>
 
                     </div>
+                </div>
+            </div>
+
+            <!-- PAGINADOR (tabs catálogo / entradas / salidas) -->
+            <div *ngIf="activeTab() !== 'stock' && listaActiva.length > pageSize"
+                 class="shrink-0 border-t-2 border-black bg-white dark:bg-slate-800 px-3 sm:px-4 py-2 flex items-center justify-between gap-2 flex-wrap">
+                <span class="text-[9px] sm:text-[10px] font-black uppercase text-gray-500">
+                    {{ rangoPagina.desde }}–{{ rangoPagina.hasta }} de {{ listaActiva.length }} registros
+                </span>
+                <div class="flex items-center gap-1">
+                    <button (click)="irAPagina(pagina() - 1)" [disabled]="pagina() <= 1"
+                            class="w-7 h-7 flex items-center justify-center bg-white dark:bg-slate-700 border-2 border-black rounded-lg shadow-[2px_2px_0px_0px_#000] hover:translate-y-[1px] hover:shadow-none transition-all disabled:opacity-30 disabled:cursor-not-allowed disabled:translate-y-0 disabled:shadow-[2px_2px_0px_0px_#000]">
+                        <mat-icon class="!text-sm text-black dark:text-white">chevron_left</mat-icon>
+                    </button>
+                    <button *ngFor="let p of paginasVisibles()" (click)="irAPagina(p)"
+                            class="w-7 h-7 flex items-center justify-center border-2 border-black rounded-lg text-[10px] font-black transition-all"
+                            [ngClass]="p === pagina()
+                                ? 'bg-amber-400 text-black shadow-none translate-y-[1px]'
+                                : 'bg-white dark:bg-slate-700 text-black dark:text-white shadow-[2px_2px_0px_0px_#000] hover:translate-y-[1px] hover:shadow-none'">
+                        {{ p }}
+                    </button>
+                    <button (click)="irAPagina(pagina() + 1)" [disabled]="pagina() >= totalPaginas"
+                            class="w-7 h-7 flex items-center justify-center bg-white dark:bg-slate-700 border-2 border-black rounded-lg shadow-[2px_2px_0px_0px_#000] hover:translate-y-[1px] hover:shadow-none transition-all disabled:opacity-30 disabled:cursor-not-allowed disabled:translate-y-0 disabled:shadow-[2px_2px_0px_0px_#000]">
+                        <mat-icon class="!text-sm text-black dark:text-white">chevron_right</mat-icon>
+                    </button>
                 </div>
             </div>
 

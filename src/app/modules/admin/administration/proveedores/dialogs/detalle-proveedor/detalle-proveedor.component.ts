@@ -80,7 +80,8 @@ export class DetalleProveedorComponent {
             delivery_days: formData.tiempo_entrega_dias || 0,
             payment_terms: formData.condiciones_pago,
             rating:        formData.calificacion || 0,
-            active:        formData.active !== undefined ? formData.active : true
+            // conservar el estado actual del proveedor (el form no edita 'active')
+            active:        formData.active !== undefined ? formData.active : (this.data.proveedor?.active ?? true)
         };
     }
 

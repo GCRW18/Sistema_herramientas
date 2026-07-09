@@ -161,9 +161,18 @@ export class EnvioCalibracionComponent implements OnInit, OnDestroy {
         this.pageIndex = 0;
 
         const estado = this.filterEstado.value;
+        // Excluir TODAS las transcripciones históricas: por flag is_historical y por
+        // ambos marcadores de internal_notes ('[TRANSCRIPCIÓN HISTÓRICA]' del form y
+        // '[TRANSCRIPCION HISTORICA - LISTADO MGH-102]' del baseline DAT-10). Antes solo
+        // se excluía la igualdad exacta del marcador viejo: las 487 transcripciones del
+        // baseline (send_date NULL → primeras con sort desc) llenaban el limit y
+        // empujaban los envíos reales fuera de la página.
         const params: any = {
             limit: 200,
-            filtro: "(cls.internal_notes IS NULL OR cls.internal_notes != '[TRANSCRIPCIÓN HISTÓRICA]')",
+            filtro: "(COALESCE(cls.is_historical, false) = false"
+                + " AND (cls.internal_notes IS NULL"
+                + " OR (cls.internal_notes NOT LIKE '[TRANSCRIPCION HISTORICA%'"
+                + " AND cls.internal_notes NOT LIKE '[TRANSCRIPCIÓN HISTÓRICA%')))",
         };
         if (estado) params.status = estado;
 
@@ -411,8 +420,10 @@ export class EnvioCalibracionComponent implements OnInit, OnDestroy {
     async nuevoEnvio(): Promise<void> {
         try {
             const { FormEnvioComponent } = await import('./form-envio/form-envio.component');
+            // Form compacto de columna única: el lote se gestiona en su propia
+            // miniventana (se abre desde el botón "Ver / Configurar Lote")
             const ref = this.dialog.open(FormEnvioComponent, {
-                width: '900px', maxWidth: '98vw', height: '88vh',
+                width: '520px', maxWidth: '95vw', maxHeight: '95vh',
                 panelClass: 'no-padding-dialog',
                 disableClose: false
             });

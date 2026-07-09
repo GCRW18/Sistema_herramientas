@@ -133,6 +133,7 @@ export class InventarioMiscelaneosComponent implements OnInit, OnDestroy {
 
     // ── Filtros ────────────────────────────────────────────
     applyFilters(): void {
+        this.pagina.set(1);
         const q    = (this.searchControl.value  ?? '').trim().toLowerCase();
         const tipo = (this.filterTipoCtrl.value ?? '').trim();
 
@@ -158,6 +159,56 @@ export class InventarioMiscelaneosComponent implements OnInit, OnDestroy {
         this.filterTipoCtrl.setValue('', { emitEvent: false });
         this.searchControl.setValue('',  { emitEvent: false });
         this.applyFilters();
+    }
+
+    /* ── Paginación (compartida entre los tabs de listas) ── */
+    readonly pageSize = 10;
+    pagina = signal(1);
+
+    private paginar<T>(list: T[]): T[] {
+        const total = Math.max(1, Math.ceil(list.length / this.pageSize));
+        const p = Math.min(this.pagina(), total);
+        const inicio = (p - 1) * this.pageSize;
+        return list.slice(inicio, inicio + this.pageSize);
+    }
+
+    get materialesPagina(): Material[] { return this.paginar(this.filteredMateriales); }
+    get entradasPagina():   Entrada[]  { return this.paginar(this.filteredEntradas); }
+    get salidasPagina():    Salida[]   { return this.paginar(this.filteredSalidas); }
+
+    /** Lista filtrada del tab activo — alimenta el paginador común */
+    get listaActiva(): unknown[] {
+        switch (this.activeTab()) {
+            case 'catalogo': return this.filteredMateriales;
+            case 'entradas': return this.filteredEntradas;
+            case 'salidas':  return this.filteredSalidas;
+            default:         return [];
+        }
+    }
+
+    get totalPaginas(): number {
+        return Math.max(1, Math.ceil(this.listaActiva.length / this.pageSize));
+    }
+
+    get rangoPagina(): { desde: number; hasta: number } {
+        const total = this.listaActiva.length;
+        if (!total) return { desde: 0, hasta: 0 };
+        const p = Math.min(this.pagina(), this.totalPaginas);
+        return { desde: (p - 1) * this.pageSize + 1, hasta: Math.min(p * this.pageSize, total) };
+    }
+
+    paginasVisibles(): number[] {
+        const total  = this.totalPaginas;
+        const actual = Math.min(this.pagina(), total);
+        const inicio = Math.max(1, Math.min(actual - 2, total - 4));
+        const fin    = Math.min(total, inicio + 4);
+        const out: number[] = [];
+        for (let i = inicio; i <= fin; i++) out.push(i);
+        return out;
+    }
+
+    irAPagina(p: number): void {
+        this.pagina.set(Math.min(Math.max(1, p), this.totalPaginas));
     }
 
     refresh(): void { this.loadAll(); }
@@ -244,6 +295,7 @@ export class InventarioMiscelaneosComponent implements OnInit, OnDestroy {
 
     eliminarCatalogo(m: Material): void {
         const ref = this.dialog.open(ConfirmDeleteComponent, {
+            width: '420px', maxWidth: '95vw',
             panelClass: 'no-padding-dialog',
             data: {
                 title:        'ELIMINAR ÍTEM',
@@ -305,6 +357,7 @@ export class InventarioMiscelaneosComponent implements OnInit, OnDestroy {
 
     eliminarEntrada(e: Entrada): void {
         const ref = this.dialog.open(ConfirmDeleteComponent, {
+            width: '420px', maxWidth: '95vw',
             panelClass: 'no-padding-dialog',
             data: {
                 title:        'ELIMINAR ENTRADA',
@@ -366,6 +419,7 @@ export class InventarioMiscelaneosComponent implements OnInit, OnDestroy {
 
     eliminarSalida(s: Salida): void {
         const ref = this.dialog.open(ConfirmDeleteComponent, {
+            width: '420px', maxWidth: '95vw',
             panelClass: 'no-padding-dialog',
             data: {
                 title:        'ELIMINAR SALIDA',

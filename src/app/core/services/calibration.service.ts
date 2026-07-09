@@ -148,7 +148,14 @@ export class CalibrationService {
     }
 
     getToolCalibrationHistory(toolId: string): Observable<CalibrationRecord[]> {
-        return from(this._api.post('herramientas/calibrations/listCalibrations', { start: 0, limit: 50, tool_id: toolId, sort: 'send_date', dir: 'desc' })).pipe(
+        // El parámetro suelto tool_id NO es procesado por ACTcalibrations: sin el
+        // filtro explícito, el endpoint devolvía las últimas calibraciones de TODAS
+        // las herramientas y el historial mostraba registros ajenos.
+        const idNum = Number(toolId) || 0;
+        return from(this._api.post('herramientas/calibrations/listCalibrations', {
+            start: 0, limit: 100, sort: 'id_calibration', dir: 'desc',
+            filtro: `cls.tool_id = ${idNum}`,
+        })).pipe(
             switchMap((response: any) => of(this._normalizeResponse(response) as CalibrationRecord[])),
             catchError((error) => { console.error('Error en getToolCalibrationHistory:', error); return of([]); })
         );
