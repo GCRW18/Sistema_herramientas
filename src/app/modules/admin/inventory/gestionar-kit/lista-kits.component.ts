@@ -472,8 +472,12 @@ export class ListaKitsComponent implements OnInit {
         event.stopPropagation();
         const id_kit = kit._raw?.id_kit ?? kit.id;
         const raw    = kit._raw ?? {};
-        this.kitsService.updateKit(id_kit, { ...raw, active: !kit.activo }).subscribe({
-            next:  () => this.cargarKits(),
+        const nuevoActivo = !kit.activo;
+        this.kitsService.updateKit(id_kit, { ...raw, active: nuevoActivo }).subscribe({
+            // Solo cambió "active" — actualizar en memoria en vez de recargar la tabla completa.
+            next: () => this.kits.update(list => list.map(k =>
+                k.id === kit.id ? { ...k, activo: nuevoActivo, _raw: { ...k._raw, active: nuevoActivo } } : k
+            )),
             error: () => {}
         });
     }
@@ -481,7 +485,7 @@ export class ListaKitsComponent implements OnInit {
     async editarKit(kit: Kit): Promise<void> {
         const { GestionarKitComponent } = await import('./gestionar-kit.component');
         const ref = this.dialog.open(GestionarKitComponent, {
-            width: '800px', maxWidth: '95vw', height: 'auto', maxHeight: '88vh',
+            width: '920px', maxWidth: '95vw', height: '640px', maxHeight: '88vh',
             panelClass: 'neo-dialog', data: { mode: 'edit', kit: kit._raw ?? kit }
         });
         ref.afterClosed().subscribe(result => {
@@ -492,7 +496,7 @@ export class ListaKitsComponent implements OnInit {
     async crearNuevoKit(): Promise<void> {
         const { GestionarKitComponent } = await import('./gestionar-kit.component');
         const ref = this.dialog.open(GestionarKitComponent, {
-            width: '800px', maxWidth: '95vw', height: 'auto', maxHeight: '88vh',
+            width: '920px', maxWidth: '95vw', height: '640px', maxHeight: '88vh',
             panelClass: 'neo-dialog'
         });
         ref.afterClosed().subscribe(result => {

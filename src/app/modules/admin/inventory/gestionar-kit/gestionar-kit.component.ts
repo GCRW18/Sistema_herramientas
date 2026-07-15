@@ -4,7 +4,7 @@ import { FormBuilder, FormGroup, FormArray, Validators, ReactiveFormsModule } fr
 import { MatIconModule } from '@angular/material/icon';
 import { MatDialog, MatDialogRef, MatDialogModule, MAT_DIALOG_DATA } from '@angular/material/dialog';
 import { DragDropModule } from '@angular/cdk/drag-drop';
-import { Subject, Subscription, of, forkJoin } from 'rxjs';
+import { Subject, Subscription, Observable, of, forkJoin } from 'rxjs';
 import { debounceTime, distinctUntilChanged, switchMap, catchError, finalize, mergeMap, map } from 'rxjs/operators';
 import { MovementService }          from '../../../../core/services/movement.service';
 import { CalibrationService }       from '../../../../core/services/calibration.service';
@@ -76,7 +76,6 @@ export class GestionarKitComponent implements OnInit, OnDestroy {
     private ubicacionPickerRef: MatDialogRef<any> | null = null;
     pickerExpanded    = false;
     showAlmacenGrid   = false;
-    showNivelDropdown = false;
     loadingWarehouses = false;
     loadingRacks      = false;
     warehouses:   Warehouse[] = [];
@@ -84,6 +83,10 @@ export class GestionarKitComponent implements OnInit, OnDestroy {
     selWarehouse: Warehouse | null = null;
     selRack:      Rack | null      = null;
     selectedLevelId: number | null = null;
+
+    // Ubicacion original del kit al abrir el form en modo edicion (para detectar si el
+    // usuario la cambio y disparar moverKit en vez de mezclarlo con el guardado normal).
+    private originalLocation: { rackId: number | null; levelId: number | null } | null = null;
 
     get racks():  Rack[]  { return this.racksFull; }
     get levels(): Level[] { return this.selRack?.niveles ?? []; }
@@ -141,6 +144,7 @@ export class GestionarKitComponent implements OnInit, OnDestroy {
                 ubicacion:      kit.location_name ?? kit.ubicacion ?? '',
                 descripcionKit: kit.description ?? kit.descripcion ?? ''
             });
+            this.prefillUbicacion(kit);
             // Cargar componentes existentes desde el backend (no desde _raw, que no los tiene)
             if (id_kit) {
                 this.itemsLoading = true;
@@ -278,13 +282,9 @@ export class GestionarKitComponent implements OnInit, OnDestroy {
                 this.ubicSvc.getWarehouses().pipe(
                     finalize(() => this.loadingWarehouses = false)
                 ).subscribe(ws => {
-                    this.warehouses = ws.filter(w => w.estado === 'ACTIVO');
-                    if (!this.selWarehouse) {
-                        const cbba = this.warehouses.find(w =>
-                            w.ciudad?.toLowerCase().includes('cochabamba') ||
-                            w.nombre?.toLowerCase().includes('cochabamba')
-                        );
-                        if (cbba) this.selectWarehouse(cbba);
+                    this.warehouses = this._soloCbba(ws.filter(w => w.estado === 'ACTIVO'));
+                    if (!this.selWarehouse && this.warehouses.length === 1) {
+                        this.selectWarehouse(this.warehouses[0]);
                     }
                 })
             );
@@ -292,8 +292,8 @@ export class GestionarKitComponent implements OnInit, OnDestroy {
 
         this.pickerExpanded     = true;
         this.ubicacionPickerRef = this.dialog.open(this.ubicacionPickerTpl, {
-            width: 'min(380px, 94vw)',
-            maxHeight: '86vh',
+            width: 'min(760px, 96vw)',
+            maxHeight: '70vh',
             panelClass: 'no-padding-dialog',
             hasBackdrop: true,
             autoFocus: false,
@@ -309,10 +309,6 @@ export class GestionarKitComponent implements OnInit, OnDestroy {
     }
 
     toggleAlmacenGrid(): void { this.showAlmacenGrid = !this.showAlmacenGrid; }
-    toggleNivelDropdown(): void { this.showNivelDropdown = !this.showNivelDropdown; }
-    levelSeleccionado(): Level | null {
-        return this.levels.find(l => l.id === this.selectedLevelId) ?? null;
-    }
 
     selectWarehouse(w: Warehouse): void {
         if (this.selWarehouse?.id === w.id) { this.showAlmacenGrid = false; return; }
@@ -321,36 +317,97 @@ export class GestionarKitComponent implements OnInit, OnDestroy {
         this.selectedLevelId = null;
         this.racksFull      = [];
         this.showAlmacenGrid = false;
-        this.showNivelDropdown = false;
         this.loadingRacks   = true;
         this._subs.add(
-            this.ubicSvc.getRacks(w.id).pipe(
-                switchMap(rs => {
-                    const activos = rs.filter(r => r.activo);
-                    if (!activos.length) return of([] as Rack[]);
-                    return forkJoin(activos.map(r =>
-                        this.ubicSvc.getLevels(r.id).pipe(
-                            map(ls => ({ ...r, niveles: ls.filter(l => l.activo && !l.isFloor) })),
-                            catchError(() => of({ ...r, niveles: [] as Level[] }))
-                        )
-                    ));
-                }),
+            this._cargarRacksDeAlmacen(w).pipe(
                 finalize(() => this.loadingRacks = false)
             ).subscribe(rs => { this.racksFull = rs; })
+        );
+    }
+
+    // Únicos almacenes reales de Cochabamba con estantes/niveles cargados (catálogo DAT-12,
+    // data000001.sql): Almacén Central Hangar CBB y Depósito Externo CBB (zona Hazmat).
+    // El resto de bases del catálogo están vacías (sin estantes todavía).
+    // startsWith en vez de code exacto: DAT-12 los creó como 'ALM-CBB'/'ALM-CBB-EXT', y DAT-14
+    // los renombra a 'ALM-CBB-0001'/'ALM-CBB-0002' (formato oficial) — a la fecha no está
+    // confirmado si DAT-14 ya corrió en el servidor que se esté usando, así que se cubren
+    // ambos estados. Mismo patrón de fallback que ya usa form-envio.component.ts para esto.
+    private _soloCbba(ws: Warehouse[]): Warehouse[] {
+        return ws.filter(w => w.codigo?.startsWith('ALM-CBB'));
+    }
+
+    /**
+     * 2 requests fijos (racks + niveles de TODO el almacén) en vez de 1+N (un getLevels
+     * por rack) — ALM-CBB tiene 33 estantes, eso eran hasta 34 llamadas HTTP paralelas
+     * cada vez que se abría el picker. Mismo fix ya aplicado en gestion-estantes.component.ts.
+     */
+    private _cargarRacksDeAlmacen(w: Warehouse): Observable<Rack[]> {
+        return forkJoin([
+            this.ubicSvc.getRacks(w.id),
+            this.ubicSvc.getLevelsByWarehouse(w.id)
+        ]).pipe(
+            map(([racks, levels]) => racks
+                .filter(r => r.activo)
+                .map(r => ({
+                    ...r,
+                    niveles: levels.filter(l => l.rackId === r.id && l.activo && !l.isFloor)
+                }))
+            ),
+            catchError(() => of([] as Rack[]))
+        );
+    }
+
+    /**
+     * En modo edicion, precarga almacen/estante/nivel actuales del kit (rack_id/level_id
+     * reales) para que el picker muestre la ubicacion vigente y para poder detectar si el
+     * usuario la cambia al guardar (ver onSubmit).
+     */
+    private prefillUbicacion(kit: any): void {
+        const warehouseId = kit.warehouse_id != null ? Number(kit.warehouse_id) : null;
+        const rackId      = kit.rack_id      != null ? Number(kit.rack_id)      : null;
+        const levelId     = kit.level_id     != null ? Number(kit.level_id)     : null;
+        this.originalLocation = { rackId, levelId };
+        if (!warehouseId || !rackId || !levelId) return;
+
+        this.loadingWarehouses = true;
+        this._subs.add(
+            this.ubicSvc.getWarehouses().pipe(
+                finalize(() => this.loadingWarehouses = false)
+            ).subscribe(ws => {
+                const activos = ws.filter(w => w.estado === 'ACTIVO');
+                // El picker solo ofrece almacenes de Cbb, pero la busqueda del almacen
+                // actual del kit usa la lista completa (por si viniera de datos legado
+                // con otra base) para no perder el dato al editar.
+                this.warehouses = this._soloCbba(activos);
+                const wh = activos.find(w => w.id === warehouseId);
+                if (!wh) return;
+                this.selWarehouse = wh;
+                this.loadingRacks = true;
+                this._subs.add(
+                    this._cargarRacksDeAlmacen(wh).pipe(
+                        finalize(() => this.loadingRacks = false)
+                    ).subscribe(rs => {
+                        this.racksFull = rs;
+                        const rack = rs.find(r => r.id === rackId);
+                        if (rack) {
+                            this.selRack         = rack;
+                            this.selectedLevelId = levelId;
+                        }
+                    })
+                );
+            })
         );
     }
 
     selectRack(r: Rack): void {
         this.selRack        = r;
         this.selectedLevelId = null;
-        this.showNivelDropdown = false;
     }
 
     selectLevel(l: Level): void {
         this.selectedLevelId = l.id;
         const etiqueta = `${this.selWarehouse!.nombre} › ${this.selRack!.nombre} › ${l.nombre}`;
         this.kitForm.patchValue({ ubicacion: etiqueta });
-        this.showNivelDropdown = false;
         this.closeUbicacionPicker();
     }
 
@@ -399,6 +456,7 @@ export class GestionarKitComponent implements OnInit, OnDestroy {
                     mergeMap(() => this.kitsService.getKitComponents(id_kit)),
                     mergeMap(existentes => this.kitsService.deleteKitComponents(existentes)),
                     mergeMap(() => this.kitsService.saveKitComponents(id_kit, items)),
+                    mergeMap(() => this._moverKitSiCambioUbicacion(id_kit)),
                     finalize(() => this.saving = false)
                 ).subscribe({
                     next: () => { this.dialogRef.close({ saved: true }); },
@@ -406,6 +464,16 @@ export class GestionarKitComponent implements OnInit, OnDestroy {
                 })
             );
         } else {
+            // createKit no filtra nulls como updateKit (ver kits.service.ts) — pxp-client
+            // serializa JS null como el string 'null', que Postgres rechaza al castear a
+            // integer. Por eso estos campos solo se agregan al payload si hay ubicacion
+            // elegida; si no, se omiten y quedan NULL reales del lado de la BD.
+            if (this.selRack?.id && this.selectedLevelId) {
+                payload.warehouse_id = this.selWarehouse?.id ?? null;
+                payload.rack_id      = this.selRack.id;
+                payload.level_id     = this.selectedLevelId;
+            }
+
             this._subs.add(
                 this.kitsService.getNextKitCode().pipe(
                     mergeMap(code => {
@@ -425,6 +493,20 @@ export class GestionarKitComponent implements OnInit, OnDestroy {
                 })
             );
         }
+    }
+
+    /**
+     * En modo edicion, HE_KIT_MOD nunca toca rack_id/level_id (a proposito, ver
+     * ft_kits_ime.sql). Si el usuario cambio la ubicacion en el picker, se dispara
+     * HE_KIT_MOV por separado a traves de moverKit().
+     */
+    private _moverKitSiCambioUbicacion(id_kit: number) {
+        const rackId  = this.selRack?.id      ?? null;
+        const levelId = this.selectedLevelId  ?? null;
+        const changed = rackId  !== (this.originalLocation?.rackId  ?? null)
+                     || levelId !== (this.originalLocation?.levelId ?? null);
+        if (!changed || !rackId || !levelId) return of(null);
+        return this.kitsService.moverKit(id_kit, rackId, levelId);
     }
 
     // ── Helpers ────────────────────────────────────────────────────────

@@ -114,6 +114,14 @@ export class KitsService {
     }
 
     // -----------------------------------------------------------------------------------------------------
+    // @ Ubicación — mover kit a otro almacén/estante/nivel (HE_KIT_MOV, no toca otros campos del kit)
+    // -----------------------------------------------------------------------------------------------------
+
+    moverKit(id_kit: number, rack_id: number, level_id: number): Observable<any> {
+        return this._postOrThrow('herramientas/kits/moverKits', { id_kit, rack_id, level_id });
+    }
+
+    // -----------------------------------------------------------------------------------------------------
     // @ Correlativos — código auto-generado
     // -----------------------------------------------------------------------------------------------------
 

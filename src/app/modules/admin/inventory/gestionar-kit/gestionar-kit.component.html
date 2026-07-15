@@ -1,4 +1,4 @@
-<div class="bg-stone-100 dark:bg-slate-900 border-2 border-black overflow-hidden flex flex-col w-full max-h-[88vh] rounded-2xl"
+<div class="bg-stone-100 dark:bg-slate-900 border-2 border-black overflow-hidden flex flex-col w-full h-full max-h-[88vh] rounded-2xl"
 >
 
     <!-- ═══ HEADER (drag handle) ═══ -->
@@ -25,7 +25,7 @@
     <form [formGroup]="kitForm" class="flex-1 flex flex-col md:flex-row overflow-hidden min-h-0">
 
         <!-- ─── PANEL IZQUIERDO: campos ─── -->
-        <div class="w-full md:w-[290px] md:shrink-0 flex flex-col gap-2.5 overflow-y-auto px-3 py-3 border-b-2 md:border-b-0 md:border-r-2 border-black neo-scrollbar bg-stone-100 dark:bg-slate-900 max-h-[42vh] md:max-h-none">
+        <div class="w-full md:w-[340px] md:shrink-0 flex flex-col gap-2.5 overflow-y-auto px-3.5 py-3.5 border-b-2 md:border-b-0 md:border-r-2 border-black neo-scrollbar bg-stone-100 dark:bg-slate-900 max-h-[42vh] md:max-h-none">
 
             <!-- Código (readonly, auto-generado) -->
             <div>
@@ -40,45 +40,45 @@
                 </div>
             </div>
 
-            <!-- Nombre + Categoría -->
-            <div class="flex flex-col gap-1.5">
-                <div>
-                    <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1 block">
-                        Nombre del Kit *
-                    </label>
-                    <input type="text" formControlName="nombreKit" placeholder="EJ: KIT MANTENIMIENTO A"
-                           class="w-full h-9 text-sm font-bold bg-white dark:bg-slate-800 dark:text-white border-2 rounded-xl px-3 outline-none transition-all placeholder:text-stone-300 placeholder:font-normal placeholder:normal-case dark:placeholder:text-slate-600 uppercase"
-                           [ngClass]="kitForm.get('nombreKit')?.invalid && kitForm.get('nombreKit')?.touched
-                               ? 'border-red-400 focus:shadow-[2px_2px_0_#f87171]'
-                               : 'border-stone-300 dark:border-slate-600 hover:border-stone-400 focus:border-black focus:shadow-[3px_3px_0_#000]'">
-                    <p *ngIf="kitForm.get('nombreKit')?.invalid && kitForm.get('nombreKit')?.touched"
-                       class="text-[8px] font-bold text-red-500 mt-0.5">Campo requerido.</p>
-                </div>
+            <!-- Nombre -->
+            <div>
+                <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1 block">
+                    Nombre del Kit *
+                </label>
+                <input type="text" formControlName="nombreKit" placeholder="EJ: KIT MANTENIMIENTO A"
+                       class="w-full h-9 text-sm font-bold bg-white dark:bg-slate-800 dark:text-white border-2 rounded-xl px-3 outline-none transition-all placeholder:text-stone-300 placeholder:font-normal placeholder:normal-case dark:placeholder:text-slate-600 uppercase"
+                       [ngClass]="kitForm.get('nombreKit')?.invalid && kitForm.get('nombreKit')?.touched
+                           ? 'border-red-400 focus:shadow-[2px_2px_0_#f87171]'
+                           : 'border-stone-300 dark:border-slate-600 hover:border-stone-400 focus:border-black focus:shadow-[3px_3px_0_#000]'">
+                <p *ngIf="kitForm.get('nombreKit')?.invalid && kitForm.get('nombreKit')?.touched"
+                   class="text-[8px] font-bold text-red-500 mt-0.5">Campo requerido.</p>
+            </div>
 
+            <!-- Categoría + Estado (fila, el panel ya tiene el ancho para eso) -->
+            <div class="grid grid-cols-2 gap-2">
                 <div>
                     <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1 block">
                         Categoría *
                     </label>
                     <select formControlName="categoria"
-                            class="w-full h-9 text-xs font-black bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-xl px-2 outline-none transition-all uppercase cursor-pointer hover:border-stone-400 focus:border-black focus:shadow-[3px_3px_0_#000]">
+                            class="w-full h-9 text-sm font-bold bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-xl px-2 outline-none transition-all uppercase cursor-pointer hover:border-stone-400 focus:border-black focus:shadow-[3px_3px_0_#000]">
                         <option *ngFor="let c of categorias" [value]="c">{{ c }}</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1 block">
+                        Estado *
+                    </label>
+                    <select formControlName="estado"
+                            class="w-full h-9 text-sm font-bold bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-xl px-2 outline-none transition-all uppercase cursor-pointer hover:border-stone-400 focus:border-black focus:shadow-[3px_3px_0_#000]">
+                        <option *ngFor="let e of estados" [value]="e.value">{{ e.label }}</option>
                     </select>
                 </div>
             </div>
 
             <!-- Divisor -->
             <div class="border-t-2 border-dashed border-stone-300 dark:border-slate-700"></div>
-
-            <!-- Estado -->
-            <div>
-                <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1 block">
-                    Estado *
-                </label>
-                <select formControlName="estado"
-                        class="w-full h-9 text-xs font-black bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-xl px-2 outline-none transition-all uppercase cursor-pointer hover:border-stone-400 focus:border-black focus:shadow-[3px_3px_0_#000]">
-                    <option *ngFor="let e of estados" [value]="e.value">{{ e.label }}</option>
-                </select>
-            </div>
 
             <!-- Funcionario (autocomplete funcionarios) -->
             <div class="relative">
@@ -125,7 +125,7 @@
                     <div class="flex-1 flex items-center h-9 bg-white dark:bg-slate-900 border-2 rounded-xl px-2.5 gap-1.5 min-w-0 transition-all"
                          [ngClass]="pickerExpanded ? 'border-black shadow-[2px_2px_0_#000]' : 'border-stone-300 dark:border-slate-600'">
                         <mat-icon class="!text-sm text-amber-500 shrink-0">shelves</mat-icon>
-                        <span class="text-xs font-bold truncate"
+                        <span class="text-sm font-bold truncate"
                               [ngClass]="kitForm.get('ubicacion')?.value ? 'text-black dark:text-white' : 'text-stone-300 dark:text-slate-500'">
                             {{ kitForm.get('ubicacion')?.value || 'Sin asignar' }}
                         </span>
@@ -143,7 +143,7 @@
 
                 <!-- Contenido de la mini ventana (abierta vía MatDialog en openUbicacionPicker()) -->
                 <ng-template #ubicacionPickerTpl>
-                <div class="bg-white dark:bg-slate-900 border-2 border-black rounded-xl overflow-hidden flex flex-col" style="max-height:86vh">
+                <div class="bg-white dark:bg-slate-900 border-2 border-black rounded-xl overflow-hidden flex flex-col" style="height:64vh; max-height:64vh">
 
                     <!-- Título -->
                     <div class="bg-[#0F172A] px-3 py-2.5 flex items-center justify-between shrink-0 select-none">
@@ -157,17 +157,17 @@
                         </button>
                     </div>
 
-                    <!-- Contenido con scroll -->
-                    <div class="overflow-y-auto flex-1 neo-scrollbar">
+                    <!-- Contenido: 3 columnas horizontales -->
+                    <div class="flex-1 min-h-0 overflow-hidden flex flex-col md:flex-row divide-y-2 md:divide-y-0 md:divide-x-2 divide-stone-200 dark:divide-slate-700">
 
-                    <!-- ─── PASO 1: ALMACÉN ─── -->
-                    <div class="px-3 py-3 border-b border-stone-200 dark:border-slate-700">
+                    <!-- ─── COLUMNA 1: ALMACÉN ─── -->
+                    <div class="md:w-1/3 min-h-0 flex flex-col overflow-y-auto neo-scrollbar px-3 py-3">
                         <div class="flex items-center gap-2 mb-2">
                             <span class="w-5 h-5 rounded border-2 flex items-center justify-center text-[9px] font-black shrink-0 transition-all"
                                   [ngClass]="selWarehouse ? 'border-black bg-black text-white' : 'border-stone-300 bg-white dark:bg-slate-800 text-stone-400'">
                                 {{ selWarehouse ? '✓' : '1' }}
                             </span>
-                            <span class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400">Almacén</span>
+                            <span class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400">Almacén (Cbb)</span>
                             <div class="flex-1 h-px bg-stone-200 dark:bg-slate-700"></div>
                             <button *ngIf="selWarehouse && !showAlmacenGrid" type="button"
                                     (click)="toggleAlmacenGrid()"
@@ -197,7 +197,7 @@
                             <mat-icon class="!text-sm text-black dark:text-white shrink-0">check_circle</mat-icon>
                         </div>
 
-                        <!-- Grid de almacenes -->
+                        <!-- Lista de almacenes -->
                         <div *ngIf="(!selWarehouse || showAlmacenGrid) && !loadingWarehouses" class="flex flex-col gap-1.5">
                             <button *ngFor="let w of warehouses" type="button"
                                     (click)="selectWarehouse(w)"
@@ -213,100 +213,84 @@
                                 <mat-icon *ngIf="selWarehouse?.id === w.id" class="!text-sm text-black dark:text-white shrink-0">check</mat-icon>
                             </button>
                             <div *ngIf="!warehouses.length && !loadingWarehouses"
-                                 class="text-[9px] text-stone-400 italic text-center py-3">Sin almacenes activos</div>
+                                 class="text-[9px] text-stone-400 italic text-center py-3">Sin almacenes activos en Cochabamba</div>
                         </div>
                     </div>
 
-                    <!-- ─── PASO 2: ESTANTE ─── -->
-                    <ng-container *ngIf="selWarehouse">
-                        <div class="px-3 py-3 border-b border-stone-200 dark:border-slate-700">
-                            <div class="flex items-center gap-2 mb-2">
-                                <span class="w-5 h-5 rounded border-2 flex items-center justify-center text-[9px] font-black shrink-0 transition-all"
-                                      [ngClass]="selRack ? 'border-black bg-black text-white' : 'border-stone-300 bg-white dark:bg-slate-800 text-stone-400'">
-                                    {{ selRack ? '✓' : '2' }}
-                                </span>
-                                <span class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400">Estante</span>
-                                <span *ngIf="loadingRacks" class="ml-auto text-[8px] text-stone-400 italic animate-pulse">cargando...</span>
-                            </div>
+                    <!-- ─── COLUMNA 2: ESTANTE ─── -->
+                    <div class="md:w-1/3 min-h-0 flex flex-col overflow-y-auto neo-scrollbar px-3 py-3">
+                        <div class="flex items-center gap-2 mb-2 shrink-0">
+                            <span class="w-5 h-5 rounded border-2 flex items-center justify-center text-[9px] font-black shrink-0 transition-all"
+                                  [ngClass]="selRack ? 'border-black bg-black text-white' : 'border-stone-300 bg-white dark:bg-slate-800 text-stone-400'">
+                                {{ selRack ? '✓' : '2' }}
+                            </span>
+                            <span class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400">Estante</span>
+                            <span *ngIf="loadingRacks" class="ml-auto text-[8px] text-stone-400 italic animate-pulse">cargando...</span>
+                        </div>
 
+                        <ng-container *ngIf="selWarehouse; else esperandoAlmacen">
                             <!-- Skeleton -->
-                            <div *ngIf="loadingRacks" class="grid grid-cols-2 gap-1.5">
-                                <div *ngFor="let _ of [1,2,3,4]"
-                                     class="h-14 rounded-xl border-2 border-stone-200 dark:border-slate-700 bg-stone-100 dark:bg-slate-800 animate-pulse"></div>
+                            <div *ngIf="loadingRacks" class="grid grid-cols-3 gap-1.5">
+                                <div *ngFor="let _ of [1,2,3,4,5,6]"
+                                     class="h-12 rounded-xl border-2 border-stone-200 dark:border-slate-700 bg-stone-100 dark:bg-slate-800 animate-pulse"></div>
                             </div>
 
                             <!-- Cards de estantes -->
-                            <div *ngIf="!loadingRacks && racks.length" class="grid grid-cols-2 gap-1.5">
-                                <button *ngFor="let r of racks" type="button"
+                            <div *ngIf="!loadingRacks && racks.length" class="grid grid-cols-3 gap-1.5 content-start">
+                                <button *ngFor="let r of racks" type="button" [title]="r.nombre"
                                         (click)="selectRack(r)"
-                                        class="flex flex-col items-center border-2 rounded-xl p-2 text-center transition-all"
+                                        class="flex flex-col items-center border-2 rounded-xl p-1.5 text-center transition-all"
                                         [ngClass]="selRack?.id === r.id
                                             ? 'border-black bg-white dark:bg-slate-700 shadow-[2px_2px_0_#000] -translate-y-px'
                                             : 'border-stone-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:border-stone-400 hover:shadow-[1px_1px_0_#ccc] hover:-translate-y-px'">
-                                    <mat-icon class="!text-lg mb-0.5 text-stone-400 dark:text-slate-500">view_column</mat-icon>
-                                    <p class="text-[10px] font-black text-black dark:text-white uppercase leading-none">{{ r.codigo }}</p>
-                                    <p class="text-[8px] text-stone-400 truncate w-full text-center mt-0.5">{{ r.nombre }}</p>
+                                    <mat-icon class="!text-base mb-0.5 text-stone-400 dark:text-slate-500">view_column</mat-icon>
+                                    <p class="text-[9px] font-black text-black dark:text-white uppercase leading-none truncate w-full">{{ r.codigo }}</p>
                                 </button>
                             </div>
 
                             <p *ngIf="!loadingRacks && !racks.length"
                                class="text-[9px] text-stone-400 italic text-center py-3">Sin estantes disponibles</p>
-                        </div>
-                    </ng-container>
-
-                    <!-- ─── PASO 3: NIVEL ─── -->
-                    <ng-container *ngIf="selRack">
-                        <div class="px-3 py-3">
-                            <div class="flex items-center gap-2 mb-2">
-                                <span class="w-5 h-5 rounded border-2 flex items-center justify-center text-[9px] font-black shrink-0 transition-all"
-                                      [ngClass]="selectedLevelId ? 'border-black bg-black text-white' : 'border-stone-300 bg-white dark:bg-slate-800 text-stone-400'">
-                                    {{ selectedLevelId ? '✓' : '3' }}
-                                </span>
-                                <span class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400">Nivel</span>
+                        </ng-container>
+                        <ng-template #esperandoAlmacen>
+                            <div class="flex-1 flex items-center justify-center min-h-[100px]">
+                                <p class="text-[9px] text-stone-300 dark:text-slate-600 italic text-center px-4">Selecciona un almacén primero</p>
                             </div>
+                        </ng-template>
+                    </div>
 
-                            <!-- Trigger dropdown -->
-                            <button type="button" (click)="toggleNivelDropdown()"
-                                    class="w-full flex items-center justify-between border-2 rounded-xl px-3 py-2 transition-all"
-                                    [ngClass]="showNivelDropdown || selectedLevelId
-                                        ? 'border-black shadow-[2px_2px_0_#000] bg-white dark:bg-slate-800'
-                                        : 'border-stone-300 dark:border-slate-600 hover:border-stone-400 bg-white dark:bg-slate-800'">
-                                <div class="flex items-center gap-2 min-w-0">
-                                    <mat-icon class="!text-sm text-stone-400 shrink-0">layers</mat-icon>
-                                    <span *ngIf="!levelSeleccionado()" class="text-[10px] text-stone-400 dark:text-slate-500 italic">— Seleccionar nivel —</span>
-                                    <span *ngIf="levelSeleccionado()" class="text-[10px] font-black text-black dark:text-white truncate">
-                                        N{{ levelSeleccionado()?.numero }} · {{ levelSeleccionado()?.codigo }}
-                                    </span>
-                                </div>
-                                <mat-icon class="!text-sm text-stone-400 shrink-0 transition-transform duration-200"
-                                          [ngClass]="showNivelDropdown ? 'rotate-180' : ''">expand_more</mat-icon>
-                            </button>
+                    <!-- ─── COLUMNA 3: NIVEL ─── -->
+                    <div class="md:w-1/3 min-h-0 flex flex-col overflow-y-auto neo-scrollbar px-3 py-3">
+                        <div class="flex items-center gap-2 mb-2 shrink-0">
+                            <span class="w-5 h-5 rounded border-2 flex items-center justify-center text-[9px] font-black shrink-0 transition-all"
+                                  [ngClass]="selectedLevelId ? 'border-black bg-black text-white' : 'border-stone-300 bg-white dark:bg-slate-800 text-stone-400'">
+                                {{ selectedLevelId ? '✓' : '3' }}
+                            </span>
+                            <span class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400">Nivel</span>
+                        </div>
 
-                            <!-- Lista de niveles -->
-                            <div *ngIf="showNivelDropdown"
-                                 class="mt-1 border-2 border-black rounded-xl bg-white dark:bg-slate-800 overflow-hidden shadow-[2px_2px_0_#000] divide-y divide-stone-100 dark:divide-slate-700">
-                                <button *ngFor="let l of levels" type="button"
+                        <ng-container *ngIf="selRack; else esperandoEstante">
+                            <div class="grid grid-cols-3 gap-1.5 content-start">
+                                <button *ngFor="let l of levels" type="button" [title]="l.nombre"
                                         (click)="selectLevel(l)"
-                                        class="w-full flex items-center gap-3 px-3 py-2 text-left transition-colors"
+                                        class="flex flex-col items-center border-2 rounded-xl p-1.5 text-center transition-all"
                                         [ngClass]="selectedLevelId === l.id
-                                            ? 'bg-stone-100 dark:bg-slate-700'
-                                            : 'hover:bg-stone-50 dark:hover:bg-slate-700/50'">
-                                    <div class="w-5 h-5 rounded border-2 flex items-center justify-center shrink-0 transition-all"
-                                         [ngClass]="selectedLevelId === l.id ? 'border-black bg-black' : 'border-stone-200 dark:border-slate-600 bg-white dark:bg-slate-700'">
-                                        <mat-icon *ngIf="selectedLevelId === l.id" class="!text-xs text-white">check</mat-icon>
-                                    </div>
-                                    <div class="flex-1 min-w-0">
-                                        <p class="text-[10px] font-black text-black dark:text-white">N{{ l.numero }} · {{ l.codigo }}</p>
-                                        <p class="text-[8px] text-stone-400 dark:text-slate-500 truncate">{{ l.nombre }}</p>
-                                    </div>
+                                            ? 'border-black bg-white dark:bg-slate-700 shadow-[2px_2px_0_#000] -translate-y-px'
+                                            : 'border-stone-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:border-stone-400 hover:shadow-[1px_1px_0_#ccc] hover:-translate-y-px'">
+                                    <mat-icon class="!text-base mb-0.5 text-stone-400 dark:text-slate-500">layers</mat-icon>
+                                    <p class="text-[9px] font-black text-black dark:text-white uppercase leading-none">N{{ l.numero }}</p>
                                 </button>
-                                <div *ngIf="!levels.length"
-                                     class="px-3 py-4 text-[9px] text-stone-400 italic text-center">Sin niveles disponibles</div>
                             </div>
-                        </div>
-                    </ng-container>
+                            <p *ngIf="!levels.length"
+                               class="text-[9px] text-stone-400 italic text-center py-3">Sin niveles disponibles</p>
+                        </ng-container>
+                        <ng-template #esperandoEstante>
+                            <div class="flex-1 flex items-center justify-center min-h-[100px]">
+                                <p class="text-[9px] text-stone-300 dark:text-slate-600 italic text-center px-4">Selecciona un estante primero</p>
+                            </div>
+                        </ng-template>
+                    </div>
 
-                    </div><!-- /contenido con scroll -->
+                    </div><!-- /3 columnas -->
                 </div><!-- /mini ventana -->
                 </ng-template>
             </div>
