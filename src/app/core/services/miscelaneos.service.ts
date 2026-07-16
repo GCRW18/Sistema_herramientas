@@ -38,6 +38,11 @@ export class MiscelaneosService {
             fecha:       raw.fecha_reg        ? (raw.fecha_reg as string).split('T')[0] : '',
             hora:        raw.fecha_reg        ? (raw.fecha_reg as string).split('T')[1]?.slice(0,5) ?? '' : '',
             observacion: raw.notes            ?? '',
+            warehouseId: raw.warehouse_id != null ? Number(raw.warehouse_id) : null,
+            rackId:      raw.rack_id      != null ? Number(raw.rack_id)      : null,
+            levelId:     raw.level_id     != null ? Number(raw.level_id)     : null,
+            rackName:    raw.rack_name    ?? '',
+            levelName:   raw.level_name   ?? '',
         };
     }
 
@@ -98,7 +103,7 @@ export class MiscelaneosService {
     }
 
     createMiscelaneo(mat: Partial<Material>): Observable<{ id: number }> {
-        return from(this._api.post('herramientas/miscelaneos/insertarMiscelaneos', {
+        const payload: any = {
             code:             mat.codigoBoaM?.trim().toUpperCase(),
             name:             mat.producto?.trim(),
             description:      mat.observacion?.trim() || null,
@@ -113,7 +118,16 @@ export class MiscelaneosService {
             location_name:    mat.ubicacion?.trim()    || null,
             notes:            mat.observacion?.trim()  || null,
             active:           mat.activo               ?? true,
-        })).pipe(
+        };
+        // pxp-client serializa JS null como la string 'null', que Postgres rechaza al castear
+        // a int4 — por eso rack_id/level_id/warehouse_id solo se agregan si hay ubicación
+        // elegida (mismo criterio que kits.service.ts#createKit).
+        if (mat.rackId && mat.levelId) {
+            payload.warehouse_id = mat.warehouseId ?? null;
+            payload.rack_id      = mat.rackId;
+            payload.level_id     = mat.levelId;
+        }
+        return from(this._api.post('herramientas/miscelaneos/insertarMiscelaneos', payload)).pipe(
             map((r: any) => {
                 const root = r?.ROOT ?? r;
                 if (root?.error === true) throw new Error(root?.detalle?.mensaje ?? root?.mensaje ?? 'Error al crear misceláneo');
@@ -145,6 +159,21 @@ export class MiscelaneosService {
             map((r: any) => {
                 const root = r?.ROOT ?? r;
                 if (root?.error === true) throw new Error(root?.detalle?.mensaje ?? root?.mensaje ?? 'Error al actualizar misceláneo');
+                return root;
+            }),
+            catchError(err => { throw err; })
+        );
+    }
+
+    // HE_MIS_MOD (updateMiscelaneo) nunca toca rack_id/level_id a propósito — igual criterio
+    // que he.ft_kits_ime (HE_KIT_MOD no mueve, HE_KIT_MOV sí). Mover ubicación va por acá.
+    moverMiscelaneo(id: number, rackId: number, levelId: number): Observable<any> {
+        return from(this._api.post('herramientas/miscelaneos/moverMiscelaneos', {
+            id_miscelaneo: id, rack_id: rackId, level_id: levelId
+        })).pipe(
+            map((r: any) => {
+                const root = r?.ROOT ?? r;
+                if (root?.error === true) throw new Error(root?.detalle?.mensaje ?? root?.mensaje ?? 'Error al mover misceláneo');
                 return root;
             }),
             catchError(err => { throw err; })

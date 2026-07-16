@@ -1,10 +1,10 @@
 import { Injectable, inject } from '@angular/core';
-import { Observable, from, map } from 'rxjs';
+import { Observable, from, map, of, catchError } from 'rxjs';
 import { ErpApiService } from 'app/core/api/api.service';
 import {
     Warehouse, AlmacenTipo, AlmacenEstado,
     Rack, Level, LevelTool, ToolEstado,
-    Ciudad, Oficina,
+    Ciudad, Oficina, LevelKit, LevelMiscelaneo,
 } from './interfaces';
 
 interface BackendWarehouse {
@@ -79,6 +79,38 @@ interface BackendLugar {
     id_lugar: number;
     nombre:   string;
     codigo:   string;
+}
+
+interface BackendKit {
+    id_kit:              number;
+    code:                string;
+    name:                string;
+    category?:           string;
+    status:              string;
+    is_complete:         boolean;
+    total_components:    number;
+    present_components:  number;
+    warehouse_id?:       number;
+    rack_id:             number;
+    level_id:            number;
+    rack_name?:          string;
+    level_name?:         string;
+    funcionario_nombre?: string;
+}
+
+interface BackendMiscelaneo {
+    id_miscelaneo:     number;
+    code:              string;
+    name:              string;
+    item_type?:        string;
+    quantity_in_stock: number;
+    unit_of_measure:   string;
+    warehouse_id?:     number;
+    rack_id:           number;
+    level_id:          number;
+    rack_name?:        string;
+    level_name?:       string;
+    active:            boolean;
 }
 
 
@@ -349,6 +381,60 @@ export class GestionUbicacionesService {
         return from(this._api.post('herramientas/leveltools/eliminarLevelTools', { id_tool: toolId }));
     }
 
+    /* ════════ Kits (ubicados en rack/nivel) ════════ */
+
+    /**
+     * Kits del módulo Gestión de Kits que tienen rack/nivel real asignado
+     * (he.tkits.rack_id/level_id, ver he.ft_kits_ime HE_KIT_INS/HE_KIT_MOV). Se muestran
+     * junto a las herramientas en la grilla de estantes de este módulo.
+     */
+    getKitsByWarehouse(warehouseId: number): Observable<LevelKit[]> {
+        const params = {
+            start: 0, limit: 5000, sort: 'kit.id_kit', dir: 'asc',
+            filtro_adicional: `kit.warehouse_id = ${warehouseId} and kit.level_id is not null`,
+            warehouse_id: warehouseId
+        };
+        return from(this._api.post('herramientas/kits/listarKits', params)).pipe(
+            map((r: any) => {
+                let rawData = r?.datos || r?.data || [];
+                rawData = rawData.filter((x: BackendKit) => Number(x.warehouse_id) === warehouseId);
+                return rawData.map((x: BackendKit) => this.toLevelKit(x));
+            }),
+            catchError(() => of([]))
+        );
+    }
+
+    moveKit(kitId: number, rackId: number, levelId: number): Observable<any> {
+        return from(this._api.post('herramientas/kits/moverKits', { id_kit: kitId, rack_id: rackId, level_id: levelId }));
+    }
+
+    /* ════════ Misceláneos (ubicados en rack/nivel) ════════ */
+
+    /**
+     * Ítems del catálogo de Misceláneos con rack/nivel real asignado (he.tmiscelaneos.rack_id/
+     * level_id, ver he.ft_miscelaneos_ime HE_MIS_INS/HE_MIS_MOV). Se muestran junto a herramientas
+     * y kits en la grilla de estantes de este módulo.
+     */
+    getMiscelaneosByWarehouse(warehouseId: number): Observable<LevelMiscelaneo[]> {
+        const params = {
+            start: 0, limit: 5000, sort: 'mis.id_miscelaneo', dir: 'asc',
+            filtro_adicional: `mis.warehouse_id = ${warehouseId} and mis.level_id is not null`,
+            warehouse_id: warehouseId
+        };
+        return from(this._api.post('herramientas/miscelaneos/listarMiscelaneos', params)).pipe(
+            map((r: any) => {
+                let rawData = r?.datos || r?.data || [];
+                rawData = rawData.filter((x: BackendMiscelaneo) => Number(x.warehouse_id) === warehouseId);
+                return rawData.map((x: BackendMiscelaneo) => this.toLevelMiscelaneo(x));
+            }),
+            catchError(() => of([]))
+        );
+    }
+
+    moveMiscelaneo(id: number, rackId: number, levelId: number): Observable<any> {
+        return from(this._api.post('herramientas/miscelaneos/moverMiscelaneos', { id_miscelaneo: id, rack_id: rackId, level_id: levelId }));
+    }
+
     /* ════════ Mapeos ════════ */
 
     private toWarehouse(b: BackendWarehouse): Warehouse {
@@ -457,6 +543,42 @@ export class GestionUbicacionesService {
             um:            b.unit_of_measure || 'UNIDAD',
             imagenBase64:  b.image_base64,
             observaciones: b.notes,
+        };
+    }
+
+    private toLevelKit(b: BackendKit): LevelKit {
+        return {
+            id:                 b.id_kit,
+            levelId:            b.level_id,
+            rackId:             b.rack_id,
+            rackCodigo:         b.rack_name || '',
+            levelNumero:        null,
+            levelCodigo:        b.level_name || '',
+            codigo:             b.code,
+            nombre:             b.name,
+            category:           b.category,
+            status:             b.status,
+            isComplete:         this._parseBool(b.is_complete),
+            totalComponents:    Number(b.total_components ?? 0),
+            presentComponents:  Number(b.present_components ?? 0),
+            funcionarioNombre:  b.funcionario_nombre,
+        };
+    }
+
+    private toLevelMiscelaneo(b: BackendMiscelaneo): LevelMiscelaneo {
+        return {
+            id:              b.id_miscelaneo,
+            levelId:         b.level_id,
+            rackId:          b.rack_id,
+            rackCodigo:      b.rack_name || '',
+            levelNumero:     null,
+            levelCodigo:     b.level_name || '',
+            codigo:          b.code,
+            nombre:          b.name,
+            itemType:        b.item_type,
+            quantityInStock: Number(b.quantity_in_stock ?? 0),
+            unitOfMeasure:   b.unit_of_measure || 'UND',
+            activo:          this._parseBool(b.active),
         };
     }
 

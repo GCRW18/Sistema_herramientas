@@ -12,7 +12,7 @@ import { catchError, takeUntil } from 'rxjs/operators';
 
 import { CalibrationService } from 'app/core/services/calibration.service';
 
-import { Warehouse, Rack, Level, LevelTool } from '../interfaces';
+import { Warehouse, Rack, Level, LevelTool, LevelKit, LevelMiscelaneo } from '../interfaces';
 import { ConfirmDeleteComponent, ConfirmDeleteData } from '../confirm-delete/confirm-delete.component';
 import { GestionUbicacionesService } from '../gestion-ubicaciones.service';
 import { NivelHerramientasDialogComponent, NivelHerramientasData } from '../nivel-herramientas/nivel-herramientas-dialog.component';
@@ -133,18 +133,37 @@ export class GestionEstantesComponent implements OnInit, OnChanges, OnDestroy {
             racks:  this.svc.getRacks(this.almacen.id),
             levels: this.svc.getLevelsByWarehouse(this.almacen.id).pipe(catchError(() => of([] as Level[]))),
             tools:  this.svc.getLevelToolsByWarehouse(this.almacen.id).pipe(catchError(() => of([] as LevelTool[]))),
+            kits:   this.svc.getKitsByWarehouse(this.almacen.id).pipe(catchError(() => of([] as LevelKit[]))),
+            miscelaneos: this.svc.getMiscelaneosByWarehouse(this.almacen.id).pipe(catchError(() => of([] as LevelMiscelaneo[]))),
         }).subscribe({
-            next: ({ racks, levels, tools }) => {
+            next: ({ racks, levels, tools, kits, miscelaneos }) => {
                 const toolsPorNivel = new Map<number, LevelTool[]>();
                 tools.forEach(t => {
                     const arr = toolsPorNivel.get(t.levelId) ?? [];
                     arr.push(t);
                     toolsPorNivel.set(t.levelId, arr);
                 });
+                const kitsPorNivel = new Map<number, LevelKit[]>();
+                kits.forEach(k => {
+                    const arr = kitsPorNivel.get(k.levelId) ?? [];
+                    arr.push(k);
+                    kitsPorNivel.set(k.levelId, arr);
+                });
+                const miscPorNivel = new Map<number, LevelMiscelaneo[]>();
+                miscelaneos.forEach(m => {
+                    const arr = miscPorNivel.get(m.levelId) ?? [];
+                    arr.push(m);
+                    miscPorNivel.set(m.levelId, arr);
+                });
                 const nivelesPorEstante = new Map<number, Level[]>();
                 levels.forEach(lv => {
                     const arr = nivelesPorEstante.get(lv.rackId) ?? [];
-                    arr.push({ ...lv, tools: toolsPorNivel.get(lv.id) ?? [] });
+                    arr.push({
+                        ...lv,
+                        tools: toolsPorNivel.get(lv.id) ?? [],
+                        kits: kitsPorNivel.get(lv.id) ?? [],
+                        miscelaneos: miscPorNivel.get(lv.id) ?? [],
+                    });
                     nivelesPorEstante.set(lv.rackId, arr);
                 });
                 this.estantes = racks.map(r => ({ ...r, niveles: nivelesPorEstante.get(r.id) ?? [] }));
@@ -232,6 +251,14 @@ export class GestionEstantesComponent implements OnInit, OnChanges, OnDestroy {
 
     contarHerramientas(r: Rack): number {
         return r.niveles.reduce((acc, n) => acc + (n.tools?.length ?? 0), 0);
+    }
+
+    contarKits(r: Rack): number {
+        return r.niveles.reduce((acc, n) => acc + (n.kits?.length ?? 0), 0);
+    }
+
+    contarMiscelaneos(r: Rack): number {
+        return r.niveles.reduce((acc, n) => acc + (n.miscelaneos?.length ?? 0), 0);
     }
 
     estadoBadge(estado: string): { bg: string; tx: string } {

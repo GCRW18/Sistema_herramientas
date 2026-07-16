@@ -60,7 +60,6 @@ export class FormMaterialComponent implements OnInit, OnDestroy {
     private ubicacionPickerRef: MatDialogRef<any> | null = null;
     pickerExpanded    = false;
     showAlmacenGrid   = false;
-    showNivelDropdown = false;
     loadingWarehouses = false;
     loadingRacks      = false;
     warehouses:   Warehouse[] = [];
@@ -68,6 +67,8 @@ export class FormMaterialComponent implements OnInit, OnDestroy {
     selWarehouse: Warehouse | null = null;
     selRack:      Rack | null      = null;
     selectedLevelId: number | null = null;
+    /** Ubicación real al abrir el form (edit) — para saber si el usuario la cambió al guardar */
+    private originalLocation: { rackId: number | null; levelId: number | null } | null = null;
 
     get racks():  Rack[]  { return this.racksFull; }
     get levels(): Level[] { return (this.selRack as any)?.niveles ?? []; }
@@ -106,6 +107,7 @@ export class FormMaterialComponent implements OnInit, OnDestroy {
             if (mat.tipoItem  && !this.tiposItem.includes(mat.tipoItem))    this.tiposItem   = [mat.tipoItem,  ...this.tiposItem];
             if (mat.tipoCompra && !this.tiposCompra.includes(mat.tipoCompra)) this.tiposCompra = [mat.tipoCompra, ...this.tiposCompra];
             this.form.patchValue(mat);
+            if (this.mode === 'edit') this.prefillUbicacion(mat);
         }
         // usr_reg, fecha_reg are set by the pxp-framework — the API has no parameter to update them
         this.form.get('recibidoPor')?.disable();
@@ -174,6 +176,46 @@ export class FormMaterialComponent implements OnInit, OnDestroy {
         setTimeout(() => this.showFuncionarioSuggestions = false, 150);
     }
 
+    /**
+     * En modo edicion, precarga almacen/estante/nivel actuales del material (rack_id/level_id
+     * reales) para que el picker muestre la ubicacion vigente y para poder detectar si el
+     * usuario la cambia al guardar (ver save()). Mismo patrón que gestionar-kit.component.ts.
+     */
+    private prefillUbicacion(mat: Material): void {
+        const warehouseId = mat.warehouseId ?? null;
+        const rackId      = mat.rackId      ?? null;
+        const levelId     = mat.levelId     ?? null;
+        this.originalLocation = { rackId, levelId };
+        if (!warehouseId || !rackId || !levelId) return;
+
+        this.loadingWarehouses = true;
+        this.ubicSvc.getWarehouses().pipe(
+            finalize(() => this.loadingWarehouses = false),
+            takeUntil(this._destroy$)
+        ).subscribe(ws => {
+            const activos = ws.filter(w => w.estado === 'ACTIVO');
+            // El picker solo ofrece almacenes de Cbb, pero la busqueda del almacen actual del
+            // item usa la lista completa (por si viniera de datos legado con otra base) para
+            // no perder el dato al editar. Mismo criterio que gestionar-kit.component.ts.
+            this.warehouses = this._soloCbba(activos);
+            const wh = activos.find(w => w.id === warehouseId);
+            if (!wh) return;
+            this.selWarehouse = wh;
+            this.loadingRacks = true;
+            this._cargarRacksDeAlmacen(wh).pipe(
+                finalize(() => this.loadingRacks = false),
+                takeUntil(this._destroy$)
+            ).subscribe(rs => {
+                this.racksFull = rs;
+                const rack = this.racksFull.find(r => r.id === rackId);
+                if (rack) {
+                    this.selRack         = rack;
+                    this.selectedLevelId = levelId;
+                }
+            });
+        });
+    }
+
     // ── Picker de ubicación (mini ventana) ──────────────────────
     openUbicacionPicker(): void {
         if (this.ubicacionPickerRef) { this.closeUbicacionPicker(); return; }
@@ -184,21 +226,17 @@ export class FormMaterialComponent implements OnInit, OnDestroy {
                 finalize(() => this.loadingWarehouses = false),
                 takeUntil(this._destroy$)
             ).subscribe(ws => {
-                this.warehouses = ws.filter(w => w.estado === 'ACTIVO');
-                if (!this.selWarehouse) {
-                    const cbba = this.warehouses.find(w =>
-                        w.ciudad?.toLowerCase().includes('cochabamba') ||
-                        w.nombre?.toLowerCase().includes('cochabamba')
-                    );
-                    if (cbba) this.selectWarehouse(cbba);
+                this.warehouses = this._soloCbba(ws.filter(w => w.estado === 'ACTIVO'));
+                if (!this.selWarehouse && this.warehouses.length === 1) {
+                    this.selectWarehouse(this.warehouses[0]);
                 }
             });
         }
 
         this.pickerExpanded    = true;
         this.ubicacionPickerRef = this.dialog.open(this.ubicacionPickerTpl, {
-            width: 'min(380px, 94vw)',
-            maxHeight: '86vh',
+            width: 'min(760px, 96vw)',
+            maxHeight: '70vh',
             panelClass: 'no-padding-dialog',
             hasBackdrop: true,
             autoFocus: false,
@@ -213,12 +251,7 @@ export class FormMaterialComponent implements OnInit, OnDestroy {
         this.ubicacionPickerRef?.close();
     }
 
-    toggleAlmacenGrid():   void { this.showAlmacenGrid   = !this.showAlmacenGrid; }
-    toggleNivelDropdown(): void { this.showNivelDropdown = !this.showNivelDropdown; }
-
-    levelSeleccionado(): Level | null {
-        return this.levels.find(l => l.id === this.selectedLevelId) ?? null;
-    }
+    toggleAlmacenGrid(): void { this.showAlmacenGrid = !this.showAlmacenGrid; }
 
     selectWarehouse(w: Warehouse): void {
         if (this.selWarehouse?.id === w.id) { this.showAlmacenGrid = false; return; }
@@ -226,36 +259,50 @@ export class FormMaterialComponent implements OnInit, OnDestroy {
         this.selRack         = null;
         this.selectedLevelId = null;
         this.racksFull       = [];
-        this.showAlmacenGrid    = false;
-        this.showNivelDropdown  = false;
-        this.loadingRacks       = true;
-        this.ubicSvc.getRacks(w.id).pipe(
-            switchMap(rs => {
-                const activos = rs.filter(r => r.activo);
-                if (!activos.length) return of([] as Rack[]);
-                return forkJoin(activos.map(r =>
-                    this.ubicSvc.getLevels(r.id).pipe(
-                        map(ls => ({ ...r, niveles: ls.filter(l => l.activo && !l.isFloor) })),
-                        catchError(() => of({ ...r, niveles: [] as Level[] }))
-                    )
-                ));
-            }),
+        this.showAlmacenGrid = false;
+        this.loadingRacks    = true;
+        this._cargarRacksDeAlmacen(w).pipe(
             finalize(() => this.loadingRacks = false),
             takeUntil(this._destroy$)
-        ).subscribe(rs => { this.racksFull = rs as Rack[]; });
+        ).subscribe(rs => { this.racksFull = rs; });
+    }
+
+    // Únicos almacenes reales de Cochabamba con estantes/niveles cargados (catálogo DAT-12,
+    // data000001.sql). El resto de bases del catálogo están vacías (sin estantes todavía).
+    // Mismo criterio que gestionar-kit.component.ts.
+    private _soloCbba(ws: Warehouse[]): Warehouse[] {
+        return ws.filter(w => w.codigo?.startsWith('ALM-CBB'));
+    }
+
+    /**
+     * 2 requests fijos (racks + niveles de TODO el almacén) en vez de 1+N (un getLevels por
+     * rack) — mismo fix ya aplicado en gestionar-kit.component.ts y gestion-estantes.component.ts.
+     */
+    private _cargarRacksDeAlmacen(w: Warehouse) {
+        return forkJoin([
+            this.ubicSvc.getRacks(w.id),
+            this.ubicSvc.getLevelsByWarehouse(w.id)
+        ]).pipe(
+            map(([racks, levels]) => racks
+                .filter(r => r.activo)
+                .map(r => ({
+                    ...r,
+                    niveles: levels.filter(l => l.rackId === r.id && l.activo && !l.isFloor)
+                }))
+            ),
+            catchError(() => of([] as Rack[]))
+        );
     }
 
     selectRack(r: Rack): void {
         this.selRack         = r;
         this.selectedLevelId = null;
-        this.showNivelDropdown = false;
     }
 
     selectLevel(l: Level): void {
         this.selectedLevelId = l.id;
         const etiqueta = `${this.selWarehouse!.nombre} › ${this.selRack!.nombre} › ${l.nombre}`;
         this.form.patchValue({ ubicacion: etiqueta });
-        this.showNivelDropdown = false;
         this.closeUbicacionPicker();
     }
 
@@ -313,6 +360,9 @@ export class FormMaterialComponent implements OnInit, OnDestroy {
             fecha:       v.fecha,
             hora:        v.hora,
             observacion: v.observacion?.trim() || undefined,
+            warehouseId: this.selWarehouse?.id   ?? null,
+            rackId:      this.selRack?.id        ?? null,
+            levelId:     this.selectedLevelId    ?? null,
         };
         this.dialogRef.close(out);
     }

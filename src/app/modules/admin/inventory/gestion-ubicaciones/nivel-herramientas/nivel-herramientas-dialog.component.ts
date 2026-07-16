@@ -6,7 +6,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatTooltipModule } from '@angular/material/tooltip';
 
-import { Warehouse, Rack, Level, LevelTool } from '../interfaces';
+import { Warehouse, Rack, Level, LevelTool, LevelKit, LevelMiscelaneo } from '../interfaces';
 import { GestionUbicacionesService } from '../gestion-ubicaciones.service';
 import { ConfirmDeleteComponent, ConfirmDeleteData } from '../confirm-delete/confirm-delete.component';
 import { MoverResult } from '../mover-herramientas/mover-herramientas.component';
@@ -54,6 +54,14 @@ export interface NivelHerramientasData {
             <span class="hidden sm:flex px-2 py-1 text-[10px] font-black uppercase border-2 border-black rounded-lg bg-white text-black items-center gap-1 shrink-0 shadow-[2px_2px_0px_0px_#000]">
                 <mat-icon class="!text-[13px] !w-3.5 !h-3.5">handyman</mat-icon>
                 {{ herramientas.length }}
+            </span>
+            <span *ngIf="kits.length" class="hidden sm:flex px-2 py-1 text-[10px] font-black uppercase border-2 border-black rounded-lg bg-blue-100 text-blue-800 items-center gap-1 shrink-0 shadow-[2px_2px_0px_0px_#000]">
+                <mat-icon class="!text-[13px] !w-3.5 !h-3.5">inventory_2</mat-icon>
+                {{ kits.length }}
+            </span>
+            <span *ngIf="miscelaneos.length" class="hidden sm:flex px-2 py-1 text-[10px] font-black uppercase border-2 border-black rounded-lg bg-purple-100 text-purple-800 items-center gap-1 shrink-0 shadow-[2px_2px_0px_0px_#000]">
+                <mat-icon class="!text-[13px] !w-3.5 !h-3.5">category</mat-icon>
+                {{ miscelaneos.length }}
             </span>
             <button (click)="cerrar()" matTooltip="Cerrar"
                     class="w-9 h-9 flex items-center justify-center bg-[#FF1414FF] border-2 border-black rounded shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all shrink-0">
@@ -135,6 +143,78 @@ export interface NivelHerramientasData {
                         Agregar la primera
                     </button>
                 </div>
+
+                <!-- Kits asignados a este nivel -->
+                <ng-container *ngIf="kitsFiltrados.length">
+                    <div class="flex items-center gap-2 mt-2 mb-0.5">
+                        <mat-icon class="!text-[14px] !w-3.5 !h-3.5 text-blue-700">inventory_2</mat-icon>
+                        <span class="text-[10px] font-black uppercase text-gray-500">Kits en este nivel</span>
+                    </div>
+
+                    <div *ngFor="let k of kitsFiltrados"
+                         class="group relative bg-blue-50 dark:bg-slate-800 border-2 border-black rounded-xl p-2 sm:p-3 shadow-[3px_3px_0px_0px_#000] hover:-translate-y-[1px] hover:shadow-[4px_4px_0px_0px_#000] transition-all flex items-center gap-2">
+
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-center gap-1 sm:gap-2 mb-0.5 flex-wrap">
+                                <span class="font-mono text-[8px] sm:text-[9px] font-black px-1 sm:px-1.5 py-0.5 bg-blue-200 dark:bg-slate-700 border border-black rounded text-black dark:text-white">
+                                    {{ k.codigo }}
+                                </span>
+                                <span class="px-1 sm:px-1.5 py-0.5 text-[7px] sm:text-[8px] font-black uppercase border border-black rounded"
+                                      [ngClass]="k.isComplete ? 'bg-green-500 text-white' : 'bg-[#FF1414FF] text-white'">
+                                    {{ k.isComplete ? 'COMPLETO' : 'INCOMPLETO' }}
+                                </span>
+                            </div>
+                            <p class="font-black text-[11px] sm:text-[12px] leading-tight text-black dark:text-white truncate mt-0.5">{{ k.nombre }}</p>
+                            <p class="text-[9px] sm:text-[10px] font-bold text-gray-500 truncate mt-0.5">
+                                {{ k.presentComponents }}/{{ k.totalComponents }} componentes
+                                <span *ngIf="k.funcionarioNombre"> · {{ k.funcionarioNombre }}</span>
+                            </p>
+                        </div>
+
+                        <div class="flex items-center justify-center gap-1 shrink-0">
+                            <button (click)="moverKit(k)" matTooltip="Mover kit"
+                                    class="w-6 h-6 sm:w-7 sm:h-7 flex items-center justify-center bg-blue-500 border-2 border-black rounded shadow-[2px_2px_0px_0px_#000] hover:translate-y-[1px] hover:shadow-none transition-all">
+                                <mat-icon class="!text-[12px] sm:!text-[14px] text-white">swap_horiz</mat-icon>
+                            </button>
+                        </div>
+                    </div>
+                </ng-container>
+
+                <!-- Misceláneos asignados a este nivel -->
+                <ng-container *ngIf="miscelaneosFiltrados.length">
+                    <div class="flex items-center gap-2 mt-2 mb-0.5">
+                        <mat-icon class="!text-[14px] !w-3.5 !h-3.5 text-purple-700">category</mat-icon>
+                        <span class="text-[10px] font-black uppercase text-gray-500">Misceláneos en este nivel</span>
+                    </div>
+
+                    <div *ngFor="let m of miscelaneosFiltrados"
+                         class="group relative bg-purple-50 dark:bg-slate-800 border-2 border-black rounded-xl p-2 sm:p-3 shadow-[3px_3px_0px_0px_#000] hover:-translate-y-[1px] hover:shadow-[4px_4px_0px_0px_#000] transition-all flex items-center gap-2">
+
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-center gap-1 sm:gap-2 mb-0.5 flex-wrap">
+                                <span class="font-mono text-[8px] sm:text-[9px] font-black px-1 sm:px-1.5 py-0.5 bg-purple-200 dark:bg-slate-700 border border-black rounded text-black dark:text-white">
+                                    {{ m.codigo }}
+                                </span>
+                                <span *ngIf="m.itemType" class="px-1 sm:px-1.5 py-0.5 text-[7px] sm:text-[8px] font-black uppercase border border-black rounded bg-gray-200 text-black">
+                                    {{ m.itemType }}
+                                </span>
+                            </div>
+                            <p class="font-black text-[11px] sm:text-[12px] leading-tight text-black dark:text-white truncate mt-0.5">{{ m.nombre }}</p>
+                        </div>
+
+                        <div class="text-right shrink-0 px-2 sm:px-3 border-r-2 border-gray-200 dark:border-slate-700">
+                            <p class="text-sm sm:text-lg font-black text-black dark:text-white leading-none">{{ m.quantityInStock }}</p>
+                            <p class="text-[7px] sm:text-[8px] font-bold text-gray-500 uppercase mt-0.5">{{ m.unitOfMeasure }}</p>
+                        </div>
+
+                        <div class="flex items-center justify-center gap-1 shrink-0">
+                            <button (click)="moverMiscelaneo(m)" matTooltip="Mover misceláneo"
+                                    class="w-6 h-6 sm:w-7 sm:h-7 flex items-center justify-center bg-blue-500 border-2 border-black rounded shadow-[2px_2px_0px_0px_#000] hover:translate-y-[1px] hover:shadow-none transition-all">
+                                <mat-icon class="!text-[12px] sm:!text-[14px] text-white">swap_horiz</mat-icon>
+                            </button>
+                        </div>
+                    </div>
+                </ng-container>
             </div>
         </div>
     </div>
@@ -168,6 +248,26 @@ export class NivelHerramientasDialogComponent implements AfterViewInit {
         return this.herramientas.filter(t =>
             `${t.codigo} ${t.pn} ${t.sn ?? ''} ${t.nombre} ${t.marca ?? ''}`.toLowerCase().includes(q)
         );
+    }
+
+    get kits(): LevelKit[] {
+        return this.level.kits ?? [];
+    }
+
+    get kitsFiltrados(): LevelKit[] {
+        const q = (this.filtroControl.value ?? '').toString().trim().toLowerCase();
+        if (!q) return this.kits;
+        return this.kits.filter(k => `${k.codigo} ${k.nombre}`.toLowerCase().includes(q));
+    }
+
+    get miscelaneos(): LevelMiscelaneo[] {
+        return this.level.miscelaneos ?? [];
+    }
+
+    get miscelaneosFiltrados(): LevelMiscelaneo[] {
+        const q = (this.filtroControl.value ?? '').toString().trim().toLowerCase();
+        if (!q) return this.miscelaneos;
+        return this.miscelaneos.filter(m => `${m.codigo} ${m.nombre}`.toLowerCase().includes(q));
     }
 
     ngAfterViewInit(): void {
@@ -293,6 +393,64 @@ export class NivelHerramientasDialogComponent implements AfterViewInit {
                     this.snackBar.open(`Herramienta movida a ${res.levelCodigo}`, 'Cerrar', { duration: 3000 });
                 },
                 error: () => this.snackBar.open('Error al mover herramienta', 'Cerrar', { duration: 3500 }),
+            });
+        });
+    }
+
+    async moverKit(kit: LevelKit) {
+        const racksByAlmacen: Record<number, Rack[]> = {};
+        racksByAlmacen[this.data.almacen.id] = this.data.estantes;
+
+        const { MoverHerramientasComponent } = await import('../mover-herramientas/mover-herramientas.component');
+        const ref = this.dialog.open(MoverHerramientasComponent, {
+            width: '600px', maxWidth: '95vw', panelClass: 'no-padding-dialog',
+            data: {
+                count: 1,
+                almacenes: this.data.todosLosAlmacenes,
+                racksByAlmacen,
+                currentLevelId:   kit.levelId,
+                currentRackCode:  kit.rackCodigo,
+                currentAlmacenId: this.data.almacen.id,
+            }
+        });
+        ref.afterClosed().subscribe((res: MoverResult | undefined) => {
+            if (!res) return;
+            this.svc.moveKit(kit.id, res.rackId, res.levelId).subscribe({
+                next: () => {
+                    this.level.kits = (this.level.kits ?? []).filter(k => k.id !== kit.id);
+                    this.changed = true;
+                    this.snackBar.open(`Kit movido a ${res.levelCodigo}`, 'Cerrar', { duration: 3000 });
+                },
+                error: () => this.snackBar.open('Error al mover kit', 'Cerrar', { duration: 3500 }),
+            });
+        });
+    }
+
+    async moverMiscelaneo(item: LevelMiscelaneo) {
+        const racksByAlmacen: Record<number, Rack[]> = {};
+        racksByAlmacen[this.data.almacen.id] = this.data.estantes;
+
+        const { MoverHerramientasComponent } = await import('../mover-herramientas/mover-herramientas.component');
+        const ref = this.dialog.open(MoverHerramientasComponent, {
+            width: '600px', maxWidth: '95vw', panelClass: 'no-padding-dialog',
+            data: {
+                count: 1,
+                almacenes: this.data.todosLosAlmacenes,
+                racksByAlmacen,
+                currentLevelId:   item.levelId,
+                currentRackCode:  item.rackCodigo,
+                currentAlmacenId: this.data.almacen.id,
+            }
+        });
+        ref.afterClosed().subscribe((res: MoverResult | undefined) => {
+            if (!res) return;
+            this.svc.moveMiscelaneo(item.id, res.rackId, res.levelId).subscribe({
+                next: () => {
+                    this.level.miscelaneos = (this.level.miscelaneos ?? []).filter(m => m.id !== item.id);
+                    this.changed = true;
+                    this.snackBar.open(`Misceláneo movido a ${res.levelCodigo}`, 'Cerrar', { duration: 3000 });
+                },
+                error: () => this.snackBar.open('Error al mover misceláneo', 'Cerrar', { duration: 3500 }),
             });
         });
     }

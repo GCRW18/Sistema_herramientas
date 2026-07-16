@@ -47,6 +47,40 @@ export interface Level {
     activo:      boolean;
     isFloor:     boolean;
     tools?:      LevelTool[];
+    kits?:       LevelKit[];
+    miscelaneos?: LevelMiscelaneo[];
+}
+
+export interface LevelKit {
+    id:                  number;
+    levelId:             number;
+    rackId:              number;
+    rackCodigo:          string;
+    levelNumero:         number | null;
+    levelCodigo:         string;
+    codigo:              string;
+    nombre:              string;
+    category?:           string;
+    status:              string;
+    isComplete:          boolean;
+    totalComponents:     number;
+    presentComponents:   number;
+    funcionarioNombre?:  string;
+}
+
+export interface LevelMiscelaneo {
+    id:               number;
+    levelId:          number;
+    rackId:           number;
+    rackCodigo:       string;
+    levelNumero:      number | null;
+    levelCodigo:      string;
+    codigo:           string;
+    nombre:           string;
+    itemType?:        string;
+    quantityInStock:  number;
+    unitOfMeasure:    string;
+    activo:           boolean;
 }
 
 export type ToolEstado = 'NUEVO' | 'REACONDICIONADO' | 'USADO';

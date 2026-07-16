@@ -16,6 +16,12 @@ export interface Material {
     fecha: string;
     hora: string;
     observacion?: string;
+    /** Ubicación real Almacén→Estante→Nivel (ver he.tmiscelaneos.rack_id/level_id) */
+    warehouseId?: number | null;
+    rackId?:      number | null;
+    levelId?:     number | null;
+    rackName?:    string;
+    levelName?:   string;
 }
 
 export interface Entrada {

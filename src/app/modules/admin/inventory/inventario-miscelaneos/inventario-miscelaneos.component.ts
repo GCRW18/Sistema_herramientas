@@ -5,8 +5,8 @@ import { MatDialog, MatDialogModule, MatDialogRef } from '@angular/material/dial
 import { MatIconModule } from '@angular/material/icon';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatTooltipModule } from '@angular/material/tooltip';
-import { Subject, combineLatest, forkJoin } from 'rxjs';
-import { startWith, takeUntil, debounceTime, finalize } from 'rxjs/operators';
+import { Subject, combineLatest, forkJoin, of } from 'rxjs';
+import { startWith, takeUntil, debounceTime, finalize, mergeMap } from 'rxjs/operators';
 
 import { Material, Entrada, Salida, TabMisc } from './interfaces';
 import { MiscelaneosService } from '../../../../core/services/miscelaneos.service';
@@ -273,7 +273,16 @@ export class InventarioMiscelaneosComponent implements OnInit, OnDestroy {
             if (!r) return;
             this.isLoading.set(true);
             this.svc.updateMiscelaneo(m.id, r)
-                .pipe(finalize(() => this.isLoading.set(false)))
+                .pipe(
+                    // HE_MIS_MOD no toca rack_id/level_id a propósito (ver miscelaneos.service.ts).
+                    // Si el usuario cambió la ubicación en el picker, se dispara HE_MIS_MOV aparte.
+                    mergeMap(() => {
+                        const changed = r.rackId !== m.rackId || r.levelId !== m.levelId;
+                        if (!changed || !r.rackId || !r.levelId) return of(null);
+                        return this.svc.moverMiscelaneo(m.id, r.rackId, r.levelId);
+                    }),
+                    finalize(() => this.isLoading.set(false))
+                )
                 .subscribe({
                     next: () => {
                         this.snackBar.open('Ítem actualizado', 'Cerrar', { duration: 2500 });
