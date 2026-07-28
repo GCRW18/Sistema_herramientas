@@ -178,198 +178,180 @@
 
                 <!-- Fila 5: Ubicación — picker MatDialog -->
                 <div>
-                    <!-- Trigger button -->
-                    <button type="button" (click)="openUbicacionDialog()"
-                            class="w-full flex items-center justify-between px-3 py-2 border-2 border-black rounded-lg bg-white dark:bg-slate-800 select-none transition-all"
-                            [ngClass]="showUbicacionPanel ? 'shadow-none ring-2 ring-amber-400' : 'shadow-[2px_2px_0_#000] hover:shadow-[1px_1px_0_#000]'">
-                        <div class="flex items-center gap-2 min-w-0">
-                            <div class="flex items-center gap-0.5 shrink-0">
-                                <span class="w-4 h-4 rounded border-2 flex items-center justify-center text-[8px] font-black transition-all"
-                                      [ngClass]="ubSelectedWarehouse ? 'border-black bg-black text-white' : 'border-stone-300 text-stone-400'">
-                                    {{ ubSelectedWarehouse ? '✓' : '1' }}
-                                </span>
-                                <span class="w-2.5 h-px" [ngClass]="ubSelectedWarehouse ? 'bg-black dark:bg-white' : 'bg-stone-300'"></span>
-                                <span class="w-4 h-4 rounded border-2 flex items-center justify-center text-[8px] font-black transition-all"
-                                      [ngClass]="ubSelectedRack ? 'border-black bg-black text-white' : 'border-stone-300 text-stone-400'">
-                                    {{ ubSelectedRack ? '✓' : '2' }}
-                                </span>
-                                <span class="w-2.5 h-px" [ngClass]="ubSelectedRack ? 'bg-black dark:bg-white' : 'bg-stone-300'"></span>
-                                <span class="w-4 h-4 rounded border-2 flex items-center justify-center text-[8px] font-black transition-all"
-                                      [ngClass]="ubSelectedLevel ? 'border-black bg-black text-white' : 'border-stone-300 text-stone-400'">
-                                    {{ ubSelectedLevel ? '✓' : '3' }}
-                                </span>
-                            </div>
-                            <div class="min-w-0">
-                                <p class="text-[8px] font-black uppercase tracking-wider text-stone-400 dark:text-slate-500 leading-none mb-0.5">Ubicación en Inventario</p>
-                                <p class="text-[10px] font-black font-mono text-black dark:text-white truncate">{{ getUbicacionLabel() }}</p>
-                            </div>
-                        </div>
-                        <div class="flex items-center gap-1 shrink-0">
-                            <button *ngIf="ubSelectedWarehouse" type="button"
-                                    (click)="limpiarUbicacion(); $event.stopPropagation()"
-                                    class="w-5 h-5 flex items-center justify-center rounded hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors">
-                                <mat-icon class="!text-xs text-red-400">close</mat-icon>
-                            </button>
-                            <mat-icon class="!text-sm text-stone-400 transition-transform duration-200"
-                                      [ngClass]="showUbicacionPanel ? 'rotate-180' : ''">expand_more</mat-icon>
-                        </div>
-                    </button>
+                    <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-500 mb-1 block">
+                        Ubicación en Inventario
+                    </label>
 
-                    <!-- Mini ventana (MatDialog) -->
+                    <!-- Display + controles -->
+                    <div class="flex gap-1.5">
+                        <div class="flex-1 flex items-center h-9 bg-white dark:bg-slate-800 border-2 rounded-lg px-2.5 gap-1.5 min-w-0 transition-all"
+                             [ngClass]="showUbicacionPanel ? 'border-black shadow-[2px_2px_0_#000]' : 'border-stone-300 dark:border-slate-600'">
+                            <mat-icon class="!text-sm text-amber-500 shrink-0">shelves</mat-icon>
+                            <span class="text-xs font-bold font-mono truncate"
+                                  [ngClass]="ubSelectedWarehouse ? 'text-black dark:text-white' : 'text-stone-300 dark:text-slate-500'">
+                                {{ getUbicacionLabel() }}
+                            </span>
+                        </div>
+                        <button type="button" (click)="openUbicacionDialog()"
+                                class="h-9 px-2.5 border-2 border-black rounded-lg font-black shadow-[2px_2px_0_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all flex items-center shrink-0"
+                                [ngClass]="showUbicacionPanel ? 'bg-[#0F172A] text-white' : 'bg-amber-400 text-black'">
+                            <mat-icon class="!text-sm">{{ showUbicacionPanel ? 'expand_less' : 'account_tree' }}</mat-icon>
+                        </button>
+                        <button *ngIf="ubSelectedWarehouse" type="button" (click)="limpiarUbicacion()"
+                                class="h-9 w-9 flex items-center justify-center bg-red-100 border-2 border-black rounded-lg shadow-[2px_2px_0_#000] hover:bg-red-400 hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all shrink-0">
+                            <mat-icon class="!text-sm text-red-700">close</mat-icon>
+                        </button>
+                    </div>
+
+                    <!-- Mini ventana (MatDialog vía openUbicacionDialog()) -->
                     <ng-template #ubicDialogTpl>
-                        <div class="bg-white dark:bg-slate-800 border-2 border-black rounded-xl overflow-hidden flex flex-col"
-                             style="max-height: 88vh;">
+                        <div class="bg-white dark:bg-slate-800 border-2 border-black rounded-xl overflow-hidden flex flex-col" style="height:64vh; max-height:64vh">
 
-                            <!-- Title bar -->
-                            <div class="bg-[#0F172A] px-3 py-2 flex items-center justify-between shrink-0 select-none">
-                                <div class="flex items-center gap-2.5">
-                                    <div class="flex items-center gap-1">
-                                        <div class="w-5 h-5 rounded-full border-2 flex items-center justify-center text-[9px] font-black transition-all"
-                                             [ngClass]="ubSelectedWarehouse ? 'border-amber-400 bg-amber-400 text-black' : 'border-white/20 text-white/30'">
-                                            {{ ubSelectedWarehouse ? '✓' : '1' }}
-                                        </div>
-                                        <div class="w-4 h-px" [ngClass]="ubSelectedWarehouse ? 'bg-amber-400' : 'bg-white/20'"></div>
-                                        <div class="w-5 h-5 rounded-full border-2 flex items-center justify-center text-[9px] font-black transition-all"
-                                             [ngClass]="ubSelectedRack ? 'border-amber-400 bg-amber-400 text-black' : 'border-white/20 text-white/30'">
-                                            {{ ubSelectedRack ? '✓' : '2' }}
-                                        </div>
-                                        <div class="w-4 h-px" [ngClass]="ubSelectedRack ? 'bg-amber-400' : 'bg-white/20'"></div>
-                                        <div class="w-5 h-5 rounded-full border-2 flex items-center justify-center text-[9px] font-black transition-all"
-                                             [ngClass]="ubSelectedLevel ? 'border-amber-400 bg-amber-400 text-black' : 'border-white/20 text-white/30'">
-                                            {{ ubSelectedLevel ? '✓' : '3' }}
-                                        </div>
-                                    </div>
-                                    <span class="text-white text-[10px] font-black uppercase tracking-wider">Seleccionar Ubicación</span>
-                                </div>
+                            <!-- Título -->
+                            <div class="bg-[#0F172A] px-3 py-2.5 flex items-center justify-between shrink-0 select-none">
+                                <span class="text-white text-[10px] font-black uppercase tracking-wider flex items-center gap-1.5">
+                                    <mat-icon class="!text-sm text-amber-400">account_tree</mat-icon>
+                                    Seleccionar Ubicación
+                                </span>
                                 <button type="button" (click)="closeUbicacionDialog()"
                                         class="w-6 h-6 flex items-center justify-center rounded hover:bg-white/10 transition-colors">
                                     <mat-icon class="!text-sm text-white/70 hover:text-white">close</mat-icon>
                                 </button>
                             </div>
 
-                            <!-- Content scrollable -->
-                            <div class="overflow-y-auto flex-1 divide-y divide-stone-100 dark:divide-slate-700 custom-scrollbar">
+                            <!-- Contenido: 3 columnas horizontales -->
+                            <div class="flex-1 min-h-0 overflow-hidden flex flex-col md:flex-row divide-y-2 md:divide-y-0 md:divide-x-2 divide-stone-200 dark:divide-slate-700">
 
-                                <!-- ─ PASO 1: ALMACÉN ─ -->
-                                <div class="px-3 py-2.5">
-                                    <div class="flex items-center gap-1.5 mb-2">
-                                        <span class="w-4 h-4 rounded border-2 flex items-center justify-center text-[8px] font-black shrink-0 transition-all"
-                                              [ngClass]="ubSelectedWarehouse ? 'border-black bg-black text-white' : 'border-stone-300 text-stone-400'">
-                                            {{ ubSelectedWarehouse ? '✓' : '1' }}
-                                        </span>
-                                        <span class="text-[8px] font-black uppercase tracking-widest text-stone-400">Almacén</span>
-                                        <div class="flex-1 h-px bg-stone-200 dark:bg-slate-700"></div>
-                                        <button *ngIf="ubSelectedWarehouse && !showUbAlmacenGrid" type="button"
-                                                (click)="showUbAlmacenGrid = true"
-                                                class="flex items-center gap-0.5 text-[8px] font-black uppercase text-stone-500 hover:text-black transition-colors">
-                                            <mat-icon class="!text-[10px]">edit</mat-icon> cambiar
-                                        </button>
-                                        <button *ngIf="showUbAlmacenGrid && ubSelectedWarehouse" type="button"
-                                                (click)="showUbAlmacenGrid = false"
-                                                class="flex items-center gap-0.5 text-[8px] font-black uppercase text-stone-400 hover:text-stone-600 transition-colors">
-                                            <mat-icon class="!text-[10px]">close</mat-icon> cerrar
-                                        </button>
-                                    </div>
-                                    <div *ngIf="ubSelectedWarehouse && !showUbAlmacenGrid"
-                                         class="flex items-center gap-2 bg-stone-50 dark:bg-slate-700 border-2 border-black rounded-lg px-2.5 py-2 shadow-[2px_2px_0_#000]">
-                                        <mat-icon class="!text-sm text-black dark:text-white shrink-0">warehouse</mat-icon>
-                                        <div class="flex-1 min-w-0">
-                                            <p class="text-[7px] text-stone-400 font-bold uppercase tracking-widest leading-none mb-0.5">{{ ubSelectedWarehouse.tipo }}</p>
-                                            <p class="text-xs font-black text-black dark:text-white truncate">{{ ubSelectedWarehouse.codigo }} · {{ ubSelectedWarehouse.nombre }}</p>
-                                        </div>
-                                        <mat-icon class="!text-sm text-black dark:text-white shrink-0">check_circle</mat-icon>
-                                    </div>
-                                    <div *ngIf="!ubSelectedWarehouse || showUbAlmacenGrid">
-                                        <div *ngIf="loadingAlmacenes" class="grid grid-cols-2 gap-2">
-                                            <div *ngFor="let _ of [1,2]" class="h-10 rounded-lg border-2 border-stone-200 bg-stone-100 animate-pulse"></div>
-                                        </div>
-                                        <div *ngIf="!loadingAlmacenes" class="grid grid-cols-2 gap-2">
-                                            <button *ngFor="let w of ubAlmacenes" type="button"
-                                                    (click)="seleccionarAlmacen(w)"
-                                                    class="flex items-center gap-2 border-2 rounded-lg px-2.5 py-2 text-left transition-all"
-                                                    [ngClass]="ubSelectedWarehouse?.id === w.id
-                                                        ? 'border-black bg-white dark:bg-slate-700 shadow-[2px_2px_0_#000]'
-                                                        : 'border-stone-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:border-black hover:shadow-[2px_2px_0_#000]'">
-                                                <mat-icon class="!text-sm text-stone-400 shrink-0">warehouse</mat-icon>
-                                                <div class="flex-1 min-w-0">
-                                                    <p class="text-[10px] font-black uppercase text-black dark:text-white leading-none">{{ w.codigo }}</p>
-                                                    <p class="text-[8px] text-stone-400 truncate">{{ w.nombre }}</p>
-                                                </div>
-                                                <mat-icon *ngIf="ubSelectedWarehouse?.id === w.id" class="!text-xs text-black dark:text-white shrink-0">check</mat-icon>
-                                            </button>
-                                        </div>
-                                    </div>
+                            <!-- ─── COLUMNA 1: ALMACÉN ─── -->
+                            <div class="md:w-1/3 min-h-0 flex flex-col overflow-y-auto custom-scrollbar px-3 py-3">
+                                <div class="flex items-center gap-2 mb-2">
+                                    <span class="w-5 h-5 rounded border-2 flex items-center justify-center text-[9px] font-black shrink-0 transition-all"
+                                          [ngClass]="ubSelectedWarehouse ? 'border-black bg-black text-white' : 'border-stone-300 bg-white dark:bg-slate-800 text-stone-400'">
+                                        {{ ubSelectedWarehouse ? '✓' : '1' }}
+                                    </span>
+                                    <span class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400">Almacén</span>
+                                    <div class="flex-1 h-px bg-stone-200 dark:bg-slate-700"></div>
+                                    <button *ngIf="ubSelectedWarehouse && !showUbAlmacenGrid" type="button"
+                                            (click)="showUbAlmacenGrid = true"
+                                            class="flex items-center gap-0.5 text-[9px] font-black uppercase text-stone-500 hover:text-black dark:hover:text-white transition-colors">
+                                        <mat-icon class="!text-xs">edit</mat-icon> cambiar
+                                    </button>
+                                    <button *ngIf="showUbAlmacenGrid && ubSelectedWarehouse" type="button"
+                                            (click)="showUbAlmacenGrid = false"
+                                            class="flex items-center gap-0.5 text-[9px] font-black uppercase text-stone-400 hover:text-stone-600 transition-colors">
+                                        <mat-icon class="!text-xs">close</mat-icon> cerrar
+                                    </button>
                                 </div>
 
-                                <!-- ─ PASO 2: ESTANTE ─ -->
-                                <ng-container *ngIf="ubSelectedWarehouse">
-                                    <div class="px-3 py-2.5">
-                                        <div class="flex items-center gap-1.5 mb-2">
-                                            <span class="w-4 h-4 rounded border-2 flex items-center justify-center text-[8px] font-black shrink-0 transition-all"
-                                                  [ngClass]="ubSelectedRack ? 'border-black bg-black text-white' : 'border-stone-300 text-stone-400'">
-                                                {{ ubSelectedRack ? '✓' : '2' }}
-                                            </span>
-                                            <span class="text-[8px] font-black uppercase tracking-widest text-stone-400">Estante / Rack</span>
-                                            <span *ngIf="loadingRacks" class="text-[8px] text-stone-400 italic animate-pulse ml-auto">cargando…</span>
+                                <div *ngIf="loadingAlmacenes" class="flex items-center gap-2 py-2">
+                                    <div class="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin shrink-0"></div>
+                                    <span class="text-[9px] text-stone-400 font-bold">Cargando almacenes...</span>
+                                </div>
+
+                                <!-- Chip seleccionado -->
+                                <div *ngIf="ubSelectedWarehouse && !showUbAlmacenGrid && !loadingAlmacenes"
+                                     class="flex items-center gap-2 bg-stone-50 dark:bg-slate-700 border-2 border-black rounded-xl px-3 py-2 shadow-[2px_2px_0_#000]">
+                                    <mat-icon class="!text-sm text-black dark:text-white shrink-0">warehouse</mat-icon>
+                                    <div class="flex-1 min-w-0">
+                                        <p class="text-[8px] text-stone-400 font-bold uppercase tracking-widest leading-none mb-0.5">{{ ubSelectedWarehouse.tipo }}</p>
+                                        <p class="text-xs font-black text-black dark:text-white truncate">{{ ubSelectedWarehouse.codigo }} · {{ ubSelectedWarehouse.nombre }}</p>
+                                    </div>
+                                    <mat-icon class="!text-sm text-black dark:text-white shrink-0">check_circle</mat-icon>
+                                </div>
+
+                                <!-- Lista de almacenes -->
+                                <div *ngIf="(!ubSelectedWarehouse || showUbAlmacenGrid) && !loadingAlmacenes" class="flex flex-col gap-1.5">
+                                    <button *ngFor="let w of ubAlmacenes" type="button"
+                                            (click)="seleccionarAlmacen(w)"
+                                            class="flex items-center gap-2 border-2 rounded-xl px-3 py-2 text-left transition-all"
+                                            [ngClass]="ubSelectedWarehouse?.id === w.id
+                                                ? 'border-black bg-white dark:bg-slate-700 shadow-[2px_2px_0_#000]'
+                                                : 'border-stone-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:border-black hover:shadow-[2px_2px_0_#000]'">
+                                        <mat-icon class="!text-sm text-stone-400 shrink-0">warehouse</mat-icon>
+                                        <div class="flex-1 min-w-0">
+                                            <p class="text-[10px] font-black uppercase text-black dark:text-white truncate">{{ w.codigo }} · {{ w.nombre }}</p>
+                                            <p class="text-[8px] text-stone-400">{{ w.ciudad }}</p>
                                         </div>
-                                        <div *ngIf="loadingRacks" class="grid grid-cols-3 gap-2">
-                                            <div *ngFor="let _ of [1,2,3]" class="h-14 rounded-lg border-2 border-stone-200 bg-stone-100 animate-pulse"></div>
-                                        </div>
-                                        <div *ngIf="!loadingRacks && ubRacks.length" class="grid grid-cols-3 gap-2">
-                                            <button *ngFor="let r of ubRacks" type="button"
-                                                    (click)="seleccionarRack(r)"
-                                                    class="flex flex-col items-center border-2 rounded-lg px-1 py-2 text-center transition-all"
-                                                    [ngClass]="ubSelectedRack?.id === r.id
-                                                        ? 'border-black bg-white dark:bg-slate-700 shadow-[2px_2px_0_#000]'
-                                                        : 'border-stone-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:border-stone-400 hover:shadow-[2px_2px_0_#ccc]'">
-                                                <mat-icon class="!text-xl mb-1 text-stone-400">view_column</mat-icon>
-                                                <p class="text-[9px] font-black text-black dark:text-white uppercase leading-none">{{ r.codigo }}</p>
-                                                <p class="text-[7px] text-stone-400 truncate w-full text-center mt-0.5">{{ r.nombre }}</p>
-                                            </button>
-                                        </div>
-                                        <p *ngIf="!loadingRacks && !ubRacks.length"
-                                           class="text-[9px] text-stone-400 italic text-center py-3">Sin estantes disponibles.</p>
+                                        <mat-icon *ngIf="ubSelectedWarehouse?.id === w.id" class="!text-sm text-black dark:text-white shrink-0">check</mat-icon>
+                                    </button>
+                                    <div *ngIf="!ubAlmacenes.length && !loadingAlmacenes"
+                                         class="text-[9px] text-stone-400 italic text-center py-3">Sin almacenes activos</div>
+                                </div>
+                            </div>
+
+                            <!-- ─── COLUMNA 2: ESTANTE ─── -->
+                            <div class="md:w-1/3 min-h-0 flex flex-col overflow-y-auto custom-scrollbar px-3 py-3">
+                                <div class="flex items-center gap-2 mb-2 shrink-0">
+                                    <span class="w-5 h-5 rounded border-2 flex items-center justify-center text-[9px] font-black shrink-0 transition-all"
+                                          [ngClass]="ubSelectedRack ? 'border-black bg-black text-white' : 'border-stone-300 bg-white dark:bg-slate-800 text-stone-400'">
+                                        {{ ubSelectedRack ? '✓' : '2' }}
+                                    </span>
+                                    <span class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400">Estante</span>
+                                    <span *ngIf="loadingRacks" class="ml-auto text-[8px] text-stone-400 italic animate-pulse">cargando...</span>
+                                </div>
+
+                                <ng-container *ngIf="ubSelectedWarehouse; else esperandoAlmacenDet">
+                                    <div *ngIf="loadingRacks" class="grid grid-cols-3 gap-1.5">
+                                        <div *ngFor="let _ of [1,2,3,4,5,6]"
+                                             class="h-12 rounded-xl border-2 border-stone-200 dark:border-slate-700 bg-stone-100 dark:bg-slate-800 animate-pulse"></div>
                                     </div>
 
-                                    <!-- ─ PASO 3: NIVEL ─ -->
-                                    <div class="px-3 py-2.5">
-                                        <div class="flex items-center gap-1.5 mb-2">
-                                            <span class="w-4 h-4 rounded border-2 flex items-center justify-center text-[8px] font-black shrink-0 transition-all"
-                                                  [ngClass]="ubSelectedLevel ? 'border-black bg-black text-white' : 'border-stone-300 text-stone-400'">
-                                                {{ ubSelectedLevel ? '✓' : '3' }}
-                                            </span>
-                                            <span class="text-[8px] font-black uppercase tracking-widest text-stone-400">Nivel</span>
-                                            <span *ngIf="loadingLevels" class="text-[8px] text-stone-400 italic animate-pulse ml-auto">cargando…</span>
-                                        </div>
-                                        <div *ngIf="!ubSelectedRack" class="flex items-center justify-center py-4 gap-2 opacity-40">
-                                            <mat-icon class="!text-xl text-stone-400">layers</mat-icon>
-                                            <p class="text-[9px] text-stone-400 font-bold uppercase tracking-widest">Elige un estante</p>
-                                        </div>
-                                        <div *ngIf="ubSelectedRack && !loadingLevels"
-                                             class="border-2 border-black dark:border-slate-600 rounded-lg overflow-hidden divide-y divide-stone-100 dark:divide-slate-700 shadow-[2px_2px_0_#000]">
-                                            <button *ngFor="let l of ubLevels" type="button"
-                                                    (click)="seleccionarLevel(l)"
-                                                    class="w-full flex items-center gap-2.5 px-3 py-2 text-left transition-colors"
-                                                    [ngClass]="ubSelectedLevel?.id === l.id
-                                                        ? 'bg-stone-100 dark:bg-slate-700'
-                                                        : 'bg-white dark:bg-slate-800 hover:bg-stone-50 dark:hover:bg-slate-700/50'">
-                                                <div class="w-5 h-5 rounded border-2 flex items-center justify-center shrink-0 transition-all"
-                                                     [ngClass]="ubSelectedLevel?.id === l.id ? 'border-black bg-black' : 'border-stone-200 dark:border-slate-600 bg-white dark:bg-slate-700'">
-                                                    <mat-icon *ngIf="ubSelectedLevel?.id === l.id" class="!text-xs text-white">check</mat-icon>
-                                                </div>
-                                                <div class="flex-1 min-w-0">
-                                                    <p class="text-[10px] font-black text-black dark:text-white">
-                                                        {{ l.isFloor ? 'Suelo' : 'N° ' + l.numero }} · {{ l.codigo }}
-                                                    </p>
-                                                    <p class="text-[8px] text-stone-400 dark:text-slate-500 truncate">{{ l.nombre }}</p>
-                                                </div>
-                                                <mat-icon *ngIf="ubSelectedLevel?.id === l.id" class="!text-sm text-amber-500 shrink-0">where_to_vote</mat-icon>
-                                            </button>
-                                        </div>
+                                    <div *ngIf="!loadingRacks && ubRacks.length" class="grid grid-cols-3 gap-1.5 content-start">
+                                        <button *ngFor="let r of ubRacks" type="button" [title]="r.nombre"
+                                                (click)="seleccionarRack(r)"
+                                                class="flex flex-col items-center border-2 rounded-xl p-1.5 text-center transition-all"
+                                                [ngClass]="ubSelectedRack?.id === r.id
+                                                    ? 'border-black bg-white dark:bg-slate-700 shadow-[2px_2px_0_#000] -translate-y-px'
+                                                    : 'border-stone-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:border-stone-400 hover:shadow-[1px_1px_0_#ccc] hover:-translate-y-px'">
+                                            <mat-icon class="!text-base mb-0.5 text-stone-400 dark:text-slate-500">view_column</mat-icon>
+                                            <p class="text-[9px] font-black text-black dark:text-white uppercase leading-none truncate w-full">{{ r.codigo }}</p>
+                                        </button>
                                     </div>
+
+                                    <p *ngIf="!loadingRacks && !ubRacks.length"
+                                       class="text-[9px] text-stone-400 italic text-center py-3">Sin estantes disponibles</p>
                                 </ng-container>
+                                <ng-template #esperandoAlmacenDet>
+                                    <div class="flex-1 flex items-center justify-center min-h-[100px]">
+                                        <p class="text-[9px] text-stone-300 dark:text-slate-600 italic text-center px-4">Selecciona un almacén primero</p>
+                                    </div>
+                                </ng-template>
+                            </div>
 
-                            </div><!-- /content scrollable -->
+                            <!-- ─── COLUMNA 3: NIVEL ─── -->
+                            <div class="md:w-1/3 min-h-0 flex flex-col overflow-y-auto custom-scrollbar px-3 py-3">
+                                <div class="flex items-center gap-2 mb-2 shrink-0">
+                                    <span class="w-5 h-5 rounded border-2 flex items-center justify-center text-[9px] font-black shrink-0 transition-all"
+                                          [ngClass]="ubSelectedLevel ? 'border-black bg-black text-white' : 'border-stone-300 bg-white dark:bg-slate-800 text-stone-400'">
+                                        {{ ubSelectedLevel ? '✓' : '3' }}
+                                    </span>
+                                    <span class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400">Nivel</span>
+                                    <span *ngIf="loadingLevels" class="ml-auto text-[8px] text-stone-400 italic animate-pulse">cargando...</span>
+                                </div>
+
+                                <ng-container *ngIf="ubSelectedRack; else esperandoEstanteDet">
+                                    <div class="grid grid-cols-3 gap-1.5 content-start">
+                                        <button *ngFor="let l of ubLevels" type="button" [title]="l.nombre"
+                                                (click)="seleccionarLevel(l)"
+                                                class="flex flex-col items-center border-2 rounded-xl p-1.5 text-center transition-all"
+                                                [ngClass]="ubSelectedLevel?.id === l.id
+                                                    ? 'border-black bg-white dark:bg-slate-700 shadow-[2px_2px_0_#000] -translate-y-px'
+                                                    : 'border-stone-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:border-stone-400 hover:shadow-[1px_1px_0_#ccc] hover:-translate-y-px'">
+                                            <mat-icon class="!text-base mb-0.5 text-stone-400 dark:text-slate-500">layers</mat-icon>
+                                            <p class="text-[9px] font-black text-black dark:text-white uppercase leading-none">{{ l.isFloor ? 'Suelo' : 'N' + l.numero }}</p>
+                                        </button>
+                                    </div>
+                                    <p *ngIf="!ubLevels.length"
+                                       class="text-[9px] text-stone-400 italic text-center py-3">Sin niveles disponibles</p>
+                                </ng-container>
+                                <ng-template #esperandoEstanteDet>
+                                    <div class="flex-1 flex items-center justify-center min-h-[100px]">
+                                        <p class="text-[9px] text-stone-300 dark:text-slate-600 italic text-center px-4">Selecciona un estante primero</p>
+                                    </div>
+                                </ng-template>
+                            </div>
+
+                            </div><!-- /3 columnas -->
                         </div><!-- /mini ventana -->
                     </ng-template>
                 </div>

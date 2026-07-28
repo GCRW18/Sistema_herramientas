@@ -30,16 +30,26 @@ export class PermisosDialogComponent implements OnInit {
     searchTerm = '';
 
     readonly moduleIcons: Record<string, string> = {
-        'Inventario':   'inventory_2',
-        'Herramientas': 'build',
-        'Calibración':  'straighten',
-        'Movimientos':  'swap_horiz',
-        'Kits':         'inventory',
-        'Cuarentena':   'warning_amber',
-        'Reportes':     'assessment',
-        'Usuarios':     'people',
-        'Roles':        'shield',
-        'Sistema':      'admin_panel_settings'
+        'Almacén y Ubicaciones':       'warehouse',
+        'Misceláneos':                 'category',
+        'Gestión Kits':                'inventory',
+        'Reportes Inventario':         'assessment',
+        'Consultar Inventario':        'search',
+        'Inter-Bases':                 'swap_horiz',
+        'Préstamo Técnico BOA':        'engineering',
+        'Préstamo Terceros':           'storefront',
+        'Ingresos Almacén':            'move_to_inbox',
+        'Cuarentena y Baja':           'warning_amber',
+        'Envío Calibración':           'send',
+        'Retorno Calibración':         'undo',
+        'Empresas de Servicio':        'apartment',
+        'Consulta y Auditoría':        'fact_check',
+        'Servicios de Mantenimiento':  'build',
+        'Centro de Control':           'notifications_active',
+        'Transcripción Histórico':     'edit_note',
+        'Usuarios':                    'people',
+        'Proveedores':                 'local_shipping',
+        'Roles y Permisos':            'shield',
     };
 
     get filteredPermissions(): { mod: string; perm: Permission }[] {

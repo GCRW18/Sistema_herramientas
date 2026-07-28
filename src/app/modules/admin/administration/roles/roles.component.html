@@ -21,23 +21,6 @@
       </div>
 
       <div class="flex items-center gap-2 flex-wrap w-full sm:w-auto">
-        <!-- Conmutador de fuente -->
-        <div class="flex items-center border-[2px] border-black rounded-xl overflow-hidden shrink-0 shadow-[2px_2px_0px_0px_#000]">
-          <button (click)="cambiarFuente('modulo')"
-                  matTooltip="Roles propios del módulo (he.roles) con matriz de permisos"
-                  class="px-2.5 sm:px-3 py-2 font-black text-[10px] uppercase transition-all flex items-center gap-1"
-                  [ngClass]="!esERP ? 'bg-[#0F172AFF] text-[#FFC501FF]' : 'bg-white dark:bg-slate-800 text-gray-500 hover:text-black dark:hover:text-white'">
-            <mat-icon class="!text-[12px] !w-3 !h-3">handyman</mat-icon>
-            Módulo
-          </button>
-          <button (click)="cambiarFuente('erp')"
-                  matTooltip="Roles reales del framework (seguridad/Rol/listarRol) — solo lectura"
-                  class="px-2.5 sm:px-3 py-2 font-black text-[10px] uppercase transition-all flex items-center gap-1 border-l-2 border-black"
-                  [ngClass]="esERP ? 'bg-[#0F172AFF] text-[#FFC501FF]' : 'bg-white dark:bg-slate-800 text-gray-500 hover:text-black dark:hover:text-white'">
-            <mat-icon class="!text-[12px] !w-3 !h-3">corporate_fare</mat-icon>
-            ERP
-          </button>
-        </div>
         <!-- Búsqueda -->
         <div class="relative flex-1 min-w-[140px] sm:flex-none">
           <input type="text" [formControl]="searchControl"
@@ -48,27 +31,18 @@
                         placeholder:font-bold placeholder:normal-case dark:placeholder:text-slate-500">
           <mat-icon class="absolute left-2.5 top-2 text-black dark:text-white !text-sm">search</mat-icon>
         </div>
-        <!-- Nuevo Rol (solo fuente módulo) -->
-        <button *ngIf="!esERP" (click)="nuevoRol()"
-                class="shrink-0 px-3 sm:px-4 py-2 bg-[#FFC501FF] text-black font-black text-xs
-                       border-[2px] border-black rounded-xl shadow-[3px_3px_0px_0px_#000]
-                       hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all
-                       uppercase flex items-center gap-1.5">
-          <mat-icon class="!text-sm text-black">add_circle</mat-icon>
-          <span class="hidden sm:inline">Nuevo Rol</span>
-        </button>
+        <!-- Nuevo Rol -->
+        <ng-container *appHasPermission="'admin_roles.create'">
+          <button (click)="nuevoRol()"
+                  class="shrink-0 px-3 sm:px-4 py-2 bg-[#FFC501FF] text-black font-black text-xs
+                         border-[2px] border-black rounded-xl shadow-[3px_3px_0px_0px_#000]
+                         hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all
+                         uppercase flex items-center gap-1.5">
+            <mat-icon class="!text-sm text-black">add_circle</mat-icon>
+            <span class="hidden sm:inline">Nuevo Rol</span>
+          </button>
+        </ng-container>
       </div>
-    </div>
-
-    <!-- Banner modo ERP -->
-    <div *ngIf="esERP"
-         class="shrink-0 flex items-center gap-2 px-3 py-2 bg-blue-50 dark:bg-blue-900/20 border-[2px] border-blue-600 rounded-xl">
-      <mat-icon class="!text-base text-blue-600 shrink-0">info</mat-icon>
-      <p class="text-[10px] sm:text-[11px] font-bold text-blue-800 dark:text-blue-300 leading-snug">
-        Roles reales del framework (<span class="font-mono font-black">seguridad/Rol/listarRol</span>) —
-        <span class="font-black uppercase">solo lectura</span>. Su administración es del ERP.
-        La matriz de permisos del módulo vive en la fuente "Módulo".
-      </p>
     </div>
 
     <!-- ── CARD PRINCIPAL ──────────────────────────────────────────── -->
@@ -126,21 +100,17 @@
             <tr class="text-left text-[10px] font-black uppercase tracking-wider text-black dark:text-white">
               <th class="px-3 py-2.5">NOMBRE</th>
               <th class="hidden md:table-cell px-3 py-2.5">DESCRIPCIÓN</th>
-              <th *ngIf="esERP" class="hidden sm:table-cell px-3 py-2.5 w-40">SUBSISTEMA</th>
-              <th *ngIf="!esERP" class="px-3 py-2.5 text-center w-24">PERMISOS</th>
-              <th *ngIf="!esERP" class="hidden sm:table-cell px-3 py-2.5 text-center w-24">USUARIOS</th>
+              <th class="px-3 py-2.5 text-center w-24">PERMISOS</th>
+              <th class="hidden sm:table-cell px-3 py-2.5 text-center w-24">USUARIOS</th>
               <th class="px-3 py-2.5 text-center w-24">ESTADO</th>
-              <th *ngIf="!esERP" class="px-3 py-2.5 text-center w-28">ACCIONES</th>
+              <th class="px-3 py-2.5 text-center w-28">ACCIONES</th>
             </tr>
           </thead>
           <tbody>
             <tr *ngFor="let rol of rolesPagina; let idx = index"
                 (click)="verDetalle(rol)"
-                class="border-b border-gray-200 dark:border-slate-700 transition-all"
-                [ngClass]="[
-                    idx % 2 === 0 ? 'bg-white dark:bg-slate-800/60' : 'bg-gray-50 dark:bg-slate-800/40',
-                    !esERP ? 'cursor-pointer hover:bg-amber-50 dark:hover:bg-amber-900/10' : ''
-                ]">
+                class="border-b border-gray-200 dark:border-slate-700 transition-all cursor-pointer hover:bg-amber-50 dark:hover:bg-amber-900/10"
+                [ngClass]="idx % 2 === 0 ? 'bg-white dark:bg-slate-800/60' : 'bg-gray-50 dark:bg-slate-800/40'">
 
               <td class="px-3 py-2.5">
                 <div class="flex items-center gap-2">
@@ -155,18 +125,14 @@
                 <span class="text-xs font-bold text-gray-600 dark:text-gray-300">{{ rol.descripcion || '—' }}</span>
               </td>
 
-              <td *ngIf="esERP" class="hidden sm:table-cell px-3 py-2.5">
-                <span class="text-xs font-bold text-gray-500 dark:text-gray-400">{{ rol.subsistema || '—' }}</span>
-              </td>
-
-              <td *ngIf="!esERP" class="px-3 py-2.5 text-center">
+              <td class="px-3 py-2.5 text-center">
                 <span class="inline-flex items-center justify-center gap-1 font-black text-[10px] border-2 border-black rounded-lg px-2 py-0.5 bg-white dark:bg-slate-700 text-black dark:text-white">
                   <mat-icon class="!text-[11px] !w-3 !h-3 text-[#7113CF]">key</mat-icon>
                   {{ rol.permissions.length }}
                 </span>
               </td>
 
-              <td *ngIf="!esERP" class="hidden sm:table-cell px-3 py-2.5 text-center">
+              <td class="hidden sm:table-cell px-3 py-2.5 text-center">
                 <span class="inline-flex items-center justify-center gap-1 font-black text-[10px] border-2 border-black rounded-lg px-2 py-0.5 bg-white dark:bg-slate-700 text-black dark:text-white">
                   <mat-icon class="!text-[11px] !w-3 !h-3 text-blue-600">group</mat-icon>
                   {{ rol.userCount }}
@@ -184,13 +150,13 @@
                 </span>
               </td>
 
-              <td *ngIf="!esERP" class="px-3 py-2.5 text-center" (click)="$event.stopPropagation()">
+              <td class="px-3 py-2.5 text-center" (click)="$event.stopPropagation()">
                 <div class="flex items-center justify-center gap-1.5">
-                  <button (click)="editarRol(rol, $event)" matTooltip="Editar"
+                  <button *appHasPermission="'admin_roles.edit'" (click)="editarRol(rol, $event)" matTooltip="Editar"
                           class="w-7 h-7 flex items-center justify-center bg-[#FFC501FF] border-2 border-black rounded-lg shadow-[2px_2px_0px_0px_#000] hover:translate-y-[1px] hover:shadow-none transition-all">
                     <mat-icon class="!text-sm text-black">edit</mat-icon>
                   </button>
-                  <button (click)="toggleEstado(rol, $event)" matTooltip="Cambiar estado"
+                  <button *appHasPermission="'admin_roles.toggle'" (click)="toggleEstado(rol, $event)" matTooltip="Cambiar estado"
                           [ngClass]="rol.activo ? 'bg-gray-400' : 'bg-green-600'"
                           class="w-7 h-7 flex items-center justify-center border-2 border-black rounded-lg shadow-[2px_2px_0px_0px_#000] hover:translate-y-[1px] hover:shadow-none transition-all">
                     <mat-icon class="!text-sm text-white">{{ rol.activo ? 'pause' : 'play_arrow' }}</mat-icon>
@@ -200,17 +166,19 @@
             </tr>
 
             <tr *ngIf="filteredRoles.length === 0">
-              <td [attr.colspan]="esERP ? 4 : 6" class="py-12 text-center">
+              <td colspan="6" class="py-12 text-center">
                 <div class="flex flex-col items-center gap-3">
                   <mat-icon class="!text-5xl text-gray-300 dark:text-gray-600">shield_off</mat-icon>
                   <p class="text-xs font-bold uppercase text-gray-500 mt-2">
                     {{ searchControl.value ? 'No se encontraron roles' : 'No hay roles registrados' }}
                   </p>
-                  <button *ngIf="!searchControl.value && !esERP" (click)="nuevoRol()"
-                          class="mt-2 px-4 py-2 bg-[#FFC501FF] text-black font-black text-[10px] border-2 border-black rounded-lg shadow-[2px_2px_0px_0px_#000] hover:translate-y-[1px] hover:shadow-none transition-all uppercase inline-flex items-center gap-1.5">
-                    <mat-icon class="!text-base text-black">add</mat-icon>
-                    Crear el primero
-                  </button>
+                  <ng-container *appHasPermission="'admin_roles.create'">
+                    <button *ngIf="!searchControl.value" (click)="nuevoRol()"
+                            class="mt-2 px-4 py-2 bg-[#FFC501FF] text-black font-black text-[10px] border-2 border-black rounded-lg shadow-[2px_2px_0px_0px_#000] hover:translate-y-[1px] hover:shadow-none transition-all uppercase inline-flex items-center gap-1.5">
+                      <mat-icon class="!text-base text-black">add</mat-icon>
+                      Crear el primero
+                    </button>
+                  </ng-container>
                 </div>
               </td>
             </tr>

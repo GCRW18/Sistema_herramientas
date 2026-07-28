@@ -2,6 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { AuthUtils } from 'app/core/auth/auth.utils';
 import { UserService } from 'app/core/user/user.service';
+import { PermissionsService } from 'app/core/services/permissions.service';
 import { catchError, from, Observable, of, switchMap, throwError, timeout } from 'rxjs';
 import { Router } from '@angular/router';
 
@@ -13,6 +14,7 @@ export class AuthService {
     private _authenticated: boolean = false;
     private _httpClient = inject(HttpClient);
     private _userService = inject(UserService);
+    private _permissionsService = inject(PermissionsService);
     private _erpInitialized: boolean = false;
 
     /**
@@ -238,6 +240,8 @@ export class AuthService {
         localStorage.removeItem('aut');
         // Set the authenticated flag to false
         this._authenticated = false;
+        // No arrastrar los permisos del usuario que cierra sesión al próximo login
+        this._permissionsService.reset();
         PxpClient.logout();
         // Return the observable
         return of(true);

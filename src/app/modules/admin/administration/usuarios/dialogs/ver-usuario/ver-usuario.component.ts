@@ -1,18 +1,21 @@
-import { Component, Inject } from '@angular/core';
+import { Component, Inject, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
+import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MAT_DIALOG_DATA, MatDialogRef, MatDialogModule } from '@angular/material/dialog';
+import { RoleService } from '../../../../../../core/services/role.service';
 
 /**
- * Ficha de usuario/funcionario — SOLO LECTURA (patrón módulo Funcionarios).
- * Muestra los datos de la cuenta PXP y, si el usuario tiene registro técnico
- * en he.temployees (id_employee), su información de licencia/sello/cargo/área/base.
- * Sin acciones de edición: únicamente botón Cerrar.
+ * Ficha de usuario/funcionario — solo lectura para los datos personales/técnicos
+ * (patrón módulo Funcionarios: la cuenta de login vive en segu, no se edita aquí).
+ * Única acción de escritura: asignar/cambiar el rol del módulo (he.roles), que se
+ * guarda como fila espejo en he.tusuarios vinculada por id_usuario.
  */
 @Component({
     selector: 'app-ver-usuario',
     standalone: true,
-    imports: [CommonModule, MatIconModule, MatDialogModule],
+    imports: [CommonModule, FormsModule, MatIconModule, MatDialogModule, MatSnackBarModule],
     template: `
     <div class="bg-stone-100 dark:bg-slate-900 border-2 border-black rounded-2xl overflow-hidden flex flex-col"
          style="width:100%; max-height:90vh">
@@ -85,6 +88,23 @@ import { MAT_DIALOG_DATA, MatDialogRef, MatDialogModule } from '@angular/materia
                     </div>
                 </div>
             </div>
+
+            <!-- Rol del módulo -->
+            <div>
+                <p class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1.5">Rol del Módulo</p>
+                <div class="bg-white dark:bg-slate-800 border-2 border-black rounded-xl p-3 flex items-center gap-2.5 shadow-[2px_2px_0_#000]">
+                    <mat-icon class="!text-lg text-[#7113CF] shrink-0">shield</mat-icon>
+                    <select [(ngModel)]="selectedRoleId" [disabled]="loadingRoles"
+                            class="flex-1 h-9 min-w-0 text-xs font-bold bg-stone-100 dark:bg-slate-700 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-lg px-2 outline-none focus:border-black">
+                        <option [ngValue]="null">Sin rol asignado</option>
+                        <option *ngFor="let r of roles" [ngValue]="r.id_role">{{ r.name }}</option>
+                    </select>
+                    <button type="button" (click)="guardarRol()" [disabled]="guardandoRol || loadingRoles"
+                            class="shrink-0 px-3 h-9 bg-[#FFC501FF] text-black font-black text-[10px] uppercase border-2 border-black rounded-lg shadow-[2px_2px_0_#000] hover:shadow-none hover:translate-x-[1px] hover:translate-y-[1px] transition-all disabled:opacity-40">
+                        {{ guardandoRol ? 'Guardando…' : 'Guardar' }}
+                    </button>
+                </div>
+            </div>
         </div>
 
         <!-- Footer -->
@@ -97,14 +117,68 @@ import { MAT_DIALOG_DATA, MatDialogRef, MatDialogModule } from '@angular/materia
     </div>
     `,
 })
-export class VerUsuarioComponent {
+export class VerUsuarioComponent implements OnInit {
     f: any;
+
+    private roleSvc  = inject(RoleService);
+    private snackBar = inject(MatSnackBar);
+
+    // Filas crudas de herramientas/roles/listarRoles (id_role, name, ...) — no coinciden
+    // con el shape del interface Role (id/name), por eso van sin tipar como RolesComponent
+    // hace también con su propio mapeo local.
+    roles: any[] = [];
+    loadingRoles  = false;
+    guardandoRol  = false;
+    // string, no number: así vienen los id_role del backend (PHP serializa enteros de
+    // Postgres como string) y así quedan las [ngValue] de las <option> — si no coinciden
+    // los tipos, Angular nunca marca ninguna opción como seleccionada.
+    selectedRoleId: string | null = null;
 
     constructor(
         private dialogRef: MatDialogRef<VerUsuarioComponent>,
         @Inject(MAT_DIALOG_DATA) data: { funcionario: any }
     ) {
         this.f = data.funcionario || {};
+    }
+
+    ngOnInit(): void {
+        if (!this.f.id_usuario) return;
+        this.loadingRoles = true;
+        this.roleSvc.getRoles().subscribe({
+            next: (rows: any[]) => {
+                this.roles = rows || [];
+                this.roleSvc.getUserRoleAssignment(this.f.id_usuario).subscribe({
+                    next: (res) => {
+                        this.selectedRoleId = res.id_role;
+                        this.loadingRoles = false;
+                    },
+                    error: () => { this.loadingRoles = false; }
+                });
+            },
+            error: () => { this.loadingRoles = false; }
+        });
+    }
+
+    guardarRol(): void {
+        if (!this.f.id_usuario || this.guardandoRol) return;
+        this.guardandoRol = true;
+        this.roleSvc.assignRoleToUser({
+            idUsuario: this.f.id_usuario,
+            idRole:    this.selectedRoleId,
+            username:  this.f.cuenta || '',
+            nombres:   this.f.first_name || '',
+            apellidos: [this.f.paternal_last_name, this.f.maternal_last_name].filter(Boolean).join(' '),
+            email:     this.f.email_empresa || this.f.email_personal || ''
+        }).subscribe({
+            next: () => {
+                this.guardandoRol = false;
+                this.snackBar.open('Rol actualizado', 'Cerrar', { duration: 2500 });
+            },
+            error: () => {
+                this.guardandoRol = false;
+                this.snackBar.open('Error al asignar el rol', 'Cerrar', { duration: 4000 });
+            }
+        });
     }
 
     get iniciales(): string {

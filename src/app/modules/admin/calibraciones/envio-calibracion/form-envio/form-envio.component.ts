@@ -1,13 +1,9 @@
 import { Component, OnInit, OnDestroy, inject, signal, ViewChild, ElementRef, ChangeDetectorRef } from '@angular/core';
 import { CommonModule }                                                              from '@angular/common';
 import { FormsModule }                                                               from '@angular/forms';
-import { MatDialog, MatDialogModule, MatDialogRef }                                  from '@angular/material/dialog';
-import { MatButtonModule }                                                           from '@angular/material/button';
+import { MatDialogModule, MatDialogRef }                                             from '@angular/material/dialog';
 import { MatIconModule }                                                             from '@angular/material/icon';
-import { MatProgressSpinnerModule }                                                  from '@angular/material/progress-spinner';
 import { MatSnackBar, MatSnackBarModule }                                            from '@angular/material/snack-bar';
-import { MatTooltipModule }                                                          from '@angular/material/tooltip';
-import { CdkDrag, CdkDragHandle }                                                    from '@angular/cdk/drag-drop';
 import { Subject, lastValueFrom, of }                                                from 'rxjs';
 import { takeUntil, finalize, debounceTime, distinctUntilChanged, switchMap, map, catchError } from 'rxjs/operators';
 
@@ -43,9 +39,7 @@ interface MultiToolItem {
     standalone: true,
     imports: [
         CommonModule, FormsModule,
-        MatDialogModule, MatButtonModule, MatIconModule,
-        MatProgressSpinnerModule, MatSnackBarModule, MatTooltipModule,
-        CdkDrag, CdkDragHandle,
+        MatDialogModule, MatIconModule, MatSnackBarModule,
     ],
     templateUrl: './form-envio.component.html',
     styles: [`
@@ -62,10 +56,6 @@ export class FormEnvioComponent implements OnInit, OnDestroy {
     public  dialogRef          = inject(MatDialogRef<FormEnvioComponent>);
     private snackBar           = inject(MatSnackBar);
     private cdr                = inject(ChangeDetectorRef);
-    private dialog             = inject(MatDialog);
-
-    /** Miniventana del lote (una sola instancia) */
-    private loteRef: MatDialogRef<any> | null = null;
 
     private _destroy$    = new Subject<void>();
     private _toolSearch$ = new Subject<string>();
@@ -123,7 +113,6 @@ export class FormEnvioComponent implements OnInit, OnDestroy {
     }
 
     ngOnDestroy(): void {
-        this.loteRef?.close();
         this._destroy$.next();
         this._destroy$.complete();
     }
@@ -287,33 +276,8 @@ export class FormEnvioComponent implements OnInit, OnDestroy {
                 this.showToolDropdown = false;
                 this.cdr.detectChanges();
                 this.scanInputRef.nativeElement.focus();
-                // Al agregar la primera herramienta, abrir la miniventana del lote
-                // para que el usuario configure el laboratorio (requerido)
-                if (this.toolList.length === 1) this.abrirLote();
             }
         });
-    }
-
-    /**
-     * Abre el lote en una miniventana independiente (sin backdrop, arrastrable).
-     * Se pasa el propio componente: toolList se muta in-place, así que la
-     * miniventana refleja en vivo lo que se agrega/quita desde el form.
-     */
-    async abrirLote(): Promise<void> {
-        if (this.loteRef) return;
-        const { LoteEnvioDialogComponent } = await import('./lote-envio-dialog.component');
-        this.loteRef = this.dialog.open(LoteEnvioDialogComponent, {
-            width: '560px', maxWidth: '95vw',
-            panelClass: 'no-padding-dialog',
-            hasBackdrop: false,
-            autoFocus: false, restoreFocus: false,
-            // El form principal ahora se abre centrado (640px). La miniventana se
-            // posiciona a su derecha, más cerca del form (menor offset desde el
-            // centro del viewport que la mitad de su ancho + separación).
-            position: { top: '8vh', left: 'calc(50vw + 260px)' },
-            data: { host: this },
-        });
-        this.loteRef.afterClosed().subscribe(() => this.loteRef = null);
     }
 
     removeTool(index: number): void { if (!this.isProcessing()) this.toolList.splice(index, 1); }

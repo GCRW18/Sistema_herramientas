@@ -3,10 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
-import { MatTooltipModule } from '@angular/material/tooltip';
-import { CdkDrag, CdkDragHandle } from '@angular/cdk/drag-drop';
 import { Subject, lastValueFrom, of } from 'rxjs';
 import { takeUntil, finalize, debounceTime, distinctUntilChanged, switchMap, map, catchError } from 'rxjs/operators';
 import { CalibrationService } from '../../../../../core/services/calibration.service';
@@ -41,9 +38,7 @@ interface MaintToolItem {
     standalone: true,
     imports: [
         CommonModule, FormsModule,
-        MatDialogModule, MatIconModule,
-        MatProgressSpinnerModule, MatSnackBarModule, MatTooltipModule,
-        CdkDrag, CdkDragHandle,
+        MatDialogModule, MatIconModule, MatSnackBarModule,
     ],
     templateUrl: './form-lote.component.html',
     styles: [`

@@ -1,52 +1,69 @@
-<div class="bg-stone-100 dark:bg-[#0F172A] border-2 border-black rounded-xl overflow-hidden flex flex-col w-full h-full"
->
+<!-- ══════════════════════════════════════════════════════════════════
+     FORM DIALOG: NUEVO LOTE DE ENVÍO A MANTENIMIENTO — MGH-109
+══════════════════════════════════════════════════════════════════ -->
+<div class="bg-stone-100 dark:bg-[#0F172A] sm:border-2 border-black rounded-2xl flex flex-col overflow-hidden relative w-full"
+     style="box-shadow:6px 6px 0 #000; height:min(560px,90vh)">
 
-    <!-- HEADER -->
-    <div class="bg-[#0F172A] px-5 py-3.5 flex items-center gap-3 shrink-0 select-none"
-         cdkDrag cdkDragRootElement=".cdk-overlay-pane" cdkDragHandle style="cursor:grab">
-        <div class="w-9 h-9 rounded bg-amber-400 border-2 border-black flex items-center justify-center shadow-[2px_2px_0_#fbbf24] shrink-0">
-            <mat-icon class="!text-lg text-black">build</mat-icon>
+    <!-- Header -->
+    <div class="bg-[#0F172A] px-4 py-3 flex items-center gap-3 shrink-0">
+        <div class="w-8 h-8 rounded bg-amber-400 border-2 border-black flex items-center justify-center shadow-[2px_2px_0_#fbbf24] shrink-0">
+            <mat-icon class="!text-base text-black">build</mat-icon>
         </div>
         <div>
-            <p class="text-[9px] text-slate-400 font-bold uppercase tracking-[0.18em] leading-none mb-0.5">Mantenimiento · MGH-109</p>
+            <p class="text-[9px] text-slate-400 font-bold uppercase tracking-[0.15em] leading-none mb-1">Mantenimiento · MGH-109</p>
             <h2 class="text-sm text-white font-black uppercase tracking-tight leading-none">Nuevo Lote de Envío a Mantenimiento</h2>
+        </div>
+        <div class="ml-auto flex items-center gap-2 shrink-0">
+            <span *ngIf="getDoneCount() > 0"
+                  class="text-[9px] font-black text-emerald-400 flex items-center gap-1">
+                <mat-icon class="!text-sm">check_circle</mat-icon>
+                {{ getDoneCount() }} enviada{{ getDoneCount() !== 1 ? 's' : '' }}
+            </span>
+            <span *ngIf="items.length > 0"
+                  class="px-2 py-1 bg-amber-500 text-black font-black text-[10px] border border-black rounded leading-none">
+        {{ items.length }} ítem{{ items.length !== 1 ? 's' : '' }}
+      </span>
         </div>
     </div>
 
-    <!-- CUERPO -->
-    <div class="flex flex-col md:flex-row flex-1 overflow-hidden min-h-0 p-2 gap-2">
+    <!-- Body: LEFT (datos comunes) / RIGHT (lote) -->
+    <div class="flex flex-col sm:flex-row flex-1 overflow-hidden min-h-0">
 
-        <!-- ── PANEL IZQUIERDO: CAMPOS COMPARTIDOS ── -->
-        <div class="basis-[38%] shrink-0 flex flex-col bg-white dark:bg-slate-800 border-2 border-black rounded-xl overflow-y-auto custom-scrollbar"
-             style="box-shadow: 3px 3px 0 #000">
+        <!-- LEFT: datos comunes + buscador -->
+        <div class="sm:basis-[42%] shrink-0 overflow-y-auto custom-scrollbar border-b-2 sm:border-b-0 sm:border-r-2 border-black/20 dark:border-slate-500">
+            <div class="px-4 py-3 flex flex-col gap-3">
 
-            <div class="flex flex-col gap-4 p-4">
-
-                <h3 class="text-[9px] font-black uppercase text-stone-400 dark:text-slate-300 border-b-2 border-black pb-1.5 flex items-center gap-1.5">
-                    <mat-icon class="!text-sm text-amber-500">settings</mat-icon> Datos Comunes del Lote
-                </h3>
+                <!-- ── Datos Comunes del Lote ── -->
+                <div class="flex items-center gap-1.5">
+                    <mat-icon class="!text-xs text-amber-500 shrink-0">settings</mat-icon>
+                    <span class="text-[9px] font-black uppercase text-stone-400 dark:text-slate-500 tracking-wider whitespace-nowrap">Datos Comunes del Lote</span>
+                    <div class="flex-1 h-px bg-stone-200 dark:bg-slate-600 ml-1"></div>
+                </div>
 
                 <!-- Empresa / Taller -->
                 <div>
-                    <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-300 mb-1.5 block">Empresa / Taller *</label>
+                    <label class="text-[9px] font-black uppercase tracking-tight text-stone-500 dark:text-slate-400 mb-1 block">Empresa / Taller <span class="text-red-500">*</span></label>
                     <select [(ngModel)]="selectedProviderId" [ngModelOptions]="{standalone:true}"
                             (ngModelChange)="onProviderChange($event)"
-                            class="w-full h-10 text-sm font-bold bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-500 rounded-xl px-3 outline-none transition-all duration-150 hover:border-stone-400 dark:hover:border-slate-400 focus:border-black dark:focus:border-white focus:shadow-[3px_3px_0_#000] dark:focus:shadow-[3px_3px_0_#FFC501] appearance-none">
+                            class="w-full h-8 px-2.5 bg-white dark:bg-slate-800 text-black dark:text-white border-2 border-stone-300 dark:border-slate-500 rounded-lg text-xs font-bold outline-none transition-all cursor-pointer hover:border-stone-400 focus:border-black focus:shadow-[2px_2px_0_#000] appearance-none">
                         <option [ngValue]="null">— Seleccionar empresa —</option>
                         <option *ngFor="let p of providers" [ngValue]="p.id_laboratory">{{ p.name }}</option>
                     </select>
                 </div>
 
                 <!-- Fecha Envío -->
-                <div class="bg-white dark:bg-slate-800 border-2 border-stone-300 dark:border-slate-500 rounded-xl px-3 py-2 hover:border-stone-400 dark:hover:border-slate-400 transition-all duration-150">
-                    <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-300 leading-none block mb-1">Fecha Envío *</label>
+                <div>
+                    <label class="text-[9px] font-black uppercase tracking-tight text-stone-500 dark:text-slate-400 mb-1 block">Fecha Envío <span class="text-red-500">*</span></label>
                     <input type="date" [(ngModel)]="sendDateStr" [ngModelOptions]="{standalone:true}"
-                           class="w-full text-xs font-black bg-transparent text-black dark:text-white outline-none border-none cursor-pointer">
+                           class="w-full h-8 text-xs font-bold bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-500 rounded-lg px-2.5 outline-none transition-all cursor-pointer hover:border-stone-400 focus:border-black focus:shadow-[2px_2px_0_#000]">
                 </div>
 
                 <!-- Solicitado Por -->
                 <div class="relative">
-                    <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-300 mb-1.5 block">Solicitado Por</label>
+                    <label class="text-[9px] font-black uppercase tracking-tight text-stone-500 dark:text-slate-400 mb-1 flex justify-between items-center">
+                        <span>Solicitado Por</span>
+                        <div *ngIf="requestedByLoading" class="w-3 h-3 border-2 border-[#FFC501FF] border-t-transparent rounded-full animate-spin"></div>
+                    </label>
                     <div class="relative">
                         <input type="text"
                                [value]="requestedByName"
@@ -54,37 +71,27 @@
                                (blur)="hideRequestedByDropdown()"
                                placeholder="Buscar funcionario..."
                                autocomplete="off"
-                               class="w-full h-10 text-sm font-bold bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-500 rounded-xl px-3 pr-9 outline-none placeholder:text-stone-300 dark:placeholder:text-slate-500 hover:border-stone-400 dark:hover:border-slate-400 focus:border-black dark:focus:border-white focus:shadow-[3px_3px_0_#000] dark:focus:shadow-[3px_3px_0_#FFC501] transition-all duration-150">
-                        <mat-spinner *ngIf="requestedByLoading" diameter="16" class="absolute right-3 top-2.5"></mat-spinner>
+                               class="w-full h-8 pl-8 pr-3 text-xs font-bold bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-500 rounded-lg outline-none transition-all placeholder:text-stone-300 dark:placeholder:text-slate-500 hover:border-stone-400 focus:border-black focus:shadow-[2px_2px_0_#000]">
+                        <mat-icon class="absolute left-2.5 top-1/2 -translate-y-1/2 text-stone-400 !text-sm !w-[14px] !h-[14px] !leading-[14px] pointer-events-none">how_to_reg</mat-icon>
                     </div>
                     <div *ngIf="showRequestedByDropdown"
-                         class="absolute z-50 w-full mt-1 border-2 border-black dark:border-slate-500 rounded-xl bg-white dark:bg-slate-800 shadow-[3px_3px_0_#000] dark:shadow-[3px_3px_0_#FFC501] overflow-hidden divide-y divide-stone-100 dark:divide-slate-600 max-h-44 overflow-y-auto custom-scrollbar">
-                        <div *ngFor="let f of requestedByFuncionarios"
-                             (mousedown)="selectRequestedBy(f)"
-                             class="px-3 py-2.5 hover:bg-amber-50 dark:hover:bg-slate-700 cursor-pointer transition-colors">
-                            <div class="text-xs font-black text-black dark:text-white">{{ f.nombre }}</div>
-                            <div class="text-[9px] font-bold text-stone-400 uppercase">{{ f.cargo }}</div>
-                        </div>
+                         class="absolute left-0 right-0 top-full mt-1 z-50 bg-white dark:bg-slate-800 border-2 border-black rounded-xl shadow-[3px_3px_0_#000] overflow-hidden max-h-40 overflow-y-auto custom-scrollbar divide-y divide-stone-100 dark:divide-slate-700">
+                        <button *ngFor="let f of requestedByFuncionarios" type="button" (mousedown)="selectRequestedBy(f)"
+                                class="w-full px-3 py-2 text-left hover:bg-amber-50 dark:hover:bg-slate-700 transition-colors">
+                            <div class="text-xs font-black text-black dark:text-white uppercase">{{ f.nombre }}</div>
+                            <div class="text-[10px] font-bold text-stone-400 uppercase tracking-tight">{{ f.cargo }}</div>
+                        </button>
                     </div>
                 </div>
 
-                <!-- Aviso config por herramienta -->
-                <div class="flex items-start gap-2 bg-amber-50 dark:bg-amber-900/20 border-2 border-amber-400 rounded-xl px-3 py-2">
-                    <mat-icon class="!text-sm text-amber-600 shrink-0 mt-0.5">info</mat-icon>
-                    <p class="text-[9px] font-bold text-amber-700 dark:text-amber-400 leading-relaxed">
-                        Tipo de servicio, periodicidad, retorno estimado y notas se configuran
-                        <strong>individualmente</strong> por herramienta en el lote.
-                    </p>
+                <!-- ── Añadir Herramienta al Lote ── -->
+                <div class="flex items-center gap-1.5 mt-1">
+                    <mat-icon class="!text-xs text-amber-500 shrink-0">search</mat-icon>
+                    <span class="text-[9px] font-black uppercase text-stone-400 dark:text-slate-500 tracking-wider whitespace-nowrap">Añadir Herramienta al Lote</span>
+                    <div class="flex-1 h-px bg-stone-200 dark:bg-slate-600 ml-1"></div>
                 </div>
-            </div>
 
-            <!-- BUSCADOR HERRAMIENTA -->
-            <div class="border-t-2 border-dashed border-stone-300 dark:border-slate-600 mx-4 pt-4 pb-3 flex flex-col gap-2">
-                <h3 class="text-[9px] font-black uppercase text-stone-400 dark:text-slate-300 flex items-center gap-1.5 mb-1">
-                    <mat-icon class="!text-sm text-amber-500">search</mat-icon> Añadir Herramienta al Lote
-                </h3>
-
-                <div class="flex gap-2">
+                <div class="relative flex gap-2">
                     <div class="relative flex-1 min-w-0">
                         <input type="text" #scanInput
                                [(ngModel)]="barcodeValue" [ngModelOptions]="{standalone:true}"
@@ -94,183 +101,175 @@
                                [disabled]="isScanning() || isProcessing()"
                                placeholder="Código o nombre..."
                                autocomplete="off"
-                               class="w-full h-10 text-sm font-bold bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-500 rounded-xl px-3 outline-none transition-all duration-150 placeholder:text-stone-300 dark:placeholder:text-slate-500 hover:border-stone-400 dark:hover:border-slate-400 focus:border-black dark:focus:border-white focus:shadow-[3px_3px_0_#000] dark:focus:shadow-[3px_3px_0_#FFC501] disabled:opacity-50">
-                        <mat-spinner *ngIf="toolSearchLoading" diameter="16" class="absolute right-3 top-2.5"></mat-spinner>
+                               class="w-full h-8 text-xs font-bold bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-500 rounded-lg px-3 outline-none transition-all placeholder:text-stone-300 dark:placeholder:text-slate-500 hover:border-stone-400 focus:border-black focus:shadow-[2px_2px_0_#000] disabled:opacity-50">
+                        <div *ngIf="toolSearchLoading" class="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 border-2 border-[#FFC501FF] border-t-transparent rounded-full animate-spin"></div>
 
                         <div *ngIf="showToolDropdown"
-                             class="absolute z-50 w-full mt-1 top-full left-0 border-2 border-black dark:border-slate-500 rounded-xl bg-white dark:bg-slate-800 overflow-hidden shadow-[3px_3px_0_#000] dark:shadow-[3px_3px_0_#FFC501] divide-y divide-stone-100 dark:divide-slate-600 max-h-48 overflow-y-auto custom-scrollbar">
+                             class="absolute z-50 w-full mt-1 top-full left-0 border-2 border-black dark:border-slate-500 rounded-xl bg-white dark:bg-slate-800 overflow-hidden shadow-[3px_3px_0_#000] divide-y divide-stone-100 dark:divide-slate-700 max-h-40 overflow-y-auto custom-scrollbar">
                             <div *ngFor="let tool of toolSuggestions" (mousedown)="selectToolSuggestion(tool)"
-                                 class="px-3 py-2.5 hover:bg-stone-50 dark:hover:bg-slate-700 cursor-pointer transition-colors">
+                                 class="px-3 py-2 hover:bg-amber-50 dark:hover:bg-slate-700 cursor-pointer transition-colors">
                                 <div class="text-xs font-black text-black dark:text-white">{{ tool.code ?? tool.tool_code }}</div>
-                                <div class="text-[10px] font-bold text-stone-400 truncate mt-0.5 uppercase">{{ tool.name ?? tool.tool_name }}</div>
+                                <div class="text-[10px] font-bold text-stone-400 dark:text-slate-400 truncate mt-0.5 uppercase">{{ tool.name ?? tool.tool_name }}</div>
                             </div>
                         </div>
                     </div>
 
-                    <button (click)="scanAndAdd()"
+                    <button type="button" (click)="scanAndAdd()"
                             [disabled]="isScanning() || !barcodeValue.trim() || isProcessing()"
-                            class="h-10 px-3 bg-amber-400 text-black font-black text-xs border-2 border-black rounded-xl shadow-[2px_2px_0_#000] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all flex items-center justify-center shrink-0 gap-1.5 disabled:opacity-50">
-                        <mat-spinner *ngIf="isScanning()" diameter="16"></mat-spinner>
-                        <mat-icon *ngIf="!isScanning()" class="!text-base text-black">add_circle</mat-icon>
+                            class="h-8 px-3 bg-amber-400 text-black font-black text-[10px] border-2 border-black rounded-lg shadow-[2px_2px_0_#000] hover:shadow-none hover:translate-x-[1px] hover:translate-y-[1px] transition-all flex items-center gap-1.5 shrink-0 disabled:opacity-50">
+                        <div *ngIf="isScanning()" class="w-3 h-3 border-2 border-black border-t-transparent rounded-full animate-spin"></div>
+                        <mat-icon *ngIf="!isScanning()" class="!text-sm">add_circle</mat-icon>
                         <span *ngIf="!isScanning()" class="hidden sm:inline">AGREGAR</span>
                     </button>
                 </div>
             </div>
         </div>
 
-        <!-- ── PANEL DERECHO: LOTE CON CONFIG POR HERRAMIENTA ── -->
-        <div class="flex-1 min-h-0 flex flex-col bg-white dark:bg-slate-800 border-2 border-black rounded-xl overflow-hidden"
-             style="box-shadow: 3px 3px 0 #000">
+        <!-- RIGHT: lote -->
+        <div class="flex-1 min-h-0 flex flex-col overflow-hidden">
 
-            <div class="flex items-center justify-between px-4 py-3 shrink-0 border-b-2 border-black bg-[#0F172A]">
-                <h3 class="text-[11px] font-black uppercase text-white flex items-center gap-2 tracking-widest">
-                    <mat-icon class="!text-sm text-amber-400">list</mat-icon>
-                    Herramientas del Lote
-                    <span class="px-2 py-0.5 bg-amber-400 text-black border-2 border-black rounded font-mono text-[10px] shadow-[1px_1px_0_#000]">{{ items.length }}</span>
-                </h3>
-                <span *ngIf="getDoneCount() > 0"
-                      class="text-[9px] font-black text-emerald-400 flex items-center gap-1">
-                    <mat-icon class="!text-sm">check_circle</mat-icon>
-                    {{ getDoneCount() }} enviada{{ getDoneCount() !== 1 ? 's' : '' }}
-                </span>
+            <!-- Header lote -->
+            <div class="border-b-2 border-black/20 dark:border-slate-500 px-4 py-2.5 flex items-center justify-between shrink-0">
+                <div class="flex items-center gap-1.5">
+                    <mat-icon class="!text-xs text-amber-500">list</mat-icon>
+                    <span class="text-[9px] font-black uppercase text-stone-400 dark:text-slate-500 tracking-wider">Herramientas del Lote</span>
+                </div>
+                <span class="px-2 py-0.5 bg-amber-400 text-black border-2 border-black rounded font-mono text-[10px] font-black shadow-[1px_1px_0_#000]">{{ items.length }}</span>
             </div>
 
             <!-- Lista de items -->
-            <div *ngIf="items.length > 0" class="flex-1 overflow-y-auto custom-scrollbar p-3 flex flex-col gap-3">
+            <div class="flex-1 overflow-y-auto custom-scrollbar">
+                <div *ngIf="items.length === 0"
+                     class="flex flex-col items-center justify-center gap-3 h-full py-10 text-center px-4">
+                    <mat-icon class="!text-5xl text-stone-300 dark:text-slate-600">build</mat-icon>
+                    <p class="text-sm font-black uppercase text-stone-400 dark:text-slate-500">Busca y agrega herramientas al lote</p>
+                </div>
 
-                <div *ngFor="let item of items; let i = index"
-                     class="border-2 transition-all duration-150 rounded-sm"
-                     [ngClass]="{
-                         'border-stone-300 bg-stone-50 dark:bg-slate-800': item.status === 'pending',
-                         'border-amber-400 bg-amber-50 dark:bg-amber-900/20 animate-pulse': item.status === 'sending',
-                         'border-green-500 bg-green-50 dark:bg-green-900/20': item.status === 'done',
-                         'border-red-400 bg-red-50 dark:bg-red-900/20': item.status === 'error'
-                     }">
+                <div *ngIf="items.length > 0" class="p-3 flex flex-col gap-2">
+                    <div *ngFor="let item of items; let i = index"
+                         class="border-2 rounded-lg transition-colors"
+                         [ngClass]="{
+                             'border-stone-200 dark:border-slate-600 bg-white dark:bg-slate-800': item.status === 'pending',
+                             'border-amber-400 bg-amber-50 dark:bg-amber-900/20 animate-pulse': item.status === 'sending',
+                             'border-green-500 bg-green-50 dark:bg-green-900/20': item.status === 'done',
+                             'border-red-400 bg-red-50 dark:bg-red-900/20': item.status === 'error'
+                         }">
 
-                    <!-- Cabecera del item -->
-                    <div class="flex items-start gap-2 p-2.5">
-                        <div class="shrink-0 flex items-center justify-center w-6 h-6 rounded-full border-2 border-stone-300 dark:border-slate-500 bg-stone-100 dark:bg-slate-700 text-[10px] font-black text-stone-500 dark:text-slate-300 mt-0.5">
-                            {{ i + 1 }}
-                        </div>
-                        <div class="flex-1 min-w-0">
-                            <div class="flex items-center gap-2 mb-0.5 flex-wrap">
-                                <span class="font-black text-xs text-black dark:text-white font-mono">{{ item.toolCode }}</span>
-                                <span *ngIf="item.status === 'done'" class="text-[8px] font-black px-1.5 py-0.5 bg-green-500 text-white rounded uppercase">✓ ENVIADO</span>
-                                <span *ngIf="item.status === 'error'" class="text-[8px] font-black px-1.5 py-0.5 bg-red-500 text-white rounded uppercase">✗ ERROR</span>
-                                <span *ngIf="item.status === 'sending'" class="text-[8px] font-black px-1.5 py-0.5 bg-amber-400 text-black border border-black rounded uppercase">ENVIANDO…</span>
+                        <!-- Cabecera del item -->
+                        <div class="flex items-start gap-2 p-2.5">
+                            <div class="shrink-0 flex items-center justify-center w-6 h-6 rounded-full border-2 border-stone-300 dark:border-slate-500 bg-stone-100 dark:bg-slate-700 text-[10px] font-black text-stone-500 dark:text-slate-300 mt-0.5">
+                                {{ i + 1 }}
                             </div>
-                            <div class="text-[10px] font-bold text-stone-400 dark:text-slate-300 leading-tight truncate uppercase">{{ item.toolName }}</div>
+                            <div class="flex-1 min-w-0">
+                                <div class="flex items-center gap-2 mb-0.5 flex-wrap">
+                                    <span class="font-black text-xs text-black dark:text-white font-mono">{{ item.toolCode }}</span>
+                                    <span *ngIf="item.status === 'done'" class="text-[8px] font-black px-1.5 py-0.5 bg-green-500 text-white rounded uppercase">✓ ENVIADO</span>
+                                    <span *ngIf="item.status === 'error'" class="text-[8px] font-black px-1.5 py-0.5 bg-red-500 text-white rounded uppercase">✗ ERROR</span>
+                                    <span *ngIf="item.status === 'sending'" class="text-[8px] font-black px-1.5 py-0.5 bg-amber-400 text-black border border-black rounded uppercase">ENVIANDO…</span>
+                                </div>
+                                <div class="text-[10px] font-bold text-stone-400 dark:text-slate-300 leading-tight truncate uppercase">{{ item.toolName }}</div>
+                            </div>
+                            <button type="button" (click)="removeTool(i)" [disabled]="isProcessing()"
+                                    class="w-7 h-7 flex items-center justify-center bg-red-50 hover:bg-red-500 text-red-500 hover:text-white border-2 border-red-200 hover:border-red-600 rounded-lg transition-all disabled:opacity-40 shrink-0">
+                                <mat-icon class="!text-xs">close</mat-icon>
+                            </button>
                         </div>
-                        <button (click)="removeTool(i)" [disabled]="isProcessing()"
-                                class="w-7 h-7 flex items-center justify-center bg-[#FF1414] text-white border-2 border-black rounded shadow-[2px_2px_0_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all disabled:opacity-40 shrink-0">
-                            <mat-icon class="!text-xs">close</mat-icon>
-                        </button>
-                    </div>
 
-                    <!-- Config individual (editable cuando pending/error) -->
-                    <div *ngIf="item.status === 'pending' || item.status === 'error'"
-                         class="border-t-2 border-dashed border-stone-200 dark:border-slate-600 mx-2.5 pt-2.5 pb-2.5 flex flex-col gap-2">
+                        <!-- Config individual (editable cuando pending/error) -->
+                        <div *ngIf="item.status === 'pending' || item.status === 'error'"
+                             class="border-t-2 border-dashed border-stone-200 dark:border-slate-600 mx-2.5 pt-2.5 pb-2.5 flex flex-col gap-2">
 
-                        <!-- Tipo de servicio -->
-                        <div class="flex items-center gap-2">
-                            <label class="text-[8px] font-black uppercase tracking-wider text-stone-400 w-16 shrink-0">Tipo *</label>
-                            <div class="flex gap-1 flex-1">
-                                <button *ngFor="let opt of serviceTypeOptions" type="button"
-                                        (click)="item.maintenanceType = opt.value; onItemTypeChange(item)"
-                                        class="flex-1 h-7 text-[8px] font-black border-2 rounded-lg transition-all duration-150"
-                                        [ngClass]="item.maintenanceType === opt.value
-                                            ? (opt.value === 'corrective' ? 'bg-[#FF1414] text-white border-black shadow-[1px_1px_0_#000]' : 'bg-amber-400 text-black border-black shadow-[1px_1px_0_#000]')
-                                            : 'bg-white dark:bg-slate-700 border-stone-300 dark:border-slate-500 text-stone-400 dark:text-slate-300 hover:border-stone-400'">
-                                    {{ opt.label }}
-                                </button>
+                            <!-- Tipo de servicio -->
+                            <div class="flex items-center gap-2">
+                                <label class="text-[9px] font-black uppercase tracking-tight text-stone-500 dark:text-slate-400 w-14 shrink-0">Tipo <span class="text-red-500">*</span></label>
+                                <div class="flex gap-1 flex-1">
+                                    <button *ngFor="let opt of serviceTypeOptions" type="button"
+                                            (click)="item.maintenanceType = opt.value; onItemTypeChange(item)"
+                                            class="flex-1 h-7 text-[8px] font-black border-2 rounded-lg transition-all"
+                                            [ngClass]="item.maintenanceType === opt.value
+                                                ? (opt.value === 'corrective' ? 'bg-[#FF1414] text-white border-black' : 'bg-amber-400 text-black border-black')
+                                                : 'bg-white dark:bg-slate-700 border-stone-300 dark:border-slate-500 text-stone-400 dark:text-slate-300 hover:border-stone-400'">
+                                        {{ opt.label }}
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Periodicidad (solo preventivo) -->
+                            <div *ngIf="item.maintenanceType === 'preventive'" class="flex items-center gap-2">
+                                <label class="text-[9px] font-black uppercase tracking-tight text-stone-500 dark:text-slate-400 w-14 shrink-0">Período</label>
+                                <div class="flex gap-1 flex-1">
+                                    <button *ngFor="let opt of subtypeOptions" type="button"
+                                            (click)="item.preventiveSubtype = opt.value; onItemSubtypeChange(item)"
+                                            class="flex-1 h-7 text-[8px] font-black border-2 rounded-lg transition-all"
+                                            [ngClass]="item.preventiveSubtype === opt.value
+                                                ? 'bg-blue-500 text-white border-black'
+                                                : 'bg-white dark:bg-slate-700 border-stone-300 dark:border-slate-500 text-stone-400 dark:text-slate-300 hover:border-stone-400'">
+                                        {{ opt.label }}
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Retorno + Notas -->
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                <div class="flex flex-col gap-1">
+                                    <label class="text-[9px] font-black uppercase tracking-tight text-stone-500 dark:text-slate-400">Retorno Est.</label>
+                                    <input type="date" [(ngModel)]="item.expectedReturnDate" [ngModelOptions]="{standalone:true}"
+                                           class="h-8 text-xs font-bold bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-500 rounded-lg px-2 outline-none focus:border-black cursor-pointer">
+                                </div>
+                                <div class="flex flex-col gap-1">
+                                    <label class="text-[9px] font-black uppercase tracking-tight text-stone-500 dark:text-slate-400">Notas</label>
+                                    <input type="text" [(ngModel)]="item.notes" [ngModelOptions]="{standalone:true}"
+                                           placeholder="Notas opcionales..."
+                                           class="h-8 text-xs font-bold bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-500 rounded-lg px-2 outline-none focus:border-black placeholder:text-stone-300 dark:placeholder:text-slate-500">
+                                </div>
+                            </div>
+
+                            <!-- Reporte discrepancia (solo correctivo) -->
+                            <div *ngIf="item.maintenanceType === 'corrective'" class="flex flex-col gap-1">
+                                <label class="text-[9px] font-black uppercase tracking-tight text-red-500 flex items-center gap-1">
+                                    <mat-icon class="!text-[10px]">report_problem</mat-icon> Nro. Reporte Discrepancia
+                                </label>
+                                <input type="text" [(ngModel)]="item.discrepancyReportNum" [ngModelOptions]="{standalone:true}"
+                                       placeholder="RD-XXXX/YYYY..."
+                                       class="h-8 text-xs font-bold bg-red-50 dark:bg-slate-800 dark:text-white border-2 border-red-300 rounded-lg px-2 outline-none focus:border-red-500 placeholder:text-red-300 dark:placeholder:text-slate-600">
                             </div>
                         </div>
 
-                        <!-- Periodicidad (solo preventivo) -->
-                        <div *ngIf="item.maintenanceType === 'preventive'" class="flex items-center gap-2">
-                            <label class="text-[8px] font-black uppercase tracking-wider text-stone-400 w-16 shrink-0">Período</label>
-                            <div class="flex gap-1 flex-1">
-                                <button *ngFor="let opt of subtypeOptions" type="button"
-                                        (click)="item.preventiveSubtype = opt.value; onItemSubtypeChange(item)"
-                                        class="flex-1 h-7 text-[8px] font-black border-2 rounded-lg transition-all duration-150"
-                                        [ngClass]="item.preventiveSubtype === opt.value
-                                            ? 'bg-blue-500 text-white border-black shadow-[1px_1px_0_#000]'
-                                            : 'bg-white dark:bg-slate-700 border-stone-300 dark:border-slate-500 text-stone-400 dark:text-slate-300 hover:border-stone-400'">
-                                    {{ opt.label }}
-                                </button>
-                            </div>
+                        <!-- Resumen cuando está enviado -->
+                        <div *ngIf="item.status === 'done'"
+                             class="border-t border-green-200 dark:border-green-800 mx-2.5 py-2 flex items-center gap-2 flex-wrap">
+                            <span class="text-[9px] font-black text-green-700 dark:text-green-400">{{ item.recordNumber }}</span>
+                            <span class="text-[8px] font-bold text-stone-400">·</span>
+                            <span class="text-[9px] font-bold text-stone-500 dark:text-slate-300 uppercase">
+                                {{ item.maintenanceType === 'preventive' ? 'Prev. ' + (item.preventiveSubtype === 'annual' ? 'Anual' : 'Semestral') : 'Correctivo' }}
+                            </span>
+                            <span class="text-[8px] font-bold text-stone-400">·</span>
+                            <span class="text-[9px] font-bold text-stone-500 dark:text-slate-300">Retorno: {{ fmtDate(item.expectedReturnDate) }}</span>
                         </div>
 
-                        <!-- Retorno + Notas -->
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                            <div class="flex flex-col gap-1">
-                                <label class="text-[8px] font-black uppercase tracking-wider text-stone-400">Retorno Est.</label>
-                                <input type="date" [(ngModel)]="item.expectedReturnDate" [ngModelOptions]="{standalone:true}"
-                                       class="h-8 text-xs font-black bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-500 rounded-lg px-2 outline-none focus:border-black dark:focus:border-white cursor-pointer">
-                            </div>
-                            <div class="flex flex-col gap-1">
-                                <label class="text-[8px] font-black uppercase tracking-wider text-stone-400">Notas</label>
-                                <input type="text" [(ngModel)]="item.notes" [ngModelOptions]="{standalone:true}"
-                                       placeholder="Notas opcionales..."
-                                       class="h-8 text-xs font-bold bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-500 rounded-lg px-2 outline-none focus:border-black dark:focus:border-white placeholder:text-stone-300 dark:placeholder:text-slate-500">
-                            </div>
+                        <!-- Error -->
+                        <div *ngIf="item.status === 'error'"
+                             class="border-t border-red-200 dark:border-red-800 mx-2.5 py-1.5">
+                            <span class="text-[9px] font-black text-red-500">✗ {{ item.error }}</span>
                         </div>
-
-                        <!-- Reporte discrepancia (solo correctivo) -->
-                        <div *ngIf="item.maintenanceType === 'corrective'" class="flex flex-col gap-1">
-                            <label class="text-[8px] font-black uppercase tracking-wider text-red-500 flex items-center gap-1">
-                                <mat-icon class="!text-[10px]">report_problem</mat-icon> Nro. Reporte Discrepancia
-                            </label>
-                            <input type="text" [(ngModel)]="item.discrepancyReportNum" [ngModelOptions]="{standalone:true}"
-                                   placeholder="RD-XXXX/YYYY..."
-                                   class="h-8 text-xs font-bold bg-red-50 dark:bg-slate-800 dark:text-white border-2 border-red-300 rounded-lg px-2 outline-none focus:border-red-500 focus:shadow-[2px_2px_0_#f87171] placeholder:text-red-300 dark:placeholder:text-slate-600">
-                        </div>
-                    </div>
-
-                    <!-- Resumen cuando está enviado -->
-                    <div *ngIf="item.status === 'done'"
-                         class="border-t border-green-200 dark:border-green-800 mx-2.5 py-2 flex items-center gap-2 flex-wrap">
-                        <span class="text-[9px] font-black text-green-700 dark:text-green-400">{{ item.recordNumber }}</span>
-                        <span class="text-[8px] font-bold text-stone-400">·</span>
-                        <span class="text-[9px] font-bold text-stone-500 dark:text-slate-300 uppercase">
-                            {{ item.maintenanceType === 'preventive' ? 'Prev. ' + (item.preventiveSubtype === 'annual' ? 'Anual' : 'Semestral') : 'Correctivo' }}
-                        </span>
-                        <span class="text-[8px] font-bold text-stone-400">·</span>
-                        <span class="text-[9px] font-bold text-stone-500 dark:text-slate-300">Retorno: {{ fmtDate(item.expectedReturnDate) }}</span>
-                    </div>
-
-                    <!-- Error -->
-                    <div *ngIf="item.status === 'error'"
-                         class="border-t border-red-200 dark:border-red-800 mx-2.5 py-1.5">
-                        <span class="text-[9px] font-black text-red-500">✗ {{ item.error }}</span>
                     </div>
                 </div>
-            </div>
-
-            <!-- Estado vacío -->
-            <div *ngIf="items.length === 0" class="flex-1 flex flex-col items-center justify-center text-center p-8 gap-3">
-                <div class="w-16 h-16 border-2 border-dashed border-stone-300 dark:border-slate-500 flex items-center justify-center">
-                    <mat-icon class="!text-3xl text-stone-300 dark:text-slate-500">build</mat-icon>
-                </div>
-                <p class="text-[9px] font-black uppercase text-stone-400 dark:text-slate-400 tracking-[0.18em]">
-                    Busca y agrega herramientas al lote
-                </p>
             </div>
         </div>
     </div>
 
-    <!-- FOOTER -->
-    <div class="border-t-2 border-black bg-stone-200 dark:bg-slate-900 px-5 py-3 flex flex-wrap justify-between items-center gap-3 shrink-0">
-        <div class="flex items-center gap-3 flex-wrap">
+    <!-- Footer -->
+    <div class="border-t-2 border-black bg-stone-200 dark:bg-slate-800 px-4 py-2 flex flex-wrap items-center justify-between gap-2 shrink-0">
+        <div class="flex items-center gap-2 shrink-0">
             <button type="button" (click)="dialogRef.close(false)"
-                    class="px-4 py-2 bg-[#FF1414] text-white font-black text-[10px] border-2 border-black rounded-xl shadow-[2px_2px_0_#000] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all uppercase">
+                    class="flex items-center gap-1 px-3 py-1.5 bg-[#FF1414] text-white font-black text-[10px] uppercase border-2 border-black rounded-lg shadow-[2px_2px_0_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all">
+                <mat-icon class="!text-xs">close</mat-icon>
                 Cancelar
             </button>
-            <span class="text-[10px] text-stone-500 dark:text-slate-300 font-bold uppercase tracking-wider">
-                <span *ngIf="items.length === 0">Agregue herramientas al lote</span>
+            <span class="text-[10px] font-black text-black dark:text-white shrink-0">
+                <span *ngIf="items.length === 0" class="font-bold normal-case text-stone-500 dark:text-slate-300">Agregue herramientas al lote</span>
                 <span *ngIf="items.length > 0 && !isProcessing() && getDoneCount() < items.length">
-                    <strong class="font-black text-black dark:text-white text-xs">{{ items.length }}</strong>
-                    herramienta{{ items.length > 1 ? 's' : '' }} para envío
+                    {{ items.length }} herramienta{{ items.length > 1 ? 's' : '' }} para envío
                 </span>
                 <span *ngIf="isProcessing()" class="text-amber-600 dark:text-amber-400">
                     Procesando {{ processedCount + 1 }} de {{ items.length }}...
@@ -278,19 +277,19 @@
             </span>
         </div>
 
-        <div class="flex items-center gap-2">
+        <div class="flex items-center gap-2 shrink-0">
             <!-- Reimprimir nota (visible cuando todos están done) -->
             <button *ngIf="getDoneCount() > 0 && getDoneCount() === items.length && !isProcessing()"
                     type="button" (click)="abrirNotaLoteManual()"
-                    class="flex items-center gap-1.5 px-3 py-2 bg-white dark:bg-slate-700 text-black dark:text-white font-black text-[10px] border-2 border-black rounded-xl shadow-[2px_2px_0_#000] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all uppercase">
-                <mat-icon class="!text-sm">print</mat-icon>
+                    class="flex items-center gap-1 px-3 py-1.5 bg-white dark:bg-slate-700 text-black dark:text-white font-black text-[10px] uppercase border-2 border-black rounded-lg shadow-[2px_2px_0_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all">
+                <mat-icon class="!text-xs">print</mat-icon>
                 Nota Lote
             </button>
 
-            <button (click)="submitLote()" [disabled]="!canSubmit() || isProcessing()"
-                    class="flex items-center gap-2 px-5 py-2 bg-amber-400 text-black font-black text-[10px] border-2 border-black rounded-xl shadow-[3px_3px_0_#000] hover:shadow-none hover:translate-x-[3px] hover:translate-y-[3px] transition-all uppercase disabled:opacity-50 disabled:cursor-not-allowed">
-                <mat-spinner *ngIf="isProcessing()" diameter="16"></mat-spinner>
-                <mat-icon *ngIf="!isProcessing()" class="!text-sm">send</mat-icon>
+            <button type="button" (click)="submitLote()" [disabled]="!canSubmit() || isProcessing()"
+                    class="flex items-center gap-1.5 px-3 py-1.5 bg-black text-white font-black text-[10px] uppercase border-2 border-black rounded-lg shadow-[2px_2px_0_#fbbf24] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all disabled:opacity-40 disabled:cursor-not-allowed disabled:translate-x-0 disabled:translate-y-0 disabled:shadow-none">
+                <div *ngIf="isProcessing()" class="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                <mat-icon *ngIf="!isProcessing()" class="!text-xs">send</mat-icon>
                 {{ isProcessing() ? 'PROCESANDO...' : 'ENVIAR LOTE (' + items.length + ')' }}
             </button>
         </div>

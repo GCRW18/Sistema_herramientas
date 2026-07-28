@@ -67,10 +67,13 @@ export class FormRolComponent implements OnInit {
     }
 
     private loadRolData(rol: any): void {
+        const validIds = new Set(AVAILABLE_PERMISSIONS.map(p => p.id));
         this.rolForm.patchValue({
             nombre:      rol.nombre || rol.name,
             descripcion: rol.descripcion || rol.description,
-            permissions: rol.permissions || [],
+            // Descarta ids de permisos huérfanos (de catálogos anteriores) para
+            // que dejen de arrastrarse indefinidamente en cada guardado.
+            permissions: (rol.permissions || []).filter((id: string) => validIds.has(id)),
             active:      rol.active !== undefined ? rol.active : true
         });
     }

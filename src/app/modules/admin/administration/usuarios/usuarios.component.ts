@@ -8,18 +8,14 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { EmployeeService } from '../../../../core/services/employee.service';
-import { ErpApiService } from '../../../../core/api/api.service';
 
 /**
- * Módulo Usuarios — patrón "Funcionarios" (solo consulta), con dos fuentes conmutables:
- *  · 'modulo': herramientas/employees/listarFuncionarios (he.ft_funcionarios_segu_sel,
- *    une segu.tusuario + he.temployees → cargo/área/base/licencia y ficha completa).
- *  · 'erp': seguridad/Usuario/listarUsuario — endpoint oficial del framework (payload
- *    provisto por el equipo ERP). Solo devuelve cuenta/nombre/estado, sin datos técnicos.
- * Ambas son SOLO LECTURA: las cuentas de login pertenecen al framework (schema segu).
- * Click en fila (solo fuente módulo) → ficha VerUsuarioComponent.
+ * Módulo Usuarios — patrón "Funcionarios" (solo consulta):
+ * herramientas/employees/listarFuncionarios (he.ft_funcionarios_segu_sel,
+ * une segu.tusuario + he.temployees → cargo/área/base/licencia y ficha completa).
+ * SOLO LECTURA: las cuentas de login pertenecen al framework (schema segu).
+ * Click en fila → ficha VerUsuarioComponent.
  */
-type FuenteUsuarios = 'modulo' | 'erp';
 interface UsuarioTabla {
     id: number;
     cuenta: string;
@@ -56,16 +52,12 @@ export class UsuariosComponent implements OnInit {
     private snackBar    = inject(MatSnackBar);
     private dialog      = inject(MatDialog);
     private employeeSvc = inject(EmployeeService);
-    private api         = inject(ErpApiService);
 
     searchControl = new FormControl('');
 
     usuarios: UsuarioTabla[] = [];
     filteredUsuarios: UsuarioTabla[] = [];
     isLoading = false;
-
-    /** Fuente activa: módulo (segu + he.temployees, con ficha) o endpoint oficial del ERP */
-    fuente = signal<FuenteUsuarios>('modulo');
 
     /* ── Paginación ── */
     readonly pageSize = 10;
@@ -78,17 +70,7 @@ export class UsuariosComponent implements OnInit {
         });
     }
 
-    get esERP(): boolean { return this.fuente() === 'erp'; }
-
-    cambiarFuente(f: FuenteUsuarios): void {
-        if (this.fuente() === f) return;
-        this.fuente.set(f);
-        this.searchControl.setValue('', { emitEvent: false });
-        this.cargarUsuarios();
-    }
-
     cargarUsuarios(): void {
-        if (this.esERP) { this.cargarUsuariosERP(); return; }
         this.isLoading = true;
         this.employeeSvc.getFuncionarios().subscribe({
             next: (rows: any[]) => {
@@ -103,40 +85,6 @@ export class UsuariosComponent implements OnInit {
                 this.snackBar.open('Error al cargar usuarios', 'Cerrar', { duration: 5000, verticalPosition: 'top' });
             }
         });
-    }
-
-    /** Endpoint oficial del framework (segu.tusuario) — payload provisto por el equipo ERP */
-    private async cargarUsuariosERP(): Promise<void> {
-        this.isLoading = true;
-        try {
-            const r: any = await this.api.post('seguridad/Usuario/listarUsuario', {
-                start: 0, limit: 50, sort: 'desc_person', dir: 'ASC', usuarios_activo: 'si'
-            });
-            const raw: any[] = r?.datos || r?.data || [];
-            this.usuarios = raw.map(u => ({
-                id: Number(u.id_usuario ?? 0),
-                cuenta: u.cuenta || '',
-                nombreCompleto: u.desc_person || u.cuenta || '',
-                cargo: '',
-                area: '',
-                base: '',
-                estado: (this.parseActivo(u.estado_reg) ? 'ACTIVO' : 'INACTIVO') as 'ACTIVO' | 'INACTIVO',
-                raw: u
-            }));
-            this.filterUsuarios(this.searchControl.value || '');
-        } catch {
-            this.usuarios = [];
-            this.filterUsuarios('');
-            this.snackBar.open('Error al cargar usuarios del ERP', 'Cerrar', { duration: 5000, verticalPosition: 'top' });
-        } finally {
-            this.isLoading = false;
-        }
-    }
-
-    private parseActivo(val: any): boolean {
-        if (typeof val === 'boolean') return val;
-        if (typeof val === 'string') return ['true', 't', '1', 'activo', 'si'].includes(val.toLowerCase());
-        return !!val;
     }
 
     private mapearUsuario(f: any): UsuarioTabla {
@@ -166,11 +114,6 @@ export class UsuariosComponent implements OnInit {
     /* ── Ficha de solo lectura ── */
 
     async verFicha(u: UsuarioTabla): Promise<void> {
-        if (this.esERP) {
-            // El endpoint del ERP no trae datos técnicos: la ficha solo aplica a la fuente módulo
-            this.snackBar.open('Fuente ERP: listado simple sin ficha técnica', 'Cerrar', { duration: 2500 });
-            return;
-        }
         const { VerUsuarioComponent } = await import('./dialogs/ver-usuario/ver-usuario.component');
         this.dialog.open(VerUsuarioComponent, {
             width: '520px', maxWidth: '95vw', maxHeight: '90vh',

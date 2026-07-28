@@ -12,8 +12,8 @@ import { MatAutocompleteModule } from '@angular/material/autocomplete';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { DragDropModule } from '@angular/cdk/drag-drop';
 import { OverlayModule } from '@angular/cdk/overlay';
-import { Subject, of } from 'rxjs';
-import { takeUntil, finalize, catchError, debounceTime, distinctUntilChanged, switchMap, map } from 'rxjs/operators';
+import { Subject, of, forkJoin } from 'rxjs';
+import { takeUntil, finalize, catchError, debounceTime, distinctUntilChanged, switchMap, map, mergeMap } from 'rxjs/operators';
 import { MovementService }    from '../../../../core/services/movement.service';
 import { ToolService }         from '../../../../core/services/tool.service';
 import { SupplierService }      from '../../../../core/services/supplier.service';
@@ -560,7 +560,7 @@ export class IngresosHubComponent implements OnInit, OnDestroy {
             }
         }
         this.dialogRefActual = this.dialog.open(this.herramientaModal, {
-            width: '800px', maxWidth: '96vw', height: '560px', panelClass: 'no-padding-dialog', disableClose: true
+            width: 'min(760px, 96vw)', maxWidth: '96vw', height: 'min(680px, 92vh)', panelClass: 'no-padding-dialog', disableClose: true
         });
     }
 
@@ -659,7 +659,7 @@ export class IngresosHubComponent implements OnInit, OnDestroy {
             this.seleccionarUbAlmacen(this._warehouseCbba);
         }
         this.dialogRefActual = this.dialog.open(this.herramientaModal, {
-            width: '800px', maxWidth: '96vw', height: '560px', panelClass: 'no-padding-dialog', disableClose: true
+            width: 'min(760px, 96vw)', maxWidth: '96vw', height: 'min(680px, 92vh)', panelClass: 'no-padding-dialog', disableClose: true
         });
         this._showMsg('Ítem copiado. Ajuste el S/N si es necesario.', 'info');
     }
@@ -745,7 +745,7 @@ export class IngresosHubComponent implements OnInit, OnDestroy {
         this.generarCodigoBoa();
         setTimeout(() => {
             this.dialogRefActual = this.dialog.open(this.herramientaModal, {
-                width: '800px', maxWidth: '96vw', height: '560px', panelClass: 'no-padding-dialog', disableClose: true
+                width: 'min(760px, 96vw)', maxWidth: '96vw', height: 'min(680px, 92vh)', panelClass: 'no-padding-dialog', disableClose: true
             });
         }, 100);
     }
@@ -910,14 +910,11 @@ export class IngresosHubComponent implements OnInit, OnDestroy {
         this.ubicSvc.getWarehouses().pipe(takeUntil(this.destroy$))
             .subscribe({
                 next: ws => {
-                    this.ubAlmacenes = ws;
-                    this.ubAlmacenesFiltrados = ws;
-                    this._warehouseCbba = ws.find(w =>
-                        w.ciudad?.toLowerCase().includes('cbba') ||
-                        w.ciudad?.toLowerCase().includes('cochabamba') ||
-                        w.nombre?.toLowerCase().includes('cbba') ||
-                        w.nombre?.toLowerCase().includes('cochabamba')
-                    ) || null;
+                    // Solo almacenes de Cochabamba (mismo criterio que Kits/Misceláneos):
+                    // esta pantalla registra ingresos nuevos, siempre entran por Cbba.
+                    this.ubAlmacenes = ws.filter(w => w.codigo?.startsWith('ALM-CBB'));
+                    this.ubAlmacenesFiltrados = this.ubAlmacenes;
+                    this._warehouseCbba = this.ubAlmacenes[0] ?? null;
                 },
                 error: () => {},
                 complete: () => { this.loadingAlmacenes = false; }
@@ -1019,8 +1016,8 @@ export class IngresosHubComponent implements OnInit, OnDestroy {
         if (this.ubicDialogRef) { this.closeUbicacionDialog(); return; }
         this.showUbicacionPanel = true;
         this.ubicDialogRef = this.dialog.open(this.ubicDialogTpl, {
-            width: 'min(420px, 96vw)',
-            maxHeight: '90vh',
+            width: 'min(760px, 96vw)',
+            maxHeight: '70vh',
             panelClass: 'no-padding-dialog',
             hasBackdrop: true,
             backdropClass: 'ubic-backdrop',
@@ -1270,6 +1267,10 @@ export class IngresosHubComponent implements OnInit, OnDestroy {
             ].filter(Boolean).join(' | ')
         })));
         const tipoLabel = fv.tipoAjuste || 'INVENTARIO';
+        // Ubicación elegida en el picker (rack/nivel) de cada item: registrarAjusteIngreso
+        // solo actualiza cantidad/condición/notas, no toca ubicación (mismo criterio que
+        // HE_KIT_MOD/HE_MIS_MOD). Se aplica aparte con moveLevelTool (HE_LTL_MOV).
+        const itemsConUbicacion = this.dataSourceAjuste.filter(i => i.rackId && i.levelId);
         this.movementSvc.registrarAjusteIngreso({
             date:               fv.fecha,
             time:               new Date().toTimeString().slice(0, 8),
@@ -1280,6 +1281,12 @@ export class IngresosHubComponent implements OnInit, OnDestroy {
             items_json:         itemsJson
         }).pipe(
             takeUntil(this.destroy$),
+            mergeMap((result: any) => {
+                if (itemsConUbicacion.length === 0) return of(result);
+                return forkJoin(itemsConUbicacion.map(i =>
+                    this.ubicSvc.moveLevelTool(i.toolId, i.rackId!, i.levelId!).pipe(catchError(() => of(null)))
+                )).pipe(map(() => result));
+            }),
             finalize(() => this.isSavingAjuste = false)
         ).subscribe({
             next: (result: any) => {

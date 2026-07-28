@@ -8,18 +8,11 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { debounceTime, startWith } from 'rxjs/operators';
 import { SupplierService } from '../../../../core/services/supplier.service';
-import { ErpApiService } from '../../../../core/api/api.service';
 
 /**
- * Módulo Proveedores — dos fuentes conmutables:
- *  · 'modulo': CRUD completo contra he.tsuppliers (herramientas/suppliers/*),
- *    los mismos proveedores que consume ingresos-hub para las compras.
- *  · 'erp': catálogo corporativo del ERP (param.tproveedor) vía
- *    parametros/Proveedor/listarProveedorV2 — SOLO LECTURA (endpoint provisto
- *    por el equipo del framework; la administración de ese catálogo es del ERP).
- * El conmutador existe para comparar ambos catálogos y decidir la fuente definitiva.
+ * Módulo Proveedores — CRUD completo contra he.tsuppliers (herramientas/suppliers/*),
+ * los mismos proveedores que consume ingresos-hub para las compras.
  */
-type FuenteProveedores = 'modulo' | 'erp';
 interface ProveedorDisplay {
     id: string;
     codigo: string;
@@ -65,16 +58,12 @@ export class ProveedoresComponent implements OnInit {
     private snackBar    = inject(MatSnackBar);
     private dialog      = inject(MatDialog);
     private supplierSvc = inject(SupplierService);
-    private api         = inject(ErpApiService);
 
     searchControl = new FormControl('');
 
     proveedores: ProveedorDisplay[] = [];
     filteredProveedores: ProveedorDisplay[] = [];
     isLoading = false;
-
-    /** Fuente activa: catálogo propio del módulo (CRUD) o corporativo ERP (solo lectura) */
-    fuente = signal<FuenteProveedores>('modulo');
 
     /* ── Paginación ── */
     readonly pageSize = 10;
@@ -85,17 +74,7 @@ export class ProveedoresComponent implements OnInit {
         this.setupFilters();
     }
 
-    get esERP(): boolean { return this.fuente() === 'erp'; }
-
-    cambiarFuente(f: FuenteProveedores): void {
-        if (this.fuente() === f) return;
-        this.fuente.set(f);
-        this.searchControl.setValue('', { emitEvent: false });
-        this.loadProveedores();
-    }
-
     loadProveedores(): void {
-        if (this.esERP) { this.loadProveedoresERP(); return; }
         this.isLoading = true;
         this.supplierSvc.getSuppliers({ limit: 1000 }).subscribe({
             next: (rows: any[]) => {
@@ -110,42 +89,6 @@ export class ProveedoresComponent implements OnInit {
                 this.snackBar.open('Error al cargar proveedores', 'Cerrar', { duration: 5000, verticalPosition: 'top' });
             }
         });
-    }
-
-    /** Catálogo corporativo del ERP (param.tproveedor) — payload provisto por el framework */
-    private async loadProveedoresERP(): Promise<void> {
-        this.isLoading = true;
-        try {
-            const r: any = await this.api.post('parametros/Proveedor/listarProveedorV2', {
-                start: 0, limit: 50, sort: 'tipo', dir: 'ASC', tipo: 'institucion'
-            });
-            const raw: any[] = r?.datos || r?.data || [];
-            this.proveedores = raw.map(p => this.mapERPToDisplay(p));
-            this.applyFilters();
-        } catch {
-            this.proveedores = [];
-            this.applyFilters();
-            this.snackBar.open('Error al cargar proveedores del ERP', 'Cerrar', { duration: 5000, verticalPosition: 'top' });
-        } finally {
-            this.isLoading = false;
-        }
-    }
-
-    private mapERPToDisplay(p: any): ProveedorDisplay {
-        const tipo = (p.tipo || '').toLowerCase();
-        return {
-            id:        String(p.id_proveedor ?? ''),
-            codigo:    p.codigo || p.codigo_alkym || '',
-            tipo,
-            tipoLabel: (p.tipo || 'INSTITUCIÓN').toUpperCase(),
-            nombre:    p.nombre || p.nombre_proveedor || p.rotulo_comercial || '',
-            nit:       p.nit || '',
-            ciudad:    p.lugar || '',
-            telefono:  p.telefono1_institucion || p.telefono1 || '',
-            email:     p.email1_institucion || p.correo || '',
-            activo:    this.parseActivo(p.estado_reg),
-            raw:       p
-        };
     }
 
     private mapToDisplay(s: any): ProveedorDisplay {
@@ -241,7 +184,6 @@ export class ProveedoresComponent implements OnInit {
     /* ── Acciones CRUD ── */
 
     async nuevoProveedor(): Promise<void> {
-        if (this.esERP) return;
         const { FormProveedorComponent } = await import('./dialogs/form-proveedor/form-proveedor.component');
         const ref = this.dialog.open(FormProveedorComponent, {
             width: '560px', maxWidth: '95vw', maxHeight: '90vh',
@@ -262,7 +204,6 @@ export class ProveedoresComponent implements OnInit {
 
     async editarProveedor(p: ProveedorDisplay, ev: Event): Promise<void> {
         ev.stopPropagation();
-        if (this.esERP) return;
         const { FormProveedorComponent } = await import('./dialogs/form-proveedor/form-proveedor.component');
         const ref = this.dialog.open(FormProveedorComponent, {
             width: '560px', maxWidth: '95vw', maxHeight: '90vh',
@@ -282,11 +223,6 @@ export class ProveedoresComponent implements OnInit {
     }
 
     async verDetalle(p: ProveedorDisplay): Promise<void> {
-        if (this.esERP) {
-            // El detalle/edición aplica solo al catálogo del módulo (he.tsuppliers)
-            this.snackBar.open('Catálogo ERP corporativo: solo lectura', 'Cerrar', { duration: 2500 });
-            return;
-        }
         const { DetalleProveedorComponent } = await import('./dialogs/detalle-proveedor/detalle-proveedor.component');
         const ref = this.dialog.open(DetalleProveedorComponent, {
             width: '560px', maxWidth: '95vw', maxHeight: '90vh',
@@ -300,7 +236,6 @@ export class ProveedoresComponent implements OnInit {
 
     async toggleEstado(p: ProveedorDisplay, ev: Event): Promise<void> {
         ev.stopPropagation();
-        if (this.esERP) return;
         const { ConfirmToggleDialogComponent } = await import('./dialogs/confirm-toggle-dialog.component');
         const ref = this.dialog.open(ConfirmToggleDialogComponent, {
             maxWidth: '95vw',

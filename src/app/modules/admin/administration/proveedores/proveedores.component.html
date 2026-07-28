@@ -21,23 +21,6 @@
       </div>
 
       <div class="flex items-center gap-2 flex-wrap w-full sm:w-auto">
-        <!-- Conmutador de fuente: catálogo del módulo vs corporativo ERP -->
-        <div class="flex items-center border-[2px] border-black rounded-xl overflow-hidden shrink-0 shadow-[2px_2px_0px_0px_#000]">
-          <button (click)="cambiarFuente('modulo')"
-                  matTooltip="Catálogo propio del módulo (he.tsuppliers) — el que usan las compras"
-                  class="px-2.5 sm:px-3 py-2 font-black text-[10px] uppercase transition-all flex items-center gap-1"
-                  [ngClass]="!esERP ? 'bg-[#0F172AFF] text-[#FFC501FF]' : 'bg-white dark:bg-slate-800 text-gray-500 hover:text-black dark:hover:text-white'">
-            <mat-icon class="!text-[12px] !w-3 !h-3">handyman</mat-icon>
-            Módulo
-          </button>
-          <button (click)="cambiarFuente('erp')"
-                  matTooltip="Catálogo corporativo del ERP (param.tproveedor) — solo lectura"
-                  class="px-2.5 sm:px-3 py-2 font-black text-[10px] uppercase transition-all flex items-center gap-1 border-l-2 border-black"
-                  [ngClass]="esERP ? 'bg-[#0F172AFF] text-[#FFC501FF]' : 'bg-white dark:bg-slate-800 text-gray-500 hover:text-black dark:hover:text-white'">
-            <mat-icon class="!text-[12px] !w-3 !h-3">corporate_fare</mat-icon>
-            ERP
-          </button>
-        </div>
         <!-- Búsqueda -->
         <div class="relative flex-1 min-w-[140px] sm:flex-none">
           <input type="text" [formControl]="searchControl"
@@ -48,8 +31,8 @@
                         placeholder:font-bold placeholder:normal-case dark:placeholder:text-slate-500">
           <mat-icon class="absolute left-2.5 top-2 text-black dark:text-white !text-sm">search</mat-icon>
         </div>
-        <!-- Nuevo Proveedor (solo catálogo del módulo) -->
-        <button *ngIf="!esERP" (click)="nuevoProveedor()"
+        <!-- Nuevo Proveedor -->
+        <button (click)="nuevoProveedor()"
                 class="shrink-0 px-3 sm:px-4 py-2 bg-[#FFC501FF] text-black font-black text-xs
                        border-[2px] border-black rounded-xl shadow-[3px_3px_0px_0px_#000]
                        hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all
@@ -58,17 +41,6 @@
           <span class="hidden sm:inline">Nuevo Proveedor</span>
         </button>
       </div>
-    </div>
-
-    <!-- Banner modo ERP (solo lectura) -->
-    <div *ngIf="esERP"
-         class="shrink-0 flex items-center gap-2 px-3 py-2 bg-blue-50 dark:bg-blue-900/20 border-[2px] border-blue-600 rounded-xl">
-      <mat-icon class="!text-base text-blue-600 shrink-0">info</mat-icon>
-      <p class="text-[10px] sm:text-[11px] font-bold text-blue-800 dark:text-blue-300 leading-snug">
-        Catálogo corporativo del ERP (<span class="font-mono font-black">parametros/Proveedor/listarProveedorV2</span>) —
-        <span class="font-black uppercase">solo lectura</span>. La administración de estos proveedores es del ERP.
-        Las compras del módulo usan el catálogo "Módulo".
-      </p>
     </div>
 
     <!-- ── CARD PRINCIPAL ──────────────────────────────────────────── -->
@@ -132,17 +104,14 @@
               <th class="hidden lg:table-cell px-3 py-2.5 w-32">TELÉFONO</th>
               <th class="hidden xl:table-cell px-3 py-2.5 w-48">EMAIL</th>
               <th class="px-3 py-2.5 text-center w-24">ESTADO</th>
-              <th *ngIf="!esERP" class="px-3 py-2.5 text-center w-28">ACCIONES</th>
+              <th class="px-3 py-2.5 text-center w-28">ACCIONES</th>
             </tr>
           </thead>
           <tbody>
             <tr *ngFor="let proveedor of proveedoresPagina; let idx = index"
                 (click)="verDetalle(proveedor)"
-                class="border-b border-gray-200 dark:border-slate-700 transition-all"
-                [ngClass]="[
-                    idx % 2 === 0 ? 'bg-white dark:bg-slate-800/60' : 'bg-gray-50 dark:bg-slate-800/40',
-                    !esERP ? 'cursor-pointer hover:bg-amber-50 dark:hover:bg-amber-900/10' : ''
-                ]">
+                class="border-b border-gray-200 dark:border-slate-700 transition-all cursor-pointer hover:bg-amber-50 dark:hover:bg-amber-900/10"
+                [ngClass]="idx % 2 === 0 ? 'bg-white dark:bg-slate-800/60' : 'bg-gray-50 dark:bg-slate-800/40'">
 
               <td class="px-3 py-2.5">
                 <span class="font-mono font-black text-[10px] bg-[#FFC501FF] text-black px-1.5 py-0.5 rounded border-2 border-black">
@@ -187,7 +156,7 @@
                 </span>
               </td>
 
-              <td *ngIf="!esERP" class="px-3 py-2.5 text-center" (click)="$event.stopPropagation()">
+              <td class="px-3 py-2.5 text-center" (click)="$event.stopPropagation()">
                 <div class="flex items-center justify-center gap-1.5">
                   <button (click)="editarProveedor(proveedor, $event)" matTooltip="Editar"
                           class="w-7 h-7 flex items-center justify-center bg-[#FFC501FF] border-2 border-black rounded-lg shadow-[2px_2px_0px_0px_#000] hover:translate-y-[1px] hover:shadow-none transition-all">
@@ -203,13 +172,13 @@
             </tr>
 
             <tr *ngIf="filteredProveedores.length === 0">
-              <td [attr.colspan]="esERP ? 8 : 9" class="py-12 text-center">
+              <td colspan="9" class="py-12 text-center">
                 <div class="flex flex-col items-center gap-3">
                   <mat-icon class="!text-5xl text-gray-300 dark:text-gray-600">store_mall_directory</mat-icon>
                   <p class="text-xs font-bold uppercase text-gray-500 mt-2">
                     {{ searchControl.value ? 'No se encontraron proveedores' : 'No hay proveedores registrados' }}
                   </p>
-                  <button *ngIf="!searchControl.value && !esERP" (click)="nuevoProveedor()"
+                  <button *ngIf="!searchControl.value" (click)="nuevoProveedor()"
                           class="mt-2 px-4 py-2 bg-[#FFC501FF] text-black font-black text-[10px] border-2 border-black rounded-lg shadow-[2px_2px_0px_0px_#000] hover:translate-y-[1px] hover:shadow-none transition-all uppercase inline-flex items-center gap-1.5">
                     <mat-icon class="!text-base text-black">add</mat-icon>
                     Registrar el primero

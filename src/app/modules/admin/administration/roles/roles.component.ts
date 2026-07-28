@@ -8,22 +8,16 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { debounceTime, startWith } from 'rxjs/operators';
 import { RoleService } from '../../../../core/services/role.service';
-import { ErpApiService } from '../../../../core/api/api.service';
+import { HasPermissionDirective } from '../../../../core/directives/has-permission.directive';
 
 /**
- * Módulo Roles y Permisos — dos fuentes conmutables:
- *  · 'modulo': CRUD completo contra he.roles (herramientas/roles/*), con la matriz
- *    de permisos serializada en he.roles.permissions como JSON de ids.
- *  · 'erp': seguridad/Rol/listarRol — roles reales del framework (segu.trol), SOLO
- *    LECTURA (su administración es del ERP; regla del proyecto: no tocar segu).
+ * Módulo Roles y Permisos — CRUD completo contra he.roles (herramientas/roles/*),
+ * con la matriz de permisos serializada en he.roles.permissions como JSON de ids.
  */
-type FuenteRoles = 'modulo' | 'erp';
-
 interface RoleDisplay {
     id: string;
     nombre: string;
     descripcion: string;
-    subsistema: string;
     permissions: string[];
     userCount: number;
     activo: boolean;
@@ -39,7 +33,8 @@ interface RoleDisplay {
         MatDialogModule,
         MatSnackBarModule,
         MatTooltipModule,
-        ReactiveFormsModule
+        ReactiveFormsModule,
+        HasPermissionDirective
     ],
     templateUrl: './roles.component.html',
     styles: [`
@@ -53,16 +48,12 @@ export class RolesComponent implements OnInit {
     private snackBar = inject(MatSnackBar);
     private dialog   = inject(MatDialog);
     private roleSvc  = inject(RoleService);
-    private api      = inject(ErpApiService);
 
     searchControl = new FormControl('');
 
     roles: RoleDisplay[] = [];
     filteredRoles: RoleDisplay[] = [];
     isLoading = false;
-
-    /** Fuente activa: roles del módulo (he.roles, CRUD) o roles del framework (solo lectura) */
-    fuente = signal<FuenteRoles>('modulo');
 
     /* ── Paginación ── */
     readonly pageSize = 10;
@@ -73,17 +64,7 @@ export class RolesComponent implements OnInit {
         this.setupSearch();
     }
 
-    get esERP(): boolean { return this.fuente() === 'erp'; }
-
-    cambiarFuente(f: FuenteRoles): void {
-        if (this.fuente() === f) return;
-        this.fuente.set(f);
-        this.searchControl.setValue('', { emitEvent: false });
-        this.loadRoles();
-    }
-
     loadRoles(): void {
-        if (this.esERP) { this.loadRolesERP(); return; }
         this.isLoading = true;
         this.roleSvc.getRoles().subscribe({
             next: (rows: any[]) => {
@@ -100,39 +81,11 @@ export class RolesComponent implements OnInit {
         });
     }
 
-    /** Roles reales del framework (segu.trol) — payload provisto por el equipo ERP */
-    private async loadRolesERP(): Promise<void> {
-        this.isLoading = true;
-        try {
-            const r: any = await this.api.post('seguridad/Rol/listarRol', {
-                start: 0, limit: 50, sort: 'rol', dir: 'ASC'
-            });
-            const raw: any[] = r?.datos || r?.data || [];
-            this.roles = raw.map((x: any) => ({
-                id:          String(x.id_rol ?? ''),
-                nombre:      x.rol || '',
-                descripcion: x.descripcion || '',
-                subsistema:  (x.desc_subsis || '').trim(),
-                permissions: [],
-                userCount:   0,
-                activo:      this.parseActivo(x.estado_reg)
-            }));
-            this.applyFilters();
-        } catch {
-            this.roles = [];
-            this.applyFilters();
-            this.snackBar.open('Error al cargar roles del ERP', 'Cerrar', { duration: 5000, verticalPosition: 'top' });
-        } finally {
-            this.isLoading = false;
-        }
-    }
-
     private mapToDisplay(r: any): RoleDisplay {
         return {
             id:          String(r.id_role ?? r.id ?? ''),
             nombre:      r.name || '',
             descripcion: r.description || '',
-            subsistema:  '',
             permissions: this.parsePermissions(r.permissions),
             userCount:   Number(r.user_count ?? 0),
             activo:      this.parseActivo(r.active)
@@ -168,7 +121,6 @@ export class RolesComponent implements OnInit {
     }
 
     async nuevoRol(): Promise<void> {
-        if (this.esERP) return;
         const { FormRolComponent } = await import('./dialogs/form-rol/form-rol.component');
         const ref = this.dialog.open(FormRolComponent, {
             width: '460px', maxWidth: '95vw', maxHeight: '90vh',
@@ -189,7 +141,6 @@ export class RolesComponent implements OnInit {
 
     async editarRol(r: RoleDisplay, ev?: Event): Promise<void> {
         ev?.stopPropagation();
-        if (this.esERP) return;
         const { FormRolComponent } = await import('./dialogs/form-rol/form-rol.component');
         const ref = this.dialog.open(FormRolComponent, {
             width: '460px', maxWidth: '95vw', maxHeight: '90vh',
@@ -201,22 +152,35 @@ export class RolesComponent implements OnInit {
         });
         ref.afterClosed().subscribe(result => {
             if (!result) return;
-            this.roleSvc.updateRole(r.id, this.buildPayload(result, r.activo)).subscribe({
+            const payload = this.buildPayload(result, r.activo);
+            this.roleSvc.updateRole(r.id, payload).subscribe({
                 next: () => {
                     this.snackBar.open('Rol actualizado', 'Cerrar', { duration: 2500 });
-                    this.loadRoles();
+                    // Actualiza la fila localmente con lo que se acaba de guardar en vez de
+                    // volver a pedir la lista: el backend tarda un instante en reflejar el
+                    // commit en listarRoles, y un refetch inmediato aquí devolvía el dato
+                    // viejo (se veía "no se actualiza" hasta un refresh manual).
+                    this.applyOptimisticUpdate(r.id, {
+                        nombre:      payload.name,
+                        descripcion: payload.description,
+                        permissions: result.permissions || [],
+                        activo:      payload.active,
+                    });
                 },
                 error: () => this.snackBar.open('Error al actualizar rol', 'Cerrar', { duration: 4000 }),
             });
         });
     }
 
+    /** Refleja en la tabla, sin esperar un refetch, un cambio que ya se confirmó guardado. */
+    private applyOptimisticUpdate(id: string, patch: Partial<RoleDisplay>): void {
+        const idx = this.roles.findIndex(x => x.id === id);
+        if (idx === -1) return;
+        this.roles[idx] = { ...this.roles[idx], ...patch };
+        this.applyFilters();
+    }
+
     async verDetalle(r: RoleDisplay): Promise<void> {
-        if (this.esERP) {
-            // Los roles del framework se administran desde el ERP, no desde este modulo
-            this.snackBar.open('Roles del framework: solo lectura', 'Cerrar', { duration: 2500 });
-            return;
-        }
         const { DetalleRolComponent } = await import('./dialogs/detalle-rol/detalle-rol.component');
         const ref = this.dialog.open(DetalleRolComponent, {
             width: '520px', maxWidth: '95vw', maxHeight: '90vh',
@@ -226,7 +190,7 @@ export class RolesComponent implements OnInit {
                     nombre: r.nombre, name: r.nombre,
                     descripcion: r.descripcion, description: r.descripcion,
                     permissions: r.permissions,
-                    user_count: r.userCount,
+                    userCount: r.userCount,
                     active: r.activo,
                 },
                 permissions: null
@@ -239,7 +203,6 @@ export class RolesComponent implements OnInit {
 
     toggleEstado(r: RoleDisplay, ev: Event): void {
         ev.stopPropagation();
-        if (this.esERP) return;
         // HE_ROL_MOD sobrescribe todos los campos: enviar el registro completo
         // (permissions viaja serializado como JSON text, igual que en buildPayload)
         const payload: any = {
@@ -251,7 +214,7 @@ export class RolesComponent implements OnInit {
         this.roleSvc.updateRole(r.id, payload).subscribe({
             next: () => {
                 this.snackBar.open(`Rol ${!r.activo ? 'activado' : 'desactivado'}`, 'Cerrar', { duration: 2500 });
-                this.loadRoles();
+                this.applyOptimisticUpdate(r.id, { activo: payload.active });
             },
             error: () => this.snackBar.open('Error al cambiar estado', 'Cerrar', { duration: 4000 }),
         });

@@ -103,6 +103,10 @@ export class DetalleHerramientaComponent implements OnInit, OnDestroy {
     ubRacks:     Rack[]      = [];
     ubLevels:    Level[]     = [];
 
+    /** Lista completa (sin filtrar) para ubicar herramientas ya guardadas fuera de
+     *  Cbba (datos legado) sin perder el auto-select al editar — ver _soloCbba(). */
+    private _todosLosAlmacenes: Warehouse[] = [];
+
     loadingAlmacenes = false;
     loadingRacks     = false;
     loadingLevels    = false;
@@ -208,16 +212,18 @@ export class DetalleHerramientaComponent implements OnInit, OnDestroy {
         });
         if (tool.imagen) this.imagenOriginal.set(tool.imagen);
 
-        // Auto-seleccionar ubicación si el tool la trae
-        if (tool.warehouse_id && this.ubAlmacenes.length > 0) {
-            const w = this.ubAlmacenes.find(a => a.id === tool.warehouse_id);
+        // Auto-seleccionar ubicación si el tool la trae (búsqueda contra la lista
+        // completa, no la filtrada a Cbba: la herramienta puede estar en otra base
+        // por datos legado y no queremos perder el dato al editar).
+        if (tool.warehouse_id && this._todosLosAlmacenes.length > 0) {
+            const w = this._todosLosAlmacenes.find(a => a.id === tool.warehouse_id);
             if (w) {
                 this._autoSelectWarehouse(w, tool.rack_id, tool.level_id);
                 return;
             }
         }
         // Si almacenes aún no cargaron, espera y reintenta
-        if (tool.warehouse_id && this.ubAlmacenes.length === 0) {
+        if (tool.warehouse_id && this._todosLosAlmacenes.length === 0) {
             this._pendingAutoSelect = { wId: tool.warehouse_id, rId: tool.rack_id, lId: tool.level_id };
         }
     }
@@ -243,7 +249,11 @@ export class DetalleHerramientaComponent implements OnInit, OnDestroy {
             finalize(() => { this.loadingAlmacenes = false; })
         ).subscribe({
             next: warehouses => {
-                this.ubAlmacenes = warehouses;
+                this._todosLosAlmacenes = warehouses;
+                // Solo almacenes de Cochabamba en el picker (mismo criterio que
+                // Kits/Misceláneos); _todosLosAlmacenes conserva la lista completa
+                // para ubicar herramientas ya guardadas fuera de Cbba (datos legado).
+                this.ubAlmacenes = warehouses.filter(w => w.codigo?.startsWith('ALM-CBB'));
                 if (this._pendingAutoSelect) {
                     const p = this._pendingAutoSelect;
                     this._pendingAutoSelect = null;
@@ -295,8 +305,8 @@ export class DetalleHerramientaComponent implements OnInit, OnDestroy {
         if (this.ubicDialogRef) { this.closeUbicacionDialog(); return; }
         this.showUbicacionPanel = true;
         this.ubicDialogRef = this.dialog.open(this.ubicDialogTpl, {
-            width: 'min(420px, 96vw)',
-            maxHeight: '90vh',
+            width: 'min(760px, 96vw)',
+            maxHeight: '70vh',
             panelClass: 'no-padding-dialog',
             hasBackdrop: true,
             backdropClass: 'ubic-backdrop',

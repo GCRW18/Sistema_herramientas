@@ -286,8 +286,8 @@ export class ServiciosMantenimientoComponent implements OnInit, OnDestroy {
 
     nuevoLote(): void {
         const ref = this.dialog.open(FormLoteMantenimientoComponent, {
-            width: '1000px', maxWidth: '98vw', height: '88vh',
-            panelClass: 'no-padding-dialog', disableClose: false,
+            width: 'min(820px, 100vw)', maxWidth: '100vw', maxHeight: '100dvh',
+            panelClass: 'neo-dialog-transparent', disableClose: false, autoFocus: false,
         });
         ref.afterClosed().subscribe(ok => {
             if (ok) { this.loadMantenimientos(); this.showMsg('Lote procesado exitosamente', 'success'); }

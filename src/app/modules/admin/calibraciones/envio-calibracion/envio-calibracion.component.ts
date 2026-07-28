@@ -420,12 +420,9 @@ export class EnvioCalibracionComponent implements OnInit, OnDestroy {
     async nuevoEnvio(): Promise<void> {
         try {
             const { FormEnvioComponent } = await import('./form-envio/form-envio.component');
-            // Form compacto de columna única: el lote se gestiona en su propia
-            // miniventana (se abre desde el botón "Ver / Configurar Lote")
             const ref = this.dialog.open(FormEnvioComponent, {
-                width: '520px', maxWidth: '95vw', maxHeight: '95vh',
-                panelClass: 'no-padding-dialog',
-                disableClose: false
+                width: 'min(820px, 100vw)', maxWidth: '100vw', maxHeight: '100dvh',
+                panelClass: 'neo-dialog-transparent', disableClose: false, autoFocus: false
             });
             ref.afterClosed().subscribe(ok => {
                 if (ok) { this.loadCalibraciones(); this.showMsg('Envío registrado exitosamente', 'success'); }

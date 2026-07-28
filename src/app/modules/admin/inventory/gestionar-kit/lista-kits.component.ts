@@ -6,6 +6,7 @@ import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { MatDialogRef } from '@angular/material/dialog';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { KitsService } from '../../../../core/services/kits.service';
+import { HasPermissionDirective } from '../../../../core/directives/has-permission.directive';
 import { catchError, finalize } from 'rxjs/operators';
 import { of } from 'rxjs';
 
@@ -37,7 +38,7 @@ interface KitItem {
 @Component({
     selector: 'app-lista-kits',
     standalone: true,
-    imports: [CommonModule, FormsModule, MatIconModule, MatDialogModule, MatTooltipModule],
+    imports: [CommonModule, FormsModule, MatIconModule, MatDialogModule, MatTooltipModule, HasPermissionDirective],
     template: `
     <div class="flex flex-col w-full h-full bg-[#f8f9fc] dark:bg-[#0F172AFF] transition-colors duration-300 font-sans overflow-hidden">
 
@@ -110,7 +111,7 @@ interface KitItem {
                         <span class="hidden sm:inline">Categorías</span>
                     </button>
 
-                    <button (click)="crearNuevoKit()"
+                    <button *appHasPermission="'kits.create'" (click)="crearNuevoKit()"
                             class="px-5 py-2 bg-[#FFC501FF] text-black font-black text-xs
                                    border-[2px] border-black rounded-xl
                                    shadow-[3px_3px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px]
@@ -247,26 +248,30 @@ interface KitItem {
                                             class="w-7 h-7 flex items-center justify-center bg-blue-950 border-2 border-black rounded-lg shadow-[2px_2px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all">
                                         <mat-icon class="!text-sm text-white">visibility</mat-icon>
                                     </button>
-                                    <button (click)="editarKit(kit)"
+                                    <button *appHasPermission="'kits.edit'" (click)="editarKit(kit)"
                                             matTooltip="Editar kit"
                                             class="w-7 h-7 flex items-center justify-center bg-[#FFC501FF] border-2 border-black rounded-lg shadow-[2px_2px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all">
                                         <mat-icon class="!text-sm text-black">edit</mat-icon>
                                     </button>
                                     <!-- Prestar: visible cuando el kit no está EN USO y está activo -->
-                                    <button *ngIf="kit.estado !== 'EN USO' && kit.activo"
-                                            (click)="prestarKit(kit)"
-                                            matTooltip="Prestar kit"
-                                            class="w-7 h-7 flex items-center justify-center bg-blue-500 border-2 border-black rounded-lg shadow-[2px_2px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all">
-                                        <mat-icon class="!text-sm text-white">send</mat-icon>
-                                    </button>
+                                    <ng-container *appHasPermission="'kits.prestar'">
+                                        <button *ngIf="kit.estado !== 'EN USO' && kit.activo"
+                                                (click)="prestarKit(kit)"
+                                                matTooltip="Prestar kit"
+                                                class="w-7 h-7 flex items-center justify-center bg-blue-500 border-2 border-black rounded-lg shadow-[2px_2px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all">
+                                            <mat-icon class="!text-sm text-white">send</mat-icon>
+                                        </button>
+                                    </ng-container>
                                     <!-- Devolver: visible cuando el kit está EN USO -->
-                                    <button *ngIf="kit.estado === 'EN USO'"
-                                            (click)="devolverKit(kit)"
-                                            matTooltip="Registrar devolución"
-                                            class="w-7 h-7 flex items-center justify-center bg-orange-500 border-2 border-black rounded-lg shadow-[2px_2px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all">
-                                        <mat-icon class="!text-sm text-white">assignment_return</mat-icon>
-                                    </button>
-                                    <button (click)="toggleActivo(kit, $event)"
+                                    <ng-container *appHasPermission="'kits.devolver'">
+                                        <button *ngIf="kit.estado === 'EN USO'"
+                                                (click)="devolverKit(kit)"
+                                                matTooltip="Registrar devolución"
+                                                class="w-7 h-7 flex items-center justify-center bg-orange-500 border-2 border-black rounded-lg shadow-[2px_2px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all">
+                                            <mat-icon class="!text-sm text-white">assignment_return</mat-icon>
+                                        </button>
+                                    </ng-container>
+                                    <button *appHasPermission="'kits.toggle'" (click)="toggleActivo(kit, $event)"
                                             [matTooltip]="kit.activo ? 'Desactivar kit' : 'Activar kit'"
                                             [class]="kit.activo
                                                 ? 'w-7 h-7 flex items-center justify-center bg-green-600 border-2 border-black rounded-lg shadow-[2px_2px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all'
@@ -425,7 +430,7 @@ export class ListaKitsComponent implements OnInit {
 
     cargarKits(): void {
         this.isLoading.set(true);
-        this.kitsService.getKits().pipe(
+        this.kitsService.getKits({ limit: 1000 }).pipe(
             finalize(() => this.isLoading.set(false)),
             catchError(() => of([]))
         ).subscribe(data => {
@@ -438,7 +443,7 @@ export class ListaKitsComponent implements OnInit {
             id:                  k.id_kit,
             nombre:              k.name         ?? '',
             descripcion:         k.description  ?? '',
-            cantidadItems:       k.total_components ?? 0,
+            cantidadItems:       Number(k.total_components ?? 0),
             ubicacion:           k.location_name ?? undefined,
             ultimaActualizacion: k.fecha_reg ? new Date(k.fecha_reg) : new Date(),
             categoria:           k.category      ?? 'GENERAL',
