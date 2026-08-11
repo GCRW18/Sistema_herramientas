@@ -11,11 +11,12 @@ import { startWith, takeUntil, debounceTime, finalize, mergeMap } from 'rxjs/ope
 import { Material, Entrada, Salida, TabMisc } from './interfaces';
 import { MiscelaneosService } from '../../../../core/services/miscelaneos.service';
 import { ConfirmDeleteComponent } from '../gestion-ubicaciones/confirm-delete/confirm-delete.component';
+import { HasPermissionDirective } from '../../../../core/directives/has-permission.directive';
 
 @Component({
     selector: 'app-inventario-miscelaneos',
     standalone: true,
-    imports: [CommonModule, ReactiveFormsModule, MatDialogModule, MatIconModule, MatSnackBarModule, MatTooltipModule],
+    imports: [CommonModule, ReactiveFormsModule, MatDialogModule, MatIconModule, MatSnackBarModule, MatTooltipModule, HasPermissionDirective],
     templateUrl: './inventario-miscelaneos.component.html',
     styles: [`
         :host { display: block; height: 100%; }

@@ -95,17 +95,21 @@
 
           <!-- Acciones -->
           <div class="ml-auto flex items-center gap-1.5 shrink-0">
-            <button *ngIf="activeTab === 'prestamo'" (click)="abrirFormPrestamo()"
-                    class="h-7 px-2.5 flex items-center gap-1.5 rounded-lg bg-[#FFC501FF] border border-black text-black font-black text-[10px] uppercase shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all shrink-0">
-              <mat-icon class="!text-xs !w-3.5 !h-3.5">add_circle</mat-icon>
-              <span class="hidden sm:inline">Nuevo PT</span>
-            </button>
+            <ng-container *appHasPermission="'prestamo_tecnico.prestar'">
+              <button *ngIf="activeTab === 'prestamo'" (click)="abrirFormPrestamo()"
+                      class="h-7 px-2.5 flex items-center gap-1.5 rounded-lg bg-[#FFC501FF] border border-black text-black font-black text-[10px] uppercase shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all shrink-0">
+                <mat-icon class="!text-xs !w-3.5 !h-3.5">add_circle</mat-icon>
+                <span class="hidden sm:inline">Nuevo PT</span>
+              </button>
+            </ng-container>
 
-            <button *ngIf="activeTab === 'devolucion'" (click)="abrirFormDevolucion()"
-                    class="h-7 px-2.5 flex items-center gap-1.5 rounded-lg bg-[#FFC501FF] border border-black text-black font-black text-[10px] uppercase shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all shrink-0">
-              <mat-icon class="!text-xs !w-3.5 !h-3.5">assignment_return</mat-icon>
-              <span class="hidden sm:inline">Registrar Devolución</span>
-            </button>
+            <ng-container *appHasPermission="'prestamo_tecnico.devolver'">
+              <button *ngIf="activeTab === 'devolucion'" (click)="abrirFormDevolucion()"
+                      class="h-7 px-2.5 flex items-center gap-1.5 rounded-lg bg-[#FFC501FF] border border-black text-black font-black text-[10px] uppercase shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all shrink-0">
+                <mat-icon class="!text-xs !w-3.5 !h-3.5">assignment_return</mat-icon>
+                <span class="hidden sm:inline">Registrar Devolución</span>
+              </button>
+            </ng-container>
 
             <button (click)="loadData()" [disabled]="isLoading()"
                     class="flex items-center gap-1.5 h-7 px-2.5 rounded-lg border border-white/30 text-white hover:bg-white/20 transition-all disabled:opacity-40 font-black text-[10px] uppercase shrink-0">
@@ -133,10 +137,12 @@
                filterStatus.value === '' ? 'Sin préstamos registrados' :
                'Sin préstamos activos' }}
           </p>
-          <button *ngIf="filterStatus.value !== 'returned'" (click)="abrirFormPrestamo()"
-                  class="h-8 px-4 rounded-xl border-[2px] border-black bg-[#FFC501FF] text-black font-black text-xs uppercase shadow-[2px_2px_0_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all mt-1 flex items-center gap-1.5">
-            <mat-icon class="!text-sm">add_circle</mat-icon>Nuevo Préstamo PT
-          </button>
+          <ng-container *appHasPermission="'prestamo_tecnico.prestar'">
+            <button *ngIf="filterStatus.value !== 'returned'" (click)="abrirFormPrestamo()"
+                    class="h-8 px-4 rounded-xl border-[2px] border-black bg-[#FFC501FF] text-black font-black text-xs uppercase shadow-[2px_2px_0_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all mt-1 flex items-center gap-1.5">
+              <mat-icon class="!text-sm">add_circle</mat-icon>Nuevo Préstamo PT
+            </button>
+          </ng-container>
         </div>
 
         <div *ngIf="filteredLoans.length > 0" class="flex-1 overflow-auto custom-scrollbar bg-gray-50 dark:bg-[#0F172AFF]">
@@ -230,7 +236,7 @@
              class="flex-1 flex flex-col items-center justify-center gap-3 py-12 px-4 text-center">
           <mat-icon class="!text-5xl text-gray-300 dark:text-gray-600">assignment_return</mat-icon>
           <p class="text-xs font-bold uppercase text-gray-500 mt-2">Sin devoluciones pendientes</p>
-          <button (click)="abrirFormDevolucion()"
+          <button *appHasPermission="'prestamo_tecnico.devolver'" (click)="abrirFormDevolucion()"
                   class="h-8 px-4 rounded-xl border-[2px] border-black bg-[#FFC501FF] text-black font-black text-xs uppercase shadow-[2px_2px_0_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all mt-1 flex items-center gap-1.5">
             <mat-icon class="!text-sm">assignment_return</mat-icon>Registrar Devolución
           </button>

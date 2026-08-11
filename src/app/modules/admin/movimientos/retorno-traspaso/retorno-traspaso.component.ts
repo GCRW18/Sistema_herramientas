@@ -14,11 +14,12 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import {
     Subject, takeUntil, finalize, debounceTime, distinctUntilChanged,
-    switchMap, of, forkJoin, map
+    switchMap, of, forkJoin, map, catchError
 } from 'rxjs';
 
 import { MovementService } from '../../../../core/services/movement.service';
 import { ToolService } from '../../../../core/services/tool.service';
+import { HasPermissionDirective } from '../../../../core/directives/has-permission.directive';
 
 // Dialog components (standalone subfolders)
 import { EnvioDialogComponent } from './dialogs/envio/envio-dialog.component';
@@ -52,6 +53,8 @@ interface ToolEnvioItem {
     cantidad: number;
     condicion: string;
     notas: string;
+    unidad?: string;
+    listaContenido?: string;
 }
 
 interface TraspasoItem {
@@ -97,6 +100,9 @@ interface MovimientoActivo {
     requested_by_name: string;
     received_by_name: string;
     department: string;
+    authorized_by?: string;
+    destination_department?: string;
+    destination_unit?: string;
     document_number: string;
     notes: string;
     specific_observations?: string;
@@ -143,6 +149,7 @@ interface HistorialRecord {
         MatIconModule, MatButtonModule, MatTableModule,
         MatPaginatorModule, MatDialogModule, MatSnackBarModule,
         MatProgressSpinnerModule, MatCheckboxModule, MatTooltipModule,
+        HasPermissionDirective,
     ],
     templateUrl: './retorno-traspaso.component.html',
     styles: [`
@@ -182,6 +189,7 @@ export class RetornoTraspasoComponent implements OnInit, OnDestroy {
     private movSvc   = inject(MovementService);
     private toolSvc  = inject(ToolService);
     private _unsub$  = new Subject<void>();
+    private _logoBoaDataUri: Promise<string> | null = null;
     private _envioDialogRef: any          = null;
     private _traspasoDialogRef: any       = null;
     private _retornoDialogRef: any        = null;
@@ -1360,6 +1368,9 @@ export class RetornoTraspasoComponent implements OnInit, OnDestroy {
                         requested_by_name:          m.requested_by_name  || m.responsible_person || '',
                         received_by_name:           m.received_by_name   || '',
                         department:                 m.department         || '',
+                        authorized_by:              m.authorized_by      || '',
+                        destination_department:     m.destination_department || '',
+                        destination_unit:           m.destination_unit       || '',
                         document_number:            m.document_number    || '',
                         notes:                      m.notes              || '',
                         specific_observations:      m.specific_observations      || '',
@@ -1389,6 +1400,9 @@ export class RetornoTraspasoComponent implements OnInit, OnDestroy {
                         requested_by_name:          m.requested_by_name  || m.responsible_person || '',
                         received_by_name:           m.received_by_name   || '',
                         department:                 m.department         || '',
+                        authorized_by:              m.authorized_by      || '',
+                        destination_department:     m.destination_department || '',
+                        destination_unit:           m.destination_unit       || '',
                         document_number:            m.document_number    || '',
                         notes:                      m.notes              || '',
                         specific_observations:      m.specific_observations || '',
@@ -1539,10 +1553,13 @@ export class RetornoTraspasoComponent implements OnInit, OnDestroy {
 
     verPdfActivo(mov: MovimientoActivo): void {
         this.loadingPdfActivo = mov.id_movement;
-        this.movSvc.getMovementItems(Number(mov.id_movement))
+        forkJoin({
+            rawItems: this.movSvc.getMovementItems(Number(mov.id_movement)),
+            personal: this.movSvc.getPersonal().pipe(catchError(() => of([] as any[])))
+        })
             .pipe(takeUntil(this._unsub$), finalize(() => this.loadingPdfActivo = null))
             .subscribe({
-                next: (rawItems: any[]) => {
+                next: ({ rawItems, personal }) => {
                     const items: ToolEnvioItem[] = (rawItems || []).map((item: any) => ({
                         toolId:    Number(item.tool_id || item.toolId || 0),
                         codigo:    item.tool?.code || item.code || '',
@@ -1554,18 +1571,41 @@ export class RetornoTraspasoComponent implements OnInit, OnDestroy {
                         cantidad:  Number(item.quantity) || 1,
                         condicion: item.condition_state || 'good',
                         notas:     item.notes || '',
+                        unidad:         item.unit_of_measure || '',
+                        listaContenido: item.content_list    || '',
                     }));
+                    // Cruza nombre contra el padrón de funcionarios (mismo origen que usan los
+                    // autocompletados del form) para completar Licencia/Cargo, que el movimiento
+                    // en sí no guarda — solo el nombre en texto libre.
+                    const buscarFuncionario = (nombre: string): any => {
+                        const q = (nombre || '').trim().toLowerCase();
+                        if (!q) return null;
+                        return (personal || []).find((f: any) => (f.nombreCompleto || '').trim().toLowerCase() === q) || null;
+                    };
+                    const solicitante = buscarFuncionario(mov.requested_by_name);
+                    const autorizado  = buscarFuncionario(mov.authorized_by || '');
+
                     const tipo = mov.movement_type_label === 'TRASPASO' ? 'TRASPASO DEFINITIVO' : 'ENVÍO A BASE';
                     const fakeForm = {
                         fechaEnvio:           mov.send_date,
                         fechaTraspaso:        mov.send_date,
+                        baseOrigen:           { nombre: mov.source_warehouse_name },
                         baseDestino:          { nombre: mov.destination_warehouse_name },
                         areaDepartamento:     mov.destination_warehouse_name,
+                        department:           mov.department,
+                        departamentoDestino:  mov.destination_department,
+                        unidadDestino:        mov.destination_unit,
                         responsableEnvia:     mov.requested_by_name,
                         responsableTraspaso:  mov.requested_by_name,
+                        licenciaSolicitante:  solicitante?.licencia || '',
+                        cargoSolicitante:     solicitante?.cargo    || '',
+                        recibeEnDestino:      mov.received_by_name,
+                        tipoTraspaso:         mov.transfer_type,
+                        autorizadoPor:        mov.authorized_by || '',
+                        cargoAutorizado:      autorizado?.cargo || '',
                         nroDocumento:         mov.document_number,
                         fechaEsperadaRetorno: mov.expected_return_date || 'N/A',
-                        notas: '',
+                        notas: mov.notes || '',
                     };
                     this._pdfEnvio(mov.movement_number, items, fakeForm, tipo);
                 },
@@ -1598,6 +1638,9 @@ export class RetornoTraspasoComponent implements OnInit, OnDestroy {
                         requested_by_name:          m.requested_by_name  || m.responsible_person || '',
                         received_by_name:           m.received_by_name   || '',
                         department:                 m.department         || '',
+                        authorized_by:              m.authorized_by      || '',
+                        destination_department:     m.destination_department || '',
+                        destination_unit:           m.destination_unit       || '',
                         document_number:            m.document_number    || '',
                         notes:                      m.notes              || '',
                         specific_observations:      m.specific_observations || '',
@@ -2845,7 +2888,209 @@ export class RetornoTraspasoComponent implements OnInit, OnDestroy {
             [origen, responsable]);
     }
 
+    /** Carga el logo de BoA como data-URI (una sola vez, cacheado) para poder incrustarlo
+     *  en el HTML que se abre en una pestaña nueva vía Blob — esa pestaña no comparte el
+     *  árbol de assets de la app, así que una ruta relativa /images/... no es confiable ahí. */
+    private _loadLogoBoaDataUri(): Promise<string> {
+        if (!this._logoBoaDataUri) {
+            this._logoBoaDataUri = fetch('/images/logo-boa.png')
+                .then(r => r.blob())
+                .then(blob => new Promise<string>((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onload  = () => resolve(reader.result as string);
+                    reader.onerror = reject;
+                    reader.readAsDataURL(blob);
+                }))
+                .catch(() => '');
+        }
+        return this._logoBoaDataUri;
+    }
+
+    /** Nota de Traspaso — formato oficial MGH-109 (BoAMM OAM145# N-014), calcado del
+     *  formulario Excel/impreso real. Piloto: por ahora solo se usa para TRASPASO DEFINITIVO. */
+    private async _pdfTraspasoOficial(nro: string, items: ToolEnvioItem[], form: any): Promise<void> {
+        const logoUri = await this._loadLogoBoaDataUri();
+        const now     = new Date();
+        const fecha   = new Date(form.fechaTraspaso || now).toLocaleDateString('es-BO', { day: '2-digit', month: '2-digit', year: 'numeric' });
+        const hora    = form.horaTraspaso || now.toLocaleTimeString('es-BO', { hour: '2-digit', minute: '2-digit' });
+
+        const solicitante = form.responsableTraspaso || form.responsableEnvia || '---';
+        const destino     = form.baseDestino?.nombre || form.areaDepartamento || '---';
+        const recibe      = form.recibeEnDestino || '---';
+        const autorizado  = form.autorizadoPor || '---';
+        const tipoTrp     = this.getTransferTypeLabel(form.tipoTraspaso || '') || '---';
+        // Licencia/Cargo no se guardan en el movimiento — se cruzan por nombre contra el
+        // padrón de funcionarios (he.employees) al momento de generar el PDF, ver verPdfActivo().
+        const licencia        = form.licenciaSolicitante || '---';
+        const cargo           = form.cargoSolicitante     || '---';
+        const cargoAutorizado = form.cargoAutorizado      || '---';
+        // Desglose organizativo del destino (SCP-41) — texto libre, no hay catalogo.
+        // Sin fallback a form.department (Gerencia Destino): son campos deliberadamente
+        // separados, mostrar la Gerencia acá disfrazaría un destination_department vacío.
+        const departamentoDestino = form.departamentoDestino || '---';
+        const unidadDestino       = form.unidadDestino       || '---';
+
+        const filas = items.map(it => `
+            <tr>
+                <td class="mono">${it.codigo || '---'}</td>
+                <td class="mono">${it.pn || '---'}</td>
+                <td class="mono">${it.sn || '---'}</td>
+                <td class="tc">${it.unidad || '---'}</td>
+                <td class="tc">${it.cantidad}</td>
+                <td>${it.nombre || '---'}</td>
+                <td>${it.listaContenido || '---'}</td>
+                <td>${it.marca || '---'}</td>
+                <td class="tc" style="font-size:8.5px">${it.fechaVencCal || '---'}</td>
+                <td>${it.notas || '---'}</td>
+            </tr>`).join('');
+
+        const html = `<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8">
+<title>Nota de Traspaso ${nro}</title>
+<style>
+  @page { size: A4; margin: 8mm 10mm; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: Arial, sans-serif; font-size: 10px; color: #000; }
+
+  table.head-table { width: 100%; border-collapse: collapse; border: 2px solid #000; margin-bottom: 6px; }
+  table.head-table td { border: 1px solid #000; padding: 4px 8px; vertical-align: middle; }
+  .logo-cell { width: 22%; text-align: center; padding: 6px 8px; }
+  .logo-cell img { max-width: 100%; max-height: 34px; }
+  .logo-cell .oam { font-size: 8px; font-weight: 900; margin-top: 2px; }
+  .title-cell { width: 58%; text-align: center; }
+  .title-cell h1 { font-size: 14px; font-weight: 900; text-transform: uppercase; }
+  .title-cell h2 { font-size: 10.5px; font-weight: 900; text-transform: uppercase; margin-top: 2px; }
+  .code-cell { width: 20%; text-align: center; padding: 0; }
+  .code-cell .mgh { font-size: 15px; font-weight: 900; padding: 6px 0; border-bottom: 1px solid #000; }
+  .code-cell .rev-fecha { display: flex; font-size: 9px; font-weight: 700; }
+  .code-cell .rev-fecha > div { flex: 1; padding: 3px 0; }
+  .code-cell .rev-fecha > div:first-child { border-right: 1px solid #000; }
+
+  table.meta-table { width: 100%; border-collapse: collapse; border: 2px solid #000; border-top: none; margin-bottom: 0; }
+  table.meta-table td { border: 1px solid #000; padding: 3px 6px; font-size: 9.5px; height: 20px; }
+  table.meta-table td b { font-weight: 900; }
+  .nnota-cell { text-align: center; font-weight: 900; }
+  .nnota-cell .lbl { font-size: 8px; text-transform: uppercase; }
+  .nnota-cell .val { font-size: 12px; }
+
+  .detalle-bar { background: #fff; border: 2px solid #000; border-top: none; text-align: center; font-weight: 900; font-size: 11px; text-transform: uppercase; padding: 3px; }
+
+  table.items { width: 100%; border-collapse: collapse; border: 2px solid #000; border-top: none; margin-bottom: 0; }
+  table.items th { border: 1px solid #000; background: #e5e7eb; font-size: 8px; font-weight: 900; text-transform: uppercase; padding: 4px 3px; }
+  table.items td { border: 1px solid #000; padding: 4px 3px; font-size: 9px; min-height: 16px; }
+  table.items tbody tr { height: 22px; }
+  .tc { text-align: center; }
+  .mono { font-family: monospace; }
+
+  table.foot-table { width: 100%; border-collapse: collapse; border: 2px solid #000; border-top: none; }
+  table.foot-table td { border: 1px solid #000; padding: 6px 8px; vertical-align: top; font-size: 9.5px; }
+  .firma-lbl { font-weight: 900; }
+  .firma-line { border-bottom: 1px solid #000; height: 30px; margin-top: 14px; }
+  .firma-sub { text-align: center; font-size: 8.5px; font-weight: 700; margin-top: 2px; }
+  .nota-importante { font-size: 8.5px; }
+  .nota-importante b { font-style: italic; }
+  .nota-importante ul { margin: 4px 0 0 12px; }
+  .nota-importante li { margin-bottom: 5px; }
+
+  table.autoriza-table { width: 100%; border-collapse: collapse; border: 2px solid #000; border-top: none; margin-bottom: 14px; }
+  table.autoriza-table td { border: 1px solid #000; padding: 6px 8px; font-size: 9.5px; }
+
+  @media print { body { padding: 0; } }
+</style>
+<script>window.onload = () => window.print();</script>
+</head><body>
+
+<table class="head-table">
+  <tr>
+    <td class="logo-cell" rowspan="2">
+      ${logoUri ? `<img src="${logoUri}" alt="BoA">` : '<div style="font-weight:900;font-size:16px">BoA</div>'}
+      <div class="oam">BoAMM &nbsp; OAM145# N-014</div>
+    </td>
+    <td class="title-cell" rowspan="2">
+      <h1>Nota de Traspaso</h1>
+      <h2>Herramientas, Bancos de Prueba y Equipos de Apoyo</h2>
+    </td>
+    <td class="code-cell">
+      <div class="mgh">MGH-109</div>
+      <div class="rev-fecha"><div>REV. 0</div><div>${fecha}</div></div>
+    </td>
+  </tr>
+</table>
+
+<table class="meta-table">
+  <tr>
+    <td style="width:16%"><b>NOMBRE DE SOLICITANTE:</b></td><td style="width:26%">${solicitante}</td>
+    <td style="width:16%"><b>GERENCIA DESTINO:</b></td><td style="width:22%">${destino}</td>
+    <td rowspan="5" class="nnota-cell" style="width:20%"><div class="lbl">N° Nota</div><div class="val">${nro}</div></td>
+  </tr>
+  <tr>
+    <td><b>LICENCIA:</b></td><td>${licencia}</td>
+    <td><b>DEPARTAMENTO:</b></td><td>${departamentoDestino}</td>
+  </tr>
+  <tr>
+    <td><b>CARGO:</b></td><td>${cargo}</td>
+    <td><b>UNIDAD:</b></td><td>${unidadDestino}</td>
+  </tr>
+  <tr>
+    <td><b>FECHA Y HORA:</b></td><td>${fecha} ${hora}</td>
+    <td><b>TIPO TRASPASO:</b></td><td>${tipoTrp}</td>
+  </tr>
+  <tr>
+    <td colspan="1"><b>OBSERVACIONES:</b></td><td colspan="3">${form.notas || '---'}</td>
+  </tr>
+</table>
+
+<div class="detalle-bar">Detalle</div>
+<table class="items">
+  <thead><tr>
+    <th style="width:8%">Código</th><th style="width:10%">P/N ó Modelo</th><th style="width:9%">S/N</th>
+    <th style="width:6%">Unidad</th><th style="width:5%">Cant.</th><th style="width:14%">Nombre</th>
+    <th style="width:14%">Lista de Contenido</th><th style="width:9%">Marca</th>
+    <th style="width:10%">Fecha de Calibración</th><th style="width:15%">Obs</th>
+  </tr></thead>
+  <tbody>${filas || '<tr><td colspan="10" class="tc">Sin ítems</td></tr>'}</tbody>
+</table>
+
+<table class="foot-table">
+  <tr>
+    <td style="width:27%">
+      <div class="firma-lbl">ENTREGADO POR:</div>
+      <div class="firma-line"></div>
+      <div class="firma-sub">Firma Almacén Herramientas — ${solicitante}</div>
+    </td>
+    <td style="width:27%">
+      <div class="firma-lbl">RECIBIDO POR:</div>
+      <div class="firma-line"></div>
+      <div class="firma-sub">Firma recepción — ${recibe}</div>
+    </td>
+    <td style="width:46%" class="nota-importante">
+      <b>NOTA IMPORTANTE:</b>
+      <ul>
+        <li>Las herramientas descritas en la presente nota se encuentran en condición SERVICIABLE, a menos que se indique lo contrario en la casilla de OBSERVACIONES.</li>
+        <li>La firma de la presente nota implica que se está en conformidad con toda la información detallada.</li>
+      </ul>
+    </td>
+  </tr>
+</table>
+
+<table class="autoriza-table">
+  <tr>
+    <td style="width:20%"><b>AUTORIZADO POR</b></td>
+    <td style="width:16%"><b>Nombre:</b></td><td style="width:24%">${autorizado}</td>
+    <td style="width:12%"><b>Cargo:</b></td><td style="width:28%">${cargoAutorizado}</td>
+  </tr>
+  <tr>
+    <td></td>
+    <td colspan="2"><div class="firma-line"></div><div class="firma-sub">Firma</div></td>
+    <td colspan="2"></td>
+  </tr>
+</table>
+
+</body></html>`;
+        this._abrirBlob(html);
+    }
+
     private _pdfEnvio(nro: string, items: ToolEnvioItem[], form: any, tipo: string): void {
+        if (tipo === 'TRASPASO DEFINITIVO') { this._pdfTraspasoOficial(nro, items, form); return; }
         const fecha       = new Date(form.fechaEnvio || form.fechaTraspaso || new Date()).toLocaleDateString('es-BO', { day: '2-digit', month: '2-digit', year: 'numeric' });
         const destino     = form.baseDestino?.nombre || form.areaDepartamento || '---';
         const responsable = form.responsableEnvia || form.responsableTraspaso || '---';

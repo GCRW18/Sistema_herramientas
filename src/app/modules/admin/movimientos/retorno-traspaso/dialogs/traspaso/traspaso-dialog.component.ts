@@ -96,6 +96,8 @@ export class TraspasoDialogComponent implements OnInit, OnDestroy {
         this.traspasoForm = this.fb.group({
             baseOrigen:           [this.data.defaultAlmacen ?? null],
             areaDepartamento:     ['', Validators.required],
+            departamentoDestino:  [''],
+            unidadDestino:        [''],
             fechaTraspaso:        [today, Validators.required],
             horaTraspaso:         [hora],
             responsableTraspaso:  ['', Validators.required],
@@ -198,7 +200,10 @@ export class TraspasoDialogComponent implements OnInit, OnDestroy {
             toolId: id, codigo: tool.code ?? tool.codigo ?? '',
             nombre: tool.name ?? tool.description ?? '', pn: tool.part_number ?? '',
             sn: tool.serial_number ?? '', marca: tool.brand ?? '', fechaVencCal: '',
-            cantidad: 1, condicion: 'good', notas: ''
+            cantidad: 1, condicion: 'good', notas: '',
+            // Prellenados desde la ficha de la herramienta (he.ttools) — editables por si
+            // el traspaso necesita un valor distinto al de la ficha maestra.
+            unidad: tool.unit_of_measure ?? '', listaContenido: tool.content_list ?? ''
         });
         this.toolSearchTraspaso = ''; this.toolResultsTraspaso = []; this.showToolDropTraspaso = false;
     }
@@ -247,7 +252,8 @@ export class TraspasoDialogComponent implements OnInit, OnDestroy {
         const itemsJson = JSON.stringify(this.itemsTraspaso.map(it => ({
             tool_id: it.toolId, quantity: it.cantidad,
             condition_on_movement: it.condicion,
-            serial_number: it.sn || '', part_number: it.pn || '', notes: it.notas || ''
+            serial_number: it.sn || '', part_number: it.pn || '', notes: it.notas || '',
+            unit_of_measure: it.unidad || '', content_list: it.listaContenido || ''
         })));
         this.isSavingTraspaso = true;
         const payload: any = {
@@ -257,6 +263,8 @@ export class TraspasoDialogComponent implements OnInit, OnDestroy {
             responsible_person:  form.responsableTraspaso || '',
             received_by_name:    form.recibeEnDestino     || '',
             department:          form.areaDepartamento    || '',
+            destination_department: form.departamentoDestino || '',
+            destination_unit:       form.unidadDestino       || '',
             document_number:     form.nroDocumento        || '',
             exit_reason:         'area_transfer',
             authorized_by:       form.autorizadoPor       || '',

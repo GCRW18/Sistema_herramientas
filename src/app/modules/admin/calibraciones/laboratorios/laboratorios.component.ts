@@ -10,6 +10,7 @@ import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { Subject, combineLatest } from 'rxjs';
 import { debounceTime, startWith, takeUntil, finalize } from 'rxjs/operators';
 import { CalibrationService } from '../../../../core/services/calibration.service';
+import { HasPermissionDirective } from '../../../../core/directives/has-permission.directive';
 
 export interface Laboratory {
     id_laboratory: string | null;
@@ -43,6 +44,7 @@ export interface Laboratory {
         MatProgressSpinnerModule,
         MatTooltipModule,
         ReactiveFormsModule,
+        HasPermissionDirective,
     ],
     templateUrl: './laboratorios.component.html',
 })

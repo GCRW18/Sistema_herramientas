@@ -12,6 +12,7 @@ import { startWith, takeUntil, debounceTime } from 'rxjs/operators';
 import { Warehouse, Rack, Ciudad } from './interfaces';
 import { GestionEstantesComponent } from './gestion-estantes/gestion-estantes.component';
 import { GestionUbicacionesService } from './gestion-ubicaciones.service';
+import { HasPermissionDirective } from '../../../../core/directives/has-permission.directive';
 
 @Component({
     selector: 'app-gestion-ubicaciones',
@@ -25,6 +26,7 @@ import { GestionUbicacionesService } from './gestion-ubicaciones.service';
         MatTooltipModule,
         MatMenuModule,
         GestionEstantesComponent,
+        HasPermissionDirective,
     ],
     templateUrl: './gestion-ubicaciones.component.html',
     styles: [`
@@ -178,9 +180,10 @@ export class GestionUbicacionesComponent implements OnInit, OnDestroy {
         this.pagina.set(Math.min(Math.max(1, p), this.totalPaginas));
     }
 
-    countActivos()   { return this.almacenes.filter(a => a.estado === 'ACTIVO').length; }
-    countInactivos() { return this.almacenes.filter(a => a.estado === 'INACTIVO').length; }
-    countEstantes()  { return this.almacenes.reduce((s, a) => s + (a.estantesCount ?? 0), 0); }
+    countActivos()    { return this.almacenes.filter(a => a.estado === 'ACTIVO').length; }
+    countInactivos()  { return this.almacenes.filter(a => a.estado === 'INACTIVO').length; }
+    countEstantes()   { return this.almacenes.reduce((s, a) => s + (a.estantesCount ?? 0), 0); }
+    countSinOficina() { return this.almacenes.filter(a => !a.nombreOficina).length; }
 
     /* ── Autocomplete ciudad ── */
     get ciudadesFiltradas(): Ciudad[] {

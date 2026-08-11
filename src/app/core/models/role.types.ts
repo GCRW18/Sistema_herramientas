@@ -85,6 +85,7 @@ export const AVAILABLE_PERMISSIONS: Permission[] = [
     { id: 'cuarentena.poner',     name: 'Poner en Cuarentena',   description: 'Enviar una herramienta a cuarentena',       module: 'Cuarentena y Baja', action: 'poner' },
     { id: 'cuarentena.baja',      name: 'Dar de Baja',           description: 'Registrar la baja de una herramienta',      module: 'Cuarentena y Baja', action: 'baja' },
     { id: 'cuarentena.anular',    name: 'Anular Baja',           description: 'Anular una baja registrada',                module: 'Cuarentena y Baja', action: 'anular' },
+    { id: 'cuarentena.resolver',  name: 'Resolver Cuarentena',   description: 'Resolver una herramienta en cuarentena',    module: 'Cuarentena y Baja', action: 'resolver' },
 
     // ── Calibraciones · Envío Calibración ──────────────────────────────────
     { id: 'cal_envio.view',   name: 'Ver Envíos a Calibración', description: 'Consultar envíos a calibración', module: 'Envío Calibración', action: 'view' },
@@ -118,7 +119,8 @@ export const AVAILABLE_PERMISSIONS: Permission[] = [
     { id: 'transcripcion.edit', name: 'Editar Transcripción',        description: 'Completar/corregir una transcripción histórica', module: 'Transcripción Histórico', action: 'edit' },
 
     // ── Administración · Usuarios ───────────────────────────────────────────
-    { id: 'admin_usuarios.view', name: 'Ver Usuarios', description: 'Consultar ficha de usuarios/funcionarios', module: 'Usuarios', action: 'view' },
+    { id: 'admin_usuarios.view',        name: 'Ver Usuarios',    description: 'Consultar ficha de usuarios/funcionarios', module: 'Usuarios', action: 'view' },
+    { id: 'admin_usuarios.assign_role', name: 'Asignar Rol',     description: 'Asignar o cambiar el rol de un usuario',   module: 'Usuarios', action: 'assign_role' },
 
     // ── Administración · Proveedores ────────────────────────────────────────
     { id: 'admin_proveedores.view',   name: 'Ver Proveedores',    description: 'Consultar proveedores', module: 'Proveedores', action: 'view' },

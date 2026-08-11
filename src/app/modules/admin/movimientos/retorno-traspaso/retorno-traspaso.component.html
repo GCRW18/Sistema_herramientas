@@ -135,14 +135,14 @@
 
             <!-- Envíos Base -->
             <ng-container *ngIf="activeTabView === 'envios'">
-              <button (click)="abrirFormEnvio()"
+              <button *appHasPermission="'interbases.enviar'" (click)="abrirFormEnvio()"
                       class="h-7 px-2.5 flex items-center gap-1.5 rounded-lg bg-[#FFC501FF] border border-black text-black font-black text-[10px] uppercase shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all shrink-0">
                 <mat-icon class="!text-xs !w-3.5 !h-3.5">send</mat-icon>
                 <span class="hidden sm:inline">Nuevo Envío</span>
                 <span class="bg-black/20 text-[8px] font-black px-1 rounded">ENV</span>
               </button>
               <mat-icon class="!text-xs text-white/30 shrink-0">chevron_right</mat-icon>
-              <button (click)="abrirFormRetorno()"
+              <button *appHasPermission="'interbases.retornar'" (click)="abrirFormRetorno()"
                       class="h-7 px-2.5 flex items-center gap-1.5 rounded-lg border border-white/40 text-white font-black text-[10px] uppercase hover:bg-white/20 transition-all shrink-0">
                 <mat-icon class="!text-xs !w-3.5 !h-3.5">move_to_inbox</mat-icon>
                 <span class="hidden sm:inline">Retorno Base</span>
@@ -152,14 +152,14 @@
 
             <!-- Traspasos -->
             <ng-container *ngIf="activeTabView === 'traspasos'">
-              <button (click)="abrirFormTraspaso()"
+              <button *appHasPermission="'interbases.traspasar'" (click)="abrirFormTraspaso()"
                       class="h-7 px-2.5 flex items-center gap-1.5 rounded-lg bg-[#FFC501FF] border border-black text-black font-black text-[10px] uppercase shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all shrink-0">
                 <mat-icon class="!text-xs !w-3.5 !h-3.5">transform</mat-icon>
                 <span class="hidden sm:inline">Traspasar</span>
                 <span class="bg-black/20 text-[8px] font-black px-1 rounded">TRP</span>
               </button>
               <mat-icon class="!text-xs text-white/30 shrink-0">chevron_right</mat-icon>
-              <button (click)="abrirFormRetornoArea()"
+              <button *appHasPermission="'interbases.retornar'" (click)="abrirFormRetornoArea()"
                       class="h-7 px-2.5 flex items-center gap-1.5 rounded-lg border border-white/40 text-white font-black text-[10px] uppercase hover:bg-white/20 transition-all shrink-0">
                 <mat-icon class="!text-xs !w-3.5 !h-3.5">undo</mat-icon>
                 <span class="hidden sm:inline">Retorno Área</span>
@@ -169,14 +169,14 @@
 
             <!-- MGH-109 -->
             <ng-container *ngIf="activeTabView === 'tecnico'">
-              <button (click)="abrirFormTraspasoTecnico()"
+              <button *appHasPermission="'interbases.traspasar'" (click)="abrirFormTraspasoTecnico()"
                       class="h-7 px-2.5 flex items-center gap-1.5 rounded-lg bg-[#FFC501FF] border border-black text-black font-black text-[10px] uppercase shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all shrink-0">
                 <mat-icon class="!text-xs !w-3.5 !h-3.5">badge</mat-icon>
                 <span class="hidden sm:inline">Traspasar</span>
                 <span class="bg-black/20 text-[8px] font-black px-1 rounded">MGH</span>
               </button>
               <mat-icon class="!text-xs text-white/30 shrink-0">chevron_right</mat-icon>
-              <button (click)="abrirFormDevolucionTecnico()"
+              <button *appHasPermission="'interbases.retornar'" (click)="abrirFormDevolucionTecnico()"
                       class="h-7 px-2.5 flex items-center gap-1.5 rounded-lg border border-white/40 text-white font-black text-[10px] uppercase hover:bg-white/20 transition-all shrink-0">
                 <mat-icon class="!text-xs !w-3.5 !h-3.5">assignment_return</mat-icon>
                 <span class="hidden sm:inline">Dev. Técnica</span>
@@ -324,7 +324,7 @@
               <td class="px-3 py-2.5 text-center">
                 <!-- Activos: botón retorno + PDF envío -->
                 <div *ngIf="!mov.isCompleted" class="flex items-center justify-center gap-1.5">
-                  <button type="button" (click)="registrarRetornoDesdeActivo(mov)"
+                  <button type="button" *appHasPermission="'interbases.retornar'" (click)="registrarRetornoDesdeActivo(mov)"
                           [matTooltip]="mov.movement_type_label==='ENVIO_BASE'
                             ? 'Ret. BASE — ' + mov.movement_number
                             : (+mov.destination_warehouse_id)===0

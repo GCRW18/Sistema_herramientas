@@ -11,6 +11,7 @@ import { Subject, forkJoin, of } from 'rxjs';
 import { takeUntil, finalize, catchError, debounceTime, distinctUntilChanged, switchMap, map } from 'rxjs/operators';
 import { MovementService } from '../../../../core/services/movement.service';
 import { QuarantineService } from '../../../../core/services/quarantine.service';
+import { HasPermissionDirective } from '../../../../core/directives/has-permission.directive';
 
 interface BajaItem {
     id: string;
@@ -35,7 +36,8 @@ type TabType = 'cuarentena' | 'baja' | 'historial';
     imports: [
         CommonModule, ReactiveFormsModule, FormsModule,
         MatIconModule, MatDialogModule, MatSnackBarModule,
-        MatProgressSpinnerModule, MatTooltipModule, DragDropModule
+        MatProgressSpinnerModule, MatTooltipModule, DragDropModule,
+        HasPermissionDirective
     ],
     templateUrl: './cuarentena-baja-hub.component.html',
     styles: [`

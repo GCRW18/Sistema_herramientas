@@ -12,6 +12,7 @@ import { Subject, from, of }                             from 'rxjs';
 import { debounceTime, takeUntil, finalize, catchError } from 'rxjs/operators';
 import { CalibrationService }                            from '../../../../core/services/calibration.service';
 import { ErpApiService }                                 from 'app/core/api/api.service';
+import { HasPermissionDirective }                        from '../../../../core/directives/has-permission.directive';
 
 interface CalibrationDisplay {
     id_calibration:       number;
@@ -45,6 +46,7 @@ interface CalibrationDisplay {
         MatTooltipModule,
         MatMenuModule,
         ReactiveFormsModule,
+        HasPermissionDirective,
     ],
     templateUrl: './envio-calibracion.component.html',
     styles: [`

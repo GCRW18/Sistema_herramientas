@@ -18,152 +18,162 @@
         </button>
     </div>
 
-    <!-- FORM — una sola pantalla sin scroll -->
-    <form [formGroup]="proveedorForm" class="px-4 py-3 flex flex-col gap-2">
+    <!-- FORM -->
+    <form [formGroup]="proveedorForm" class="px-5 py-4 grid grid-cols-1 md:grid-cols-2 gap-x-5 gap-y-3">
 
-        <!-- ── Datos del Proveedor ── -->
-        <div class="flex items-center gap-2">
-            <div class="w-1.5 h-1.5 bg-[#FFC501FF] border border-black rounded-full shrink-0"></div>
-            <p class="text-[7px] font-black uppercase tracking-[0.2em] text-stone-400 dark:text-slate-500 whitespace-nowrap">Datos del Proveedor</p>
-            <div class="flex-1 h-px bg-stone-200 dark:bg-slate-700"></div>
-        </div>
+        <!-- ═══ COLUMNA IZQUIERDA · Identificación ═══ -->
+        <div class="flex flex-col gap-2.5">
 
-        <div class="grid grid-cols-1 sm:grid-cols-[80px_1fr_120px] gap-2">
-            <div>
-                <label class="text-[7px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-0.5 block">Código *</label>
-                <input formControlName="codigo" type="text" placeholder="COD-000"
-                       class="w-full h-8 text-xs font-bold font-mono bg-white dark:bg-slate-800 dark:text-white border-2 rounded-lg px-2.5 outline-none transition-all uppercase placeholder:font-normal placeholder:normal-case placeholder:text-stone-300"
-                       [ngClass]="proveedorForm.get('codigo')?.invalid && proveedorForm.get('codigo')?.touched ? 'border-red-400' : 'border-stone-300 dark:border-slate-600 focus:border-black focus:shadow-[2px_2px_0_#000]'">
+            <!-- ── Datos del Proveedor ── -->
+            <div class="flex items-center gap-2">
+                <div class="w-1.5 h-1.5 bg-[#FFC501FF] border border-black rounded-full shrink-0"></div>
+                <p class="text-[8px] font-black uppercase tracking-[0.2em] text-stone-400 dark:text-slate-500 whitespace-nowrap">Datos del Proveedor</p>
+                <div class="flex-1 h-px bg-stone-200 dark:bg-slate-700"></div>
             </div>
+
+            <div class="grid grid-cols-[90px_1fr] gap-2.5">
+                <div>
+                    <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1 block">Código *</label>
+                    <input formControlName="codigo" type="text" placeholder="COD-000"
+                           class="w-full h-9 text-xs font-bold font-mono bg-white dark:bg-slate-800 dark:text-white border-2 rounded-xl px-2.5 outline-none transition-all uppercase placeholder:font-normal placeholder:normal-case placeholder:text-stone-300"
+                           [ngClass]="proveedorForm.get('codigo')?.invalid && proveedorForm.get('codigo')?.touched ? 'border-red-400' : 'border-stone-300 dark:border-slate-600 hover:border-stone-400 focus:border-black focus:shadow-[3px_3px_0_#000]'">
+                </div>
+                <div>
+                    <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1 block">Tipo *</label>
+                    <select formControlName="tipo_proveedor"
+                            class="w-full h-9 text-xs font-bold bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-xl px-2.5 outline-none hover:border-stone-400 focus:border-black focus:shadow-[3px_3px_0_#000] transition-all appearance-auto">
+                        <option *ngFor="let tipo of tiposProveedor" [value]="tipo.value">{{ tipo.label }}</option>
+                    </select>
+                </div>
+            </div>
+
             <div>
-                <label class="text-[7px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-0.5 block">Nombre Comercial *</label>
+                <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1 block">Nombre Comercial *</label>
                 <input formControlName="nombre_comercial" type="text" placeholder="Nombre de la empresa"
-                       class="w-full h-8 text-xs font-bold bg-white dark:bg-slate-800 dark:text-white border-2 rounded-lg px-2.5 outline-none transition-all placeholder:font-normal placeholder:text-stone-300"
-                       [ngClass]="proveedorForm.get('nombre_comercial')?.invalid && proveedorForm.get('nombre_comercial')?.touched ? 'border-red-400' : 'border-stone-300 dark:border-slate-600 focus:border-black focus:shadow-[2px_2px_0_#000]'">
+                       class="w-full h-9 text-sm font-bold bg-white dark:bg-slate-800 dark:text-white border-2 rounded-xl px-3 outline-none transition-all placeholder:font-normal placeholder:text-stone-300"
+                       [ngClass]="proveedorForm.get('nombre_comercial')?.invalid && proveedorForm.get('nombre_comercial')?.touched ? 'border-red-400' : 'border-stone-300 dark:border-slate-600 hover:border-stone-400 focus:border-black focus:shadow-[3px_3px_0_#000]'">
             </div>
-            <div>
-                <label class="text-[7px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-0.5 block">Tipo *</label>
-                <select formControlName="tipo_proveedor"
-                        class="w-full h-8 text-xs font-bold bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-lg px-2.5 outline-none focus:border-black focus:shadow-[2px_2px_0_#000] transition-all appearance-auto">
-                    <option *ngFor="let tipo of tiposProveedor" [value]="tipo.value">{{ tipo.label }}</option>
-                </select>
+
+            <!-- ── Identidad Legal ── -->
+            <div class="flex items-center gap-2 mt-1">
+                <div class="w-1.5 h-1.5 bg-[#FFC501FF] border border-black rounded-full shrink-0"></div>
+                <p class="text-[8px] font-black uppercase tracking-[0.2em] text-stone-400 dark:text-slate-500 whitespace-nowrap">Identidad Legal</p>
+                <div class="flex-1 h-px bg-stone-200 dark:bg-slate-700"></div>
             </div>
-        </div>
 
-        <!-- ── Identidad Legal ── -->
-        <div class="flex items-center gap-2">
-            <div class="w-1.5 h-1.5 bg-[#FFC501FF] border border-black rounded-full shrink-0"></div>
-            <p class="text-[7px] font-black uppercase tracking-[0.2em] text-stone-400 dark:text-slate-500 whitespace-nowrap">Identidad Legal</p>
-            <div class="flex-1 h-px bg-stone-200 dark:bg-slate-700"></div>
-        </div>
-
-        <div class="grid grid-cols-2 gap-2">
             <div>
-                <label class="text-[7px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-0.5 block">Razón Social *</label>
+                <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1 block">Razón Social *</label>
                 <input formControlName="razon_social" type="text" placeholder="Nombre legal"
-                       class="w-full h-8 text-xs font-bold bg-white dark:bg-slate-800 dark:text-white border-2 rounded-lg px-2.5 outline-none transition-all placeholder:font-normal placeholder:text-stone-300"
-                       [ngClass]="proveedorForm.get('razon_social')?.invalid && proveedorForm.get('razon_social')?.touched ? 'border-red-400' : 'border-stone-300 dark:border-slate-600 focus:border-black focus:shadow-[2px_2px_0_#000]'">
+                       class="w-full h-9 text-sm font-bold bg-white dark:bg-slate-800 dark:text-white border-2 rounded-xl px-3 outline-none transition-all placeholder:font-normal placeholder:text-stone-300"
+                       [ngClass]="proveedorForm.get('razon_social')?.invalid && proveedorForm.get('razon_social')?.touched ? 'border-red-400' : 'border-stone-300 dark:border-slate-600 hover:border-stone-400 focus:border-black focus:shadow-[3px_3px_0_#000]'">
             </div>
             <div>
-                <label class="text-[7px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-0.5 block">NIT / RUC *</label>
+                <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1 block">NIT / RUC *</label>
                 <input formControlName="nit" type="text" placeholder="Número tributario"
-                       class="w-full h-8 text-xs font-bold font-mono bg-white dark:bg-slate-800 dark:text-white border-2 rounded-lg px-2.5 outline-none transition-all placeholder:font-normal placeholder:text-stone-300"
-                       [ngClass]="proveedorForm.get('nit')?.invalid && proveedorForm.get('nit')?.touched ? 'border-red-400' : 'border-stone-300 dark:border-slate-600 focus:border-black focus:shadow-[2px_2px_0_#000]'">
+                       class="w-full h-9 text-sm font-bold font-mono bg-white dark:bg-slate-800 dark:text-white border-2 rounded-xl px-3 outline-none transition-all placeholder:font-normal placeholder:text-stone-300"
+                       [ngClass]="proveedorForm.get('nit')?.invalid && proveedorForm.get('nit')?.touched ? 'border-red-400' : 'border-stone-300 dark:border-slate-600 hover:border-stone-400 focus:border-black focus:shadow-[3px_3px_0_#000]'">
+            </div>
+
+            <!-- ── Notas ── -->
+            <div class="flex items-center gap-2 mt-1">
+                <div class="w-1.5 h-1.5 bg-[#FFC501FF] border border-black rounded-full shrink-0"></div>
+                <p class="text-[8px] font-black uppercase tracking-[0.2em] text-stone-400 dark:text-slate-500 whitespace-nowrap">Notas</p>
+                <div class="flex-1 h-px bg-stone-200 dark:bg-slate-700"></div>
+            </div>
+
+            <div class="flex-1 flex flex-col">
+                <textarea formControlName="observaciones" rows="2"
+                          placeholder="Notas internas..."
+                          class="w-full flex-1 text-sm font-bold bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-xl px-3 py-2 outline-none hover:border-stone-400 focus:border-black focus:shadow-[3px_3px_0_#000] transition-all resize-none placeholder:font-normal placeholder:text-stone-300"></textarea>
             </div>
         </div>
 
-        <!-- ── Contacto ── -->
-        <div class="flex items-center gap-2">
-            <div class="w-1.5 h-1.5 bg-[#FFC501FF] border border-black rounded-full shrink-0"></div>
-            <p class="text-[7px] font-black uppercase tracking-[0.2em] text-stone-400 dark:text-slate-500 whitespace-nowrap">Contacto</p>
-            <div class="flex-1 h-px bg-stone-200 dark:bg-slate-700"></div>
-        </div>
+        <!-- ═══ COLUMNA DERECHA · Contacto y Condiciones ═══ -->
+        <div class="flex flex-col gap-2.5">
 
-        <!-- Teléfono + Email + botón mini ventana -->
-        <div class="grid grid-cols-[1fr_1fr_auto] gap-2 items-end">
+            <!-- ── Contacto ── -->
+            <div class="flex items-center gap-2">
+                <div class="w-1.5 h-1.5 bg-[#FFC501FF] border border-black rounded-full shrink-0"></div>
+                <p class="text-[8px] font-black uppercase tracking-[0.2em] text-stone-400 dark:text-slate-500 whitespace-nowrap">Contacto</p>
+                <div class="flex-1 h-px bg-stone-200 dark:bg-slate-700"></div>
+            </div>
+
             <div>
-                <label class="text-[7px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-0.5 block">Teléfono *</label>
+                <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1 block">Teléfono *</label>
                 <div class="relative">
-                    <mat-icon class="absolute left-2 top-1/2 -translate-y-1/2 text-stone-300 dark:text-slate-600 pointer-events-none !text-sm">call</mat-icon>
+                    <mat-icon class="absolute left-2.5 top-1/2 -translate-y-1/2 text-stone-300 dark:text-slate-600 pointer-events-none !text-base">call</mat-icon>
                     <input formControlName="telefono" type="text" placeholder="+591 ..."
-                           class="w-full h-8 text-xs font-bold font-mono bg-white dark:bg-slate-800 dark:text-white border-2 rounded-lg pl-7 pr-2.5 outline-none transition-all placeholder:font-normal placeholder:text-stone-300"
-                           [ngClass]="proveedorForm.get('telefono')?.invalid && proveedorForm.get('telefono')?.touched ? 'border-red-400' : 'border-stone-300 dark:border-slate-600 focus:border-black focus:shadow-[2px_2px_0_#000]'">
+                           class="w-full h-9 text-sm font-bold font-mono bg-white dark:bg-slate-800 dark:text-white border-2 rounded-xl pl-8 pr-3 outline-none transition-all placeholder:font-normal placeholder:text-stone-300"
+                           [ngClass]="proveedorForm.get('telefono')?.invalid && proveedorForm.get('telefono')?.touched ? 'border-red-400' : 'border-stone-300 dark:border-slate-600 hover:border-stone-400 focus:border-black focus:shadow-[3px_3px_0_#000]'">
                 </div>
             </div>
             <div>
-                <label class="text-[7px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-0.5 block">Email *</label>
+                <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1 block">Email *</label>
                 <div class="relative">
-                    <mat-icon class="absolute left-2 top-1/2 -translate-y-1/2 text-stone-300 dark:text-slate-600 pointer-events-none !text-sm">mail</mat-icon>
+                    <mat-icon class="absolute left-2.5 top-1/2 -translate-y-1/2 text-stone-300 dark:text-slate-600 pointer-events-none !text-base">mail</mat-icon>
                     <input formControlName="email" type="email" placeholder="correo@empresa.com"
-                           class="w-full h-8 text-xs font-bold bg-white dark:bg-slate-800 dark:text-white border-2 rounded-lg pl-7 pr-2.5 outline-none transition-all placeholder:font-normal placeholder:text-stone-300"
-                           [ngClass]="proveedorForm.get('email')?.invalid && proveedorForm.get('email')?.touched ? 'border-red-400' : 'border-stone-300 dark:border-slate-600 focus:border-black focus:shadow-[2px_2px_0_#000]'">
+                           class="w-full h-9 text-sm font-bold bg-white dark:bg-slate-800 dark:text-white border-2 rounded-xl pl-8 pr-3 outline-none transition-all placeholder:font-normal placeholder:text-stone-300"
+                           [ngClass]="proveedorForm.get('email')?.invalid && proveedorForm.get('email')?.touched ? 'border-red-400' : 'border-stone-300 dark:border-slate-600 hover:border-stone-400 focus:border-black focus:shadow-[3px_3px_0_#000]'">
                 </div>
             </div>
-            <!-- Botón que abre la mini ventana como dialog separado -->
-            <button type="button" (click)="openUbicacionDialog()"
-                    class="h-8 px-3 flex items-center gap-1.5 bg-white dark:bg-slate-800 text-black dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-lg font-black text-[9px] uppercase transition-all shrink-0 shadow-[2px_2px_0_#000] hover:shadow-none hover:translate-x-[1px] hover:translate-y-[1px] select-none">
-                <mat-icon class="!text-sm text-stone-500">add_location_alt</mat-icon>
-                Ubicación
-            </button>
-        </div>
 
-        <!-- Indicador de datos de ubicación/contacto cargados -->
-        <div *ngIf="proveedorForm.get('ciudad')?.value || proveedorForm.get('contacto_principal')?.value"
-             class="flex items-center gap-1.5 px-2 py-1 bg-amber-50 dark:bg-amber-900/20 border border-amber-300 dark:border-amber-700 rounded-lg">
-            <mat-icon class="!text-xs text-amber-600">check_circle</mat-icon>
-            <span class="text-[8px] font-black uppercase tracking-wider text-amber-700 dark:text-amber-400">
-                Ubicación y contacto registrados
-                <span *ngIf="proveedorForm.get('ciudad')?.value" class="font-normal normal-case">
-                    — {{ proveedorForm.get('ciudad')?.value }}
-                </span>
-            </span>
-        </div>
+            <!-- Ubicación / contacto ampliado -->
+            <div class="bg-white dark:bg-slate-800 border-2 rounded-xl p-3 flex items-center gap-3 transition-all"
+                 [ngClass]="(proveedorForm.get('ciudad')?.value || proveedorForm.get('contacto_principal')?.value) ? 'border-amber-400' : 'border-stone-300 dark:border-slate-600'">
+                <div class="w-9 h-9 rounded-xl bg-[#0F172A] border-2 border-black flex items-center justify-center shrink-0">
+                    <mat-icon class="text-amber-400 !text-base">add_location_alt</mat-icon>
+                </div>
+                <div class="flex-1 min-w-0">
+                    <p class="text-[9px] font-black uppercase text-stone-400 dark:text-slate-400 leading-none mb-1">Ubicación y contacto</p>
+                    <p class="text-[10px] font-bold text-black dark:text-white leading-tight truncate"
+                       [ngClass]="!(proveedorForm.get('ciudad')?.value || proveedorForm.get('contacto_principal')?.value) && 'text-stone-300 dark:text-slate-600'">
+                        {{ (proveedorForm.get('ciudad')?.value || proveedorForm.get('contacto_principal')?.value)
+                            ? (proveedorForm.get('ciudad')?.value || proveedorForm.get('contacto_principal')?.value)
+                            : 'Sin registrar' }}
+                    </p>
+                </div>
+                <button type="button" (click)="openUbicacionDialog()"
+                        class="flex items-center gap-1.5 h-9 px-3.5 bg-[#FFC501FF] text-black font-black text-[10px] uppercase border-2 border-black rounded-xl shadow-[2px_2px_0_#000] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all shrink-0">
+                    <mat-icon class="!text-sm">tune</mat-icon>
+                    Editar
+                </button>
+            </div>
 
-        <!-- ── Condiciones Comerciales ── -->
-        <div class="flex items-center gap-2">
-            <div class="w-1.5 h-1.5 bg-[#FFC501FF] border border-black rounded-full shrink-0"></div>
-            <p class="text-[7px] font-black uppercase tracking-[0.2em] text-stone-400 dark:text-slate-500 whitespace-nowrap">Condiciones Comerciales</p>
-            <div class="flex-1 h-px bg-stone-200 dark:bg-slate-700"></div>
-        </div>
+            <!-- ── Condiciones Comerciales ── -->
+            <div class="flex items-center gap-2 mt-1">
+                <div class="w-1.5 h-1.5 bg-[#FFC501FF] border border-black rounded-full shrink-0"></div>
+                <p class="text-[8px] font-black uppercase tracking-[0.2em] text-stone-400 dark:text-slate-500 whitespace-nowrap">Condiciones Comerciales</p>
+                <div class="flex-1 h-px bg-stone-200 dark:bg-slate-700"></div>
+            </div>
 
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
-            <div>
-                <label class="text-[7px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-0.5 block">Entrega (días)</label>
-                <div class="relative">
-                    <mat-icon class="absolute left-2 top-1/2 -translate-y-1/2 text-stone-300 dark:text-slate-600 pointer-events-none !text-sm">schedule</mat-icon>
-                    <input formControlName="tiempo_entrega_dias" type="number" min="0"
-                           class="w-full h-8 text-xs font-bold bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-lg pl-7 pr-2.5 outline-none focus:border-black focus:shadow-[2px_2px_0_#000] transition-all">
+            <div class="grid grid-cols-2 gap-2.5">
+                <div>
+                    <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1 block">Entrega (días)</label>
+                    <div class="relative">
+                        <mat-icon class="absolute left-2.5 top-1/2 -translate-y-1/2 text-stone-300 dark:text-slate-600 pointer-events-none !text-base">schedule</mat-icon>
+                        <input formControlName="tiempo_entrega_dias" type="number" min="0"
+                               class="w-full h-9 text-sm font-bold bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-xl pl-8 pr-3 outline-none hover:border-stone-400 focus:border-black focus:shadow-[3px_3px_0_#000] transition-all">
+                    </div>
+                </div>
+                <div>
+                    <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1 block">Calificación</label>
+                    <div class="flex items-center justify-center gap-0.5 h-9 px-2 bg-white dark:bg-slate-800 border-2 border-stone-300 dark:border-slate-600 rounded-xl">
+                        <mat-icon *ngFor="let star of [1,2,3,4,5]"
+                                  (click)="setRating(star)"
+                                  class="cursor-pointer !text-lg transition-transform hover:scale-110"
+                                  [class.text-[#FFC501FF]]="(proveedorForm.get('calificacion')?.value || 0) >= star"
+                                  [class.text-stone-300]="(proveedorForm.get('calificacion')?.value || 0) < star">
+                            star
+                        </mat-icon>
+                    </div>
                 </div>
             </div>
             <div>
-                <label class="text-[7px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-0.5 block">Calificación</label>
-                <div class="flex items-center gap-0.5 h-8 px-2 bg-white dark:bg-slate-800 border-2 border-stone-300 dark:border-slate-600 rounded-lg">
-                    <mat-icon *ngFor="let star of [1,2,3,4,5]"
-                              (click)="setRating(star)"
-                              class="cursor-pointer !text-base transition-transform hover:scale-110"
-                              [class.text-[#FFC501FF]]="(proveedorForm.get('calificacion')?.value || 0) >= star"
-                              [class.text-stone-300]="(proveedorForm.get('calificacion')?.value || 0) < star">
-                        star
-                    </mat-icon>
-                </div>
-            </div>
-            <div>
-                <label class="text-[7px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-0.5 block">Condiciones de Pago</label>
+                <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1 block">Condiciones de Pago</label>
                 <input formControlName="condiciones_pago" type="text" placeholder="Ej. Crédito 30 días"
-                       class="w-full h-8 text-xs font-bold bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-lg px-2.5 outline-none focus:border-black focus:shadow-[2px_2px_0_#000] transition-all placeholder:font-normal placeholder:text-stone-300">
+                       class="w-full h-9 text-sm font-bold bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-xl px-3 outline-none hover:border-stone-400 focus:border-black focus:shadow-[3px_3px_0_#000] transition-all placeholder:font-normal placeholder:text-stone-300">
             </div>
         </div>
-
-        <!-- ── Notas ── -->
-        <div class="flex items-center gap-2">
-            <div class="w-1.5 h-1.5 bg-[#FFC501FF] border border-black rounded-full shrink-0"></div>
-            <p class="text-[7px] font-black uppercase tracking-[0.2em] text-stone-400 dark:text-slate-500 whitespace-nowrap">Notas</p>
-            <div class="flex-1 h-px bg-stone-200 dark:bg-slate-700"></div>
-        </div>
-
-        <textarea formControlName="observaciones" rows="2"
-                  placeholder="Notas internas..."
-                  class="w-full text-xs font-bold bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-lg px-2.5 py-2 outline-none focus:border-black focus:shadow-[2px_2px_0_#000] transition-all resize-none placeholder:font-normal placeholder:text-stone-300"></textarea>
 
     </form>
 

@@ -12,6 +12,7 @@ import { DragDropModule } from '@angular/cdk/drag-drop';
 import { Subject } from 'rxjs';
 import { takeUntil, finalize, debounceTime, distinctUntilChanged, switchMap, startWith } from 'rxjs/operators';
 import { CalibrationService } from '../../../../core/services/calibration.service';
+import { HasPermissionDirective } from '../../../../core/directives/has-permission.directive';
 
 interface ToolSuggestion { tool_id: number; tool_code: string; tool_name: string; is_calibratable?: boolean; }
 interface TranscriptionRecord { id: string | number; tool_id: string | number; fecha: string; codigo: string; nombre: string; certificado: string; resultado: string; laboratorio: string; }
@@ -23,7 +24,8 @@ interface TranscriptionRecord { id: string | number; tool_id: string | number; f
         CommonModule, FormsModule, ReactiveFormsModule,
         MatDialogModule, MatButtonModule, MatIconModule,
         MatTableModule, MatProgressSpinnerModule,
-        MatSnackBarModule, MatTooltipModule, DragDropModule
+        MatSnackBarModule, MatTooltipModule, DragDropModule,
+        HasPermissionDirective
     ],
     templateUrl: './transcripcion-manual.component.html',
     styles: [`

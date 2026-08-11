@@ -22,6 +22,8 @@ export interface ToolEnvioItem {
     cantidad: number;
     condicion: string;
     notas: string;
+    unidad?: string;
+    listaContenido?: string;
 }
 
 export interface TraspasoItem {
@@ -67,6 +69,9 @@ export interface MovimientoActivo {
     requested_by_name: string;
     received_by_name: string;
     department: string;
+    authorized_by?: string;
+    destination_department?: string;
+    destination_unit?: string;
     document_number: string;
     notes: string;
     specific_observations?: string;

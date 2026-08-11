@@ -33,7 +33,7 @@
                     <mat-icon class="absolute left-2.5 top-2 text-black dark:text-white !text-sm">search</mat-icon>
                 </div>
 
-                <button (click)="openFormDialog()"
+                <button *appHasPermission="'transcripcion.edit'" (click)="openFormDialog()"
                         class="px-5 py-2 bg-[#FFC501FF] text-black font-black text-xs
                                border-[2px] border-black rounded-xl
                                shadow-[3px_3px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px]

@@ -9,6 +9,7 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { Subject, forkJoin, of } from 'rxjs';
 import { takeUntil, finalize, switchMap, map, catchError, debounceTime, distinctUntilChanged } from 'rxjs/operators';
 import { MovementService } from '../../../../../core/services/movement.service';
+import { PrestamoPdfService, PrestamoPdfData } from '../prestamo-pdf.service';
 
 type CondicionDevolucion = 'BUENO' | 'DAÑADO' | 'IRREPARABLE' | 'REQUIERE_CALIBRACION' | 'FALTANTE';
 
@@ -52,11 +53,12 @@ export class FormDevolucionDialogComponent implements OnInit, OnDestroy {
     dialogRef         = inject(MatDialogRef<FormDevolucionDialogComponent>);
     private _confirmDialogRef: any = null;
 
-    private dialog      = inject(MatDialog);
-    private fb          = inject(FormBuilder);
-    private snackBar    = inject(MatSnackBar);
-    private movementSvc = inject(MovementService);
-    private destroy$    = new Subject<void>();
+    private dialog        = inject(MatDialog);
+    private fb            = inject(FormBuilder);
+    private snackBar      = inject(MatSnackBar);
+    private movementSvc   = inject(MovementService);
+    private prestamoPdfSvc = inject(PrestamoPdfService);
+    private destroy$      = new Subject<void>();
 
     isSaving      = false;
     isSearching   = false;
@@ -68,6 +70,7 @@ export class FormDevolucionDialogComponent implements OnInit, OnDestroy {
     private _aircraft     = '';
     private _department   = '';
     private _deliveredBy  = '';
+    private _specialWork  = false;
 
     devolucionForm!: FormGroup;
     dataSourceDevolucion: DevolucionItem[] = [];
@@ -253,6 +256,7 @@ export class FormDevolucionDialogComponent implements OnInit, OnDestroy {
         this._aircraft    = '';
         this._department  = '';
         this._deliveredBy = '';
+        this._specialWork = false;
 
         let filtro = `status = 'active' AND loan_type = 'internal'`;
         if (nombre) {
@@ -305,6 +309,7 @@ export class FormDevolucionDialogComponent implements OnInit, OnDestroy {
                 this._aircraft    = [...new Set((loans as any[]).map((l: any) => l.aircraft).filter(Boolean))].join(' / ');
                 this._department  = [...new Set((loans as any[]).map((l: any) => l.department).filter(Boolean))].join(' / ');
                 this._deliveredBy = loan0.delivered_by_name || '';
+                this._specialWork = (loans as any[]).some((l: any) => !!l.special_work);
                 let resultado: DevolucionItem[] = loans.flatMap((loan: any) => {
                     const loanItems = (items || []).filter((i: any) => String(i.loan_id) === String(loan.id_loan));
                     return loanItems.map((item: any) => ({
@@ -458,45 +463,32 @@ export class FormDevolucionDialogComponent implements OnInit, OnDestroy {
         const condLabel: Record<string, string> = { BUENO:'Bueno', DAÑADO:'Dañado', REQUIERE_CALIBRACION:'Req. Calib.', IRREPARABLE:'Irreparable', FALTANTE:'Faltante' };
         const estadoLabel: Record<string, string> = { good:'SERVICEABLE', new:'NUEVO', excellent:'EXCELENTE', fair:'REGULAR', poor:'MALO', damaged:'DAÑADO' };
 
-        const rowsPrest = items.map(it =>
-            `<tr><td>${it.codigo||'-'}</td><td>${it.pn||'-'}</td><td>${it.sn||'-'}</td><td style="text-align:center;font-weight:700">${it.cantidadPrestada}</td><td>${it.und||'UND'}</td><td>${it.descripcion||'-'}</td><td>${it.listaContenido||'-'}</td><td>${it.fechaCalibracion||'-'}</td><td>${estadoLabel[(it.estadoAlPrestar||'').toLowerCase()]||it.estadoAlPrestar||'-'}</td><td>${this.loanNotes||''}</td></tr>`
-        ).join('');
-
-        const rowsDev = items.map(it =>
-            `<tr><td>${fechaDev}</td><td>${tecnico}</td><td>&nbsp;</td><td>${responsable}</td><td>&nbsp;</td><td style="font-weight:700;color:${it.condicionDevolucion==='BUENO'?'#166534':'#dc2626'}">${condLabel[it.condicionDevolucion]||it.condicionDevolucion}</td><td>&nbsp;</td><td>${it.observacionItem||fv.observaciones||''}</td></tr>`
-        ).join('');
-
-        const css = `<style>@page{size:A4 landscape;margin:12mm 10mm}*{box-sizing:border-box}body{font-family:Arial,sans-serif;font-size:10px;color:#000;margin:0}.top{display:flex;justify-content:space-between;margin-bottom:5px}.code-box{border:2px solid #000;padding:3px 10px;font-weight:900;font-size:13px;display:inline-block}h1{text-align:center;font-size:12px;font-weight:900;text-transform:uppercase;background:#111A43;color:white;padding:7px 10px;margin:0 0 7px;border:1px solid #000}.info-tbl{width:100%;border-collapse:collapse;border:1px solid #000;margin-bottom:7px}.info-tbl td{border:1px solid #ddd;padding:3px 6px}.lbl{background:#f0f0f0;font-weight:700;font-size:9px;width:130px}.nro-cell{background:#f0f0f0;text-align:center;font-weight:900;font-size:13px;vertical-align:middle;width:110px}.sec{background:#111A43;color:white;padding:3px 8px;font-weight:900;font-size:10px;text-transform:uppercase;border:1px solid #000}table.det{width:100%;border-collapse:collapse;border:1px solid #000}table.det th{background:#111A43;color:white;padding:5px 4px;font-size:8.5px;font-weight:900;text-transform:uppercase;border:1px solid #000;text-align:center}table.det td{padding:4px;border:1px solid #ddd;font-size:9px}table.det tr:nth-child(even) td{background:#f9f9f9}.sigs{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:16px}.sig{border:1px solid #000;padding:6px 8px;text-align:center}.sig-ttl{font-weight:900;font-size:9px;text-transform:uppercase;margin-bottom:26px;line-height:1.4}.sig-line{border-top:1px solid #000;padding-top:3px;font-size:8.5px}.footer{text-align:center;margin-top:10px;font-size:7.5px;color:#888;border-top:1px dotted #ccc;padding-top:4px}@media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact}}</style>`;
-
-        const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>MGH-100 ${nroPrest} / ${nro}</title>${css}</head><body>
-<div class="top"><div style="font-weight:900;font-size:11px">BoAMM &nbsp; OAM145#114 &nbsp; N-114</div><div style="text-align:right"><div class="code-box">MGH-100</div><br><span style="font-size:9px">REV. 0 &nbsp; 2016-10-13</span></div></div>
-<h1>NOTA DE PRÉSTAMO - DEVOLUCIÓN<br><span style="font-size:10px;font-weight:400">HERRAMIENTAS, BANCOS DE PRUEBA Y EQUIPOS DE APOYO</span></h1>
-<table class="info-tbl">
-<tr><td class="lbl">NOMBRE SOLICITANTE:</td><td>${tecnico}</td><td class="lbl">UNIDAD DESTINO:</td><td>${this._department||fv.unidadDestino||''}</td><td class="nro-cell" rowspan="4"><div style="font-size:7px;font-weight:400">N° PRÉSTAMO</div><div>${nroPrest}</div><div style="font-size:7px;font-weight:400;margin-top:6px">N° DEVOLUCIÓN</div><div>${nro}</div></td></tr>
-<tr><td class="lbl">LICENCIA:</td><td>${licencia}</td><td class="lbl">ORDEN DE TRABAJO:</td><td>${fv.ordenTrabajo||''}</td></tr>
-<tr><td class="lbl">MATRÍCULA AERONAVE:</td><td>${this._aircraft||''}</td><td class="lbl">ENTREGÓ (ALMACÉN):</td><td>${this._deliveredBy||''}</td></tr>
-<tr><td class="lbl">FECHA PRÉSTAMO:</td><td>${fechaPrest}</td><td class="lbl">OBSERVACIONES:</td><td>${this.loanNotes||''}</td></tr>
-</table>
-<div class="sec">DATOS PRÉSTAMO</div>
-<table class="det"><thead><tr><th>CÓDIGO</th><th>P/N ó MODELO</th><th>S/N</th><th>CANT.</th><th>UND</th><th>DESCRIPCIÓN</th><th>LISTA CONTENIDO</th><th>FECHA CALIBRACIÓN</th><th>ESTADO</th><th>OBS</th></tr></thead><tbody>${rowsPrest}</tbody></table>
-<div class="sec" style="margin-top:6px">DATOS DEVOLUCIÓN</div>
-<table class="det"><thead><tr><th>FECHA/HORA</th><th colspan="2">ENTREGUE CONFORME (NOMBRE/FIRMA)</th><th colspan="2">RECIBI CONFORME (NOMBRE/FIRMA)</th><th>CONDICIÓN DEVOLUCIÓN</th><th>NRO. REPORTE AVERÍA</th><th>OBS</th></tr></thead><tbody>${rowsDev}</tbody></table>
-<div class="sigs"><div class="sig"><div class="sig-ttl">ENTREGADO POR<br>FIRMA ALMACÉN HERRAMIENTAS</div><div style="font-size:9px;margin-bottom:20px">${this._deliveredBy||responsable}</div><div class="sig-line">&nbsp;</div></div><div class="sig"><div class="sig-ttl">RECIBIDO POR<br>FIRMA TÉC. O INSP. (PRÉSTAMO)</div><div style="font-size:9px;margin-bottom:20px">${tecnico}</div><div class="sig-line">&nbsp;</div></div><div class="sig"><div class="sig-ttl">DEVUELVE CONFORME / RECIBE ALMACÉN</div><div style="font-size:9px;margin-bottom:12px">${tecnico} → ${responsable}</div><div class="sig-line">&nbsp;</div></div></div>
-<div class="footer">BOLIVIANA DE AVIACIÓN — Almacén de Herramientas | Generado: ${new Date().toLocaleString('es-BO')} | Préstamo: ${nroPrest} | Devolución: ${nro}</div>
-<script>window.onload=function(){setTimeout(function(){window.print();},500);};<\/script>
-</body></html>`;
-        this._abrirBlob(html);
-    }
-
-    private _abrirBlob(html: string): void {
-        const blob = new Blob([html], { type: 'text/html' });
-        const url  = URL.createObjectURL(blob);
-        const a    = document.createElement('a');
-        a.href = url; a.target = '_blank'; a.rel = 'noopener';
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        setTimeout(() => URL.revokeObjectURL(url), 60000);
+        const data: PrestamoPdfData = {
+            nroPrestamo: nroPrest,
+            nroDevolucion: nro,
+            solicitante: tecnico,
+            licencia,
+            matriculaAeronave: this._aircraft || '',
+            fechaHoraPrestamo: fechaPrest,
+            unidadDestino: this._department || fv.unidadDestino || '',
+            ordenTrabajo: fv.ordenTrabajo || '',
+            trabajoEspecial: this._specialWork,
+            observaciones: this.loanNotes || '',
+            entregadoPor: this._deliveredBy || '',
+            devuelto: true,
+            fechaHoraDevolucion: fechaDev,
+            recibioAlmacen: responsable,
+            items: items.map(it => ({
+                codigo: it.codigo, pn: it.pn, sn: it.sn, cantidad: it.cantidadPrestada,
+                unidad: it.und || 'UND', descripcion: it.descripcion,
+                listaContenido: it.listaContenido, fechaCalibracion: it.fechaCalibracion,
+                estado: estadoLabel[(it.estadoAlPrestar || '').toLowerCase()] || it.estadoAlPrestar || '',
+                obs: this.loanNotes || '',
+                condicionDevolucion: condLabel[it.condicionDevolucion] || it.condicionDevolucion,
+                obsDevolucion: it.observacionItem || fv.observaciones || '',
+            })),
+        };
+        this.prestamoPdfSvc.generarPdf(data);
     }
 
     private showMsg(type: 'success' | 'error' | 'info' | 'warning', text: string): void {

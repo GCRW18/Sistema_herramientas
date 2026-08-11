@@ -19,18 +19,18 @@
     </div>
 
     <!-- FORM -->
-    <form [formGroup]="rolForm" class="px-5 py-4 flex flex-col gap-3">
+    <form [formGroup]="rolForm" class="px-5 py-4 grid grid-cols-1 md:grid-cols-2 gap-x-5 gap-y-3">
 
-        <!-- ── Datos del Rol ─────────────────── -->
-        <div class="flex items-center gap-2">
-            <div class="w-1.5 h-1.5 bg-[#FFC501FF] border border-black rounded-full shrink-0"></div>
-            <p class="text-[8px] font-black uppercase tracking-[0.2em] text-stone-400 dark:text-slate-500 whitespace-nowrap">Datos del Rol</p>
-            <div class="flex-1 h-px bg-stone-200 dark:bg-slate-700"></div>
-        </div>
+        <!-- ═══ COLUMNA IZQUIERDA · Datos del Rol ═══ -->
+        <div class="flex flex-col gap-2.5">
+            <div class="flex items-center gap-2">
+                <div class="w-1.5 h-1.5 bg-[#FFC501FF] border border-black rounded-full shrink-0"></div>
+                <p class="text-[8px] font-black uppercase tracking-[0.2em] text-stone-400 dark:text-slate-500 whitespace-nowrap">Datos del Rol</p>
+                <div class="flex-1 h-px bg-stone-200 dark:bg-slate-700"></div>
+            </div>
 
-        <!-- Nombre + Estado -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5">
-            <div class="col-span-2">
+            <!-- Nombre -->
+            <div>
                 <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1 block">Nombre del Rol *</label>
                 <input formControlName="nombre" type="text" placeholder="Ej. Administrador"
                        class="w-full h-9 text-sm font-bold bg-white dark:bg-slate-800 dark:text-white border-2 rounded-xl px-3 outline-none transition-all placeholder:text-stone-300 placeholder:font-normal dark:placeholder:text-slate-600 hover:border-stone-400 focus:border-black focus:shadow-[3px_3px_0_#000]"
@@ -38,6 +38,8 @@
                 <p *ngIf="rolForm.get('nombre')?.invalid && rolForm.get('nombre')?.touched"
                    class="text-[8px] font-bold text-red-500 mt-0.5">Requerido (mín. 3 caracteres).</p>
             </div>
+
+            <!-- Estado -->
             <div>
                 <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1 block">Estado</label>
                 <div class="flex items-center gap-2 h-9 px-3 bg-white dark:bg-slate-800 border-2 border-stone-300 dark:border-slate-600 rounded-xl">
@@ -51,66 +53,68 @@
                     </span>
                 </div>
             </div>
-        </div>
 
-        <!-- Descripción -->
-        <div>
-            <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1 block">Descripción</label>
-            <textarea formControlName="descripcion" rows="2"
-                      placeholder="Describe las responsabilidades del rol..."
-                      class="w-full text-sm font-bold bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-xl px-3 py-2 outline-none transition-all placeholder:text-stone-300 placeholder:font-normal dark:placeholder:text-slate-600 hover:border-stone-400 focus:border-black focus:shadow-[3px_3px_0_#000] resize-none"></textarea>
-        </div>
-
-        <!-- ── Permisos ─────────────────── -->
-        <div class="flex items-center gap-2">
-            <div class="w-1.5 h-1.5 bg-[#FFC501FF] border border-black rounded-full shrink-0"></div>
-            <p class="text-[8px] font-black uppercase tracking-[0.2em] text-stone-400 dark:text-slate-500 whitespace-nowrap">Permisos</p>
-            <div class="flex-1 h-px bg-stone-200 dark:bg-slate-700"></div>
-        </div>
-
-        <!-- Permissions summary card -->
-        <div class="bg-white dark:bg-slate-800 border-2 rounded-xl p-3 flex items-center gap-3 transition-all"
-             [ngClass]="(rolForm.get('permissions')?.value?.length || 0) > 0
-                 ? 'border-amber-400'
-                 : rolForm.get('permissions')?.invalid && rolForm.get('permissions')?.touched
-                 ? 'border-red-400'
-                 : 'border-stone-300 dark:border-slate-600'">
-            <div class="w-10 h-10 rounded-xl bg-[#0F172A] border-2 border-black flex items-center justify-center shrink-0">
-                <mat-icon class="text-amber-400 !text-lg">lock_person</mat-icon>
+            <!-- Descripción -->
+            <div class="flex-1 flex flex-col">
+                <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1 block">Descripción</label>
+                <textarea formControlName="descripcion" rows="4"
+                          placeholder="Describe las responsabilidades del rol..."
+                          class="w-full flex-1 text-sm font-bold bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-xl px-3 py-2 outline-none transition-all placeholder:text-stone-300 placeholder:font-normal dark:placeholder:text-slate-600 hover:border-stone-400 focus:border-black focus:shadow-[3px_3px_0_#000] resize-none"></textarea>
             </div>
-            <div class="flex-1 min-w-0">
-                <p class="text-[9px] font-black uppercase text-stone-400 dark:text-slate-400 leading-none mb-1">Permisos asignados</p>
-                <div class="flex items-baseline gap-1.5">
-                    <span class="text-2xl font-black leading-none"
-                          [ngClass]="(rolForm.get('permissions')?.value?.length || 0) > 0 ? 'text-black dark:text-white' : 'text-stone-300 dark:text-slate-600'">
-                        {{ rolForm.get('permissions')?.value?.length || 0 }}
-                    </span>
-                    <span class="text-[9px] font-bold text-stone-400 dark:text-slate-500">
-                        de {{ totalPermissions }} disponibles
-                    </span>
+        </div>
+
+        <!-- ═══ COLUMNA DERECHA · Permisos ═══ -->
+        <div class="flex flex-col gap-2.5">
+            <div class="flex items-center gap-2">
+                <div class="w-1.5 h-1.5 bg-[#FFC501FF] border border-black rounded-full shrink-0"></div>
+                <p class="text-[8px] font-black uppercase tracking-[0.2em] text-stone-400 dark:text-slate-500 whitespace-nowrap">Permisos</p>
+                <div class="flex-1 h-px bg-stone-200 dark:bg-slate-700"></div>
+            </div>
+
+            <!-- Permissions summary card -->
+            <div class="bg-white dark:bg-slate-800 border-2 rounded-xl p-3 flex items-center gap-3 transition-all"
+                 [ngClass]="(rolForm.get('permissions')?.value?.length || 0) > 0
+                     ? 'border-amber-400'
+                     : rolForm.get('permissions')?.invalid && rolForm.get('permissions')?.touched
+                     ? 'border-red-400'
+                     : 'border-stone-300 dark:border-slate-600'">
+                <div class="w-10 h-10 rounded-xl bg-[#0F172A] border-2 border-black flex items-center justify-center shrink-0">
+                    <mat-icon class="text-amber-400 !text-lg">lock_person</mat-icon>
                 </div>
+                <div class="flex-1 min-w-0">
+                    <p class="text-[9px] font-black uppercase text-stone-400 dark:text-slate-400 leading-none mb-1">Permisos asignados</p>
+                    <div class="flex items-baseline gap-1.5">
+                        <span class="text-2xl font-black leading-none"
+                              [ngClass]="(rolForm.get('permissions')?.value?.length || 0) > 0 ? 'text-black dark:text-white' : 'text-stone-300 dark:text-slate-600'">
+                            {{ rolForm.get('permissions')?.value?.length || 0 }}
+                        </span>
+                        <span class="text-[9px] font-bold text-stone-400 dark:text-slate-500">
+                            de {{ totalPermissions }} disponibles
+                        </span>
+                    </div>
+                </div>
+                <button type="button" (click)="openPermisosDialog()"
+                        class="flex items-center gap-1.5 h-9 px-4 bg-[#FFC501FF] text-black font-black text-[10px] uppercase border-2 border-black rounded-xl shadow-[2px_2px_0_#000] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all shrink-0">
+                    <mat-icon class="!text-sm">tune</mat-icon>
+                    Gestionar
+                </button>
             </div>
-            <button type="button" (click)="openPermisosDialog()"
-                    class="flex items-center gap-1.5 h-9 px-4 bg-[#FFC501FF] text-black font-black text-[10px] uppercase border-2 border-black rounded-xl shadow-[2px_2px_0_#000] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all shrink-0">
-                <mat-icon class="!text-sm">tune</mat-icon>
-                Gestionar
-            </button>
-        </div>
 
-        <!-- Chips de módulos seleccionados -->
-        <div *ngIf="(rolForm.get('permissions')?.value?.length || 0) > 0"
-             class="flex flex-wrap gap-1.5">
-            <span *ngFor="let mod of getSelectedModulesSummary()"
-                  class="inline-flex items-center gap-1 px-2 py-0.5 bg-amber-50 dark:bg-amber-900/20 border border-amber-300 dark:border-amber-700 rounded-lg text-[9px] font-black text-amber-800 dark:text-amber-300 uppercase">
-                <mat-icon class="!text-[9px]">check</mat-icon>
-                {{ mod.name }} ({{ mod.count }})
-            </span>
-        </div>
+            <!-- Chips de módulos seleccionados -->
+            <div *ngIf="(rolForm.get('permissions')?.value?.length || 0) > 0"
+                 class="flex-1 flex flex-wrap content-start gap-1.5 bg-white dark:bg-slate-800 border-2 border-stone-200 dark:border-slate-700 rounded-xl p-2.5 overflow-y-auto max-h-[132px]">
+                <span *ngFor="let mod of getSelectedModulesSummary()"
+                      class="inline-flex items-center gap-1 px-2 py-0.5 h-fit bg-amber-50 dark:bg-amber-900/20 border border-amber-300 dark:border-amber-700 rounded-lg text-[9px] font-black text-amber-800 dark:text-amber-300 uppercase">
+                    <mat-icon class="!text-[9px]">check</mat-icon>
+                    {{ mod.name }} ({{ mod.count }})
+                </span>
+            </div>
 
-        <p *ngIf="rolForm.get('permissions')?.invalid && rolForm.get('permissions')?.touched"
-           class="text-[8px] font-bold text-red-500 -mt-1">
-            Debe asignar al menos un permiso.
-        </p>
+            <p *ngIf="rolForm.get('permissions')?.invalid && rolForm.get('permissions')?.touched"
+               class="text-[8px] font-bold text-red-500 -mt-1">
+                Debe asignar al menos un permiso.
+            </p>
+        </div>
 
     </form>
 

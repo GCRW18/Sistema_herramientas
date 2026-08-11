@@ -8,6 +8,7 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { Subject, forkJoin, of } from 'rxjs';
 import { debounceTime, startWith, takeUntil, finalize, catchError } from 'rxjs/operators';
 import { MovementService } from '../../../../core/services/movement.service';
+import { HasPermissionDirective } from '../../../../core/directives/has-permission.directive';
 
 interface ExternalLoanDisplay {
     id_loan:                 number;
@@ -44,7 +45,7 @@ interface PendingExternalItem {
     selector: 'app-prestamo-externo-hub',
     standalone: true,
     imports: [CommonModule, DatePipe, ReactiveFormsModule, MatIconModule,
-              MatDialogModule, MatSnackBarModule, MatTooltipModule],
+              MatDialogModule, MatSnackBarModule, MatTooltipModule, HasPermissionDirective],
     templateUrl: './prestamo-externo-hub.component.html',
     styles: [`
         :host { display: flex; flex-direction: column; height: 100%; }

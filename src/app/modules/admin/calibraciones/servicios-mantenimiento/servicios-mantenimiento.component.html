@@ -71,7 +71,7 @@
                 </button>
 
                 <!-- Nuevo Envío -->
-                <button (click)="nuevoLote()"
+                <button *appHasPermission="'mantenimiento.create'" (click)="nuevoLote()"
                         matTooltip="Enviar herramientas a mantenimiento"
                         class="px-5 py-2 bg-[#FFC501FF] text-black font-black text-xs
                                border-[2px] border-black rounded-xl
@@ -280,15 +280,17 @@
                         <!-- Acciones -->
                         <td class="px-3 py-2">
                             <div class="flex gap-1.5 justify-center">
-                                <button *ngIf="mnt.status === 'sent'"
-                                        (click)="registrarRetorno(mnt)"
-                                        matTooltip="Registrar retorno de mantenimiento"
-                                        class="w-8 h-8 flex items-center justify-center border-2 border-black
-                                                   bg-green-500 hover:bg-green-400
-                                                   rounded-lg shadow-[2px_2px_0px_0px_#000]
-                                                   active:translate-y-[1px] active:shadow-none transition-all">
-                                    <mat-icon class="text-white !text-base">assignment_return</mat-icon>
-                                </button>
+                                <ng-container *appHasPermission="'mantenimiento.registrar'">
+                                    <button *ngIf="mnt.status === 'sent'"
+                                            (click)="registrarRetorno(mnt)"
+                                            matTooltip="Registrar retorno de mantenimiento"
+                                            class="w-8 h-8 flex items-center justify-center border-2 border-black
+                                                       bg-green-500 hover:bg-green-400
+                                                       rounded-lg shadow-[2px_2px_0px_0px_#000]
+                                                       active:translate-y-[1px] active:shadow-none transition-all">
+                                        <mat-icon class="text-white !text-base">assignment_return</mat-icon>
+                                    </button>
+                                </ng-container>
 
                                 <button (click)="printNota(mnt)"
                                         matTooltip="Imprimir nota de envío"

@@ -10,6 +10,7 @@ import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 import { CalibrationService } from '../../../../core/services/calibration.service';
 import { MaintenanceService } from '../../../../core/services/maintenance.service';
+import { HasPermissionDirective } from '../../../../core/directives/has-permission.directive';
 
 export interface AuditRow {
     id: number;
@@ -47,6 +48,7 @@ export interface LaboratorioSimple {
         MatSnackBarModule,
         MatProgressSpinnerModule,
         MatTooltipModule,
+        HasPermissionDirective,
     ],
     templateUrl: './consulta-auditoria.component.html',
     styles: [`

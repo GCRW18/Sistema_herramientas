@@ -123,7 +123,7 @@ export class RolesComponent implements OnInit {
     async nuevoRol(): Promise<void> {
         const { FormRolComponent } = await import('./dialogs/form-rol/form-rol.component');
         const ref = this.dialog.open(FormRolComponent, {
-            width: '460px', maxWidth: '95vw', maxHeight: '90vh',
+            width: '820px', maxWidth: '95vw', maxHeight: '90vh',
             panelClass: 'neo-dialog',
             data: { mode: 'create' }
         });
@@ -143,7 +143,7 @@ export class RolesComponent implements OnInit {
         ev?.stopPropagation();
         const { FormRolComponent } = await import('./dialogs/form-rol/form-rol.component');
         const ref = this.dialog.open(FormRolComponent, {
-            width: '460px', maxWidth: '95vw', maxHeight: '90vh',
+            width: '820px', maxWidth: '95vw', maxHeight: '90vh',
             panelClass: 'neo-dialog',
             data: {
                 mode: 'edit',

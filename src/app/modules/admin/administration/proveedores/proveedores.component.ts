@@ -8,6 +8,7 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { debounceTime, startWith } from 'rxjs/operators';
 import { SupplierService } from '../../../../core/services/supplier.service';
+import { HasPermissionDirective } from '../../../../core/directives/has-permission.directive';
 
 /**
  * Módulo Proveedores — CRUD completo contra he.tsuppliers (herramientas/suppliers/*),
@@ -44,7 +45,8 @@ const TYPE_LABELS: Record<string, string> = {
         MatDialogModule,
         MatSnackBarModule,
         MatTooltipModule,
-        ReactiveFormsModule
+        ReactiveFormsModule,
+        HasPermissionDirective
     ],
     templateUrl: './proveedores.component.html',
     styles: [`
@@ -186,7 +188,7 @@ export class ProveedoresComponent implements OnInit {
     async nuevoProveedor(): Promise<void> {
         const { FormProveedorComponent } = await import('./dialogs/form-proveedor/form-proveedor.component');
         const ref = this.dialog.open(FormProveedorComponent, {
-            width: '560px', maxWidth: '95vw', maxHeight: '90vh',
+            width: '820px', maxWidth: '95vw', maxHeight: '90vh',
             panelClass: 'neo-dialog',
             data: { mode: 'create' }
         });
@@ -206,7 +208,7 @@ export class ProveedoresComponent implements OnInit {
         ev.stopPropagation();
         const { FormProveedorComponent } = await import('./dialogs/form-proveedor/form-proveedor.component');
         const ref = this.dialog.open(FormProveedorComponent, {
-            width: '560px', maxWidth: '95vw', maxHeight: '90vh',
+            width: '820px', maxWidth: '95vw', maxHeight: '90vh',
             panelClass: 'neo-dialog',
             data: { mode: 'edit', proveedor: this.mapToForm(p) }
         });

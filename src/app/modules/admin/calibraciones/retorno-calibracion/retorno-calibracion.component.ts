@@ -9,6 +9,7 @@ import { FormControl, ReactiveFormsModule }              from '@angular/forms';
 import { Subject, combineLatest }                        from 'rxjs';
 import { debounceTime, startWith, takeUntil, finalize }  from 'rxjs/operators';
 import { CalibrationService }                            from '../../../../core/services/calibration.service';
+import { HasPermissionDirective }                        from '../../../../core/directives/has-permission.directive';
 
 interface CalibrationDisplay {
     id_calibration:       number;
@@ -38,6 +39,7 @@ interface CalibrationDisplay {
         MatProgressSpinnerModule,
         MatTooltipModule,
         ReactiveFormsModule,
+        HasPermissionDirective,
     ],
     templateUrl: './retorno-calibracion.component.html',
     styles: [`

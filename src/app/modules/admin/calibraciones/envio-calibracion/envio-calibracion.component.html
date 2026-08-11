@@ -60,7 +60,7 @@
                 </button>
 
                 <!-- Nuevo envío -->
-                <button (click)="nuevoEnvio()"
+                <button *appHasPermission="'cal_envio.enviar'" (click)="nuevoEnvio()"
                         class="px-5 py-2 bg-[#FFC501FF] text-black font-black text-xs
                                border-[2px] border-black rounded-xl
                                shadow-[3px_3px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px]
@@ -281,15 +281,17 @@
                                     </button>
                                 </mat-menu>
 
-                                <button *ngIf="cal.status === 'sent' || cal.status === 'in_process'"
-                                        (click)="anularEnvio(cal)"
-                                        matTooltip="Anular envío"
-                                        class="w-8 h-8 flex items-center justify-center border-2 border-black
-                                               bg-white dark:bg-red-900/50 hover:bg-red-200 dark:hover:bg-red-800
-                                               rounded-lg shadow-[2px_2px_0px_0px_#000]
-                                               active:translate-y-[1px] active:shadow-none transition-all">
-                                    <mat-icon class="text-red-600 dark:text-red-400 !text-base">block</mat-icon>
-                                </button>
+                                <ng-container *appHasPermission="'cal_envio.anular'">
+                                    <button *ngIf="cal.status === 'sent' || cal.status === 'in_process'"
+                                            (click)="anularEnvio(cal)"
+                                            matTooltip="Anular envío"
+                                            class="w-8 h-8 flex items-center justify-center border-2 border-black
+                                                   bg-white dark:bg-red-900/50 hover:bg-red-200 dark:hover:bg-red-800
+                                                   rounded-lg shadow-[2px_2px_0px_0px_#000]
+                                                   active:translate-y-[1px] active:shadow-none transition-all">
+                                        <mat-icon class="text-red-600 dark:text-red-400 !text-base">block</mat-icon>
+                                    </button>
+                                </ng-container>
                             </div>
                         </td>
                     </tr>
@@ -302,16 +304,18 @@
                                     ? 'No se encontraron calibraciones con ese criterio'
                                     : 'No hay calibraciones activas registradas' }}
                             </p>
-                            <button *ngIf="!searchControl.value && !filterEstado.value"
-                                    (click)="nuevoEnvio()"
-                                    class="mt-4 px-4 py-2 bg-[#0F172AFF] text-white font-black text-sm
-                                           border-[2px] border-black rounded-full
-                                           shadow-[3px_3px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px]
-                                           hover:shadow-[2px_2px_0px_0px_#000] transition-all uppercase
-                                           inline-flex items-center gap-2">
-                                <mat-icon class="!text-base text-[#FFC501FF]">add</mat-icon>
-                                Registrar primer envío
-                            </button>
+                            <ng-container *appHasPermission="'cal_envio.enviar'">
+                                <button *ngIf="!searchControl.value && !filterEstado.value"
+                                        (click)="nuevoEnvio()"
+                                        class="mt-4 px-4 py-2 bg-[#0F172AFF] text-white font-black text-sm
+                                               border-[2px] border-black rounded-full
+                                               shadow-[3px_3px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px]
+                                               hover:shadow-[2px_2px_0px_0px_#000] transition-all uppercase
+                                               inline-flex items-center gap-2">
+                                    <mat-icon class="!text-base text-[#FFC501FF]">add</mat-icon>
+                                    Registrar primer envío
+                                </button>
+                            </ng-container>
                         </td>
                     </tr>
                     </tbody>

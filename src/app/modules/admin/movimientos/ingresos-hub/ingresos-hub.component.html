@@ -177,7 +177,7 @@
                                 <mat-icon class="!text-xs !w-3.5 !h-3.5">fact_check</mat-icon>
                                 <span class="hidden sm:inline">Manual</span>
                             </button>
-                            <button (click)="abrirModalConfirmacionNueva()" [disabled]="dataSource.length === 0"
+                            <button *appHasPermission="'ingresos.register'" (click)="abrirModalConfirmacionNueva()" [disabled]="dataSource.length === 0"
                                     class="h-7 px-2.5 flex items-center gap-1.5 rounded-lg bg-[#FFC501FF] border border-black text-black font-black text-[10px] uppercase shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all shrink-0 disabled:opacity-40 disabled:cursor-not-allowed disabled:translate-x-0 disabled:translate-y-0 disabled:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
                                 <mat-icon class="!text-xs !w-3.5 !h-3.5">check_circle</mat-icon>
                                 <span class="hidden sm:inline">Confirmar Ingreso</span>
@@ -201,7 +201,7 @@
                                 <mat-icon class="!text-xs !w-3.5 !h-3.5">add_circle</mat-icon>
                                 <span class="hidden sm:inline">Agregar Ítem</span>
                             </button>
-                            <button (click)="abrirModalConfirmacionAjuste()" [disabled]="isSavingAjuste || dataSourceAjuste.length === 0"
+                            <button *appHasPermission="'ingresos.adjust'" (click)="abrirModalConfirmacionAjuste()" [disabled]="isSavingAjuste || dataSourceAjuste.length === 0"
                                     class="h-7 px-2.5 flex items-center gap-1.5 rounded-lg bg-[#FFC501FF] border border-black text-black font-black text-[10px] uppercase shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all shrink-0 disabled:opacity-40 disabled:cursor-not-allowed disabled:translate-x-0 disabled:translate-y-0 disabled:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
                                 <mat-icon class="!text-xs !w-3.5 !h-3.5">check_circle</mat-icon>
                                 <span class="hidden sm:inline">Finalizar Ajuste</span>
@@ -1060,6 +1060,18 @@
                                     class="w-full h-8 text-xs font-bold bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-lg px-1.5 outline-none transition-all cursor-pointer hover:border-stone-400 focus:border-black focus:shadow-[2px_2px_0_#000]">
                                 <option *ngFor="let u of unidadesMedida" [value]="u.value">{{ u.label }}</option>
                             </select>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2 mt-2">
+                        <div>
+                            <label class="text-[9px] font-black uppercase tracking-wider text-stone-500 dark:text-slate-400 mb-1 block">Fecha Vencimiento</label>
+                            <input type="date" formControlName="fechaVencimiento"
+                                   class="w-full h-8 text-xs font-bold bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-lg px-2.5 outline-none transition-all cursor-pointer hover:border-stone-400 focus:border-black focus:shadow-[2px_2px_0_#000]">
+                        </div>
+                        <div>
+                            <label class="text-[9px] font-black uppercase tracking-wider text-stone-500 dark:text-slate-400 mb-1 block">N° Lote</label>
+                            <input type="text" formControlName="loteNumero" placeholder="LOTE-…"
+                                   class="w-full h-8 text-xs font-bold bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-lg px-2.5 outline-none transition-all placeholder:text-stone-300 placeholder:font-normal hover:border-stone-400 focus:border-black focus:shadow-[2px_2px_0_#000]">
                         </div>
                     </div>
                 </div>

@@ -116,7 +116,7 @@ export class UsuariosComponent implements OnInit {
     async verFicha(u: UsuarioTabla): Promise<void> {
         const { VerUsuarioComponent } = await import('./dialogs/ver-usuario/ver-usuario.component');
         this.dialog.open(VerUsuarioComponent, {
-            width: '520px', maxWidth: '95vw', maxHeight: '90vh',
+            width: '860px', maxWidth: '95vw', maxHeight: '90vh',
             panelClass: 'no-padding-dialog',
             data: { funcionario: u.raw }
         });

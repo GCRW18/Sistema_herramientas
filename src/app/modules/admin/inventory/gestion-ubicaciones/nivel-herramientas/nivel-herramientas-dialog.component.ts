@@ -10,6 +10,7 @@ import { Warehouse, Rack, Level, LevelTool, LevelKit, LevelMiscelaneo } from '..
 import { GestionUbicacionesService } from '../gestion-ubicaciones.service';
 import { ConfirmDeleteComponent, ConfirmDeleteData } from '../confirm-delete/confirm-delete.component';
 import { MoverResult } from '../mover-herramientas/mover-herramientas.component';
+import { HasPermissionDirective } from '../../../../../core/directives/has-permission.directive';
 
 export interface NivelHerramientasData {
     almacen:           Warehouse;
@@ -24,7 +25,7 @@ export interface NivelHerramientasData {
 @Component({
     selector: 'app-nivel-herramientas-dialog',
     standalone: true,
-    imports: [CommonModule, ReactiveFormsModule, MatDialogModule, MatIconModule, MatSnackBarModule, MatTooltipModule],
+    imports: [CommonModule, ReactiveFormsModule, MatDialogModule, MatIconModule, MatSnackBarModule, MatTooltipModule, HasPermissionDirective],
     styles: [`
         :host { display: block; }
         .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
@@ -76,7 +77,7 @@ export interface NivelHerramientasData {
                        class="w-full h-9 pl-8 pr-3 bg-[#f8f9fc] dark:bg-slate-900 text-black dark:text-white border-2 border-black rounded-lg font-bold text-[11px] focus:outline-none focus:shadow-[2px_2px_0px_0px_#000] transition-all">
                 <mat-icon class="absolute left-2 top-2 text-black dark:text-white !text-base">search</mat-icon>
             </div>
-            <button (click)="agregarHerramienta()"
+            <button *appHasPermission="'inv_ubicaciones.manage'" (click)="agregarHerramienta()"
                     class="shrink-0 px-3 py-2 bg-amber-400 text-black font-black text-[10px] border-2 border-black rounded-lg shadow-[2px_2px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all uppercase flex items-center gap-1.5">
                 <mat-icon class="!text-base text-black">add</mat-icon>
                 <span class="hidden sm:inline">Agregar</span>
@@ -116,15 +117,15 @@ export interface NivelHerramientasData {
                     </div>
 
                     <div class="flex items-center justify-center gap-1 shrink-0">
-                        <button (click)="editarHerramienta(t)" matTooltip="Editar"
+                        <button *appHasPermission="'inv_ubicaciones.manage'" (click)="editarHerramienta(t)" matTooltip="Editar"
                                 class="w-6 h-6 sm:w-7 sm:h-7 flex items-center justify-center bg-amber-400 border-2 border-black rounded shadow-[2px_2px_0px_0px_#000] hover:translate-y-[1px] hover:shadow-none transition-all">
                             <mat-icon class="!text-[12px] sm:!text-[14px] text-black">edit</mat-icon>
                         </button>
-                        <button (click)="moverHerramienta(t)" matTooltip="Mover"
+                        <button *appHasPermission="'inv_ubicaciones.move'" (click)="moverHerramienta(t)" matTooltip="Mover"
                                 class="w-6 h-6 sm:w-7 sm:h-7 flex items-center justify-center bg-blue-500 border-2 border-black rounded shadow-[2px_2px_0px_0px_#000] hover:translate-y-[1px] hover:shadow-none transition-all">
                             <mat-icon class="!text-[12px] sm:!text-[14px] text-white">swap_horiz</mat-icon>
                         </button>
-                        <button (click)="quitarHerramienta(t)" matTooltip="Quitar del nivel"
+                        <button *appHasPermission="'inv_ubicaciones.manage'" (click)="quitarHerramienta(t)" matTooltip="Quitar del nivel"
                                 class="w-6 h-6 sm:w-7 sm:h-7 flex items-center justify-center bg-[#FF1414FF] border-2 border-black rounded shadow-[2px_2px_0px_0px_#000] hover:translate-y-[1px] hover:shadow-none transition-all">
                             <mat-icon class="!text-[12px] sm:!text-[14px] text-white">remove_circle</mat-icon>
                         </button>
@@ -137,11 +138,13 @@ export interface NivelHerramientasData {
                     <p class="text-xs font-black uppercase text-gray-500 mt-3">
                         {{ herramientas.length === 0 ? 'Nivel sin herramientas' : 'Sin resultados para la búsqueda' }}
                     </p>
-                    <button *ngIf="herramientas.length === 0" (click)="agregarHerramienta()"
-                            class="mt-4 px-4 py-2 bg-amber-400 text-black font-black text-[10px] border-2 border-black rounded-lg shadow-[2px_2px_0px_0px_#000] hover:translate-y-[1px] hover:shadow-none transition-all uppercase inline-flex items-center gap-1.5">
-                        <mat-icon class="!text-base text-black">add</mat-icon>
-                        Agregar la primera
-                    </button>
+                    <ng-container *appHasPermission="'inv_ubicaciones.manage'">
+                        <button *ngIf="herramientas.length === 0" (click)="agregarHerramienta()"
+                                class="mt-4 px-4 py-2 bg-amber-400 text-black font-black text-[10px] border-2 border-black rounded-lg shadow-[2px_2px_0px_0px_#000] hover:translate-y-[1px] hover:shadow-none transition-all uppercase inline-flex items-center gap-1.5">
+                            <mat-icon class="!text-base text-black">add</mat-icon>
+                            Agregar la primera
+                        </button>
+                    </ng-container>
                 </div>
 
                 <!-- Kits asignados a este nivel -->
@@ -172,7 +175,7 @@ export interface NivelHerramientasData {
                         </div>
 
                         <div class="flex items-center justify-center gap-1 shrink-0">
-                            <button (click)="moverKit(k)" matTooltip="Mover kit"
+                            <button *appHasPermission="'inv_ubicaciones.move'" (click)="moverKit(k)" matTooltip="Mover kit"
                                     class="w-6 h-6 sm:w-7 sm:h-7 flex items-center justify-center bg-blue-500 border-2 border-black rounded shadow-[2px_2px_0px_0px_#000] hover:translate-y-[1px] hover:shadow-none transition-all">
                                 <mat-icon class="!text-[12px] sm:!text-[14px] text-white">swap_horiz</mat-icon>
                             </button>
@@ -208,7 +211,7 @@ export interface NivelHerramientasData {
                         </div>
 
                         <div class="flex items-center justify-center gap-1 shrink-0">
-                            <button (click)="moverMiscelaneo(m)" matTooltip="Mover misceláneo"
+                            <button *appHasPermission="'inv_ubicaciones.move'" (click)="moverMiscelaneo(m)" matTooltip="Mover misceláneo"
                                     class="w-6 h-6 sm:w-7 sm:h-7 flex items-center justify-center bg-blue-500 border-2 border-black rounded shadow-[2px_2px_0px_0px_#000] hover:translate-y-[1px] hover:shadow-none transition-all">
                                 <mat-icon class="!text-[12px] sm:!text-[14px] text-white">swap_horiz</mat-icon>
                             </button>

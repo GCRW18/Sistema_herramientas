@@ -71,6 +71,17 @@
         </div>
 
         <div>
+          <label class="text-[9px] font-black uppercase tracking-tight text-stone-500 dark:text-slate-400 mb-1 block">Departamento Destino</label>
+          <input type="text" formControlName="departamentoDestino" placeholder="Opcional…"
+                 class="w-full h-7 text-xs font-bold bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-500 rounded-lg px-2 outline-none transition-colors placeholder:text-stone-300 focus:border-black" />
+        </div>
+        <div>
+          <label class="text-[9px] font-black uppercase tracking-tight text-stone-500 dark:text-slate-400 mb-1 block">Unidad Destino</label>
+          <input type="text" formControlName="unidadDestino" placeholder="Opcional…"
+                 class="w-full h-7 text-xs font-bold bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-500 rounded-lg px-2 outline-none transition-colors placeholder:text-stone-300 focus:border-black" />
+        </div>
+
+        <div>
           <label class="text-[9px] font-black uppercase tracking-tight text-stone-500 dark:text-slate-400 mb-1 block">Fecha Traspaso <span class="text-red-500">*</span></label>
           <input type="date" formControlName="fechaTraspaso"
                  class="w-full h-7 text-xs font-bold bg-white dark:bg-slate-800 dark:text-white border-2border-stone-300 dark:border-slate-500 rounded-lg px-2 outline-none transition-colors focus:border-black" />
@@ -274,6 +285,16 @@
               <div>
                 <label class="text-[7px] font-black uppercase text-stone-400 dark:text-slate-400 mb-0.5 block">Notas</label>
                 <input type="text" [(ngModel)]="item.notas" [ngModelOptions]="{standalone:true}" placeholder="Opcional…"
+                       class="w-full h-6 px-2 bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-500 rounded-lg font-bold text-[9px] outline-none focus:border-black transition-all placeholder:text-stone-300 dark:placeholder:text-slate-500 placeholder:font-normal" />
+              </div>
+              <div>
+                <label class="text-[7px] font-black uppercase text-stone-400 dark:text-slate-400 mb-0.5 block">Unidad</label>
+                <input type="text" [(ngModel)]="item.unidad" [ngModelOptions]="{standalone:true}" placeholder="Ej. PZA…"
+                       class="w-full h-6 px-2 bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-500 rounded-lg font-bold text-[9px] outline-none focus:border-black transition-all placeholder:text-stone-300 dark:placeholder:text-slate-500 placeholder:font-normal" />
+              </div>
+              <div>
+                <label class="text-[7px] font-black uppercase text-stone-400 dark:text-slate-400 mb-0.5 block">Lista de Contenido</label>
+                <input type="text" [(ngModel)]="item.listaContenido" [ngModelOptions]="{standalone:true}" placeholder="Opcional…"
                        class="w-full h-6 px-2 bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-500 rounded-lg font-bold text-[9px] outline-none focus:border-black transition-all placeholder:text-stone-300 dark:placeholder:text-slate-500 placeholder:font-normal" />
               </div>
             </div>

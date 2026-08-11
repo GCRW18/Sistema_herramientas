@@ -5,6 +5,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MAT_DIALOG_DATA, MatDialogRef, MatDialogModule } from '@angular/material/dialog';
 import { RoleService } from '../../../../../../core/services/role.service';
+import { HasPermissionDirective } from '../../../../../../core/directives/has-permission.directive';
 
 /**
  * Ficha de usuario/funcionario — solo lectura para los datos personales/técnicos
@@ -15,94 +16,107 @@ import { RoleService } from '../../../../../../core/services/role.service';
 @Component({
     selector: 'app-ver-usuario',
     standalone: true,
-    imports: [CommonModule, FormsModule, MatIconModule, MatDialogModule, MatSnackBarModule],
+    imports: [CommonModule, FormsModule, MatIconModule, MatDialogModule, MatSnackBarModule, HasPermissionDirective],
     template: `
     <div class="bg-stone-100 dark:bg-slate-900 border-2 border-black rounded-2xl overflow-hidden flex flex-col"
          style="width:100%; max-height:90vh">
 
-        <!-- Header -->
-        <div class="bg-[#0F172A] px-4 py-3 flex items-center gap-3 shrink-0">
-            <div class="w-11 h-11 rounded-xl bg-amber-400 border-2 border-black flex items-center justify-center shadow-[2px_2px_0_#000] shrink-0">
-                <span class="text-black font-black text-sm">{{ iniciales }}</span>
-            </div>
-            <div class="flex-1 min-w-0">
-                <p class="text-[8px] text-slate-400 font-bold uppercase tracking-[0.18em] leading-none mb-0.5">Ficha de Usuario</p>
-                <h2 class="text-sm text-white font-black uppercase tracking-tight leading-tight truncate">{{ f.full_name || f.cuenta }}</h2>
-                <p class="text-[10px] text-amber-400 font-black font-mono mt-0.5 truncate">{{ f.cuenta }}</p>
-            </div>
-            <button type="button" (click)="cerrar()"
-                    class="w-8 h-8 flex items-center justify-center rounded-lg bg-white/10 hover:bg-white/20 transition-colors border border-white/10 shrink-0">
-                <mat-icon class="text-white !text-base">close</mat-icon>
-            </button>
-        </div>
+        <!-- Cuerpo: sidebar de perfil + panel de datos -->
+        <div class="flex-1 flex min-h-0">
 
-        <!-- Chips de estado -->
-        <div class="px-4 py-2.5 bg-white dark:bg-slate-800 border-b-2 border-black flex items-center gap-1.5 flex-wrap shrink-0">
-            <span class="px-2 py-0.5 text-[9px] font-black uppercase border-2 border-black rounded shadow-[1px_1px_0_#000]"
-                  [ngClass]="f.active ? 'bg-green-600 text-white' : 'bg-stone-400 text-black'">
-                {{ f.active ? 'Activo' : 'Inactivo' }}
-            </span>
-            <span *ngIf="f.license_number"
-                  class="px-2 py-0.5 text-[9px] font-black uppercase border-2 border-black rounded bg-blue-900 text-white shadow-[1px_1px_0_#000]">
-                Lic. {{ f.license_number }}
-            </span>
-            <span *ngIf="f.base_code"
-                  class="px-2 py-0.5 text-[9px] font-black uppercase border-2 border-black rounded bg-amber-400 text-black shadow-[1px_1px_0_#000]">
-                {{ f.base_name || f.base_code }}
-            </span>
-            <span *ngIf="!f.id_employee"
-                  class="px-2 py-0.5 text-[9px] font-black uppercase border-2 border-dashed border-stone-400 rounded text-stone-500 dark:text-slate-400">
-                Sin registro técnico
-            </span>
-        </div>
+            <!-- ═══ SIDEBAR · Perfil ═══ -->
+            <div class="w-56 shrink-0 bg-[#0F172A] px-5 py-6 flex flex-col items-center gap-1 overflow-y-auto border-r-2 border-black">
+                <div class="w-16 h-16 rounded-2xl bg-amber-400 border-2 border-black flex items-center justify-center shadow-[3px_3px_0_#000] shrink-0 mb-3">
+                    <span class="text-black font-black text-lg">{{ iniciales }}</span>
+                </div>
+                <h2 class="text-white font-black text-sm uppercase tracking-tight leading-tight text-center break-words">{{ f.full_name || f.cuenta }}</h2>
+                <p class="text-amber-400 font-black font-mono text-[10px] text-center break-all">{{ f.cuenta }}</p>
 
-        <!-- Cuerpo -->
-        <div class="flex-1 overflow-y-auto p-4 flex flex-col gap-3">
+                <div class="w-full h-px bg-white/10 my-3"></div>
 
-            <!-- Datos técnicos -->
-            <div>
-                <p class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1.5">Información Técnica</p>
-                <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                    <div *ngFor="let c of cardsTecnicos"
-                         class="bg-white dark:bg-slate-800 border-2 border-black rounded-xl p-2.5 shadow-[2px_2px_0_#000]">
-                        <p class="text-[8px] font-black uppercase tracking-wider text-stone-400 dark:text-slate-400 flex items-center gap-1">
-                            <mat-icon class="!text-[11px] !w-3 !h-3 text-amber-500">{{ c.icon }}</mat-icon>
-                            {{ c.label }}
-                        </p>
-                        <p class="text-[11px] font-black text-black dark:text-white mt-1 break-words leading-tight">{{ c.value || '—' }}</p>
+                <div class="w-full flex flex-col gap-1.5">
+                    <div class="flex items-center gap-2 px-2.5 py-1.5 rounded-lg border-2 border-black shadow-[1px_1px_0_#000]"
+                         [ngClass]="f.active ? 'bg-green-600' : 'bg-white/10'">
+                        <mat-icon class="!text-sm text-white shrink-0">{{ f.active ? 'check_circle' : 'cancel' }}</mat-icon>
+                        <span class="text-[9px] font-black uppercase text-white truncate">{{ f.active ? 'Activo' : 'Inactivo' }}</span>
+                    </div>
+                    <div *ngIf="f.license_number" class="flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-blue-900 border-2 border-black shadow-[1px_1px_0_#000]">
+                        <mat-icon class="!text-sm text-white shrink-0">badge</mat-icon>
+                        <span class="text-[9px] font-black uppercase text-white truncate">Lic. {{ f.license_number }}</span>
+                    </div>
+                    <div *ngIf="f.base_code" class="flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-amber-400 border-2 border-black shadow-[1px_1px_0_#000]">
+                        <mat-icon class="!text-sm text-black shrink-0">flight_takeoff</mat-icon>
+                        <span class="text-[9px] font-black uppercase text-black truncate">{{ f.base_name || f.base_code }}</span>
+                    </div>
+                    <div *ngIf="!f.id_employee" class="flex items-center gap-2 px-2.5 py-1.5 rounded-lg border-2 border-dashed border-white/20">
+                        <mat-icon class="!text-sm text-slate-400 shrink-0">info</mat-icon>
+                        <span class="text-[9px] font-black uppercase text-slate-400 truncate">Sin registro técnico</span>
                     </div>
                 </div>
             </div>
 
-            <!-- Datos personales / contacto -->
-            <div>
-                <p class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1.5">Datos Personales</p>
-                <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                    <div *ngFor="let c of cardsPersonales"
-                         class="bg-white dark:bg-slate-800 border-2 border-black rounded-xl p-2.5 shadow-[2px_2px_0_#000]">
-                        <p class="text-[8px] font-black uppercase tracking-wider text-stone-400 dark:text-slate-400 flex items-center gap-1">
-                            <mat-icon class="!text-[11px] !w-3 !h-3 text-amber-500">{{ c.icon }}</mat-icon>
-                            {{ c.label }}
-                        </p>
-                        <p class="text-[11px] font-black text-black dark:text-white mt-1 break-words leading-tight">{{ c.value || '—' }}</p>
-                    </div>
-                </div>
-            </div>
+            <!-- ═══ PANEL · Datos ═══ -->
+            <div class="flex-1 min-w-0 flex flex-col">
 
-            <!-- Rol del módulo -->
-            <div>
-                <p class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1.5">Rol del Módulo</p>
-                <div class="bg-white dark:bg-slate-800 border-2 border-black rounded-xl p-3 flex items-center gap-2.5 shadow-[2px_2px_0_#000]">
-                    <mat-icon class="!text-lg text-[#7113CF] shrink-0">shield</mat-icon>
-                    <select [(ngModel)]="selectedRoleId" [disabled]="loadingRoles"
-                            class="flex-1 h-9 min-w-0 text-xs font-bold bg-stone-100 dark:bg-slate-700 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-lg px-2 outline-none focus:border-black">
-                        <option [ngValue]="null">Sin rol asignado</option>
-                        <option *ngFor="let r of roles" [ngValue]="r.id_role">{{ r.name }}</option>
-                    </select>
-                    <button type="button" (click)="guardarRol()" [disabled]="guardandoRol || loadingRoles"
-                            class="shrink-0 px-3 h-9 bg-[#FFC501FF] text-black font-black text-[10px] uppercase border-2 border-black rounded-lg shadow-[2px_2px_0_#000] hover:shadow-none hover:translate-x-[1px] hover:translate-y-[1px] transition-all disabled:opacity-40">
-                        {{ guardandoRol ? 'Guardando…' : 'Guardar' }}
+                <!-- Barra superior -->
+                <div class="px-4 py-2.5 bg-white dark:bg-slate-800 border-b-2 border-black flex items-center justify-between shrink-0">
+                    <p class="text-[8px] font-black uppercase tracking-[0.2em] text-stone-400 dark:text-slate-400">Ficha de Usuario</p>
+                    <button type="button" (click)="cerrar()"
+                            class="w-7 h-7 flex items-center justify-center rounded-lg bg-stone-100 dark:bg-slate-700 hover:bg-stone-200 dark:hover:bg-slate-600 transition-colors border border-stone-300 dark:border-slate-600 shrink-0">
+                        <mat-icon class="text-stone-500 dark:text-slate-300 !text-base">close</mat-icon>
                     </button>
+                </div>
+
+                <div class="flex-1 overflow-y-auto p-4 flex flex-col gap-3">
+
+                    <!-- Datos técnicos + personales lado a lado, en formato ficha -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-3">
+
+                        <div class="bg-white dark:bg-slate-800 border-2 border-black rounded-xl shadow-[2px_2px_0_#000] overflow-hidden">
+                            <p class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 px-3 pt-2.5 pb-1.5">Información Técnica</p>
+                            <div class="px-3 pb-1">
+                                <div *ngFor="let c of cardsTecnicos"
+                                     class="flex items-center justify-between gap-2 py-1.5 border-t border-stone-100 dark:border-slate-700">
+                                    <span class="flex items-center gap-1.5 text-[9px] font-black uppercase tracking-wider text-stone-400 dark:text-slate-500 shrink-0">
+                                        <mat-icon class="!text-sm text-amber-500 shrink-0">{{ c.icon }}</mat-icon>
+                                        {{ c.label }}
+                                    </span>
+                                    <span class="text-[11px] font-black text-black dark:text-white text-right truncate">{{ c.value || '—' }}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-white dark:bg-slate-800 border-2 border-black rounded-xl shadow-[2px_2px_0_#000] overflow-hidden">
+                            <p class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 px-3 pt-2.5 pb-1.5">Datos Personales</p>
+                            <div class="px-3 pb-1">
+                                <div *ngFor="let c of cardsPersonales"
+                                     class="flex items-center justify-between gap-2 py-1.5 border-t border-stone-100 dark:border-slate-700">
+                                    <span class="flex items-center gap-1.5 text-[9px] font-black uppercase tracking-wider text-stone-400 dark:text-slate-500 shrink-0">
+                                        <mat-icon class="!text-sm text-amber-500 shrink-0">{{ c.icon }}</mat-icon>
+                                        {{ c.label }}
+                                    </span>
+                                    <span class="text-[11px] font-black text-black dark:text-white text-right truncate">{{ c.value || '—' }}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Rol del módulo -->
+                    <div>
+                        <p class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1.5">Rol del Módulo</p>
+                        <div class="bg-white dark:bg-slate-800 border-2 border-black rounded-xl p-3 flex items-center gap-2.5 shadow-[2px_2px_0_#000]">
+                            <mat-icon class="!text-lg text-[#7113CF] shrink-0">shield</mat-icon>
+                            <select [(ngModel)]="selectedRoleId" [disabled]="loadingRoles"
+                                    class="flex-1 h-9 min-w-0 text-xs font-bold bg-stone-100 dark:bg-slate-700 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-lg px-2 outline-none focus:border-black">
+                                <option [ngValue]="null">Sin rol asignado</option>
+                                <option *ngFor="let r of roles" [ngValue]="r.id_role">{{ r.name }}</option>
+                            </select>
+                            <button *appHasPermission="'admin_usuarios.assign_role'" type="button" (click)="guardarRol()" [disabled]="guardandoRol || loadingRoles"
+                                    class="shrink-0 px-3 h-9 bg-[#FFC501FF] text-black font-black text-[10px] uppercase border-2 border-black rounded-lg shadow-[2px_2px_0_#000] hover:shadow-none hover:translate-x-[1px] hover:translate-y-[1px] transition-all disabled:opacity-40">
+                                {{ guardandoRol ? 'Guardando…' : 'Guardar' }}
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>

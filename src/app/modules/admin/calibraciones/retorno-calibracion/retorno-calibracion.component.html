@@ -201,15 +201,17 @@
                             <div class="flex gap-2 justify-center items-center">
 
                                 <!-- Confirmar Retorno (solo EN LAB) -->
-                                <button *ngIf="cal.status === 'sent' || cal.status === 'in_process'"
-                                        (click)="abrirConfirmarRetorno(cal)"
-                                        matTooltip="Confirmar Retorno"
-                                        class="h-7 px-2.5 flex items-center justify-center gap-1 border-2 border-black
-                                               bg-green-600 hover:bg-green-400 rounded-lg shadow-[2px_2px_0px_0px_#000]
-                                               active:translate-y-[1px] active:shadow-none transition-all">
-                                    <mat-icon class=" text-black dark:text-black !text-sm">check_circle</mat-icon>
-                                    <span class="text-black font-black text-[10px] uppercase hidden sm:inline">Retorno</span>
-                                </button>
+                                <ng-container *appHasPermission="'cal_retorno.registrar'">
+                                    <button *ngIf="cal.status === 'sent' || cal.status === 'in_process'"
+                                            (click)="abrirConfirmarRetorno(cal)"
+                                            matTooltip="Confirmar Retorno"
+                                            class="h-7 px-2.5 flex items-center justify-center gap-1 border-2 border-black
+                                                   bg-green-600 hover:bg-green-400 rounded-lg shadow-[2px_2px_0px_0px_#000]
+                                                   active:translate-y-[1px] active:shadow-none transition-all">
+                                        <mat-icon class=" text-black dark:text-black !text-sm">check_circle</mat-icon>
+                                        <span class="text-black font-black text-[10px] uppercase hidden sm:inline">Retorno</span>
+                                    </button>
+                                </ng-container>
 
                                 <!-- Visualizar Nota de Envío (siempre) -->
                                 <button (click)="printNota(cal)"

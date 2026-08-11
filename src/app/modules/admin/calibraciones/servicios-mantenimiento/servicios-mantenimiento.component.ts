@@ -12,6 +12,7 @@ import { debounceTime, startWith, takeUntil, finalize, catchError } from 'rxjs/o
 import { MaintenanceService } from '../../../../core/services/maintenance.service';
 import { FormServicioComponent } from './form-servicio/form-servicio.component';
 import { FormLoteMantenimientoComponent } from './form-lote-mantenimiento/form-lote.component';
+import { HasPermissionDirective } from '../../../../core/directives/has-permission.directive';
 
 interface MaintenanceDisplay {
     id_maintenance: number;
@@ -45,6 +46,7 @@ interface MaintenanceDisplay {
         MatProgressSpinnerModule,
         MatTooltipModule,
         ReactiveFormsModule,
+        HasPermissionDirective,
     ],
     templateUrl: './servicios-mantenimiento.component.html',
     styles: [`

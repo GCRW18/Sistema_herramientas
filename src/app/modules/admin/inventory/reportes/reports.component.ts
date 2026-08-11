@@ -9,6 +9,7 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { ReportesService, DashboardStats } from './reportes.service';
 import { REPORTE_CONFIGS, ColDef } from './reporte-visor-dialog.component';
+import { HasPermissionDirective } from '../../../../core/directives/has-permission.directive';
 
 /* ── Opciones de sub-reporte por tab ───────────────────────────────────────── */
 export interface SubReporteOpt {
@@ -71,6 +72,7 @@ interface KpiCard {
         CommonModule, FormsModule,
         MatIconModule, MatTooltipModule,
         MatProgressSpinnerModule, MatSnackBarModule,
+        HasPermissionDirective,
     ],
     templateUrl: './reports.component.html',
     styles: [`

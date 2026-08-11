@@ -53,7 +53,7 @@
                     <option *ngFor="let e of estadosFiltro" [value]="e.value">{{ e.label }}</option>
                 </select>
 
-                <button (click)="nuevoLaboratorio()"
+                <button *appHasPermission="'cal_labs.create'" (click)="nuevoLaboratorio()"
                         class="px-5 py-2 bg-[#FFC501FF] text-black font-black text-xs
                                border-[2px] border-black rounded-xl
                                shadow-[3px_3px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px]
@@ -174,7 +174,7 @@
 
                         <td class="px-3 py-2">
                             <div class="flex gap-1.5 justify-center">
-                                <button (click)="editarLaboratorio(lab); $event.stopPropagation()"
+                                <button *appHasPermission="'cal_labs.edit'" (click)="editarLaboratorio(lab); $event.stopPropagation()"
                                         matTooltip="Editar empresa"
                                         class="w-8 h-8 flex items-center justify-center border-2 border-black
                                                    bg-white dark:bg-indigo-900/50 hover:bg-indigo-200 dark:hover:bg-indigo-800
@@ -183,7 +183,7 @@
                                     <mat-icon class="text-indigo-600 dark:text-indigo-400 !text-base">edit</mat-icon>
                                 </button>
 
-                                <button (click)="eliminarLaboratorio(lab, $event)"
+                                <button *appHasPermission="'cal_labs.delete'" (click)="eliminarLaboratorio(lab, $event)"
                                         matTooltip="{{ lab.active ? 'Desactivar empresa' : 'Eliminar empresa' }}"
                                         class="w-8 h-8 flex items-center justify-center border-2 border-black
                                                    bg-red-100 dark:bg-red-900/50 hover:bg-red-200 dark:hover:bg-red-800
@@ -203,16 +203,18 @@
                                 ? 'No se encontraron empresas con esos criterios'
                                 : 'No hay empresas registradas' }}
                             </p>
-                            <button *ngIf="!searchControl.value && !filterTipoServicio.value && !filterEstado.value"
-                                    (click)="nuevoLaboratorio()"
-                                    class="mt-4 px-4 py-2 bg-[#0F172AFF] text-white font-black text-sm
-                                               border-[2px] border-black rounded-full
-                                               shadow-[3px_3px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px]
-                                               hover:shadow-[2px_2px_0px_0px_#000] transition-all uppercase
-                                               inline-flex items-center gap-2">
-                                <mat-icon class="!text-base text-amber-400">add</mat-icon>
-                                Registrar primera empresa
-                            </button>
+                            <ng-container *appHasPermission="'cal_labs.create'">
+                                <button *ngIf="!searchControl.value && !filterTipoServicio.value && !filterEstado.value"
+                                        (click)="nuevoLaboratorio()"
+                                        class="mt-4 px-4 py-2 bg-[#0F172AFF] text-white font-black text-sm
+                                                   border-[2px] border-black rounded-full
+                                                   shadow-[3px_3px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px]
+                                                   hover:shadow-[2px_2px_0px_0px_#000] transition-all uppercase
+                                                   inline-flex items-center gap-2">
+                                    <mat-icon class="!text-base text-amber-400">add</mat-icon>
+                                    Registrar primera empresa
+                                </button>
+                            </ng-container>
                         </td>
                     </tr>
                     </tbody>

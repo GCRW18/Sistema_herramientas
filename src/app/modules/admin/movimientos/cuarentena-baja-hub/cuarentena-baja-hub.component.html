@@ -151,7 +151,7 @@
                 <mat-icon class="!text-xs !w-3.5 !h-3.5">add_circle</mat-icon>
                 <span class="hidden sm:inline">Agregar Ítem</span>
               </button>
-              <button (click)="submitQuarantine()"
+              <button *appHasPermission="'cuarentena.poner'" (click)="submitQuarantine()"
                       [disabled]="cuarentenaList.length === 0 || !isReporteValido()"
                       class="h-7 px-2.5 flex items-center gap-1.5 rounded-lg bg-[#FFC501FF] border border-black text-black font-black text-[10px] uppercase shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all shrink-0 disabled:opacity-40 disabled:cursor-not-allowed disabled:translate-x-0 disabled:translate-y-0 disabled:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
                 <mat-icon class="!text-xs !w-3.5 !h-3.5">check_circle</mat-icon>
@@ -176,7 +176,7 @@
                 <mat-icon class="!text-xs !w-3.5 !h-3.5">add_circle</mat-icon>
                 <span class="hidden sm:inline">Agregar Ítem</span>
               </button>
-              <button (click)="procesarEImprimir()"
+              <button *appHasPermission="'cuarentena.baja'" (click)="procesarEImprimir()"
                       [disabled]="bajaItems().length === 0 || !isProcessValid()"
                       class="h-7 px-2.5 flex items-center gap-1.5 rounded-lg bg-[#FF1414] text-white border border-black font-black text-[10px] uppercase shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all shrink-0 disabled:opacity-40 disabled:cursor-not-allowed disabled:translate-x-0 disabled:translate-y-0 disabled:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
                 <mat-icon class="!text-xs !w-3.5 !h-3.5">print</mat-icon>
@@ -377,18 +377,22 @@
                             class="w-7 h-7 bg-[#0F172A] text-white rounded-lg border-[2px] border-black shadow-[2px_2px_0px_0px_#000] hover:shadow-none hover:translate-x-[1px] hover:translate-y-[1px] transition-all flex items-center justify-center">
                       <mat-icon class="!text-sm">print</mat-icon>
                     </button>
-                    <button *ngIf="m._type === 'cuarentena' && m.status !== 'resolved' && m.status !== 'cancelled'"
-                            (click)="abrirModalResolver(m)"
-                            matTooltip="Resolver cuarentena"
-                            class="w-7 h-7 bg-green-600 text-white rounded-lg border-[2px] border-black shadow-[2px_2px_0px_0px_#000] hover:shadow-none hover:translate-x-[1px] hover:translate-y-[1px] transition-all flex items-center justify-center">
-                      <mat-icon class="!text-sm">check_circle</mat-icon>
-                    </button>
-                    <button *ngIf="bajaEsAnulable(m)"
-                            (click)="abrirModalAnularBaja(m)"
-                            matTooltip="Anular baja — devolver a disponible"
-                            class="w-7 h-7 bg-orange-500 text-white rounded-lg border-[2px] border-black shadow-[2px_2px_0px_0px_#000] hover:shadow-none hover:translate-x-[1px] hover:translate-y-[1px] transition-all flex items-center justify-center">
-                      <mat-icon class="!text-sm">undo</mat-icon>
-                    </button>
+                    <ng-container *appHasPermission="'cuarentena.resolver'">
+                      <button *ngIf="m._type === 'cuarentena' && m.status !== 'resolved' && m.status !== 'cancelled'"
+                              (click)="abrirModalResolver(m)"
+                              matTooltip="Resolver cuarentena"
+                              class="w-7 h-7 bg-green-600 text-white rounded-lg border-[2px] border-black shadow-[2px_2px_0px_0px_#000] hover:shadow-none hover:translate-x-[1px] hover:translate-y-[1px] transition-all flex items-center justify-center">
+                        <mat-icon class="!text-sm">check_circle</mat-icon>
+                      </button>
+                    </ng-container>
+                    <ng-container *appHasPermission="'cuarentena.anular'">
+                      <button *ngIf="bajaEsAnulable(m)"
+                              (click)="abrirModalAnularBaja(m)"
+                              matTooltip="Anular baja — devolver a disponible"
+                              class="w-7 h-7 bg-orange-500 text-white rounded-lg border-[2px] border-black shadow-[2px_2px_0px_0px_#000] hover:shadow-none hover:translate-x-[1px] hover:translate-y-[1px] transition-all flex items-center justify-center">
+                        <mat-icon class="!text-sm">undo</mat-icon>
+                      </button>
+                    </ng-container>
                   </div>
                 </td>
               </tr>

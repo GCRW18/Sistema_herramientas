@@ -20,6 +20,8 @@ import { SupplierService }      from '../../../../core/services/supplier.service
 import { CalibrationService }   from '../../../../core/services/calibration.service';
 import { GestionUbicacionesService } from '../../inventory/gestion-ubicaciones/gestion-ubicaciones.service';
 import { Warehouse, Rack, Level }    from '../../inventory/gestion-ubicaciones/interfaces';
+import { HasPermissionDirective } from '../../../../core/directives/has-permission.directive';
+import { IngresoPdfService, IngresoPdfItem } from './ingreso-pdf.service';
 
 interface Proveedor {
     id: string;
@@ -50,6 +52,10 @@ interface HerramientaItem {
     marca: string;
     nivelCriticidad: string;
     fabricacion: string;
+    /** Campos oficiales MGH-116 (SCP-43) — se guardan en he.ttools.warranty_expiration
+     *  y he.tmovement_items.batch_number respectivamente. */
+    fechaVencimiento: string | null;
+    loteNumero: string;
     imagen?: string | null;
     warehouseId?: number | null;
     rackId?: number | null;
@@ -89,7 +95,8 @@ type TabType = 'nueva' | 'ajuste' | 'historial';
         CommonModule, ReactiveFormsModule, FormsModule,
         MatIconModule, MatTableModule, MatCheckboxModule,
         MatDialogModule, MatSnackBarModule, MatProgressSpinnerModule,
-        MatTooltipModule, MatAutocompleteModule, MatSlideToggleModule, DragDropModule, OverlayModule
+        MatTooltipModule, MatAutocompleteModule, MatSlideToggleModule, DragDropModule, OverlayModule,
+        HasPermissionDirective
     ],
     templateUrl: './ingresos-hub.component.html',
     styles: [`
@@ -137,6 +144,7 @@ export class IngresosHubComponent implements OnInit, OnDestroy {
     private supplierSvc    = inject(SupplierService);
     private calibrationSvc = inject(CalibrationService);
     private ubicSvc        = inject(GestionUbicacionesService);
+    private ingresoPdfSvc  = inject(IngresoPdfService);
     private destroy$       = new Subject<void>();
 
     // ── Tab state ──────────────────────────────────────────────────────────────
@@ -446,6 +454,8 @@ export class IngresosHubComponent implements OnInit, OnDestroy {
             marca:                ['', Validators.required],
             nivelCriticidad:      ['B', Validators.required],
             fabricacion:          ['INTERNACIONAL', Validators.required],
+            fechaVencimiento:     [null],
+            loteNumero:           [''],
             warehouseId:          [null],
             rackId:               [null],
             levelId:              [null]
@@ -683,7 +693,8 @@ export class IngresosHubComponent implements OnInit, OnDestroy {
             condition: h.estado === 'NUEVO' ? 'new' : h.estado === 'REACONDICIONADO' ? 'reconditioned' : 'good',
             criticality_level: h.nivelCriticidad || 'B', manufacture_origin: h.fabricacion || 'INTERNACIONAL',
             requires_calibration: h.requiereCalibracion || false, calibration_interval: h.intervaloCalibracion || null,
-            calibration_date: h.fechaCalibracion || null, certificate_number: h.nroCertificado || '', notes: h.observacion || ''
+            calibration_date: h.fechaCalibracion || null, certificate_number: h.nroCertificado || '', notes: h.observacion || '',
+            warranty_expiration: h.fechaVencimiento || null, batch_number: h.loteNumero || ''
         })));
         this.movementSvc.registrarNuevaCompra({
             movement_number:    rec.nroCmr,
@@ -897,7 +908,8 @@ export class IngresosHubComponent implements OnInit, OnDestroy {
     private _resetHerramientaForm(): void {
         this.herramientaForm.reset({
             codigoBoa: 'BOA-H-', cantidad: 1, unidadMedida: 'UNIDAD', estado: 'NUEVO',
-            requiereCalibracion: false, tipo: 'HERRAMIENTA', nivelCriticidad: 'B', fabricacion: 'INTERNACIONAL'
+            requiereCalibracion: false, tipo: 'HERRAMIENTA', nivelCriticidad: 'B', fabricacion: 'INTERNACIONAL',
+            fechaVencimiento: null, loteNumero: ''
         });
         this.herramientaImagen.set(null);
         this._resetUbicacionBuscador();
@@ -1398,7 +1410,16 @@ export class IngresosHubComponent implements OnInit, OnDestroy {
         return (m.movement_number || '').toUpperCase().startsWith('AI-');
     }
 
+    /** Reimpresión desde el historial. COMPRA usa el formato oficial MGH-116
+     *  (IngresoPdfService, mismo layout que la impresión inmediata al guardar);
+     *  AJUSTE_INGRESO sigue con el layout genérico propio de esta función —
+     *  fuera de alcance de la consolidación MGH-116 (tiene su propia hoja Excel
+     *  "AJUSTE INGRESO" pendiente de recalcar aparte). */
     pdfHistorialItem(m: any): void {
+        if (!this.isAjusteIngreso(m)) {
+            this._pdfHistorialCompraOficial(m);
+            return;
+        }
         const generarPdfConItems = (items: any[]) => {
             const nro   = m.movement_number || '---';
             const fecha = m.date ? new Date(m.date).toLocaleDateString('es-BO') : '';
@@ -1441,50 +1462,73 @@ export class IngresosHubComponent implements OnInit, OnDestroy {
         }
     }
 
+    private _pdfHistorialCompraOficial(m: any): void {
+        const nro          = m.movement_number || '---';
+        const fecha        = m.date ? new Date(m.date).toLocaleDateString('es-BO', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '';
+        const proveedor    = m.supplier || m.document_number || '';
+        const factura      = m.invoice_number || '';
+        const entregadoPor = m.received_by_name || '';
+        const recibidoPor  = m.responsible_person || '';
+
+        const build = (items: any[]) => {
+            const pdfItems: IngresoPdfItem[] = items.map(it => ({
+                codigo:           it.code || '',
+                pn:               it.part_number || it.pn || '',
+                proveedor,
+                factura,
+                descripcion:      it.description || it.name || it.descripcion || '',
+                unidad:           it.unit_of_measure || 'UND',
+                cantidad:         Number(it.quantity ?? it.cantidad ?? 1),
+                fechaVencimiento: it.warranty_expiration
+                    ? new Date(it.warranty_expiration).toLocaleDateString('es-BO', { day: '2-digit', month: '2-digit', year: 'numeric' })
+                    : '',
+                origenAB: IngresoPdfService.origenAB(it.manufacture_origin),
+                tipoAB:   IngresoPdfService.tipoAB(it.category_code),
+                lote:     it.batch_number || ''
+            }));
+            this.ingresoPdfSvc.generarPdf({
+                nroNota: nro, fechaIngreso: fecha, observaciones: m.notes || '',
+                entregadoPor, recibidoPor, items: pdfItems
+            });
+        };
+
+        if (m.id_movement) {
+            this.movementSvc.getMovementItems(Number(m.id_movement)).pipe(
+                takeUntil(this.destroy$),
+                catchError(() => of([]))
+            ).subscribe(items => build(items));
+        } else {
+            build([]);
+        }
+    }
+
     // ══════════════════════════════════════════════════════════════════════════
-    //  PDF — NUEVA HERRAMIENTA (INGRESO POR COMPRA)
+    //  PDF — NUEVA HERRAMIENTA (INGRESO POR COMPRA) — formato oficial MGH-116
     // ══════════════════════════════════════════════════════════════════════════
     private _abrirImpresionIngreso(nro: string, items: HerramientaItem[], rec: any, provNombre: string): void {
-        const now  = new Date().toLocaleString('es-BO');
-        const rows = items.map((h, idx) => `
-            <tr>
-                <td style="text-align:center">${idx + 1}</td>
-                <td><span style="font-family:monospace;font-weight:700;background:#0f172a;color:white;padding:1px 5px;border-radius:3px;font-size:9px">${h.codigoBoa}</span></td>
-                <td style="font-family:monospace;font-size:9px">${h.pn || '-'}</td>
-                <td style="font-family:monospace;font-size:9px">${h.sn || '-'}</td>
-                <td style="text-align:center;font-weight:700">${h.cantidad}</td>
-                <td style="font-size:9px">${h.unidadMedida || 'UND'}</td>
-                <td>${h.descripcion || '-'}</td>
-                <td style="font-size:9px">${h.marca || '-'}</td>
-                <td style="text-align:center"><span style="padding:1px 4px;border:1px solid #000;font-size:8px;font-weight:700">${h.estado}</span></td>
-                <td style="font-size:8.5px">${h.estante ? h.estante + (h.nivelUbicacion ? '/' + h.nivelUbicacion : '') : '-'}</td>
-            </tr>`).join('');
-
-        const css = `<style>@page{size:A4 landscape;margin:12mm 10mm}*{box-sizing:border-box}body{font-family:Arial,sans-serif;font-size:10px;color:#000;margin:0}.top{display:flex;justify-content:space-between;margin-bottom:5px}.code-box{border:2px solid #000;padding:3px 10px;font-weight:900;font-size:13px;display:inline-block}h1{text-align:center;font-size:12px;font-weight:900;text-transform:uppercase;background:#111A43;color:white;padding:7px 10px;margin:0 0 7px;border:1px solid #000}.info-tbl{width:100%;border-collapse:collapse;border:1px solid #000;margin-bottom:7px}.info-tbl td{border:1px solid #ddd;padding:3px 6px}.lbl{background:#f0f0f0;font-weight:700;font-size:9px;width:130px}.nro-cell{background:#f0f0f0;text-align:center;font-weight:900;font-size:15px;vertical-align:middle;width:120px}.sec{background:#111A43;color:white;padding:3px 8px;font-weight:900;font-size:10px;text-transform:uppercase;border:1px solid #000}table.det{width:100%;border-collapse:collapse;border:1px solid #000}table.det th{background:#111A43;color:white;padding:4px 3px;font-size:8px;font-weight:900;text-transform:uppercase;border:1px solid #000;text-align:center}table.det td{padding:3px 4px;border:1px solid #ddd;font-size:9px}table.det tr:nth-child(even) td{background:#f9f9f9}.sigs{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:16px}.sig{border:1px solid #000;padding:6px 8px;text-align:center}.sig-ttl{font-weight:900;font-size:9px;text-transform:uppercase;margin-bottom:26px}.sig-line{border-top:1px solid #000;padding-top:3px;font-size:8.5px}.footer{text-align:center;margin-top:10px;font-size:7.5px;color:#888;border-top:1px dotted #ccc;padding-top:4px}@media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact}}</style>`;
-
-        const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>NI ${nro}</title>${css}<script>window.onload=function(){setTimeout(function(){window.print();},500);};<\/script></head><body>
-<div class="top"><div style="font-weight:900;font-size:11px">BoAMM &nbsp; OAM145# N-114</div><div style="text-align:right"><div class="code-box">NI</div><br><span style="font-size:9px">NOTA DE INGRESO</span></div></div>
-<h1>NOTA DE INGRESO A ALMACÉN DE HERRAMIENTAS<br><span style="font-size:10px;font-weight:400">HERRAMIENTAS, BANCOS DE PRUEBA Y EQUIPOS DE APOYO</span></h1>
-<table class="info-tbl">
-<tr><td class="lbl">DOCUMENTO / CMR:</td><td style="font-weight:700">${rec.nroCmr || nro}</td><td class="lbl">FACTURA:</td><td>${rec.nroFactura || '—'}</td><td class="nro-cell" rowspan="3"><div style="font-size:8px;font-weight:400">N° INGRESO</div>${nro}</td></tr>
-<tr><td class="lbl">PROVEEDOR:</td><td>${provNombre || '—'}</td><td class="lbl">ORDEN DE COMPRA:</td><td>${rec.ordenCompra || '—'}</td></tr>
-<tr><td class="lbl">RECIBE EN ALMACÉN:</td><td style="font-weight:700">${rec.funcionarioRecibe || '—'}</td><td class="lbl">FECHA INGRESO:</td><td>${rec.fechaIngreso || '—'}</td></tr>
-</table>
-<div class="sec">DETALLE DE HERRAMIENTAS INGRESADAS</div>
-<table class="det"><thead><tr><th>#</th><th>CÓDIGO BOA</th><th>P/N</th><th>S/N</th><th>CANT.</th><th>UND</th><th>DESCRIPCIÓN</th><th>MARCA</th><th>ESTADO</th><th>UBICACIÓN</th></tr></thead><tbody>${rows}</tbody></table>
-<div class="sigs">
-<div class="sig"><div class="sig-ttl">ENTREGADO POR / PROVEEDOR</div><div style="font-size:9px;margin-bottom:16px">${rec.recibiConforme || '____________________'}</div><div class="sig-line">Firma / Sello</div></div>
-<div class="sig"><div class="sig-ttl">RECIBIDO EN ALMACÉN</div><div style="font-size:9px;margin-bottom:16px">${rec.funcionarioRecibe || '____________________'}</div><div class="sig-line">Firma / Cargo</div></div>
-<div class="sig"><div class="sig-ttl">JEFE DE ALMACÉN</div><div class="sig-line">Firma / Cargo</div></div>
-</div>
-<div class="footer">Sistema de Gestión de Herramientas - BOA &nbsp;|&nbsp; ${now}</div>
-</body></html>`;
-        const blob = new Blob([html], { type: 'text/html' });
-        const url  = URL.createObjectURL(blob);
-        const a    = document.createElement('a');
-        a.href = url; a.target = '_blank'; a.rel = 'noopener';
-        document.body.appendChild(a); a.click(); document.body.removeChild(a);
-        setTimeout(() => URL.revokeObjectURL(url), 60000);
+        const pdfItems: IngresoPdfItem[] = items.map(h => ({
+            codigo:           h.codigoBoa,
+            pn:               h.pn || '',
+            proveedor:        provNombre || '',
+            factura:          rec.nroFactura || '',
+            descripcion:      h.descripcion || '',
+            unidad:           h.unidadMedida || 'UND',
+            cantidad:         h.cantidad,
+            fechaVencimiento: h.fechaVencimiento
+                ? new Date(h.fechaVencimiento).toLocaleDateString('es-BO', { day: '2-digit', month: '2-digit', year: 'numeric' })
+                : '',
+            origenAB: IngresoPdfService.origenAB(h.fabricacion),
+            tipoAB:   IngresoPdfService.tipoAB(h.tipo),
+            lote:     h.loteNumero || ''
+        }));
+        this.ingresoPdfSvc.generarPdf({
+            nroNota:       nro,
+            fechaIngreso:  rec.fechaIngreso || '',
+            observaciones: (rec.tipoDe ? '[' + rec.tipoDe + '] ' : '') + (rec.observaciones || ''),
+            entregadoPor:  rec.recibiConforme    || '',
+            recibidoPor:   rec.funcionarioRecibe || '',
+            items: pdfItems
+        });
     }
 
     // ══════════════════════════════════════════════════════════════════════════

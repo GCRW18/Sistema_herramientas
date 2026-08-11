@@ -66,12 +66,18 @@ export class FormAlmacenComponent implements OnInit {
         );
     });
 
+    // id_oficina y ciudad solo son obligatorios al crear: el picker Base›Oficina
+    // fuerza a elegirlos ahí. En 'edit'/'view' se dejan opcionales porque el
+    // catálogo real sembrado por DAT-12 (15 almacenes) nunca completó la columna
+    // 'city' (las 15 filas) ni 'id_oficina' (13 de 15) — exigirlos dejaba el botón
+    // Guardar deshabilitado para esos almacenes sin ninguna forma de corregirlo
+    // desde la UI (ciudad ni siquiera es un input editable, es solo un badge).
     form: FormGroup = this.fb.group({
         id_lugar:    [null, Validators.required],
         codigo:      ['',   Validators.maxLength(40)],
         nombre:      ['',   [Validators.required, Validators.maxLength(120)]],
-        ciudad:      ['',   Validators.required],
-        id_oficina:  [null, Validators.required],
+        ciudad:      ['',   this.mode === 'new' ? [Validators.required] : []],
+        id_oficina:  [null, this.mode === 'new' ? [Validators.required] : []],
         tipo:        ['Principal', Validators.required],
         estado:      ['ACTIVO',    Validators.required],
         descripcion: [''],
@@ -258,8 +264,10 @@ export class FormAlmacenComponent implements OnInit {
             id_lugar:      Number(v.id_lugar),
             codigo,
             nombre:        v.nombre.trim(),
-            ciudad:        v.ciudad,
-            id_oficina:    Number(v.id_oficina),
+            // Si el almacén viene sin ciudad (catálogo DAT-12), se autocompleta desde
+            // la base seleccionada al guardar, para que el registro quede corregido.
+            ciudad:        v.ciudad || this.selectedBase?.nombre || '',
+            id_oficina:    v.id_oficina != null && v.id_oficina !== '' ? Number(v.id_oficina) : null,
             nombreOficina: this.nombreOficinaPreview,
             tipo:          v.tipo,
             estado:        v.estado,

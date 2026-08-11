@@ -142,7 +142,7 @@
                 class="px-4 py-2 bg-[#FF1414] text-white font-black text-[10px] border-2 border-black rounded-xl shadow-[2px_2px_0_#000] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all uppercase">
             Cerrar
         </button>
-        <button type="button" (click)="editarProveedor()"
+        <button *appHasPermission="'admin_proveedores.edit'" type="button" (click)="editarProveedor()"
                 class="flex items-center gap-2 px-5 py-2 bg-[#0F172A] text-white font-black text-[10px] border-2 border-black rounded-xl shadow-[3px_3px_0_#000] hover:shadow-none hover:translate-x-[3px] hover:translate-y-[3px] transition-all uppercase">
             <mat-icon class="!text-white !text-base">edit</mat-icon>
             Editar Proveedor

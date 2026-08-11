@@ -97,6 +97,16 @@
                 </div>
             </div>
         </div>
+
+        <!-- Footer -->
+        <div class="border-t-2 border-black bg-stone-200 dark:bg-slate-900 px-5 py-3 flex justify-end shrink-0">
+            <button type="button" (click)="imprimirPdf()" [disabled]="generandoPdf"
+                    class="flex items-center gap-2 px-5 py-2 bg-orange-500 text-white font-black text-[10px] border-2 border-black rounded-xl shadow-[3px_3px_0_#000] hover:shadow-none hover:translate-x-[3px] hover:translate-y-[3px] transition-all uppercase disabled:opacity-50 disabled:cursor-not-allowed">
+                <mat-spinner *ngIf="generandoPdf" diameter="16"></mat-spinner>
+                <mat-icon *ngIf="!generandoPdf" class="!text-sm">picture_as_pdf</mat-icon>
+                {{ generandoPdf ? 'Generando...' : 'Imprimir Nota (MGH-117)' }}
+            </button>
+        </div>
     </ng-container>
 
     <!-- ======================================================

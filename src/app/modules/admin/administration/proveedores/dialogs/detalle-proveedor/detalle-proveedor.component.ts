@@ -5,6 +5,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MAT_DIALOG_DATA, MatDialogRef, MatDialogModule, MatDialog } from '@angular/material/dialog';
 import { DragDropModule } from '@angular/cdk/drag-drop';
 import { SupplierService } from '../../../../../../core/services/supplier.service';
+import { HasPermissionDirective } from '../../../../../../core/directives/has-permission.directive';
 
 @Component({
     selector: 'app-detalle-proveedor',
@@ -14,7 +15,8 @@ import { SupplierService } from '../../../../../../core/services/supplier.servic
         MatButtonModule,
         MatIconModule,
         MatDialogModule,
-        DragDropModule
+        DragDropModule,
+        HasPermissionDirective
     ],
     templateUrl: './detalle-proveedor.component.html',
     styles: [`

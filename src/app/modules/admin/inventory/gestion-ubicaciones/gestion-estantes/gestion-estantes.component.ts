@@ -16,6 +16,7 @@ import { Warehouse, Rack, Level, LevelTool, LevelKit, LevelMiscelaneo } from '..
 import { ConfirmDeleteComponent, ConfirmDeleteData } from '../confirm-delete/confirm-delete.component';
 import { GestionUbicacionesService } from '../gestion-ubicaciones.service';
 import { NivelHerramientasDialogComponent, NivelHerramientasData } from '../nivel-herramientas/nivel-herramientas-dialog.component';
+import { HasPermissionDirective } from '../../../../../core/directives/has-permission.directive';
 
 @Component({
     selector: 'app-gestion-estantes',
@@ -28,6 +29,7 @@ import { NivelHerramientasDialogComponent, NivelHerramientasData } from '../nive
         MatSnackBarModule,
         MatTooltipModule,
         DragDropModule,
+        HasPermissionDirective,
     ],
     templateUrl: './gestion-estantes.component.html',
     styles: [`

@@ -104,7 +104,7 @@
                 </div>
 
                 <!-- Nuevo Almacén: extremo derecho -->
-                <button (click)="nuevoAlmacen()"
+                <button *appHasPermission="'inv_ubicaciones.manage'" (click)="nuevoAlmacen()"
                         class="ml-auto shrink-0 px-3 sm:px-5 py-2 bg-[#FFC501FF] text-black font-black text-xs
                                border-[2px] border-black rounded-xl
                                shadow-[3px_3px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px]
@@ -167,6 +167,17 @@
                         </div>
                     </div>
 
+                    <div *ngIf="countSinOficina() > 0" matTooltip="Almacenes sin oficina asignada — complétalos al editarlos"
+                         class="flex items-center gap-1.5 bg-orange-600/40 rounded-lg px-2 sm:px-3 py-1 sm:py-1.5 border border-black shrink-0">
+                        <div class="w-4 h-4 sm:w-5 sm:h-5 bg-orange-600 border border-black rounded flex items-center justify-center shrink-0">
+                            <mat-icon class="!text-[10px] text-white">warning</mat-icon>
+                        </div>
+                        <div>
+                            <div class="text-[7px] sm:text-[8px] font-black uppercase text-white leading-none">Sin oficina</div>
+                            <div class="text-xs sm:text-sm font-black text-white leading-none">{{ countSinOficina() }}</div>
+                        </div>
+                    </div>
+
                     <button (click)="cargarAlmacenes()" [disabled]="isLoading()" matTooltip="Recargar lista"
                             class="w-7 h-7 flex items-center justify-center rounded-lg border border-white/30 shrink-0
                                    text-white hover:bg-white/20 transition-all disabled:opacity-40">
@@ -205,7 +216,14 @@
 
                         <td class="hidden md:table-cell px-4 py-3 text-xs text-black dark:text-white">
                             <div class="font-bold">{{ a.ciudad }}</div>
-                            <div class="text-[10px] text-gray-500">{{ a.nombreOficina }}</div>
+                            <div *ngIf="a.nombreOficina; else sinOficina" class="text-[10px] text-gray-500">{{ a.nombreOficina }}</div>
+                            <ng-template #sinOficina>
+                                <span matTooltip="Sin oficina asignada — edítalo para completarla"
+                                      class="inline-flex items-center gap-1 px-1.5 py-0.5 mt-0.5 text-[9px] font-black uppercase border border-orange-500 rounded text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-900/20">
+                                    <mat-icon class="!text-[10px] !w-2.5 !h-2.5">warning</mat-icon>
+                                    Sin oficina
+                                </span>
+                            </ng-template>
                         </td>
 
                         <td class="hidden sm:table-cell px-4 py-3 text-center">
@@ -230,7 +248,7 @@
 
                         <td class="px-3 sm:px-4 py-3">
                             <div class="flex gap-1.5 justify-center" (click)="$event.stopPropagation()">
-                                <button (click)="editarAlmacen(a, $event)" matTooltip="Editar"
+                                <button *appHasPermission="'inv_ubicaciones.manage'" (click)="editarAlmacen(a, $event)" matTooltip="Editar"
                                         class="w-7 h-7 flex items-center justify-center bg-[#FFC501FF] border-2 border-black rounded-lg shadow-[2px_2px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all">
                                     <mat-icon class="!text-sm text-black">edit</mat-icon>
                                 </button>
