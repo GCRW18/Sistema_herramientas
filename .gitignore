@@ -44,3 +44,7 @@ testem.log
 # System Files
 .DS_Store
 Thumbs.db
+desktop.ini
+
+# IDE/JVM crash dumps
+hs_err_pid*.log
