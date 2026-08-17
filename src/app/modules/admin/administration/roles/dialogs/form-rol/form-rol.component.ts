@@ -78,6 +78,11 @@ export class FormRolComponent implements OnInit {
         });
     }
 
+    /* trackBy — getSelectedModulesSummary() arma objetos nuevos en cada
+       llamada; sin esto el *ngFor los recrearía en cada CD (mismo origen
+       del congelamiento de Misceláneos). */
+    trackByModName = (_: number, mod: { name: string }): string => mod.name;
+
     getSelectedModulesSummary(): { name: string; count: number }[] {
         const current: string[] = this.rolForm.get('permissions')?.value || [];
         const result: { name: string; count: number }[] = [];

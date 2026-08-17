@@ -194,7 +194,7 @@ export class MiscelaneosService {
     // ── Movimientos ───────────────────────────────────────────────────────────
 
     getEntradas(miscelaneo_id?: number): Observable<Entrada[]> {
-        const params: any = { start: 0, limit: 500, sort: 'mv.fecha_reg', dir: 'desc', tipo: 'ENTRADA' };
+        const params: any = { start: 0, limit: 500, sort: 'mv.fecha_reg', dir: 'desc', type: 'ENTRADA' };
         if (miscelaneo_id) params.miscelaneo_id = miscelaneo_id;
         return from(this._api.post('herramientas/miscelaneomovimientos/listarMiscelaneoMovimientos', params)).pipe(
             map((r: any) => this._normalize(r)
@@ -206,7 +206,7 @@ export class MiscelaneosService {
     }
 
     getSalidas(miscelaneo_id?: number): Observable<Salida[]> {
-        const params: any = { start: 0, limit: 500, sort: 'mv.fecha_reg', dir: 'desc', tipo: 'SALIDA' };
+        const params: any = { start: 0, limit: 500, sort: 'mv.fecha_reg', dir: 'desc', type: 'SALIDA' };
         if (miscelaneo_id) params.miscelaneo_id = miscelaneo_id;
         return from(this._api.post('herramientas/miscelaneomovimientos/listarMiscelaneoMovimientos', params)).pipe(
             map((r: any) => this._normalize(r)

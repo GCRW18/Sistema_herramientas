@@ -217,51 +217,6 @@ export class ToolService {
     }
 
     /**
-     * Send tool to calibration
-     * CORREGIDO: Cambiar 'tool_id' por 'id_tool' para que coincida con el backend
-     */
-    sendToCalibration(id: string, data: any): Observable<Tool> {
-        return from(this._api.post('herramientas/tools/sendToCalibration', {
-            id_tool: id,  // ← CAMBIO: 'tool_id' → 'id_tool'
-            ...data
-        })).pipe(
-            switchMap((response: any) => {
-                return of(response?.data || {});
-            })
-        );
-    }
-
-    /**
-     * Send tool to maintenance
-     * CORREGIDO: Cambiar 'tool_id' por 'id_tool' para que coincida con el backend
-     */
-    sendToMaintenance(id: string, data: any): Observable<Tool> {
-        return from(this._api.post('herramientas/tools/sendToMaintenance', {
-            id_tool: id,  // ← CAMBIO: 'tool_id' → 'id_tool'
-            ...data
-        })).pipe(
-            switchMap((response: any) => {
-                return of(response?.data || {});
-            })
-        );
-    }
-
-    /**
-     * Send tool to quarantine
-     * CORREGIDO: Cambiar 'tool_id' por 'id_tool' para que coincida con el backend
-     */
-    sendToQuarantine(id: string, data: any): Observable<Tool> {
-        return from(this._api.post('herramientas/tools/sendToQuarantine', {
-            id_tool: id,  // ← CAMBIO: 'tool_id' → 'id_tool'
-            ...data
-        })).pipe(
-            switchMap((response: any) => {
-                return of(response?.data || {});
-            })
-        );
-    }
-
-    /**
      * Decommission tool
      * CORREGIDO: Cambiar 'tool_id' por 'id_tool' para que coincida con el backend
      */

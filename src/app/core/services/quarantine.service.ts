@@ -1,31 +1,11 @@
 import { Injectable, inject } from '@angular/core';
-import { from, Observable, of, ReplaySubject, switchMap } from 'rxjs';
+import { from, Observable, of, switchMap } from 'rxjs';
 import { DecommissionRecord, QuarantineRecord } from '../models';
 import { ErpApiService } from '../api/api.service';
 
 @Injectable({ providedIn: 'root' })
 export class QuarantineService {
     private _api = inject(ErpApiService);
-    private _quarantines: ReplaySubject<QuarantineRecord[]> = new ReplaySubject<QuarantineRecord[]>(1);
-    private _decommissions: ReplaySubject<DecommissionRecord[]> = new ReplaySubject<DecommissionRecord[]>(1);
-
-    // -----------------------------------------------------------------------------------------------------
-    // @ Accessors
-    // -----------------------------------------------------------------------------------------------------
-
-    /**
-     * Getter for quarantines
-     */
-    get quarantines$(): Observable<QuarantineRecord[]> {
-        return this._quarantines.asObservable();
-    }
-
-    /**
-     * Getter for decommissions
-     */
-    get decommissions$(): Observable<DecommissionRecord[]> {
-        return this._decommissions.asObservable();
-    }
 
     // -----------------------------------------------------------------------------------------------------
     // @ Public methods - Quarantine
@@ -44,26 +24,7 @@ export class QuarantineService {
         };
 
         return from(this._api.post('herramientas/quarantines/listQuarantines', params)).pipe(
-            switchMap((response: any) => {
-                const quarantines = response?.datos || response?.data || [];
-                this._quarantines.next(quarantines);
-                return of(quarantines);
-            })
-        );
-    }
-
-    /**
-     * Get quarantine by id
-     */
-    getQuarantineById(id: string): Observable<QuarantineRecord> {
-        return from(this._api.post('herramientas/quarantines/listQuarantines', {
-            start: 0,
-            limit: 1,
-            id_quarantine: id
-        })).pipe(
-            switchMap((response: any) => {
-                return of(response?.data?.[0] || null);
-            })
+            switchMap((response: any) => of(response?.datos || response?.data || []))
         );
     }
 
@@ -98,34 +59,6 @@ export class QuarantineService {
     }
 
     /**
-     * Resolve quarantine
-     */
-    resolveQuarantine(id: string, resolution: string, actionTaken: string): Observable<QuarantineRecord> {
-        return from(this._api.post('herramientas/quarantines/resolverCuarentena', {
-            id_quarantine: id,
-            resultado: resolution,
-            accion_tomada: actionTaken
-        })).pipe(
-            switchMap((response: any) => {
-                return of(response?.data || {});
-            })
-        );
-    }
-
-    /**
-     * Cancel quarantine
-     */
-    cancelQuarantine(id: string): Observable<QuarantineRecord> {
-        return from(this._api.post('herramientas/quarantines/cancelCuarentena', {
-            id_quarantine: id
-        })).pipe(
-            switchMap((response: any) => {
-                return of(response?.data || {});
-            })
-        );
-    }
-
-    /**
      * Get active quarantines
      */
     getActiveQuarantines(): Observable<QuarantineRecord[]> {
@@ -153,26 +86,7 @@ export class QuarantineService {
         };
 
         return from(this._api.post('herramientas/decommissions/listDecommissions', params)).pipe(
-            switchMap((response: any) => {
-                const decommissions = response?.datos || response?.data || [];
-                this._decommissions.next(decommissions);
-                return of(decommissions);
-            })
-        );
-    }
-
-    /**
-     * Get decommission by id
-     */
-    getDecommissionById(id: string): Observable<DecommissionRecord> {
-        return from(this._api.post('herramientas/decommissions/listDecommissions', {
-            start: 0,
-            limit: 1,
-            id_baja: id
-        })).pipe(
-            switchMap((response: any) => {
-                return of(response?.data?.[0] || null);
-            })
+            switchMap((response: any) => of(response?.datos || response?.data || []))
         );
     }
 
@@ -202,45 +116,6 @@ export class QuarantineService {
                     throw new Error(root?.detalle?.mensaje || root?.mensaje || 'Error al actualizar baja');
                 }
                 return of(root?.datos?.[0] || root?.datos || root?.data || {});
-            })
-        );
-    }
-
-    /**
-     * Approve decommission
-     */
-    approveDecommission(id: string): Observable<DecommissionRecord> {
-        return from(this._api.post('herramientas/decommissions/approveBaja', {
-            id_baja: id
-        })).pipe(
-            switchMap((response: any) => {
-                return of(response?.data || {});
-            })
-        );
-    }
-
-    /**
-     * Generate quarantine report
-     */
-    generateQuarantineReport(filters?: any): Observable<Blob> {
-        // PXP might return a file URL instead of blob
-        return from(this._api.post('herramientas/quarantines/generarReporte', filters)).pipe(
-            switchMap((response: any) => {
-                // Handle file download - might need adjustment based on PXP response format
-                return of(new Blob());
-            })
-        );
-    }
-
-    /**
-     * Generate decommission report
-     */
-    generateDecommissionReport(filters?: any): Observable<Blob> {
-        // PXP might return a file URL instead of blob
-        return from(this._api.post('herramientas/decommissions/generarReporte', filters)).pipe(
-            switchMap((response: any) => {
-                // Handle file download - might need adjustment based on PXP response format
-                return of(new Blob());
             })
         );
     }

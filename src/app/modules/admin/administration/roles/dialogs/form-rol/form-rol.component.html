@@ -103,7 +103,7 @@
             <!-- Chips de módulos seleccionados -->
             <div *ngIf="(rolForm.get('permissions')?.value?.length || 0) > 0"
                  class="flex-1 flex flex-wrap content-start gap-1.5 bg-white dark:bg-slate-800 border-2 border-stone-200 dark:border-slate-700 rounded-xl p-2.5 overflow-y-auto max-h-[132px]">
-                <span *ngFor="let mod of getSelectedModulesSummary()"
+                <span *ngFor="let mod of getSelectedModulesSummary(); trackBy: trackByModName"
                       class="inline-flex items-center gap-1 px-2 py-0.5 h-fit bg-amber-50 dark:bg-amber-900/20 border border-amber-300 dark:border-amber-700 rounded-lg text-[9px] font-black text-amber-800 dark:text-amber-300 uppercase">
                     <mat-icon class="!text-[9px]">check</mat-icon>
                     {{ mod.name }} ({{ mod.count }})

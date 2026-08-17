@@ -1,7 +1,6 @@
 import { Injectable, inject } from '@angular/core';
-import { from, Observable, of, BehaviorSubject, switchMap, catchError } from 'rxjs';
-import { Maintenance, MaintenanceFormData, MaintenanceCompletionData } from '../models/maintenance.types';
-import { MaintenanceBatchPayload, MaintenanceBatchResult } from '../models/maintenance-batch.types';
+import { from, Observable, of, switchMap, catchError } from 'rxjs';
+import { Maintenance } from '../models/maintenance.types';
 import { ErpApiService } from '../api/api.service';
 
 @Injectable({
@@ -9,14 +8,6 @@ import { ErpApiService } from '../api/api.service';
 })
 export class MaintenanceService {
     private _api = inject(ErpApiService);
-    private _maintenances = new BehaviorSubject<Maintenance[]>([]);
-
-    /**
-     * Getter for maintenances
-     */
-    get maintenances$(): Observable<Maintenance[]> {
-        return this._maintenances.asObservable();
-    }
 
     /**
      * Get all maintenance records
@@ -62,160 +53,7 @@ export class MaintenanceService {
                     certificate_number: item.certificate_number,
                     next_calibration_date: item.next_maintenance_date,
                 }));
-                this._maintenances.next(maintenances);
                 return of(maintenances);
-            })
-        );
-    }
-
-    /**
-     * Get maintenance by ID
-     */
-    getMaintenanceById(id: string): Observable<Maintenance> {
-        return from(this._api.post('herramientas/maintenances/listMaintenances', {
-            start: 0,
-            limit: 1,
-            id_maintenance: id
-        })).pipe(
-            switchMap((response: any) => {
-                return of(response?.data?.[0] || null);
-            })
-        );
-    }
-
-    /**
-     * Get maintenance records for a specific tool
-     */
-    getMaintenancesByTool(toolId: string): Observable<Maintenance[]> {
-        return from(this._api.post('herramientas/maintenances/listMaintenances', {
-            start: 0,
-            limit: 100,
-            tool_id: toolId,
-            sort: 'request_date',
-            dir: 'desc'
-        })).pipe(
-            switchMap((response: any) => {
-                return of(response?.data || []);
-            })
-        );
-    }
-
-    /**
-     * Create a new maintenance record
-     */
-    createMaintenance(data: MaintenanceFormData): Observable<Maintenance> {
-        // Transformar datos de camelCase a snake_case para el backend
-        // Formatear fecha a 'YYYY-MM-DD' para PostgreSQL
-        let formattedDate = null;
-        if (data.scheduledDate) {
-            const date = new Date(data.scheduledDate);
-            formattedDate = date.toISOString().split('T')[0];
-        }
-
-        const backendData = {
-            type: data.type,
-            scheduled_date: formattedDate,
-            description: data.description,
-            technician: data.technician,
-            notes: data.notes,
-            cost: data.estimatedCost || 0
-        };
-
-        return from(this._api.post('herramientas/maintenances/insertMaintenance', backendData)).pipe(
-            switchMap((response: any) => {
-                // El backend devuelve el id en response.data.id_maintenance
-                const newMaintenance = {
-                    ...data,
-                    id: response?.data?.id_maintenance || response?.data?.id,
-                    status: 'scheduled' as const,
-                    createdAt: new Date(),
-                    updatedAt: new Date()
-                };
-                const currentMaintenances = this._maintenances.value;
-                this._maintenances.next([newMaintenance, ...currentMaintenances]);
-                return of(newMaintenance);
-            })
-        );
-    }
-
-    /**
-     * Update an existing maintenance record
-     */
-    updateMaintenance(id: string, data: Partial<Maintenance>): Observable<Maintenance> {
-        // Transformar datos de camelCase a snake_case para el backend
-        let formattedDate = null;
-        if (data.scheduledDate) {
-            const date = new Date(data.scheduledDate);
-            formattedDate = date.toISOString().split('T')[0];
-        }
-
-        const backendData: any = {
-            id_maintenance: id
-        };
-
-        if (data.type) backendData.type = data.type;
-        if (formattedDate) backendData.scheduled_date = formattedDate;
-        if (data.description) backendData.description = data.description;
-        if (data.technician) backendData.technician = data.technician;
-        if (data.notes !== undefined) backendData.notes = data.notes;
-        if (data.cost !== undefined) backendData.cost = data.cost;
-
-        return from(this._api.post('herramientas/maintenances/updateMantenimiento', backendData)).pipe(
-            switchMap((response: any) => {
-                const updatedMaintenance = {
-                    ...data,
-                    id: id,
-                    id_maintenance: id
-                } as Maintenance;
-                const currentMaintenances = this._maintenances.value;
-                const index = currentMaintenances.findIndex((m: any) => m.id_maintenance === id || m.id === id);
-                if (index !== -1) {
-                    currentMaintenances[index] = updatedMaintenance;
-                    this._maintenances.next(currentMaintenances);
-                }
-                return of(updatedMaintenance);
-            })
-        );
-    }
-
-    /**
-     * Complete a maintenance record
-     */
-    completeMaintenance(id: string, data: MaintenanceCompletionData): Observable<Maintenance> {
-        return from(this._api.post('herramientas/maintenances/completeMantenimiento', {
-            id_maintenance: id,
-            ...data
-        })).pipe(
-            switchMap((response: any) => {
-                const completedMaintenance = response?.data || {};
-                const currentMaintenances = this._maintenances.value;
-                const index = currentMaintenances.findIndex((m: any) => m.id_maintenance === id);
-                if (index !== -1) {
-                    currentMaintenances[index] = completedMaintenance;
-                    this._maintenances.next(currentMaintenances);
-                }
-                return of(completedMaintenance);
-            })
-        );
-    }
-
-    /**
-     * Change maintenance status
-     */
-    changeMaintenanceStatus(id: string, status: 'in_progress' | 'cancelled'): Observable<Maintenance> {
-        return from(this._api.post('herramientas/maintenances/cambiarEstadoMantenimiento', {
-            id_maintenance: id,
-            status: status
-        })).pipe(
-            switchMap((response: any) => {
-                const updatedMaintenance = response?.data || {};
-                const currentMaintenances = this._maintenances.value;
-                const index = currentMaintenances.findIndex((m: any) => m.id_maintenance === id);
-                if (index !== -1) {
-                    currentMaintenances[index] = updatedMaintenance;
-                    this._maintenances.next(currentMaintenances);
-                }
-                return of(updatedMaintenance);
             })
         );
     }
@@ -297,53 +135,6 @@ export class MaintenanceService {
         );
     }
 
-    // ── Lotes de Mantenimiento ───────────────────────────────────────────────
-
-    /**
-     * Envía un lote de herramientas a mantenimiento – HE_MAINT_BATCH_SEND
-     * Genera correlativo LM-NNNN/YYYY y crea un registro por herramienta
-     */
-    createMaintenanceBatchPxp(payload: MaintenanceBatchPayload): Observable<MaintenanceBatchResult> {
-        const { items, ...rest } = payload;
-        const body = { ...rest, items_json: JSON.stringify(items) };
-        return from(this._api.post('herramientas/maintenances/enviarLoteMantenimiento', body)).pipe(
-            switchMap((response: any) => {
-                if (response?.error) throw new Error(response?.mensaje || 'Error al procesar el lote');
-                const datos = response?.datos?.[0] ?? response?.datos ?? response;
-                return of(datos as MaintenanceBatchResult);
-            }),
-            catchError((err) => { throw err; })
-        );
-    }
-
-    /**
-     * Busca reportes de discrepancia – HE_DISC_REP_SEL
-     */
-    searchDiscrepancyReportsPxp(term: string): Observable<any[]> {
-        return from(this._api.post('herramientas/maintenances/buscarReportesDiscrepancia', {
-            term, start: 0, limit: 20
-        })).pipe(
-            switchMap((response: any) => of(response?.datos || [])),
-            catchError(() => of([]))
-        );
-    }
-
-    /**
-     * Delete a maintenance record
-     */
-    deleteMaintenance(id: string): Observable<void> {
-        return from(this._api.post('herramientas/maintenances/deleteMaintenance', {
-            id_maintenance: id
-        })).pipe(
-            switchMap(() => {
-                const currentMaintenances = this._maintenances.value;
-                const filteredMaintenances = currentMaintenances.filter((m: any) => m.id_maintenance !== id);
-                this._maintenances.next(filteredMaintenances);
-                return of(undefined);
-            })
-        );
-    }
-
     // ===================================================================
     // GENERACIÓN DE PDFs para MANTENIMIENTO
     // ===================================================================
@@ -371,28 +162,6 @@ export class MaintenanceService {
     }
 
     /**
-     * Genera PDF de Certificado de Retorno de Mantenimiento
-     * @param id_maintenance - ID del registro de mantenimiento
-     * @returns Observable con el PDF en base64
-     */
-    generarPdfRetornoMantenimiento(id_maintenance: number): Observable<{ pdf_base64: string; nombre_archivo: string }> {
-        return from(this._api.post('herramientas/maintenances/generarPdfRetornoMantenimiento', {
-            id_maintenance: id_maintenance
-        })).pipe(
-            switchMap((response: any) => {
-                const hasError = response?.ROOT?.error === true || response?.error === true;
-                if (hasError) throw new Error(response?.ROOT?.detalle?.mensaje || response?.mensaje || 'Error al generar PDF');
-                const data = response?.ROOT?.datos ?? response?.datos ?? response;
-                return of({
-                    pdf_base64: data?.pdf_base64 as string,
-                    nombre_archivo: data?.nombre_archivo || `certificado_mantenimiento_${id_maintenance}.html`
-                });
-            }),
-            catchError((error) => { throw error; })
-        );
-    }
-
-    /**
      * Genera y abre PDF de Nota de Envío a Mantenimiento directamente
      * @param id_maintenance - ID del registro de mantenimiento
      */
@@ -403,21 +172,6 @@ export class MaintenanceService {
             },
             error: (error) => {
                 console.error('Error al generar PDF de envío de mantenimiento:', error);
-            }
-        });
-    }
-
-    /**
-     * Genera y abre PDF de Certificado de Retorno de Mantenimiento directamente
-     * @param id_maintenance - ID del registro de mantenimiento
-     */
-    generarYVerPdfRetornoMantenimiento(id_maintenance: number): void {
-        this.generarPdfRetornoMantenimiento(id_maintenance).subscribe({
-            next: (result) => {
-                this.abrirPdf(result.pdf_base64, result.nombre_archivo);
-            },
-            error: (error) => {
-                console.error('Error al generar PDF de retorno de mantenimiento:', error);
             }
         });
     }
@@ -461,59 +215,5 @@ export class MaintenanceService {
         const url   = window.URL.createObjectURL(blob);
         window.open(url, '_blank');
         setTimeout(() => window.URL.revokeObjectURL(url), 30000);
-    }
-
-    /**
-     * Descarga el PDF de Nota de Envío a Mantenimiento
-     * @param id_maintenance - ID del registro de mantenimiento
-     */
-    descargarPdfEnvioMantenimiento(id_maintenance: number): Observable<void> {
-        return this.generarPdfEnvioMantenimiento(id_maintenance).pipe(
-            switchMap((result) => {
-                const byteCharacters = atob(result.pdf_base64);
-                const byteNumbers = new Array(byteCharacters.length);
-                for (let i = 0; i < byteCharacters.length; i++) {
-                    byteNumbers[i] = byteCharacters.charCodeAt(i);
-                }
-                const byteArray = new Uint8Array(byteNumbers);
-                const blob = new Blob([byteArray], { type: 'application/pdf' });
-
-                const url = window.URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = result.nombre_archivo;
-                a.click();
-                window.URL.revokeObjectURL(url);
-
-                return of(undefined);
-            })
-        );
-    }
-
-    /**
-     * Descarga el PDF de Certificado de Retorno de Mantenimiento
-     * @param id_maintenance - ID del registro de mantenimiento
-     */
-    descargarPdfRetornoMantenimiento(id_maintenance: number): Observable<void> {
-        return this.generarPdfRetornoMantenimiento(id_maintenance).pipe(
-            switchMap((result) => {
-                const byteCharacters = atob(result.pdf_base64);
-                const byteNumbers = new Array(byteCharacters.length);
-                for (let i = 0; i < byteCharacters.length; i++) {
-                    byteNumbers[i] = byteCharacters.charCodeAt(i);
-                }
-                const byteArray = new Uint8Array(byteNumbers);
-                const blob = new Blob([byteArray], { type: 'application/pdf' });
-
-                const url = window.URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = result.nombre_archivo;
-                a.click();
-                window.URL.revokeObjectURL(url);
-
-                return of(undefined);
-            })
-        );
     }
 }

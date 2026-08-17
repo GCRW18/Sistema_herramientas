@@ -10,6 +10,7 @@ import { takeUntil, finalize, catchError, debounceTime, distinctUntilChanged, sw
 import { MovementService } from '../../../../../core/services/movement.service';
 import { CalibrationService } from '../../../../../core/services/calibration.service';
 import { ModalHerramientaExternoComponent } from '../modal-herramienta-externo/modal-herramienta-externo.component';
+import { PrestamoExternoPdfService, PrestamoExternoPdfData } from '../prestamo-externo-pdf.service';
 
 interface ExternalLoanItem {
     toolId: number; id: number; codigo: string; pn: string; descripcion: string; sn: string;
@@ -46,6 +47,7 @@ export class FormPrestamoExternoDialogComponent implements OnInit, OnDestroy {
     private snackBar    = inject(MatSnackBar);
     private movementSvc     = inject(MovementService);
     private calibrationSvc  = inject(CalibrationService);
+    private pdfSvc          = inject(PrestamoExternoPdfService);
     private destroy$        = new Subject<void>();
 
     isSaving = false;
@@ -257,31 +259,21 @@ export class FormPrestamoExternoDialogComponent implements OnInit, OnDestroy {
     }
 
     private _imprimir(nro: string, fv: any, items: ExternalLoanItem[]): void {
-        const w = window.open('', '_blank');
-        if (!w) return;
-        const total = items.reduce((s,i) => s + (i.precioTotal||0), 0);
-        const rows  = items.map(i =>
-            `<tr><td>${i.codigo||'-'}</td><td>${i.pn||'-'}</td><td>${i.sn||'-'}</td><td style="text-align:center;font-weight:700">${i.cantidad}</td><td>${i.descripcion||'-'}</td><td>${i.listaContenido||'-'}</td><td>${i.contenido||'&nbsp;'}</td></tr>`
-        ).join('');
-        const css = `<style>@page{size:A4 landscape;margin:12mm 10mm}*{box-sizing:border-box}body{font-family:Arial,sans-serif;font-size:10px;color:#000;margin:0}.top{display:flex;justify-content:space-between;margin-bottom:5px}.code-box{border:2px solid #000;padding:3px 10px;font-weight:900;font-size:13px;display:inline-block}h1{text-align:center;font-size:12px;font-weight:900;text-transform:uppercase;background:#111A43;color:white;padding:7px 10px;margin:0 0 7px;border:1px solid #000}.info-tbl{width:100%;border-collapse:collapse;border:1px solid #000;margin-bottom:7px}.info-tbl td{border:1px solid #ddd;padding:3px 6px}.lbl{background:#f0f0f0;font-weight:700;font-size:9px;width:130px}.nro-cell{background:#f0f0f0;text-align:center;font-weight:900;font-size:15px;vertical-align:middle;width:120px}.sec{background:#111A43;color:white;padding:3px 8px;font-weight:900;font-size:10px;text-transform:uppercase;border:1px solid #000}table.det{width:100%;border-collapse:collapse;border:1px solid #000}table.det th{background:#111A43;color:white;padding:5px 4px;font-size:8.5px;font-weight:900;text-transform:uppercase;border:1px solid #000;text-align:center}table.det td{padding:4px;border:1px solid #ddd;font-size:9px}table.det tr:nth-child(even) td{background:#f9f9f9}.sigs{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:16px}.sig{border:1px solid #000;padding:6px 8px;text-align:center}.sig-ttl{font-weight:900;font-size:9px;text-transform:uppercase;margin-bottom:26px;line-height:1.4}.sig-line{border-top:1px solid #000;padding-top:3px;font-size:8.5px}.footer{text-align:center;margin-top:10px;font-size:7.5px;color:#888;border-top:1px dotted #ccc;padding-top:4px}@media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact}}</style>`;
-        w.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>MGH-100 ${nro}</title>${css}</head><body>
-<div class="top"><div style="font-weight:900;font-size:11px">BoAMM &nbsp; OAM145#114 &nbsp; N-114</div><div style="text-align:right"><div class="code-box">MGH-100</div><br><span style="font-size:9px">REV. 0 &nbsp; 2016-10-13</span></div></div>
-<h1>NOTA DE PRÉSTAMO - DEVOLUCIÓN A TERCEROS</h1>
-<table class="info-tbl">
-<tr><td class="lbl">EMPRESA / SOLICITANTE:</td><td style="font-weight:700">${fv.nombreEmpresa||''}</td><td class="lbl">NIT:</td><td>${fv.nit||''}</td><td class="nro-cell" rowspan="4"><div style="font-size:8px;font-weight:400">N° NOTA</div>${nro}</td></tr>
-<tr><td class="lbl">CONTACTO:</td><td>${fv.contacto||''}</td><td class="lbl">MOTIVO:</td><td>${fv.motivoPrestamo||''}</td></tr>
-<tr><td class="lbl">AUTORIZADO POR:</td><td style="font-weight:700">${fv.autorizado||''}</td><td class="lbl">TOTAL $US:</td><td style="font-weight:700">$${total.toFixed(2)}</td></tr>
-<tr><td class="lbl">FECHA Y HORA:</td><td>${fv.fecha||''} ${fv.hora||''}</td><td class="lbl">OBSERVACIONES:</td><td>${fv.observaciones||''}</td></tr>
-</table>
-<div class="sec">DATOS PRÉSTAMO</div>
-<table class="det"><thead><tr><th>CÓDIGO</th><th>P/N ó MODELO</th><th>S/N</th><th>CANT.</th><th>DESCRIPCIÓN</th><th>LISTA CONTENIDO</th><th>OBS</th></tr></thead><tbody>${rows}</tbody></table>
-<div class="sec" style="margin-top:6px">DATOS DEVOLUCIÓN</div>
-<table class="det"><thead><tr><th>FECHA/HORA</th><th colspan="2">ENTREGUE CONFORME (NOMBRE/FIRMA)</th><th colspan="2">RECIBI CONFORME (NOMBRE/FIRMA)</th><th>CONDICIÓN DEVOLUCIÓN</th><th>NRO. REPORTE AVERÍA</th><th>OBS</th></tr></thead><tbody>${items.map(()=>`<tr><td style="height:28px">&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>`).join('')}</tbody></table>
-<div class="sigs"><div class="sig"><div class="sig-ttl">ENTREGADO POR<br>FIRMA ALMACÉN BOA</div><div style="font-size:9px;margin-bottom:20px">${fv.autorizado||''}</div><div class="sig-line">&nbsp;</div></div><div class="sig"><div class="sig-ttl">RECIBIDO POR<br>FIRMA EMPRESA TERCERA</div><div style="font-size:9px;margin-bottom:20px">${fv.nombreEmpresa||''}</div><div class="sig-line">&nbsp;</div></div><div class="sig"><div class="sig-ttl">AUTORIZADO POR<br>FIRMA BOA</div><div class="sig-line">&nbsp;</div></div></div>
-<div class="footer">Sistema de Gestión de Herramientas - BOA &nbsp;|&nbsp; ${new Date().toLocaleString('es-BO')}</div>
-<script>window.onload=function(){setTimeout(function(){window.print();},500);};<\/script>
-</body></html>`);
-        w.document.close();
+        const data: PrestamoExternoPdfData = {
+            nroPrestamo: nro,
+            solicitante: fv.contacto || '',
+            empresa: fv.nombreEmpresa || '',
+            fechaHoraPrestamo: `${fv.fecha||''} ${fv.hora||''}`.trim(),
+            observaciones: fv.observaciones || '',
+            entregadoPor: fv.autorizado || '',
+            devuelto: false,
+            items: items.map(i => ({
+                codigo: i.codigo, pn: i.pn, sn: i.sn, cantidad: i.cantidad,
+                descripcion: i.descripcion, listaContenido: i.listaContenido,
+                hrCosto: i.costoHora || 0, valorUsd: i.precioTotal || 0, obs: i.contenido || '',
+            })),
+        };
+        this.pdfSvc.generarPdf(data);
     }
 
     private showMsg(type: 'success'|'error'|'info'|'warning', text: string): void {

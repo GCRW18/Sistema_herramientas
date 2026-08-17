@@ -28,6 +28,7 @@ import { RetornoDialogComponent } from './dialogs/retorno/retorno-dialog.compone
 import { TraspasoTecnicoDialogComponent } from './dialogs/traspaso-tecnico/traspaso-tecnico-dialog.component';
 import { DevolucionTecnicoDialogComponent } from './dialogs/devolucion-tecnico/devolucion-tecnico-dialog.component';
 import { RetornoAreaDialogComponent } from './dialogs/retorno-area/retorno-area-dialog.component';
+import { EnvioBasePdfService, EnvioBasePdfData } from './envio-base-pdf.service';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 type ActiveTab    = 'envio' | 'traspaso' | 'retorno' | 'activos' | 'traspaso-tecnico';
@@ -174,7 +175,6 @@ interface HistorialRecord {
 export class RetornoTraspasoComponent implements OnInit, OnDestroy {
 
     @ViewChild('historialDialog')           historialDialog!:           TemplateRef<any>;
-    @ViewChild('envioFormDialog')           envioFormDialog!:           TemplateRef<any>;
     @ViewChild('traspasoFormDialog')        traspasoFormDialog!:        TemplateRef<any>;
     @ViewChild('retornoFormDialog')         retornoFormDialog!:         TemplateRef<any>;
     @ViewChild('traspasoTecnicoFormDialog')    traspasoTecnicoFormDialog!:    TemplateRef<any>;
@@ -188,6 +188,7 @@ export class RetornoTraspasoComponent implements OnInit, OnDestroy {
     private snackBar = inject(MatSnackBar);
     private movSvc   = inject(MovementService);
     private toolSvc  = inject(ToolService);
+    private envioBasePdfSvc = inject(EnvioBasePdfService);
     private _unsub$  = new Subject<void>();
     private _logoBoaDataUri: Promise<string> | null = null;
     private _envioDialogRef: any          = null;
@@ -204,19 +205,6 @@ export class RetornoTraspasoComponent implements OnInit, OnDestroy {
     bases: Ubicacion[]    = [];
     almacenes: Ubicacion[] = [];
     isLoading = false;
-
-    // ── ENVÍO tab ─────────────────────────────────────────────────────────────
-    envioForm!: FormGroup;
-    itemsEnvio: ToolEnvioItem[]  = [];
-    activeEnvioChip: number | null = null;
-    toolSearchEnvio              = '';
-    toolResultsEnvio: any[]      = [];
-    showToolDropEnvio            = false;
-    searchingToolsEnvio          = false;
-    isSavingEnvio                = false;
-    envCorrelativoPreview        = '';
-    loadingCorrelativo           = false;
-    private _srchEnvio$          = new Subject<string>();
 
     // ── TRASPASO tab ──────────────────────────────────────────────────────────
     traspasoForm!: FormGroup;
@@ -261,17 +249,7 @@ export class RetornoTraspasoComponent implements OnInit, OnDestroy {
     funcionariosLoading          = false;
     showFuncDropdown             = false;
 
-    // ── ENVÍO funcionarios autocomplete ───────────────────────────────────────
-    funcionariosEnvia: Funcionario[]  = [];
-    funcEnviaLoading                  = false;
-    showFuncEnviaDropdown             = false;
-    funcionariosRecibe: Funcionario[] = [];
-    funcRecibeLoading                 = false;
-    showFuncRecibeDropdown            = false;
-
     // ── Dept/Location autocomplete ────────────────────────────────────────────
-    deptUbicacionesEnvio:    Ubicacion[] = [];
-    showDeptDropEnvio                    = false;
     deptUbicacionesTraspaso: Ubicacion[] = [];
     showDeptDropTraspaso                 = false;
 
@@ -371,18 +349,15 @@ export class RetornoTraspasoComponent implements OnInit, OnDestroy {
 
     // ─────────────────────────────────────────────────────────────────────────
     ngOnInit(): void {
-        this._initEnvioForm();
         this._initTraspasoForm();
         this._initRetornoForm();
         this._initTraspasoTecnicoForm();
         this._initDevolucionTecnicoForm();
         this._initRetornoAreaForm();
         this._loadUbicaciones();
-        this._setupToolSearchEnvio();
         this._setupToolSearchTraspaso();
         this._setupToolSearchTecnico();
         this._setupFuncSearch();
-        this._setupFuncSearchEnvio();
         this._setupFuncSearchTraspaso();
         this._setupPersonaTecnicoSearch();
         this._setupFuncDevolucionSearch();
@@ -410,31 +385,6 @@ export class RetornoTraspasoComponent implements OnInit, OnDestroy {
             if (r?.refreshActivos) this.loadMovActivos();
         });
     }
-
-    private _fetchEnvCorrelativoPreview(): void {
-        this.loadingCorrelativo = true;
-        this.envCorrelativoPreview = '';
-        this.movSvc.getSiguienteCorrelativoPreview('ENV')
-            .pipe(takeUntil(this._unsub$), finalize(() => this.loadingCorrelativo = false))
-            .subscribe({
-                next: (nro) => {
-                    this.envCorrelativoPreview = nro;
-                    // Pre-llenar nroDocumento con el mismo número para que el CO-MAT
-                    // físico coincida con el registro en el sistema
-                    this.envioForm.patchValue({ nroDocumento: nro }, { emitEvent: false });
-                }
-            });
-    }
-
-    imprimirCoMat(): void {
-        const form = this.envioForm.value;
-        if (this.itemsEnvio.length === 0) {
-            this._showMsg('Agregue al menos una herramienta para imprimir el CO-MAT', 'warning');
-            return;
-        }
-        this._pdfCoMat(this.envCorrelativoPreview || 'ENV-?/?', this.itemsEnvio, form);
-    }
-    cerrarFormEnvio(): void { this._envioDialogRef?.close(); }
 
     abrirFormTraspaso(): void {
         const defaultAlmacen = this.almacenes.find(u => u.nombre.toLowerCase().includes('cochabamba')) ?? this.almacenes[0] ?? null;
@@ -495,132 +445,6 @@ export class RetornoTraspasoComponent implements OnInit, OnDestroy {
         });
     }
 
-    // ── ENVÍO tab ─────────────────────────────────────────────────────────────
-
-    private _initEnvioForm(): void {
-        const today = new Date().toISOString().split('T')[0];
-        const hora  = new Date().toTimeString().slice(0, 5);
-        this.envioForm = this.fb.group({
-            baseOrigen:          [null],
-            baseDestino:         [null, Validators.required],
-            fechaEnvio:          [today, Validators.required],
-            horaEnvio:           [hora],
-            responsableEnvia:    ['', Validators.required],
-            recibeEnDestino:     [''],
-            departamento:        [''],
-            nroDocumento:        [''],
-            tipoEnvio:           ['EVENTUAL'],
-            fechaEsperadaRetorno:[''],
-            nroVuelo:            [''],
-            aeronave:            [''],
-            notas:               ['']
-        });
-    }
-
-    private _setupToolSearchEnvio(): void {
-        this._srchEnvio$.pipe(
-            debounceTime(300), distinctUntilChanged(),
-            switchMap(term => {
-                if (!term || term.trim().length < 2) {
-                    this.toolResultsEnvio = []; this.showToolDropEnvio = false;
-                    return of([]);
-                }
-                this.searchingToolsEnvio = true;
-                return this.toolSvc.getTools({ query: term.trim() }).pipe(
-                    finalize(() => this.searchingToolsEnvio = false)
-                );
-            }),
-            takeUntil(this._unsub$)
-        ).subscribe({ next: (tools: any[]) => {
-            this.toolResultsEnvio = tools.slice(0, 12);
-            this.showToolDropEnvio = this.toolResultsEnvio.length > 0;
-        }});
-    }
-
-    onToolSearchEnvio(term: string): void { this.toolSearchEnvio = term; this._srchEnvio$.next(term); }
-    hideToolDropEnvio(): void { setTimeout(() => this.showToolDropEnvio = false, 150); }
-
-    addToolEnvio(tool: any): void {
-        const id = tool.id_tool ?? tool.id;
-        if (this.itemsEnvio.some(i => i.toolId === id)) {
-            this._showMsg('Herramienta ya en la lista', 'warning'); return;
-        }
-        this.itemsEnvio.push({
-            toolId: id, codigo: tool.code ?? tool.codigo ?? '',
-            nombre: tool.name ?? tool.description ?? '',
-            pn: tool.part_number ?? '', sn: tool.serial_number ?? '',
-            marca: tool.brand ?? tool.marca ?? '',
-            fechaVencCal: tool.calibration_expiry_date ?? tool.next_calibration_date ?? '',
-            cantidad: 1, condicion: 'good', notas: ''
-        });
-        this.toolSearchEnvio = ''; this.toolResultsEnvio = []; this.showToolDropEnvio = false;
-    }
-
-    removeToolEnvio(i: number): void { this.itemsEnvio.splice(i, 1); }
-
-    canSaveEnvio(): boolean {
-        if (!this.envioForm.valid || this.itemsEnvio.length === 0 || this.isSavingEnvio) return false;
-        if (this.requiereFechaRetornoEnvio() && !this.envioForm.get('fechaEsperadaRetorno')?.value) return false;
-        return true;
-    }
-
-    guardarEnvio(): void {
-        if (!this.canSaveEnvio()) {
-            this.envioForm.markAllAsTouched();
-            if (this.itemsEnvio.length === 0) this._showMsg('Agregue al menos una herramienta', 'warning');
-            else this._showMsg('Complete los campos requeridos', 'error');
-            return;
-        }
-        const form = this.envioForm.value;
-        const itemsJson = JSON.stringify(this.itemsEnvio.map(it => ({
-            tool_id: it.toolId, quantity: it.cantidad,
-            condition_on_movement: it.condicion,
-            serial_number: it.sn || '', part_number: it.pn || '', notes: it.notas || ''
-        })));
-
-        this.isSavingEnvio = true;
-        this.movSvc.registrarEnvioOtrasBases({
-            date: form.fechaEnvio, time: (form.horaEnvio || '00:00') + ':00',
-            source_warehouse_id:      form.baseOrigen?.id ? Number(form.baseOrigen.id) : undefined,
-            destination_warehouse_id: form.baseDestino?.id ? Number(form.baseDestino.id) : undefined,
-            requested_by_name:   form.responsableEnvia || '',
-            received_by_name:    form.recibeEnDestino  || '',
-            responsible_person:  form.responsableEnvia || '',
-            department:          form.departamento     || '',
-            document_number:     form.nroDocumento     || '',
-            expected_return_date: this.requiereFechaRetornoEnvio() ? (form.fechaEsperadaRetorno || '') : '',
-            notes:               form.notas            || '',
-            specific_observations: [
-                `Tipo envío: ${form.tipoEnvio === 'PERMANENTE' ? 'PERMANENTE' : 'EVENTUAL'}`,
-                form.nroVuelo  ? `Vuelo: ${form.nroVuelo}`   : '',
-                form.aeronave  ? `Aeronave: ${form.aeronave}` : ''
-            ].filter(Boolean).join(' | '),
-            items_json: itemsJson
-        }).pipe(finalize(() => this.isSavingEnvio = false), takeUntil(this._unsub$)).subscribe({
-            next: (result: any) => {
-                const nro = result?.movement_number || '---';
-                this._showMsg(`Envío registrado: ${nro}`, 'success');
-                this._pdfEnvio(nro, this.itemsEnvio, form, 'ENVÍO A BASE');
-                this._resetEnvioTab();
-                this._envioDialogRef?.close();
-                this.loadMovActivos();
-            },
-            error: (err) => this._showMsg('Error al registrar envío: ' + (err?.message || ''), 'error')
-        });
-    }
-
-    private _resetEnvioTab(): void {
-        this.envioForm.reset({
-            fechaEnvio: new Date().toISOString().split('T')[0],
-            horaEnvio:  new Date().toTimeString().slice(0, 5),
-            tipoEnvio:  'EVENTUAL'
-        });
-        this._setDefaultAlmacenOrigen();
-        this.itemsEnvio = [];
-        this.funcionariosEnvia  = []; this.showFuncEnviaDropdown  = false;
-        this.funcionariosRecibe = []; this.showFuncRecibeDropdown = false;
-    }
-
     // ── TRASPASO tab ──────────────────────────────────────────────────────────
 
     private _initTraspasoForm(): void {
@@ -639,11 +463,6 @@ export class RetornoTraspasoComponent implements OnInit, OnDestroy {
             nroDocumento:         [''],
             notas:                ['']
         });
-    }
-
-    /** Tipo de envío a base (PERMANENTE requiere fecha retorno, EVENTUAL no) */
-    requiereFechaRetornoEnvio(): boolean {
-        return this.envioForm.get('tipoEnvio')?.value === 'PERMANENTE';
     }
 
     /** Indica si el tipo de traspaso del form TRP requiere fecha de retorno */
@@ -825,81 +644,6 @@ export class RetornoTraspasoComponent implements OnInit, OnDestroy {
 
     hideFuncDropdown(): void { setTimeout(() => this.showFuncDropdown = false, 150); }
 
-    // ── ENVÍO — autocomplete funcionarios (responsableEnvia + recibeEnDestino) ──
-
-    private _setupFuncSearchEnvio(): void {
-        // Responsable envía
-        this.envioForm.get('responsableEnvia')?.valueChanges.pipe(
-            debounceTime(200), distinctUntilChanged(),
-            switchMap(term => {
-                const t = (term || '').trim();
-                if (t.length < 2) {
-                    this.funcionariosEnvia = []; this.showFuncEnviaDropdown = false; return of([]);
-                }
-                this.funcEnviaLoading = true;
-                const q = t.toLowerCase();
-                return this.movSvc.getPersonal().pipe(
-                    map((lista: any[]) => lista
-                        .filter(f => [f.nombreCompleto, f.nombre, f.apellido_paterno, f.apellido_materno]
-                            .filter(Boolean).join(' ').toLowerCase().includes(q))
-                        .slice(0, 10)
-                        .map(f => ({ ...f, nombre: f.nombreCompleto || f.nombre }))
-                    ),
-                    finalize(() => this.funcEnviaLoading = false)
-                );
-            }),
-            takeUntil(this._unsub$)
-        ).subscribe({
-            next: (data: any[]) => {
-                this.funcionariosEnvia = data; this.funcEnviaLoading = false;
-                this.showFuncEnviaDropdown = data.length > 0;
-            },
-            error: () => this.funcEnviaLoading = false
-        });
-
-        // Recibe en destino
-        this.envioForm.get('recibeEnDestino')?.valueChanges.pipe(
-            debounceTime(200), distinctUntilChanged(),
-            switchMap(term => {
-                const t = (term || '').trim();
-                if (t.length < 2) {
-                    this.funcionariosRecibe = []; this.showFuncRecibeDropdown = false; return of([]);
-                }
-                this.funcRecibeLoading = true;
-                const q = t.toLowerCase();
-                return this.movSvc.getPersonal().pipe(
-                    map((lista: any[]) => lista
-                        .filter(f => [f.nombreCompleto, f.nombre, f.apellido_paterno, f.apellido_materno]
-                            .filter(Boolean).join(' ').toLowerCase().includes(q))
-                        .slice(0, 10)
-                        .map(f => ({ ...f, nombre: f.nombreCompleto || f.nombre }))
-                    ),
-                    finalize(() => this.funcRecibeLoading = false)
-                );
-            }),
-            takeUntil(this._unsub$)
-        ).subscribe({
-            next: (data: any[]) => {
-                this.funcionariosRecibe = data; this.funcRecibeLoading = false;
-                this.showFuncRecibeDropdown = data.length > 0;
-            },
-            error: () => this.funcRecibeLoading = false
-        });
-    }
-
-    selectFuncionarioEnvia(func: Funcionario): void {
-        this.envioForm.patchValue({ responsableEnvia: func.nombre }, { emitEvent: false });
-        this.funcionariosEnvia = []; this.showFuncEnviaDropdown = false;
-    }
-
-    selectFuncionarioRecibe(func: Funcionario): void {
-        this.envioForm.patchValue({ recibeEnDestino: func.nombre }, { emitEvent: false });
-        this.funcionariosRecibe = []; this.showFuncRecibeDropdown = false;
-    }
-
-    hideFuncEnviaDropdown(): void  { setTimeout(() => this.showFuncEnviaDropdown  = false, 150); }
-    hideFuncRecibeDropdown(): void { setTimeout(() => this.showFuncRecibeDropdown = false, 150); }
-
     // ── Almacén Cochabamba predeterminado ──────────────────────────────────────
 
     private _setDefaultAlmacenOrigen(): void {
@@ -909,7 +653,6 @@ export class RetornoTraspasoComponent implements OnInit, OnDestroy {
             u.nombre.toLowerCase().includes('cochabamba')
         ) ?? this.almacenes[0] ?? null;
         if (cbba) {
-            this.envioForm.patchValue({ baseOrigen: cbba }, { emitEvent: false });
             this.traspasoForm?.patchValue({ baseOrigen: cbba }, { emitEvent: false });
             // MGH-109: almacenOrigen = almacén que entrega (mismo origen)
             this.traspasoTecnicoForm?.patchValue({ almacenOrigen: cbba }, { emitEvent: false });
@@ -923,24 +666,6 @@ export class RetornoTraspasoComponent implements OnInit, OnDestroy {
             this.traspasoTecnicoForm?.patchValue({ base: defaultBase }, { emitEvent: false });
         }
     }
-
-    // ── Dept autocomplete — Envío ─────────────────────────────────────────────
-
-    onDeptChangeEnvio(term: string): void {
-        const q = (term || '').toLowerCase().trim();
-        if (!q) { this.deptUbicacionesEnvio = []; this.showDeptDropEnvio = false; return; }
-        this.deptUbicacionesEnvio = this.getAllUbicaciones()
-            .filter(u => u.nombre.toLowerCase().includes(q))
-            .slice(0, 10);
-        this.showDeptDropEnvio = this.deptUbicacionesEnvio.length > 0;
-    }
-
-    selectDeptEnvio(nombre: string): void {
-        this.envioForm.patchValue({ departamento: nombre });
-        this.deptUbicacionesEnvio = []; this.showDeptDropEnvio = false;
-    }
-
-    hideDeptDropEnvio(): void { setTimeout(() => this.showDeptDropEnvio = false, 150); }
 
     // ── Dept autocomplete — Traspaso ──────────────────────────────────────────
 
@@ -1688,75 +1413,28 @@ export class RetornoTraspasoComponent implements OnInit, OnDestroy {
             });
     }
 
+    /** Reimpresión de la nota de retorno desde "Movimientos Completados" — mismo
+     *  renderer que la impresión en vivo (_pdfRetorno → _abrirPdf), para que ambas
+     *  se vean idénticas en vez de mantener una plantilla vieja duplicada. */
     private _pdfRetornoSimple(rtrNro: string, originalNro: string, almacen: string, origen: string, recibePor: string, items: ToolEnvioItem[]): void {
-        const now = new Date().toLocaleString('es-BO');
-        const rows = items.map((item, i) => `
+        const ahora = new Date().toLocaleString('es-BO');
+        const filas = items.map((item, i) => `
             <tr>
                 <td style="text-align:center">${i + 1}</td>
-                <td><span style="font-family:monospace;font-weight:700;background:#0f172a;color:white;padding:1px 4px;border-radius:2px;font-size:9px">${item.codigo || '-'}</span></td>
-                <td>${item.nombre || '-'}</td>
-                <td style="font-family:monospace;font-size:9px">${item.pn || '-'}</td>
-                <td style="font-family:monospace;font-size:9px">${item.sn || '-'}</td>
+                <td>${item.codigo || '---'}</td>
+                <td>${item.nombre || '---'}</td>
+                <td>${item.pn || '---'}</td>
+                <td>${item.sn || '---'}</td>
                 <td style="text-align:center;font-weight:700">${item.cantidad}</td>
-                <td style="text-align:center;font-size:9px">${item.condicion || '-'}</td>
+                <td style="text-align:center">${item.condicion || '---'}</td>
             </tr>`).join('');
-        const html = `<!DOCTYPE html>
-<html><head><meta charset="UTF-8"><title>Retorno ${rtrNro}</title>
-<style>
-  @page { size: A4 landscape; margin: 12mm 10mm; }
-  * { box-sizing: border-box; }
-  body { font-family: Arial, sans-serif; font-size: 10px; color: #000; margin: 0; }
-  h1 { text-align: center; font-size: 13px; font-weight: 900; text-transform: uppercase;
-       background: #166534; color: white; padding: 7px 10px; margin: 0 0 7px; border: 1px solid #000; }
-  .meta { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; margin-bottom: 6px; }
-  .meta-box { border: 1.5px solid #000; padding: 4px 8px; border-radius: 3px; }
-  .meta-box label { font-size: 8px; font-weight: 900; text-transform: uppercase; color: #6b7280; display: block; }
-  .meta-box span  { font-weight: 900; font-size: 11px; }
-  table { width: 100%; border-collapse: collapse; font-size: 9px; }
-  th { background: #0f172a; color: white; padding: 4px 6px; font-weight: 900; text-transform: uppercase; text-align: left; }
-  td { padding: 3px 6px; border-bottom: 1px solid #e5e7eb; }
-  tr:nth-child(even) td { background: #f9fafb; }
-  .footer { margin-top: 18px; display: flex; justify-content: space-around; }
-  .sign { text-align: center; }
-  .sign-line { border-top: 2px solid #000; width: 160px; margin: 40px auto 3px; }
-  .sign-label { font-size: 8px; font-weight: 900; text-transform: uppercase; }
-  .badge { background:#dcfce7;border:2px solid #166534;color:#166534;font-weight:900;
-           padding:2px 8px;border-radius:4px;display:inline-block;font-size:11px; }
-</style></head>
-<body>
-  <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:5px">
-    <div>
-      <div class="badge">RETORNO</div>
-      <div style="font-size:10px;font-weight:700;margin-top:2px">Retorno de: <strong>${originalNro}</strong></div>
-    </div>
-    <div style="text-align:right;font-size:9px;color:#6b7280">
-      <div>Impreso: ${now}</div>
-    </div>
-  </div>
-  <h1>NOTA DE RETORNO — ${rtrNro}</h1>
-  <div class="meta">
-    <div class="meta-box"><label>Nro. Retorno</label><span>${rtrNro}</span></div>
-    <div class="meta-box"><label>Movimiento Original</label><span>${originalNro}</span></div>
-    <div class="meta-box"><label>Almacén Receptor</label><span>${almacen || '—'}</span></div>
-    <div class="meta-box"><label>Origen / Técnico</label><span>${origen || '—'}</span></div>
-    <div class="meta-box"><label>Recibido Por</label><span>${recibePor || '—'}</span></div>
-  </div>
-  <table>
-    <thead><tr>
-      <th style="width:30px">#</th><th style="width:90px">Código</th>
-      <th>Descripción</th><th style="width:100px">P/N</th>
-      <th style="width:100px">S/N</th><th style="width:40px;text-align:center">Cant.</th>
-      <th style="width:70px;text-align:center">Condición</th>
-    </tr></thead>
-    <tbody>${rows}</tbody>
-  </table>
-  <div class="footer">
-    <div class="sign"><div class="sign-line"></div><div class="sign-label">Entrega</div></div>
-    <div class="sign"><div class="sign-line"></div><div class="sign-label">Recibe — ${almacen || 'Almacén'}</div></div>
-    <div class="sign"><div class="sign-line"></div><div class="sign-label">Autoriza</div></div>
-  </div>
-</body></html>`;
-        this._abrirBlob(html);
+        this._abrirPdf(rtrNro, 'RETORNO', filas, [
+            ['Nro. Retorno', rtrNro], ['Movimiento Original', originalNro],
+            ['Almacén Receptor', almacen || '---'], ['Origen / Técnico', origen || '---'],
+            ['Recibido Por', recibePor || '---'], ['Fecha Impresión', ahora],
+        ], [['#','4%'],['Código BOA','12%'],['Descripción','32%'],['P/N','14%'],['S/N','14%'],
+            ['Cant.','8%'],['Condición','16%']],
+            [origen || '---', almacen || '---']);
     }
 
     // ── TRASPASO TÉCNICO (MGH-109) ────────────────────────────────────────────
@@ -2263,257 +1941,65 @@ export class RetornoTraspasoComponent implements OnInit, OnDestroy {
         });
     }
 
+    /** Mismo renderer que el resto de retornos (_abrirPdf) — acotado a un solo
+     *  traspaso técnico (mov: MovimientoActivo singular), pero sin equivalente en
+     *  el Excel (MGH-109 no tiene sección de retorno), solo visualmente consistente. */
     private _pdfDevolucionMGH109(nro: string, items: TraspasoItem[], form: any, mov: MovimientoActivo): void {
-        const now = new Date().toLocaleString('es-BO');
         const condLabel: Record<string, string> = {
             BUENO: 'Bueno', DAÑADO: 'Dañado', REQUIERE_CALIBRACION: 'Req. Calibración', FALTANTE: 'Faltante'
         };
-        const rows = items.map((item, i) => `
+        const filas = items.map((item, i) => `
             <tr>
                 <td style="text-align:center">${i + 1}</td>
-                <td><span style="font-family:monospace;font-weight:700;background:#0f172a;color:white;padding:1px 4px;border-radius:2px;font-size:9px">${item.codigo || '-'}</span></td>
-                <td>${item.descripcion || '-'}</td>
-                <td>${item.pn || '-'}</td>
-                <td>${item.sn || '-'}</td>
+                <td>${item.codigo || '---'}</td>
+                <td>${item.descripcion || '---'}</td>
+                <td>${item.pn || '---'}</td>
+                <td>${item.sn || '---'}</td>
                 <td style="text-align:center;font-weight:700">${item.cantidadRetorna} / ${item.cantidadEnviada}</td>
-                <td style="font-weight:bold;text-align:center;color:${item.condicion === 'BUENO' ? '#16a34a' : item.condicion === 'DAÑADO' ? '#dc2626' : '#d97706'}">${condLabel[item.condicion] || '-'}</td>
-                <td>${item.observacionItem || '-'}</td>
+                <td style="font-weight:bold;text-align:center">${condLabel[item.condicion] || '---'}</td>
+                <td>${item.observacionItem || '---'}</td>
             </tr>`).join('');
 
-        const html = `<!DOCTYPE html>
-<html><head><meta charset="UTF-8"><title>Devolución MGH-109 ${nro}</title>
-<style>
-  @page { size: A4 landscape; margin: 12mm 10mm; }
-  * { box-sizing: border-box; }
-  body { font-family: Arial, sans-serif; font-size: 10px; color: #000; margin: 0; }
-  .top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 5px; }
-  .code-box { border: 2px solid #000; padding: 3px 10px; font-weight: 900; font-size: 13px; display: inline-block; }
-  .badge-return { background: #dcfce7; border: 2px solid #166534; color: #166534; font-weight: 900; padding: 2px 8px; border-radius: 4px; display: inline-block; font-size: 11px; margin: 3px 0; }
-  h1 { text-align: center; font-size: 12px; font-weight: 900; text-transform: uppercase; letter-spacing: 1px; background: #166534; color: white; padding: 7px 10px; margin: 0 0 7px; border: 1px solid #000; }
-  .info-tbl { width: 100%; border-collapse: collapse; border: 1px solid #000; margin-bottom: 7px; }
-  .info-tbl td { border: 1px solid #ddd; padding: 3px 6px; }
-  .lbl { background: #f0f0f0; font-weight: 700; font-size: 9px; width: 130px; }
-  .nro-cell { background: #dcfce7; text-align: center; font-weight: 900; font-size: 15px; vertical-align: middle; width: 120px; color: #166534; }
-  .sec { background: #166534; color: white; padding: 3px 8px; font-weight: 900; font-size: 10px; text-transform: uppercase; border: 1px solid #000; }
-  table.det { width: 100%; border-collapse: collapse; border: 1px solid #000; }
-  table.det th { background: #166534; color: white; padding: 5px 4px; font-size: 8.5px; font-weight: 900; text-transform: uppercase; border: 1px solid #000; text-align: center; }
-  table.det td { padding: 4px; border: 1px solid #ddd; font-size: 9px; }
-  table.det tr:nth-child(even) td { background: #f0fdf4; }
-  .nota { border: 1px solid #ccc; padding: 5px 8px; margin-top: 8px; font-size: 8.5px; background: #f0fdf4; line-height: 1.5; }
-  .sigs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-top: 18px; }
-  .sig { border: 1px solid #000; padding: 6px 8px; text-align: center; }
-  .sig-ttl { font-weight: 900; font-size: 9px; text-transform: uppercase; margin-bottom: 28px; }
-  .sig-line { border-top: 1px solid #000; padding-top: 3px; font-size: 8.5px; }
-  .footer { text-align: center; margin-top: 10px; font-size: 7.5px; color: #888; border-top: 1px dotted #ccc; padding-top: 4px; }
-</style>
-<script>window.onload = function() { setTimeout(function(){ window.print(); }, 500); };</script>
-</head><body>
-<div class="top">
-  <div>
-    <div class="code-box">BoAMM OAM145# N-014</div>
-    <div class="badge-return">✓ DEVOLUCIÓN MGH-109</div>
-    <div style="font-size:9px;margin-top:2px;">Formulario MGH-109 — Devolución de Herramienta Técnica</div>
-  </div>
-  <div style="text-align:right">
-    <div style="font-size:9px;color:#555">Generado: ${now}</div>
-  </div>
-</div>
-<h1>DEVOLUCIÓN DE HERRAMIENTA / EQUIPO — NOTA TÉCNICA</h1>
-<table class="info-tbl">
-  <tr>
-    <td class="lbl">Nro. Devolución</td>
-    <td class="nro-cell" rowspan="3">${nro}</td>
-    <td class="lbl">Técnico / Responsable</td>
-    <td><strong>${mov.received_by_name || '-'}</strong></td>
-    <td class="lbl">Traspaso Original</td>
-    <td><strong>${mov.movement_number || '-'}</strong></td>
-  </tr>
-  <tr>
-    <td class="lbl">Fecha Devolución</td>
-    <td>${form.fechaDevolucion || '-'}</td>
-    <td class="lbl">Unidad / Área</td>
-    <td>${mov.department || '-'}</td>
-    <td class="lbl">Recibe en Almacén</td>
-    <td>${form.recibeAlmacen || '-'}</td>
-  </tr>
-  <tr>
-    <td class="lbl">Nro. Documento</td>
-    <td>${form.nroDocumento || '---'}</td>
-    <td class="lbl">Observaciones</td>
-    <td colspan="2">${form.observaciones || '---'}</td>
-  </tr>
-</table>
-<div class="sec">DETALLE DE HERRAMIENTAS / EQUIPOS DEVUELTOS</div>
-<table class="det">
-  <thead>
-    <tr>
-      <th style="width:3%">#</th>
-      <th style="width:9%">Código BOA</th>
-      <th style="width:22%">Descripción</th>
-      <th style="width:11%">P/N</th>
-      <th style="width:10%">S/N</th>
-      <th style="width:10%">Dev/Env</th>
-      <th style="width:10%">Condición</th>
-      <th style="width:25%">Observaciones</th>
-    </tr>
-  </thead>
-  <tbody>${rows}</tbody>
-</table>
-<div class="sigs">
-  <div class="sig">
-    <div class="sig-ttl">Devuelve (${mov.received_by_name || '-'})</div>
-    <div class="sig-line">Firma: ________________________</div>
-  </div>
-  <div class="sig">
-    <div class="sig-ttl">Recibe en Almacén (${form.recibeAlmacen || 'Almacén'})</div>
-    <div class="sig-line">Firma / Sello</div>
-  </div>
-  <div class="sig">
-    <div class="sig-ttl">Verificado (Jefe Almacén)</div>
-    <div class="sig-line">Firma / Sello</div>
-  </div>
-</div>
-<div class="nota">
-  <strong>Nota:</strong> Este documento certifica la devolución de herramientas/equipos al almacén de origen.
-  El responsable de almacén verifica el estado de las herramientas conforme al detalle. Traspaso origen: ${mov.movement_number} | Técnico: ${mov.received_by_name || '-'}
-</div>
-<div class="footer">BOLIVIANA DE AVIACIÓN — Almacén de Herramientas | Generado: ${now} | Doc Devolución: ${nro}</div>
-</body></html>`;
-
-        this._abrirBlob(html);
+        this._abrirPdf(nro, 'DEVOLUCIÓN MGH-109', filas, [
+            ['Traspaso Original', mov.movement_number || '---'], ['Técnico / Responsable', mov.received_by_name || '---'],
+            ['Unidad / Área', mov.department || '---'], ['Fecha Devolución', form.fechaDevolucion || '---'],
+            ['Recibe en Almacén', form.recibeAlmacen || '---'], ['Nro. Documento', form.nroDocumento || '---'],
+            ['Observaciones', form.observaciones || '---'],
+        ], [['#','3%'],['Código BOA','9%'],['Descripción','22%'],['P/N','11%'],['S/N','10%'],
+            ['Dev/Env','10%'],['Condición','10%'],['Observaciones','25%']],
+            [mov.received_by_name || '---', form.recibeAlmacen || '---']);
     }
 
+    /** Mismo renderer que el resto de PDFs de Inter-Bases (_abrirPdf) — lado de
+     *  envío del flujo "Traspaso Técnico" (pestaña MGH-109), distinto de
+     *  _pdfTraspasoOficial (usado por la pestaña Traspaso normal). Sin equivalente
+     *  propio en el Excel, solo visualmente consistente con el resto. */
     private _pdfMGH109(nro: string, fv: any, items: ToolEnvioItem[]): void {
-        const now      = new Date().toLocaleString('es-BO');
-        const dept     = fv.unidad || '';
         const baseText = fv.base?.codigo
             ? `${fv.base.codigo} — ${fv.base.nombre}`
-            : (fv.base?.nombre || fv.base || '-');
-        const rows = items.map((item, i) => `
+            : (fv.base?.nombre || fv.base || '---');
+        const nombreCompleto = fv.nombreCompleto || fv.nombreCompletoInput || '---';
+
+        const filas = items.map((item, i) => `
             <tr>
                 <td style="text-align:center">${i + 1}</td>
-                <td><span style="font-family:monospace;font-weight:700;background:#0f172a;color:white;padding:1px 4px;border-radius:2px;font-size:9px">${item.codigo || '-'}</span></td>
-                <td>${item.pn || '-'}</td>
-                <td>${item.sn || '-'}</td>
+                <td>${item.codigo || '---'}</td>
+                <td>${item.pn || '---'}</td>
+                <td>${item.sn || '---'}</td>
                 <td style="text-align:center">PZA</td>
                 <td style="text-align:center;font-weight:700">${item.cantidad}</td>
-                <td>${item.nombre || '-'}</td>
-                <td>${item.notas || '-'}</td>
-                <td>${fv.fecha || '-'}</td>
-                <td>&nbsp;</td>
+                <td>${item.nombre || '---'}</td>
+                <td>${item.notas || '---'}</td>
             </tr>`).join('');
 
-        const html = `<!DOCTYPE html>
-<html><head><meta charset="UTF-8"><title>MGH-109 Nota de Traspaso ${nro}</title>
-<style>
-  @page { size: A4 landscape; margin: 12mm 10mm; }
-  * { box-sizing: border-box; }
-  body { font-family: Arial, sans-serif; font-size: 10px; color: #000; margin: 0; }
-  .top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 5px; }
-  .code-box { border: 2px solid #000; padding: 3px 10px; font-weight: 900; font-size: 13px; display: inline-block; }
-  h1 { text-align: center; font-size: 12px; font-weight: 900; text-transform: uppercase; letter-spacing: 1px; background: #111A43; color: white; padding: 7px 10px; margin: 0 0 7px; border: 1px solid #000; }
-  .info-tbl { width: 100%; border-collapse: collapse; border: 1px solid #000; margin-bottom: 7px; }
-  .info-tbl td { border: 1px solid #ddd; padding: 3px 6px; }
-  .lbl { background: #f0f0f0; font-weight: 700; font-size: 9px; width: 130px; }
-  .nro-cell { background: #f0f0f0; text-align: center; font-weight: 900; font-size: 15px; vertical-align: middle; width: 120px; }
-  .sec { background: #111A43; color: white; padding: 3px 8px; font-weight: 900; font-size: 10px; text-transform: uppercase; border: 1px solid #000; }
-  table.det { width: 100%; border-collapse: collapse; border: 1px solid #000; }
-  table.det th { background: #111A43; color: white; padding: 5px 4px; font-size: 8.5px; font-weight: 900; text-transform: uppercase; border: 1px solid #000; text-align: center; }
-  table.det td { padding: 4px; border: 1px solid #ddd; font-size: 9px; }
-  table.det tr:nth-child(even) td { background: #f9f9f9; }
-  .nota { border: 1px solid #ccc; padding: 5px 8px; margin-top: 8px; font-size: 8.5px; background: #fffde7; line-height: 1.5; }
-  .sigs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-top: 18px; }
-  .sig { border: 1px solid #000; padding: 6px 8px; text-align: center; }
-  .sig-ttl { font-weight: 900; font-size: 9px; text-transform: uppercase; margin-bottom: 28px; }
-  .sig-line { border-top: 1px solid #000; padding-top: 3px; font-size: 8.5px; }
-  .footer { text-align: center; margin-top: 10px; font-size: 7.5px; color: #888; border-top: 1px dotted #ccc; padding-top: 4px; }
-</style>
-<script>window.onload = function() { setTimeout(function(){ window.print(); }, 500); };</script>
-</head><body>
-<div class="top">
-  <div>
-    <div class="code-box">BoAMM OAM145# N-014</div>
-    <div style="font-size:9px;margin-top:3px;">Formulario MGH-109 — Nota de Traspaso de Herramienta</div>
-  </div>
-  <div style="text-align:right">
-    <div style="font-size:9px;color:#555">Generado: ${now}</div>
-  </div>
-</div>
-
-<h1>NOTA DE TRASPASO DE HERRAMIENTA / EQUIPO</h1>
-
-<table class="info-tbl">
-  <tr>
-    <td class="lbl">Nro. Documento</td>
-    <td class="nro-cell" rowspan="4">${nro}</td>
-    <td class="lbl">Nombre Completo</td>
-    <td>${fv.nombreCompleto || fv.nombreCompletoInput || '-'}</td>
-    <td class="lbl">Nro. Licencia / CI</td>
-    <td>${fv.nroLicencia || '-'}</td>
-  </tr>
-  <tr>
-    <td class="lbl">Fecha</td>
-    <td>${fv.fecha || '-'}</td>
-    <td class="lbl">Cargo</td>
-    <td>${fv.cargo || '-'}</td>
-    <td class="lbl">Base</td>
-    <td>${baseText}</td>
-  </tr>
-  <tr>
-    <td class="lbl">Tipo de Traspaso</td>
-    <td>${fv.tipoTraspaso || '-'}</td>
-    <td class="lbl">Unidad / Área</td>
-    <td colspan="2">${fv.unidad || '-'}</td>
-  </tr>
-  <tr>
-    <td class="lbl">Observaciones</td>
-    <td colspan="4">${fv.observaciones || '---'}</td>
-  </tr>
-</table>
-
-<div class="sec">DETALLE DE HERRAMIENTAS / EQUIPOS</div>
-<table class="det">
-  <thead>
-    <tr>
-      <th style="width:3%">#</th>
-      <th style="width:9%">Código BOA</th>
-      <th style="width:11%">P/N</th>
-      <th style="width:10%">S/N</th>
-      <th style="width:5%">Unid.</th>
-      <th style="width:6%">Cant.</th>
-      <th style="width:24%">Descripción</th>
-      <th style="width:18%">Observaciones</th>
-      <th style="width:8%">Fecha</th>
-      <th style="width:6%">Firma</th>
-    </tr>
-  </thead>
-  <tbody>${rows}</tbody>
-</table>
-
-<div class="sigs">
-  <div class="sig">
-    <div class="sig-ttl">Entrega (${fv.responsableEntrega || 'Almacén'})</div>
-    <div class="sig-line">Firma / Sello</div>
-  </div>
-  <div class="sig">
-    <div class="sig-ttl">Recibe (${fv.nombreCompleto || fv.nombreCompletoInput || '-'})</div>
-    <div class="sig-line">Firma: ________________________<br>Licencia: ${fv.nroLicencia || '-'}</div>
-  </div>
-  <div class="sig">
-    <div class="sig-ttl">Autoriza (Jefe de ${fv.unidad || 'Área'})</div>
-    <div class="sig-line">Firma / Sello</div>
-  </div>
-</div>
-
-<div class="nota">
-  <strong>Nota:</strong> Este documento certifica el traspaso de las herramientas/equipos indicados de acuerdo a los procedimientos del Manual de Mantenimiento.
-  El receptor asume la responsabilidad de las herramientas hasta su devolución. Dpto: ${dept} | Tipo: ${fv.tipoTraspaso}
-</div>
-
-<div class="footer">BOLIVIANA DE AVIACIÓN — Almacén de Herramientas | Generado: ${now} | Doc: ${nro}</div>
-</body></html>`;
-
-        this._abrirBlob(html);
+        this._abrirPdf(nro, 'MGH-109 — NOTA DE TRASPASO', filas, [
+            ['Nombre Completo', nombreCompleto], ['Nro. Licencia / CI', fv.nroLicencia || '---'],
+            ['Fecha', fv.fecha || '---'], ['Cargo', fv.cargo || '---'],
+            ['Base', baseText], ['Tipo de Traspaso', fv.tipoTraspaso || '---'],
+            ['Unidad / Área', fv.unidad || '---'], ['Observaciones', fv.observaciones || '---'],
+        ], [['#','3%'],['Código BOA','9%'],['P/N','11%'],['S/N','10%'],['Unid.','5%'],
+            ['Cant.','6%'],['Descripción','30%'],['Observaciones','26%']],
+            [fv.responsableEntrega || 'Almacén', nombreCompleto]);
     }
 
     // ── RETORNO ÁREA (TRASPASO doble-panel) ──────────────────────────────────
@@ -2687,121 +2173,40 @@ export class RetornoTraspasoComponent implements OnInit, OnDestroy {
         });
     }
 
+    /** Mismo renderer que el resto de retornos (_abrirPdf) — este flujo sí está
+     *  acotado a un solo traspaso (mov: MovimientoActivo singular, no búsqueda
+     *  multi-nota), pero "TRASPASO" (MGH-109) no tiene sección de retorno en el
+     *  Excel, así que sigue sin ser un calcado, solo visualmente consistente. */
     private _pdfRetornoArea(nro: string, items: TraspasoItem[], form: any, mov: MovimientoActivo): void {
-        const now     = new Date().toLocaleString('es-BO');
         const fecha   = new Date(form.fechaRetorno).toLocaleDateString('es-BO', { day: '2-digit', month: '2-digit', year: 'numeric' });
-        const origen  = mov.destination_warehouse_name || '';
-        const destino = mov.source_warehouse_name || '';
-        const recibe  = form.recibeAlmacen || '';
-        const movNro  = mov.movement_number || '';
+        const origen  = mov.destination_warehouse_name || '---';
+        const destino = mov.source_warehouse_name || '---';
+        const recibe  = form.recibeAlmacen || '---';
+        const movNro  = mov.movement_number || '---';
         const condLabel: Record<string, string> = {
             'BUENO': 'BUENO', 'DAÑADO': 'DAÑADO',
             'REQUIERE_CALIBRACION': 'REQUIERE CALIB.', 'FALTANTE': 'FALTANTE'
         };
 
-        const rows = items.map((it, i) => `
+        const filas = items.map((it, i) => `
             <tr>
                 <td style="text-align:center">${i + 1}</td>
-                <td><span style="font-family:monospace;font-weight:700;background:#0f172a;color:white;padding:1px 4px;border-radius:2px;font-size:9px">${it.codigo || '—'}</span></td>
-                <td>${it.descripcion || '—'}</td>
-                <td>${it.pn || '—'}</td>
-                <td>${it.sn || '—'}</td>
+                <td>${it.codigo || '---'}</td>
+                <td>${it.descripcion || '---'}</td>
+                <td>${it.pn || '---'}</td>
+                <td>${it.sn || '---'}</td>
                 <td style="text-align:center;font-weight:700">${it.cantidadRetorna} / ${it.cantidadEnviada}</td>
-                <td style="font-weight:bold;text-align:center;color:${it.condicion==='BUENO'?'#16a34a':it.condicion==='DAÑADO'?'#dc2626':'#d97706'}">${condLabel[it.condicion] || '—'}</td>
-                <td>${it.observacionItem || ''}</td>
+                <td style="font-weight:bold;text-align:center">${condLabel[it.condicion] || '---'}</td>
+                <td>${it.observacionItem || '---'}</td>
             </tr>`).join('');
 
-        const html = `<!DOCTYPE html>
-<html><head><meta charset="UTF-8"><title>Retorno Traspaso ${nro}</title>
-<style>
-  @page { size: A4 landscape; margin: 12mm 10mm; }
-  * { box-sizing: border-box; }
-  body { font-family: Arial, sans-serif; font-size: 10px; color: #000; margin: 0; }
-  .top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 5px; }
-  .code-box { border: 2px solid #000; padding: 3px 10px; font-weight: 900; font-size: 13px; display: inline-block; }
-  .badge-ret { background: #fef3c7; border: 2px solid #b45309; color: #92400e; font-weight: 900; padding: 2px 8px; border-radius: 4px; display: inline-block; font-size: 11px; margin: 3px 0; }
-  h1 { text-align: center; font-size: 12px; font-weight: 900; text-transform: uppercase; letter-spacing: 1px; background: #b45309; color: white; padding: 7px 10px; margin: 0 0 7px; border: 1px solid #000; }
-  .info-tbl { width: 100%; border-collapse: collapse; border: 1px solid #000; margin-bottom: 7px; }
-  .info-tbl td { border: 1px solid #ddd; padding: 3px 6px; }
-  .lbl { background: #f0f0f0; font-weight: 700; font-size: 9px; width: 130px; }
-  .nro-cell { background: #fef3c7; text-align: center; font-weight: 900; font-size: 15px; vertical-align: middle; width: 120px; color: #92400e; }
-  .sec { background: #b45309; color: white; padding: 3px 8px; font-weight: 900; font-size: 10px; text-transform: uppercase; border: 1px solid #000; }
-  table.det { width: 100%; border-collapse: collapse; border: 1px solid #000; }
-  table.det th { background: #b45309; color: white; padding: 5px 4px; font-size: 8.5px; font-weight: 900; text-transform: uppercase; border: 1px solid #000; text-align: center; }
-  table.det td { padding: 4px; border: 1px solid #ddd; font-size: 9px; }
-  table.det tr:nth-child(even) td { background: #fffbeb; }
-  .nota { border: 1px solid #ccc; padding: 5px 8px; margin-top: 8px; font-size: 8.5px; background: #fffbeb; line-height: 1.5; }
-  .sigs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-top: 18px; }
-  .sig { border: 1px solid #000; padding: 6px 8px; text-align: center; }
-  .sig-ttl { font-weight: 900; font-size: 9px; text-transform: uppercase; margin-bottom: 28px; }
-  .sig-line { border-top: 1px solid #000; padding-top: 3px; font-size: 8.5px; }
-  .footer { text-align: center; margin-top: 10px; font-size: 7.5px; color: #888; border-top: 1px dotted #ccc; padding-top: 4px; }
-</style>
-<script>window.onload = function() { setTimeout(function(){ window.print(); }, 500); };</script>
-</head><body>
-<div class="top">
-  <div>
-    <div class="code-box">BOA — Almacén Herramientas</div>
-    <div class="badge-ret">↩ RETORNO DE TRASPASO ÁREA</div>
-    <div style="font-size:9px;margin-top:2px;">Devolución de herramientas desde área/almacén externo</div>
-  </div>
-  <div style="text-align:right">
-    <div style="font-size:9px;color:#555">Generado: ${now}</div>
-  </div>
-</div>
-
-<h1>NOTA DE RETORNO DE TRASPASO DE ÁREA</h1>
-
-<table class="info-tbl">
-  <tr>
-    <td class="lbl">Nro. Retorno</td><td class="nro-cell">${nro}</td>
-    <td class="lbl">Traspaso origen</td><td><strong>${movNro}</strong></td>
-  </tr>
-  <tr>
-    <td class="lbl">Desde (Área / Almacén)</td><td>${origen}</td>
-    <td class="lbl">Retorna a (Almacén)</td><td>${destino}</td>
-  </tr>
-  <tr>
-    <td class="lbl">Fecha Retorno</td><td>${fecha}</td>
-    <td class="lbl">Recibe en almacén</td><td><strong>${recibe}</strong></td>
-  </tr>
-  <tr>
-    <td class="lbl">Observaciones</td><td colspan="3">${form.observaciones || '—'}</td>
-  </tr>
-</table>
-
-<div class="sec">DETALLE DE HERRAMIENTAS RETORNADAS</div>
-<table class="det">
-  <thead><tr>
-    <th>#</th><th>Código</th><th>Descripción</th><th>P/N</th><th>S/N</th>
-    <th>Cant. Ret./Env.</th><th>Condición</th><th>Observación ítem</th>
-  </tr></thead>
-  <tbody>${rows}</tbody>
-</table>
-
-<div class="sigs">
-  <div class="sig">
-    <div class="sig-ttl">Entrega desde Área<br>(${origen})</div>
-    <div class="sig-line">Firma / Sello</div>
-  </div>
-  <div class="sig">
-    <div class="sig-ttl">Recibe en Almacén<br>(${recibe})</div>
-    <div class="sig-line">Firma / Sello</div>
-  </div>
-  <div class="sig">
-    <div class="sig-ttl">Vo.Bo. Jefe Almacén</div>
-    <div class="sig-line">Firma / Sello</div>
-  </div>
-</div>
-
-<div class="nota">
-  <strong>Nota:</strong> Este documento certifica el retorno de herramientas/equipos al almacén de origen.
-  El responsable de almacén verifica el estado conforme al detalle. Traspaso origen: ${movNro} | Área: ${origen}
-</div>
-<div class="footer">BOLIVIANA DE AVIACIÓN — Almacén de Herramientas | Generado: ${now} | Doc Retorno: ${nro}</div>
-</body></html>`;
-
-        this._abrirBlob(html);
+        this._abrirPdf(nro, 'RETORNO DE TRASPASO ÁREA', filas, [
+            ['Traspaso Origen', movNro], ['Desde (Área / Almacén)', origen],
+            ['Retorna a (Almacén)', destino], ['Fecha Retorno', fecha],
+            ['Recibe en Almacén', recibe], ['Observaciones', form.observaciones || '---'],
+        ], [['#','3%'],['Código BOA','8%'],['Descripción','22%'],['P/N','12%'],['S/N','12%'],
+            ['Cant. Ret/Env','10%'],['Condición','12%'],['Obs. Ítem','21%']],
+            [origen, recibe]);
     }
 
     // ── HISTORIAL ─────────────────────────────────────────────────────────────
@@ -3091,216 +2496,34 @@ export class RetornoTraspasoComponent implements OnInit, OnDestroy {
 
     private _pdfEnvio(nro: string, items: ToolEnvioItem[], form: any, tipo: string): void {
         if (tipo === 'TRASPASO DEFINITIVO') { this._pdfTraspasoOficial(nro, items, form); return; }
-        const fecha       = new Date(form.fechaEnvio || form.fechaTraspaso || new Date()).toLocaleDateString('es-BO', { day: '2-digit', month: '2-digit', year: 'numeric' });
-        const destino     = form.baseDestino?.nombre || form.areaDepartamento || '---';
-        const responsable = form.responsableEnvia || form.responsableTraspaso || '---';
-        const recibe      = form.recibeEnDestino || null;
-        const autorizado  = form.autorizadoPor || null;
-        const esTraspaso  = tipo === 'TRASPASO DEFINITIVO';
-        const condLabel: Record<string, string> = {
-            excellent: 'Excelente', good: 'Bueno', fair: 'Regular', damaged: 'Dañado'
+        const data: EnvioBasePdfData = {
+            nroNota: nro,
+            origen: form.baseOrigen?.nombre || '---',
+            destino: form.baseDestino?.nombre || form.areaDepartamento || '---',
+            fechaEnvio: new Date(form.fechaEnvio || form.fechaTraspaso || new Date()).toLocaleDateString('es-BO', { day: '2-digit', month: '2-digit', year: 'numeric' }),
+            responsable: form.responsableEnvia || form.responsableTraspaso || '',
+            recibe: form.recibeEnDestino || '',
+            tipoEnvio: form.tipoEnvio || 'EVENTUAL',
+            fechaEsperadaRetorno: form.fechaEsperadaRetorno || '',
+            nroDocumento: form.nroDocumento || '',
+            nroVuelo: form.nroVuelo || '',
+            aeronave: form.aeronave || '',
+            observaciones: form.notas || '',
+            items: items.map(it => ({ descripcion: it.nombre, pn: it.pn, sn: it.sn })),
         };
-        const filas = items.map((it, i) => `
-            <tr><td style="text-align:center">${i + 1}</td><td>${it.codigo}</td>
-            <td>${it.nombre}</td><td>${it.pn || '---'}</td><td>${it.sn || '---'}</td>
-            ${esTraspaso ? `<td>${it.marca || '---'}</td><td style="font-size:9px">${it.fechaVencCal || '---'}</td>` : ''}
-            <td style="text-align:center">${it.cantidad}</td>
-            <td style="text-align:center">${condLabel[it.condicion] || it.condicion}</td>
-            <td>${it.notas || '---'}</td></tr>`).join('');
-
-        const campos: [string, string][] = esTraspaso ? [
-            ['Fecha',                fecha],
-            ['Almacén Origen',       form.baseOrigen?.nombre || '---'],
-            ['Área / Base Destino',  destino],
-            ['Responsable / Envía',  responsable],
-            ['Recibe en Destino',    recibe   || '---'],
-            ['Autorizado por',       autorizado || '---'],
-            ['Notas',                form.notas || '---']
-        ] : [
-            ['Fecha',                fecha],
-            ['Destino / Área',       destino],
-            ['Responsable',          responsable],
-            ['Nro. Documento',       form.nroDocumento     || '---'],
-            ['Fecha Esp. Retorno',   form.fechaEsperadaRetorno || 'N/A'],
-            ['Nro. Vuelo',           form.nroVuelo         || '---'],
-            ['Aeronave',             form.aeronave         || '---'],
-            ['Tipo Envío',           form.tipoEnvio         || 'EVENTUAL'],
-            ['Notas',                form.notas            || '---']
-        ];
-
-        // Traspaso: 3 firmas (Envía / Recibe / Autorizado) cuando hay autorizado,
-        // si no hay autorizado 2 firmas (Envía / Recibe usando área destino)
-        const firmas: [string, string] | [string, string, string] = esTraspaso
-            ? (autorizado
-                ? [responsable, recibe || destino, autorizado]
-                : [responsable, recibe || destino])
-            : [responsable, destino];
-
-        const columnas: [string, string][] = esTraspaso
-            ? [['#','3%'],['Código BOA','8%'],['Descripción','18%'],['P/N','10%'],['S/N','9%'],
-               ['Marca','8%'],['Venc. Cal.','9%'],['Cant.','5%'],['Condición','10%'],['Notas','20%']]
-            : [['#','3%'],['Código BOA','8%'],['Descripción','24%'],['P/N','13%'],['S/N','11%'],
-               ['Cant.','7%'],['Condición','12%'],['Observación','22%']];
-        this._abrirPdf(nro, tipo, filas, campos, columnas, firmas as [string, string]);
-    }
-
-    /** Genera la Solicitud de Envío CO-MAT (formato OAM145# N-014 de BoAMM) */
-    private _pdfCoMat(nro: string, items: ToolEnvioItem[], form: any): void {
-        const now  = new Date();
-        const fecha = now.toLocaleDateString('es-BO', { day: '2-digit', month: '2-digit', year: 'numeric' });
-        const hora  = now.toLocaleTimeString('es-BO', { hour: '2-digit', minute: '2-digit' });
-        const origen  = form.baseOrigen?.nombre  || form.baseOrigen?.codigo  || 'ALMACÉN CBB';
-        const destino = form.baseDestino?.nombre || form.baseDestino?.codigo || '---';
-        const responsable = form.responsableEnvia || '---';
-        const recibe      = form.recibeEnDestino  || '';
-        const nVuelo      = form.nroVuelo  || '---';
-        const aeronave    = form.aeronave  || '---';
-        const tipoEnvio   = form.tipoEnvio || 'EVENTUAL';
-        const nBultos     = items.length;
-
-        const rows = items.map((it, i) => `
-            <tr>
-                <td class="tc">${i + 1}</td>
-                <td class="tc"><strong>${it.cantidad}</strong></td>
-                <td>${it.nombre || '-'}</td>
-                <td class="mono">${it.pn || '---'}</td>
-                <td class="mono">${it.sn || '---'}</td>
-                <td class="mono">${it.codigo || '-'}</td>
-            </tr>`).join('');
-
-        const html = `<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8">
-<title>CO-MAT ${nro}</title>
-<style>
-  @page { size: A4; margin: 10mm 12mm; }
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: Arial, sans-serif; font-size: 10px; color: #000; }
-
-  /* ── ENCABEZADO ── */
-  .top { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #000; padding-bottom: 6px; margin-bottom: 8px; }
-  .top-left { font-size: 8.5px; color: #555; line-height: 1.6; }
-  .top-center { text-align: center; flex: 1; }
-  .top-center h1 { font-size: 14px; font-weight: 900; text-transform: uppercase; letter-spacing: 1px; }
-  .top-center .subtitle { font-size: 9px; color: #555; margin-top: 1px; }
-  .top-right { text-align: right; }
-  .nro-box { border: 2.5px solid #000; padding: 5px 14px; font-size: 16px; font-weight: 900; letter-spacing: 1px; display: inline-block; }
-  .tipo-badge { display: inline-block; background: ${tipoEnvio === 'PERMANENTE' ? '#fbbf24' : '#dcfce7'}; border: 1.5px solid #000; font-weight: 900; font-size: 9px; padding: 2px 7px; border-radius: 3px; margin-top: 3px; }
-
-  /* ── GRID DATOS ── */
-  .meta { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 5px 14px; margin-bottom: 8px; border: 1.5px solid #ddd; border-radius: 4px; padding: 7px 10px; }
-  .field label { display: block; font-size: 7.5px; font-weight: 900; text-transform: uppercase; color: #666; margin-bottom: 1px; }
-  .field span { display: block; font-weight: 700; font-size: 10px; border-bottom: 1px solid #ccc; padding-bottom: 1px; min-height: 13px; }
-
-  /* ── TABLA ── */
-  .sec-title { background: #0f172a; color: #fff; font-size: 9px; font-weight: 900; text-transform: uppercase; padding: 4px 8px; letter-spacing: 0.5px; margin-bottom: 0; }
-  table { width: 100%; border-collapse: collapse; margin-bottom: 10px; }
-  th { background: #334155; color: #fff; padding: 4px 5px; font-size: 8.5px; font-weight: 900; text-transform: uppercase; text-align: left; border: 1px solid #000; }
-  td { padding: 3.5px 5px; border: 1px solid #ddd; font-size: 9px; }
-  tr:nth-child(even) td { background: #f8f9fc; }
-  .tc { text-align: center; }
-  .mono { font-family: monospace; font-size: 9px; }
-
-  /* ── PIE ── */
-  .cargo-info { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 5px 10px; border: 1.5px solid #000; border-radius: 4px; padding: 6px 10px; margin-bottom: 10px; }
-  .cargo-field label { font-size: 7.5px; font-weight: 900; text-transform: uppercase; color: #555; display: block; }
-  .cargo-field span { font-weight: 700; font-size: 10px; border-bottom: 1px solid #aaa; display: block; min-height: 13px; padding-bottom: 1px; }
-
-  .firmas { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 14px; }
-  .firma { border: 1.5px solid #000; padding: 6px 8px; }
-  .firma-title { font-size: 8px; font-weight: 900; text-transform: uppercase; background: #0f172a; color: #fff; padding: 3px 6px; margin: -6px -8px 8px; letter-spacing: 0.3px; }
-  .firma-row { display: flex; justify-content: space-between; gap: 10px; margin-bottom: 4px; }
-  .firma-item label { font-size: 7.5px; text-transform: uppercase; font-weight: 900; color: #555; display: block; }
-  .firma-item span { border-bottom: 1px solid #000; display: block; min-height: 16px; font-size: 9px; font-weight: 700; min-width: 100px; padding-bottom: 1px; }
-  .firma-sign { height: 34px; border-bottom: 1px solid #000; margin-top: 4px; }
-
-  .footer { text-align: center; font-size: 7.5px; color: #888; margin-top: 10px; border-top: 1px dotted #ccc; padding-top: 4px; }
-  @media print { body { padding: 0; } }
-</style>
-<script>window.onload = () => window.print();</script>
-</head><body>
-
-<!-- ENCABEZADO -->
-<div class="top">
-  <div class="top-left">
-    <div><strong>BoAMM</strong>  OAM145# N-014</div>
-    <div>BOLIVIANA DE AVIACIÓN</div>
-    <div>Almacén de Herramientas</div>
-  </div>
-  <div class="top-center">
-    <h1>Solicitud de Envío</h1>
-    <div class="subtitle">CO-MAT — Comprobante de Movimiento de Material</div>
-    <div class="tipo-badge">${tipoEnvio}</div>
-  </div>
-  <div class="top-right">
-    <div class="nro-box">${nro}</div>
-    <div style="font-size:8px;color:#555;margin-top:4px">Fecha: ${fecha} ${hora}</div>
-  </div>
-</div>
-
-<!-- DATOS PRINCIPALES -->
-<div class="meta">
-  <div class="field"><label>Origen / Almacén</label><span>${origen}</span></div>
-  <div class="field"><label>Base Destino</label><span>${destino}</span></div>
-  <div class="field"><label>Fecha Retorno Esperada</label><span>${tipoEnvio === 'PERMANENTE' ? (form.fechaEsperadaRetorno || '---') : 'No aplica (Eventual)'}</span></div>
-  <div class="field"><label>Responsable / Envía</label><span>${responsable}</span></div>
-  <div class="field"><label>Recibe en Destino</label><span>${recibe || '---'}</span></div>
-  <div class="field"><label>Nro. Vuelo / Aeronave</label><span>${nVuelo !== '---' || aeronave !== '---' ? nVuelo + ' / ' + aeronave : '---'}</span></div>
-</div>
-
-<!-- TABLA ITEMS -->
-<div class="sec-title">Detalle de Herramientas / Equipos</div>
-<table>
-  <thead>
-    <tr>
-      <th style="width:4%">ITEM</th>
-      <th style="width:6%">CANT.</th>
-      <th style="width:35%">DESCRIPCIÓN</th>
-      <th style="width:18%">MODELO / P/N</th>
-      <th style="width:15%">SERIAL NUMBER</th>
-      <th style="width:12%">CÓDIGO BOA</th>
-    </tr>
-  </thead>
-  <tbody>${rows}</tbody>
-</table>
-
-<!-- DATOS DE CARGA -->
-<div class="cargo-info">
-  <div class="cargo-field"><label>ORIGEN</label><span>${origen}</span></div>
-  <div class="cargo-field"><label>Nº DE BULTOS</label><span>${nBultos}</span></div>
-  <div class="cargo-field"><label>PESO (Kg)</label><span>&nbsp;</span></div>
-  <div class="cargo-field"><label>SERIAL NUMBER (Envío)</label><span>${nro}</span></div>
-</div>
-
-<!-- FIRMAS -->
-<div class="firmas">
-  <div class="firma">
-    <div class="firma-title">ENTREGUE CONFORME / MM-CBB</div>
-    <div class="firma-row">
-      <div class="firma-item"><label>Nombre</label><span>${responsable}</span></div>
-      <div class="firma-item"><label>Fecha / Hora</label><span>${fecha} ${hora}</span></div>
-    </div>
-    <div class="firma-sign"></div>
-    <div style="font-size:7.5px;text-align:center;margin-top:3px;color:#555;font-weight:700">FIRMA / SELLO</div>
-  </div>
-  <div class="firma">
-    <div class="firma-title">RECIBI CONFORME / CARGA-VOA</div>
-    <div class="firma-row">
-      <div class="firma-item"><label>Nombre</label><span>${recibe || '&nbsp;'}</span></div>
-      <div class="firma-item"><label>Fecha / Hora</label><span>&nbsp;</span></div>
-    </div>
-    <div class="firma-sign"></div>
-    <div style="font-size:7.5px;text-align:center;margin-top:3px;color:#555;font-weight:700">FIRMA / SELLO</div>
-  </div>
-</div>
-
-<div class="footer">
-  BOLIVIANA DE AVIACIÓN — Almacén de Herramientas · CO-MAT | Generado: ${now.toLocaleString('es-BO')} | Nro: ${nro}
-</div>
-</body></html>`;
-        this._abrirBlob(html);
+        this.envioBasePdfSvc.generarPdf(data);
     }
 
     /** Genera el "Reporte de Discrepancia" para items devueltos DAÑADOS o FALTANTES */
-    private _pdfDiscrepancia(nro: string, items: TraspasoItem[], form: any): void {
+    /**
+     * "Reporte Discrepancia de Herramienta" (MGH-101) — mismo tratamiento que
+     * _abrirImpresionCuarentena() en cuarentena-baja-hub.component.ts: la hoja real
+     * es de una sola herramienta por reporte, pero acá se genera automático por
+     * lote (todos los ítems DAÑADOS/FALTANTES de un mismo retorno) — se mantiene
+     * el lote, solo se restyleó al patrón visual del resto de PDFs.
+     */
+    private async _pdfDiscrepancia(nro: string, items: TraspasoItem[], form: any): Promise<void> {
+        const logoUri = await this._loadLogoBoaDataUri();
         const fecha       = form.fechaRetorno
             ? new Date(form.fechaRetorno).toLocaleDateString('es-BO', { day: '2-digit', month: '2-digit', year: 'numeric' })
             : new Date().toLocaleDateString('es-BO');
@@ -3309,141 +2532,235 @@ export class RetornoTraspasoComponent implements OnInit, OnDestroy {
             DAÑADO: 'DAÑADO / NO SERVICIABLE', FALTANTE: 'FALTANTE',
             BUENO: 'Bueno', REQUIERE_CALIBRACION: 'Req. Calibración'
         };
-        const rows = items.map((it, i) => `
+        const filas = items.map((it, i) => `
             <tr>
-                <td style="text-align:center">${i + 1}</td>
-                <td><span style="font-family:monospace;font-weight:700;background:#0f172a;color:#fff;padding:1px 5px;border-radius:2px;font-size:9px">${it.codigo || '-'}</span></td>
-                <td>${it.descripcion || '-'}</td>
-                <td style="font-family:monospace;font-size:9px">${it.pn || '-'}</td>
-                <td style="font-family:monospace;font-size:9px">${it.sn || '-'}</td>
-                <td style="font-weight:900;color:#dc2626;text-align:center">${condLabel[it.condicion] || it.condicion || '-'}</td>
+                <td class="tc">${i + 1}</td>
+                <td class="mono">${it.codigo || '---'}</td>
+                <td>${it.descripcion || '---'}</td>
+                <td class="mono">${it.pn || '---'}</td>
+                <td class="mono">${it.sn || '---'}</td>
+                <td class="tc" style="font-weight:900;color:#dc2626">${condLabel[it.condicion] || it.condicion || '---'}</td>
                 <td>${it.observacionItem || '---'}</td>
             </tr>`).join('');
 
         const html = `<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8">
 <title>Reporte de Discrepancia ${nro}</title>
 <style>
-  @page { size: A4; margin: 14mm 12mm; }
-  * { box-sizing: border-box; }
-  body { font-family: Arial, sans-serif; font-size: 10px; color: #000; margin: 0; }
-  .header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 3px solid #dc2626; padding-bottom: 8px; margin-bottom: 10px; }
-  .title { font-size: 16px; font-weight: 900; text-transform: uppercase; color: #dc2626; margin: 0; letter-spacing: 0.5px; }
-  .subtitle { font-size: 9px; color: #555; margin: 2px 0 0; }
-  .nro-box { background: #dc2626; color: #fff; font-weight: 900; font-size: 13px; padding: 6px 14px; border-radius: 4px; }
-  .alert { background: #fef2f2; border: 2px solid #dc2626; border-radius: 5px; padding: 7px 12px; margin-bottom: 10px; font-size: 9px; font-weight: 700; color: #991b1b; line-height: 1.5; }
-  .grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 5px 14px; margin-bottom: 10px; }
-  .field label { display: block; font-size: 8px; font-weight: 900; text-transform: uppercase; color: #666; }
-  .field span { display: block; font-weight: 700; font-size: 10px; border-bottom: 1px solid #ccc; padding-bottom: 1px; }
-  table { width: 100%; border-collapse: collapse; margin-bottom: 14px; font-size: 9.5px; }
-  th { background: #dc2626; color: #fff; padding: 5px 4px; text-align: left; font-size: 8.5px; text-transform: uppercase; }
-  td { padding: 4px; border-bottom: 1px solid #fca5a5; }
-  tr:nth-child(even) td { background: #fff5f5; }
-  .firmas { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; margin-top: 22px; }
-  .firma { border-top: 2px solid #000; padding-top: 6px; text-align: center; font-size: 9.5px; font-weight: 700; }
-  .firma-red { border-top: 2px solid #dc2626 !important; background: #fff5f5; padding: 6px 4px 4px; }
-  .footer { text-align: center; font-size: 7.5px; color: #888; margin-top: 12px; border-top: 1px dotted #ccc; padding-top: 4px; }
+  @page { size: A4; margin: 8mm 10mm; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: Arial, sans-serif; font-size: 10px; color: #000; }
+
+  table.head-table { width: 100%; border-collapse: collapse; border: 2px solid #000; margin-bottom: 6px; }
+  table.head-table td { border: 1px solid #000; padding: 6px 8px; vertical-align: middle; }
+  .logo-cell { width: 22%; text-align: center; }
+  .logo-cell img { max-width: 100%; max-height: 34px; }
+  .logo-cell .oam { font-size: 8px; font-weight: 900; margin-top: 2px; }
+  .title-cell { width: 58%; text-align: center; }
+  .title-cell h1 { font-size: 12.5px; font-weight: 900; text-transform: uppercase; }
+  .code-cell { width: 20%; text-align: center; padding: 0; }
+  .code-cell .mgh { font-size: 15px; font-weight: 900; padding: 6px 0; border-bottom: 1px solid #000; }
+  .code-cell .rev-fecha { display: flex; font-size: 9px; font-weight: 700; }
+  .code-cell .rev-fecha > div { flex: 1; padding: 3px 0; }
+  .code-cell .rev-fecha > div:first-child { border-right: 1px solid #000; }
+
+  .alert { background: #fef2f2; border: 2px solid #dc2626; border-top: none; padding: 6px 10px; margin-bottom: 0; font-size: 9px; font-weight: 700; color: #991b1b; line-height: 1.5; }
+
+  table.meta-table { width: 100%; border-collapse: collapse; border: 2px solid #000; border-top: none; margin-bottom: 0; }
+  table.meta-table td { border: 1px solid #000; padding: 3px 6px; font-size: 9.5px; height: 20px; }
+  table.meta-table td b { font-weight: 900; }
+
+  .detalle-bar { background: #fff; border: 2px solid #000; border-top: none; text-align: center; font-weight: 900; font-size: 11px; text-transform: uppercase; padding: 3px; }
+
+  table.items { width: 100%; border-collapse: collapse; border: 2px solid #000; border-top: none; margin-bottom: 0; }
+  table.items th { border: 1px solid #000; background: #e5e7eb; font-size: 7.7px; font-weight: 900; text-transform: uppercase; padding: 4px 2px; }
+  table.items td { border: 1px solid #000; padding: 4px 3px; font-size: 8.7px; }
+  table.items tbody tr { height: 20px; }
+  .tc { text-align: center; }
+  .mono { font-family: monospace; }
+
+  table.foot-table { width: 100%; border-collapse: collapse; border: 2px solid #000; border-top: none; }
+  table.foot-table td { border: 1px solid #000; padding: 6px 8px; vertical-align: top; font-size: 9.5px; width: 33.3%; }
+  .firma-lbl { font-weight: 900; }
+  .firma-line { border-bottom: 1px solid #000; height: 26px; margin-top: 12px; }
+  .firma-sub { text-align: center; font-size: 8.5px; font-weight: 700; margin-top: 2px; }
+
   @media print { body { padding: 0; } }
 </style>
 <script>window.onload = () => window.print();</script>
 </head><body>
-<div class="header">
-  <div>
-    <h1 class="title">Reporte de Discrepancia</h1>
-    <div class="subtitle">BOLIVIANA DE AVIACIÓN — Almacén de Herramientas · Retorno con novedades</div>
-  </div>
-  <div class="nro-box">${nro}</div>
-</div>
-<div class="alert">
-  ⚠ Este documento certifica el retorno de herramientas en condición <strong>NO SERVICIABLE</strong> (Dañada/Faltante).
-  Requiere investigación, acción correctiva y firmas de los responsables antes de archivarse.
-</div>
-<div class="grid">
-  <div class="field"><label>Nro. Documento Retorno</label><span>${nro}</span></div>
-  <div class="field"><label>Fecha de Retorno</label><span>${fecha}</span></div>
-  <div class="field"><label>Responsable</label><span>${responsable}</span></div>
-  <div class="field"><label>Nro. Referencia (COMAT/TRP)</label><span>${form.nroDocumento || '---'}</span></div>
-  <div class="field"><label>Origen / Base</label><span>${form.ubicacionOrigen?.nombre || '---'}</span></div>
-  <div class="field"><label>Observaciones Generales</label><span>${form.observaciones || '---'}</span></div>
-</div>
-<table>
-  <thead>
-    <tr>
-      <th style="width:3%">#</th>
-      <th style="width:9%">Código BOA</th>
-      <th style="width:27%">Descripción</th>
-      <th style="width:12%">P/N</th>
-      <th style="width:10%">S/N</th>
-      <th style="width:14%">Condición</th>
-      <th style="width:25%">Descripción de Avería / Novedades</th>
-    </tr>
-  </thead>
-  <tbody>${rows}</tbody>
+
+<table class="head-table">
+  <tr>
+    <td class="logo-cell" rowspan="2">
+      ${logoUri ? `<img src="${logoUri}" alt="BoA">` : '<div style="font-weight:900;font-size:16px">BoA</div>'}
+      <div class="oam">BoAMM &nbsp; OAM145# N-114</div>
+    </td>
+    <td class="title-cell" rowspan="2">
+      <h1>Reporte Discrepancia de Herramienta</h1>
+    </td>
+    <td class="code-cell">
+      <div class="mgh">MGH-101</div>
+      <div class="rev-fecha"><div>REV. 0</div><div>2016-10-13</div></div>
+    </td>
+  </tr>
 </table>
-<div class="firmas">
-  <div class="firma"><div style="height:36px"></div>ENTREGA CONFORME<br>${responsable}</div>
-  <div class="firma"><div style="height:36px"></div>RECIBE — ALMACÉN<br>Firma / Sello</div>
-  <div class="firma firma-red">
-    <div style="height:36px"></div>
-    <span style="color:#991b1b;font-size:8.5px;font-weight:900;display:block;margin-bottom:2px">AUTORIZADO / JEFE ALMACÉN</span>
-    Firma / Sello
-  </div>
-</div>
-<div class="footer">BOLIVIANA DE AVIACIÓN — Almacén de Herramientas | Generado: ${new Date().toLocaleString('es-BO')} | Doc: ${nro}</div>
+
+<div class="alert">⚠ Este documento certifica el retorno de herramientas en condición NO SERVICIABLE (Dañada/Faltante). Requiere investigación, acción correctiva y firmas de los responsables antes de archivarse.</div>
+
+<table class="meta-table">
+  <tr>
+    <td style="width:20%"><b>NRO. DOCUMENTO RETORNO:</b></td><td style="width:30%">${nro}</td>
+    <td style="width:20%"><b>FECHA DE RETORNO:</b></td><td style="width:30%">${fecha}</td>
+  </tr>
+  <tr>
+    <td><b>RESPONSABLE:</b></td><td>${responsable}</td>
+    <td><b>NRO. REFERENCIA (COMAT/TRP):</b></td><td>${form.nroDocumento || '---'}</td>
+  </tr>
+  <tr>
+    <td><b>ORIGEN / BASE:</b></td><td>${form.ubicacionOrigen?.nombre || '---'}</td>
+    <td><b>OBSERVACIONES GENERALES:</b></td><td>${form.observaciones || '---'}</td>
+  </tr>
+</table>
+
+<div class="detalle-bar">DETALLE DE HERRAMIENTAS CON NOVEDAD</div>
+<table class="items">
+  <thead><tr>
+    <th style="width:4%">#</th><th style="width:9%">Código BOA</th><th style="width:27%">Descripción</th>
+    <th style="width:12%">P/N</th><th style="width:10%">S/N</th><th style="width:13%">Condición</th>
+    <th style="width:25%">Descripción de Avería / Novedades</th>
+  </tr></thead>
+  <tbody>${filas || '<tr><td colspan="7" class="tc">Sin ítems</td></tr>'}</tbody>
+</table>
+
+<table class="foot-table">
+  <tr>
+    <td>
+      <div class="firma-lbl">ENTREGA CONFORME</div>
+      <div class="firma-line"></div>
+      <div class="firma-sub">${responsable}</div>
+    </td>
+    <td>
+      <div class="firma-lbl">RECIBE — ALMACÉN</div>
+      <div class="firma-line"></div>
+      <div class="firma-sub">&nbsp;</div>
+    </td>
+    <td>
+      <div class="firma-lbl">AUTORIZADO / JEFE ALMACÉN</div>
+      <div class="firma-line"></div>
+      <div class="firma-sub">&nbsp;</div>
+    </td>
+  </tr>
+</table>
+
 </body></html>`;
         this._abrirBlob(html);
     }
 
-    private _abrirPdf(
+    /**
+     * Acta genérica de RETORNO (base RB / traspaso RTR) — sin equivalente en el Excel
+     * (la hoja "TRASPASO" no tiene sección de retorno, y "ENV HH BASES" solo calza
+     * cuando el retorno es de una sola nota, cosa que este flujo no garantiza: busca
+     * por ubicación de origen y puede juntar ítems de varias notas de envío distintas
+     * en una sola impresión — mismo problema que la devolución en lote de Terceros).
+     * Solo se restyleó el logo/paleta para que se vea consistente con el resto de PDFs,
+     * sin forzarla al formato de una sola nota.
+     */
+    private async _abrirPdf(
         nro: string, tipo: string, filas: string,
         campos: [string, string][],
         columnas: [string, string][],
         firmas: [string, string] | [string, string, string]
-    ): void {
-        const camposHtml = campos.map(([l, v]) =>
-            `<div class="field"><label>${l}</label><span>${v}</span></div>`).join('');
-        const thHtml = columnas.map(([l, w]) =>
-            `<th style="width:${w}">${l}</th>`).join('');
-        const cols   = firmas.length === 3 ? '1fr 1fr 1fr' : '1fr 1fr';
-        const f0     = firmas[0], f1 = firmas[1], f2 = (firmas as any)[2];
-        const firmasHtml = f2
-            ? `<div class="firma"><div style="height:36px"></div>ENTREGA CONFORME<br>${f0}</div>
-               <div class="firma"><div style="height:36px"></div>RECIBE CONFORME<br>${f1}</div>
-               <div class="firma" style="background:#fffde7;border-top:3px solid #f59e0b">
-                 <div style="height:36px"></div>
-                 <span style="font-size:9px;color:#92400e;font-weight:900;display:block;margin-bottom:2px">AUTORIZADO POR</span>
-                 ${f2}
-               </div>`
-            : `<div class="firma"><div style="height:36px"></div>ENTREGA CONFORME<br>${f0}</div>
-               <div class="firma"><div style="height:36px"></div>RECIBE CONFORME<br>${f1}</div>`;
+    ): Promise<void> {
+        const logoUri = await this._loadLogoBoaDataUri();
+
+        // Meta-table: 2 pares label/value por fila, mismo maquetado que los formularios calcados
+        const metaFilas: string[] = [];
+        for (let i = 0; i < campos.length; i += 2) {
+            const [l0, v0] = campos[i];
+            const par1 = campos[i + 1];
+            metaFilas.push(`<tr>
+                <td style="width:16%"><b>${l0.toUpperCase()}:</b></td><td style="width:${par1 ? '34%' : '84%'}" ${par1 ? '' : 'colspan="3"'}>${v0}</td>
+                ${par1 ? `<td style="width:16%"><b>${par1[0].toUpperCase()}:</b></td><td style="width:34%">${par1[1]}</td>` : ''}
+            </tr>`);
+        }
+
+        const thHtml = columnas.map(([l, w]) => `<th style="width:${w}">${l}</th>`).join('');
+
+        const f0 = firmas[0], f1 = firmas[1], f2 = (firmas as any)[2];
+        const firmaCeldas = [
+            ['ENTREGA CONFORME', f0],
+            ['RECIBE CONFORME', f1],
+            ...(f2 ? [['AUTORIZADO POR', f2]] : []),
+        ];
+        const footHtml = firmaCeldas.map(([lbl, val]) => `
+            <td style="width:${f2 ? '33%' : '50%'}">
+              <div class="firma-lbl">${lbl}</div>
+              <div class="firma-line"></div>
+              <div class="firma-sub">${val}</div>
+            </td>`).join('');
+
         const html = `<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8">
-<title>${nro}</title>
+<title>${tipo} ${nro}</title>
 <style>
-body{font-family:Arial,sans-serif;font-size:11px;padding:20px}
-.header{display:flex;align-items:center;justify-content:space-between;border-bottom:3px solid #000;padding-bottom:8px;margin-bottom:12px}
-.header h1{font-size:15px;font-weight:900;text-transform:uppercase;margin:0}
-.nro{background:#0f172a;color:#fff;padding:6px 14px;font-size:14px;font-weight:900;border-radius:4px}
-.badge{display:inline-block;background:#fbbf24;color:#000;font-weight:900;padding:2px 8px;border-radius:3px;border:1px solid #000;font-size:10px;margin-bottom:6px}
-.grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px 16px;margin-bottom:12px}
-.field label{display:block;font-size:9px;font-weight:900;text-transform:uppercase;color:#555}
-.field span{display:block;font-weight:700;font-size:11px;border-bottom:1px solid #ccc;padding-bottom:2px}
-table{width:100%;border-collapse:collapse;margin-bottom:12px;font-size:10px}
-th{background:#0f172a;color:#fff;padding:5px 4px;text-align:left;font-size:9px;text-transform:uppercase}
-td{padding:4px;border-bottom:1px solid #ddd}
-tr:nth-child(even) td{background:#f8f9fc}
-.firmas{display:grid;grid-template-columns:${cols};gap:20px;margin-top:24px}
-.firma{border-top:2px solid #000;padding-top:6px;text-align:center;font-size:10px;font-weight:700}
-@media print{body{padding:10px}}
-</style></head><body>
-<div class="header">
-  <div><div class="badge">${tipo}</div>
-  <h1>Acta de ${tipo}</h1>
-  <div style="font-size:10px;color:#555">BOLIVIANA DE AVIACIÓN — Almacén de Herramientas</div></div>
-  <div class="nro">${nro}</div>
-</div>
-<div class="grid">${camposHtml}</div>
-<table><thead><tr>${thHtml}</tr></thead><tbody>${filas}</tbody></table>
-<div class="firmas">${firmasHtml}</div>
-<script>window.onload=()=>window.print();</script>
+  @page { size: A4; margin: 8mm 10mm; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: Arial, sans-serif; font-size: 10px; color: #000; }
+
+  table.head-table { width: 100%; border-collapse: collapse; border: 2px solid #000; margin-bottom: 6px; }
+  table.head-table td { border: 1px solid #000; padding: 6px 8px; vertical-align: middle; }
+  .logo-cell { width: 22%; text-align: center; }
+  .logo-cell img { max-width: 100%; max-height: 34px; }
+  .logo-cell .oam { font-size: 8px; font-weight: 900; margin-top: 2px; }
+  .title-cell { width: 58%; text-align: center; }
+  .title-cell h1 { font-size: 13px; font-weight: 900; text-transform: uppercase; }
+  .code-cell { width: 20%; text-align: center; }
+  .code-cell .nro { font-size: 13px; font-weight: 900; }
+
+  table.meta-table { width: 100%; border-collapse: collapse; border: 2px solid #000; border-top: none; margin-bottom: 0; }
+  table.meta-table td { border: 1px solid #000; padding: 3px 6px; font-size: 9.5px; height: 20px; }
+  table.meta-table td b { font-weight: 900; }
+
+  .detalle-bar { background: #fff; border: 2px solid #000; border-top: none; text-align: center; font-weight: 900; font-size: 11px; text-transform: uppercase; padding: 3px; }
+
+  table.items { width: 100%; border-collapse: collapse; border: 2px solid #000; border-top: none; margin-bottom: 0; }
+  table.items th { border: 1px solid #000; background: #e5e7eb; font-size: 7.7px; font-weight: 900; text-transform: uppercase; padding: 4px 2px; }
+  table.items td { border: 1px solid #000; padding: 4px 3px; font-size: 8.7px; }
+  table.items tbody tr { height: 20px; }
+
+  table.foot-table { width: 100%; border-collapse: collapse; border: 2px solid #000; border-top: none; }
+  table.foot-table td { border: 1px solid #000; padding: 6px 8px; vertical-align: top; font-size: 9.5px; }
+  .firma-lbl { font-weight: 900; }
+  .firma-line { border-bottom: 1px solid #000; height: 28px; margin-top: 14px; }
+  .firma-sub { text-align: center; font-size: 8.5px; font-weight: 700; margin-top: 2px; }
+
+  @media print { body { padding: 0; } }
+</style>
+<script>window.onload = () => window.print();</script>
+</head><body>
+
+<table class="head-table">
+  <tr>
+    <td class="logo-cell" rowspan="2">
+      ${logoUri ? `<img src="${logoUri}" alt="BoA">` : '<div style="font-weight:900;font-size:16px">BoA</div>'}
+      <div class="oam">BoAMM &nbsp; OAM145# N-114</div>
+    </td>
+    <td class="title-cell" rowspan="2">
+      <h1>Acta de ${tipo}</h1>
+    </td>
+    <td class="code-cell"><div class="nro">N° ${nro}</div></td>
+  </tr>
+</table>
+
+<table class="meta-table">${metaFilas.join('')}</table>
+
+<div class="detalle-bar">DETALLE</div>
+<table class="items">
+  <thead><tr>${thHtml}</tr></thead>
+  <tbody>${filas || `<tr><td colspan="${columnas.length}" style="text-align:center">Sin ítems</td></tr>`}</tbody>
+</table>
+
+<table class="foot-table"><tr>${footHtml}</tr></table>
+
 </body></html>`;
         this._abrirBlob(html);
     }

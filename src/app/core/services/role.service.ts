@@ -1,16 +1,11 @@
 import { Injectable, inject } from '@angular/core';
-import { from, Observable, of, ReplaySubject, switchMap } from 'rxjs';
+import { from, Observable, of, switchMap } from 'rxjs';
 import { Role, RoleFormData } from '../models';
 import { ErpApiService } from '../api/api.service';
 
 @Injectable({ providedIn: 'root' })
 export class RoleService {
     private _api = inject(ErpApiService);
-    private _roles = new ReplaySubject<Role[]>(1);
-
-    get roles$(): Observable<Role[]> {
-        return this._roles.asObservable();
-    }
 
     getRoles(): Observable<Role[]> {
         return from(this._api.post('herramientas/roles/listarRoles', {
@@ -19,11 +14,7 @@ export class RoleService {
             sort: 'name',
             dir: 'asc'
         })).pipe(
-            switchMap((response: any) => {
-                const roles = response?.datos || response?.data || [];
-                this._roles.next(roles);
-                return of(roles);
-            })
+            switchMap((response: any) => of(response?.datos || response?.data || []))
         );
     }
 
@@ -60,15 +51,6 @@ export class RoleService {
             id_role: id
         })).pipe(
             switchMap(() => of(undefined))
-        );
-    }
-
-    toggleRoleStatus(id: string, active: boolean): Observable<Role> {
-        return from(this._api.post('herramientas/roles/insertarRoles', {
-            id_role: id,
-            active: active
-        })).pipe(
-            switchMap((response: any) => of(response?.datos?.[0] || response?.data?.[0] || {}))
         );
     }
 

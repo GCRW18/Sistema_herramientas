@@ -75,7 +75,7 @@ import { HasPermissionDirective } from '../../../../../../core/directives/has-pe
                         <div class="bg-white dark:bg-slate-800 border-2 border-black rounded-xl shadow-[2px_2px_0_#000] overflow-hidden">
                             <p class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 px-3 pt-2.5 pb-1.5">Información Técnica</p>
                             <div class="px-3 pb-1">
-                                <div *ngFor="let c of cardsTecnicos"
+                                <div *ngFor="let c of cardsTecnicos; trackBy: trackByLabel"
                                      class="flex items-center justify-between gap-2 py-1.5 border-t border-stone-100 dark:border-slate-700">
                                     <span class="flex items-center gap-1.5 text-[9px] font-black uppercase tracking-wider text-stone-400 dark:text-slate-500 shrink-0">
                                         <mat-icon class="!text-sm text-amber-500 shrink-0">{{ c.icon }}</mat-icon>
@@ -89,7 +89,7 @@ import { HasPermissionDirective } from '../../../../../../core/directives/has-pe
                         <div class="bg-white dark:bg-slate-800 border-2 border-black rounded-xl shadow-[2px_2px_0_#000] overflow-hidden">
                             <p class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 px-3 pt-2.5 pb-1.5">Datos Personales</p>
                             <div class="px-3 pb-1">
-                                <div *ngFor="let c of cardsPersonales"
+                                <div *ngFor="let c of cardsPersonales; trackBy: trackByLabel"
                                      class="flex items-center justify-between gap-2 py-1.5 border-t border-stone-100 dark:border-slate-700">
                                     <span class="flex items-center gap-1.5 text-[9px] font-black uppercase tracking-wider text-stone-400 dark:text-slate-500 shrink-0">
                                         <mat-icon class="!text-sm text-amber-500 shrink-0">{{ c.icon }}</mat-icon>
@@ -199,6 +199,11 @@ export class VerUsuarioComponent implements OnInit {
         const palabras = (this.f.full_name || this.f.cuenta || '?').trim().split(/\s+/);
         return palabras.slice(0, 2).map((p: string) => p.charAt(0).toUpperCase()).join('');
     }
+
+    /* trackBy — cardsTecnicos/cardsPersonales arman objetos nuevos en cada
+       llamada; sin esto el *ngFor los recrearía en cada CD (mismo origen del
+       congelamiento de Misceláneos). */
+    trackByLabel = (_: number, c: { label: string }): string => c.label;
 
     get cardsTecnicos(): { icon: string; label: string; value: string | null }[] {
         return [

@@ -258,6 +258,11 @@ export class FormDevolucionExternoDialogComponent implements OnInit, OnDestroy {
         });
     }
 
+    /* trackBy — getResumen() arma objetos nuevos en cada llamada; sin esto
+       el *ngFor los recrearía en cada CD (mismo origen del congelamiento
+       de Misceláneos). */
+    trackByCondicion = (_: number, r: { condicion: string }): string => r.condicion;
+
     finalizar(): void {
         const sel = this.getSelItems();
         this.cerrarConfirm();
@@ -279,7 +284,7 @@ export class FormDevolucionExternoDialogComponent implements OnInit, OnDestroy {
         }).pipe(finalize(() => this.isSaving = false), takeUntil(this.destroy$)).subscribe({
             next: (result: any) => {
                 const nro = result?.movement_number || '---';
-                this._imprimir(nro, sel, fv);
+                this._imprimir(nro, sel, fv).catch(() => {});
                 this.showMsg('success', `Devolución registrada: ${nro}`);
                 this.dataSource = this.dataSource.filter(i => !i.selected);
                 this.dialogRef.close({ success: true, movement_number: nro });
@@ -290,17 +295,39 @@ export class FormDevolucionExternoDialogComponent implements OnInit, OnDestroy {
 
     cerrar(): void { this.dialogRef.close(); }
 
-    private _imprimir(nro: string, items: DevolucionExternoItem[], fv: any): void {
-        const w = window.open('', '_blank');
-        if (!w) return;
+    private _logoBoaDataUri: Promise<string> | null = null;
+    private _loadLogoBoaDataUri(): Promise<string> {
+        if (!this._logoBoaDataUri) {
+            this._logoBoaDataUri = fetch('/images/logo-boa.png')
+                .then(r => r.blob())
+                .then(blob => new Promise<string>((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onload  = () => resolve(reader.result as string);
+                    reader.onerror = reject;
+                    reader.readAsDataURL(blob);
+                }))
+                .catch(() => '');
+        }
+        return this._logoBoaDataUri;
+    }
+
+    /**
+     * Recibo interno de devolución en lote — puede juntar ítems de varias notas de
+     * préstamo distintas (columna NOTA SALIDA por fila), no tiene equivalente en el
+     * Excel oficial (ver PrestamoExternoPdfService para la Nota de Préstamo-Devolución
+     * de una sola nota, que sí está calcada de la hoja "PRESTAMO A TERCEROS 2"). Solo
+     * se restyleó el logo/paleta para que se vea consistente con el resto de PDFs.
+     */
+    private async _imprimir(nro: string, items: DevolucionExternoItem[], fv: any): Promise<void> {
+        const logoUri = await this._loadLogoBoaDataUri();
         const condLabel: Record<string,string> = { BUENO:'Bueno', REPARADO:'Reparado', CALIBRADO:'Calibrado', PARCIAL:'Parcial', NO_REPARABLE:'No Reparable' };
         const rows = items.map(it => {
             const color = ['NO_REPARABLE','PARCIAL'].includes(it.condicionDevolucion) ? '#dc2626' : '#166534';
             return `<tr><td><span style="font-family:monospace;font-weight:700">${it.codigo||'-'}</span></td><td style="font-family:monospace;font-size:9px">${it.pn||'-'}</td><td style="font-family:monospace;font-size:9px">${it.sn||'-'}</td><td style="text-align:center;font-weight:700">${it.cantidad}</td><td>${it.descripcion||'-'}</td><td>${it.nroNotaSalida||'-'}</td><td>${it.fechaSalida||'-'}</td><td style="text-align:center">${it.diasFuera}d</td><td style="font-weight:700;color:${color}">${condLabel[it.condicionDevolucion]||it.condicionDevolucion}</td><td>${it.observaciones||''}</td></tr>`;
         }).join('');
-        const css = `<style>@page{size:A4 landscape;margin:12mm 10mm}*{box-sizing:border-box}body{font-family:Arial,sans-serif;font-size:10px;color:#000;margin:0}.top{display:flex;justify-content:space-between;margin-bottom:5px}.code-box{border:2px solid #000;padding:3px 10px;font-weight:900;font-size:13px;display:inline-block}h1{text-align:center;font-size:12px;font-weight:900;text-transform:uppercase;background:#111A43;color:white;padding:7px 10px;margin:0 0 7px;border:1px solid #000}.info-tbl{width:100%;border-collapse:collapse;border:1px solid #000;margin-bottom:7px}.info-tbl td{border:1px solid #ddd;padding:3px 6px}.lbl{background:#f0f0f0;font-weight:700;font-size:9px;width:120px}.nro-cell{background:#f0f0f0;text-align:center;font-weight:900;font-size:15px;vertical-align:middle;width:120px}.sec{background:#111A43;color:white;padding:3px 8px;font-weight:900;font-size:10px;text-transform:uppercase;border:1px solid #000}table.det{width:100%;border-collapse:collapse;border:1px solid #000}table.det th{background:#111A43;color:white;padding:4px 3px;font-size:8px;font-weight:900;text-transform:uppercase;border:1px solid #000;text-align:center}table.det td{padding:3px 4px;border:1px solid #ddd;font-size:9px}table.det tr:nth-child(even) td{background:#f9f9f9}.sigs{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:16px}.sig{border:1px solid #000;padding:6px 8px;text-align:center}.sig-ttl{font-weight:900;font-size:9px;text-transform:uppercase;margin-bottom:26px}.sig-line{border-top:1px solid #000;padding-top:3px;font-size:8.5px}.footer{text-align:center;margin-top:10px;font-size:7.5px;color:#888;border-top:1px dotted #ccc;padding-top:4px}@media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact}}</style>`;
-        w.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Devolución Terceros ${nro}</title>${css}</head><body>
-<div class="top"><div style="font-weight:900;font-size:11px">BoAMM &nbsp; OAM145#114 &nbsp; N-114</div><div style="text-align:right"><div class="code-box">MGH-100</div><br><span style="font-size:9px">REV. 0 &nbsp; 2016-10-13</span></div></div>
+        const css = `<style>@page{size:A4 landscape;margin:12mm 10mm}*{box-sizing:border-box}body{font-family:Arial,sans-serif;font-size:10px;color:#000;margin:0}.top{display:flex;align-items:center;gap:10px;margin-bottom:5px}.top img{max-height:30px}h1{text-align:center;font-size:12px;font-weight:900;text-transform:uppercase;background:#111A43;color:white;padding:7px 10px;margin:0 0 7px;border:1px solid #000}.info-tbl{width:100%;border-collapse:collapse;border:1px solid #000;margin-bottom:7px}.info-tbl td{border:1px solid #ddd;padding:3px 6px}.lbl{background:#f0f0f0;font-weight:700;font-size:9px;width:120px}.nro-cell{background:#f0f0f0;text-align:center;font-weight:900;font-size:15px;vertical-align:middle;width:120px}.sec{background:#111A43;color:white;padding:3px 8px;font-weight:900;font-size:10px;text-transform:uppercase;border:1px solid #000}table.det{width:100%;border-collapse:collapse;border:1px solid #000}table.det th{background:#111A43;color:white;padding:4px 3px;font-size:8px;font-weight:900;text-transform:uppercase;border:1px solid #000;text-align:center}table.det td{padding:3px 4px;border:1px solid #ddd;font-size:9px}table.det tr:nth-child(even) td{background:#f9f9f9}.sigs{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:16px}.sig{border:1px solid #000;padding:6px 8px;text-align:center}.sig-ttl{font-weight:900;font-size:9px;text-transform:uppercase;margin-bottom:26px}.sig-line{border-top:1px solid #000;padding-top:3px;font-size:8.5px}.footer{text-align:center;margin-top:10px;font-size:7.5px;color:#888;border-top:1px dotted #ccc;padding-top:4px}@media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact}}</style>`;
+        const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Devolución Terceros ${nro}</title>${css}</head><body>
+<div class="top">${logoUri ? `<img src="${logoUri}" alt="BoA">` : '<div style="font-weight:900;font-size:16px">BoA</div>'}<div style="font-weight:900;font-size:11px">BoAMM &nbsp; OAM145# N-114</div></div>
 <h1>NOTA DE DEVOLUCIÓN A TERCEROS</h1>
 <table class="info-tbl">
 <tr><td class="lbl">EMPRESA / ENTIDAD:</td><td style="font-weight:700">${this._terceroSeleccionado?.razonSocial||''}</td><td class="lbl">NIT:</td><td>${this._terceroSeleccionado?.nit||''}</td><td class="nro-cell" rowspan="3"><div style="font-size:8px;font-weight:400">N° NOTA</div>${nro}</td></tr>
@@ -312,8 +339,13 @@ export class FormDevolucionExternoDialogComponent implements OnInit, OnDestroy {
 <div class="sigs"><div class="sig"><div class="sig-ttl">DEVUELTO POR</div><div style="font-size:9px;margin-bottom:16px">${this._terceroSeleccionado?.razonSocial||'_____'}</div><div class="sig-line">Firma Representante Tercero</div></div><div class="sig"><div class="sig-ttl">RECIBIDO EN ALMACÉN</div><div style="font-size:9px;margin-bottom:16px">${fv.responsableRecibe||''}</div><div class="sig-line">Firma Almacén Herramientas BOA</div></div><div class="sig"><div class="sig-ttl">AUTORIZADO POR</div><div class="sig-line">Firma Autorizada BOA</div></div></div>
 <div class="footer">Sistema de Gestión de Herramientas - BOA &nbsp;|&nbsp; ${new Date().toLocaleString('es-BO')}</div>
 <script>window.onload=function(){setTimeout(function(){window.print();},500);};<\/script>
-</body></html>`);
-        w.document.close();
+</body></html>`;
+        const blob = new Blob([html], { type: 'text/html' });
+        const url  = URL.createObjectURL(blob);
+        const a    = document.createElement('a');
+        a.href = url; a.target = '_blank'; a.rel = 'noopener';
+        document.body.appendChild(a); a.click(); document.body.removeChild(a);
+        setTimeout(() => URL.revokeObjectURL(url), 60000);
     }
 
     private showMsg(type: 'success'|'error'|'info'|'warning', text: string): void {

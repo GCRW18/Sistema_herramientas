@@ -14,6 +14,7 @@ import {
     Ubicacion, ToolEnvioItem, Funcionario,
     CONDICIONES_ENVIO, abrirBlob
 } from '../../retorno-traspaso.types';
+import { EnvioBasePdfService, EnvioBasePdfData } from '../../envio-base-pdf.service';
 
 export interface EnvioDialogData {
     almacenes: Ubicacion[];
@@ -44,8 +45,10 @@ export class EnvioDialogComponent implements OnInit, OnDestroy {
     private snackBar  = inject(MatSnackBar);
     private movSvc    = inject(MovementService);
     private toolSvc   = inject(ToolService);
+    private pdfSvc    = inject(EnvioBasePdfService);
     private _unsub$   = new Subject<void>();
     private _srchEnvio$ = new Subject<string>();
+    private _logoBoaDataUri: Promise<string> | null = null;
 
     envioForm!: FormGroup;
     itemsEnvio: ToolEnvioItem[] = [];
@@ -286,11 +289,26 @@ export class EnvioDialogComponent implements OnInit, OnDestroy {
             next: (result: any) => {
                 const nro = result?.movement_number || '---';
                 this._showMsg(`Envío registrado: ${nro}`, 'success');
-                this._pdfEnvio(nro, this.itemsEnvio, form, 'ENVÍO A BASE');
+                this._pdfEnvioOficial(nro, this.itemsEnvio, form);
                 this.dialogRef.close({ refreshActivos: true });
             },
             error: (err) => this._showMsg('Error al registrar envío: ' + (err?.message || ''), 'error')
         });
+    }
+
+    private _loadLogoBoaDataUri(): Promise<string> {
+        if (!this._logoBoaDataUri) {
+            this._logoBoaDataUri = fetch('/images/logo-boa.png')
+                .then(r => r.blob())
+                .then(blob => new Promise<string>((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onload  = () => resolve(reader.result as string);
+                    reader.onerror = reject;
+                    reader.readAsDataURL(blob);
+                }))
+                .catch(() => '');
+        }
+        return this._logoBoaDataUri;
     }
 
     imprimirCoMat(): void {
@@ -303,132 +321,163 @@ export class EnvioDialogComponent implements OnInit, OnDestroy {
 
     // ── PDF ────────────────────────────────────────────────────────────────────
 
-    private _pdfEnvio(nro: string, items: ToolEnvioItem[], form: any, tipo: string): void {
-        const fecha       = new Date(form.fechaEnvio || new Date()).toLocaleDateString('es-BO', { day: '2-digit', month: '2-digit', year: 'numeric' });
-        const destino     = form.baseDestino?.nombre || form.areaDepartamento || '---';
-        const responsable = form.responsableEnvia || '---';
-        const recibe      = form.recibeEnDestino  || null;
-        const condLabel: Record<string, string> = { excellent: 'Excelente', good: 'Bueno', fair: 'Regular', damaged: 'Dañado' };
-        const filas = items.map((it, i) => `
-            <tr><td style="text-align:center">${i + 1}</td><td>${it.codigo}</td>
-            <td>${it.nombre}</td><td>${it.pn || '---'}</td><td>${it.sn || '---'}</td>
-            <td style="text-align:center">${it.cantidad}</td>
-            <td style="text-align:center">${condLabel[it.condicion] || it.condicion}</td>
-            <td>${it.notas || '---'}</td></tr>`).join('');
-        const campos: [string, string][] = [
-            ['Fecha', fecha], ['Destino / Área', destino], ['Responsable', responsable],
-            ['Nro. Documento', form.nroDocumento || '---'],
-            ['Fecha Esp. Retorno', form.fechaEsperadaRetorno || 'N/A'],
-            ['Nro. Vuelo', form.nroVuelo || '---'], ['Aeronave', form.aeronave || '---'],
-            ['Tipo Envío', form.tipoEnvio || 'EVENTUAL'], ['Notas', form.notas || '---']
-        ];
-        const columnas: [string, string][] = [
-            ['#','3%'],['Código BOA','8%'],['Descripción','24%'],['P/N','13%'],['S/N','11%'],
-            ['Cant.','7%'],['Condición','12%'],['Observación','22%']
-        ];
-        const firmas: [string, string] = [responsable, destino];
-        this._abrirPdf(nro, tipo, filas, campos, columnas, firmas);
+    /** Nota de "Registro de Herramientas en Otras Bases" (formato oficial calcado del Excel). */
+    private _pdfEnvioOficial(nro: string, items: ToolEnvioItem[], form: any): void {
+        const data: EnvioBasePdfData = {
+            nroNota: nro,
+            origen: form.baseOrigen?.nombre || '---',
+            destino: form.baseDestino?.nombre || '---',
+            fechaEnvio: new Date(form.fechaEnvio || new Date()).toLocaleDateString('es-BO', { day: '2-digit', month: '2-digit', year: 'numeric' }),
+            responsable: form.responsableEnvia || '',
+            recibe: form.recibeEnDestino || '',
+            tipoEnvio: form.tipoEnvio || 'EVENTUAL',
+            fechaEsperadaRetorno: form.fechaEsperadaRetorno || '',
+            nroDocumento: form.nroDocumento || '',
+            nroVuelo: form.nroVuelo || '',
+            aeronave: form.aeronave || '',
+            observaciones: form.notas || '',
+            items: items.map(it => ({ descripcion: it.nombre, pn: it.pn, sn: it.sn })),
+        };
+        this.pdfSvc.generarPdf(data);
     }
 
-    private _pdfCoMat(nro: string, items: ToolEnvioItem[], form: any): void {
-        const now  = new Date();
+    /**
+     * "Solicitud de Envío — CO-MAT", calcado de "Sistema Herramientas con Macros/Formularios.xlsx",
+     * hoja "CO-MAT". A diferencia de los demás formularios calcados, esta hoja no tiene logo con
+     * código de documento (ni MGH-xxx ni MOM-) — es solo texto: "DEPARTAMENTO DE MANTENIMIENTO" /
+     * "UNIDAD DE ALMACÉN DE HERRAMIENTAS" / "SOLICITUD DE ENVÍO" / "CO-MAT". La implementación
+     * previa mostraba "OAM145# N-014" en el header, pero ese código pertenece a la hoja "SALIDA
+     * CONSUMIBLES" del mismo Excel, no a CO-MAT — se retiró por infidelidad a la fuente. El número
+     * de documento interno (correlativo ENV-N/YYYY) se imprime en la celda "SERIAL NUMBER:" que la
+     * hoja sí reserva junto a ORIGEN, en vez de inventar una caja de código aparte. La tabla también
+     * pierde la columna "Código BOA" (no existe en el Excel, solo ITEM/CANT./DESCRIPCIÓN/PART
+     * NUMBER/SERIAL NUMBER).
+     */
+    private async _pdfCoMat(nro: string, items: ToolEnvioItem[], form: any): Promise<void> {
+        const logoUri = await this._loadLogoBoaDataUri();
+        const now   = new Date();
         const fecha = now.toLocaleDateString('es-BO', { day: '2-digit', month: '2-digit', year: 'numeric' });
         const hora  = now.toLocaleTimeString('es-BO', { hour: '2-digit', minute: '2-digit' });
-        const origen  = form.baseOrigen?.nombre || 'ALMACÉN CBB';
+        const origen  = form.baseOrigen?.nombre || '---';
         const destino = form.baseDestino?.nombre || '---';
         const responsable = form.responsableEnvia || '---';
-        const recibe      = form.recibeEnDestino  || '';
-        const nVuelo      = form.nroVuelo  || '---';
-        const aeronave    = form.aeronave  || '---';
+        const recibe      = form.recibeEnDestino  || '---';
         const tipoEnvio   = form.tipoEnvio || 'EVENTUAL';
-        const rows = items.map((it, i) => `
-            <tr><td class="tc">${i + 1}</td><td class="tc"><strong>${it.cantidad}</strong></td>
-            <td>${it.nombre || '-'}</td><td class="mono">${it.pn || '---'}</td>
-            <td class="mono">${it.sn || '---'}</td><td class="mono">${it.codigo || '-'}</td></tr>`).join('');
-        const html = `<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><title>CO-MAT ${nro}</title>
-<style>
-  @page{size:A4;margin:10mm 12mm}*{box-sizing:border-box;margin:0;padding:0}
-  body{font-family:Arial,sans-serif;font-size:10px;color:#000}
-  .top{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2px solid #000;padding-bottom:6px;margin-bottom:8px}
-  .top-center{text-align:center;flex:1}.top-center h1{font-size:14px;font-weight:900;text-transform:uppercase}
-  .top-right{text-align:right}.nro-box{border:2.5px solid #000;padding:5px 14px;font-size:16px;font-weight:900;display:inline-block}
-  .tipo-badge{display:inline-block;background:${tipoEnvio==='PERMANENTE'?'#fbbf24':'#dcfce7'};border:1.5px solid #000;font-weight:900;font-size:9px;padding:2px 7px;border-radius:3px;margin-top:3px}
-  .meta{display:grid;grid-template-columns:1fr 1fr 1fr;gap:5px 14px;margin-bottom:8px;border:1.5px solid #ddd;padding:7px 10px}
-  .field label{display:block;font-size:7.5px;font-weight:900;text-transform:uppercase;color:#666;margin-bottom:1px}
-  .field span{display:block;font-weight:700;font-size:10px;border-bottom:1px solid #ccc;padding-bottom:1px;min-height:13px}
-  .sec-title{background:#0f172a;color:#fff;font-size:9px;font-weight:900;text-transform:uppercase;padding:4px 8px}
-  table{width:100%;border-collapse:collapse;margin-bottom:10px}
-  th{background:#334155;color:#fff;padding:4px 5px;font-size:8.5px;font-weight:900;text-align:left;border:1px solid #000}
-  td{padding:3.5px 5px;border:1px solid #ddd;font-size:9px}tr:nth-child(even)td{background:#f8f9fc}
-  .tc{text-align:center}.mono{font-family:monospace;font-size:9px}
-  .firmas{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:14px}
-  .firma{border:1.5px solid #000;padding:6px 8px}
-  .firma-title{font-size:8px;font-weight:900;text-transform:uppercase;background:#0f172a;color:#fff;padding:3px 6px;margin:-6px -8px 8px}
-  .firma-sign{height:34px;border-bottom:1px solid #000;margin-top:4px}
-  .footer{text-align:center;font-size:7.5px;color:#888;margin-top:10px;border-top:1px dotted #ccc;padding-top:4px}
-</style><script>window.onload=()=>window.print();</script></head><body>
-<div class="top">
-  <div style="font-size:8.5px;color:#555;line-height:1.6"><div><strong>BoAMM</strong> OAM145# N-014</div><div>BOLIVIANA DE AVIACIÓN</div><div>Almacén de Herramientas</div></div>
-  <div class="top-center"><h1>Solicitud de Envío</h1><div style="font-size:9px;color:#555">CO-MAT — Comprobante de Movimiento de Material</div><div class="tipo-badge">${tipoEnvio}</div></div>
-  <div class="top-right"><div class="nro-box">${nro}</div><div style="font-size:8px;color:#555;margin-top:4px">Fecha: ${fecha} ${hora}</div></div>
-</div>
-<div class="meta">
-  <div class="field"><label>Origen / Almacén</label><span>${origen}</span></div>
-  <div class="field"><label>Base Destino</label><span>${destino}</span></div>
-  <div class="field"><label>Fecha Retorno Esperada</label><span>${tipoEnvio==='PERMANENTE'?(form.fechaEsperadaRetorno||'---'):'No aplica (Eventual)'}</span></div>
-  <div class="field"><label>Responsable / Envía</label><span>${responsable}</span></div>
-  <div class="field"><label>Recibe en Destino</label><span>${recibe||'---'}</span></div>
-  <div class="field"><label>Nro. Vuelo / Aeronave</label><span>${nVuelo!=='---'||aeronave!=='---'?nVuelo+' / '+aeronave:'---'}</span></div>
-</div>
-<div class="sec-title">Detalle de Herramientas / Equipos</div>
-<table><thead><tr>
-  <th style="width:4%">ITEM</th><th style="width:6%">CANT.</th><th style="width:35%">DESCRIPCIÓN</th>
-  <th style="width:18%">MODELO / P/N</th><th style="width:15%">SERIAL NUMBER</th><th style="width:12%">CÓDIGO BOA</th>
-</tr></thead><tbody>${rows}</tbody></table>
-<div class="firmas">
-  <div class="firma"><div class="firma-title">ENTREGUE CONFORME / MM-CBB</div>
-    <div style="font-size:8px;font-weight:700">Nombre: ${responsable}</div><div class="firma-sign"></div></div>
-  <div class="firma"><div class="firma-title">RECIBI CONFORME / CARGA-VOA</div>
-    <div style="font-size:8px;font-weight:700">Nombre: ${recibe||'&nbsp;'}</div><div class="firma-sign"></div></div>
-</div>
-<div class="footer">BOLIVIANA DE AVIACIÓN — Almacén de Herramientas · CO-MAT | Generado: ${now.toLocaleString('es-BO')} | Nro: ${nro}</div>
-</body></html>`;
-        abrirBlob(html);
-    }
+        const vueloAeronave = (form.nroVuelo || form.aeronave)
+            ? `${form.nroVuelo || '---'} / ${form.aeronave || '---'}` : '---';
 
-    private _abrirPdf(nro: string, tipo: string, filas: string, campos: [string,string][], columnas: [string,string][], firmas: [string,string]): void {
-        const camposHtml = campos.map(([l,v]) => `<div class="field"><label>${l}</label><span>${v}</span></div>`).join('');
-        const thHtml     = columnas.map(([l,w]) => `<th style="width:${w}">${l}</th>`).join('');
-        const [f0,f1]    = firmas;
-        const html = `<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><title>${nro}</title>
+        const filas = items.map((it, i) => `
+            <tr>
+                <td class="tc">${i + 1}</td>
+                <td class="tc">${it.cantidad}</td>
+                <td>${it.nombre || '---'}</td>
+                <td class="mono">${it.pn || '---'}</td>
+                <td class="mono">${it.sn || '---'}</td>
+            </tr>`).join('');
+
+        const html = `<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8">
+<title>CO-MAT ${nro}</title>
 <style>
-body{font-family:Arial,sans-serif;font-size:11px;padding:20px}
-.header{display:flex;align-items:center;justify-content:space-between;border-bottom:3px solid #000;padding-bottom:8px;margin-bottom:12px}
-.header h1{font-size:15px;font-weight:900;text-transform:uppercase;margin:0}
-.nro{background:#0f172a;color:#fff;padding:6px 14px;font-size:14px;font-weight:900;border-radius:4px}
-.badge{display:inline-block;background:#fbbf24;color:#000;font-weight:900;padding:2px 8px;border-radius:3px;border:1px solid #000;font-size:10px;margin-bottom:6px}
-.grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px 16px;margin-bottom:12px}
-.field label{display:block;font-size:9px;font-weight:900;text-transform:uppercase;color:#555}
-.field span{display:block;font-weight:700;font-size:11px;border-bottom:1px solid #ccc;padding-bottom:2px}
-table{width:100%;border-collapse:collapse;margin-bottom:12px;font-size:10px}
-th{background:#0f172a;color:#fff;padding:5px 4px;text-align:left;font-size:9px;text-transform:uppercase}
-td{padding:4px;border-bottom:1px solid #ddd}tr:nth-child(even)td{background:#f8f9fc}
-.firmas{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:24px}
-.firma{border-top:2px solid #000;padding-top:6px;text-align:center;font-size:10px;font-weight:700}
-@media print{body{padding:10px}}
-</style></head><body>
-<div class="header">
-  <div><div class="badge">${tipo}</div><h1>Acta de ${tipo}</h1>
-  <div style="font-size:10px;color:#555">BOLIVIANA DE AVIACIÓN — Almacén de Herramientas</div></div>
-  <div class="nro">${nro}</div>
-</div>
-<div class="grid">${camposHtml}</div>
-<table><thead><tr>${thHtml}</tr></thead><tbody>${filas}</tbody></table>
-<div class="firmas">
-  <div class="firma"><div style="height:36px"></div>ENTREGA CONFORME<br>${f0}</div>
-  <div class="firma"><div style="height:36px"></div>RECIBE CONFORME<br>${f1}</div>
-</div>
-<script>window.onload=()=>window.print();</script>
+  @page { size: A4; margin: 8mm 10mm; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: Arial, sans-serif; font-size: 10px; color: #000; }
+
+  table.head-table { width: 100%; border-collapse: collapse; border: 2px solid #000; margin-bottom: 6px; }
+  table.head-table td { border: 1px solid #000; padding: 6px 8px; vertical-align: middle; }
+  .logo-cell { width: 22%; text-align: center; }
+  .logo-cell img { max-width: 100%; max-height: 34px; }
+  .title-cell { width: 78%; text-align: center; }
+  .title-cell div { font-size: 10px; font-weight: 900; text-transform: uppercase; }
+  .title-cell .comat { font-size: 15px; margin-top: 3px; }
+
+  table.meta-table { width: 100%; border-collapse: collapse; border: 2px solid #000; border-top: none; margin-bottom: 0; }
+  table.meta-table td { border: 1px solid #000; padding: 3px 6px; font-size: 9.5px; height: 20px; }
+  table.meta-table td b { font-weight: 900; }
+
+  .detalle-bar { background: #fff; border: 2px solid #000; border-top: none; text-align: center; font-weight: 900; font-size: 11px; text-transform: uppercase; padding: 3px; }
+
+  table.items { width: 100%; border-collapse: collapse; border: 2px solid #000; border-top: none; margin-bottom: 0; }
+  table.items th { border: 1px solid #000; background: #e5e7eb; font-size: 7.7px; font-weight: 900; text-transform: uppercase; padding: 4px 2px; }
+  table.items td { border: 1px solid #000; padding: 4px 3px; font-size: 8.7px; }
+  table.items tbody tr { height: 20px; }
+  .tc { text-align: center; }
+  .mono { font-family: monospace; }
+
+  table.foot-table { width: 100%; border-collapse: collapse; border: 2px solid #000; border-top: none; }
+  table.foot-table td { border: 1px solid #000; padding: 6px 8px; vertical-align: top; font-size: 9.5px; width: 50%; }
+  .firma-lbl { font-weight: 900; }
+  .firma-line { border-bottom: 1px solid #000; height: 26px; margin-top: 14px; }
+  .firma-sub { font-size: 8.5px; margin-top: 2px; }
+  .firma-fecha { margin-top: 8px; font-size: 8.5px; }
+
+  @media print { body { padding: 0; } }
+</style>
+<script>window.onload = () => window.print();</script>
+</head><body>
+
+<table class="head-table">
+  <tr>
+    <td class="logo-cell">
+      ${logoUri ? `<img src="${logoUri}" alt="BoA">` : '<div style="font-weight:900;font-size:16px">BoA</div>'}
+    </td>
+    <td class="title-cell">
+      <div>Departamento de Mantenimiento</div>
+      <div>Unidad de Almacén de Herramientas</div>
+      <div>Solicitud de Envío</div>
+      <div class="comat">CO-MAT</div>
+    </td>
+  </tr>
+</table>
+
+<table class="meta-table">
+  <tr>
+    <td style="width:16%"><b>ORIGEN:</b></td><td style="width:34%">${origen}</td>
+    <td style="width:20%"><b>SERIAL NUMBER:</b></td><td style="width:30%">${nro}</td>
+  </tr>
+  <tr>
+    <td><b>Nº DE BULTOS:</b></td><td>${items.length}</td>
+    <td><b>PESO:</b></td><td>&nbsp;</td>
+  </tr>
+  <tr>
+    <td><b>DESTINO:</b></td><td>${destino}</td>
+    <td><b>RESPONSABLE / ENVÍA:</b></td><td>${responsable}</td>
+  </tr>
+  <tr>
+    <td><b>RECIBE EN DESTINO:</b></td><td>${recibe}</td>
+    <td><b>FECHA Y HORA:</b></td><td>${fecha} ${hora}</td>
+  </tr>
+  <tr>
+    <td><b>TIPO ENVÍO:</b></td><td>${tipoEnvio}</td>
+    <td><b>N° VUELO / AERONAVE:</b></td><td>${vueloAeronave}</td>
+  </tr>
+</table>
+
+<div class="detalle-bar">DETALLE</div>
+<table class="items">
+  <thead><tr>
+    <th style="width:8%">ITEM</th><th style="width:10%">CANT.</th><th style="width:44%">DESCRIPCIÓN</th>
+    <th style="width:19%">PART NUMBER</th><th style="width:19%">SERIAL NUMBER</th>
+  </tr></thead>
+  <tbody>${filas || '<tr><td colspan="5" class="tc">Sin ítems</td></tr>'}</tbody>
+</table>
+
+<table class="foot-table">
+  <tr>
+    <td>
+      <div class="firma-lbl">ENTREGUE CONFORME / MM-CBB</div>
+      <div class="firma-line"></div>
+      <div class="firma-sub">Firma — ${responsable}</div>
+      <div class="firma-fecha">FECHA Y HORA: _____________</div>
+    </td>
+    <td>
+      <div class="firma-lbl">RECIBÍ CONFORME / CARGA-VOA</div>
+      <div class="firma-line"></div>
+      <div class="firma-sub">Firma — ${recibe}</div>
+      <div class="firma-fecha">FECHA Y HORA: _____________</div>
+    </td>
+  </tr>
+</table>
+
 </body></html>`;
         abrirBlob(html);
     }

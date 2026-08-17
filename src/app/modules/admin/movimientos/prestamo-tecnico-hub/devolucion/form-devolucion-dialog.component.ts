@@ -406,6 +406,11 @@ export class FormDevolucionDialogComponent implements OnInit, OnDestroy {
         });
     }
 
+    /* trackBy — getResumenCondicion() arma objetos nuevos en cada llamada;
+       sin esto el *ngFor los recrearía en cada CD (mismo origen del
+       congelamiento de Misceláneos). */
+    trackByCondicion = (_: number, r: { condicion: string }): string => r.condicion;
+
     abrirConfirmDevolucion(): void {
         const val = this._validateDevolucion();
         if (!val.valid) { val.errors.forEach(e => this.showMsg('error', e)); return; }

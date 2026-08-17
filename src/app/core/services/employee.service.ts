@@ -68,7 +68,9 @@ export class EmployeeService {
     }
 
     updateEmployee(id: string, data: Partial<Employee>): Observable<any> {
-        return from(this._api.post('herramientas/employees/modificarEmployees', { ...data, id_employee: id })).pipe(
+        // ACTEmployees no tiene un método "modificarEmployees" propio: insertarEmployees()
+        // decide internamente si inserta o modifica según venga o no id_employee (patrón pxp).
+        return from(this._api.post('herramientas/employees/insertarEmployees', { ...data, id_employee: id })).pipe(
             switchMap((response: any) => of(response?.data || {}))
         );
     }

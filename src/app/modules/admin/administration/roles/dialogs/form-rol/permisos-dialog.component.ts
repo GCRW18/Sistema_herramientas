@@ -64,6 +64,11 @@ export class PermisosDialogComponent implements OnInit {
         return result;
     }
 
+    /* trackBy — filteredPermissions arma objetos {mod, perm} nuevos en cada
+       llamada; sin esto, el *ngFor los recrearía en cada detección de cambios
+       (mismo origen del congelamiento de Misceláneos, ver [[project_...]]). */
+    trackByPermItem = (_: number, item: { mod: string; perm: Permission }): string => `${item.mod}::${item.perm.id}`;
+
     get isSearching(): boolean { return this.searchTerm.trim().length > 0; }
     get selectedCount(): number { return this.localPermissions.length; }
     get totalCount(): number { return AVAILABLE_PERMISSIONS.length; }

@@ -80,8 +80,11 @@
                                border-[2px] border-black rounded-lg font-black text-xs uppercase
                                focus:outline-none focus:shadow-[3px_3px_0px_0px_#000] transition-all cursor-pointer">
                     <option value="">Todos los tipos</option>
-                    <option value="Consumible">Consumible</option>
-                    <option value="Material">Material</option>
+                    <option value="CONSUMIBLE">Consumible</option>
+                    <option value="MATERIAL">Material</option>
+                    <option value="REPUESTO">Repuesto</option>
+                    <option value="QUIMICO">Químico</option>
+                    <option value="ELECTRICO">Eléctrico</option>
                 </select>
 
                 <!-- Botón de acción (cambia por tab) -->
@@ -184,7 +187,7 @@
                     </tr>
                     </thead>
                     <tbody>
-                    <tr *ngFor="let m of materialesPagina"
+                    <tr *ngFor="let m of materialesPagina(); trackBy: trackById"
                         (click)="verCatalogo(m)"
                         class="border-b border-gray-200 dark:border-slate-700 hover:bg-amber-50 dark:hover:bg-slate-800 cursor-pointer transition-all">
 
@@ -263,7 +266,7 @@
                         </td>
                     </tr>
 
-                    <tr *ngIf="!filteredMateriales.length">
+                    <tr *ngIf="!filteredMateriales().length">
                         <td colspan="8" class="px-4 py-12 text-center">
                             <mat-icon class="!text-5xl text-gray-300 dark:text-gray-600">inventory_2</mat-icon>
                             <p class="text-xs font-bold uppercase text-gray-500 mt-2">Sin ítems registrados</p>
@@ -296,7 +299,7 @@
                     </tr>
                     </thead>
                     <tbody>
-                    <tr *ngFor="let e of entradasPagina"
+                    <tr *ngFor="let e of entradasPagina(); trackBy: trackById"
                         (click)="verEntrada(e)"
                         class="border-b border-gray-200 dark:border-slate-700 hover:bg-green-50 dark:hover:bg-slate-800 cursor-pointer transition-all">
 
@@ -356,7 +359,7 @@
                         </td>
                     </tr>
 
-                    <tr *ngIf="!filteredEntradas.length">
+                    <tr *ngIf="!filteredEntradas().length">
                         <td colspan="7" class="px-4 py-12 text-center">
                             <mat-icon class="!text-5xl text-gray-300 dark:text-gray-600">move_to_inbox</mat-icon>
                             <p class="text-xs font-bold uppercase text-gray-500 mt-2">Sin entradas registradas</p>
@@ -390,7 +393,7 @@
                     </tr>
                     </thead>
                     <tbody>
-                    <tr *ngFor="let s of salidasPagina"
+                    <tr *ngFor="let s of salidasPagina(); trackBy: trackById"
                         (click)="verSalida(s)"
                         class="border-b border-gray-200 dark:border-slate-700 hover:bg-orange-50 dark:hover:bg-slate-800 cursor-pointer transition-all">
 
@@ -453,7 +456,7 @@
                         </td>
                     </tr>
 
-                    <tr *ngIf="!filteredSalidas.length">
+                    <tr *ngIf="!filteredSalidas().length">
                         <td colspan="8" class="px-4 py-12 text-center">
                             <mat-icon class="!text-5xl text-gray-300 dark:text-gray-600">outbox</mat-icon>
                             <p class="text-xs font-bold uppercase text-gray-500 mt-2">Sin salidas registradas</p>
@@ -471,15 +474,15 @@
             <div [hidden]="activeTab() !== 'stock'" class="flex-1 overflow-auto custom-scrollbar-misc p-4">
 
                 <!-- Sin datos -->
-                <div *ngIf="!stockPorUbicacion.length" class="flex flex-col items-center justify-center h-full gap-3">
+                <div *ngIf="!stockPorUbicacion().length" class="flex flex-col items-center justify-center h-full gap-3">
                     <mat-icon class="!text-5xl text-gray-300 dark:text-gray-600">warehouse</mat-icon>
                     <p class="text-xs font-bold uppercase text-gray-500">No hay ítems activos en el catálogo</p>
                 </div>
 
                 <!-- Grid de ubicaciones -->
-                <div *ngIf="stockPorUbicacion.length" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                <div *ngIf="stockPorUbicacion().length" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
 
-                    <div *ngFor="let grupo of stockPorUbicacion"
+                    <div *ngFor="let grupo of stockPorUbicacion(); trackBy: trackByUbicacion"
                          class="flex flex-col border-[3px] border-black rounded-xl overflow-hidden bg-white dark:bg-slate-900 shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-all hover:-translate-y-[2px] hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
 
                         <!-- Card header -->
@@ -512,7 +515,7 @@
 
                         <!-- Lista de ítems -->
                         <div class="flex-1 flex flex-col divide-y divide-gray-100 dark:divide-slate-700">
-                            <div *ngFor="let m of grupo.items"
+                            <div *ngFor="let m of grupo.items; trackBy: trackById"
                                  (click)="verCatalogo(m)"
                                  class="px-3 py-2 flex flex-col gap-1 cursor-pointer hover:bg-amber-50 dark:hover:bg-slate-800 transition-colors">
 
@@ -555,24 +558,24 @@
             </div>
 
             <!-- PAGINADOR (tabs catálogo / entradas / salidas) -->
-            <div *ngIf="activeTab() !== 'stock' && listaActiva.length > pageSize"
+            <div *ngIf="activeTab() !== 'stock' && listaActiva().length > pageSize"
                  class="shrink-0 border-t-2 border-black bg-white dark:bg-slate-800 px-3 sm:px-4 py-2 flex items-center justify-between gap-2 flex-wrap">
                 <span class="text-[9px] sm:text-[10px] font-black uppercase text-gray-500">
-                    {{ rangoPagina.desde }}–{{ rangoPagina.hasta }} de {{ listaActiva.length }} registros
+                    {{ rangoPagina().desde }}–{{ rangoPagina().hasta }} de {{ listaActiva().length }} registros
                 </span>
                 <div class="flex items-center gap-1">
                     <button (click)="irAPagina(pagina() - 1)" [disabled]="pagina() <= 1"
                             class="w-7 h-7 flex items-center justify-center bg-white dark:bg-slate-700 border-2 border-black rounded-lg shadow-[2px_2px_0px_0px_#000] hover:translate-y-[1px] hover:shadow-none transition-all disabled:opacity-30 disabled:cursor-not-allowed disabled:translate-y-0 disabled:shadow-[2px_2px_0px_0px_#000]">
                         <mat-icon class="!text-sm text-black dark:text-white">chevron_left</mat-icon>
                     </button>
-                    <button *ngFor="let p of paginasVisibles()" (click)="irAPagina(p)"
+                    <button *ngFor="let p of paginasVisibles(); trackBy: trackByPagina" (click)="irAPagina(p)"
                             class="w-7 h-7 flex items-center justify-center border-2 border-black rounded-lg text-[10px] font-black transition-all"
                             [ngClass]="p === pagina()
                                 ? 'bg-amber-400 text-black shadow-none translate-y-[1px]'
                                 : 'bg-white dark:bg-slate-700 text-black dark:text-white shadow-[2px_2px_0px_0px_#000] hover:translate-y-[1px] hover:shadow-none'">
                         {{ p }}
                     </button>
-                    <button (click)="irAPagina(pagina() + 1)" [disabled]="pagina() >= totalPaginas"
+                    <button (click)="irAPagina(pagina() + 1)" [disabled]="pagina() >= totalPaginas()"
                             class="w-7 h-7 flex items-center justify-center bg-white dark:bg-slate-700 border-2 border-black rounded-lg shadow-[2px_2px_0px_0px_#000] hover:translate-y-[1px] hover:shadow-none transition-all disabled:opacity-30 disabled:cursor-not-allowed disabled:translate-y-0 disabled:shadow-[2px_2px_0px_0px_#000]">
                         <mat-icon class="!text-sm text-black dark:text-white">chevron_right</mat-icon>
                     </button>

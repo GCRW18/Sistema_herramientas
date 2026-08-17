@@ -4,7 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { MatIconModule, MatIconRegistry } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDialog, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
-import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { DomSanitizer } from '@angular/platform-browser';
@@ -94,7 +94,6 @@ interface CalibrationRecord {
 })
 export class CalibracionesComponent implements OnInit, OnDestroy, AfterViewInit {
     private dialog             = inject(MatDialog);
-    private snackBar           = inject(MatSnackBar);
     private calibrationService = inject(CalibrationService);
     private movementService    = inject(MovementService);
     private injector           = inject(Injector);
@@ -378,14 +377,6 @@ export class CalibracionesComponent implements OnInit, OnDestroy, AfterViewInit 
 
     cerrarDetalle(): void {
         this.selectedEntry = null;
-    }
-
-    editarRegistro(record: CalibrationRecord): void {
-        this.showMessage(`Editar: ${record.nroComprobante}`, 'info');
-    }
-
-    private showMessage(message: string, type: 'success' | 'error' | 'warning' | 'info'): void {
-        this.snackBar.open(message, 'Cerrar', { duration: 3000, horizontalPosition: 'end', verticalPosition: 'top', panelClass: [`snackbar-${type}`] });
     }
 
     private registerIcons(): void {

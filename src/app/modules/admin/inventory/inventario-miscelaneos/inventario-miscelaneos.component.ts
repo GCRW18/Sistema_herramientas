@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, inject, signal } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { MatDialog, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
@@ -42,21 +42,55 @@ export class InventarioMiscelaneosComponent implements OnInit, OnDestroy {
     searchControl  = new FormControl('');
     filterTipoCtrl = new FormControl('');
 
-    materiales:         Material[] = [];
-    filteredMateriales: Material[] = [];
+    // Datos crudos como signals: solo se recomputan valores derivados cuando
+    // estas señales realmente cambian, nunca en cada ciclo de detección de
+    // cambios (antes eran getters/arrays planos leídos por *ngFor y devolvían
+    // una referencia nueva en cada CD → recreación completa del DOM en cada
+    // tick, que junto a BrowserAnimationsModule producía un loop de animación
+    // infinito y congelaba la pestaña al entrar al módulo).
+    private _materiales = signal<Material[]>([]);
+    private _entradas   = signal<Entrada[]>([]);
+    private _salidas    = signal<Salida[]>([]);
 
-    entradas:           Entrada[]  = [];
-    filteredEntradas:   Entrada[]  = [];
+    private _searchTerm = signal('');
+    private _tipoFiltro = signal('');
 
-    salidas:            Salida[]   = [];
-    filteredSalidas:    Salida[]   = [];
+    get materiales(): Material[] { return this._materiales(); }
+    get entradas():   Entrada[]  { return this._entradas(); }
+    get salidas():    Salida[]   { return this._salidas(); }
+
+    filteredMateriales = computed(() => {
+        const tipo = this._tipoFiltro();
+        const q    = this._searchTerm();
+        return this._materiales().filter(m => {
+            if (tipo && m.tipoItem !== tipo) return false;
+            if (q && !`${m.codigoBoaM} ${m.producto} ${m.pn} ${m.marca}`.toLowerCase().includes(q)) return false;
+            return true;
+        });
+    });
+
+    filteredEntradas = computed(() => {
+        const q = this._searchTerm();
+        return this._entradas().filter(e => {
+            if (q && !`${e.nroNota} ${e.producto} ${e.codigoNombre} ${e.recibidoPor}`.toLowerCase().includes(q)) return false;
+            return true;
+        });
+    });
+
+    filteredSalidas = computed(() => {
+        const q = this._searchTerm();
+        return this._salidas().filter(s => {
+            if (q && !`${s.nroNota} ${s.producto} ${s.nombre} ${s.area}`.toLowerCase().includes(q)) return false;
+            return true;
+        });
+    });
 
     tiposItem = ['CONSUMIBLE', 'MATERIAL'];
 
     // ── Vista Stock por ubicación ──────────────────────────
-    get stockPorUbicacion(): { ubicacion: string; items: Material[] }[] {
+    stockPorUbicacion = computed<{ ubicacion: string; items: Material[] }[]>(() => {
         const map = new Map<string, Material[]>();
-        for (const m of this.materiales.filter(m => m.activo)) {
+        for (const m of this._materiales().filter(m => m.activo)) {
             const loc = m.ubicacion?.trim() || 'Sin ubicación';
             if (!map.has(loc)) map.set(loc, []);
             map.get(loc)!.push(m);
@@ -68,7 +102,7 @@ export class InventarioMiscelaneosComponent implements OnInit, OnDestroy {
                 if (b.ubicacion === 'Sin ubicación') return -1;
                 return a.ubicacion.localeCompare(b.ubicacion);
             });
-    }
+    });
 
     countBajoStockEnUbicacion(items: Material[]): number {
         return items.filter(m => m.stockMin > 0 && m.stock <= m.stockMin).length;
@@ -81,7 +115,11 @@ export class InventarioMiscelaneosComponent implements OnInit, OnDestroy {
             this.filterTipoCtrl.valueChanges.pipe(startWith(''))
         ])
         .pipe(takeUntil(this._destroy$))
-        .subscribe(() => this.applyFilters());
+        .subscribe(([q, tipo]) => {
+            this._searchTerm.set((q ?? '').trim().toLowerCase());
+            this._tipoFiltro.set((tipo ?? '').trim());
+            this.pagina.set(1);
+        });
 
         this.loadAll();
     }
@@ -101,15 +139,15 @@ export class InventarioMiscelaneosComponent implements OnInit, OnDestroy {
         .pipe(finalize(() => this.isLoading.set(false)), takeUntil(this._destroy$))
         .subscribe({
             next: ({ materiales, entradas, salidas }) => {
-                this.materiales = materiales;
+                this._materiales.set(materiales);
                 // Enriquecer entradas con marca/pn del catálogo (el API no los devuelve)
                 const matMap = new Map(materiales.map(m => [m.id, m]));
-                this.entradas = entradas.map(e => {
+                this._entradas.set(entradas.map(e => {
                     const mat = matMap.get(e.miscelaneo_id);
                     return mat ? { ...e, marca: mat.marca || '', pn: mat.pn || '' } : e;
-                });
-                this.salidas = salidas;
-                this.applyFilters();
+                }));
+                this._salidas.set(salidas);
+                this.pagina.set(1);
             },
             error: () => this.snackBar.open('Error al cargar datos', 'Cerrar', { duration: 3000 })
         });
@@ -117,8 +155,8 @@ export class InventarioMiscelaneosComponent implements OnInit, OnDestroy {
 
     private loadMateriales(): void {
         this.svc.getMiscelaneos().pipe(takeUntil(this._destroy$)).subscribe(list => {
-            this.materiales = list;
-            this.applyFilters();
+            this._materiales.set(list);
+            this.pagina.set(1);
         });
     }
 
@@ -126,40 +164,19 @@ export class InventarioMiscelaneosComponent implements OnInit, OnDestroy {
         forkJoin({ e: this.svc.getEntradas(), s: this.svc.getSalidas() })
             .pipe(takeUntil(this._destroy$))
             .subscribe(({ e, s }) => {
-                this.entradas = e;
-                this.salidas  = s;
-                this.applyFilters();
+                this._entradas.set(e);
+                this._salidas.set(s);
+                this.pagina.set(1);
             });
-    }
-
-    // ── Filtros ────────────────────────────────────────────
-    applyFilters(): void {
-        this.pagina.set(1);
-        const q    = (this.searchControl.value  ?? '').trim().toLowerCase();
-        const tipo = (this.filterTipoCtrl.value ?? '').trim();
-
-        this.filteredMateriales = this.materiales.filter(m => {
-            if (tipo && m.tipoItem !== tipo) return false;
-            if (q && !`${m.codigoBoaM} ${m.producto} ${m.pn} ${m.marca}`.toLowerCase().includes(q)) return false;
-            return true;
-        });
-
-        this.filteredEntradas = this.entradas.filter(e => {
-            if (q && !`${e.nroNota} ${e.producto} ${e.codigoNombre} ${e.recibidoPor}`.toLowerCase().includes(q)) return false;
-            return true;
-        });
-
-        this.filteredSalidas = this.salidas.filter(s => {
-            if (q && !`${s.nroNota} ${s.producto} ${s.nombre} ${s.area}`.toLowerCase().includes(q)) return false;
-            return true;
-        });
     }
 
     setTab(tab: TabMisc): void {
         this.activeTab.set(tab);
         this.filterTipoCtrl.setValue('', { emitEvent: false });
         this.searchControl.setValue('',  { emitEvent: false });
-        this.applyFilters();
+        this._searchTerm.set('');
+        this._tipoFiltro.set('');
+        this.pagina.set(1);
     }
 
     /* ── Paginación (compartida entre los tabs de listas) ── */
@@ -173,46 +190,50 @@ export class InventarioMiscelaneosComponent implements OnInit, OnDestroy {
         return list.slice(inicio, inicio + this.pageSize);
     }
 
-    get materialesPagina(): Material[] { return this.paginar(this.filteredMateriales); }
-    get entradasPagina():   Entrada[]  { return this.paginar(this.filteredEntradas); }
-    get salidasPagina():    Salida[]   { return this.paginar(this.filteredSalidas); }
+    materialesPagina = computed(() => this.paginar(this.filteredMateriales()));
+    entradasPagina   = computed(() => this.paginar(this.filteredEntradas()));
+    salidasPagina    = computed(() => this.paginar(this.filteredSalidas()));
 
     /** Lista filtrada del tab activo — alimenta el paginador común */
-    get listaActiva(): unknown[] {
+    listaActiva = computed<unknown[]>(() => {
         switch (this.activeTab()) {
-            case 'catalogo': return this.filteredMateriales;
-            case 'entradas': return this.filteredEntradas;
-            case 'salidas':  return this.filteredSalidas;
+            case 'catalogo': return this.filteredMateriales();
+            case 'entradas': return this.filteredEntradas();
+            case 'salidas':  return this.filteredSalidas();
             default:         return [];
         }
-    }
+    });
 
-    get totalPaginas(): number {
-        return Math.max(1, Math.ceil(this.listaActiva.length / this.pageSize));
-    }
+    totalPaginas = computed(() => Math.max(1, Math.ceil(this.listaActiva().length / this.pageSize)));
 
-    get rangoPagina(): { desde: number; hasta: number } {
-        const total = this.listaActiva.length;
+    rangoPagina = computed<{ desde: number; hasta: number }>(() => {
+        const total = this.listaActiva().length;
         if (!total) return { desde: 0, hasta: 0 };
-        const p = Math.min(this.pagina(), this.totalPaginas);
+        const p = Math.min(this.pagina(), this.totalPaginas());
         return { desde: (p - 1) * this.pageSize + 1, hasta: Math.min(p * this.pageSize, total) };
-    }
+    });
 
-    paginasVisibles(): number[] {
-        const total  = this.totalPaginas;
+    paginasVisibles = computed<number[]>(() => {
+        const total  = this.totalPaginas();
         const actual = Math.min(this.pagina(), total);
         const inicio = Math.max(1, Math.min(actual - 2, total - 4));
         const fin    = Math.min(total, inicio + 4);
         const out: number[] = [];
         for (let i = inicio; i <= fin; i++) out.push(i);
         return out;
-    }
+    });
 
     irAPagina(p: number): void {
-        this.pagina.set(Math.min(Math.max(1, p), this.totalPaginas));
+        this.pagina.set(Math.min(Math.max(1, p), this.totalPaginas()));
     }
 
     refresh(): void { this.loadAll(); }
+
+    /* trackBy para *ngFor — evita que Angular destruya/recree filas cuando
+       los computed() de arriba devuelven una nueva referencia de array. */
+    trackById = (_: number, item: { id: number }): number => item.id;
+    trackByUbicacion = (_: number, grupo: { ubicacion: string }): string => grupo.ubicacion;
+    trackByPagina = (_: number, p: number): number => p;
 
     // ── Stats ──────────────────────────────────────────────
     countActivos()   { return this.materiales.filter(m => m.activo).length; }
