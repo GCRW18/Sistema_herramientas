@@ -58,8 +58,10 @@
                 <option *ngFor="let st of estadosFiltro" [value]="st.value">{{st.label}}</option>
             </select>
 
-            <select [(ngModel)]="filterEmpresa" class="w-36 h-9 px-2 bg-white dark:bg-slate-800 text-black dark:text-white border-[2px] border-black rounded-xl font-black text-xs focus:outline-none focus:shadow-[3px_3px_0px_0px_#000] dark:focus:shadow-[3px_3px_0px_0px_#FFC501] transition-all">
-                <option value="">Proveedor / Lab...</option>
+            <select [(ngModel)]="filterEmpresa" [disabled]="filterTipo === 'mantenimiento'"
+                    [matTooltip]="filterTipo === 'mantenimiento' ? 'Mantenimiento no registra el proveedor por laboratorio, solo como texto libre' : ''"
+                    class="w-36 h-9 px-2 bg-white dark:bg-slate-800 text-black dark:text-white border-[2px] border-black rounded-xl font-black text-xs focus:outline-none focus:shadow-[3px_3px_0px_0px_#000] dark:focus:shadow-[3px_3px_0px_0px_#FFC501] transition-all disabled:opacity-40 disabled:cursor-not-allowed">
+                <option value="">Lab. (solo Calibración)...</option>
                 <option *ngFor="let lab of laboratorios()" [value]="lab.id_laboratory">{{ lab.name }}</option>
             </select>
 

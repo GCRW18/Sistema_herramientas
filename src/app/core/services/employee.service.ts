@@ -8,7 +8,7 @@ export class EmployeeService {
     private _api = inject(ErpApiService);
 
     getFuncionarios(filters?: { search?: string }): Observable<any[]> {
-        const params: any = { start: 0, limit: 5000, sort: 'full_name', dir: 'asc' };
+        const params: any = { start: 0, limit: 5000, ordenacion: 'full_name', dir_ordenacion: 'asc' };
 
         if (filters?.search) {
             const s = filters.search.replace(/'/g, "''");

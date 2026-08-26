@@ -13,6 +13,7 @@ import { debounceTime, takeUntil, finalize, catchError } from 'rxjs/operators';
 import { CalibrationService }                            from '../../../../core/services/calibration.service';
 import { ErpApiService }                                 from 'app/core/api/api.service';
 import { HasPermissionDirective }                        from '../../../../core/directives/has-permission.directive';
+import { localDateStr }                                  from '../../../../core/utils/date.utils';
 
 interface CalibrationDisplay {
     id_calibration:       number;
@@ -122,6 +123,16 @@ export class EnvioCalibracionComponent implements OnInit, OnDestroy {
         this.loadLocationMap();
         this.setupFilters();
         this.loadCalibraciones();
+
+        // Las tabs de Calibraciones quedan montadas en segundo plano (display:none) al
+        // cambiar de tab, así que un envío/retorno hecho en la tab RETORNO no se reflejaba
+        // acá hasta cerrar y reabrir esta tab. calibrationsChanged$ avisa a esta tabla
+        // aunque no esté visible en ese momento.
+        this.calibrationService.calibrationsChanged$.pipe(
+            takeUntil(this._destroy$),
+        ).subscribe(() => {
+            if (!this.isLoading()) this.loadCalibraciones();
+        });
     }
 
     ngOnDestroy(): void {
@@ -271,21 +282,20 @@ export class EnvioCalibracionComponent implements OnInit, OnDestroy {
     // ── Row Helpers ───────────────────────────────
     isRetrasado(cal: CalibrationDisplay): boolean {
         if (!cal.expected_return_date || this.isCompleted(cal.status) || cal.status === 'cancelled') return false;
-        try {
-            const expected = new Date(cal.expected_return_date);
-            const today    = new Date();
-            today.setHours(0, 0, 0, 0);
-            return expected < today;
-        } catch { return false; }
+        // Comparación de texto (YYYY-MM-DD), no new Date(): una fecha "solo fecha" se
+        // interpreta como medianoche UTC, que en Bolivia (UTC-4) cae en el día anterior
+        // y marcaba como retrasada una herramienta cuyo retorno estimado era hoy mismo.
+        const expectedStr = String(cal.expected_return_date).split('T')[0];
+        return expectedStr < localDateStr();
     }
 
     getDiasRetrasado(cal: CalibrationDisplay): number {
         if (!cal.expected_return_date) return 0;
         try {
-            const expected = new Date(cal.expected_return_date);
-            const today    = new Date();
-            today.setHours(0, 0, 0, 0);
-            return Math.floor((today.getTime() - expected.getTime()) / 86_400_000);
+            const expectedStr = String(cal.expected_return_date).split('T')[0];
+            const expected = new Date(expectedStr + 'T00:00:00');
+            const today    = new Date(localDateStr() + 'T00:00:00');
+            return Math.max(0, Math.floor((today.getTime() - expected.getTime()) / 86_400_000));
         } catch { return 0; }
     }
 
@@ -376,7 +386,7 @@ export class EnvioCalibracionComponent implements OnInit, OnDestroy {
 <div class="header">
   <div>
     <h1>Herramientas Pendientes de Retorno</h1>
-    <p>Sistema de Gestión de Herramientas · MGH-109 · Envío a Calibración</p>
+    <p>Sistema de Gestión de Herramientas · Envío a Calibración</p>
   </div>
   <div class="header-right">
     <div class="label">Total pendientes</div>

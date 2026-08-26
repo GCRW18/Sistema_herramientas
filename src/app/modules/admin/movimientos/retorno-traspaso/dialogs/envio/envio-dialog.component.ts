@@ -4,12 +4,13 @@ import {
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
-import { MatDialogRef, MatDialogModule, MAT_DIALOG_DATA } from '@angular/material/dialog';
+import { MatDialogRef, MatDialogModule, MatDialog, MAT_DIALOG_DATA } from '@angular/material/dialog';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { Subject, takeUntil, finalize, debounceTime, distinctUntilChanged, switchMap, of, map } from 'rxjs';
 
 import { MovementService } from '../../../../../../core/services/movement.service';
 import { ToolService } from '../../../../../../core/services/tool.service';
+import { localDateStr } from '../../../../../../core/utils/date.utils';
 import {
     Ubicacion, ToolEnvioItem, Funcionario,
     CONDICIONES_ENVIO, abrirBlob
@@ -40,6 +41,7 @@ export interface EnvioDialogData {
 export class EnvioDialogComponent implements OnInit, OnDestroy {
 
     private dialogRef = inject(MatDialogRef<EnvioDialogComponent>);
+    private dialog    = inject(MatDialog);
     data              = inject<EnvioDialogData>(MAT_DIALOG_DATA);
     private fb        = inject(FormBuilder);
     private snackBar  = inject(MatSnackBar);
@@ -52,7 +54,6 @@ export class EnvioDialogComponent implements OnInit, OnDestroy {
 
     envioForm!: FormGroup;
     itemsEnvio: ToolEnvioItem[] = [];
-    activeEnvioChip: number | null = null;
 
     // Tool search
     toolSearchEnvio     = '';
@@ -95,7 +96,7 @@ export class EnvioDialogComponent implements OnInit, OnDestroy {
     getAllUbicaciones(): Ubicacion[] { return [...this.bases, ...this.almacenes]; }
 
     private _initForm(): void {
-        const today = new Date().toISOString().split('T')[0];
+        const today = localDateStr();
         const hora  = new Date().toTimeString().slice(0, 5);
         this.envioForm = this.fb.group({
             baseOrigen:           [null],
@@ -209,12 +210,35 @@ export class EnvioDialogComponent implements OnInit, OnDestroy {
             pn: tool.part_number ?? '', sn: tool.serial_number ?? '',
             marca: tool.brand ?? tool.marca ?? '',
             fechaVencCal: tool.calibration_expiry_date ?? tool.next_calibration_date ?? '',
-            cantidad: 1, condicion: 'good', notas: ''
+            cantidad: 1, condicion: 'good', notas: '',
+            unidad: tool.unit_of_measure ?? tool.unidad ?? 'PZA',
+            listaContenido: tool.content_list ?? '',
+            imagen: tool.location_photo ?? null,
+            notesTool: tool.notes ?? '',
+            warehouseId: tool.warehouse_id != null ? Number(tool.warehouse_id) : null,
+            rackId:      tool.rack_id      != null ? Number(tool.rack_id)      : null,
+            levelId:     tool.level_id     != null ? Number(tool.level_id)     : null,
         });
         this.toolSearchEnvio = ''; this.toolResultsEnvio = []; this.showToolDropEnvio = false;
     }
 
     removeToolEnvio(i: number): void { this.itemsEnvio.splice(i, 1); }
+
+    async abrirDetalleHerramientaItem(item: ToolEnvioItem): Promise<void> {
+        const { DetalleHerramientaComponent } = await import('../../../ingresos-hub/detalle-herramienta/detalle-herramienta.component');
+        const editItem = {
+            toolId: item.toolId, codigoBoa: item.codigo, pn: item.pn, sn: item.sn,
+            descripcion: item.nombre, marca: item.marca, tipo: 'HERRAMIENTA',
+            estado: item.condicion, cantidad: item.cantidad, um: item.unidad || 'PZA', obs: item.notesTool,
+            imagenMaster: item.imagen, warehouseId: item.warehouseId,
+            rackId: item.rackId, levelId: item.levelId
+        };
+        this.dialog.open(DetalleHerramientaComponent, {
+            width: '800px', maxWidth: '96vw', height: '560px',
+            panelClass: 'no-padding-dialog', hasBackdrop: true, disableClose: false, autoFocus: false,
+            data: { editItem, viewOnly: true }
+        });
+    }
 
     // ── Funcionarios ───────────────────────────────────────────────────────────
 
@@ -264,9 +288,13 @@ export class EnvioDialogComponent implements OnInit, OnDestroy {
         const itemsJson = JSON.stringify(this.itemsEnvio.map(it => ({
             tool_id: it.toolId, quantity: it.cantidad,
             condition_on_movement: it.condicion,
-            serial_number: it.sn || '', part_number: it.pn || '', notes: it.notas || ''
+            serial_number: it.sn || '', part_number: it.pn || '', notes: it.notas || '',
+            unit_of_measure: it.unidad || '', content_list: it.listaContenido || ''
         })));
 
+        // Se abre en el mismo tick del clic (gesto de usuario) para que el navegador no
+        // bloquee la pestaña nueva cuando el PDF se genera después de que responda el guardado.
+        const pdfWin = window.open('', '_blank');
         this.isSavingEnvio = true;
         this.movSvc.registrarEnvioOtrasBases({
             date: form.fechaEnvio, time: (form.horaEnvio || '00:00') + ':00',
@@ -289,10 +317,10 @@ export class EnvioDialogComponent implements OnInit, OnDestroy {
             next: (result: any) => {
                 const nro = result?.movement_number || '---';
                 this._showMsg(`Envío registrado: ${nro}`, 'success');
-                this._pdfEnvioOficial(nro, this.itemsEnvio, form);
+                this._pdfEnvioOficial(nro, this.itemsEnvio, form, pdfWin);
                 this.dialogRef.close({ refreshActivos: true });
             },
-            error: (err) => this._showMsg('Error al registrar envío: ' + (err?.message || ''), 'error')
+            error: (err) => { pdfWin?.close(); this._showMsg('Error al registrar envío: ' + (err?.message || ''), 'error'); }
         });
     }
 
@@ -322,7 +350,7 @@ export class EnvioDialogComponent implements OnInit, OnDestroy {
     // ── PDF ────────────────────────────────────────────────────────────────────
 
     /** Nota de "Registro de Herramientas en Otras Bases" (formato oficial calcado del Excel). */
-    private _pdfEnvioOficial(nro: string, items: ToolEnvioItem[], form: any): void {
+    private _pdfEnvioOficial(nro: string, items: ToolEnvioItem[], form: any, win?: Window | null): void {
         const data: EnvioBasePdfData = {
             nroNota: nro,
             origen: form.baseOrigen?.nombre || '---',
@@ -338,7 +366,7 @@ export class EnvioDialogComponent implements OnInit, OnDestroy {
             observaciones: form.notas || '',
             items: items.map(it => ({ descripcion: it.nombre, pn: it.pn, sn: it.sn })),
         };
-        this.pdfSvc.generarPdf(data);
+        this.pdfSvc.generarPdf(data, win);
     }
 
     /**

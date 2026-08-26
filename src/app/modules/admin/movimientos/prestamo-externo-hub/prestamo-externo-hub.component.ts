@@ -197,13 +197,6 @@ export class PrestamoExternoHubComponent implements OnInit, OnDestroy {
         return t ? d + ' ' + t : d;
     }
 
-    getDiasFueraClass(dias: number): string {
-        if (dias <= 7)  return 'bg-green-100 text-green-800 border-green-300';
-        if (dias <= 30) return 'bg-yellow-100 text-yellow-800 border-yellow-300';
-        if (dias <= 60) return 'bg-orange-100 text-orange-800 border-orange-300';
-        return 'bg-red-100 text-red-800 border-red-400';
-    }
-
     private readonly _condicionLabel: Record<string,string> = {
         'good':'ACTIVO','new':'NUEVO','fair':'REGULAR','poor':'MALO',
         'damaged':'DAÑADO','serviceable':'ACTIVO','bueno':'ACTIVO','nuevo':'NUEVO',
@@ -211,14 +204,6 @@ export class PrestamoExternoHubComponent implements OnInit, OnDestroy {
 
     getCondicionLabel(est: string): string {
         return this._condicionLabel[(est||'').toLowerCase()] || (est||'—').toUpperCase();
-    }
-
-    getEstadoClass(est: string): string {
-        const e = (est||'').toLowerCase();
-        if (['good','serviceable','bueno','nuevo','new'].includes(e)) return 'bg-green-500 text-white';
-        if (['fair'].includes(e))                                      return 'bg-yellow-400 text-black';
-        if (['damaged','poor','unserviceable'].includes(e))            return 'bg-red-500 text-white';
-        return 'bg-stone-400 text-white';
     }
 
     async abrirFormPrestamo(): Promise<void> {
@@ -254,8 +239,7 @@ export class PrestamoExternoHubComponent implements OnInit, OnDestroy {
             items: items.map((it: any) => ({
                 codigo: it.code || '', pn: it.part_number || '', sn: it.serial_number || '',
                 cantidad: Number(it.quantity) || 1, descripcion: it.description || it.name || '',
-                listaContenido: it.content_list || '', hrCosto: Number(it.unit_cost) || 0,
-                valorUsd: Number(it.total_cost) || 0, obs: it.notes || '',
+                listaContenido: it.content_list || '', obs: it.notes || '',
             })),
         };
         this.pdfSvc.generarPdf(data);
@@ -278,8 +262,7 @@ export class PrestamoExternoHubComponent implements OnInit, OnDestroy {
             items: items.map((it: any) => ({
                 codigo: it.code || '', pn: it.part_number || '', sn: it.serial_number || '',
                 cantidad: Number(it.quantity) || 1, descripcion: it.description || it.name || '',
-                listaContenido: it.content_list || '', hrCosto: Number(it.unit_cost) || 0,
-                valorUsd: Number(it.total_cost) || 0, obs: it.notes || '',
+                listaContenido: it.content_list || '', obs: it.notes || '',
                 condicionDevolucion: condLabel[it.condition_on_return] || it.condition_on_return || '',
                 obsDevolucion: it.notes || loan.return_notes || '',
             })),

@@ -13,9 +13,10 @@ import { Subject } from 'rxjs';
 import { takeUntil, finalize, debounceTime, distinctUntilChanged, switchMap, startWith } from 'rxjs/operators';
 import { CalibrationService } from '../../../../core/services/calibration.service';
 import { HasPermissionDirective } from '../../../../core/directives/has-permission.directive';
+import { localDateStr } from '../../../../core/utils/date.utils';
 
 interface ToolSuggestion { tool_id: number; tool_code: string; tool_name: string; is_calibratable?: boolean; }
-interface TranscriptionRecord { id: string | number; tool_id: string | number; fecha: string; codigo: string; nombre: string; certificado: string; resultado: string; laboratorio: string; }
+interface TranscriptionRecord { id: string | number; tool_id: string | number; fecha: string; codigo: string; nombre: string; certificado: string; resultado: string; laboratorio: string; has_certificate_file: boolean; }
 
 @Component({
     selector: 'app-transcripcion-manual',
@@ -90,12 +91,14 @@ export class TranscripcionManualComponent implements OnInit, OnDestroy {
     labNameOverride      = '';
     result: 'approved' | 'conditional' | 'rejected' = 'approved';
     selectedFile: File | null = null;
+    selectedFileBase64: string | null = null;
+    private readonly MAX_PDF_BYTES = 5 * 1024 * 1024;
 
     showCertError    = signal(false);
     showDateError    = signal(false);
     showToolError    = signal(false);
 
-    readonly todayStr = new Date().toISOString().split('T')[0];
+    readonly todayStr = localDateStr();
 
     ngOnInit(): void {
         this.loadTranscriptions();
@@ -118,7 +121,7 @@ export class TranscripcionManualComponent implements OnInit, OnDestroy {
         // fuera las 487 transcripciones del baseline.
         this.calibrationService.getCalibrations({
             limit: 1000,
-            sort: 'id_calibration', dir: 'desc',
+            ordenacion: 'id_calibration', dir_ordenacion: 'desc',
             filtro: "(COALESCE(cls.is_historical, false) = true"
                 + " OR cls.internal_notes LIKE '[TRANSCRIPCION HISTORICA%'"
                 + " OR cls.internal_notes LIKE '[TRANSCRIPCIÓN HISTÓRICA%')"
@@ -136,7 +139,8 @@ export class TranscripcionManualComponent implements OnInit, OnDestroy {
                     nombre: r.tool_name ?? r.name ?? '—',
                     certificado: r.certificate_number ?? r.record_number ?? '—',
                     resultado: r.result ?? r.status ?? '—',
-                    laboratorio: r.supplier_name ?? r.laboratory_name ?? '—'
+                    laboratorio: r.supplier_name ?? r.laboratory_name ?? '—',
+                    has_certificate_file: !!(r.has_certificate_file || r.certificate_file),
                 }));
                 this.applyFilters();
             },
@@ -232,6 +236,7 @@ export class TranscripcionManualComponent implements OnInit, OnDestroy {
         this.labNameOverride = '';
         this.result = 'approved';
         this.selectedFile = null;
+        this.selectedFileBase64 = null;
         this.showConfirm.set(false);
         this.isProcessing.set(false);
         this.showToolError.set(false);
@@ -308,7 +313,7 @@ export class TranscripcionManualComponent implements OnInit, OnDestroy {
         try {
             const d = new Date(this.calibrationDateStr + 'T00:00:00');
             d.setFullYear(d.getFullYear() + 1);
-            this.nextCalibrationDate = d.toISOString().split('T')[0];
+            this.nextCalibrationDate = localDateStr(d);
         } catch { this.nextCalibrationDate = ''; }
     }
 
@@ -316,12 +321,24 @@ export class TranscripcionManualComponent implements OnInit, OnDestroy {
         const input = event.target as HTMLInputElement;
         if (!input.files?.length) return;
         const file = input.files[0];
-        if (file.type !== 'application/pdf') { this.showMessage('Solo se permiten archivos PDF.', 'warning'); return; }
-        this.selectedFile = file;
+        if (file.type !== 'application/pdf') { this.showMessage('Solo se permiten archivos PDF.', 'warning'); input.value = ''; return; }
+        if (file.size > this.MAX_PDF_BYTES) { this.showMessage('El PDF supera los 5 MB permitidos.', 'warning'); input.value = ''; return; }
+
+        const reader = new FileReader();
+        reader.onload = () => {
+            this.selectedFile = file;
+            const result = reader.result as string;
+            this.selectedFileBase64 = result.includes(',') ? result.split(',')[1] : result;
+        };
+        reader.onerror = () => this.showMessage('No se pudo leer el archivo.', 'error');
+        reader.readAsDataURL(file);
         input.value = '';
     }
 
-    removeFile(): void { this.selectedFile = null; }
+    removeFile(): void {
+        this.selectedFile = null;
+        this.selectedFileBase64 = null;
+    }
 
     // Validación unificada para habilitar el botón superior
     canSubmit(): boolean {
@@ -351,6 +368,7 @@ export class TranscripcionManualComponent implements OnInit, OnDestroy {
             result: this.result,
             is_historical: true,
         };
+        if (this.selectedFileBase64) params.certificate_file = this.selectedFileBase64;
 
         if (this.labId) {
             params.supplier_id = this.labId;
@@ -376,6 +394,32 @@ export class TranscripcionManualComponent implements OnInit, OnDestroy {
     }
 
     cancelConfirm(): void { this.showConfirm.set(false); }
+
+    // ── PDF adjunto en la transcripción ────────────────────────────────────────
+    verCertificado(record: TranscriptionRecord): void {
+        if (!record.has_certificate_file) { this.showMessage('No se adjuntó un PDF en esta transcripción', 'warning'); return; }
+        this.isLoading = true;
+        this.calibrationService.getCertificateFile(Number(record.id)).pipe(takeUntil(this._destroy$)).subscribe({
+            next: (dataUrl) => {
+                this.isLoading = false;
+                if (!dataUrl) { this.showMessage('No se encontró el PDF adjunto', 'warning'); return; }
+                try {
+                    const base64 = dataUrl.includes(',') ? dataUrl.split(',')[1] : dataUrl;
+                    const bytes  = atob(base64);
+                    const arr    = new Uint8Array(bytes.length);
+                    for (let i = 0; i < bytes.length; i++) arr[i] = bytes.charCodeAt(i);
+                    const blob = new Blob([arr], { type: 'application/pdf' });
+                    const url  = window.URL.createObjectURL(blob);
+                    window.open(url, '_blank');
+                    setTimeout(() => window.URL.revokeObjectURL(url), 300);
+                } catch (e) {
+                    console.error('Error abriendo PDF de transcripción:', e);
+                    this.showMessage('No se pudo abrir el PDF adjunto', 'error');
+                }
+            },
+            error: () => { this.isLoading = false; this.showMessage('Error al obtener el PDF adjunto', 'error'); }
+        });
+    }
 
     // ── Historial de Herramienta (miniventana) ────────────────────────────────
     async openHistorial(record: TranscriptionRecord): Promise<void> {

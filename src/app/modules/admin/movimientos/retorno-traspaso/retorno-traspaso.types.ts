@@ -24,6 +24,12 @@ export interface ToolEnvioItem {
     notas: string;
     unidad?: string;
     listaContenido?: string;
+    // Datos reales de la herramienta (catálogo), para el detalle de solo-lectura.
+    imagen?: string | null;
+    notesTool?: string;
+    warehouseId?: number | null;
+    rackId?: number | null;
+    levelId?: number | null;
 }
 
 export interface TraspasoItem {
@@ -45,6 +51,8 @@ export interface TraspasoItem {
     expanded: boolean;
     condicion: CondRetorno | '';
     observacionItem: string;
+    fechaVencCal?: string;
+    listaContenido?: string;
 }
 
 export interface Funcionario {

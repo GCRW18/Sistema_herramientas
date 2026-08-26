@@ -5,17 +5,17 @@
          cdkDrag cdkDragRootElement=".cdk-overlay-pane" cdkDragHandle style="cursor:grab">
 
         <div class="w-8 h-8 rounded bg-amber-400 border-2 border-black flex items-center justify-center shadow-[2px_2px_0_#fbbf24] shrink-0">
-            <mat-icon class="!text-base text-black">{{ isEditMode() ? 'edit' : 'add_box' }}</mat-icon>
+            <mat-icon class="!text-base text-black">{{ viewOnly() ? 'visibility' : (isEditMode() ? 'edit' : 'add_box') }}</mat-icon>
         </div>
         <div class="flex-1 min-w-0">
-            <p class="text-[9px] text-slate-400 font-bold uppercase tracking-[0.15em] leading-none mb-0.5 hidden sm:block">Ajuste Ingreso · Ítem</p>
+            <p class="text-[9px] text-slate-400 font-bold uppercase tracking-[0.15em] leading-none mb-0.5 hidden sm:block">{{ viewOnly() ? 'Detalle · Solo lectura' : 'Ajuste Ingreso · Ítem' }}</p>
             <h2 class="text-xs text-white font-black uppercase tracking-tight leading-none">
-                {{ isEditMode() ? 'Editar Ítem de Ajuste' : 'Añadir Herramienta al Ajuste' }}
+                {{ viewOnly() ? 'Ver Herramienta' : (isEditMode() ? 'Editar Ítem de Ajuste' : 'Añadir Herramienta al Ajuste') }}
             </h2>
         </div>
 
         <!-- Buscador herramienta existente -->
-        <div class="relative w-full sm:w-auto sm:shrink-0">
+        <div *ngIf="!viewOnly()" class="relative w-full sm:w-auto sm:shrink-0">
             <input type="text"
                    [value]="buscarValue"
                    (input)="onBuscarInput($any($event.target).value)"
@@ -46,12 +46,8 @@
                         <span class="text-[9px] text-stone-400" *ngIf="tool.pn">P/N: <strong>{{ tool.pn }}</strong></span>
                         <span class="text-[9px] text-stone-400" *ngIf="tool.sn">S/N: {{ tool.sn }}</span>
                         <span class="text-[9px] font-bold px-1 rounded"
-                              [ngClass]="{
-                                'bg-green-100 text-green-800':  tool.estado === 'SERVICEABLE',
-                                'bg-red-100 text-red-800':      tool.estado === 'UNSERVICEABLE',
-                                'bg-blue-100 text-blue-800':    tool.estado === 'EN_CALIBRACION',
-                                'bg-amber-100 text-amber-800':  tool.estado === 'REPARACION'
-                              }">{{ tool.estado }}</span>
+                              [ngClass]="getEstadoBadgeClass(tool.estado)"
+                              *ngIf="tool.estadoLabel">{{ tool.estadoLabel }}</span>
                     </div>
                     <div *ngIf="tool.ubicacion" class="text-[8px] text-stone-400 mt-0.5 font-mono">
                         <mat-icon class="!text-[8px] align-middle">location_on</mat-icon> {{ tool.ubicacion }}
@@ -69,17 +65,18 @@
             <div class="w-2/5 shrink-0 flex flex-col items-center justify-center px-4 py-4">
 
                 <!-- Zona foto -->
-                <div class="w-72 h-72 border-2 border-dashed border-stone-300 dark:border-slate-600 rounded-xl bg-stone-50 dark:bg-slate-900 flex flex-col items-center justify-center relative overflow-hidden cursor-pointer hover:border-amber-400 transition-colors group"
-                     (click)="fileInput.click()">
+                <div class="w-72 h-72 border-2 border-dashed border-stone-300 dark:border-slate-600 rounded-xl bg-stone-50 dark:bg-slate-900 flex flex-col items-center justify-center relative overflow-hidden transition-colors group"
+                     [class.cursor-pointer]="!viewOnly()" [class.hover:border-amber-400]="!viewOnly()"
+                     (click)="!viewOnly() && fileInput.click()">
                     <div *ngIf="imagenNueva() || imagenOriginal(); else noImg" class="w-full h-full p-2 relative">
                         <img [src]="imagenNueva() || imagenOriginal()" class="w-full h-full object-contain rounded" alt="Foto">
-                        <div class="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                        <div *ngIf="!viewOnly()" class="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                             <span class="text-white text-[9px] font-black uppercase bg-black/60 px-2 py-1 border border-white rounded-lg">Cambiar foto</span>
                         </div>
                     </div>
                     <ng-template #noImg>
                         <mat-icon class="!text-5xl text-stone-300 dark:text-slate-600 mb-1">add_photo_alternate</mat-icon>
-                        <span class="text-[9px] font-black uppercase text-stone-400">Click para subir</span>
+                        <span class="text-[9px] font-black uppercase text-stone-400">{{ viewOnly() ? 'Sin foto' : 'Click para subir' }}</span>
                     </ng-template>
                     <input type="file" #fileInput (change)="onImageSelected($event)" accept="image/*" class="hidden">
                 </div>
@@ -192,12 +189,12 @@
                                 {{ getUbicacionLabel() }}
                             </span>
                         </div>
-                        <button type="button" (click)="openUbicacionDialog()"
+                        <button *ngIf="!viewOnly()" type="button" (click)="openUbicacionDialog()"
                                 class="h-9 px-2.5 border-2 border-black rounded-lg font-black shadow-[2px_2px_0_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all flex items-center shrink-0"
                                 [ngClass]="showUbicacionPanel ? 'bg-[#0F172A] text-white' : 'bg-amber-400 text-black'">
                             <mat-icon class="!text-sm">{{ showUbicacionPanel ? 'expand_less' : 'account_tree' }}</mat-icon>
                         </button>
-                        <button *ngIf="ubSelectedWarehouse" type="button" (click)="limpiarUbicacion()"
+                        <button *ngIf="!viewOnly() && ubSelectedWarehouse" type="button" (click)="limpiarUbicacion()"
                                 class="h-9 w-9 flex items-center justify-center bg-red-100 border-2 border-black rounded-lg shadow-[2px_2px_0_#000] hover:bg-red-400 hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all shrink-0">
                             <mat-icon class="!text-sm text-red-700">close</mat-icon>
                         </button>
@@ -356,13 +353,6 @@
                     </ng-template>
                 </div>
 
-                <!-- Fila 6: Doc. Referencia -->
-                <div>
-                    <label class="text-[9px] font-black uppercase tracking-wider text-stone-400 dark:text-slate-400 mb-1 block">Doc. Referencia</label>
-                    <input type="text" formControlName="documento" placeholder="AI-001 / REF-..."
-                           class="w-full h-8 text-xs font-black uppercase bg-white dark:bg-slate-900 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-lg px-2.5 outline-none transition-all placeholder:text-stone-300 placeholder:font-normal placeholder:normal-case hover:border-stone-400 focus:border-black focus:shadow-[2px_2px_0_#000]">
-                </div>
-
                 <!-- Fila 7: Observaciones -->
                 <div>
                     <label class="text-[9px] font-black uppercase tracking-wider text-stone-400 dark:text-slate-400 mb-1 block">Observaciones</label>
@@ -383,7 +373,7 @@
         </button>
 
         <!-- Indicador de herramienta seleccionada -->
-        <div class="hidden sm:flex items-center gap-1 text-[9px] font-bold">
+        <div *ngIf="!viewOnly()" class="hidden sm:flex items-center gap-1 text-[9px] font-bold">
             <ng-container *ngIf="detalleForm.get('toolId')?.value; else sinSeleccion">
                 <mat-icon class="!text-sm" style="color:#22c55e">check_circle</mat-icon>
                 <span class="text-stone-500 dark:text-slate-400">Del inventario</span>
@@ -394,7 +384,7 @@
             </ng-template>
         </div>
 
-        <button type="button" (click)="procesar()"
+        <button *ngIf="!viewOnly()" type="button" (click)="procesar()"
                 class="flex items-center gap-1.5 px-3 py-1.5 bg-amber-400 text-black font-black text-[10px] border-2 border-black rounded-lg shadow-[2px_2px_0_#000] hover:shadow-none hover:translate-x-[1px] hover:translate-y-[1px] transition-all uppercase">
             <mat-icon class="!text-xs">done</mat-icon>
             {{ isEditMode() ? 'Actualizar Ítem' : 'Agregar Ítem' }}

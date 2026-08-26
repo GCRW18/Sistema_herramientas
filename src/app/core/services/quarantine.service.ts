@@ -18,8 +18,8 @@ export class QuarantineService {
         const params: any = {
             start: 0,
             limit: 100,
-            sort: 'id_quarantine',
-            dir: 'desc',
+            ordenacion: 'id_quarantine',
+            dir_ordenacion: 'desc',
             ...filters
         };
 
@@ -34,8 +34,11 @@ export class QuarantineService {
     createQuarantine(record: Partial<QuarantineRecord>): Observable<any> {
         return from(this._api.post('herramientas/quarantines/insertQuarantine', record)).pipe(
             switchMap((response: any) => {
-                if (response?.error) throw new Error(response.mensaje || 'Error al registrar cuarentena');
-                return of(response?.datos?.[0] || response?.datos || response || record);
+                const root = response?.ROOT || response;
+                if (root?.error === true || root?.error === 'true') {
+                    throw new Error(root?.detalle?.mensaje || root?.mensaje || 'Error al registrar cuarentena');
+                }
+                return of(root?.datos?.[0] || root?.datos || record);
             })
         );
     }
@@ -80,8 +83,8 @@ export class QuarantineService {
         const params: any = {
             start: 0,
             limit: 100,
-            sort: 'id_decommission',
-            dir: 'desc',
+            ordenacion: 'id_decommission',
+            dir_ordenacion: 'desc',
             ...filters
         };
 
@@ -96,8 +99,11 @@ export class QuarantineService {
     createDecommission(record: Partial<DecommissionRecord>): Observable<any> {
         return from(this._api.post('herramientas/decommissions/insertDecommission', record)).pipe(
             switchMap((response: any) => {
-                if (response?.error) throw new Error(response.mensaje || 'Error al registrar baja');
-                return of(response?.datos?.[0] || response?.datos || response || record);
+                const root = response?.ROOT || response;
+                if (root?.error === true || root?.error === 'true') {
+                    throw new Error(root?.detalle?.mensaje || root?.mensaje || 'Error al registrar baja');
+                }
+                return of(root?.datos?.[0] || root?.datos || record);
             })
         );
     }

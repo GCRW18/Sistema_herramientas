@@ -10,6 +10,7 @@ import { takeUntil, finalize, debounceTime, distinctUntilChanged, switchMap, map
 import { CalibrationService } from '../../../../../core/services/calibration.service';
 import { MovementService }    from '../../../../../core/services/movement.service';
 import { ScanToolResult }     from '../../../../../core/models';
+import { localDateStr }       from '../../../../../core/utils/date.utils';
 
 interface Funcionario { id: number; nombre: string; cargo: string; area?: string; }
 interface Warehouse   { id: number; name: string; code: string; }
@@ -383,6 +384,6 @@ export class FormEnvioComponent implements OnInit, OnDestroy {
     getErrorCount(): number { return this.toolList.filter(t => t.status === 'error').length; }
     getPendingWithoutLab(): number { return this.toolList.filter(t => t.status === 'pending' && !t.supplierId).length; }
 
-    private _toIso(d: Date): string { return d.toISOString().split('T')[0]; }
+    private _toIso(d: Date): string { return localDateStr(d); }
     showMsg(m: string, t: any) { this.snackBar.open(m, 'OK', { duration: 3000, panelClass: [`snackbar-${t}`] }); }
 }

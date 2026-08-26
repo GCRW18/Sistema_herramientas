@@ -194,7 +194,7 @@
                 </td>
 
                 <td class="px-3 py-2.5 text-center">
-                  <span class="px-1.5 py-0.5 text-[9px] font-black uppercase border-2 border-black rounded inline-flex items-center gap-1 bg-green-500 text-black">
+                  <span class="px-1.5 py-0.5 text-[9px] font-black uppercase border-2 border-black rounded inline-flex items-center gap-1 text-black dark:text-white">
                     {{ mov.status === 'active' ? 'ACTIVO' : 'DEVUELTO' }}
                   </span>
                 </td>
@@ -252,11 +252,11 @@
             </thead>
             <tbody>
               <tr *ngFor="let item of filteredPending; let idx = index"
-                  class="border-b border-gray-200 dark:border-slate-700 transition-all"
+                  class="border-b border-gray-200 dark:border-slate-700 transition-all hover:bg-gray-100 dark:hover:bg-slate-700/60"
                   [ngClass]="idx % 2 === 0 ? 'bg-white dark:bg-slate-800/60' : 'bg-gray-50 dark:bg-slate-800/40'">
 
                 <td class="px-3 py-2.5">
-                  <span class="font-mono font-black text-[10px] bg-[#7113CF] text-white px-1.5 py-0.5 rounded border-2 border-black whitespace-nowrap">
+                  <span class="font-mono font-black text-[10px] text-black dark:text-white whitespace-nowrap">
                     {{ item.loanNumber }}
                   </span>
                 </td>
@@ -266,7 +266,7 @@
                 </td>
 
                 <td class="px-3 py-2.5">
-                  <span class="font-mono font-black text-[10px] bg-[#0F172AFF] text-white px-1.5 py-0.5 rounded border border-black whitespace-nowrap">
+                  <span class="font-mono font-black text-[10px] text-black dark:text-white whitespace-nowrap">
                     {{ item.codigo }}
                   </span>
                 </td>
@@ -299,8 +299,7 @@
                 </td>
 
                 <td class="px-3 py-2.5">
-                  <span class="px-1 py-0.5 text-[9px] font-black uppercase border border-black rounded block w-fit truncate"
-                        [ngClass]="getEstadoClass(item.estadoAlPrestar)">
+                  <span class="text-[9px] font-black uppercase text-black dark:text-white block w-fit truncate">
                     {{ getCondicionLabel(item.estadoAlPrestar) }}
                   </span>
                 </td>

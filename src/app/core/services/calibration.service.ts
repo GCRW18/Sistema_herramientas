@@ -1,5 +1,5 @@
 import { Injectable, inject } from '@angular/core';
-import { from, Observable, of, ReplaySubject, switchMap, tap, catchError, map, throwError } from 'rxjs';
+import { from, Observable, of, ReplaySubject, Subject, switchMap, tap, catchError, map, throwError } from 'rxjs';
 import {
     CalibrationRecord,
     CalibrationLaboratory,
@@ -13,6 +13,13 @@ export class CalibrationService {
     private _api = inject(ErpApiService);
     private _calibrations: ReplaySubject<CalibrationRecord[]> = new ReplaySubject<CalibrationRecord[]>(1);
     private _laboratories: ReplaySubject<CalibrationLaboratory[]> = new ReplaySubject<CalibrationLaboratory[]>(1);
+
+    // Emite cuando un envío/retorno/anulación se registra con éxito. Las tabs de
+    // Calibraciones (ENVÍO, RETORNO, ...) son componentes que quedan montados en segundo
+    // plano (display:none) al cambiar de tab — no se destruyen ni recrean — así que una
+    // tabla no se enteraba de los cambios hechos desde otra tab hasta que se reabría.
+    private _calibrationsChanged = new Subject<void>();
+    readonly calibrationsChanged$ = this._calibrationsChanged.asObservable();
 
     // -----------------------------------------------------------------------------------------------------
     // @ Helpers (CORREGIDOS PARA PXP)
@@ -61,7 +68,11 @@ export class CalibrationService {
     // -----------------------------------------------------------------------------------------------------
 
     getCalibrations(filters?: any): Observable<CalibrationRecord[]> {
-        const params = { start: 0, limit: 50, sort: 'send_date', dir: 'desc', ...filters };
+        // ACTcalibrations.php->listarCalibrations() lee 'ordenacion'/'dir_ordenacion' (no
+        // 'sort'/'dir') — con las claves equivocadas el backend ignoraba el override y
+        // ordenaba por su default (id_calibration ASC), dejando fuera los registros
+        // recién enviados/retornados (id_calibration alto) del limit.
+        const params = { start: 0, limit: 50, ordenacion: 'send_date', dir_ordenacion: 'desc', ...filters };
         return from(this._api.post('herramientas/calibrations/listCalibrations', params)).pipe(
             switchMap((response: any) => {
                 const calibrations = this._normalizeResponse(response);
@@ -91,6 +102,7 @@ export class CalibrationService {
                 if (this._isPxpError(response)) throw new Error(this._extractErrorMessage(response, 'Error al anular'));
                 return of(this._normalizeSingleResponse(response) as CalibrationRecord ?? {} as CalibrationRecord);
             }),
+            tap(() => this._calibrationsChanged.next()),
             catchError((error) => {
                 console.error('Error en cancelCalibration:', error);
                 throw error;
@@ -104,7 +116,7 @@ export class CalibrationService {
         // las herramientas y el historial mostraba registros ajenos.
         const idNum = Number(toolId) || 0;
         return from(this._api.post('herramientas/calibrations/listCalibrations', {
-            start: 0, limit: 100, sort: 'id_calibration', dir: 'desc',
+            start: 0, limit: 100, ordenacion: 'id_calibration', dir_ordenacion: 'desc',
             filtro: `cls.tool_id = ${idNum}`,
         })).pipe(
             switchMap((response: any) => of(this._normalizeResponse(response) as CalibrationRecord[])),
@@ -128,6 +140,7 @@ export class CalibrationService {
                 if (this._isPxpError(response)) throw new Error(this._extractErrorMessage(response, 'Error al enviar a calibración'));
                 return of(this._normalizeSingleResponse(response) ?? response);
             }),
+            tap(() => this._calibrationsChanged.next()),
             catchError((error) => { console.error('Error en sendToCalibrationPxp:', error); throw error; })
         );
     }
@@ -139,8 +152,10 @@ export class CalibrationService {
         calibration_performed?: boolean; notes?: string; observations?: string;
         received_by_name?: string; cost?: number; currency?: string;
         jack_semiannual_date?: string; jack_annual_date?: string;
+        supplier_id?: number; certificate_file?: string;
     }): Observable<any> {
         return from(this._api.post('herramientas/calibrations/processCalibrationReturn', params)).pipe(
+            tap((raw: any) => { if (!this._isPxpError(raw)) this._calibrationsChanged.next(); }),
             switchMap((response: any) => of(this._normalizeSingleResponse(response) ?? response)),
             catchError((error) => { console.error('Error en processCalibrationReturnPxp:', error); throw error; })
         );
@@ -166,7 +181,7 @@ export class CalibrationService {
     getToolImages(idTool: number): Observable<string[]> {
         const escaped = String(idTool).replace(/[^\d]/g, '');
         return from(this._api.postRaw('herramientas/tools/listarTools', {
-            start: 0, limit: 1, sort: 'id_tool', dir: 'asc',
+            start: 0, limit: 1, ordenacion: 'id_tool', dir_ordenacion: 'asc',
             filtro_adicional: `id_tool = ${escaped}`,
         })).pipe(
             map((resp: any) => {
@@ -205,7 +220,7 @@ export class CalibrationService {
     // -----------------------------------------------------------------------------------------------------
 
     getCalibrationAlertsPxp(filters?: any): Observable<PxpCalibrationAlert[]> {
-        const params = { start: 0, limit: 100, sort: 'next_calibration_date', dir: 'asc', ...filters };
+        const params = { start: 0, limit: 100, ordenacion: 'next_calibration_date', dir_ordenacion: 'asc', ...filters };
         return from(this._api.post('herramientas/calibrations/getCalibrationAlerts', params)).pipe(
             switchMap((response: any) => {
                 const alerts = this._normalizeResponse(response);
@@ -231,6 +246,7 @@ export class CalibrationService {
         received_by_name?: string;
         send_date?: string;
         is_historical: true;
+        certificate_file?: string;
     }): Observable<any> {
         return from(this._api.post('herramientas/calibrations/createHistoricalRecord', params)).pipe(
             switchMap((response: any) => {
@@ -246,7 +262,7 @@ export class CalibrationService {
     // -----------------------------------------------------------------------------------------------------
 
     getActiveLaboratoriesPxp(tipo_servicio?: string): Observable<any[]> {
-        const params: any = { start: 0, limit: 500, sort: 'name', dir: 'asc' };
+        const params: any = { start: 0, limit: 500, ordenacion: 'name', dir_ordenacion: 'asc' };
         if (tipo_servicio) params.tipo_servicio = tipo_servicio;
         return from(this._api.post('herramientas/calibrations/listActiveLaboratories', params)).pipe(
             switchMap((response: any) => {
@@ -262,7 +278,7 @@ export class CalibrationService {
     }
 
     getLaboratories(): Observable<CalibrationLaboratory[]> {
-        return from(this._api.post('herramientas/calibrations/listLaboratories', { start: 0, limit: 100, active: true })).pipe(
+        return from(this._api.post('herramientas/calibrations/listLaboratories', { start: 0, limit: 100 })).pipe(
             switchMap((response: any) => {
                 const labs = this._normalizeResponse(response);
                 this._laboratories.next(labs as CalibrationLaboratory[]);

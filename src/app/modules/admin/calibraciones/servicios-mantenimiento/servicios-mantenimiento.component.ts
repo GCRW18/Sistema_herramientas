@@ -377,7 +377,7 @@ ${problem ? `<div style="margin-top:8px"><div class="label" style="font-size:8px
 ${notes   ? `<div style="margin-top:8px"><div class="label" style="font-size:8px;font-weight:700;color:#94a3b8;text-transform:uppercase">Notas</div><div style="margin-top:3px;font-size:11px">${notes}</div></div>` : ''}
 </div>
 <div class="sigs"><div><div class="sig-line">Tecnico emisor</div></div><div><div class="sig-line">Jefe de almacen</div></div><div><div class="sig-line">Recibido por taller</div></div></div>
-<div class="meta"><span>BOA &mdash; MGH-109 &middot; ${rn}</span><span>${today}</span></div>
+<div class="meta"><span>BOA &mdash; ${rn}</span><span>${today}</span></div>
 <script>window.onload=function(){window.print();}</script>
 </body></html>`;
     }
@@ -424,7 +424,7 @@ tr:nth-child(even){background:#f9fafb}
 </style></head><body>
 <div class="header">
     <h1>REPORTE DE AUDITORÍA — MANTENIMIENTO</h1>
-    <p>BOA — Sistema de Gestión Técnica | MGH-109</p>
+    <p>BOA — Sistema de Gestión Técnica</p>
     <p>Fecha de generación: ${fechaGen}</p>
 </div>
 <div class="filtros"><strong>Filtros aplicados:</strong><br>

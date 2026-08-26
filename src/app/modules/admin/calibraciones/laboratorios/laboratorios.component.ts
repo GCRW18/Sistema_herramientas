@@ -27,6 +27,7 @@ export interface Laboratory {
     website: string;
     is_certified: boolean;
     certification_number: string;
+    certification_types: string;
     rating: number;
     average_delivery_days: number;
     active: boolean;
@@ -96,7 +97,6 @@ export class LaboratoriosComponent implements OnInit, OnDestroy {
         ).subscribe({
             next: (res: any) => {
                 const labs = Array.isArray(res) ? res : (res?.datos || []);
-                console.log('[loadLaboratorios] registros recibidos:', labs.length, labs);
                 this.laboratorios = labs.map((lab: any) => ({
                     id_laboratory: lab.id_laboratory ?? lab.id ?? null,
                     code: lab.code ?? '—',
@@ -112,6 +112,9 @@ export class LaboratoriosComponent implements OnInit, OnDestroy {
                     website: lab.website ?? '',
                     is_certified: !!lab.is_certified,
                     certification_number: lab.certification_number ?? '',
+                    certification_types: Array.isArray(lab.certification_types)
+                        ? lab.certification_types.join(', ')
+                        : (lab.certification_types ?? '').toString().replace(/^\{|\}$/g, '').replace(/,/g, ', '),
                     rating: lab.rating ?? 0,
                     average_delivery_days: lab.average_delivery_days ?? 30,
                     active: lab.active === true || lab.active === 't' || lab.active === 'true' || lab.active === 1,
@@ -210,9 +213,10 @@ export class LaboratoriosComponent implements OnInit, OnDestroy {
         try {
             const { FormLaboratorioComponent } = await import('./form-laboratorio/form-laboratorio.component');
             const ref = this.dialog.open(FormLaboratorioComponent, {
-                width: '580px',
+                width: '540px',
                 maxWidth: '95vw',
-                height: '88vh',
+                height: 'auto',
+                maxHeight: '85vh',
                 panelClass: 'no-padding-dialog',
                 disableClose: false,
                 data: { mode: 'new' }
@@ -233,9 +237,10 @@ export class LaboratoriosComponent implements OnInit, OnDestroy {
         try {
             const { FormLaboratorioComponent } = await import('./form-laboratorio/form-laboratorio.component');
             const ref = this.dialog.open(FormLaboratorioComponent, {
-                width: '580px',
+                width: '540px',
                 maxWidth: '95vw',
-                height: '88vh',
+                height: 'auto',
+                maxHeight: '85vh',
                 panelClass: 'no-padding-dialog',
                 disableClose: false,
                 data: { mode: 'edit', laboratory: lab }
@@ -256,9 +261,10 @@ export class LaboratoriosComponent implements OnInit, OnDestroy {
         try {
             const { FormLaboratorioComponent } = await import('./form-laboratorio/form-laboratorio.component');
             const ref = this.dialog.open(FormLaboratorioComponent, {
-                width: '580px',
+                width: '540px',
                 maxWidth: '95vw',
-                height: '88vh',
+                height: 'auto',
+                maxHeight: '85vh',
                 panelClass: 'no-padding-dialog',
                 disableClose: false,
                 data: { mode: 'view', laboratory: lab }

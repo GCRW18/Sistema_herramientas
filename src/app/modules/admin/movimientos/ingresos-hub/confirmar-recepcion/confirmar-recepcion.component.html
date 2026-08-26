@@ -1,0 +1,96 @@
+<div cdkDrag cdkDragRootElement=".cdk-overlay-pane"
+     class="bg-stone-100 dark:bg-slate-900 border-2 border-black overflow-hidden flex flex-col w-full">
+
+    <!-- Header draggable -->
+    <div cdkDragHandle
+         class="bg-[#0F172A] px-4 py-3 flex items-center gap-3 shrink-0 cursor-grab active:cursor-grabbing select-none">
+        <div class="w-9 h-9 rounded-lg bg-amber-400 border-2 border-white/20 flex items-center justify-center shrink-0 shadow-[2px_2px_0_rgba(0,0,0,0.4)]">
+            <mat-icon class="text-black !text-xl">fact_check</mat-icon>
+        </div>
+        <div class="flex-1 min-w-0">
+            <h2 class="font-black text-sm text-white leading-none uppercase">Confirmar Ingreso a Almacén</h2>
+            <p class="text-[9px] text-white/50 font-bold leading-none mt-0.5 uppercase tracking-wider">Revise el detalle antes de aplicar al inventario</p>
+        </div>
+        <button (click)="revisar()"
+                class="w-7 h-7 flex items-center justify-center bg-white/10 hover:bg-white/20 rounded-lg border border-white/20 transition-all shrink-0">
+            <mat-icon class="text-white !text-sm">close</mat-icon>
+        </button>
+    </div>
+
+    <!-- Body -->
+    <div class="p-4 overflow-y-auto custom-scrollbar-ing" style="max-height: 75vh">
+
+        <!-- Card única -->
+        <div class="bg-white dark:bg-slate-800 border-2 border-black rounded-xl shadow-[3px_3px_0_#000] overflow-hidden">
+
+            <!-- Datos de recepción -->
+            <div class="px-4 py-3 grid grid-cols-2 gap-x-6 gap-y-3 border-b border-black/8 dark:border-slate-700">
+                <div>
+                    <p class="text-[8px] font-black uppercase tracking-wider text-blue-600 dark:text-blue-400 mb-0.5">Documento Respaldo</p>
+                    <p class="font-black text-sm text-black dark:text-white">{{ data?.recepcion?.nroCmr }}</p>
+                </div>
+                <div>
+                    <p class="text-[8px] font-black uppercase tracking-wider text-blue-600 dark:text-blue-400 mb-0.5">Proveedor</p>
+                    <p class="font-black text-sm text-black dark:text-white truncate">{{ data?.recepcion?.proveedor?.nombre || data?.recepcion?.proveedor || 'N/A' }}</p>
+                </div>
+                <div>
+                    <p class="text-[8px] font-black uppercase tracking-wider text-blue-600 dark:text-blue-400 mb-0.5">Recibido Por</p>
+                    <p class="font-black text-sm text-black dark:text-white">{{ data?.recepcion?.funcionarioRecibe }}</p>
+                </div>
+                <div>
+                    <p class="text-[8px] font-black uppercase tracking-wider text-blue-600 dark:text-blue-400 mb-0.5">Fecha</p>
+                    <p class="font-black text-sm text-black dark:text-white">{{ data?.recepcion?.fechaIngreso }}</p>
+                </div>
+            </div>
+
+            <!-- Separador con contador -->
+            <div class="px-4 py-2.5 flex items-center gap-2 bg-stone-50 dark:bg-slate-900 border-b border-black/8 dark:border-slate-700">
+                <mat-icon class="text-stone-400 !text-sm">inventory_2</mat-icon>
+                <span class="text-[9px] font-black uppercase tracking-wider text-stone-400 dark:text-slate-500">Herramientas</span>
+                <span class="ml-auto bg-amber-400 text-black border border-black rounded px-1.5 py-0.5 font-black text-[9px]">{{ data?.items?.length || 0 }} registros</span>
+            </div>
+
+            <!-- Lista herramientas -->
+            <div class="max-h-[35vh] overflow-y-auto custom-scrollbar-ing divide-y divide-black/8 dark:divide-slate-700">
+                <div *ngFor="let item of data?.items; let i = index"
+                     class="flex items-center gap-3 px-4 py-2.5 hover:bg-stone-50 dark:hover:bg-slate-700 transition-colors">
+                    <span class="w-6 h-6 shrink-0 flex items-center justify-center bg-[#0F172A] text-white text-[9px] font-black rounded-md">{{ i + 1 }}</span>
+                    <div class="flex-1 min-w-0">
+                        <div class="flex items-center gap-1.5 flex-wrap mb-0.5">
+                            <span class="font-mono font-black text-[10px] text-black dark:text-white">{{ item.codigoBoa }}</span>
+                            <span *ngIf="item.nivelCriticidad === 'A'"
+                                  class="text-[9px] font-black text-[#FF1414] bg-red-50 border border-red-300 px-1.5 py-0.5 rounded uppercase">CRÍTICO</span>
+                            <span *ngIf="item.requiereCalibracion"
+                                  class="text-[9px] font-black text-amber-700 bg-amber-50 border border-amber-300 px-1.5 py-0.5 rounded uppercase">Calibración</span>
+                        </div>
+                        <p class="font-black text-xs text-black dark:text-white truncate">{{ item.descripcion }}</p>
+                        <div class="flex gap-1.5 mt-0.5">
+                            <span class="text-[9px] font-bold text-stone-400 uppercase">{{ item.marca || 'S/M' }}</span>
+                            <span class="text-[9px] text-stone-300">·</span>
+                            <span class="text-[9px] font-bold text-blue-600 dark:text-blue-400 uppercase">{{ item.tipo }}</span>
+                        </div>
+                    </div>
+                    <div class="text-right shrink-0">
+                        <p class="font-black text-sm text-black dark:text-white">{{ item.cantidad }} <span class="text-[9px] text-stone-400 uppercase">{{ item.unidadMedida }}</span></p>
+                        <span class="text-[9px] font-black uppercase text-black dark:text-white">{{ item.estado }}</span>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+
+    <!-- Footer -->
+    <div class="border-t-2 border-black bg-stone-200 dark:bg-slate-800 px-4 py-2.5 flex justify-between items-center shrink-0">
+        <button (click)="revisar()"
+                class="h-8 px-4 flex items-center gap-1.5 bg-[#0F172A] text-white border-2 border-black rounded-xl font-black text-[10px] uppercase shadow-[2px_2px_0_#000] hover:translate-x-px hover:translate-y-px hover:shadow-none transition-all">
+            <mat-icon class="!text-sm">arrow_back</mat-icon> Revisar
+        </button>
+        <button (click)="confirmar()"
+                class="h-8 px-4 flex items-center gap-1.5 bg-[#FF1414] text-white border-2 border-black rounded-xl font-black text-[10px] uppercase shadow-[2px_2px_0_#000] hover:translate-x-px hover:translate-y-px hover:shadow-none transition-all">
+            <mat-icon class="!text-sm">done_all</mat-icon> Confirmar e Ingresar
+        </button>
+    </div>
+
+</div>

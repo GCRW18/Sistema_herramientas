@@ -220,20 +220,11 @@ export class PrestamoTecnicoHubComponent implements OnInit, OnDestroy {
         return Math.ceil(Math.abs(end.getTime() - new Date(fecha).getTime()) / 86400000);
     }
 
-    calcDias(fecha: string): number { return this._calcDias(fecha); }
-
     formatFecha(loan_date: string, loan_time: string): string {
         if (!loan_date) return '—';
         const d = loan_date.substring(8, 10) + '/' + loan_date.substring(5, 7) + '/' + loan_date.substring(0, 4);
         const t = loan_time ? loan_time.substring(0, 5) : '';
         return t ? d + ' ' + t : d;
-    }
-
-    getDiasFueraClass(dias: number): string {
-        if (dias <= 3)  return 'bg-green-100 text-green-800 border-green-300';
-        if (dias <= 7)  return 'bg-yellow-100 text-yellow-800 border-yellow-300';
-        if (dias <= 15) return 'bg-orange-100 text-orange-800 border-orange-300';
-        return 'bg-red-100 text-red-800 border-red-400';
     }
 
     private readonly _condicionLabel: Record<string, string> = {
@@ -247,13 +238,6 @@ export class PrestamoTecnicoHubComponent implements OnInit, OnDestroy {
         return this._condicionLabel[(est || '').toLowerCase()] || (est || '—').toUpperCase();
     }
 
-    getEstadoClass(est: string): string {
-        const e = (est || '').toLowerCase();
-        if (['good','serviceable','bueno','nuevo','new','excellent'].includes(e)) return 'bg-green-500 text-white';
-        if (['fair','en_calibracion','reconditioned'].includes(e))                return 'bg-yellow-400 text-black';
-        if (['damaged','poor','unserviceable'].includes(e))                       return 'bg-red-500 text-white';
-        return 'bg-stone-400 text-white';
-    }
 
     // ── Acciones ─────────────────────────────────────────────────────────
     async abrirFormPrestamo(): Promise<void> {

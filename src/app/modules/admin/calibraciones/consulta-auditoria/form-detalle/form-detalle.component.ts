@@ -49,6 +49,7 @@ export class FormDetalleComponent {
             'returned': 'bg-green-100 text-green-800 border-green-200',
             'sent': 'bg-blue-100 text-blue-800 border-blue-200',
             'in_process': 'bg-amber-100 text-amber-800 border-amber-200',
+            'in_progress': 'bg-amber-100 text-amber-800 border-amber-200',
             'rejected': 'bg-red-100 text-red-800 border-red-200',
             'cancelled': 'bg-gray-100 text-gray-800 border-gray-200'
         };
@@ -59,6 +60,7 @@ export class FormDetalleComponent {
         const labels: Record<string, string> = {
             'sent': 'ENVIADO',
             'in_process': 'EN PROCESO',
+            'in_progress': 'EN PROCESO',
             'completed': 'COMPLETADO',
             'returned': 'RETORNADO',
             'rejected': 'RECHAZADO',
@@ -73,9 +75,11 @@ export class FormDetalleComponent {
 
     formatDate(dateStr: string): string {
         if (!dateStr || dateStr === '—') return '—';
-        try {
-            return new Date(dateStr).toLocaleDateString('es-BO', { day: '2-digit', month: '2-digit', year: 'numeric' });
-        } catch { return dateStr; }
+        // Texto puro (YYYY-MM-DD → DD/MM/YYYY), no new Date(): una fecha "solo fecha" se
+        // interpreta como medianoche UTC, que en Bolivia (UTC-4) muestra el día anterior.
+        const parts = String(dateStr).split('T')[0].split('-');
+        if (parts.length !== 3) return dateStr;
+        return `${parts[2]}/${parts[1]}/${parts[0]}`;
     }
 
     get currentUser(): string {

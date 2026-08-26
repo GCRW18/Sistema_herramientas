@@ -11,6 +11,7 @@ import { takeUntil } from 'rxjs/operators';
 import { CalibrationService } from '../../../../core/services/calibration.service';
 import { MaintenanceService } from '../../../../core/services/maintenance.service';
 import { HasPermissionDirective } from '../../../../core/directives/has-permission.directive';
+import { localDateStr } from '../../../../core/utils/date.utils';
 
 export interface AuditRow {
     id: number;
@@ -24,6 +25,7 @@ export interface AuditRow {
     status: string;
     send_date: string;
     return_date: string | null;
+    expected_return_date: string | null;
     result: string;
     cost: number;
     notes: string;
@@ -134,7 +136,7 @@ export class ConsultaAuditoriaComponent implements OnInit, OnDestroy {
     private resetDateFilters(): void {
         const year = new Date().getFullYear();
         this.filterDateFrom = `${year}-01-01`;
-        this.filterDateTo = new Date().toISOString().split('T')[0];
+        this.filterDateTo = localDateStr();
         this.is90DaysActive = false;
     }
 
@@ -142,8 +144,8 @@ export class ConsultaAuditoriaComponent implements OnInit, OnDestroy {
         const today = new Date();
         const from = new Date(today);
         from.setDate(from.getDate() - 90);
-        this.filterDateFrom = from.toISOString().split('T')[0];
-        this.filterDateTo = today.toISOString().split('T')[0];
+        this.filterDateFrom = localDateStr(from);
+        this.filterDateTo = localDateStr(today);
         this.is90DaysActive = true;
         this.applyFilters();
     }
@@ -179,13 +181,11 @@ export class ConsultaAuditoriaComponent implements OnInit, OnDestroy {
         this.pageIndex = 0;
         this.isLoading.set(true);
 
-        const params: any = { limit: 250 };
-        if (this.filterCode) params.record_number = this.filterCode;
-        if (this.filterTool) params.tool_search = this.filterTool;
-        if (this.filterStatus) params.status = this.filterStatus;
-        if (this.filterEmpresa) params.id_laboratory = this.filterEmpresa;
-        if (this.filterDateFrom) params.date_from = this.filterDateFrom;
-        if (this.filterDateTo) params.date_to = this.filterDateTo;
+        const baseParams: any = { limit: 250 };
+        if (this.filterCode) baseParams.record_number = this.filterCode;
+        if (this.filterTool) baseParams.tool_search = this.filterTool;
+        if (this.filterDateFrom) baseParams.date_from = this.filterDateFrom;
+        if (this.filterDateTo) baseParams.date_to = this.filterDateTo;
 
         const includeCal = this.filterTipo === 'todos' || this.filterTipo === 'calibracion';
         const includeMnt = this.filterTipo === 'todos' || this.filterTipo === 'mantenimiento';
@@ -194,13 +194,24 @@ export class ConsultaAuditoriaComponent implements OnInit, OnDestroy {
             let combined: AuditRow[] = [];
 
             if (includeCal) {
-                const cals = await this.calibrationService.getCalibrations(params).toPromise();
+                // he.tcalibrations usa 'in_process' y sí tiene id_laboratory (supplier_id).
+                const calParams: any = { ...baseParams };
+                if (this.filterStatus) calParams.status = this.filterStatus;
+                if (this.filterEmpresa) calParams.id_laboratory = this.filterEmpresa;
+                const cals = await this.calibrationService.getCalibrations(calParams).toPromise();
                 const mappedCals = (cals as any[] || []).map(r => this.mapToAuditRow(r, 'calibracion'));
                 combined = [...combined, ...mappedCals];
             }
 
             if (includeMnt) {
-                const mnts = await this.maintenanceService.getMaintenances(params).toPromise();
+                // he.tmaintenances usa 'in_progress' (no 'in_process') y no tiene id_laboratory
+                // (solo 'provider' de texto libre, sin FK a he.tcalibration_laboratories) —
+                // ese filtro no se le puede aplicar sin romper la consulta en silencio.
+                const mntParams: any = { ...baseParams };
+                if (this.filterStatus) {
+                    mntParams.status = this.filterStatus === 'in_process' ? 'in_progress' : this.filterStatus;
+                }
+                const mnts = await this.maintenanceService.getMaintenances(mntParams).toPromise();
                 const mappedMnts = (mnts as any[] || []).map(r => this.mapToAuditRow(r, 'mantenimiento'));
                 combined = [...combined, ...mappedMnts];
             }
@@ -227,6 +238,7 @@ export class ConsultaAuditoriaComponent implements OnInit, OnDestroy {
             status: r.status ?? '—',
             send_date: r.send_date ?? '—',
             return_date: r.actual_return_date ?? r.return_date ?? null,
+            expected_return_date: r.expected_return_date ?? null,
             result: r.result ?? '',
             cost: r.cost ?? 0,
             notes: r.notes ?? '',
@@ -236,11 +248,18 @@ export class ConsultaAuditoriaComponent implements OnInit, OnDestroy {
     }
 
     private updateStats(data: AuditRow[]): void {
+        const pendientes = ['sent', 'in_process', 'in_progress'];
         this.statCerrados = data.filter(r => ['completed', 'returned'].includes(r.status)).length;
-        this.statFuera = data.filter(r => ['sent', 'in_process'].includes(r.status)).length;
+        this.statFuera = data.filter(r => pendientes.includes(r.status)).length;
+        // "En mora" = pendientes cuya fecha estimada de retorno ya pasó. return_date (retorno
+        // REAL) siempre es null para estos, por eso se compara contra expected_return_date.
+        // Comparación de texto (YYYY-MM-DD), no new Date(): evita el corrimiento de día por
+        // interpretar una fecha "solo fecha" como medianoche UTC (ver envio-calibracion).
+        const today = localDateStr();
         this.statMora = data.filter(r =>
-            ['sent', 'in_process'].includes(r.status) &&
-            r.return_date && new Date(r.return_date) < new Date()
+            pendientes.includes(r.status) &&
+            !!r.expected_return_date &&
+            String(r.expected_return_date).split('T')[0] < today
         ).length;
     }
 
@@ -260,6 +279,7 @@ export class ConsultaAuditoriaComponent implements OnInit, OnDestroy {
             'returned':   'bg-green-600 text-black border-black',
             'sent':       'bg-blue-700 text-gray-100 border-black',
             'in_process': 'bg-amber-500 text-black border-black',
+            'in_progress':'bg-amber-500 text-black border-black',
             'rejected':   'bg-red-600 text-gray-100 border-black',
             'cancelled':  'bg-red-600 text-gray-100 border-black',
         };
@@ -267,7 +287,8 @@ export class ConsultaAuditoriaComponent implements OnInit, OnDestroy {
     }
 
     getStatusLabel = (s: string) => ({
-        'sent': 'ENVIADO', 'in_process': 'EN TRÁNSITO', 'completed': 'FINALIZADO', 'returned': 'RETORNADO'
+        'sent': 'ENVIADO', 'in_process': 'EN TRÁNSITO', 'in_progress': 'EN TRÁNSITO',
+        'completed': 'FINALIZADO', 'returned': 'RETORNADO'
     }[s] || s.toUpperCase());
 
     getTipoLabel = (t: string) => t === 'calibracion' ? 'CAL' : 'MNT';
@@ -278,7 +299,11 @@ export class ConsultaAuditoriaComponent implements OnInit, OnDestroy {
 
     formatDate(d: string): string {
         if (!d || d === '—') return '—';
-        return new Date(d).toLocaleDateString('es-BO', { day: '2-digit', month: '2-digit', year: 'numeric' });
+        // Texto puro (YYYY-MM-DD → DD/MM/YYYY), no new Date(): una fecha "solo fecha" se
+        // interpreta como medianoche UTC, que en Bolivia (UTC-4) muestra el día anterior.
+        const parts = String(d).split('T')[0].split('-');
+        if (parts.length !== 3) return d;
+        return `${parts[2]}/${parts[1]}/${parts[0]}`;
     }
 
     printNota(row: AuditRow): void {

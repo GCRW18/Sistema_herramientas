@@ -1,0 +1,90 @@
+<div class="bg-stone-100 dark:bg-slate-900 border-2 border-black overflow-hidden flex flex-col w-full">
+
+    <!-- Header -->
+    <div class="bg-[#0F172A] px-4 py-2.5 flex items-center gap-3 shrink-0"
+         cdkDrag cdkDragRootElement=".cdk-overlay-pane" cdkDragHandle style="cursor:grab">
+        <div class="w-8 h-8 bg-blue-500 border-2 border-black rounded-lg flex items-center justify-center shadow-[2px_2px_0_#000] shrink-0">
+            <mat-icon class="!text-base text-white">receipt_long</mat-icon>
+        </div>
+        <div class="flex-1 min-w-0">
+            <p class="text-[8px] text-slate-400 uppercase tracking-widest font-bold leading-none mb-0.5">Datos de Recepción</p>
+            <h2 class="font-mono text-sm text-white font-black uppercase tracking-tight leading-none truncate">
+                {{ data?.recepcion?.nroCmr || '—' }}
+            </h2>
+        </div>
+        <span class="text-[9px] font-black uppercase px-2 py-0.5 border border-white/30 rounded-md text-white/80 bg-white/10 shrink-0">
+            {{ data?.recepcion?.tipoDe }}
+        </span>
+        <button mat-dialog-close
+                class="w-7 h-7 flex items-center justify-center bg-white/10 hover:bg-white/20 rounded-lg border border-white/20 transition-all shrink-0">
+            <mat-icon class="text-white !text-sm">close</mat-icon>
+        </button>
+    </div>
+
+    <!-- Body: single card -->
+    <div class="p-4 overflow-y-auto custom-scrollbar-ing" style="max-height: 72vh">
+        <div class="bg-white dark:bg-slate-800 border-2 border-black rounded-xl shadow-[3px_3px_0_#000] overflow-hidden">
+
+            <!-- Fecha + Proveedor -->
+            <div class="px-4 py-3 grid grid-cols-2 gap-4 border-b border-black/8 dark:border-slate-700">
+                <div>
+                    <p class="text-[8px] font-black uppercase tracking-wider text-blue-600 dark:text-blue-400 mb-0.5">Fecha de Ingreso</p>
+                    <p class="font-black text-sm text-black dark:text-white">{{ data?.recepcion?.fechaIngreso || '—' }}</p>
+                </div>
+                <div>
+                    <p class="text-[8px] font-black uppercase tracking-wider text-blue-600 dark:text-blue-400 mb-0.5">Proveedor</p>
+                    <p class="font-bold text-sm text-black dark:text-white truncate">{{ data?.recepcion?.proveedor?.nombre || data?.recepcion?.proveedor || '—' }}</p>
+                </div>
+            </div>
+
+            <!-- Recibe + Recibí Conforme -->
+            <div class="px-4 py-3 grid grid-cols-2 gap-4 border-b border-black/8 dark:border-slate-700">
+                <div>
+                    <p class="text-[8px] font-black uppercase tracking-wider text-blue-600 dark:text-blue-400 mb-0.5">Funcionario que Recibe</p>
+                    <p class="font-bold text-sm text-black dark:text-white truncate">{{ data?.recepcion?.funcionarioRecibe || '—' }}</p>
+                </div>
+                <div>
+                    <p class="text-[8px] font-black uppercase tracking-wider text-blue-600 dark:text-blue-400 mb-0.5">Recibí Conforme</p>
+                    <p class="font-bold text-sm text-black dark:text-white truncate">{{ data?.recepcion?.recibiConforme || '—' }}</p>
+                </div>
+            </div>
+
+            <!-- Factura + Orden de Compra -->
+            <div class="px-4 py-3 grid grid-cols-2 gap-4 border-b border-black/8 dark:border-slate-700">
+                <div>
+                    <p class="text-[8px] font-black uppercase tracking-wider text-blue-600 dark:text-blue-400 mb-0.5">N° Factura</p>
+                    <p class="font-mono font-black text-sm text-black dark:text-white">{{ data?.recepcion?.nroFactura || '—' }}</p>
+                </div>
+                <div>
+                    <p class="text-[8px] font-black uppercase tracking-wider text-blue-600 dark:text-blue-400 mb-0.5">Orden de Compra</p>
+                    <p class="font-mono font-black text-sm text-black dark:text-white">{{ data?.recepcion?.ordenCompra || '—' }}</p>
+                </div>
+            </div>
+
+            <!-- Observaciones -->
+            <div class="px-4 py-3">
+                <p class="text-[8px] font-black uppercase tracking-wider text-blue-600 dark:text-blue-400 mb-1.5">Observaciones</p>
+                <p *ngIf="data?.recepcion?.observaciones"
+                   class="text-xs font-bold text-stone-700 dark:text-slate-300 leading-snug italic bg-stone-50 dark:bg-slate-900 border border-black/10 px-3 py-2 rounded-lg">
+                    {{ data?.recepcion?.observaciones }}
+                </p>
+                <p *ngIf="!data?.recepcion?.observaciones"
+                   class="text-[9px] text-stone-300 dark:text-slate-600 italic">Sin observaciones</p>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="border-t-2 border-black bg-stone-200 dark:bg-slate-800 px-4 py-2.5 flex justify-between items-center shrink-0">
+        <button mat-dialog-close
+                class="h-8 px-4 flex items-center gap-1.5 bg-[#0F172A] text-white border-2 border-black rounded-xl font-black text-[10px] uppercase shadow-[2px_2px_0_#000] hover:translate-x-px hover:translate-y-px hover:shadow-none transition-all">
+            <mat-icon class="!text-sm">close</mat-icon> Cerrar
+        </button>
+        <button mat-dialog-close (click)="editar()"
+                class="h-8 px-4 flex items-center gap-1.5 bg-amber-400 text-black border-2 border-black rounded-xl font-black text-[10px] uppercase shadow-[2px_2px_0_#000] hover:translate-x-px hover:translate-y-px hover:shadow-none transition-all">
+            <mat-icon class="!text-sm">edit</mat-icon> Editar datos
+        </button>
+    </div>
+
+</div>

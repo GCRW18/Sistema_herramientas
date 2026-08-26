@@ -78,6 +78,15 @@ export class RetornoCalibracionComponent implements OnInit, OnDestroy {
     ngOnInit(): void {
         this.loadCalibraciones();
         this.setupFilters();
+
+        // Ver nota en envio-calibracion.component.ts: las tabs quedan montadas en segundo
+        // plano al cambiar de tab, así que un envío/retorno hecho en otra tab no se
+        // reflejaba acá hasta cerrar y reabrir esta.
+        this.calibrationService.calibrationsChanged$.pipe(
+            takeUntil(this._destroy$),
+        ).subscribe(() => {
+            if (!this.isLoading()) this.loadCalibraciones();
+        });
     }
 
     ngOnDestroy(): void {

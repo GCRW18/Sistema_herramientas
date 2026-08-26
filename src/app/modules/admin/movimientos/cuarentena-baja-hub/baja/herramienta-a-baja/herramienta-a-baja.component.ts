@@ -5,12 +5,13 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatInputModule } from '@angular/material/input';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatSelectModule } from '@angular/material/select';
-import { MatDialogRef, MatDialogModule, MAT_DIALOG_DATA } from '@angular/material/dialog';
+import { MatDialogRef, MatDialogModule } from '@angular/material/dialog';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { DragDropModule } from '@angular/cdk/drag-drop';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { Subject, takeUntil, debounceTime, distinctUntilChanged } from 'rxjs';
+import { Subject, of, takeUntil, debounceTime, distinctUntilChanged, switchMap, catchError } from 'rxjs';
+import { ToolService } from '../../../../../../core/services/tool.service';
 import { MovementService } from '../../../../../../core/services/movement.service';
 
 interface HerramientaOption {
@@ -20,10 +21,13 @@ interface HerramientaOption {
     pn: string;
     sn: string;
     base: string;
+    marca: string;
     existencia: number;
-    estadoFisico: string;
-    rawStatus?: string;
     imagen?: string;
+    warehouseId?: number | null;
+    rackId?: number | null;
+    levelId?: number | null;
+    notesTool?: string;
 }
 
 @Component({
@@ -59,12 +63,13 @@ interface HerramientaOption {
 })
 export class HerramientaABajaComponent implements OnInit, OnDestroy {
     public dialogRef = inject(MatDialogRef<HerramientaABajaComponent>, { optional: true });
-    public data = inject(MAT_DIALOG_DATA, { optional: true });
     private fb = inject(FormBuilder);
     private snackBar = inject(MatSnackBar);
-    private movementService = inject(MovementService);
+    private toolSvc = inject(ToolService);
+    private movementSvc = inject(MovementService);
 
     private _unsubscribeAll = new Subject<void>();
+    private _search$ = new Subject<string>();
 
     bajaForm!: FormGroup;
 
@@ -74,57 +79,62 @@ export class HerramientaABajaComponent implements OnInit, OnDestroy {
     isLoading = false;
     showSuggestions = false;
     private id_tool_actual = 0;
-    private rawStatusActual = '';
+    private warehouseId_actual: number | null = null;
+    private rackId_actual: number | null = null;
+    private levelId_actual: number | null = null;
+    // Notas reales de la herramienta (ttools.notes) — para el detalle de solo-lectura, no
+    // confundir con "observacion" del form (motivo de ESTA baja, dato distinto).
+    private notesTool_actual: string = '';
+    private warehouses: any[] = [];
 
-    herramientas: HerramientaOption[] = [];
-    herramientasFiltradas = signal<HerramientaOption[]>(this.herramientas);
+    herramientasFiltradas = signal<HerramientaOption[]>([]);
 
     ngOnInit(): void {
         this.initForm();
         this.setupSearchListener();
-        this.cargarHerramientas();
-
-        if (this.data && this.data.codigo) {
-            setTimeout(() => {
-                const herramienta = this.herramientas.find(h => h.codigo === this.data.codigo);
-                if (herramienta) {
-                    this.loadHerramientaData(herramienta);
-                }
-            }, 500);
-        }
+        this.movementSvc.getWarehouses().pipe(takeUntil(this._unsubscribeAll))
+            .subscribe({ next: (w: any[]) => { this.warehouses = w; } });
     }
 
-    private cargarHerramientas(): void {
-        const conditionMap: Record<string, string> = {
-            available: 'BUENO', serviceable: 'BUENO', good: 'BUENO',
-            repairable: 'REGULAR', repair: 'REGULAR', transitional: 'REGULAR',
-            unserviceable: 'MALO', bad: 'MALO',
-            damaged: 'INSERVIBLE', scrapped: 'INSERVIBLE'
-        };
+    // Búsqueda en vivo contra el backend (ToolService.getTools con query → searchToolsAutocomplete),
+    // el mismo mecanismo que usa el buscador de detalle-herramienta.component.ts (Ajuste de
+    // Herramienta), en vez de precargar todas las herramientas y filtrar en el cliente.
+    // "base" se resuelve en el cliente contra el listado de almacenes (getWarehouses) porque
+    // searchToolsAutocomplete solo devuelve warehouse_id, no el nombre/código del almacén.
+    private setupSearchListener(): void {
+        this._search$.pipe(
+            takeUntil(this._unsubscribeAll),
+            debounceTime(300), distinctUntilChanged(),
+            switchMap(term => {
+                const q = (term || '').trim();
+                if (q.length < 2) { return of([]); }
+                return this.toolSvc.getTools({ query: q }).pipe(catchError(() => of([])));
+            })
+        ).subscribe((tools: any[]) => {
+            const mapped: HerramientaOption[] = (tools || []).map((t: any) => ({
+                id_tool:    t.id_tool ?? t.id ?? 0,
+                codigo:     t.code          ?? t.codigo        ?? '',
+                nombre:     t.name          || t.description   || t.nombre || '',
+                pn:         t.part_number   ?? t.pn            ?? '',
+                sn:         t.serial_number ?? t.sn             ?? '',
+                base:       this._resolverBase(t.warehouse_id),
+                marca:      t.brand ?? t.marca ?? '',
+                existencia: t.quantity_in_stock ?? t.existencia ?? 0,
+                imagen:     t.location_photo ?? null,
+                warehouseId: t.warehouse_id != null ? Number(t.warehouse_id) : null,
+                rackId:      t.rack_id      != null ? Number(t.rack_id)      : null,
+                levelId:     t.level_id     != null ? Number(t.level_id)     : null,
+                notesTool:   t.notes ?? '',
+            }));
+            this.herramientasFiltradas.set(mapped);
+            this.showSuggestions = mapped.length > 0;
+        });
+    }
 
-        this.movementService.getHerramientasDisponibles()
-            .pipe(takeUntil(this._unsubscribeAll))
-            .subscribe({
-                next: (tools: any[]) => {
-                    if (tools.length > 0) {
-                        this.herramientas = tools.map((t: any) => {
-                            const rawCond = (t.condition ?? t.status ?? '').toLowerCase();
-                            return {
-                                id_tool:          t.id_tool ?? 0,
-                                codigo:           t.code          ?? t.codigo        ?? '',
-                                nombre:           t.name          || t.description   || t.nombre || '',
-                                pn:               t.part_number   ?? t.pn            ?? '',
-                                sn:               t.serial_number ?? t.sn            ?? '',
-                                base:             t.warehouse_name ?? t.base_code ?? t.base ?? '',
-                                existencia:       t.quantity_in_stock ?? t.existencia ?? 0,
-                                estadoFisico:     conditionMap[rawCond] ?? 'REGULAR',
-                                rawStatus:        t.condition ?? t.status ?? '',
-                            };
-                        });
-                        this.herramientasFiltradas.set(this.herramientas);
-                    }
-                }
-            });
+    private _resolverBase(warehouseId: any): string {
+        if (warehouseId == null) return '';
+        const w = this.warehouses.find(x => x.id === warehouseId);
+        return w ? (w.codigo ? `${w.codigo} — ${w.nombre}` : w.nombre) : '';
     }
 
     ngOnDestroy(): void {
@@ -139,6 +149,7 @@ export class HerramientaABajaComponent implements OnInit, OnDestroy {
             pn: [''],
             sn: [''],
             base: [''],
+            marca: [''],
             existencia: [0],
             estadoFisico: ['INSERVIBLE', Validators.required],
             cantidad: [1, [Validators.required, Validators.min(1)]],
@@ -155,25 +166,18 @@ export class HerramientaABajaComponent implements OnInit, OnDestroy {
             });
     }
 
-    private setupSearchListener(): void {
-        const searchControl = this.fb.control('');
-        searchControl.valueChanges
-            .pipe(takeUntil(this._unsubscribeAll), debounceTime(300), distinctUntilChanged())
-            .subscribe(term => {
-                this.buscarTermino.set(term || '');
-                this.filtrarHerramientas(term || '');
-            });
-    }
-
     onBuscarChange(value: string): void {
         this.buscarTermino.set(value);
-        this.filtrarHerramientas(value);
-        this.showSuggestions = value.length >= 2 && this.herramientasFiltradas().length > 0;
+        if (value.trim().length < 2) { this.showSuggestions = false; this.herramientasFiltradas.set([]); }
+        this._search$.next(value);
     }
 
     selectHerramienta(herramienta: HerramientaOption): void {
         this.id_tool_actual = herramienta.id_tool ?? 0;
-        this.rawStatusActual = herramienta.rawStatus ?? '';
+        this.warehouseId_actual = herramienta.warehouseId ?? null;
+        this.rackId_actual      = herramienta.rackId ?? null;
+        this.levelId_actual     = herramienta.levelId ?? null;
+        this.notesTool_actual   = herramienta.notesTool ?? '';
         this.loadHerramientaData(herramienta);
         this.buscarTermino.set(`${herramienta.codigo} - ${herramienta.nombre}`);
         this.showSuggestions = false;
@@ -185,27 +189,15 @@ export class HerramientaABajaComponent implements OnInit, OnDestroy {
 
     limpiarBusqueda(): void {
         this.buscarTermino.set('');
-        this.filtrarHerramientas('');
+        this.herramientasFiltradas.set([]);
         this.showSuggestions = false;
         this.bajaForm.reset({ cantidad: 1, estadoFisico: 'INSERVIBLE', existencia: 0 });
         this.id_tool_actual = 0;
-        this.rawStatusActual = '';
+        this.warehouseId_actual = null;
+        this.rackId_actual      = null;
+        this.levelId_actual     = null;
+        this.notesTool_actual   = '';
         this.selectedImage.set(null);
-    }
-
-    private filtrarHerramientas(term: string): void {
-        if (!term || term.trim() === '') {
-            this.herramientasFiltradas.set(this.herramientas);
-            return;
-        }
-        const searchTerm = term.toLowerCase().trim();
-        const filtered = this.herramientas.filter(h =>
-            h.codigo.toLowerCase().includes(searchTerm) ||
-            h.nombre.toLowerCase().includes(searchTerm) ||
-            h.pn.toLowerCase().includes(searchTerm) ||
-            h.sn.toLowerCase().includes(searchTerm)
-        );
-        this.herramientasFiltradas.set(filtered);
     }
 
     private loadHerramientaData(herramienta: HerramientaOption): void {
@@ -215,6 +207,7 @@ export class HerramientaABajaComponent implements OnInit, OnDestroy {
             pn: herramienta.pn,
             sn: herramienta.sn,
             base: herramienta.base,
+            marca: herramienta.marca,
             existencia: herramienta.existencia,
             estadoFisico: 'INSERVIBLE',
             cantidad: 1,
@@ -265,9 +258,11 @@ export class HerramientaABajaComponent implements OnInit, OnDestroy {
         const toolData = {
             ...formValue,
             id_tool: this.id_tool_actual,
+            warehouseId: this.warehouseId_actual,
+            rackId: this.rackId_actual,
+            levelId: this.levelId_actual,
+            notesTool: this.notesTool_actual,
             imagen: this.selectedImage(),
-            modoIngreso: 'SISTEMA',
-            fechaRegistro: new Date().toISOString(),
             id: crypto.randomUUID ? crypto.randomUUID() : Date.now().toString()
         };
 

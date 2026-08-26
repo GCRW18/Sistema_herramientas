@@ -57,7 +57,7 @@ export class EnvioBasePdfService {
         return this._logoBoaDataUri;
     }
 
-    async generarPdf(data: EnvioBasePdfData): Promise<void> {
+    async generarPdf(data: EnvioBasePdfData, win?: Window | null): Promise<void> {
         const logoUri = await this._loadLogoBoaDataUri();
 
         const origen      = data.origen || '---';
@@ -178,6 +178,12 @@ ${data.nroDocumento || data.observaciones ? `
 
 </body></html>`;
 
+        if (win && !win.closed) {
+            win.document.open();
+            win.document.write(html);
+            win.document.close();
+            return;
+        }
         const blob = new Blob([html], { type: 'text/html' });
         const url  = URL.createObjectURL(blob);
         const a    = document.createElement('a');

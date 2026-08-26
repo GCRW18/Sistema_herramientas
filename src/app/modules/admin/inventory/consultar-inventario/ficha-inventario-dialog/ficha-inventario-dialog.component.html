@@ -1,0 +1,401 @@
+<div class="fi-root bg-stone-100 dark:bg-slate-900 border-2 border-black overflow-hidden flex flex-col rounded-2xl"
+     style="width:min(860px,96vw); max-height:90vh; box-shadow:6px 6px 0 #000">
+
+  <!-- ══ HEADER ══ -->
+  <div class="bg-[#0F172A] px-4 sm:px-5 py-3 flex items-center gap-3.5 shrink-0 select-none"
+       cdkDrag cdkDragRootElement=".cdk-overlay-pane" cdkDragHandle style="cursor:grab">
+    <div class="w-10 h-10 rounded-lg bg-amber-400 border-2 border-black flex items-center justify-center shadow-[2px_2px_0_#fbbf24] shrink-0">
+      <mat-icon class="!text-lg text-black">{{ item.tipo === 'KIT' ? 'cases' : item.tipo === 'MISCELANEO' ? 'category' : 'build' }}</mat-icon>
+    </div>
+    <div class="flex-1 min-w-0">
+      <p class="text-[9px] text-slate-400 font-bold uppercase tracking-[0.16em] leading-none mb-1">Inventario · {{ item.tipo | titlecase }}</p>
+      <h2 class="text-sm text-white font-black uppercase tracking-tight leading-tight truncate">{{ item.nombre }}</h2>
+    </div>
+    <div class="flex items-center gap-1.5 shrink-0">
+      <span *ngIf="item.tipo !== 'HERRAMIENTA'"
+            class="inline-flex items-center gap-1 px-2 py-1 text-[8px] font-black uppercase border-2 rounded-md {{ getStatusBadgeClass(item.estado) }}">
+        <span *ngIf="item.estado !== 'DISPONIBLE' && item.estado !== 'COMPLETO'"
+              class="w-1 h-1 rounded-full shrink-0 {{ getStatusDotClass(item.estado) }}"></span>
+        {{ item.estado }}
+      </span>
+      <span *ngIf="item.enLaboratorio"
+            class="inline-flex items-center gap-1 px-2 py-1 text-[8px] font-black uppercase border-2 rounded-md bg-purple-100 text-purple-800 border-purple-300">
+        <mat-icon class="!text-[10px] !w-3 !h-3">science</mat-icon>
+        EN LAB
+      </span>
+    </div>
+    <button type="button" (click)="cerrar(); $event.stopPropagation()" (mousedown)="$event.stopPropagation()"
+            class="w-7 h-7 border-2 border-slate-600 rounded-lg flex items-center justify-center hover:border-red-500 hover:bg-red-900/40 transition-all shrink-0">
+      <mat-icon class="!text-sm text-slate-400">close</mat-icon>
+    </button>
+  </div>
+
+  <!-- ══ TABS ══ (solo si hay más de una — Kit tiene Ficha/Componentes/Préstamos) -->
+  <div *ngIf="tabs.length > 1"
+       class="bg-stone-200 dark:bg-slate-800 border-b-2 border-black px-3 sm:px-5 py-2 flex items-center gap-2 overflow-x-auto scrollbar-none shrink-0">
+    <button *ngFor="let tab of tabs" type="button" (click)="setActiveTab(tab.id)"
+            class="flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-black uppercase rounded-lg border-2 transition-all shrink-0"
+            [ngClass]="activeTab() === tab.id
+              ? 'bg-[#0F172A] text-amber-400 border-black shadow-[2px_2px_0_#000]'
+              : 'bg-white dark:bg-slate-700 text-black dark:text-white border-stone-300 dark:border-slate-600 hover:bg-amber-50 dark:hover:bg-slate-600'">
+      <mat-icon class="!text-sm !w-3.5 !h-3.5">{{ tab.icon }}</mat-icon>
+      {{ tab.label }}
+    </button>
+    <div *ngIf="isLoadingDetail()" class="ml-auto flex items-center gap-1.5 shrink-0 pr-1">
+      <div class="w-2.5 h-2.5 border-2 border-amber-500 border-t-transparent rounded-full spin"></div>
+      <span class="text-[8px] text-stone-400 font-black uppercase tracking-wide">Cargando…</span>
+    </div>
+  </div>
+
+  <!-- ══ BODY ══ -->
+  <div class="flex-1 overflow-y-auto neo-scroll px-4 sm:px-5 py-4 min-h-0 bg-stone-100 dark:bg-slate-900">
+
+    <!-- ─────────────────────────── TAB: FICHA ─────────────────────────── -->
+    <div *ngIf="activeTab() === 'ficha'" class="flex flex-col sm:flex-row gap-5">
+
+      <!-- ─ Foto (solo Herramienta, solo lectura — la edición vive en el módulo de Ingresos) ─ -->
+      <div *ngIf="item.tipo === 'HERRAMIENTA'"
+           class="shrink-0 flex flex-col items-center sm:items-start">
+        <div class="w-72 h-72 border-2 border-dashed border-stone-300 dark:border-slate-600 rounded-xl bg-stone-50 dark:bg-slate-800 flex flex-col items-center justify-center overflow-hidden">
+          <img *ngIf="imagenSrc()" [src]="imagenSrc()" [alt]="item.nombre"
+               class="w-full h-full object-contain p-3 opacity-90">
+          <ng-container *ngIf="!imagenSrc()">
+            <mat-icon class="!text-4xl text-stone-300 dark:text-slate-600 mb-1">image_not_supported</mat-icon>
+            <span class="text-[9px] font-black uppercase text-stone-400 dark:text-slate-500">Sin imagen</span>
+          </ng-container>
+        </div>
+      </div>
+
+      <!-- ─ Campos, agrupados en tarjetas por sección ─ -->
+      <div class="flex-1 min-w-0 flex flex-col gap-3.5">
+
+        <!-- ══ HERRAMIENTA — solo lectura; mismas filas/agrupaciones que
+             ingresos-hub/detalle-herramienta (sin tarjetas df-card). La
+             edición se hace desde el módulo de Ingresos, no desde acá. ══ -->
+        <ng-container *ngIf="item.tipo === 'HERRAMIENTA'">
+          <div class="flex flex-col gap-2">
+
+            <!-- Fila 1: Código BOA · P/N · S/N -->
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+              <div>
+                <label class="df-lbl">Código BOA</label>
+                <div class="df-box font-mono">{{ item.codigo }}</div>
+              </div>
+              <div>
+                <label class="df-lbl">P/N</label>
+                <div class="df-box font-mono">{{ item.partNumber || '—' }}</div>
+              </div>
+              <div>
+                <label class="df-lbl">S/N</label>
+                <div class="df-box font-mono">{{ item.serialNumber || '—' }}</div>
+              </div>
+            </div>
+
+            <!-- Fila 2: Nombre -->
+            <div>
+              <label class="df-lbl">Nombre / Descripción</label>
+              <div class="df-box">{{ item.nombre }}</div>
+            </div>
+
+            <!-- Fila 3: Marca · Categoría -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <div>
+                <label class="df-lbl">Marca</label>
+                <div class="df-box">{{ item.marca || '—' }}</div>
+              </div>
+              <div>
+                <label class="df-lbl">Categoría</label>
+                <div class="df-box">{{ item.categoria || '—' }}</div>
+              </div>
+            </div>
+
+            <!-- Fila 4: Estado · Criticidad · Fabricación · Cant. · Unidad -->
+            <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2">
+              <div>
+                <label class="df-lbl">Estado</label>
+                <div class="df-box">{{ item.estado }}</div>
+              </div>
+              <div>
+                <label class="df-lbl">Criticidad</label>
+                <div class="df-box">{{ item.nivelCriticidad === 'A' ? 'A — Crítico' : item.nivelCriticidad === 'B' ? 'B — Normal' : '—' }}</div>
+              </div>
+              <div>
+                <label class="df-lbl">Fabricación</label>
+                <div class="df-box">{{ item.fabricacion === 'INTERNACIONAL' ? 'Intl.' : item.fabricacion === 'LOCAL' ? 'Local' : '—' }}</div>
+              </div>
+              <div>
+                <label class="df-lbl">Cant.</label>
+                <div class="df-box justify-center">
+                  <span class="font-black" [style.color]="item.stockActual === 0 ? '#dc2626' : stockBajo() ? '#d97706' : '#16a34a'">{{ item.stockActual }}</span>
+                </div>
+              </div>
+              <div>
+                <label class="df-lbl">Unidad</label>
+                <div class="df-box">{{ item.unidad || '—' }}</div>
+              </div>
+            </div>
+
+            <!-- Fila 5: Ubicación -->
+            <div>
+              <label class="df-lbl">Ubicación en Inventario</label>
+              <div class="df-box">
+                <mat-icon class="!text-sm text-amber-500 shrink-0 mr-1.5">shelves</mat-icon>
+                {{ item.ubicacion || 'Sin asignar' }}
+              </div>
+            </div>
+
+            <!-- Fila 6: Observaciones -->
+            <div *ngIf="item.notas">
+              <label class="df-lbl">Observaciones</label>
+              <div class="df-box !h-auto py-2 !whitespace-normal !items-start text-[11px] leading-snug">{{ item.notas }}</div>
+            </div>
+
+          </div>
+        </ng-container>
+
+        <!-- ══ KIT — solo lectura; mismas filas/agrupaciones que
+             ingresos-hub/detalle-herramienta (sin tarjetas df-card). Mismo
+             set de campos que gestionar-kit (Código, Nombre, Categoría,
+             Estado, Responsable, Ubicación, Descripción, Componentes). La
+             edición se hace desde el módulo Gestión de Kits, no desde acá. ══ -->
+        <ng-container *ngIf="item.tipo === 'KIT'">
+          <div class="flex flex-col gap-2">
+
+            <!-- Fila 1: Código · Estado -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <div>
+                <label class="df-lbl">Código</label>
+                <div class="df-box font-mono">{{ item.codigo }}</div>
+              </div>
+              <div>
+                <label class="df-lbl">Estado</label>
+                <div class="df-box">
+                  <span class="px-2 py-0.5 text-[9px] font-black uppercase border-2 rounded {{ getStatusBadgeClass(item.estado) }}">{{ item.estado }}</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Fila 2: Nombre del kit -->
+            <div>
+              <label class="df-lbl">Nombre del kit</label>
+              <div class="df-box">{{ item.nombre }}</div>
+            </div>
+
+            <!-- Fila 3: Categoría · Responsable -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <div>
+                <label class="df-lbl">Categoría</label>
+                <div class="df-box">{{ item.categoria || '—' }}</div>
+              </div>
+              <div>
+                <label class="df-lbl">Responsable</label>
+                <div class="df-box">{{ item.responsable || '—' }}</div>
+              </div>
+            </div>
+
+            <!-- Fila 4: Ubicación · Total herramientas -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <div>
+                <label class="df-lbl">Ubicación</label>
+                <div class="df-box">{{ item.ubicacion || '—' }}</div>
+              </div>
+              <div>
+                <label class="df-lbl">Total herramientas</label>
+                <div class="df-box font-black !bg-amber-50 dark:!bg-amber-900/20 !border-amber-300 dark:!border-amber-800 !text-amber-800 dark:!text-amber-300">
+                  {{ item.totalComponentes ?? 0 }} herramientas
+                </div>
+              </div>
+            </div>
+
+            <!-- Fila 5: Descripción -->
+            <div *ngIf="item.descripcion">
+              <label class="df-lbl">Descripción</label>
+              <div class="df-box !h-auto py-2 !whitespace-normal !items-start text-[11px] leading-relaxed">{{ item.descripcion }}</div>
+            </div>
+
+          </div>
+        </ng-container>
+
+        <!-- ══ MISCELANEO — solo lectura; mismo set de campos que
+             inventario-miscelaneos/form-material (Código, Producto, Tipo,
+             Marca, Tipo de compra, Part N°, Unidad, Stock, Ubicación,
+             Observación). La edición se hace desde el catálogo de
+             Misceláneos, no desde acá. ══ -->
+        <ng-container *ngIf="item.tipo === 'MISCELANEO'">
+          <div class="flex flex-col gap-2">
+
+            <!-- Fila 1: Código · Part N° · Unidad -->
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+              <div>
+                <label class="df-lbl">Código</label>
+                <div class="df-box font-mono">{{ item.codigo }}</div>
+              </div>
+              <div>
+                <label class="df-lbl">Part N°</label>
+                <div class="df-box font-mono">{{ item.partNumber || '—' }}</div>
+              </div>
+              <div>
+                <label class="df-lbl">Unidad</label>
+                <div class="df-box">{{ item.unidad || '—' }}</div>
+              </div>
+            </div>
+
+            <!-- Fila 2: Nombre / Producto -->
+            <div>
+              <label class="df-lbl">Nombre / Producto</label>
+              <div class="df-box">{{ item.nombre }}</div>
+            </div>
+
+            <!-- Fila 3: Tipo · Marca · Tipo de compra -->
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+              <div>
+                <label class="df-lbl">Tipo</label>
+                <div class="df-box">{{ item.tipoItem || '—' }}</div>
+              </div>
+              <div>
+                <label class="df-lbl">Marca</label>
+                <div class="df-box">{{ item.marca || '—' }}</div>
+              </div>
+              <div>
+                <label class="df-lbl">Tipo de compra</label>
+                <div class="df-box text-[10px]">{{ item.tipoCompra || '—' }}</div>
+              </div>
+            </div>
+
+            <!-- Fila 4: Stock actual · mínimo · máximo -->
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+              <div>
+                <label class="df-lbl">Stock actual</label>
+                <div class="df-box">
+                  <span class="font-black" [style.color]="item.stockActual === 0 ? '#dc2626' : stockBajo() ? '#d97706' : '#16a34a'">{{ item.stockActual }}</span>
+                  <span class="text-[9px] ml-1 opacity-70">{{ item.unidad }}</span>
+                </div>
+              </div>
+              <div>
+                <label class="df-lbl">Stock mínimo</label>
+                <div class="df-box">{{ item.stockMinimo ?? '—' }}</div>
+              </div>
+              <div>
+                <label class="df-lbl">Stock máximo</label>
+                <div class="df-box">{{ item.stockMaximo ?? '—' }}</div>
+              </div>
+            </div>
+            <div *ngIf="(item.stockMaximo ?? 0) > 0" class="bg-white dark:bg-slate-800 border-2 border-stone-300 dark:border-slate-600 rounded-lg px-3 py-2">
+              <div class="h-2.5 bg-stone-200 dark:bg-slate-700 rounded-full overflow-hidden">
+                <div class="h-full rounded-full transition-all duration-300"
+                     [style.width.%]="(item.stockActual / item.stockMaximo!) * 100"
+                     [style.background]="(item.stockActual / item.stockMaximo!) < 0.3 ? '#ef4444' : (item.stockActual / item.stockMaximo!) < 0.7 ? '#eab308' : '#22c55e'"></div>
+              </div>
+              <div class="text-right text-[9px] font-bold text-stone-400 mt-0.5">{{ ((item.stockActual / item.stockMaximo!) * 100) | number:'1.0-0' }}% del máximo</div>
+            </div>
+
+            <!-- Fila 5: Ubicación -->
+            <div>
+              <label class="df-lbl">Ubicación</label>
+              <div class="df-box">{{ item.ubicacion || '—' }}</div>
+            </div>
+
+            <!-- Fila 6: Observación -->
+            <div *ngIf="item.descripcion">
+              <label class="df-lbl">Observación</label>
+              <div class="df-box !h-auto py-2 !whitespace-normal !items-start text-[11px] leading-snug">{{ item.descripcion }}</div>
+            </div>
+
+          </div>
+        </ng-container>
+
+      </div><!-- /campos -->
+    </div><!-- /tab ficha -->
+
+    <!-- ─────────────────────── TAB: COMPONENTES (Kit) ─────────────────────── -->
+    <div *ngIf="activeTab() === 'componentes'" class="df-card !p-0 overflow-hidden">
+      <div *ngIf="!isLoadingDetail() && detailComponents().length === 0" class="flex flex-col items-center justify-center p-8 gap-1.5">
+        <mat-icon class="text-stone-200 dark:text-slate-600" style="font-size:28px;width:28px;height:28px">inventory</mat-icon>
+        <span class="text-[10px] font-black uppercase tracking-wide text-stone-300 dark:text-slate-600">Sin componentes</span>
+      </div>
+      <ng-container *ngIf="detailComponents().length > 0">
+        <div class="bg-[#0F172A] px-3 py-2 grid gap-2 rounded-t-[13px]" style="grid-template-columns:22px 72px 1fr 76px">
+          <span class="text-[8px] font-black uppercase text-slate-400 text-center">#</span>
+          <span class="text-[8px] font-black uppercase text-slate-400">Cód.</span>
+          <span class="text-[8px] font-black uppercase text-slate-400">Herramienta</span>
+          <span class="text-[8px] font-black uppercase text-slate-400 text-center">Estado</span>
+        </div>
+        <div *ngFor="let comp of detailComponents(); let i = index"
+             class="grid gap-2 items-center px-3 py-2 border-t border-stone-100 dark:border-slate-700 hover:bg-amber-50 dark:hover:bg-slate-700/60 transition-colors"
+             style="grid-template-columns:22px 72px 1fr 76px">
+          <div class="w-[18px] h-[18px] bg-[#0f172a] text-white font-black border border-black rounded flex items-center justify-center text-[8px] mx-auto">{{ i+1 }}</div>
+          <span class="font-mono text-[9px] text-stone-400 dark:text-slate-500 truncate">{{ getCompCode(comp) }}</span>
+          <span class="text-[10px] font-black text-black dark:text-white truncate">{{ getCompName(comp) }}</span>
+          <div class="text-center">
+            <span class="inline-flex items-center px-1.5 py-0.5 text-[7px] font-black border-2 rounded {{ getCompStatusClass(getCompStatus(comp)) }}">{{ getCompStatus(comp) || '—' }}</span>
+          </div>
+        </div>
+      </ng-container>
+    </div>
+
+    <!-- ─────────────────────── TAB: PRÉSTAMOS (Kit) ─────────────────────── -->
+    <div *ngIf="activeTab() === 'prestamos'" class="df-card">
+      <div *ngIf="!isLoadingDetail() && detailLoans().length === 0" class="flex flex-col items-center justify-center p-8 gap-1.5">
+        <mat-icon class="text-stone-200 dark:text-slate-600" style="font-size:28px;width:28px;height:28px">swap_horiz</mat-icon>
+        <span class="text-[10px] font-black uppercase tracking-wide text-stone-300 dark:text-slate-600">Sin préstamos</span>
+      </div>
+      <div *ngFor="let loan of detailLoans(); let last = last"
+           class="grid gap-2 px-1 py-2.5 border-b border-stone-200 dark:border-slate-700 items-stretch last:border-b-0"
+           style="grid-template-columns:56px 12px 1fr">
+        <div class="flex flex-col gap-0.5 pt-0.5">
+          <span class="text-[11px] font-black text-black dark:text-white">{{ getLoanDate(loan) }}</span>
+        </div>
+        <div class="flex flex-col items-center">
+          <div class="w-2.5 h-2.5 rounded-full border-2 border-indigo-700 bg-indigo-400 flex-shrink-0 mt-0.5"></div>
+          <div *ngIf="!last" class="w-0.5 bg-stone-200 dark:bg-slate-700 flex-1 min-h-[8px] mt-0.5"></div>
+        </div>
+        <div class="pb-1">
+          <span class="inline-flex px-1.5 py-0.5 text-[8px] font-black border-2 border-indigo-200 dark:border-indigo-700 rounded uppercase mb-1 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-800 dark:text-indigo-300">PRÉSTAMO</span>
+          <div class="text-[10px] font-black text-black dark:text-white leading-snug">{{ getLoanWO(loan) }}</div>
+          <div class="text-[9px] text-stone-400 dark:text-slate-500 mt-0.5">
+            {{ getLoanBorrower(loan) }}
+            <ng-container *ngIf="loan.expected_return_date || loan.return_date">&nbsp;→&nbsp;Dev. {{ getLoanReturnDate(loan) }}</ng-container>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /body -->
+
+  <!-- ══ FOOTER ══ -->
+  <div class="border-t-2 border-black bg-stone-200 dark:bg-slate-800 px-4 sm:px-5 py-2.5 flex justify-between items-center shrink-0 flex-wrap gap-2">
+    <div class="flex items-center gap-1.5">
+      <mat-icon class="!text-sm text-stone-400 dark:text-slate-500">schedule</mat-icon>
+      <span class="text-[9px] font-bold uppercase tracking-[0.06em] text-stone-500 dark:text-slate-400">
+        Reg. {{ item.fechaRegistro | date:'dd/MM/yy HH:mm' }}
+        <ng-container *ngIf="item.ultimoMovimiento">&nbsp;·&nbsp;Últ. mov: {{ item.ultimoMovimiento | date:'dd/MM/yy' }}</ng-container>
+      </span>
+    </div>
+
+    <div class="flex items-center gap-2">
+      <button type="button" *ngIf="item.tipo === 'HERRAMIENTA'" (click)="verCodigoQR()" [disabled]="isGeneratingQR()"
+              matTooltip="Generar etiqueta con código QR"
+              class="px-3.5 py-2 bg-white dark:bg-slate-700 text-black dark:text-white font-black text-[11px] border-2 border-black rounded-xl shadow-[2px_2px_0_#000] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all uppercase flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-x-0 disabled:hover:translate-y-0 disabled:hover:shadow-[2px_2px_0_#000]">
+        <mat-icon class="!text-sm" [class.spin]="isGeneratingQR()">{{ isGeneratingQR() ? 'progress_activity' : 'qr_code_2' }}</mat-icon>
+        QR
+      </button>
+      <button type="button" (click)="exportarPDF()" matTooltip="Exportar / imprimir ficha en PDF"
+              class="px-3.5 py-2 bg-white dark:bg-slate-700 text-black dark:text-white font-black text-[11px] border-2 border-black rounded-xl shadow-[2px_2px_0_#000] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all uppercase flex items-center gap-1.5">
+        <mat-icon class="!text-sm">picture_as_pdf</mat-icon>
+        PDF
+      </button>
+      <span [matTooltip]="item.tipo === 'HERRAMIENTA' ? 'La edición de herramientas se hace desde el módulo de Ingresos'
+                        : item.tipo === 'KIT'         ? 'La edición de kits se hace desde el módulo Gestión de Kits'
+                                                       : 'La edición de misceláneos se hace desde el catálogo de Misceláneos'"
+            class="px-3.5 py-2 bg-stone-100 dark:bg-slate-800 text-stone-400 dark:text-slate-500 font-black text-[11px] border-2 border-stone-200 dark:border-slate-700 rounded-xl uppercase flex items-center gap-1.5 cursor-default select-none">
+        <mat-icon class="!text-sm">lock</mat-icon>
+        Solo lectura
+      </span>
+      <button type="button" (click)="cerrar()"
+              class="px-4 py-2 bg-[#FF1414] text-white font-black text-[11px] border-2 border-black rounded-xl shadow-[2px_2px_0_#000] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all uppercase">
+        Cerrar
+      </button>
+    </div>
+  </div>
+
+</div>

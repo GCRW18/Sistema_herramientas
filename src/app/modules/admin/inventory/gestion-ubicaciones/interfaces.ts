@@ -109,4 +109,5 @@ export interface LevelTool {
     intervaloCalibracion?: number | null;
     fechaCalibracion?:    string | null;
     nroCertificado?:      string;
+    listaContenido?:      string;
 }

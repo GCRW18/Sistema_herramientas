@@ -9,14 +9,20 @@ import { Subject, forkJoin, of } from 'rxjs';
 import { takeUntil, finalize, catchError, debounceTime, distinctUntilChanged, switchMap, map } from 'rxjs/operators';
 import { MovementService } from '../../../../../core/services/movement.service';
 import { CalibrationService } from '../../../../../core/services/calibration.service';
-import { ModalHerramientaExternoComponent } from '../modal-herramienta-externo/modal-herramienta-externo.component';
+import { ToolService } from '../../../../../core/services/tool.service';
 import { PrestamoExternoPdfService, PrestamoExternoPdfData } from '../prestamo-externo-pdf.service';
 
 interface ExternalLoanItem {
     toolId: number; id: number; codigo: string; pn: string; descripcion: string; sn: string;
     marca: string; fechaCalibracion: string; listaContenido: string;
-    cantidad: number; horas: number; costoHora: number; precioTotal: number;
+    cantidad: number;
     contenido: string; estado: string;
+    // Datos reales de la herramienta (catálogo), para el detalle de solo-lectura.
+    imagen?: string | null;
+    notesTool?: string;
+    warehouseId?: number | null;
+    rackId?: number | null;
+    levelId?: number | null;
 }
 
 @Component({
@@ -47,13 +53,19 @@ export class FormPrestamoExternoDialogComponent implements OnInit, OnDestroy {
     private snackBar    = inject(MatSnackBar);
     private movementSvc     = inject(MovementService);
     private calibrationSvc  = inject(CalibrationService);
+    private toolSvc         = inject(ToolService);
     private pdfSvc          = inject(PrestamoExternoPdfService);
     private destroy$        = new Subject<void>();
 
     isSaving = false;
     externalForm!: FormGroup;
     dataSource = signal<ExternalLoanItem[]>([]);
-    importeTotal = signal<number>(0);
+
+    private _toolSearchPe$ = new Subject<string>();
+    toolSearchPe        = '';
+    toolSuggestionsPe:  any[] = [];
+    showToolDropPe      = false;
+    toolSearchLoadingPe = false;
 
     private _tercerosList: any[] = [];
     empresasFiltradas:   any[] = [];
@@ -83,6 +95,7 @@ export class FormPrestamoExternoDialogComponent implements OnInit, OnDestroy {
         this.initForm();
         this._setupEntregadorSearch();
         this._cargarTerceros();
+        this._setupToolSearchPe();
     }
 
     ngOnDestroy(): void { this.destroy$.next(); this.destroy$.complete(); }
@@ -165,48 +178,86 @@ export class FormPrestamoExternoDialogComponent implements OnInit, OnDestroy {
     }
     hideEntregadorSuggestions(): void { setTimeout(() => this.showEntregadorDropdown = false, 200); }
 
-    openHerramientasModal(): void {
-        const ref = this.dialog.open(ModalHerramientaExternoComponent, {
-            width: 'min(1000px, 98vw)', maxWidth: '98vw', panelClass: 'no-padding-dialog', disableClose: true
-        });
-        ref.afterClosed().subscribe(result => {
-            if (result?.action === 'agregar') {
-                const d = result.data;
-                if (this.dataSource().some(i => i.codigo === d.codigo)) { this.showMsg('info', `"${d.nombre}" ya está en la lista`); return; }
-                const item: ExternalLoanItem = {
-                    toolId: d.id_tool ?? 0, id: Date.now(), codigo: d.codigo||'',
-                    pn: d.pn||'', descripcion: d.nombre||'', sn: d.sn||'', marca: d.marca||'',
-                    fechaCalibracion: d.fechaVencimiento||'', cantidad: d.cantidad||1,
-                    horas: d.horas||1, costoHora: d.costoHora||0,
-                    precioTotal: (d.horas||1)*(d.costoHora||0),
-                    listaContenido: d.content_list || '',
-                    contenido: d.observacion||'', estado: d.estado||'SERVICEABLE',
-                };
-                this.dataSource.update(list => [...list, item]);
-                this._recalcTotal();
-                this.showMsg('success', `"${item.descripcion}" agregada`);
-            }
+    private _setupToolSearchPe(): void {
+        this._toolSearchPe$.pipe(
+            debounceTime(300), distinctUntilChanged(),
+            switchMap(term => {
+                if (term.length < 2) { this.showToolDropPe = false; return of([]); }
+                this.toolSearchLoadingPe = true;
+                return this.toolSvc.getTools({ query: term }).pipe(
+                    map((tools: any[]) => (tools || [])
+                        .map((t: any) => ({
+                            id: t.id_tool ?? t.id, codigo: t.code ?? t.codigo ?? '',
+                            nombre: t.name ?? t.nombre ?? '', pn: t.part_number ?? t.pn ?? '',
+                            sn: t.serial_number ?? t.sn ?? '', marca: t.brand ?? t.marca ?? '',
+                            fechaCalibracion: t.next_calibration_date ?? t.calibration_due_date ?? '',
+                            listaContenido:   t.content_list ?? '',
+                            imagen:           t.location_photo ?? null,
+                            notesTool:        t.notes ?? '',
+                            warehouseId:      t.warehouse_id != null ? Number(t.warehouse_id) : null,
+                            rackId:           t.rack_id      != null ? Number(t.rack_id)      : null,
+                            levelId:          t.level_id     != null ? Number(t.level_id)     : null,
+                        }))
+                        .slice(0, 12)
+                    ),
+                    finalize(() => this.toolSearchLoadingPe = false),
+                    catchError(() => of([]))
+                );
+            }),
+            takeUntil(this.destroy$)
+        ).subscribe(res => { this.toolSuggestionsPe = res; this.showToolDropPe = res.length > 0; });
+    }
+
+    onToolInputPe(value: string): void { this.toolSearchPe = value; this._toolSearchPe$.next(value.trim()); }
+    hideToolDropPe(): void { setTimeout(() => this.showToolDropPe = false, 150); }
+    selectToolSuggestionPe(tool: any): void { this.toolSearchPe = tool.codigo; this.showToolDropPe = false; this._agregarToolPe(tool); }
+
+    addToolPeFromInput(): void {
+        const code = this.toolSearchPe.trim();
+        if (!code) return;
+        const tool = this.toolSuggestionsPe.find(h => h.codigo.toLowerCase() === code.toLowerCase())
+            || (this.toolSuggestionsPe.length === 1 ? this.toolSuggestionsPe[0] : null);
+        if (!tool) { this.showMsg('warning', `Seleccione la herramienta de la lista de sugerencias`); return; }
+        this._agregarToolPe(tool);
+    }
+
+    private _agregarToolPe(tool: any): void {
+        if (this.dataSource().some(i => i.codigo === tool.codigo)) { this.showMsg('info', `"${tool.nombre}" ya está en la lista`); return; }
+        const item: ExternalLoanItem = {
+            toolId: tool.id ?? 0, id: Date.now(), codigo: tool.codigo || '',
+            pn: tool.pn || '', descripcion: tool.nombre || '', sn: tool.sn || '',
+            marca: tool.marca || '', fechaCalibracion: tool.fechaCalibracion || '',
+            listaContenido: tool.listaContenido || '', cantidad: 1,
+            contenido: '', estado: 'SERVICEABLE',
+            imagen: tool.imagen ?? null, notesTool: tool.notesTool || '',
+            warehouseId: tool.warehouseId ?? null, rackId: tool.rackId ?? null, levelId: tool.levelId ?? null,
+        };
+        this.dataSource.update(list => [...list, item]);
+        this.showMsg('success', `"${item.descripcion}" agregada`);
+        this.toolSearchPe = '';
+        this.toolSuggestionsPe = [];
+    }
+
+    async abrirDetalleHerramientaItem(item: ExternalLoanItem): Promise<void> {
+        const { DetalleHerramientaComponent } = await import('../../ingresos-hub/detalle-herramienta/detalle-herramienta.component');
+        const editItem = {
+            toolId: item.toolId, codigoBoa: item.codigo, pn: item.pn, sn: item.sn,
+            descripcion: item.descripcion, marca: item.marca, tipo: 'HERRAMIENTA',
+            estado: item.estado, cantidad: item.cantidad, um: 'PZA', obs: item.notesTool,
+            imagenMaster: item.imagen, warehouseId: item.warehouseId,
+            rackId: item.rackId, levelId: item.levelId
+        };
+        this.dialog.open(DetalleHerramientaComponent, {
+            width: '800px', maxWidth: '96vw', height: '560px',
+            panelClass: 'no-padding-dialog', hasBackdrop: true, disableClose: false, autoFocus: false,
+            data: { editItem, viewOnly: true }
         });
     }
 
-    updateHoras(item: ExternalLoanItem): void {
-        if (item.horas < 0) item.horas = 0;
-        item.precioTotal = item.horas * (item.costoHora || 0);
-        this._recalcTotal();
-    }
-    updateCosto(item: ExternalLoanItem): void {
-        if (item.costoHora < 0) item.costoHora = 0;
-        item.precioTotal = (item.horas || 0) * item.costoHora;
-        this._recalcTotal();
-    }
     eliminarItem(idx: number): void {
         const item = this.dataSource()[idx];
         this.dataSource.update(list => list.filter((_,i) => i !== idx));
-        this._recalcTotal();
         this.showMsg('info', `"${item.descripcion}" eliminada`);
-    }
-    private _recalcTotal(): void {
-        this.importeTotal.set(this.dataSource().reduce((s,i) => s + (i.precioTotal||0), 0));
     }
 
     hasError(field: string, error: string): boolean {
@@ -232,7 +283,6 @@ export class FormPrestamoExternoDialogComponent implements OnInit, OnDestroy {
         const itemsJson = JSON.stringify(items.map(i => ({
             tool_id: i.toolId, quantity: i.cantidad, notes: i.contenido||'',
             condition: this.conditionMap[i.estado?.toUpperCase()]||'good',
-            unit_cost: i.costoHora||0, total_cost: i.precioTotal||0,
         })));
         this.movementSvc.registrarPrestamoMultiple({
             type: 'PRESTAMO_EXTERNO', date: fv.fecha, time: fv.hora,
@@ -270,7 +320,7 @@ export class FormPrestamoExternoDialogComponent implements OnInit, OnDestroy {
             items: items.map(i => ({
                 codigo: i.codigo, pn: i.pn, sn: i.sn, cantidad: i.cantidad,
                 descripcion: i.descripcion, listaContenido: i.listaContenido,
-                hrCosto: i.costoHora || 0, valorUsd: i.precioTotal || 0, obs: i.contenido || '',
+                obs: i.contenido || '',
             })),
         };
         this.pdfSvc.generarPdf(data);

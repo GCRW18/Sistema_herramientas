@@ -183,7 +183,7 @@ export class MovimientosComponent implements OnInit, OnDestroy {
         this.movService.getMovements({
             start: this.pageIndexMov * this.pageSizeMov,
             limit: this.pageSizeMov,
-            sort: 'date', dir: 'desc'
+            ordenacion: 'date', dir_ordenacion: 'desc'
         }).pipe(
             takeUntil(this._unsub$),
             finalize(() => { this.isLoadingRecents = false; this.cdr.detectChanges(); })
@@ -200,33 +200,6 @@ export class MovimientosComponent implements OnInit, OnDestroy {
             },
             error: () => { this.recentMovements = []; this.cdr.detectChanges(); }
         });
-    }
-
-    getMovTypeClass(tipoRaw: string): string {
-        switch (tipoRaw) {
-            // valores reales BD (uppercase)
-            case 'COMPRA':                       return 'bg-green-600 text-white';
-            case 'PRESTAMO_INTERNO':             return 'bg-purple-700 text-white';
-            case 'PRESTAMO_EXTERNO':             return 'bg-violet-700 text-white';
-            case 'DEVOLUCION_PRESTAMO_INTERNO':  return 'bg-teal-600 text-white';
-            case 'DEVOLUCION_PRESTAMO_EXTERNO':  return 'bg-cyan-700 text-white';
-            case 'ENVIO_BASE':                   return 'bg-blue-700 text-white';
-            case 'RETORNO_BASE':                 return 'bg-sky-600 text-white';
-            case 'TRASPASO':                     return 'bg-orange-600 text-white';
-            case 'CALIBRACION':                  return 'bg-slate-700 text-white';
-            case 'BAJA':                         return 'bg-red-600 text-white';
-            case 'AJUSTE':                       return 'bg-amber-500 text-black';
-            // fallback lowercase
-            case 'entry':        return 'bg-green-600 text-white';
-            case 'exit':         return 'bg-blue-700 text-white';
-            case 'loan':         return 'bg-purple-700 text-white';
-            case 'return':       return 'bg-teal-600 text-white';
-            case 'transfer':     return 'bg-orange-600 text-white';
-            case 'calibration':  return 'bg-slate-700 text-white';
-            case 'adjustment':   return 'bg-amber-500 text-black';
-            case 'decommission': return 'bg-red-600 text-white';
-            default:             return 'bg-[#0F172A] text-white';
-        }
     }
 
     private formatMovDate(date: string): string {

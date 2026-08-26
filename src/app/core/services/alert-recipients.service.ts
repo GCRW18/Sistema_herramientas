@@ -16,7 +16,7 @@ export class AlertRecipientsService {
     private _api = inject(ErpApiService);
 
     getRecipients(filters?: { search?: string; activo?: boolean }): Observable<AlertRecipient[]> {
-        const params: any = { start: 0, limit: 100, sort: 'nombre', dir: 'asc' };
+        const params: any = { start: 0, limit: 100, ordenacion: 'nombre', dir_ordenacion: 'asc' };
         const extra: string[] = [];
         if (filters?.search) {
             const s = filters.search.replace(/'/g, "''");

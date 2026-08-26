@@ -9,10 +9,12 @@ import { Subject, of } from 'rxjs';
 import { debounceTime, distinctUntilChanged, switchMap, takeUntil, finalize, map } from 'rxjs/operators';
 
 import { MovementService } from '../../../../../../core/services/movement.service';
+import { localDateStr } from '../../../../../../core/utils/date.utils';
 import {
     MovimientoActivo, TraspasoItem, Funcionario, CondRetorno,
     CONDICIONES_RETORNO, isItemValid, getItemErrors
 } from '../../retorno-traspaso.types';
+import { RetornoPdfService } from '../../retorno-pdf.service';
 
 export interface DevolucionTecnicoDialogData {
     movTecnicosActivos: MovimientoActivo[];
@@ -44,13 +46,14 @@ export class DevolucionTecnicoDialogComponent implements OnInit, OnDestroy {
     private fb        = inject(FormBuilder);
     private snackBar  = inject(MatSnackBar);
     private movSvc    = inject(MovementService);
+    private pdfSvc    = inject(RetornoPdfService);
     private _unsub$   = new Subject<void>();
 
     // Movement list
     movTecnicosActivos:   MovimientoActivo[] = [];
-    movTecnicosFiltrados: MovimientoActivo[] = [];
     movTecnicoSeleccionado: MovimientoActivo | null = null;
     searchTecnicoNombre = '';
+    showTecnicoDropdown = false;
 
     // Items
     devolucionTecnicoItems: TraspasoItem[] = [];
@@ -69,10 +72,9 @@ export class DevolucionTecnicoDialogComponent implements OnInit, OnDestroy {
     condiciones = CONDICIONES_RETORNO;
 
     ngOnInit(): void {
-        this.movTecnicosActivos   = this.data.movTecnicosActivos || [];
-        this.movTecnicosFiltrados = [...this.movTecnicosActivos];
+        this.movTecnicosActivos = this.data.movTecnicosActivos || [];
 
-        const today = new Date().toISOString().split('T')[0];
+        const today = localDateStr();
         this.devolucionTecnicoForm = this.fb.group({
             fechaDevolucion: [today, Validators.required],
             nroDocumento:    [''],
@@ -104,7 +106,7 @@ export class DevolucionTecnicoDialogComponent implements OnInit, OnDestroy {
     ngOnDestroy(): void { this._unsub$.next(); this._unsub$.complete(); }
 
     // Filter getter (used by template via searchTecnicoNombre)
-    get movTecnicosFiltradosActual(): MovimientoActivo[] {
+    get movTecnicosFiltrados(): MovimientoActivo[] {
         if (!this.searchTecnicoNombre) return this.movTecnicosActivos;
         const q = this.searchTecnicoNombre.toLowerCase();
         return this.movTecnicosActivos.filter(m =>
@@ -112,6 +114,14 @@ export class DevolucionTecnicoDialogComponent implements OnInit, OnDestroy {
             (m.movement_number  || '').toLowerCase().includes(q) ||
             (m.department       || '').toLowerCase().includes(q)
         );
+    }
+
+    hideTecnicoDropdown(): void { setTimeout(() => this.showTecnicoDropdown = false, 150); }
+
+    selectTecnicoFromDropdown(mov: MovimientoActivo): void {
+        this.searchTecnicoNombre = mov.movement_number;
+        this.showTecnicoDropdown = false;
+        this.seleccionarMovimientoTecnico(mov);
     }
 
     seleccionarMovimientoTecnico(mov: MovimientoActivo): void {
@@ -157,11 +167,7 @@ export class DevolucionTecnicoDialogComponent implements OnInit, OnDestroy {
     getCondicionCfg(val: string): any { return CONDICIONES_RETORNO.find(c => c.value === val); }
     getRowClass(item: TraspasoItem): string {
         if (!item.selected) return '';
-        if (!item.condicion) return 'bg-gray-50 dark:bg-slate-700/50';
-        if (item.condicion === 'BUENO') return 'bg-green-50 dark:bg-green-900/20';
-        if (item.condicion === 'DAÑADO') return 'bg-red-50 dark:bg-red-900/20';
-        if (item.condicion === 'REQUIERE_CALIBRACION') return 'bg-yellow-50 dark:bg-yellow-900/20';
-        return 'bg-red-100 dark:bg-red-900/30';
+        return 'bg-stone-50 dark:bg-slate-700/50';
     }
 
     // Count helpers
@@ -171,18 +177,14 @@ export class DevolucionTecnicoDialogComponent implements OnInit, OnDestroy {
 
     // Transfer type helpers
     getTransferTypeClass(tipo: string): string {
-        if (tipo === 'TEMPORAL') return 'bg-blue-100 text-blue-800 border-blue-300';
-        if (tipo === 'PERMANENTE') return 'bg-orange-100 text-orange-800 border-orange-300';
-        return 'bg-gray-100 text-gray-600 border-gray-300';
+        return 'bg-white dark:bg-slate-800 text-black dark:text-white border-stone-300 dark:border-slate-600';
     }
     getTransferTypeLabel(tipo: string): string {
         const map: Record<string, string> = { TEMPORAL: 'Temp.', PERMANENTE: 'Perm.', REASIGNACION: 'Reasig.', PRESTAMO: 'Prést.' };
         return map[tipo] || tipo;
     }
     getAlertBadgeClass(status: string): string {
-        if (status === 'VENCIDO')  return 'bg-red-100 text-red-700 border-red-300';
-        if (status === 'PROXIMO')  return 'bg-orange-100 text-orange-700 border-orange-300';
-        return 'bg-green-100 text-green-700 border-green-300';
+        return 'bg-white dark:bg-slate-800 text-black dark:text-white border-stone-300 dark:border-slate-600';
     }
     getAlertLabel(status: string): string {
         if (status === 'VENCIDO') return '⚠ VENC.';
@@ -207,6 +209,9 @@ export class DevolucionTecnicoDialogComponent implements OnInit, OnDestroy {
         const form = this.devolucionTecnicoForm.value;
         const sel  = this.getSelectedDevolucion();
         const mov  = this.movTecnicoSeleccionado;
+        // Se abre en el mismo tick del clic (gesto de usuario) para que el navegador no
+        // bloquee la pestaña nueva cuando el PDF se genera después de que responda el guardado.
+        const pdfWin = window.open('', '_blank');
         const itemsJson = JSON.stringify(sel.map(i => ({
             tool_id:       Number(i.toolId),
             quantity:      i.condicion === 'FALTANTE' ? 0 : i.cantidadRetorna,
@@ -225,7 +230,8 @@ export class DevolucionTecnicoDialogComponent implements OnInit, OnDestroy {
             source_warehouse_id:    mov.source_warehouse_id || undefined,
             notes:                  form.observaciones || '',
             specific_observations:  `Retorno de técnico: ${mov.received_by_name || '-'} | Traspaso original: ${mov.movement_number}`,
-            items_json:             itemsJson
+            items_json:             itemsJson,
+            source_movement_ids_json: JSON.stringify([Number(mov.id_movement)])
         }).pipe(
             finalize(() => this.isSavingDevolucionTecnico = false),
             takeUntil(this._unsub$)
@@ -233,15 +239,21 @@ export class DevolucionTecnicoDialogComponent implements OnInit, OnDestroy {
             next: (res: any) => {
                 const nro = res?.movement_number || '---';
                 this._showMsg(`Devolución registrada: ${nro}`, 'success');
+                this.pdfSvc.generarPdfDevolucionTecnico(nro, sel, {
+                    fechaDevolucion: form.fechaDevolucion,
+                    recibeAlmacen: form.recibeAlmacen,
+                    nroDocumento: form.nroDocumento,
+                    observaciones: form.observaciones
+                }, mov, pdfWin);
                 this.dialogRef.close({ refreshActivos: true });
             },
-            error: (e: any) => this._showMsg('Error: ' + (e?.message || ''), 'error')
+            error: (e: any) => { pdfWin?.close(); this._showMsg('Error: ' + (e?.message || ''), 'error'); }
         });
     }
 
     // Autocomplete
     hideFuncDevolucionRecibeDropdown(): void { setTimeout(() => this.showFuncDevolucionRecibeDropdown = false, 150); }
-    selectFuncDevolucionRecibe(f: Funcionario): void { this.devolucionTecnicoForm.patchValue({ recibeAlmacen: f.nombre }); this.showFuncDevolucionRecibeDropdown = false; }
+    selectFuncDevolucionRecibe(f: Funcionario): void { this.devolucionTecnicoForm.patchValue({ recibeAlmacen: f.nombre }, { emitEvent: false }); this.showFuncDevolucionRecibeDropdown = false; }
 
     cerrarFormDevolucionTecnico(): void { this.dialogRef.close(); }
 

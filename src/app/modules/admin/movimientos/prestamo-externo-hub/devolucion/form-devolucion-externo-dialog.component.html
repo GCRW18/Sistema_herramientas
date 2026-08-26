@@ -192,7 +192,7 @@
               </td>
 
               <td class="px-3 py-2.5">
-                <span class="font-mono text-[11px] font-black bg-[#7113CF] text-white px-2 py-1 rounded border-2 border-black">{{ item.codigo }}</span>
+                <span class="font-mono text-[11px] font-black text-black dark:text-white">{{ item.codigo }}</span>
                 <p class="font-mono text-[10px] text-stone-400 mt-0.5">{{ item.pn || '—' }}</p>
               </td>
 
@@ -204,8 +204,7 @@
               </td>
 
               <td class="px-3 py-2.5 text-center">
-                <span class="text-xs font-black px-1.5 py-0.5 rounded border"
-                      [ngClass]="getDiasFueraClass(item.diasFuera)">{{ item.diasFuera }}d</span>
+                <span class="text-xs font-black text-black dark:text-white">{{ item.diasFuera }}d</span>
               </td>
 
               <td class="px-3 py-2.5 text-center">
@@ -216,10 +215,10 @@
                 <div class="flex flex-wrap gap-0.5">
                   <button *ngFor="let c of condiciones"
                           (click)="updateCondicion(item, c.value)"
-                          class="px-1.5 py-px text-[8px] font-black uppercase border-2 border-black rounded transition-all"
+                          class="px-1.5 py-px text-[8px] font-black uppercase border-2 rounded transition-all"
                           [ngClass]="item.condicionDevolucion === c.value
-                              ? c.bgColor + ' text-white shadow-[1px_1px_0_#000]'
-                              : 'bg-white dark:bg-slate-700 text-stone-500 dark:text-slate-400 hover:bg-stone-100'">
+                              ? 'border-black bg-white dark:bg-slate-700 shadow-[1px_1px_0_#000] text-black dark:text-white'
+                              : 'border-stone-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-stone-400 dark:text-slate-500 hover:border-stone-400'">
                     {{ c.label }}
                   </button>
                 </div>
@@ -292,10 +291,9 @@
         <p class="text-[9px] font-black uppercase tracking-[0.15em] text-stone-400 dark:text-slate-400 mb-2">Resumen por condición</p>
         <div class="flex flex-wrap gap-2">
           <div *ngFor="let r of getResumen(); trackBy: trackByCondicion"
-               class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border-2 border-black"
-               [ngClass]="r.bgColor">
-            <span class="text-xs font-black text-white">{{ r.cantidad }}</span>
-            <span class="text-[10px] font-black text-white uppercase">{{ r.condicion }}</span>
+               class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border-2 border-black bg-white dark:bg-slate-800">
+            <span class="text-xs font-black text-black dark:text-white">{{ r.cantidad }}</span>
+            <span class="text-[10px] font-black text-black dark:text-white uppercase">{{ r.condicion }}</span>
           </div>
         </div>
       </div>
@@ -304,12 +302,11 @@
         <p class="text-[9px] font-black uppercase tracking-[0.15em] text-stone-400 dark:text-slate-400 mb-0.5">Herramientas ({{ getSelCount() }})</p>
         <div *ngFor="let item of getSelItems()"
              class="flex items-center gap-2 px-3 py-2 border-2 border-black rounded-xl bg-purple-50 dark:bg-purple-900/20">
-          <mat-icon class="!text-base text-white rounded px-0.5"
-                    [ngClass]="getCondicionBg(item.condicionDevolucion)">
+          <mat-icon class="!text-base text-black dark:text-white">
             {{ getCondicionIcon(item.condicionDevolucion) }}
           </mat-icon>
           <div class="flex-1 min-w-0">
-            <span class="font-mono text-xs font-black text-[#7113CF] dark:text-purple-400">{{ item.codigo }}</span>
+            <span class="font-mono text-xs font-black text-black dark:text-white">{{ item.codigo }}</span>
             <span class="text-xs text-stone-500 dark:text-slate-300 ml-1 truncate">{{ item.descripcion }}</span>
           </div>
           <span class="text-[9px] font-black text-black dark:text-white shrink-0 bg-white dark:bg-slate-700 border border-black rounded px-1">{{ item.condicionDevolucion }}</span>

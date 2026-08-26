@@ -5,20 +5,25 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatDialogRef, MatDialogModule, MatDialog } from '@angular/material/dialog';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { MatTooltipModule } from '@angular/material/tooltip';
 import { Subject, forkJoin, of } from 'rxjs';
 import { takeUntil, finalize, switchMap, map, catchError, debounceTime, distinctUntilChanged } from 'rxjs/operators';
 import { MovementService } from '../../../../../core/services/movement.service';
 import { FleetService } from '../../../../../core/services/fleet.service';
 import { KitsService } from '../../../../../core/services/kits.service';
-import { ModalHerramientaInternoComponent } from './modal-herramienta-interno/modal-herramienta-interno.component';
+import { ToolService } from '../../../../../core/services/tool.service';
 import { PrestamoPdfService, PrestamoPdfData } from '../prestamo-pdf.service';
 
 interface InternalLoanItem {
     toolId: number; id: number; codigo: string; pn: string; descripcion: string; sn: string;
     marca: string; fechaCalibracion: string; listaContenido: string; cantidad: number; unidad: string;
     estado: string; contenido: string; selected?: boolean;
+    // Datos reales de la herramienta (catálogo), para el detalle de solo-lectura — no
+    // confundir con "contenido" (siempre vacío, nunca lo llena esta pantalla).
+    imagen?: string | null;
+    notesTool?: string;
+    warehouseId?: number | null;
+    rackId?: number | null;
+    levelId?: number | null;
 }
 
 @Component({
@@ -26,8 +31,7 @@ interface InternalLoanItem {
     standalone: true,
     imports: [
         CommonModule, ReactiveFormsModule, FormsModule,
-        MatIconModule, MatCheckboxModule, MatDialogModule,
-        MatSnackBarModule, MatProgressSpinnerModule, MatTooltipModule
+        MatIconModule, MatCheckboxModule, MatDialogModule, MatSnackBarModule
     ],
     templateUrl: './form-prestamo-dialog.component.html',
     styles: [`
@@ -51,6 +55,7 @@ export class FormPrestamoDialogComponent implements OnInit, OnDestroy {
     private movementSvc  = inject(MovementService);
     private fleetSvc     = inject(FleetService);
     private kitsService  = inject(KitsService);
+    private toolSvc      = inject(ToolService);
     private prestamoPdfSvc = inject(PrestamoPdfService);
     private destroy$    = new Subject<void>();
 
@@ -58,7 +63,6 @@ export class FormPrestamoDialogComponent implements OnInit, OnDestroy {
 
     internalForm!: FormGroup;
     internalDataSource = signal<InternalLoanItem[]>([]);
-    nroNotaInterno     = '';
 
     private _tecnicoSearch$ = new Subject<string>();
     tecnicosFiltrados:  any[] = [];
@@ -82,17 +86,16 @@ export class FormPrestamoDialogComponent implements OnInit, OnDestroy {
     showToolDropPt        = false;
     toolSearchLoadingPt   = false;
     private _toolSearchPt$ = new Subject<string>();
-    private todasLasHerramientas: any[] = [];
     private _toolIdsEnPrestamo: Set<number> = new Set();
 
     kits:              any[] = [];
-    loadingKits              = false;
     kitSeleccionado          = '';
     loadingKitComponents     = false;
 
     private readonly conditionMap: Record<string, string> = {
         'SERVICEABLE': 'good', 'NUEVO': 'new', 'NEW': 'new', 'EN_CALIBRACION': 'fair',
-        'UNSERVICEABLE': 'damaged', 'EN_REPARACION': 'poor', 'BUENO': 'good', 'REGULAR': 'fair', 'MALO': 'poor'
+        'UNSERVICEABLE': 'damaged', 'EN_REPARACION': 'poor', 'REPARACION': 'poor',
+        'BUENO': 'good', 'REGULAR': 'fair', 'MALO': 'poor'
     };
 
     ngOnInit(): void {
@@ -102,7 +105,7 @@ export class FormPrestamoDialogComponent implements OnInit, OnDestroy {
         this._setupToolSearchPt();
         this.cargarAeronaves();
         this.cargarDestinos();
-        this._cargarHerramientas();
+        this._cargarHerramientasEnPrestamo();
         this._fetchPtCorrelativoPreview();
         this.loadKits();
     }
@@ -248,26 +251,27 @@ export class FormPrestamoDialogComponent implements OnInit, OnDestroy {
         return 'No disponible';
     }
 
-    private _cargarHerramientas(): void {
-        forkJoin({
-            tools:     this.movementSvc.getHerramientasDisponibles({}).pipe(catchError(() => of([]))),
-            loanItems: this.movementSvc.getActiveLoanItems({ filtro_adicional: 'returned = false' }).pipe(catchError(() => of([])))
-        }).pipe(takeUntil(this.destroy$)).subscribe(({ tools, loanItems }: any) => {
-            this._toolIdsEnPrestamo = new Set((loanItems || []).map((i: any) => Number(i.tool_id)));
-            this.todasLasHerramientas = (tools || [])
-                .filter(t => this._toolDisponible(t))
-                .map((t: any) => ({
-                    id: t.id_tool ?? t.id, codigo: t.code ?? t.codigo ?? '',
-                    nombre: t.name ?? t.nombre ?? '', pn: t.part_number ?? t.pn ?? '',
-                    sn: t.serial_number ?? t.sn ?? '', marca: t.brand ?? t.marca ?? '',
-                    existencia: Number(t.quantity_in_stock ?? t.stock ?? t.existencia ?? 0),
-                    status: (t.status ?? 'available').toLowerCase(),
-                    enPrestamo: this._toolIdsEnPrestamo.has(Number(t.id_tool ?? t.id)),
-                    fechaCalibracion: t.next_calibration_date ?? t.calibration_due_date ?? '',
-                    listaContenido:   t.content_list ?? '',
-                    unidad:           t.unit_of_measure ?? t.unidad ?? 'PZA'
-                }));
-        });
+    private _cargarHerramientasEnPrestamo(): void {
+        this.movementSvc.getActiveLoanItems({ filtro_adicional: 'returned = false' })
+            .pipe(takeUntil(this.destroy$), catchError(() => of([])))
+            .subscribe((loanItems: any[]) => {
+                this._toolIdsEnPrestamo = new Set((loanItems || []).map((i: any) => Number(i.tool_id)));
+            });
+    }
+
+    // Búsqueda en vivo contra el backend (ToolService.getTools con query → searchToolsAutocomplete),
+    // el mismo mecanismo y sin filtrar disponibilidad — igual que el buscador de
+    // detalle-herramienta.component.ts (Ajuste de Herramienta) — en vez de precargar todas las
+    // herramientas y filtrar en el cliente. La disponibilidad (estado bloqueado / calibración
+    // vencida) se valida recién al agregar (_agregarToolPt), no aquí: filtrarla en la búsqueda
+    // hacía que herramientas reales (ej. recién migradas con calibración vencida) no aparecieran
+    // nunca, aunque el usuario supiera que existían.
+    private _motivoBloqueoPrestamo(t: any): string | null {
+        const status = (t.status ?? '').toLowerCase();
+        if (this._statusBloqueado.has(status)) return this._motivoNoDisponible(t);
+        const expiry = t.fechaCalibracion || null;
+        if (expiry && expiry < this._localDateStr()) return `Calibración vencida (${expiry})`;
+        return null;
     }
 
     private _setupToolSearchPt(): void {
@@ -276,12 +280,28 @@ export class FormPrestamoDialogComponent implements OnInit, OnDestroy {
             switchMap(term => {
                 if (term.length < 2) { this.showToolDropPt = false; return of([]); }
                 this.toolSearchLoadingPt = true;
-                const q = term.toLowerCase();
-                const results = this.todasLasHerramientas
-                    .filter(h => h.codigo.toLowerCase().includes(q) || h.nombre.toLowerCase().includes(q) || (h.pn || '').toLowerCase().includes(q))
-                    .slice(0, 12);
-                this.toolSearchLoadingPt = false;
-                return of(results);
+                return this.toolSvc.getTools({ query: term }).pipe(
+                    map((tools: any[]) => (tools || [])
+                        .map((t: any) => ({
+                            id: t.id_tool ?? t.id, codigo: t.code ?? t.codigo ?? '',
+                            nombre: t.name ?? t.nombre ?? '', pn: t.part_number ?? t.pn ?? '',
+                            sn: t.serial_number ?? t.sn ?? '', marca: t.brand ?? t.marca ?? '',
+                            status: (t.status ?? 'available').toLowerCase(),
+                            enPrestamo: this._toolIdsEnPrestamo.has(Number(t.id_tool ?? t.id)),
+                            fechaCalibracion: t.next_calibration_date ?? t.calibration_due_date ?? '',
+                            listaContenido:   t.content_list ?? '',
+                            unidad:           t.unit_of_measure ?? t.unidad ?? 'PZA',
+                            imagen:           t.location_photo ?? null,
+                            notesTool:        t.notes ?? '',
+                            warehouseId:      t.warehouse_id != null ? Number(t.warehouse_id) : null,
+                            rackId:           t.rack_id      != null ? Number(t.rack_id)      : null,
+                            levelId:          t.level_id     != null ? Number(t.level_id)     : null,
+                        }))
+                        .slice(0, 12)
+                    ),
+                    finalize(() => this.toolSearchLoadingPt = false),
+                    catchError(() => of([]))
+                );
             }),
             takeUntil(this.destroy$)
         ).subscribe(res => { this.toolSuggestionsPt = res; this.showToolDropPt = res.length > 0; });
@@ -294,14 +314,17 @@ export class FormPrestamoDialogComponent implements OnInit, OnDestroy {
     addToolPtFromInput(): void {
         const code = this.toolSearchPt.trim();
         if (!code) return;
-        const tool = this.todasLasHerramientas.find(h => h.codigo.toLowerCase() === code.toLowerCase());
-        if (!tool) { this.showMsg('warning', `Herramienta "${code}" no encontrada`); return; }
+        const tool = this.toolSuggestionsPt.find(h => h.codigo.toLowerCase() === code.toLowerCase())
+            || (this.toolSuggestionsPt.length === 1 ? this.toolSuggestionsPt[0] : null);
+        if (!tool) { this.showMsg('warning', `Seleccione la herramienta de la lista de sugerencias`); return; }
         this._agregarToolPt(tool);
     }
 
     private _agregarToolPt(tool: any): void {
         if (this.internalDataSource().some(i => i.codigo === tool.codigo)) { this.showMsg('info', `"${tool.nombre}" ya está en la lista`); return; }
         if (this._toolIdsEnPrestamo.has(Number(tool.id))) { this.showMsg('warning', `"${tool.nombre}" ya tiene un préstamo activo y no está disponible`); return; }
+        const motivoBloqueo = this._motivoBloqueoPrestamo(tool);
+        if (motivoBloqueo) { this.showMsg('warning', `"${tool.nombre}" no se puede prestar: ${motivoBloqueo}`); return; }
         const item: InternalLoanItem = {
             toolId: tool.id ?? 0, id: Date.now(), codigo: tool.codigo,
             pn: tool.pn || '', descripcion: tool.nombre || '', sn: tool.sn || '',
@@ -309,7 +332,9 @@ export class FormPrestamoDialogComponent implements OnInit, OnDestroy {
             fechaCalibracion: tool.fechaCalibracion || '',
             listaContenido:   tool.listaContenido   || '',
             cantidad: 1,
-            unidad: tool.unidad || 'PZA', estado: 'SERVICEABLE', contenido: '', selected: false
+            unidad: tool.unidad || 'PZA', estado: 'SERVICEABLE', contenido: '', selected: false,
+            imagen: tool.imagen ?? null, notesTool: tool.notesTool || '',
+            warehouseId: tool.warehouseId ?? null, rackId: tool.rackId ?? null, levelId: tool.levelId ?? null
         };
         this.internalDataSource.update(list => [...list, item]);
         this.showMsg('success', `"${item.descripcion}" agregada`);
@@ -325,9 +350,8 @@ export class FormPrestamoDialogComponent implements OnInit, OnDestroy {
     }
 
     loadKits(): void {
-        this.loadingKits = true;
         forkJoin({ categorias: this.kitsService.getKitCategories(), kits: this.kitsService.getKits({ limit: 200 }) })
-            .pipe(takeUntil(this.destroy$), finalize(() => this.loadingKits = false))
+            .pipe(takeUntil(this.destroy$))
             .subscribe({
                 next: ({ categorias, kits }) => {
                     const nombresValidos = new Set(
@@ -368,7 +392,11 @@ export class FormPrestamoDialogComponent implements OnInit, OnDestroy {
                             listaContenido:   c.content_list ?? '',
                             cantidad: c.quantity ?? c.cantidad ?? 1,
                             unidad: c.unit_of_measure ?? c.unidad ?? 'PZA',
-                            estado: 'SERVICEABLE', contenido: '', selected: false
+                            estado: 'SERVICEABLE', contenido: '', selected: false,
+                            imagen: c.location_photo ?? null, notesTool: c.tool_notes || '',
+                            warehouseId: c.warehouse_id != null ? Number(c.warehouse_id) : null,
+                            rackId:      c.rack_id      != null ? Number(c.rack_id)      : null,
+                            levelId:     c.level_id     != null ? Number(c.level_id)     : null,
                         };
                         this.internalDataSource.update(list => [...list, item]);
                         added++;
@@ -383,24 +411,23 @@ export class FormPrestamoDialogComponent implements OnInit, OnDestroy {
             });
     }
 
-    openHerramientasAPrestar(): void {
-        const ref = this.dialog.open(ModalHerramientaInternoComponent, { width: 'min(1000px, 98vw)', maxWidth: '98vw', panelClass: 'no-padding-dialog', disableClose: true });
-        ref.afterClosed().subscribe(result => {
-            if (result?.action === 'agregar') {
-                const d = result.data;
-                if (this.internalDataSource().some(i => i.codigo === d.codigo)) { this.showMsg('info', `"${d.nombre}" ya está en la lista`); return; }
-                if (this._toolIdsEnPrestamo.has(Number(d.id_tool ?? 0))) { this.showMsg('warning', `"${d.nombre}" ya tiene un préstamo activo y no está disponible`); return; }
-                const item: InternalLoanItem = {
-                    toolId: d.id_tool ?? 0, id: Date.now(), codigo: d.codigo || '', pn: d.pn || '',
-                    descripcion: d.nombre || '', sn: d.sn || '', marca: d.marca || '',
-                    fechaCalibracion: d.fechaVencimiento || '',
-                    listaContenido:   d.content_list ?? d.listaContenido ?? '',
-                    cantidad: d.cantidad || 1,
-                    unidad: d.unidad || 'PZA', estado: d.estado || 'SERVICEABLE', contenido: d.observacion || '', selected: false
-                };
-                this.internalDataSource.update(list => [...list, item]);
-                this.showMsg('success', `"${item.descripcion}" agregada`);
-            }
+    // Clic en un ítem ya agregado al préstamo → abre el mismo form de detalle de herramienta
+    // usado en ingresos-hub (Ajuste de Herramienta), en modo solo-vista: mismo aspecto, sin
+    // buscador ni acción de guardar. fechaCalibracion y listaContenido no se gestionan en ese
+    // form, así que no se muestran ahí (se conservan igual en el ítem del préstamo).
+    async abrirDetalleHerramientaItem(item: InternalLoanItem): Promise<void> {
+        const { DetalleHerramientaComponent } = await import('../../ingresos-hub/detalle-herramienta/detalle-herramienta.component');
+        const editItem = {
+            toolId: item.toolId, codigoBoa: item.codigo, pn: item.pn, sn: item.sn,
+            descripcion: item.descripcion, marca: item.marca, tipo: 'HERRAMIENTA',
+            estado: item.estado, cantidad: item.cantidad, um: item.unidad, obs: item.notesTool,
+            imagenMaster: item.imagen, warehouseId: item.warehouseId,
+            rackId: item.rackId, levelId: item.levelId
+        };
+        this.dialog.open(DetalleHerramientaComponent, {
+            width: '800px', maxWidth: '96vw', height: '560px',
+            panelClass: 'no-padding-dialog', hasBackdrop: true, disableClose: false, autoFocus: false,
+            data: { editItem, viewOnly: true }
         });
     }
 
@@ -447,7 +474,6 @@ export class FormPrestamoDialogComponent implements OnInit, OnDestroy {
         }).pipe(finalize(() => this.isSaving = false), takeUntil(this.destroy$)).subscribe({
             next: (result: any) => {
                 const nro = result?.movement_number || '---';
-                this.nroNotaInterno = nro;
                 this._imprimirPrestamoInterno(nro, fv, items, responsiblePerson);
                 this.showMsg('success', `Préstamo registrado: ${nro}`);
                 this.internalDataSource.set([]);

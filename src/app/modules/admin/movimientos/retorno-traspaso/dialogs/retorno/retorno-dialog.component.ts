@@ -9,10 +9,12 @@ import { Subject, forkJoin, of } from 'rxjs';
 import { debounceTime, distinctUntilChanged, switchMap, takeUntil, finalize, map } from 'rxjs/operators';
 
 import { MovementService } from '../../../../../../core/services/movement.service';
+import { localDateStr } from '../../../../../../core/utils/date.utils';
 import {
     Ubicacion, TraspasoItem, Funcionario, CondRetorno,
     CONDICIONES_RETORNO, ResumenCondicion, isItemValid, getItemErrors
 } from '../../retorno-traspaso.types';
+import { RetornoPdfService } from '../../retorno-pdf.service';
 
 export interface RetornoDialogData {
     almacenes: Ubicacion[];
@@ -44,6 +46,7 @@ export class RetornoDialogComponent implements OnInit, OnDestroy {
     private fb        = inject(FormBuilder);
     private snackBar  = inject(MatSnackBar);
     private movSvc    = inject(MovementService);
+    private pdfSvc    = inject(RetornoPdfService);
     private _unsub$   = new Subject<void>();
     private _srchFunc$ = new Subject<string>();
 
@@ -67,16 +70,20 @@ export class RetornoDialogComponent implements OnInit, OnDestroy {
 
     condiciones = CONDICIONES_RETORNO;
 
+    // Ubicación Origen autocomplete
+    ubicacionesFiltradas: Ubicacion[] = [];
+    showUbicacionDropdown = false;
+
     ngOnInit(): void {
-        const today = new Date().toISOString().split('T')[0];
+        const today = localDateStr();
         this.retornoForm = this.fb.group({
-            ubicacionOrigen:    [null, Validators.required],
-            nroDocumento:       ['', Validators.required],
-            fechaRetorno:       [today, Validators.required],
-            responsableRecibe:  ['', Validators.required],
-            transportista:      [''],
-            observaciones:      [''],
-            searchText:         new FormControl('')
+            ubicacionOrigen:      [null, Validators.required],
+            ubicacionOrigenTexto: [''],
+            nroDocumento:         ['', Validators.required],
+            fechaRetorno:         [today, Validators.required],
+            responsableRecibe:    ['', Validators.required],
+            observaciones:        [''],
+            searchText:           new FormControl('')
         });
         this.tipoOrigenActivo = this.data.tipoOrigen || 'BASE';
 
@@ -84,6 +91,21 @@ export class RetornoDialogComponent implements OnInit, OnDestroy {
         this.retornoForm.get('searchText')!.valueChanges.pipe(
             debounceTime(200), takeUntil(this._unsub$)
         ).subscribe(q => this._filterItems(q));
+
+        // Ubicación Origen autocomplete (lista ya cargada en memoria, filtro sincrónico)
+        this.retornoForm.get('ubicacionOrigenTexto')!.valueChanges.pipe(
+            debounceTime(100), takeUntil(this._unsub$)
+        ).subscribe(term => {
+            const seleccionActual = this.retornoForm.get('ubicacionOrigen')?.value as Ubicacion | null;
+            if (seleccionActual && seleccionActual.nombre !== term) {
+                this.retornoForm.patchValue({ ubicacionOrigen: null }, { emitEvent: false });
+            }
+            const q = (term || '').trim().toLowerCase();
+            this.ubicacionesFiltradas = q
+                ? this.getAllUbicaciones().filter(u => u.nombre.toLowerCase().includes(q))
+                : this.getAllUbicaciones();
+            this.showUbicacionDropdown = this.ubicacionesFiltradas.length > 0;
+        });
 
         // Funcionario autocomplete
         this.retornoForm.get('responsableRecibe')!.valueChanges.pipe(
@@ -111,8 +133,8 @@ export class RetornoDialogComponent implements OnInit, OnDestroy {
                 String(u.id) === String(mov.destination_warehouse_id)
             ) || null;
             if (ubicacion) {
-                this.retornoForm.patchValue({ ubicacionOrigen: ubicacion }, { emitEvent: false });
-                setTimeout(() => this.consultarRetorno(), 300);
+                this.retornoForm.patchValue({ ubicacionOrigen: ubicacion, ubicacionOrigenTexto: ubicacion.nombre }, { emitEvent: false });
+                setTimeout(() => this._cargarItemsMovimiento(mov), 300);
             }
         }
     }
@@ -132,31 +154,48 @@ export class RetornoDialogComponent implements OnInit, OnDestroy {
         );
     }
 
-    getAllUbicaciones(): Ubicacion[] { return [...(this.data.almacenes || []), ...(this.data.bases || [])]; }
+    // Solo almacenes (he.twarehouses): "bases" viene de param.tlugar (id_lugar), un
+    // espacio de IDs distinto. ubicacionOrigen.id se manda como destination_warehouse_id,
+    // cuya FK apunta a he.twarehouses — mezclar "bases" aquí causa
+    // "violates foreign key constraint tmovements_dest_warehouse_fkey".
+    getAllUbicaciones(): Ubicacion[] { return this.data.almacenes || []; }
     getUbicacionesFiltradas(): Ubicacion[] { return this.getAllUbicaciones(); }
 
     getTipoOrigenLabel(): string { return this.tipoOrigenActivo === 'BASE' ? 'Base' : 'Almacén'; }
     getDocumentoLabel(): string  { return 'Nro. Nota Salida'; }
 
     hideFuncDropdown(): void { setTimeout(() => this.showFuncDropdown = false, 150); }
-    selectFuncionario(f: Funcionario): void { this.retornoForm.patchValue({ responsableRecibe: f.nombre }); this.showFuncDropdown = false; }
+    selectFuncionario(f: Funcionario): void { this.retornoForm.patchValue({ responsableRecibe: f.nombre }, { emitEvent: false }); this.showFuncDropdown = false; }
+
+    onUbicacionOrigenFocus(): void {
+        this.ubicacionesFiltradas = this.getAllUbicaciones().filter(u =>
+            u.nombre.toLowerCase().includes((this.retornoForm.get('ubicacionOrigenTexto')?.value || '').trim().toLowerCase())
+        );
+        this.showUbicacionDropdown = this.ubicacionesFiltradas.length > 0;
+    }
+    hideUbicacionDropdown(): void { setTimeout(() => this.showUbicacionDropdown = false, 150); }
+    selectUbicacionOrigen(u: Ubicacion): void {
+        this.retornoForm.patchValue({ ubicacionOrigen: u, ubicacionOrigenTexto: u.nombre }, { emitEvent: false });
+        this.showUbicacionDropdown = false;
+    }
 
     consultarRetorno(): void {
         const origen = this.retornoForm.get('ubicacionOrigen')?.value;
         if (!origen?.id) { this._showMsg('Seleccione una ubicación de origen', 'warning'); return; }
         this.isSearching = true;
         this.allData = []; this.dataSource = [];
-        const exitReason   = this.tipoOrigenActivo === 'BASE' ? 'base_send' : 'area_transfer';
-        const typeClause   = this.tipoOrigenActivo === 'BASE'
-            ? `mos.type IN ('exit','ENVIO_BASE')`
-            : `mos.type IN ('exit','TRASPASO')`;
+        const exitReason = this.tipoOrigenActivo === 'BASE' ? 'base_send' : 'area_transfer';
         const destId = Number(origen.id);
-        const filtro = `${typeClause} AND mos.exit_reason = '${exitReason}' AND mos.destination_warehouse_id = ${destId} AND mos.status IN ('approved','completed')`;
-        this.movSvc.getMovements({ filtro_adicional: filtro, limit: 200 }).pipe(
+        // Misma fuente que la tabla Activos (listarEnviosActivos) — evita depender de
+        // filtro_adicional/getMovements, cuyo filtro con literales entre comillas simples
+        // se rompe al pasar por el doble-escape de comillas del framework pXP.
+        this.movSvc.listarEnviosActivos({ limit: 200 }).pipe(
             takeUntil(this._unsub$), finalize(() => this.isSearching = false)
         ).subscribe({
             next: (movs: any[]) => {
-                const filtered = (movs || []).filter((m: any) => m.exit_reason === exitReason);
+                const filtered = (movs || []).filter((m: any) =>
+                    m.exit_reason === exitReason && Number(m.destination_warehouse_id) === destId
+                );
                 if (!filtered.length) { this._showMsg(`Sin movimientos activos para ${origen.nombre}`, 'warning'); return; }
                 forkJoin(filtered.map((mov: any) =>
                     this.movSvc.getMovementItems(Number(mov.id_movement)).pipe(
@@ -175,6 +214,25 @@ export class RetornoDialogComponent implements OnInit, OnDestroy {
                 });
             },
             error: (e: any) => this._showMsg('Error al consultar: ' + (e?.message || ''), 'error')
+        });
+    }
+
+    /** Carga solo los ítems del movimiento específico pasado desde la tabla Activos
+     *  (a diferencia de consultarRetorno(), que trae TODOS los envíos activos hacia
+     *  el mismo almacén destino — correcto para la búsqueda manual, incorrecto acá). */
+    private _cargarItemsMovimiento(mov: any): void {
+        this.isSearching = true;
+        this.allData = []; this.dataSource = [];
+        this.movSvc.getMovementItems(Number(mov.id_movement)).pipe(
+            takeUntil(this._unsub$), finalize(() => this.isSearching = false)
+        ).subscribe({
+            next: (items: any[]) => {
+                this.allData = (items || []).map((item: any) => this._mapItem(mov, item));
+                this.dataSource = [...this.allData];
+                if (!this.allData.length) this._showMsg(`Sin herramientas en ${mov.movement_number}`, 'warning');
+                else this._showMsg(`Cargadas: ${this.dataSource.length} herramienta(s) de ${mov.movement_number}`, 'success');
+            },
+            error: (e: any) => this._showMsg('Error al cargar ítems: ' + (e?.message || ''), 'error')
         });
     }
 
@@ -231,21 +289,9 @@ export class RetornoDialogComponent implements OnInit, OnDestroy {
 
     getItemErrors(item: TraspasoItem): string[] { return getItemErrors(item); }
 
-    getDiasFueraClass(dias?: number): string {
-        if (!dias) return 'bg-gray-100 text-gray-600';
-        if (dias > 30) return 'bg-red-100 text-red-700';
-        if (dias > 14) return 'bg-orange-100 text-orange-700';
-        return 'bg-green-100 text-green-700';
-    }
-
     getRowClass(item: TraspasoItem): string {
         if (!item.selected) return '';
-        if (!item.condicion) return 'bg-gray-50 dark:bg-slate-700/50';
-        if (item.condicion === 'BUENO') return 'bg-green-50 dark:bg-green-900/20';
-        if (item.condicion === 'DAÑADO') return 'bg-red-50 dark:bg-red-900/20';
-        if (item.condicion === 'REQUIERE_CALIBRACION') return 'bg-yellow-50 dark:bg-yellow-900/20';
-        if (item.condicion === 'FALTANTE') return 'bg-red-100 dark:bg-red-900/30';
-        return '';
+        return 'bg-stone-50 dark:bg-slate-800/40';
     }
 
     canProceedRetorno(): boolean {
@@ -264,6 +310,11 @@ export class RetornoDialogComponent implements OnInit, OnDestroy {
         this.showConfirmModal = false;
         const form = this.retornoForm.value;
         const sel  = this.dataSource.filter(i => i.selected);
+        const itemsConNovedad = sel.filter(it => it.condicion === 'DAÑADO' || it.condicion === 'FALTANTE');
+        // Se abren en el mismo tick del clic (gesto de usuario) para que el navegador no
+        // bloquee la pestaña nueva cuando el PDF se genera después de que responda el guardado.
+        const pdfWin = window.open('', '_blank');
+        const discrepanciaWin = itemsConNovedad.length > 0 ? window.open('', '_blank') : null;
         const itemsJson = JSON.stringify(sel.map(i => ({
             tool_id:       Number(i.toolId),
             quantity:      i.condicion === 'FALTANTE' ? 0 : i.cantidadRetorna,
@@ -273,6 +324,7 @@ export class RetornoDialogComponent implements OnInit, OnDestroy {
             part_number:   i.pn || ''
         })));
         const type = this.tipoOrigenActivo === 'BASE' ? 'RETORNO_BASE' : 'RETORNO_TRASPASO';
+        const sourceMovementIds = [...new Set(sel.map(i => Number(i.id)).filter(id => !!id))];
         this.movSvc.registrarRetornoBase({
             type,
             date:               form.fechaRetorno,
@@ -282,8 +334,8 @@ export class RetornoDialogComponent implements OnInit, OnDestroy {
             document_number:    form.nroDocumento || '',
             destination_warehouse_id: form.ubicacionOrigen?.id ? Number(form.ubicacionOrigen.id) : undefined,
             notes:              form.observaciones || '',
-            specific_observations: form.transportista ? `Transportista: ${form.transportista}` : '',
-            items_json:         itemsJson
+            items_json:         itemsJson,
+            source_movement_ids_json: JSON.stringify(sourceMovementIds)
         }).pipe(
             finalize(() => this.isSavingRetorno = false),
             takeUntil(this._unsub$)
@@ -291,9 +343,23 @@ export class RetornoDialogComponent implements OnInit, OnDestroy {
             next: (res: any) => {
                 const nro = res?.movement_number || '---';
                 this._showMsg(`Retorno registrado: ${nro}`, 'success');
+                const pdfForm = {
+                    fechaRetorno: form.fechaRetorno,
+                    nroDocumento: form.nroDocumento,
+                    origenNombre: form.ubicacionOrigen?.nombre || '',
+                    responsableRecibe: form.responsableRecibe || '',
+                    observaciones: form.observaciones || ''
+                };
+                this.pdfSvc.generarPdfRetorno(nro, this.tipoOrigenActivo, sel, pdfForm, pdfWin);
+                if (itemsConNovedad.length > 0) {
+                    this.pdfSvc.generarPdfDiscrepancia(nro, itemsConNovedad, pdfForm, discrepanciaWin);
+                }
                 this.dialogRef.close({ refreshActivos: true });
             },
-            error: (e: any) => this._showMsg('Error al registrar retorno: ' + (e?.message || ''), 'error')
+            error: (e: any) => {
+                pdfWin?.close(); discrepanciaWin?.close();
+                this._showMsg('Error al registrar retorno: ' + (e?.message || ''), 'error');
+            }
         });
     }
 

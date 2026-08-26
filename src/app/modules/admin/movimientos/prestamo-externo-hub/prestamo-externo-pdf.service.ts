@@ -7,8 +7,6 @@ export interface PrestamoExternoPdfItem {
     cantidad: number;
     descripcion: string;
     listaContenido: string;
-    hrCosto: number;
-    valorUsd: number;
     obs: string;
     /** Solo se completan si el préstamo ya tiene devolución registrada. */
     condicionDevolucion?: string;
@@ -72,7 +70,6 @@ export class PrestamoExternoPdfService {
         const fechaHoraPrestamo = data.fechaHoraPrestamo || '---';
         const observaciones     = data.observaciones || '---';
         const entregadoPor      = data.entregadoPor || '---';
-        const total = data.items.reduce((s, it) => s + (it.valorUsd || 0), 0);
 
         const nroNota = data.devuelto
             ? `<div style="font-size:8px;font-weight:400">N° PRÉSTAMO</div><div>${data.nroPrestamo}</div><div style="font-size:8px;font-weight:400;margin-top:6px">N° DEVOLUCIÓN</div><div>${data.nroDevolucion || '---'}</div>`
@@ -86,8 +83,6 @@ export class PrestamoExternoPdfService {
                 <td class="tc">${it.cantidad}</td>
                 <td>${it.descripcion || '---'}</td>
                 <td>${it.listaContenido || '---'}</td>
-                <td class="tc">$${(it.hrCosto || 0).toFixed(2)}</td>
-                <td class="tc">$${(it.valorUsd || 0).toFixed(2)}</td>
                 <td>${it.obs || '---'}</td>
             </tr>`).join('');
 
@@ -184,11 +179,10 @@ export class PrestamoExternoPdfService {
   </tr>
   <tr>
     <td><b>CI:</b></td><td>---</td>
-    <td><b>PRECIO $US:</b></td><td>$${total.toFixed(2)}</td>
+    <td><b>EMPRESA:</b></td><td>${empresa}</td>
   </tr>
   <tr>
-    <td><b>EMPRESA:</b></td><td>${empresa}</td>
-    <td><b>FECHA Y HORA:</b></td><td>${fechaHoraPrestamo}</td>
+    <td><b>FECHA Y HORA:</b></td><td colspan="3">${fechaHoraPrestamo}</td>
   </tr>
 </table>
 
@@ -196,11 +190,11 @@ export class PrestamoExternoPdfService {
 <table class="items">
   <thead><tr>
     <th style="width:9%">CÓDIGO</th><th style="width:10%">P/N ó MODELO</th><th style="width:9%">S/N</th>
-    <th style="width:5%">CANT.</th><th style="width:19%">DESCRIPCIÓN</th>
-    <th style="width:16%">LISTA DE CONTENIDO</th><th style="width:8%">HR. $</th><th style="width:9%">VALOR EN$</th>
-    <th style="width:15%">OBS</th>
+    <th style="width:5%">CANT.</th><th style="width:27%">DESCRIPCIÓN</th>
+    <th style="width:16%">LISTA DE CONTENIDO</th>
+    <th style="width:24%">OBS</th>
   </tr></thead>
-  <tbody>${filasPrestamo || '<tr><td colspan="9" class="tc">Sin ítems</td></tr>'}</tbody>
+  <tbody>${filasPrestamo || '<tr><td colspan="7" class="tc">Sin ítems</td></tr>'}</tbody>
 </table>
 
 <div class="detalle-bar">DATOS DEVOLUCIÓN</div>

@@ -1,0 +1,322 @@
+<div class="bg-stone-100 dark:bg-slate-900 border-2 border-black overflow-hidden flex flex-col h-full">
+
+    <!-- Header -->
+    <div class="bg-[#0F172A] px-4 sm:px-5 py-3 flex items-center gap-3 shrink-0 select-none"
+         cdkDrag cdkDragRootElement=".cdk-overlay-pane" cdkDragHandle style="cursor:grab">
+        <div class="w-9 h-9 rounded bg-amber-400 border-2 border-black flex items-center justify-center shadow-[2px_2px_0_#fbbf24] shrink-0">
+            <mat-icon class="!text-lg text-black">receipt_long</mat-icon>
+        </div>
+        <div class="flex-1 min-w-0">
+            <p class="text-[9px] text-slate-400 font-bold uppercase tracking-[0.18em] leading-none mb-0.5">Ingresos · Nueva Herramienta</p>
+            <h2 class="text-sm text-white font-black uppercase tracking-tight leading-none truncate">Datos de Recepción</h2>
+        </div>
+        <span class="px-2 py-1 border-2 rounded-lg text-[9px] font-black uppercase shrink-0 transition-colors"
+              [ngClass]="recepcionForm.value.tipoDe === 'DONACION'      ? 'border-blue-400 text-blue-300' :
+                          recepcionForm.value.tipoDe === 'TRANSFERENCIA' ? 'border-purple-400 text-purple-300' :
+                                                                          'border-[#FF1414] text-[#FF1414]'">
+            {{ recepcionForm.value.tipoDe || 'COMPRA' }}
+        </span>
+    </div>
+
+    <!-- Body -->
+    <div class="flex-1 overflow-y-auto px-4 py-4 flex flex-col gap-3 custom-scrollbar-ing">
+        <form [formGroup]="recepcionForm" class="flex flex-col gap-4">
+
+            <!-- ── 1. TIPO DE INGRESO ── -->
+            <div>
+                <h3 class="text-[9px] font-black uppercase text-stone-400 dark:text-slate-300 mb-2 flex items-center gap-1.5">
+                    <mat-icon class="!text-sm text-amber-500">category</mat-icon> Tipo de Ingreso <span class="text-red-500 ml-0.5">*</span>
+                </h3>
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+
+                    <button type="button" (click)="recepcionForm.patchValue({tipoDe: 'COMPRA'})"
+                            class="flex flex-row items-center justify-start gap-2 border-2 rounded-xl px-3 py-2 transition-all duration-150"
+                            [ngClass]="recepcionForm.value.tipoDe === 'COMPRA'
+                                ? 'border-black bg-white dark:bg-slate-700 shadow-[2px_2px_0_#000]'
+                                : 'border-stone-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:border-stone-400 dark:hover:border-slate-500'">
+                        <mat-icon class="!text-lg shrink-0 transition-colors"
+                                  [ngClass]="recepcionForm.value.tipoDe === 'COMPRA' ? 'text-[#FF1414]' : 'text-stone-300 dark:text-slate-500'">shopping_cart</mat-icon>
+                        <div class="flex flex-col items-start">
+                            <span class="text-[10px] font-black uppercase leading-none"
+                                  [ngClass]="recepcionForm.value.tipoDe === 'COMPRA' ? 'text-black dark:text-white' : 'text-stone-400 dark:text-slate-500'">Compra</span>
+                            <span class="text-[8px] font-normal text-stone-300 dark:text-slate-600 leading-none mt-0.5">CMR / Factura</span>
+                        </div>
+                    </button>
+
+                    <button type="button" (click)="recepcionForm.patchValue({tipoDe: 'DONACION'})"
+                            class="flex flex-row items-center justify-start gap-2 border-2 rounded-xl px-3 py-2 transition-all duration-150"
+                            [ngClass]="recepcionForm.value.tipoDe === 'DONACION'
+                                ? 'border-black bg-white dark:bg-slate-700 shadow-[2px_2px_0_#000]'
+                                : 'border-stone-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:border-stone-400 dark:hover:border-slate-500'">
+                        <mat-icon class="!text-lg shrink-0 transition-colors"
+                                  [ngClass]="recepcionForm.value.tipoDe === 'DONACION' ? 'text-[#FF1414]' : 'text-stone-300 dark:text-slate-500'">card_giftcard</mat-icon>
+                        <div class="flex flex-col items-start">
+                            <span class="text-[10px] font-black uppercase leading-none"
+                                  [ngClass]="recepcionForm.value.tipoDe === 'DONACION' ? 'text-black dark:text-white' : 'text-stone-400 dark:text-slate-500'">Donación</span>
+                            <span class="text-[8px] font-normal text-stone-300 dark:text-slate-600 leading-none mt-0.5">Carta donación</span>
+                        </div>
+                    </button>
+
+                    <button type="button" (click)="recepcionForm.patchValue({tipoDe: 'TRANSFERENCIA'})"
+                            class="flex flex-row items-center justify-start gap-2 border-2 rounded-xl px-3 py-2 transition-all duration-150"
+                            [ngClass]="recepcionForm.value.tipoDe === 'TRANSFERENCIA'
+                                ? 'border-black bg-white dark:bg-slate-700 shadow-[2px_2px_0_#000]'
+                                : 'border-stone-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:border-stone-400 dark:hover:border-slate-500'">
+                        <mat-icon class="!text-lg shrink-0 transition-colors"
+                                  [ngClass]="recepcionForm.value.tipoDe === 'TRANSFERENCIA' ? 'text-[#FF1414]' : 'text-stone-300 dark:text-slate-500'">swap_horiz</mat-icon>
+                        <div class="flex flex-col items-start">
+                            <span class="text-[10px] font-black uppercase leading-none"
+                                  [ngClass]="recepcionForm.value.tipoDe === 'TRANSFERENCIA' ? 'text-black dark:text-white' : 'text-stone-400 dark:text-slate-500'">Transfer.</span>
+                            <span class="text-[8px] font-normal text-stone-300 dark:text-slate-600 leading-none mt-0.5">Entre áreas</span>
+                        </div>
+                    </button>
+
+                </div>
+            </div>
+
+            <!-- ── 2. DOCUMENTO DE RESPALDO ── -->
+            <div>
+                <h3 class="text-[9px] font-black uppercase text-stone-400 dark:text-slate-300 mb-2 flex items-center gap-1.5">
+                    <mat-icon class="!text-sm text-amber-500">description</mat-icon> Documento de Respaldo
+                </h3>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+
+                    <!-- N° Doc principal — siempre visible, label/placeholder dinámico -->
+                    <div>
+                        <label class="text-[7px] font-black uppercase tracking-wider text-black dark:text-white mb-0.5 block">
+                            {{ getNroCmrLabel() }} <span class="text-red-500">*</span>
+                        </label>
+                        <div class="flex gap-2">
+                            <input type="text" formControlName="nroCmr" [placeholder]="getNroCmrPlaceholder()"
+                                   class="flex-1 w-0 h-8 text-sm font-black uppercase bg-white dark:bg-slate-800 dark:text-white border-2 rounded-xl px-3 outline-none transition-all placeholder:text-stone-300 placeholder:font-normal placeholder:normal-case"
+                                   [ngClass]="hasRecepcionError('nroCmr','required') || hasRecepcionError('nroCmr','minlength')
+                                       ? 'border-red-400 focus:shadow-[2px_2px_0_#f87171]'
+                                       : 'border-stone-300 dark:border-slate-600 hover:border-stone-400 focus:border-black focus:shadow-[2px_2px_0_#000]'">
+                            <button type="button" (click)="generarNroCmr()"
+                                    matTooltip="Regenerar correlativo automático"
+                                    class="h-8 px-2.5 flex items-center gap-1 bg-amber-400 border-2 border-black rounded-xl shadow-[2px_2px_0_#000] hover:shadow-none hover:translate-x-px hover:translate-y-px transition-all font-black text-[9px] uppercase shrink-0">
+                                <mat-icon class="!text-sm text-black">autorenew</mat-icon>
+                            </button>
+                        </div>
+                        <p *ngIf="hasRecepcionError('nroCmr','required') || hasRecepcionError('nroCmr','minlength')"
+                           class="text-[8px] font-bold text-red-500 mt-0.5">Mín. 3 caracteres.</p>
+                    </div>
+
+                    <!-- Fecha — siempre visible -->
+                    <div>
+                        <label class="text-[7px] font-black uppercase tracking-wider text-black dark:text-white mb-0.5 block">
+                            Fecha de Ingreso <span class="text-red-500">*</span>
+                        </label>
+                        <input type="date" formControlName="fechaIngreso"
+                               class="w-full h-9 text-sm font-bold bg-white dark:bg-slate-800 dark:text-white border-2 rounded-xl px-3 outline-none transition-all cursor-pointer"
+                               [ngClass]="hasRecepcionError('fechaIngreso','required')
+                                   ? 'border-red-400'
+                                   : 'border-stone-300 dark:border-slate-600 hover:border-stone-400 focus:border-black focus:shadow-[2px_2px_0_#000]'">
+                        <p *ngIf="hasRecepcionError('fechaIngreso','required')" class="text-[8px] font-bold text-red-500 mt-0.5">Requerido.</p>
+                    </div>
+
+                    <!-- N° Factura — solo COMPRA -->
+                    <div *ngIf="recepcionForm.value.tipoDe === 'COMPRA'" class="animate-fadeIn">
+                        <label class="text-[7px] font-black uppercase tracking-wider text-black dark:text-white mb-0.5 block">N° Factura</label>
+                        <input type="text" formControlName="nroFactura" placeholder="FAC-0001"
+                               class="w-full h-9 text-sm font-black uppercase bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-xl px-3 outline-none transition-all placeholder:text-stone-300 placeholder:font-normal placeholder:normal-case hover:border-stone-400 focus:border-black focus:shadow-[2px_2px_0_#000]">
+                    </div>
+
+                    <!-- Orden de Compra — solo COMPRA -->
+                    <div *ngIf="recepcionForm.value.tipoDe === 'COMPRA'" class="animate-fadeIn">
+                        <label class="text-[7px] font-black uppercase tracking-wider text-black dark:text-white mb-0.5 block">Orden de Compra / PO</label>
+                        <input type="text" formControlName="ordenCompra" placeholder="PO-2026-001"
+                               class="w-full h-9 text-sm font-black uppercase bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-xl px-3 outline-none transition-all placeholder:text-stone-300 placeholder:font-normal placeholder:normal-case hover:border-stone-400 focus:border-black focus:shadow-[2px_2px_0_#000]">
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- ── 3. PROVEEDOR / ORIGEN ── -->
+            <div>
+                <h3 class="text-[9px] font-black uppercase text-stone-400 dark:text-slate-300 mb-2 flex items-center gap-1.5">
+                    <mat-icon class="!text-sm text-amber-500">business</mat-icon>
+                    {{ getProveedorLabel() }}
+                </h3>
+
+                <div class="flex items-start gap-2">
+
+                    <!-- Input + dropdown (55% del ancho) -->
+                    <div class="relative w-[55%] shrink-0">
+                        <label class="text-[7px] font-black uppercase tracking-wider text-black dark:text-white mb-0.5 block">Nombre / Razón Social</label>
+                        <div class="relative">
+                            <input type="text"
+                                   [value]="proveedorInput"
+                                   (input)="onProveedorInput($any($event.target).value)"
+                                   (blur)="hideProveedorDropdown()"
+                                   [placeholder]="getProveedorPlaceholder()"
+                                   autocomplete="off"
+                                   class="w-full h-9 pl-9 text-sm font-bold bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-xl pr-3 outline-none transition-all placeholder:text-stone-300 placeholder:font-normal hover:border-stone-400 focus:border-black focus:shadow-[2px_2px_0_#000]">
+                            <mat-icon class="absolute left-2.5 top-2 text-stone-400 !text-sm">storefront</mat-icon>
+                        </div>
+                        <!-- Dropdown -->
+                        <div *ngIf="showProveedorDropdown"
+                             class="absolute z-50 w-full mt-1 top-full border-2 border-black rounded-xl bg-white dark:bg-slate-800 shadow-[3px_3px_0_#000] overflow-hidden max-h-52 overflow-y-auto custom-scrollbar-ing divide-y divide-stone-100 dark:divide-slate-700">
+                            <button *ngFor="let p of proveedoresFiltrados" type="button" (mousedown)="selectProveedor(p)"
+                                    class="w-full px-3 py-2.5 text-left hover:bg-amber-50 dark:hover:bg-slate-700 transition-colors">
+                                <div class="flex items-center gap-1.5">
+                                    <mat-icon class="!text-xs text-amber-500 shrink-0">business</mat-icon>
+                                    <span class="text-xs font-black text-black dark:text-white uppercase leading-tight">{{ p.nombre }}</span>
+                                </div>
+                                <div class="flex gap-3 mt-0.5 ml-5 flex-wrap">
+                                    <span *ngIf="p.nit" class="text-[9px] font-bold text-stone-400">NIT/RUT: {{ p.nit }}</span>
+                                    <span *ngIf="p.contacto" class="text-[9px] font-bold text-blue-500">
+                                        <mat-icon class="!text-[9px] align-middle">person</mat-icon> {{ p.contacto }}
+                                    </span>
+                                </div>
+                            </button>
+                            <div *ngIf="proveedoresFiltrados.length === 0" class="px-3 py-3 text-center text-[10px] font-bold text-stone-400 uppercase">
+                                Sin coincidencias
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- KPIs al lado derecho (visible solo cuando hay selección) -->
+                    <div class="flex-1 min-w-0 mt-4">
+                        <ng-container *ngIf="proveedorSeleccionado; else sinSeleccion">
+                            <div class="flex flex-col gap-1">
+                                <div *ngIf="proveedorSeleccionado.nit"
+                                     class="flex items-center gap-1.5 bg-amber-50 dark:bg-amber-900/20 border-2 border-amber-400 rounded-lg px-2 py-1">
+                                    <mat-icon class="!text-xs text-amber-600 shrink-0">receipt</mat-icon>
+                                    <div class="min-w-0">
+                                        <div class="text-[7px] font-black uppercase text-amber-600 leading-none">NIT / RUT</div>
+                                        <div class="text-[10px] font-black text-black dark:text-white truncate">{{ proveedorSeleccionado.nit }}</div>
+                                    </div>
+                                </div>
+                                <div *ngIf="proveedorSeleccionado.contacto"
+                                     class="flex items-center gap-1.5 bg-blue-50 dark:bg-blue-900/20 border-2 border-blue-300 rounded-lg px-2 py-1">
+                                    <mat-icon class="!text-xs text-blue-600 shrink-0">person</mat-icon>
+                                    <div class="min-w-0">
+                                        <div class="text-[7px] font-black uppercase text-blue-600 leading-none">Contacto</div>
+                                        <div class="text-[10px] font-black text-black dark:text-white truncate">{{ proveedorSeleccionado.contacto }}</div>
+                                    </div>
+                                </div>
+                                <div *ngIf="proveedorSeleccionado.telefono"
+                                     class="flex items-center gap-1.5 bg-stone-50 dark:bg-slate-700 border-2 border-stone-300 dark:border-slate-500 rounded-lg px-2 py-1">
+                                    <mat-icon class="!text-xs text-stone-500 shrink-0">phone</mat-icon>
+                                    <div class="min-w-0">
+                                        <div class="text-[7px] font-black uppercase text-stone-500 leading-none">Teléfono</div>
+                                        <div class="text-[10px] font-black text-black dark:text-white truncate">{{ proveedorSeleccionado.telefono }}</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </ng-container>
+                        <ng-template #sinSeleccion>
+                            <div class="h-9 mt-0.5 flex items-center justify-center border-2 border-dashed border-stone-200 dark:border-slate-700 rounded-xl">
+                                <span class="text-[9px] font-bold text-stone-300 dark:text-slate-600 uppercase">sin selección</span>
+                            </div>
+                        </ng-template>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- ── 4. RECEPCIÓN EN ALMACÉN ── -->
+            <div>
+                <h3 class="text-[9px] font-black uppercase text-stone-400 dark:text-slate-300 mb-2 flex items-center gap-1.5">
+                    <mat-icon class="!text-sm text-amber-500">store</mat-icon> Recepción en Almacén
+                </h3>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+
+                    <!-- Recibe en Almacén (con autocomplete) -->
+                    <div class="relative">
+                        <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1 flex justify-between items-center">
+                            <span>Recibe en Almacén <span class="text-red-500">*</span></span>
+                            <div *ngIf="funcLoading" class="w-3 h-3 border-2 border-amber-400 border-t-transparent rounded-full animate-spin"></div>
+                        </label>
+                        <div class="relative">
+                            <input type="text" [value]="recepcionForm.get('funcionarioRecibe')?.value"
+                                   (input)="onFuncionarioInput($any($event.target).value)"
+                                   (blur)="hideFuncDropdown()"
+                                   placeholder="Buscar funcionario..." autocomplete="off"
+                                   class="w-full h-9 pl-9 text-sm font-bold uppercase bg-white dark:bg-slate-800 dark:text-white border-2 rounded-xl pr-3 outline-none transition-all placeholder:text-stone-300 placeholder:font-normal placeholder:normal-case"
+                                   [ngClass]="hasRecepcionError('funcionarioRecibe','required')
+                                       ? 'border-red-400 focus:shadow-[2px_2px_0_#f87171]'
+                                       : 'border-stone-300 dark:border-slate-600 hover:border-stone-400 focus:border-black focus:shadow-[2px_2px_0_#000]'">
+                            <mat-icon class="absolute left-2.5 top-2 text-stone-400 !text-sm">person_pin</mat-icon>
+                        </div>
+                        <!-- Dropdown resultados -->
+                        <div *ngIf="showFuncDropdown"
+                             class="absolute z-50 w-full mt-1 top-full border-2 border-black rounded-xl bg-white dark:bg-slate-800 shadow-[3px_3px_0_#000] overflow-hidden max-h-40 overflow-y-auto custom-scrollbar-ing divide-y divide-stone-100 dark:divide-slate-700">
+                            <button *ngFor="let f of funcFiltrados" type="button" (mousedown)="selectFuncionario(f)"
+                                    class="w-full px-3 py-2 text-left hover:bg-amber-50 dark:hover:bg-slate-700 transition-colors">
+                                <div class="text-xs font-black text-black dark:text-white uppercase">{{ f.nombre }}</div>
+                                <div class="text-[9px] font-bold text-stone-400 uppercase mt-0.5">{{ f.cargo }}</div>
+                            </button>
+                        </div>
+                        <p *ngIf="hasRecepcionError('funcionarioRecibe','required')" class="text-[8px] font-bold text-red-500 mt-0.5">Requerido.</p>
+                    </div>
+
+                    <!-- Entregado / Conforme por (label dinámico) -->
+                    <div>
+                        <label class="text-[7px] font-black uppercase tracking-wider text-black dark:text-white mb-0.5 flex items-center justify-between">
+                            <span>{{ getEntregadoPorLabel() }}</span>
+                            <div *ngIf="recibiConformeLoading" class="w-3 h-3 border-2 border-amber-400 border-t-transparent rounded-full animate-spin"></div>
+                        </label>
+
+                        <!-- TRANSFERENCIA: buscador de funcionarios internos -->
+                        <ng-container *ngIf="recepcionForm.value.tipoDe === 'TRANSFERENCIA'">
+                            <div class="relative">
+                                <input type="text"
+                                       [value]="recepcionForm.get('recibiConforme')?.value"
+                                       (input)="onRecibiConformeInput($any($event.target).value)"
+                                       (blur)="hideRecibiConformeDropdown()"
+                                       placeholder="Buscar funcionario que entrega..."
+                                       autocomplete="off"
+                                       class="w-full h-9 pl-9 text-sm font-bold uppercase bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-xl pr-3 outline-none transition-all placeholder:text-stone-300 placeholder:font-normal placeholder:normal-case hover:border-stone-400 focus:border-black focus:shadow-[2px_2px_0_#000]">
+                                <mat-icon class="absolute left-2.5 top-2 text-stone-400 !text-sm">how_to_reg</mat-icon>
+                                <div *ngIf="showRecibiConformeDropdown"
+                                     class="absolute z-50 w-full mt-1 top-full border-2 border-black rounded-xl bg-white dark:bg-slate-800 shadow-[3px_3px_0_#000] overflow-hidden max-h-40 overflow-y-auto custom-scrollbar-ing divide-y divide-stone-100 dark:divide-slate-700">
+                                    <button *ngFor="let f of recibiConformeFiltrados" type="button" (mousedown)="selectRecibiConforme(f)"
+                                            class="w-full px-3 py-2 text-left hover:bg-amber-50 dark:hover:bg-slate-700 transition-colors">
+                                        <div class="text-xs font-black text-black dark:text-white uppercase">{{ f.nombre }}</div>
+                                        <div class="text-[9px] font-bold text-stone-400 uppercase mt-0.5">{{ f.cargo }}</div>
+                                    </button>
+                                </div>
+                            </div>
+                        </ng-container>
+
+                        <!-- COMPRA / DONACION: texto libre (persona externa) -->
+                        <ng-container *ngIf="recepcionForm.value.tipoDe !== 'TRANSFERENCIA'">
+                            <div class="relative">
+                                <input type="text" formControlName="recibiConforme"
+                                       [placeholder]="recepcionForm.value.tipoDe === 'DONACION' ? 'Nombre del representante donante...' : 'Nombre del representante o vendedor...'"
+                                       class="w-full h-9 pl-9 text-sm font-bold bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-xl pr-3 outline-none transition-all placeholder:text-stone-300 placeholder:font-normal hover:border-stone-400 focus:border-black focus:shadow-[2px_2px_0_#000]">
+                                <mat-icon class="absolute left-2.5 top-2 text-stone-400 !text-sm">how_to_reg</mat-icon>
+                            </div>
+                        </ng-container>
+                    </div>
+
+                </div>
+
+                <!-- Observaciones -->
+                <div class="mt-2">
+                    <label class="text-[7px] font-black uppercase tracking-wider text-black dark:text-white mb-0.5 block">Observaciones</label>
+                    <textarea formControlName="observaciones" rows="2"
+                              placeholder="Condiciones de entrega, notas del documento..."
+                              class="w-full text-sm font-normal bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-xl px-3 py-2 outline-none transition-all resize-none placeholder:text-stone-300 placeholder:font-normal hover:border-stone-400 focus:border-black focus:shadow-[2px_2px_0_#000] custom-scrollbar-ing"></textarea>
+                </div>
+            </div>
+
+        </form>
+    </div>
+
+    <!-- Footer -->
+    <div class="border-t-2 border-black bg-stone-200 dark:bg-slate-800 px-4 sm:px-5 py-3 flex justify-between items-center gap-3 shrink-0">
+        <button type="button" (click)="cerrarModalRecepcion()"
+                class="px-4 py-2 bg-[#FF1414] text-white font-black text-[10px] border-2 border-black rounded-xl shadow-[2px_2px_0_#000] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all uppercase">
+            Cancelar
+        </button>
+        <button type="button" (click)="cerrarModalRecepcion()"
+                class="flex items-center gap-2 px-5 py-2 bg-amber-400 text-black font-black text-[10px] border-2 border-black rounded-xl shadow-[3px_3px_0_#000] hover:shadow-none hover:translate-x-[3px] hover:translate-y-[3px] transition-all uppercase">
+            <mat-icon class="!text-sm">check</mat-icon>
+            <span class="hidden sm:inline">Aceptar Datos</span>
+            <span class="sm:hidden">Aceptar</span>
+        </button>
+    </div>
+</div>

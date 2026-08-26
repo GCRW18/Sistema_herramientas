@@ -9,10 +9,12 @@ import { Subject, of } from 'rxjs';
 import { debounceTime, distinctUntilChanged, switchMap, takeUntil, finalize, map } from 'rxjs/operators';
 
 import { MovementService } from '../../../../../../core/services/movement.service';
+import { localDateStr } from '../../../../../../core/utils/date.utils';
 import {
     MovimientoActivo, TraspasoItem, Funcionario, CondRetorno,
     CONDICIONES_RETORNO, isItemValid, getItemErrors
 } from '../../retorno-traspaso.types';
+import { RetornoPdfService } from '../../retorno-pdf.service';
 
 export interface RetornoAreaDialogData {
     movTraspasosActivos: MovimientoActivo[];
@@ -41,12 +43,14 @@ export class RetornoAreaDialogComponent implements OnInit, OnDestroy {
     private fb        = inject(FormBuilder);
     private snackBar  = inject(MatSnackBar);
     private movSvc    = inject(MovementService);
+    private pdfSvc    = inject(RetornoPdfService);
     private _unsub$   = new Subject<void>();
 
     // Movement lists
     movTraspasosActivos:   MovimientoActivo[] = [];
     movAreaSeleccionado:   MovimientoActivo | null = null;
     searchAreaMovimiento   = '';
+    showTraspasoDropdown   = false;
 
     // Items
     retornoAreaItems:      TraspasoItem[] = [];
@@ -77,7 +81,7 @@ export class RetornoAreaDialogComponent implements OnInit, OnDestroy {
 
     ngOnInit(): void {
         this.movTraspasosActivos = this.data.movTraspasosActivos || [];
-        const today = new Date().toISOString().split('T')[0];
+        const today = localDateStr();
         this.retornoAreaForm = this.fb.group({
             fechaRetorno:  [today, Validators.required],
             nroDocumento:  ['', Validators.required],
@@ -104,6 +108,20 @@ export class RetornoAreaDialogComponent implements OnInit, OnDestroy {
     }
 
     ngOnDestroy(): void { this._unsub$.next(); this._unsub$.complete(); }
+
+    hideTraspasoDropdown(): void { setTimeout(() => this.showTraspasoDropdown = false, 150); }
+
+    limpiarSeleccionTraspaso(): void {
+        this.movAreaSeleccionado = null;
+        this.retornoAreaItems = [];
+        this.searchAreaMovimiento = '';
+    }
+
+    selectTraspasoFromDropdown(mov: MovimientoActivo): void {
+        this.searchAreaMovimiento = mov.movement_number;
+        this.showTraspasoDropdown = false;
+        this.seleccionarMovimientoArea(mov);
+    }
 
     seleccionarMovimientoArea(mov: MovimientoActivo): void {
         this.movAreaSeleccionado  = mov;
@@ -146,11 +164,7 @@ export class RetornoAreaDialogComponent implements OnInit, OnDestroy {
     getItemErrors(item: TraspasoItem): string[] { return getItemErrors(item); }
     getRowClass(item: TraspasoItem): string {
         if (!item.selected) return '';
-        if (!item.condicion) return 'border-gray-300 bg-gray-50 dark:bg-slate-700/50';
-        if (item.condicion === 'BUENO') return 'border-green-400 bg-green-50 dark:bg-green-900/20';
-        if (item.condicion === 'DAÑADO') return 'border-red-400 bg-red-50 dark:bg-red-900/20';
-        if (item.condicion === 'REQUIERE_CALIBRACION') return 'border-yellow-400 bg-yellow-50 dark:bg-yellow-900/20';
-        return 'border-red-600 bg-red-100 dark:bg-red-900/30';
+        return 'border-black bg-stone-50 dark:bg-slate-700/50';
     }
     getAlertRowClass(status: string): boolean { return status !== 'SIN_FECHA'; }
 
@@ -177,6 +191,9 @@ export class RetornoAreaDialogComponent implements OnInit, OnDestroy {
         const form = this.retornoAreaForm.value;
         const sel  = this.getSelectedArea();
         const mov  = this.movAreaSeleccionado;
+        // Se abre en el mismo tick del clic (gesto de usuario) para que el navegador no
+        // bloquee la pestaña nueva cuando el PDF se genera después de que responda el guardado.
+        const pdfWin = window.open('', '_blank');
         const itemsJson = JSON.stringify(sel.map(i => ({
             tool_id:       Number(i.toolId),
             quantity:      i.condicion === 'FALTANTE' ? 0 : i.cantidadRetorna,
@@ -196,7 +213,8 @@ export class RetornoAreaDialogComponent implements OnInit, OnDestroy {
             source_warehouse_id:      mov.destination_warehouse_id,
             notes:                    form.observaciones || '',
             specific_observations:    `Retorno de traspaso ${mov.movement_number}`,
-            items_json:               itemsJson
+            items_json:               itemsJson,
+            source_movement_ids_json: JSON.stringify([Number(mov.id_movement)])
         }).pipe(
             finalize(() => this.isSavingRetornoArea = false),
             takeUntil(this._unsub$)
@@ -204,15 +222,20 @@ export class RetornoAreaDialogComponent implements OnInit, OnDestroy {
             next: (res: any) => {
                 const nro = res?.movement_number || '---';
                 this._showMsg(`Retorno registrado: ${nro}`, 'success');
+                this.pdfSvc.generarPdfRetornoArea(nro, sel, {
+                    fechaRetorno: form.fechaRetorno,
+                    recibeAlmacen: form.recibeAlmacen,
+                    observaciones: form.observaciones
+                }, mov, pdfWin);
                 this.dialogRef.close({ refreshActivos: true });
             },
-            error: (e: any) => this._showMsg('Error: ' + (e?.message || ''), 'error')
+            error: (e: any) => { pdfWin?.close(); this._showMsg('Error: ' + (e?.message || ''), 'error'); }
         });
     }
 
     // Autocomplete
     hideFuncRetornoAreaRecibeDropdown(): void { setTimeout(() => this.showFuncRetornoAreaRecibeDropdown = false, 150); }
-    selectFuncRetornoAreaRecibe(f: Funcionario): void { this.retornoAreaForm.patchValue({ recibeAlmacen: f.nombre }); this.showFuncRetornoAreaRecibeDropdown = false; }
+    selectFuncRetornoAreaRecibe(f: Funcionario): void { this.retornoAreaForm.patchValue({ recibeAlmacen: f.nombre }, { emitEvent: false }); this.showFuncRetornoAreaRecibeDropdown = false; }
 
     cerrarFormRetornoArea(): void { this.dialogRef.close(); }
 

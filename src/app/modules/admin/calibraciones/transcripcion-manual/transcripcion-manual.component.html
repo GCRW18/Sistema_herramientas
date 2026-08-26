@@ -96,13 +96,22 @@
                         <td class="py-3 px-4 text-gray-600 dark:text-gray-300 font-semibold text-xs truncate max-w-[200px]" [title]="record.laboratorio">
                             {{ record.laboratorio }}
                         </td>
-                        <td class="py-3 px-4 text-center">
-                            <button (click)="openHistorial(record)"
-                                    matTooltip="Ver historial completo de calibraciones"
-                                    class="inline-flex items-center gap-1 bg-violet-100 dark:bg-violet-900/40 border-[2px] border-black rounded-full px-2 py-1 text-[9px] font-black uppercase text-violet-800 dark:text-violet-300 shadow-[2px_2px_0px_0px_#000] hover:translate-y-[1px] hover:translate-x-[1px] hover:shadow-none transition-all">
-                                <mat-icon class="!text-[14px]">manage_search</mat-icon>
-                                VER
-                            </button>
+                        <td class="py-3 px-4">
+                            <div class="flex items-center justify-center gap-1.5">
+                                <button (click)="openHistorial(record)"
+                                        matTooltip="Ver historial completo de calibraciones"
+                                        class="inline-flex items-center gap-1 bg-violet-100 dark:bg-violet-900/40 border-[2px] border-black rounded-full px-2 py-1 text-[9px] font-black uppercase text-violet-800 dark:text-violet-300 shadow-[2px_2px_0px_0px_#000] hover:translate-y-[1px] hover:translate-x-[1px] hover:shadow-none transition-all">
+                                    <mat-icon class="!text-[14px]">manage_search</mat-icon>
+                                    VER
+                                </button>
+                                <button (click)="verCertificado(record)"
+                                        [disabled]="!record.has_certificate_file"
+                                        [matTooltip]="record.has_certificate_file ? 'Ver PDF adjunto en la transcripción' : 'No se adjuntó un PDF en esta transcripción'"
+                                        class="inline-flex items-center gap-1 bg-red-100 dark:bg-red-900/40 border-[2px] border-black rounded-full px-2 py-1 text-[9px] font-black uppercase text-red-700 dark:text-red-300 shadow-[2px_2px_0px_0px_#000] hover:translate-y-[1px] hover:translate-x-[1px] hover:shadow-none transition-all disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:translate-x-0 disabled:hover:translate-y-0 disabled:hover:shadow-[2px_2px_0px_0px_#000]">
+                                    <mat-icon class="!text-[14px]">picture_as_pdf</mat-icon>
+                                    PDF
+                                </button>
+                            </div>
                         </td>
                     </tr>
 

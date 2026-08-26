@@ -9,6 +9,7 @@ import { takeUntil, finalize, debounceTime, distinctUntilChanged, switchMap, map
 import { CalibrationService } from '../../../../../core/services/calibration.service';
 import { MaintenanceService } from '../../../../../core/services/maintenance.service';
 import { MovementService } from '../../../../../core/services/movement.service';
+import { localDateStr } from '../../../../../core/utils/date.utils';
 
 interface Funcionario { id: number; nombre: string; cargo: string; }
 
@@ -268,7 +269,7 @@ export class FormLoteMantenimientoComponent implements OnInit, OnDestroy {
                 send_date:            this.sendDateStr,
                 expected_return_date: item.expectedReturnDate,
                 provider:             this.selectedProviderName,
-                problem:              item.maintenanceType === 'corrective' ? item.discrepancyReportNum : '',
+                discrepancy_report_num: item.maintenanceType === 'corrective' ? item.discrepancyReportNum : '',
                 notes:                item.notes,
                 requested_by_name:    this.requestedByName.trim() || this._currentUser(),
             };
@@ -312,7 +313,7 @@ export class FormLoteMantenimientoComponent implements OnInit, OnDestroy {
         const fecha   = this.fmtDate(this.sendDateStr);
         const empresa = this.selectedProviderName || '—';
         const usuario = this.requestedByName || this._currentUser();
-        const hoy     = this.fmtDate(new Date().toISOString().split('T')[0]);
+        const hoy     = this.fmtDate(localDateStr());
         const doneItems = this.items.filter(i => i.status === 'done');
 
         const filas = doneItems.map((item, idx) => `
@@ -361,9 +362,9 @@ export class FormLoteMantenimientoComponent implements OnInit, OnDestroy {
 <div class="hdr">
   <div class="hdr-left">
     <h1>Nota de Envío a Mantenimiento</h1>
-    <p>BOA — Gestión Técnica de Herramientas &nbsp;|&nbsp; MGH-109 &nbsp;|&nbsp; LOTE</p>
+    <p>BOA — Gestión Técnica de Herramientas &nbsp;|&nbsp; LOTE</p>
   </div>
-  <div class="badge">MGH-109</div>
+  <div class="badge">LOTE</div>
 </div>
 
 <div class="info-grid">
@@ -417,10 +418,10 @@ export class FormLoteMantenimientoComponent implements OnInit, OnDestroy {
         } else {
             base.setDate(base.getDate() + 7);
         }
-        return base.toISOString().split('T')[0];
+        return localDateStr(base);
     }
 
-    private _today(): string { return new Date().toISOString().split('T')[0]; }
+    private _today(): string { return localDateStr(); }
 
     private _currentUser(): string {
         try {

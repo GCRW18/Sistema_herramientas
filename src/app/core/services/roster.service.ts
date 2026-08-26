@@ -80,8 +80,8 @@ export class RosterService {
         const params: any = {
             start: 0,
             limit: 50,
-            sort: 'assignment_date',
-            dir: 'desc',
+            ordenacion: 'assignment_date',
+            dir_ordenacion: 'desc',
             ...this._fromFilters(filters)
         };
 
@@ -212,8 +212,8 @@ export class RosterService {
             start: 0,
             limit: 100,
             employee_id: employeeId,
-            sort: 'assignment_date',
-            dir: 'desc'
+            ordenacion: 'assignment_date',
+            dir_ordenacion: 'desc'
         })).pipe(
             switchMap((response: any) => {
                 return of(response?.data || []);

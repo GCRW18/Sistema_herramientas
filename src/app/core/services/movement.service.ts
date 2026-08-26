@@ -19,13 +19,19 @@ export class MovementService {
         const params = {
             start: 0,
             limit: 50,
-            sort: 'date',
-            dir: 'desc',
+            ordenacion: 'date',
+            dir_ordenacion: 'desc',
             ...filters
         };
 
         return from(this._api.post('herramientas/movements/listarMovements', params)).pipe(
-            switchMap((response: any) => of(response?.datos || response?.data || []))
+            switchMap((response: any) => {
+                const root = response?.ROOT || response;
+                if (root?.error === true || root?.error === 'true') {
+                    throw new Error(root?.detalle?.mensaje || root.mensaje || 'Error al listar movimientos');
+                }
+                return of(root?.datos || root?.data || []);
+            })
         );
     }
 
@@ -37,7 +43,7 @@ export class MovementService {
             tool_id: toolId
         })).pipe(
             switchMap((response: any) => {
-                return of(response?.datos || response?.data || []);
+                return of(response?.ROOT?.datos || response?.datos || response?.data || []);
             })
         );
     }
@@ -54,15 +60,15 @@ export class MovementService {
         const params = {
             start: ((filtros?.page || 1) - 1) * (filtros?.limit || 25),
             limit: filtros?.limit || 25,
-            sort: 'date',
-            dir: 'desc',
+            ordenacion: 'date',
+            dir_ordenacion: 'desc',
             ...filtros
         };
 
         return from(this._api.post(endpoint, params)).pipe(
             switchMap((response: any) => of({
-                data: response?.datos || response?.data || [],
-                total: response?.total || 0
+                data: response?.ROOT?.datos || response?.datos || response?.data || [],
+                total: response?.ROOT?.total ?? response?.total ?? 0
             }))
         );
     }
@@ -72,15 +78,24 @@ export class MovementService {
     // -----------------------------------------------------------------------------------------------------
 
     /**
-     * Get herramientas disponibles
+     * Get herramientas disponibles.
+     * Ordena por id_tool DESC (en vez del default id_tool ASC del backend): con más de
+     * 2000 herramientas activas, el orden ascendente + limit 2000 dejaba fuera a las
+     * recién creadas (mayor id_tool), que quedaban al final del orden y nunca entraban
+     * dentro del límite — invisibles en el buscador de Préstamo Técnico.
+     * IMPORTANTE: ACTtools.php->listarTools() lee 'ordenacion'/'dir_ordenacion' (no
+     * 'sort'/'dir') — con las claves equivocadas el backend ignoraba el override y
+     * seguía aplicando su default (id_tool ASC), por lo que el orden nunca cambiaba.
      */
     getHerramientasDisponibles(filters?: any): Observable<any[]> {
         return from(this._api.post('herramientas/tools/listTools', {
             start: 0,
             limit: 2000,
+            ordenacion: 'id_tool',
+            dir_ordenacion: 'desc',
             ...filters
         })).pipe(
-            switchMap((response: any) => of(response?.datos || response?.data || []))
+            switchMap((response: any) => of(response?.ROOT?.datos || response?.datos || response?.data || []))
         );
     }
 
@@ -94,10 +109,10 @@ export class MovementService {
             this._personalPromise = (this._api.post('herramientas/employees/listarFuncionarios', {
                 start: 0,
                 limit: 5000,
-                sort: 'full_name',
-                dir: 'asc'
+                ordenacion: 'full_name',
+                dir_ordenacion: 'asc'
             }) as Promise<any>).then((response: any) => {
-                const raw: any[] = response?.datos || response?.data || [];
+                const raw: any[] = response?.ROOT?.datos || response?.datos || response?.data || [];
                 const mapped = raw.map((emp: any) => ({
                     id:               emp.id_usuario || emp.id_employee || emp.id,
                     id_employee:      emp.id_usuario || emp.id_employee || emp.id,
@@ -176,7 +191,13 @@ export class MovementService {
             start: 0,
             limit: 100
         })).pipe(
-            switchMap((response: any) => of(response?.datos || response?.data || []))
+            switchMap((response: any) => {
+                const root = response?.ROOT || response;
+                if (root?.error === true || root?.error === 'true') {
+                    throw new Error(root?.detalle?.mensaje || root.mensaje || 'Error al listar ítems del movimiento');
+                }
+                return of(root?.datos || root?.data || []);
+            })
         );
     }
 
@@ -204,12 +225,12 @@ export class MovementService {
      * Get funcionarios list (personal que puede recibir/entregar herramientas)
      */
     getFuncionarios(search?: string): Observable<any[]> {
-        const params: any = { start: 0, limit: 30, sort: 'full_name', dir: 'asc' };
+        const params: any = { start: 0, limit: 30, ordenacion: 'full_name', dir_ordenacion: 'asc' };
         if (search && search.trim().length >= 1) {
             params.search_term = search.trim();
         }
         return from(this._api.post('herramientas/employees/listarEmployees', params)).pipe(
-            switchMap((response: any) => of((response?.datos || response?.data || []).map((f: any) => ({
+            switchMap((response: any) => of((response?.ROOT?.datos || response?.datos || response?.data || []).map((f: any) => ({
                 ...f,
                 id: f.id ?? f.id_employee,
                 nombre: f.nombre ?? f.full_name,
@@ -241,8 +262,11 @@ export class MovementService {
     }): Observable<{ id_movement: number; movement_number: string }> {
         return from(this._api.post('herramientas/movements/registrarNuevaCompra', data)).pipe(
             switchMap((response: any) => {
-                if (response?.error) throw new Error(response.mensaje || 'Error al registrar compra');
-                const datos = response?.datos || response?.data || {};
+                const root = response?.ROOT || response;
+                if (root?.error === true || root?.error === 'true') {
+                    throw new Error(root?.detalle?.mensaje || root.mensaje || 'Error al registrar compra');
+                }
+                const datos = root?.datos || root?.data || {};
                 if (datos?.error === 'true' || datos?.error === true) {
                     throw new Error(datos.mensaje || 'Error en el servidor');
                 }
@@ -255,7 +279,7 @@ export class MovementService {
 
     getIngresosCategories(): Observable<{ id_category: number; name: string; code: string; active: boolean }[]> {
         return from(this._api.post('herramientas/categories/listCategories', {
-            start: 0, limit: 200, sort: 'display_order', dir: 'asc'
+            start: 0, limit: 200, ordenacion: 'display_order', dir_ordenacion: 'asc'
         })).pipe(
             map((r: any) => {
                 const data = r?.ROOT?.datos ?? r?.datos ?? r?.data ?? [];
@@ -294,11 +318,11 @@ export class MovementService {
         return from(this._api.post('herramientas/tools/listarTools', {
             start: 0,
             limit: 500,
-            sort: 'brand',
-            dir: 'asc'
+            ordenacion: 'brand',
+            dir_ordenacion: 'asc'
         })).pipe(
             switchMap((response: any) => {
-                const tools = response?.datos || response?.data || [];
+                const tools = response?.ROOT?.datos || response?.datos || response?.data || [];
                 const brands = [...new Set(
                     tools.map((t: any) => t.brand || t.marca).filter((b: any) => b && b.trim())
                 )] as string[];
@@ -314,11 +338,11 @@ export class MovementService {
         return from(this._api.post('herramientas/tools/listarTools', {
             start: 0,
             limit: 2000,
-            sort: 'id_tool',
-            dir: 'desc'
+            ordenacion: 'id_tool',
+            dir_ordenacion: 'desc'
         })).pipe(
             switchMap((response: any) => {
-                const tools = response?.datos || response?.data || [];
+                const tools = response?.ROOT?.datos || response?.datos || response?.data || [];
                 let maxNum = 0;
                 tools.forEach((t: any) => {
                     const match = String(t.code || '').match(/BOA-H-(\d+)/);
@@ -338,19 +362,31 @@ export class MovementService {
      */
     getActiveLoans(params?: { filtro_adicional?: string; [key: string]: any }): Observable<any[]> {
         const { filtro_adicional, ...rest } = params || {};
-        const postParams: any = { start: 0, limit: 200, sort: 'id_loan', dir: 'desc', ...rest };
+        const postParams: any = { start: 0, limit: 200, ordenacion: 'id_loan', dir_ordenacion: 'desc', ...rest };
         if (filtro_adicional) { postParams.filtro_adicional = filtro_adicional; }
         return from(this._api.post('herramientas/movements/listarLoans', postParams)).pipe(
-            switchMap((response: any) => of(response?.datos || response?.data || []))
+            switchMap((response: any) => {
+                const root = response?.ROOT || response;
+                if (root?.error === true || root?.error === 'true') {
+                    throw new Error(root?.detalle?.mensaje || root.mensaje || 'Error al buscar préstamos activos');
+                }
+                return of(root?.datos || root?.data || []);
+            })
         );
     }
 
     getActiveLoanItems(params?: { filtro_adicional?: string; [key: string]: any }): Observable<any[]> {
         return from(this._api.post('herramientas/movements/listarLoanItems', {
-            start: 0, limit: 1000, sort: 'id_loan_item', dir: 'asc',
+            start: 0, limit: 1000, ordenacion: 'id_loan_item', dir_ordenacion: 'asc',
             ...params
         })).pipe(
-            switchMap((response: any) => of(response?.datos || response?.data || []))
+            switchMap((response: any) => {
+                const root = response?.ROOT || response;
+                if (root?.error === true || root?.error === 'true') {
+                    throw new Error(root?.detalle?.mensaje || root.mensaje || 'Error al obtener ítems del préstamo');
+                }
+                return of(root?.datos || root?.data || []);
+            })
         );
     }
 
@@ -382,8 +418,11 @@ export class MovementService {
     }): Observable<{ id_movement: number; movement_number: string; id_loan: number }> {
         return from(this._api.post('herramientas/movements/registrarPrestamoMultiple', data)).pipe(
             switchMap((response: any) => {
-                if (response?.error) throw new Error(response.mensaje || 'Error al registrar el préstamo');
-                return of((response?.datos || response?.data)?.[0] || response?.datos || response?.data || {});
+                const root = response?.ROOT || response;
+                if (root?.error === true || root?.error === 'true') {
+                    throw new Error(root?.detalle?.mensaje || root.mensaje || 'Error al registrar el préstamo');
+                }
+                return of(root?.datos?.[0] || root?.datos || root?.data?.[0] || root?.data || {});
             })
         );
     }
@@ -409,8 +448,11 @@ export class MovementService {
     }): Observable<{ id_movement: number; movement_number: string }> {
         return from(this._api.post('herramientas/movements/registrarDevolucionPrestamo', data)).pipe(
             switchMap((response: any) => {
-                if (response?.error) throw new Error(response.mensaje || 'Error al registrar la devolución');
-                return of((response?.datos || response?.data)?.[0] || response?.datos || response?.data || {});
+                const root = response?.ROOT || response;
+                if (root?.error === true || root?.error === 'true') {
+                    throw new Error(root?.detalle?.mensaje || root.mensaje || 'Error al registrar la devolución');
+                }
+                return of(root?.datos?.[0] || root?.datos || root?.data?.[0] || root?.data || {});
             })
         );
     }
@@ -431,8 +473,11 @@ export class MovementService {
     }): Observable<{ id_movement: number; movement_number: string }> {
         return from(this._api.post('herramientas/movements/registrarAjusteIngreso', data)).pipe(
             switchMap((response: any) => {
-                if (response?.error) throw new Error(response.mensaje || 'Error al registrar el ajuste');
-                return of((response?.datos || response?.data)?.[0] || response?.datos || response?.data || {});
+                const root = response?.ROOT || response;
+                if (root?.error === true || root?.error === 'true') {
+                    throw new Error(root?.detalle?.mensaje || root.mensaje || 'Error al registrar el ajuste');
+                }
+                return of(root?.datos?.[0] || root?.datos || root?.data?.[0] || root?.data || {});
             })
         );
     }
@@ -458,8 +503,11 @@ export class MovementService {
     }): Observable<{ id_movement: number; movement_number: string }> {
         return from(this._api.post('herramientas/movements/registrarRetornoBase', data)).pipe(
             switchMap((response: any) => {
-                if (response?.error) throw new Error(response.mensaje || 'Error al registrar el retorno');
-                const datos = (response?.datos || response?.data)?.[0] || response?.datos || response?.data || {};
+                const root = response?.ROOT || response;
+                if (root?.error === true || root?.error === 'true') {
+                    throw new Error(root?.detalle?.mensaje || root.mensaje || 'Error al registrar el retorno');
+                }
+                const datos = root?.datos?.[0] || root?.datos || root?.data?.[0] || root?.data || {};
                 // pxp devuelve ROOT.error=false incluso cuando la función SQL falla;
                 // el error real queda en datos.error='true' / datos.mensaje
                 if (datos?.error === 'true' || datos?.error === true) {
@@ -498,10 +546,11 @@ export class MovementService {
     }): Observable<{ id_movement: number; movement_number: string }> {
         return from(this._api.post('herramientas/movements/registrarTraspasoOtraArea', data)).pipe(
             switchMap((response: any) => {
-                if (response?.error) {
-                    throw new Error(response.mensaje || 'Error al registrar el traspaso');
+                const root = response?.ROOT || response;
+                if (root?.error === true || root?.error === 'true') {
+                    throw new Error(root?.detalle?.mensaje || root.mensaje || 'Error al registrar el traspaso');
                 }
-                return of((response?.datos || response?.data)?.[0] || response?.datos || response?.data || {});
+                return of(root?.datos?.[0] || root?.datos || root?.data?.[0] || root?.data || {});
             })
         );
     }
@@ -530,10 +579,11 @@ export class MovementService {
     }): Observable<{ id_movement: number; movement_number: string }> {
         return from(this._api.post('herramientas/movements/registrarEnvioOtrasBases', data)).pipe(
             switchMap((response: any) => {
-                if (response?.error) {
-                    throw new Error(response.mensaje || 'Error al registrar el envío');
+                const root = response?.ROOT || response;
+                if (root?.error === true || root?.error === 'true') {
+                    throw new Error(root?.detalle?.mensaje || root.mensaje || 'Error al registrar el envío');
                 }
-                return of((response?.datos || response?.data)?.[0] || response?.datos || response?.data || {});
+                return of(root?.datos?.[0] || root?.datos || root?.data?.[0] || root?.data || {});
             })
         );
     }
@@ -545,11 +595,11 @@ export class MovementService {
     getParametrosPorCategoria(categoria: string): Observable<string[]> {
         return from(this._api.post('herramientas/parametros/listarParametros', {
             start: 0, limit: 200,
-            sort: 'nombre', dir: 'asc',
+            ordenacion: 'nombre', dir_ordenacion: 'asc',
             filtro: `par.categoria = '${categoria}' AND par.active = true AND par.estado_reg = 'activo'`
         })).pipe(
             switchMap((response: any) => {
-                const rows: any[] = response?.datos || response?.data || [];
+                const rows: any[] = response?.ROOT?.datos || response?.datos || response?.data || [];
                 return of(rows.map(r => r.valor || r.nombre).filter(Boolean));
             }),
             catchError(() => of([]))
@@ -561,15 +611,24 @@ export class MovementService {
             start: params?.start ?? 0,
             limit: params?.limit ?? 200
         })).pipe(
-            switchMap((response: any) => of(response?.datos || response?.data || []))
+            switchMap((response: any) => {
+                const root = response?.ROOT || response;
+                if (root?.error === true || root?.error === 'true') {
+                    throw new Error(root?.detalle?.mensaje || root.mensaje || 'Error al listar movimientos completados');
+                }
+                return of(root?.datos || root?.data || []);
+            })
         );
     }
 
     cerrarMovimiento(idMovement: number): Observable<any> {
         return from(this._api.post('herramientas/movements/cerrarMovimiento', { id_movement: idMovement })).pipe(
             switchMap((response: any) => {
-                if (response?.error) throw new Error(response.mensaje || 'Error al cerrar el movimiento');
-                const datos = (response?.datos || response?.data)?.[0] || response?.datos || response?.data || {};
+                const root = response?.ROOT || response;
+                if (root?.error === true || root?.error === 'true') {
+                    throw new Error(root?.detalle?.mensaje || root.mensaje || 'Error al cerrar el movimiento');
+                }
+                const datos = root?.datos?.[0] || root?.datos || root?.data?.[0] || root?.data || {};
                 if (datos?.error === 'true' || datos?.error === true) {
                     throw new Error(datos.mensaje || 'Error al cerrar el movimiento');
                 }
@@ -589,7 +648,13 @@ export class MovementService {
             start: params?.start ?? 0,
             limit: params?.limit ?? 200
         })).pipe(
-            switchMap((response: any) => of(response?.datos || response?.data || []))
+            switchMap((response: any) => {
+                const root = response?.ROOT || response;
+                if (root?.error === true || root?.error === 'true') {
+                    throw new Error(root?.detalle?.mensaje || root.mensaje || 'Error al listar envíos activos');
+                }
+                return of(root?.datos || root?.data || []);
+            })
         );
     }
 }

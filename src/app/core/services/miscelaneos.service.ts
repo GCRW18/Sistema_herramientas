@@ -94,7 +94,7 @@ export class MiscelaneosService {
     // ── Catálogo ──────────────────────────────────────────────────────────────
 
     getMiscelaneos(search?: string): Observable<Material[]> {
-        const params: any = { start: 0, limit: 200, sort: 'code', dir: 'asc' };
+        const params: any = { start: 0, limit: 200, ordenacion: 'code', dir_ordenacion: 'asc' };
         if (search?.trim()) params.search = search.trim();
         return from(this._api.post('herramientas/miscelaneos/listarMiscelaneos', params)).pipe(
             map((r: any) => this._normalize(r).map(x => this._mapMaterial(x))),
@@ -194,7 +194,7 @@ export class MiscelaneosService {
     // ── Movimientos ───────────────────────────────────────────────────────────
 
     getEntradas(miscelaneo_id?: number): Observable<Entrada[]> {
-        const params: any = { start: 0, limit: 500, sort: 'mv.fecha_reg', dir: 'desc', type: 'ENTRADA' };
+        const params: any = { start: 0, limit: 500, ordenacion: 'mv.fecha_reg', dir_ordenacion: 'desc', type: 'ENTRADA' };
         if (miscelaneo_id) params.miscelaneo_id = miscelaneo_id;
         return from(this._api.post('herramientas/miscelaneomovimientos/listarMiscelaneoMovimientos', params)).pipe(
             map((r: any) => this._normalize(r)
@@ -206,7 +206,7 @@ export class MiscelaneosService {
     }
 
     getSalidas(miscelaneo_id?: number): Observable<Salida[]> {
-        const params: any = { start: 0, limit: 500, sort: 'mv.fecha_reg', dir: 'desc', type: 'SALIDA' };
+        const params: any = { start: 0, limit: 500, ordenacion: 'mv.fecha_reg', dir_ordenacion: 'desc', type: 'SALIDA' };
         if (miscelaneo_id) params.miscelaneo_id = miscelaneo_id;
         return from(this._api.post('herramientas/miscelaneomovimientos/listarMiscelaneoMovimientos', params)).pipe(
             map((r: any) => this._normalize(r)

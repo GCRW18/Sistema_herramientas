@@ -1,0 +1,139 @@
+<div *ngIf="data?.item as item"
+     class="bg-white dark:bg-slate-900 border-2 border-black overflow-hidden flex flex-col w-full">
+
+    <!-- Header -->
+    <div class="bg-[#0F172A] px-4 py-3 flex items-center gap-3 shrink-0">
+        <div class="w-8 h-8 rounded-lg bg-[#FF1414] border-2 border-black flex items-center justify-center shadow-[2px_2px_0_#000] shrink-0">
+            <mat-icon class="!text-base text-white">inventory_2</mat-icon>
+        </div>
+        <div class="flex-1 min-w-0">
+            <p class="text-[8px] text-slate-400 font-bold uppercase tracking-widest leading-none mb-0.5">Detalle del Ítem</p>
+            <h2 class="text-sm text-white font-black uppercase tracking-tight leading-none truncate font-mono">{{ item.codigoBoa }}</h2>
+        </div>
+        <span class="text-[10px] font-black uppercase text-white shrink-0">{{ item.estado }}</span>
+        <button mat-dialog-close
+                class="w-7 h-7 flex items-center justify-center bg-white/10 hover:bg-white/20 rounded-lg border border-white/20 transition-all shrink-0">
+            <mat-icon class="text-white !text-sm">close</mat-icon>
+        </button>
+    </div>
+
+    <!-- Body: un solo card -->
+    <div class="p-4 overflow-y-auto custom-scrollbar-ing" style="max-height: 75vh">
+        <div class="bg-white dark:bg-slate-800 border-2 border-black rounded-xl shadow-[3px_3px_0_#000] overflow-hidden">
+
+            <!-- Chips P/N · S/N -->
+            <div class="px-4 py-2.5 bg-stone-50 dark:bg-slate-900 border-b border-black/10 flex flex-wrap gap-2 items-center">
+                <span class="font-mono text-[10px] font-black text-gray-600 dark:text-gray-300 bg-white dark:bg-slate-700 border-2 border-gray-300 px-2 py-0.5 rounded">P/N: {{ item.pn || '—' }}</span>
+                <span class="font-mono text-[10px] font-black text-[#FF1414] dark:text-red-400 bg-red-50 dark:bg-red-900/20 border-2 border-[#FF1414] px-2 py-0.5 rounded">S/N: {{ item.sn || '—' }}</span>
+            </div>
+
+            <!-- Sección: Datos generales -->
+            <div class="px-4 py-3 flex flex-col gap-2">
+                <p class="text-[8px] font-black uppercase tracking-widest text-stone-400 dark:text-slate-500 flex items-center gap-1">
+                    <mat-icon class="!text-[10px]">build_circle</mat-icon> Datos del Ítem
+                </p>
+                <div class="grid grid-cols-2 gap-x-6 gap-y-1.5">
+                    <div class="flex justify-between items-center">
+                        <span class="text-[9px] font-black uppercase text-stone-400">Tipo</span>
+                        <span class="text-[10px] font-black text-black dark:text-white bg-blue-50 dark:bg-blue-900/30 border border-blue-300 px-1.5 py-0.5 rounded uppercase">{{ item.tipo }}</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-[9px] font-black uppercase text-stone-400">Marca</span>
+                        <span class="text-[10px] font-black text-black dark:text-white">{{ item.marca || '—' }}</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-[9px] font-black uppercase text-stone-400">Fabricación</span>
+                        <span class="text-[10px] font-bold text-black dark:text-white">{{ item.fabricacion || '—' }}</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-[9px] font-black uppercase text-stone-400">Cant. / Und.</span>
+                        <span class="text-[10px] font-black text-black dark:text-white">{{ item.cantidad }} {{ item.unidadMedida }}</span>
+                    </div>
+                    <div class="flex justify-between items-center col-span-2">
+                        <span class="text-[9px] font-black uppercase text-stone-400">Criticidad</span>
+                        <span class="text-[10px] font-black px-1.5 py-0.5 rounded border-2 border-black uppercase text-black dark:text-white">
+                            {{ item.nivelCriticidad === 'A' ? 'A — Crítico' : 'B — Normal' }}
+                        </span>
+                    </div>
+                    <div *ngIf="item.estante || item.nivelUbicacion" class="flex justify-between items-center col-span-2">
+                        <span class="text-[9px] font-black uppercase text-stone-400">Ubicación</span>
+                        <span class="font-mono text-[10px] font-black text-black dark:text-white bg-gray-100 dark:bg-slate-700 border border-gray-300 px-1.5 py-0.5 rounded">
+                            {{ item.estante }}{{ item.nivelUbicacion ? ' / ' + item.nivelUbicacion : '' }}
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sección: Descripción -->
+            <div class="px-4 py-3 border-t border-black/10">
+                <p class="text-[8px] font-black uppercase tracking-widest text-stone-400 dark:text-slate-500 flex items-center gap-1 mb-1.5">
+                    <mat-icon class="!text-[10px]">description</mat-icon> Descripción
+                </p>
+                <p class="text-xs font-bold text-black dark:text-white leading-snug">{{ item.descripcion }}</p>
+            </div>
+
+            <!-- Sección: Calibración -->
+            <div class="px-4 py-3 border-t border-black/10">
+                <p class="text-[8px] font-black uppercase tracking-widest text-stone-400 dark:text-slate-500 flex items-center gap-1 mb-1.5">
+                    <mat-icon class="!text-[10px] text-amber-500">speed</mat-icon> Calibración
+                </p>
+                <ng-container *ngIf="item.requiereCalibracion; else noCalib">
+                    <div class="grid grid-cols-2 gap-x-6 gap-y-1.5">
+                        <div class="flex justify-between items-center">
+                            <span class="text-[9px] font-black uppercase text-stone-400">Intervalo</span>
+                            <span class="text-[10px] font-black text-amber-700 dark:text-amber-400">{{ item.intervaloCalibracion }} días</span>
+                        </div>
+                        <div *ngIf="item.fechaCalibracion" class="flex justify-between items-center">
+                            <span class="text-[9px] font-black uppercase text-stone-400">Últ. calib.</span>
+                            <span class="font-mono text-[10px] font-black text-black dark:text-white">{{ item.fechaCalibracion }}</span>
+                        </div>
+                        <div *ngIf="item.nroCertificado" class="flex justify-between items-center col-span-2">
+                            <span class="text-[9px] font-black uppercase text-stone-400">N° Cert.</span>
+                            <span class="font-mono text-[10px] font-black text-black dark:text-white bg-amber-50 dark:bg-amber-900/20 border border-amber-300 px-1.5 py-0.5 rounded">{{ item.nroCertificado }}</span>
+                        </div>
+                    </div>
+                    <div class="mt-2 px-2 py-2.5 bg-amber-100 dark:bg-amber-900/30 border-2 border-amber-400 rounded-lg flex items-center gap-1">
+                        <mat-icon class="!text-xs text-amber-700">check_circle</mat-icon>
+                        <span class="text-[9px] font-black text-amber-800 dark:text-amber-300 uppercase">Sujeta a calibración</span>
+                    </div>
+                </ng-container>
+                <ng-template #noCalib>
+                    <div class="flex items-center gap-2">
+                        <mat-icon class="!text-base text-stone-300 dark:text-slate-600">speed</mat-icon>
+                        <span class="text-[9px] font-bold text-stone-400 dark:text-slate-500 uppercase">No requiere calibración</span>
+                    </div>
+                </ng-template>
+            </div>
+
+            <!-- Sección: Accesorios + Observaciones -->
+            <div class="px-4 py-3 border-t border-black/10 flex flex-col gap-3">
+                <div>
+                    <p class="text-[8px] font-black uppercase tracking-widest text-stone-400 dark:text-slate-500 flex items-center gap-1 mb-1.5">
+                        <mat-icon class="!text-[10px]">extension</mat-icon> Accesorios
+                    </p>
+                    <p *ngIf="item.accesorios" class="text-[11px] font-bold text-stone-700 dark:text-stone-300 leading-snug">{{ item.accesorios }}</p>
+                    <p *ngIf="!item.accesorios" class="text-[9px] text-stone-300 dark:text-slate-600 italic">Sin accesorios registrados</p>
+                </div>
+                <div>
+                    <p class="text-[8px] font-black uppercase tracking-widest text-stone-400 dark:text-slate-500 flex items-center gap-1 mb-1.5">
+                        <mat-icon class="!text-[10px] text-[#FF1414]">sticky_note_2</mat-icon> Observaciones
+                    </p>
+                    <p *ngIf="item.observacion"
+                       class="text-[11px] font-bold text-stone-700 dark:text-stone-300 leading-snug bg-red-50 dark:bg-red-900/20 border-l-4 border-[#FF1414] px-2 py-2.5 rounded-r-lg italic">
+                        "{{ item.observacion }}"
+                    </p>
+                    <p *ngIf="!item.observacion" class="text-[9px] text-stone-300 dark:text-slate-600 italic">Sin observaciones registradas</p>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="border-t-2 border-black bg-stone-100 dark:bg-slate-800 px-4 py-2.5 flex justify-end shrink-0">
+        <button mat-dialog-close
+                class="h-8 px-4 flex items-center gap-1.5 bg-[#0F172AFF] text-white border-2 border-black rounded-xl font-black text-[10px] uppercase shadow-[2px_2px_0_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all">
+            <mat-icon class="!text-sm">close</mat-icon> Cerrar
+        </button>
+    </div>
+</div>

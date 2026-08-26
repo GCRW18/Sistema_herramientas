@@ -8,7 +8,7 @@ import { MatDialog, MatDialogRef } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { forkJoin, of } from 'rxjs';
-import { catchError } from 'rxjs/operators';
+import { catchError, finalize } from 'rxjs/operators';
 
 import { ToolService }        from 'app/core/services/tool.service';
 import { KitsService }        from 'app/core/services/kits.service';
@@ -43,43 +43,30 @@ export interface UnifiedItem {
     marca?:               string;
     descripcion?:         string;
     categoria?:           string;
+    subCategoria?:        string;
     unidad?:              string;
     // Ubicación descompuesta
     ubicacion:            string;
     almacen?:             string;
-    nivelFisico?:         string;
+    estante?:             string;    // shelf libre (independiente de rack_id/level_id)
     // Stock
     stockActual:          number;
     stockMinimo?:         number;
     stockMaximo?:         number;
     // Estado
     estado:               UnifiedStatus;
-    condicion?:           string;
     // Extras herramientas
-    requiresCalibration?: boolean;
-    fechaCalibracion?:    Date;
-    proximaCalibracion?:  Date;
-    estadoFisico?:        string;
     nivelCriticidad?:     string;
     fabricacion?:         string;
-    intervaloCalibracion?: number;
-    nroCertificado?:      string;
     enLaboratorio?:       boolean;   // sent_to_calibration
-    modelo?:              string;
-    activoFijo?:          string;    // fixed_asset_code
-    garantia?:            string;
-    garantiaVence?:       Date;
-    registradoPor?:       string;    // usr_reg
     imagen?:              string;
-    valorUnitario?:       number;
-    proveedor?:           string;
-    fechaCompra?:         Date;
     notas?:               string;
     // Extras kits
     totalComponentes?:    number;
     responsable?:         string;
     // Extras misceláneos
     tipoItem?:            string;
+    tipoCompra?:          string;
     // Metadatos
     ultimoMovimiento?:    Date;
     fechaRegistro:        Date;
@@ -137,6 +124,10 @@ export class ConsultarInventarioComponent implements OnInit {
     inventoryData = signal<UnifiedItem[]>([]);
     isLoading     = signal(false);
 
+    // ── Vista: tabla o tarjetas ────────────────────────────────────────────────
+    viewMode = signal<'tabla' | 'tarjetas'>('tabla');
+    setViewMode(v: 'tabla' | 'tarjetas'): void { this.viewMode.set(v); }
+
     // ── Pestañas internas ─────────────────────────────────────────────────────
     activeTab = signal<TabId>('todos');
 
@@ -175,6 +166,11 @@ export class ConsultarInventarioComponent implements OnInit {
     // ── Detalle de ítem (abre como MatDialog) ────────────────────────────────
     // Los signals de detalle ya no viven aquí — los gestiona FichaInventarioDialogComponent
     selectedItemId = signal<string | null>(null);   // internalId de la fila activa (gris)
+
+    // ── Selección múltiple (para imprimir varios códigos QR en un solo PDF) ───
+    selectedIds     = signal<Set<number>>(new Set());
+    selectedCount   = computed(() => this.selectedIds().size);
+    isGeneratingQR  = signal(false);
 
     // ── Listas de filtros (dinámicas desde datos) ─────────────────────────────
     ubicaciones: string[] = [];
@@ -456,20 +452,12 @@ export class ConsultarInventarioComponent implements OnInit {
         let estado: UnifiedStatus = statusMap[t.status] || 'DISPONIBLE';
         if (estado === 'DISPONIBLE' && (t.quantity_in_stock ?? 0) <= 0) estado = 'SIN STOCK';
 
-        // Valores reales del CHECK de he.ttools.condition:
-        // new | excellent | good | fair | poor | damaged | reconditioned
-        const condicionMap: Record<string, string> = {
-            new: 'EXCELENTE', excellent: 'EXCELENTE', reconditioned: 'BUENO',
-            good: 'BUENO', fair: 'REGULAR', poor: 'MALO', damaged: 'MALO',
-        };
-        const estadoFisicoMap: Record<string, string> = {
-            new: 'NUEVO', excellent: 'NUEVO', reconditioned: 'REACONDICIONADO',
-            good: 'USADO', fair: 'USADO', poor: 'USADO', damaged: 'USADO',
-        };
-
-        // listTools devuelve ttools.images (text[]); la foto principal suele vivir en
-        // he.ttool_files (la ficha la completa vía findToolByCodeAny). Aquí se toma el
-        // primer elemento del array si existe (llega como '{a,b}' o como array).
+        // listTools devuelve ttools.images (text[], en la práctica siempre vacío — nada lo
+        // escribe hoy) y location_photo (columna escalar aparte, subconsulta a
+        // he.ttool_files/'location_photo' — la foto real, la misma que ya usan "Agregar
+        // Herramienta al Nivel" y Recepción). location_photo va en columna propia y NO
+        // dentro de t.images porque es una data-URL con comas ("data:...;base64,xxx") y el
+        // parseo manual de arrays de abajo corta el string en la primera coma que encuentra.
         let imagen: string | undefined;
         const rawImgs = t.images;
         let primera: string | undefined;
@@ -477,6 +465,7 @@ export class ConsultarInventarioComponent implements OnInit {
         else if (typeof rawImgs === 'string' && rawImgs.length > 2 && rawImgs.startsWith('{')) {
             primera = rawImgs.slice(1, -1).split(',')[0]?.replace(/^"|"$/g, '') || undefined;
         }
+        if (!primera && t.location_photo) primera = t.location_photo;
         if (primera) {
             imagen = (primera.startsWith('data:') || primera.startsWith('http'))
                 ? primera
@@ -494,33 +483,19 @@ export class ConsultarInventarioComponent implements OnInit {
             marca:               t.brand         || undefined,
             descripcion:         t.description   || undefined,
             categoria:           (t.category_id ? catMap[t.category_id] : undefined) || t.category_name || undefined,
+            subCategoria:        (t.subcategory_id ? catMap[t.subcategory_id] : undefined) || undefined,
             unidad:              t.unit_of_measure || 'UNIDAD',
             ubicacion,
             almacen:             wName,
-            nivelFisico:         lName,
+            estante:             t.estante || undefined,
             stockActual:         t.quantity_in_stock ?? 0,
             stockMinimo:         0,
             stockMaximo:         undefined,
             estado,
-            condicion:            condicionMap[t.condition] || 'BUENO',
-            requiresCalibration:  !!t.requires_calibration,
-            fechaCalibracion:     t.last_calibration_date  ? new Date(t.last_calibration_date)  : undefined,
-            proximaCalibracion:   t.next_calibration_date  ? new Date(t.next_calibration_date)  : undefined,
-            estadoFisico:         estadoFisicoMap[t.condition] || undefined,
             nivelCriticidad:      t.criticality_level        || undefined,
             fabricacion:          t.manufacture_origin        || undefined,
-            intervaloCalibracion: t.calibration_interval      ?? undefined,
-            nroCertificado:       t.calibration_certificate   || undefined,
             enLaboratorio:        t.sent_to_calibration === true || t.sent_to_calibration === 't',
-            modelo:               t.model            || undefined,
-            activoFijo:           t.fixed_asset_code || undefined,
-            garantia:             t.warranty         || undefined,
-            garantiaVence:        t.warranty_expiration ? new Date(t.warranty_expiration) : undefined,
-            registradoPor:        t.usr_reg          || undefined,
             imagen,
-            valorUnitario:       t.purchase_price  ?? undefined,
-            proveedor:           t.supplier         || undefined,
-            fechaCompra:         t.purchase_date    ? new Date(t.purchase_date) : undefined,
             notas:               t.notes            || undefined,
             ultimoMovimiento:    t.fecha_mod
                 ? new Date(t.fecha_mod)
@@ -560,6 +535,10 @@ export class ConsultarInventarioComponent implements OnInit {
             stockMinimo:      1,
             totalComponentes: k.total_components   ?? 0,
             responsable:      k.funcionario_nombre  || undefined,
+            partNumber:          k.part_number   || undefined,
+            serialNumber:        k.serial_number || undefined,
+            marca:               k.manufacturer  || undefined,
+            imagen:              k.image_url     || undefined,
             estado,
             ultimoMovimiento: k.fecha_mod
                 ? new Date(k.fecha_mod)
@@ -594,6 +573,7 @@ export class ConsultarInventarioComponent implements OnInit {
             descripcion:  m.observacion  || m.notes         || undefined,
             categoria:    m.tipoItem     || m.item_type     || undefined,
             tipoItem:     m.tipoItem     || m.item_type     || undefined,
+            tipoCompra:   m.tipoCompra   || m.purchase_type || undefined,
             unidad:       (m.unidad      || m.unit_of_measure)?.trim() || 'UND',
             ubicacion,
             almacen:      ubicacion !== 'Sin ubicación' ? ubicacion : undefined,
@@ -729,7 +709,61 @@ export class ConsultarInventarioComponent implements OnInit {
             autoFocus:    false,
             restoreFocus: false,
         });
-        ref.afterClosed().subscribe(() => this.selectedItemId.set(null));
+        ref.afterClosed().subscribe((saved) => {
+            this.selectedItemId.set(null);
+            if (saved) this.loadInventory();
+        });
+    }
+
+    // ── Selección múltiple para impresión de códigos QR ───────────────────────
+    // Solo las HERRAMIENTA son seleccionables porque el reporte RCodigoQRTools
+    // trabaja sobre id_tool; kits y misceláneos no tienen etiqueta QR propia.
+
+    isSelectable(item: UnifiedItem): boolean {
+        return item.tipo === 'HERRAMIENTA';
+    }
+
+    isSelected(item: UnifiedItem): boolean {
+        return this.selectedIds().has(Number(item.id));
+    }
+
+    toggleSelect(item: UnifiedItem, event: Event): void {
+        event.stopPropagation();
+        if (!this.isSelectable(item)) return;
+        const id = Number(item.id);
+        const next = new Set(this.selectedIds());
+        if (next.has(id)) next.delete(id); else next.add(id);
+        this.selectedIds.set(next);
+    }
+
+    clearSelection(): void {
+        this.selectedIds.set(new Set());
+    }
+
+    imprimirCodigosQRSeleccionados(): void {
+        const ids = Array.from(this.selectedIds());
+        if (ids.length === 0 || this.isGeneratingQR()) return;
+
+        this.isGeneratingQR.set(true);
+        this.toolService.generarCodigoQR(ids).pipe(
+            finalize(() => this.isGeneratingQR.set(false))
+        ).subscribe({
+            next: ({ pdf_base64 }) => {
+                try {
+                    const bytes = atob(pdf_base64);
+                    const arr   = new Uint8Array(bytes.length);
+                    for (let i = 0; i < bytes.length; i++) arr[i] = bytes.charCodeAt(i);
+                    const blob = new Blob([arr], { type: 'application/pdf' });
+                    const url  = window.URL.createObjectURL(blob);
+                    window.open(url, '_blank');
+                    setTimeout(() => window.URL.revokeObjectURL(url), 300);
+                    this.clearSelection();
+                } catch (e) {
+                    console.error('Error abriendo códigos QR:', e);
+                }
+            },
+            error: (e) => console.error('Error al generar códigos QR:', e)
+        });
     }
 
     // ── Imprimir / Guardar como PDF ───────────────────────────────────────────
@@ -993,22 +1027,6 @@ export class ConsultarInventarioComponent implements OnInit {
             'BAJA':             'bg-stone-400',
         };
         return m[estado] || 'bg-stone-400';
-    }
-
-    getCondicionBadgeClass(condicion: string): string {
-        const m: Record<string, string> = {
-            'EXCELENTE': 'bg-green-100  text-green-800  border-green-300',
-            'BUENO':     'bg-blue-100   text-blue-800   border-blue-300',
-            'REGULAR':   'bg-yellow-100 text-yellow-800 border-yellow-300',
-            'MALO':      'bg-red-100    text-red-800    border-red-300',
-        };
-        return m[condicion] || 'bg-stone-100 text-stone-600 border-stone-300';
-    }
-
-    getMovBadgeClass(tipo: string): string {
-        return tipo === 'ENTRADA'
-            ? 'bg-emerald-100 text-emerald-700 border-emerald-200'
-            : 'bg-red-100     text-red-700     border-red-200';
     }
 
 }

@@ -1,5 +1,5 @@
 ﻿<div class="bg-stone-100 dark:bg-[#0F172A] sm:border-2 border-black rounded-2xl flex flex-col overflow-hidden relative w-full"
-     style="box-shadow:6px 6px 0 #000; height:430px">
+     style="box-shadow:6px 6px 0 #000; height:min(560px,90vh)">
 
   <!-- Saving overlay -->
   <div *ngIf="isSavingRetorno" class="absolute inset-0 bg-black/60 flex items-center justify-center z-50">
@@ -10,13 +10,13 @@
   </div>
 
   <!-- Header -->
-  <div class="bg-[#0F172A] px-4 py-2 flex items-center gap-3 shrink-0">
-    <div class="w-6 h-6 rounded bg-green-500 border-2 border-black flex items-center justify-center shadow-[2px_2px_0_#16a34a] shrink-0">
-      <mat-icon class="!text-sm text-white">move_to_inbox</mat-icon>
+  <div class="bg-[#0F172A] px-4 py-3 flex items-center gap-3 shrink-0">
+    <div class="w-8 h-8 rounded bg-green-500 border-2 border-black flex items-center justify-center shadow-[2px_2px_0_#16a34a] shrink-0">
+      <mat-icon class="!text-base text-white">move_to_inbox</mat-icon>
     </div>
     <div>
-      <p class="text-[8px] text-slate-400 font-bold uppercase tracking-[0.15em] leading-none mb-0.5">Entradas · Retorno de Base — RB</p>
-      <h2 class="text-xs text-white font-black uppercase tracking-tight leading-none">Registrar Retorno de Base</h2>
+      <p class="text-[9px] text-slate-400 font-bold uppercase tracking-[0.15em] leading-none mb-1">Entradas · Retorno de Base — RB</p>
+      <h2 class="text-sm text-white font-black uppercase tracking-tight leading-none">Registrar Retorno de Base</h2>
     </div>
     <div class="ml-auto flex items-center gap-2 shrink-0">
       <span *ngIf="getSelectedCount()>0"
@@ -30,10 +30,10 @@
   <div class="flex flex-col sm:flex-row flex-1 overflow-hidden min-h-0">
 
     <!-- LEFT: form + query -->
-    <div class="sm:basis-[44%] shrink-0 flex flex-col overflow-hidden border-b-2 sm:border-b-0 sm:border-r-2 border-black/20 dark:border-slate-600">
+    <div class="sm:basis-[46%] shrink-0 flex flex-col overflow-hidden border-b-2 sm:border-b-0 sm:border-r-2 border-black/20 dark:border-slate-600">
       <!-- form area scrollable -->
       <div class="flex-1 min-h-0 overflow-y-auto custom-scrollbar">
-        <form [formGroup]="retornoForm" class="px-3 py-2 grid grid-cols-1 sm:grid-cols-2 gap-x-2 gap-y-1.5 content-start">
+        <form [formGroup]="retornoForm" class="px-4 py-3 grid grid-cols-1 sm:grid-cols-2 gap-x-3 gap-y-2 content-start">
 
           <div class="col-span-2 flex items-center gap-1 mt-1">
             <mat-icon class="!text-[10px] text-green-500 shrink-0">how_to_reg</mat-icon>
@@ -41,27 +41,34 @@
             <div class="flex-1 h-px bg-stone-200 dark:bg-slate-600 ml-0.5"></div>
           </div>
 
-          <div class="col-span-2">
+          <div class="col-span-2 relative">
             <label class="text-[9px] font-black uppercase tracking-tight text-stone-500 dark:text-slate-400 mb-1 block">{{getTipoOrigenLabel()}} Origen <span class="text-red-500">*</span></label>
-            <select formControlName="ubicacionOrigen"
-                    class="w-full h-7 text-xs font-bold bg-white dark:bg-slate-800 dark:text-white border-2rounded-lg px-2 outline-none appearance-none cursor-pointer focus:border-black transition-colors"
-                    [ngClass]="retornoForm.get('ubicacionOrigen')?.touched && retornoForm.get('ubicacionOrigen')?.invalid ? 'border-red-500' : 'border-stone-300 dark:border-slate-500'">
-              <option [ngValue]="null" disabled>Seleccionar {{getTipoOrigenLabel()}}…</option>
-              <option *ngFor="let u of getUbicacionesFiltradas()" [ngValue]="u">{{u.nombre}}</option>
-            </select>
+            <input type="text" formControlName="ubicacionOrigenTexto"
+                   (focus)="onUbicacionOrigenFocus()" (blur)="hideUbicacionDropdown()"
+                   placeholder="Buscar {{getTipoOrigenLabel().toLowerCase()}}…" autocomplete="off"
+                   class="w-full h-8 text-xs font-bold bg-white dark:bg-slate-800 dark:text-white border-2 rounded-lg px-2 outline-none transition-colors placeholder:text-stone-300 focus:border-black"
+                   [ngClass]="retornoForm.get('ubicacionOrigen')?.touched && !retornoForm.get('ubicacionOrigen')?.value ? 'border-red-500' : 'border-stone-300 dark:border-slate-500'" />
+            <div *ngIf="showUbicacionDropdown && ubicacionesFiltradas.length"
+                 class="absolute left-0 right-0 top-full mt-0.5 z-50 bg-white dark:bg-slate-800 border-2 border-black rounded-xl shadow-[3px_3px_0_#000] overflow-hidden max-h-36 overflow-y-auto custom-scrollbar divide-y divide-stone-100 dark:divide-slate-700">
+              <div *ngFor="let u of ubicacionesFiltradas" (mousedown)="selectUbicacionOrigen(u)"
+                   class="px-2 py-1.5 hover:bg-stone-50 dark:hover:bg-slate-700 cursor-pointer transition-colors">
+                <div class="text-[10px] font-black text-black dark:text-white uppercase">{{u.nombre}}</div>
+                <div *ngIf="u.codigo" class="text-[8px] font-bold text-stone-400 uppercase">{{u.codigo}}</div>
+              </div>
+            </div>
           </div>
 
           <div>
             <label class="text-[9px] font-black uppercase tracking-tight text-stone-500 dark:text-slate-400 mb-1 block">{{getDocumentoLabel()}} <span class="text-red-500">*</span></label>
             <input type="text" formControlName="nroDocumento" placeholder="Nro. de nota…"
-                   class="w-full h-7 text-xs font-bold bg-white dark:bg-slate-800 dark:text-white border-2rounded-lg px-2 outline-none transition-colors placeholder:text-stone-300 focus:border-black"
+                   class="w-full h-8 text-xs font-bold bg-white dark:bg-slate-800 dark:text-white border-2 rounded-lg px-2 outline-none transition-colors placeholder:text-stone-300 focus:border-black"
                    [ngClass]="retornoForm.get('nroDocumento')?.touched && retornoForm.get('nroDocumento')?.invalid ? 'border-red-500' : 'border-stone-300 dark:border-slate-500'" />
           </div>
 
           <div>
             <label class="text-[9px] font-black uppercase tracking-tight text-stone-500 dark:text-slate-400 mb-1 block">Fecha Retorno <span class="text-red-500">*</span></label>
             <input type="date" formControlName="fechaRetorno"
-                   class="w-full h-7 text-xs font-bold bg-white dark:bg-slate-800 dark:text-white border-2border-stone-300 dark:border-slate-500 rounded-lg px-2 outline-none transition-colors focus:border-black" />
+                   class="w-full h-8 text-xs font-bold bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-500 rounded-lg px-2 outline-none transition-colors focus:border-black" />
           </div>
 
           <div class="col-span-2 relative">
@@ -73,7 +80,7 @@
             </label>
             <input type="text" formControlName="responsableRecibe"
                    (blur)="hideFuncDropdown()" placeholder="Nombre o buscar funcionario…"
-                   class="w-full h-7 text-xs font-bold bg-white dark:bg-slate-800 dark:text-white border-2rounded-lg px-2 outline-none transition-colors placeholder:text-stone-300 focus:border-black"
+                   class="w-full h-8 text-xs font-bold bg-white dark:bg-slate-800 dark:text-white border-2 rounded-lg px-2 outline-none transition-colors placeholder:text-stone-300 focus:border-black"
                    [ngClass]="retornoForm.get('responsableRecibe')?.touched && retornoForm.get('responsableRecibe')?.invalid ? 'border-red-500' : 'border-stone-300 dark:border-slate-500'" />
             <div *ngIf="showFuncDropdown && funcionarios.length"
                  class="absolute left-0 right-0 top-full mt-0.5 z-50 bg-white dark:bg-slate-800 border-2 border-black rounded-xl shadow-[3px_3px_0_#000] overflow-hidden max-h-36 overflow-y-auto custom-scrollbar divide-y divide-stone-100 dark:divide-slate-700">
@@ -86,12 +93,6 @@
           </div>
 
           <div class="col-span-2">
-            <label class="text-[9px] font-black uppercase tracking-tight text-stone-500 dark:text-slate-400 mb-1 block">Transportista</label>
-            <input type="text" formControlName="transportista" placeholder="Nombre del transportista…"
-                   class="w-full h-7 text-xs font-bold bg-white dark:bg-slate-800 dark:text-white border-2border-stone-300 dark:border-slate-500 rounded-lg px-2 outline-none transition-colors placeholder:text-stone-300 focus:border-black" />
-          </div>
-
-          <div class="col-span-2">
             <label class="text-[9px] font-black uppercase tracking-tight text-stone-500 dark:text-slate-400 mb-1 block">Observaciones</label>
             <textarea formControlName="observaciones" rows="1" placeholder="Observaciones generales…"
                       class="w-full text-xs font-bold bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-500 rounded-lg px-2 py-1.5 outline-none transition-colors placeholder:text-stone-300 resize-none focus:border-black"></textarea>
@@ -99,26 +100,16 @@
         </form>
       </div><!-- /scroll form area -->
 
-      <!-- Consultar button -->
-      <div class="shrink-0 px-3 pt-1 pb-1.5">
-        <button type="button" (click)="consultarRetorno()" [disabled]="isSearching"
-                class="w-full h-7 flex items-center justify-center gap-1.5 bg-[#0F172A] text-white font-black text-[9px] uppercase border-2 border-black rounded-lg shadow-[2px_2px_0_#16a34a] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all disabled:opacity-40 disabled:cursor-not-allowed disabled:translate-x-0 disabled:shadow-none">
-          <div *ngIf="isSearching" class="w-3.5 h-3.5 border-2 border-[#FFC501FF] border-t-transparent rounded-full animate-spin"></div>
-          <mat-icon *ngIf="!isSearching" class="!text-xs text-[#FFC501FF]">search</mat-icon>
-          {{isSearching ? 'Buscando…' : 'Consultar Envíos Activos'}}
-        </button>
-      </div>
-
       <!-- Resumen -->
       <div *ngIf="getSelectedCount()>0"
            class="shrink-0 mx-3 mb-2 bg-green-50 dark:bg-green-900/20 border-2 border-green-400 rounded-xl p-2">
         <p class="text-[7px] font-black uppercase tracking-widest text-green-700 dark:text-green-400 mb-1">Resumen del Retorno</p>
         <div class="flex flex-wrap gap-1 mb-1">
-          <span *ngIf="getResumenCondicion().buenos>0"    class="text-[8px] font-black px-1.5 py-0.5 bg-green-100 text-green-800 border border-green-400 rounded">✓ {{getResumenCondicion().buenos}} Buenos</span>
-          <span *ngIf="getResumenCondicion().danados>0"   class="text-[8px] font-black px-1.5 py-0.5 bg-red-100 text-red-800 border border-red-400 rounded">⚠ {{getResumenCondicion().danados}} Dañados</span>
-          <span *ngIf="getResumenCondicion().calibracion>0" class="text-[8px] font-black px-1.5 py-0.5 bg-yellow-100 text-yellow-800 border border-yellow-400 rounded">⚙ {{getResumenCondicion().calibracion}} Cal.</span>
-          <span *ngIf="getResumenCondicion().faltantes>0" class="text-[8px] font-black px-1.5 py-0.5 bg-red-100 text-red-900 border border-red-600 rounded">✗ {{getResumenCondicion().faltantes}} Faltantes</span>
-          <span *ngIf="getResumenCondicion().pendientes>0" class="text-[8px] font-black px-1.5 py-0.5 bg-gray-100 text-gray-600 border border-gray-400 rounded">? {{getResumenCondicion().pendientes}} Pend.</span>
+          <span *ngIf="getResumenCondicion().buenos>0"    class="text-[8px] font-black px-1.5 py-0.5 border border-black text-black dark:text-white rounded">✓ {{getResumenCondicion().buenos}} Buenos</span>
+          <span *ngIf="getResumenCondicion().danados>0"   class="text-[8px] font-black px-1.5 py-0.5 border border-black text-black dark:text-white rounded">⚠ {{getResumenCondicion().danados}} Dañados</span>
+          <span *ngIf="getResumenCondicion().calibracion>0" class="text-[8px] font-black px-1.5 py-0.5 border border-black text-black dark:text-white rounded">⚙ {{getResumenCondicion().calibracion}} Cal.</span>
+          <span *ngIf="getResumenCondicion().faltantes>0" class="text-[8px] font-black px-1.5 py-0.5 border border-black text-black dark:text-white rounded">✗ {{getResumenCondicion().faltantes}} Faltantes</span>
+          <span *ngIf="getResumenCondicion().pendientes>0" class="text-[8px] font-black px-1.5 py-0.5 border border-stone-300 dark:border-slate-600 text-black dark:text-white rounded">? {{getResumenCondicion().pendientes}} Pend.</span>
         </div>
         <span class="text-[9px] font-bold text-green-700 dark:text-green-400">{{getTotalRetornado()}} / {{getTotalEnviado()}} uds.</span>
       </div>
@@ -174,8 +165,7 @@
                 <div><p class="text-[7px] text-stone-400 uppercase font-black">S/N</p><p class="text-[9px] font-mono text-black dark:text-white truncate">{{item.sn||'—'}}</p></div>
                 <div><p class="text-[7px] text-stone-400 uppercase font-black">Nota salida</p><p class="text-[9px] font-black text-black dark:text-white">{{item.nroNotaSalida}}</p></div>
               </div>
-              <span class="shrink-0 text-[9px] font-black px-1 py-0.5 rounded border border-black"
-                    [ngClass]="getDiasFueraClass(item.diasFuera)">{{item.diasFuera||0}}d</span>
+              <span class="shrink-0 text-[9px] font-black px-1 py-0.5 rounded border border-stone-300 dark:border-slate-600 text-black dark:text-white">{{item.diasFuera||0}}d</span>
               <button *ngIf="item.selected" type="button"
                       (click)="toggleExpand(item); $event.stopPropagation()"
                       class="shrink-0 w-5 h-5 flex items-center justify-center border border-stone-300 rounded bg-white dark:bg-slate-700 hover:border-black transition-all">
@@ -190,8 +180,10 @@
                   <p class="text-[7px] font-black uppercase tracking-tight text-stone-500">Condición <span class="text-red-500">*</span></p>
                   <div class="flex flex-wrap gap-1">
                     <button type="button" *ngFor="let cond of condiciones" (click)="onCondicionChange(item, cond.value)"
-                            class="flex items-center gap-0.5 px-1.5 py-0.5 border-2 border-black rounded-lg text-[8px] font-black text-white shadow-[1px_1px_0_#000] hover:shadow-none hover:translate-x-[1px] hover:translate-y-[1px] transition-all"
-                            [ngClass]="[cond.bgColor, item.condicion===cond.value ? 'ring-2 ring-black ring-offset-1' : '']">
+                            class="flex items-center gap-0.5 px-1.5 py-0.5 border-2 rounded-lg text-[8px] font-black transition-all"
+                            [ngClass]="item.condicion===cond.value
+                              ? 'border-black bg-white dark:bg-slate-700 shadow-[1px_1px_0_#000] text-black dark:text-white'
+                              : 'border-stone-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-stone-400 dark:text-slate-500 hover:border-stone-400'">
                       <mat-icon class="!text-[9px] !w-[9px] !h-[9px]">{{cond.icon}}</mat-icon>{{cond.label}}
                     </button>
                   </div>
@@ -236,6 +228,12 @@
               class="flex items-center gap-1 px-3 py-1.5 bg-red-500 text-white font-black text-[10px] uppercase border-2 border-black rounded-lg shadow-[2px_2px_0_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all">
         <mat-icon class="!text-[10px]">close</mat-icon>Cerrar
       </button>
+      <button type="button" (click)="consultarRetorno()" [disabled]="isSearching"
+              class="flex items-center gap-1 px-3 py-1.5 bg-[#0F172A] text-white font-black text-[10px] uppercase border-2 border-black rounded-lg shadow-[2px_2px_0_#16a34a] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all disabled:opacity-40 disabled:cursor-not-allowed disabled:translate-x-0 disabled:shadow-none">
+        <div *ngIf="isSearching" class="w-3 h-3 border-2 border-[#FFC501FF] border-t-transparent rounded-full animate-spin"></div>
+        <mat-icon *ngIf="!isSearching" class="!text-[10px] text-[#FFC501FF]">search</mat-icon>
+        {{isSearching ? 'Buscando…' : 'Consultar'}}
+      </button>
     </div>
     <div class="flex items-center gap-1 shrink-0">
       <span *ngIf="getSelectedCount()>0" class="text-[7px] text-stone-500 dark:text-slate-400 font-bold">{{getSelectedCount()}} ítem(s) seleccionados</span>
@@ -269,10 +267,10 @@
           ¿Confirmas el retorno de <span class="font-black text-green-600">{{getSelectedCount()}}</span> herramienta(s)?
         </p>
         <div class="flex flex-wrap gap-2 mb-4">
-          <span *ngIf="getResumenCondicion().buenos>0" class="flex items-center gap-1 px-2 py-1.5 bg-green-50 border-2 border-green-400 rounded-xl text-xs font-black text-green-800"><mat-icon class="!text-sm">check_circle</mat-icon>{{getResumenCondicion().buenos}} Bueno(s)</span>
-          <span *ngIf="getResumenCondicion().danados>0" class="flex items-center gap-1 px-2 py-1.5 bg-red-50 border-2 border-red-400 rounded-xl text-xs font-black text-red-800"><mat-icon class="!text-sm">report_problem</mat-icon>{{getResumenCondicion().danados}} Dañado(s)</span>
-          <span *ngIf="getResumenCondicion().calibracion>0" class="flex items-center gap-1 px-2 py-1.5 bg-yellow-50 border-2 border-yellow-400 rounded-xl text-xs font-black text-yellow-800"><mat-icon class="!text-sm">speed</mat-icon>{{getResumenCondicion().calibracion}} Req. Cal.</span>
-          <span *ngIf="getResumenCondicion().faltantes>0" class="flex items-center gap-1 px-2 py-1.5 bg-red-100 border-2 border-red-500 rounded-xl text-xs font-black text-red-900"><mat-icon class="!text-sm">help_outline</mat-icon>{{getResumenCondicion().faltantes}} Faltante(s)</span>
+          <span *ngIf="getResumenCondicion().buenos>0" class="flex items-center gap-1 px-2 py-1.5 bg-white dark:bg-slate-800 border-2 border-black rounded-xl text-xs font-black text-black dark:text-white"><mat-icon class="!text-sm">check_circle</mat-icon>{{getResumenCondicion().buenos}} Bueno(s)</span>
+          <span *ngIf="getResumenCondicion().danados>0" class="flex items-center gap-1 px-2 py-1.5 bg-white dark:bg-slate-800 border-2 border-black rounded-xl text-xs font-black text-black dark:text-white"><mat-icon class="!text-sm">report_problem</mat-icon>{{getResumenCondicion().danados}} Dañado(s)</span>
+          <span *ngIf="getResumenCondicion().calibracion>0" class="flex items-center gap-1 px-2 py-1.5 bg-white dark:bg-slate-800 border-2 border-black rounded-xl text-xs font-black text-black dark:text-white"><mat-icon class="!text-sm">speed</mat-icon>{{getResumenCondicion().calibracion}} Req. Cal.</span>
+          <span *ngIf="getResumenCondicion().faltantes>0" class="flex items-center gap-1 px-2 py-1.5 bg-white dark:bg-slate-800 border-2 border-black rounded-xl text-xs font-black text-black dark:text-white"><mat-icon class="!text-sm">help_outline</mat-icon>{{getResumenCondicion().faltantes}} Faltante(s)</span>
         </div>
         <div class="flex items-center justify-between bg-gray-50 dark:bg-slate-700 border-2 border-black/10 rounded-xl px-4 py-3 mb-4">
           <span class="text-xs font-bold uppercase text-gray-500 tracking-wider">Total retorna</span>

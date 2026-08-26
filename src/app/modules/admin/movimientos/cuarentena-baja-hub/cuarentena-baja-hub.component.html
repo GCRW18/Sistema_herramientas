@@ -21,7 +21,7 @@
 
       <div class="flex items-center gap-4">
         <div class="flex items-center justify-center w-10 h-10 bg-white dark:bg-[#0F172AFF] border-[3px] border-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] rounded-xl shrink-0">
-          <mat-icon class="text-black dark:text-white !text-base">warning</mat-icon>
+          <mat-icon class="text-black dark:text-amber-400 !text-base">warning</mat-icon>
         </div>
         <div>
           <h1 class="text-xl font-black text-black dark:text-white uppercase tracking-tighter leading-none">
@@ -112,12 +112,6 @@
                 <div class="text-sm font-black text-white leading-none">{{ bajaItems().length }}</div>
               </div>
             </div>
-            <div *ngIf="bajaItems().length > 0" class="flex items-center gap-1.5 bg-white/10 rounded-lg px-2.5 py-1.5 border border-white/20 shrink-0">
-              <div>
-                <div class="text-[8px] font-black uppercase text-white/70 leading-none">Unidades</div>
-                <div class="text-sm font-black text-white leading-none">{{ getTotalCantidad() }}</div>
-              </div>
-            </div>
           </ng-container>
 
           <!-- ── Tab Historial ── -->
@@ -138,10 +132,10 @@
               <button (click)="abrirModalReporte()"
                       class="h-7 px-2.5 flex items-center gap-1.5 rounded-lg border border-black font-black text-[10px] uppercase shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all shrink-0"
                       [ngClass]="isReporteValido() ? 'bg-amber-400 text-black' : 'bg-white/10 text-white'"
-                      [matTooltip]="isReporteValido() ? 'Reporte: ' + reporteForm.value.nroReporteDiscrepancia : 'Completar reporte de discrepancia (requerido para finalizar)'">
+                      [matTooltip]="isReporteValido() ? (reporteForm.value.nroReporteDiscrepancia ? 'Reporte: ' + reporteForm.value.nroReporteDiscrepancia : 'Datos del reporte completos (N° se genera al finalizar)') : 'Completar reporte de discrepancia (requerido para finalizar)'">
                 <mat-icon class="!text-xs !w-3.5 !h-3.5" [class.text-black]="isReporteValido()" [class.text-white]="!isReporteValido()">receipt_long</mat-icon>
                 <span class="hidden sm:inline">
-                  {{ isReporteValido() ? (reporteForm.value.nroReporteDiscrepancia | slice:0:14) : 'Reporte Disc.' }}
+                  {{ isReporteValido() ? (reporteForm.value.nroReporteDiscrepancia ? (reporteForm.value.nroReporteDiscrepancia | slice:0:14) : 'Reporte OK') : 'Reporte Disc.' }}
                 </span>
                 <mat-icon *ngIf="isReporteValido()" class="!text-xs !w-3.5 !h-3.5 text-black">check_circle</mat-icon>
                 <mat-icon *ngIf="!isReporteValido()" class="!text-xs !w-3.5 !h-3.5 text-white">warning</mat-icon>
@@ -214,26 +208,28 @@
             </thead>
             <tbody class="bg-white dark:bg-[#0F172AFF]">
               <tr *ngFor="let item of cuarentenaList; let i = index"
-                  class="border-b border-gray-200 dark:border-slate-700 transition-all hover:bg-amber-50 dark:hover:bg-slate-800/80"
+                  (click)="abrirDetalleHerramientaCuarentena(item)"
+                  title="Clic para ver detalle de la herramienta"
+                  class="border-b border-gray-200 dark:border-slate-700 transition-all hover:bg-gray-100 dark:hover:bg-slate-800/80 cursor-pointer"
                   [ngClass]="i % 2 === 0 ? 'bg-white dark:bg-slate-800/60' : 'bg-gray-50 dark:bg-slate-800/40'">
                 <td class="px-3 py-2.5 text-center font-black text-sm text-gray-400">{{ i + 1 }}</td>
                 <td class="px-3 py-2.5">
-                  <span class="font-mono font-black text-amber-700 dark:text-amber-400 text-[10px] bg-amber-50 dark:bg-amber-900/30 px-1.5 py-0.5 rounded border border-amber-200 uppercase">{{ item.codigo }}</span>
+                  <span class="font-mono font-black text-black dark:text-white text-[10px] uppercase">{{ item.codigo }}</span>
                 </td>
                 <td class="px-3 py-2.5">
                   <div class="font-black text-xs text-black dark:text-white leading-tight">{{ item.nombre }}</div>
                 </td>
-                <td class="px-3 py-2.5 text-center font-mono text-xs font-bold text-gray-500 dark:text-gray-400">{{ item.partNumber || '-' }}</td>
-                <td class="px-3 py-2.5 text-center font-mono text-xs font-bold text-blue-600 dark:text-blue-400">{{ item.serialNumber || '-' }}</td>
+                <td class="px-3 py-2.5 text-center font-mono text-xs font-bold text-black dark:text-white">{{ item.partNumber || '-' }}</td>
+                <td class="px-3 py-2.5 text-center font-mono text-xs font-bold text-black dark:text-white">{{ item.serialNumber || '-' }}</td>
                 <td class="px-3 py-2.5 text-center">
                   <span class="bg-gray-100 dark:bg-slate-800 border-[2px] border-black text-black dark:text-white rounded px-2 py-0.5 font-black text-sm block w-fit mx-auto">{{ item.cantidad }}</span>
                 </td>
                 <td class="px-3 py-2.5 text-center">
-                  <span class="px-2 py-0.5 rounded text-[10px] font-black border-[2px] border-black uppercase text-black bg-amber-400">
+                  <span class="text-[10px] font-black uppercase text-black dark:text-white">
                     {{ getEstadoFisicoLabel(item.estadoFisico) }}
                   </span>
                 </td>
-                <td class="px-3 py-2.5 text-center">
+                <td class="px-3 py-2.5 text-center" (click)="$event.stopPropagation()">
                   <button (click)="removerDeLista(i)" matTooltip="Quitar de lista"
                           class="w-7 h-7 bg-[#FF1414] text-white rounded-lg border-[2px] border-black shadow-[2px_2px_0px_0px_#000] hover:shadow-none hover:translate-x-[1px] hover:translate-y-[1px] transition-all flex items-center justify-center mx-auto">
                     <mat-icon class="!text-sm">delete</mat-icon>
@@ -280,25 +276,27 @@
             </thead>
             <tbody class="bg-white dark:bg-[#0F172AFF]">
               <tr *ngFor="let item of bajaItems(); let i = index"
-                  class="border-b border-gray-200 dark:border-slate-700 transition-all hover:bg-[#FF1414]/5 dark:hover:bg-slate-800/80"
+                  (click)="abrirDetalleHerramientaBaja(item)"
+                  title="Clic para ver detalle de la herramienta"
+                  class="border-b border-gray-200 dark:border-slate-700 transition-all hover:bg-gray-100 dark:hover:bg-slate-800/80 cursor-pointer"
                   [ngClass]="i % 2 === 0 ? 'bg-white dark:bg-slate-800/60' : 'bg-gray-50 dark:bg-slate-800/40'">
                 <td class="px-3 py-2.5 text-center font-black text-sm text-gray-400">{{ i + 1 }}</td>
                 <td class="px-3 py-2.5">
-                  <span class="font-mono font-black text-[#FF1414] dark:text-[#FF1414]/80 text-[10px] bg-[#FF1414]/5 dark:bg-[#FF1414]/10 px-1.5 py-0.5 rounded border border-[#FF1414]/20 uppercase">{{ item.codigo }}</span>
+                  <span class="font-mono font-black text-black dark:text-white text-[10px] uppercase">{{ item.codigo }}</span>
                 </td>
                 <td class="px-3 py-2.5">
                   <div class="font-black text-xs text-black dark:text-white leading-tight line-clamp-2" [matTooltip]="item.nombre">{{ item.nombre }}</div>
                   <div class="font-bold text-[10px] uppercase text-gray-400 mt-0.5">{{ item.base }}</div>
                 </td>
-                <td class="px-3 py-2.5 text-center font-mono text-xs font-bold text-gray-500 dark:text-gray-400">{{ item.pn || '-' }}</td>
-                <td class="px-3 py-2.5 text-center font-mono text-xs font-bold text-blue-600 dark:text-blue-400">{{ item.sn || '-' }}</td>
+                <td class="px-3 py-2.5 text-center font-mono text-xs font-bold text-black dark:text-white">{{ item.pn || '-' }}</td>
+                <td class="px-3 py-2.5 text-center font-mono text-xs font-bold text-black dark:text-white">{{ item.sn || '-' }}</td>
                 <td class="px-3 py-2.5 text-center">
                   <span class="bg-gray-100 dark:bg-slate-800 border-[2px] border-black text-black dark:text-white rounded px-2 py-0.5 font-black text-sm block w-fit mx-auto">{{ item.cantidad }}</span>
                 </td>
                 <td class="px-3 py-2.5 text-center">
-                  <span class="px-2 py-0.5 rounded text-[10px] font-black border-[2px] border-black uppercase text-white bg-[#FF1414]">{{ item.estadoFisico }}</span>
+                  <span class="text-[10px] font-black uppercase text-black dark:text-white">{{ item.estadoFisico }}</span>
                 </td>
-                <td class="px-3 py-2.5 text-center">
+                <td class="px-3 py-2.5 text-center" (click)="$event.stopPropagation()">
                   <button (click)="removeItemBaja(i)" matTooltip="Eliminar"
                           class="w-7 h-7 bg-[#FF1414] text-white rounded-lg border-[2px] border-black shadow-[2px_2px_0px_0px_#000] hover:shadow-none hover:translate-x-[1px] hover:translate-y-[1px] transition-all flex items-center justify-center mx-auto">
                     <mat-icon class="!text-sm">delete</mat-icon>
@@ -349,13 +347,13 @@
             </thead>
             <tbody class="bg-white dark:bg-[#0F172AFF]">
               <tr *ngFor="let m of filteredHistorial; let idx = index"
-                  class="border-b border-gray-200 dark:border-slate-700 transition-all hover:bg-[#FF1414]/5 dark:hover:bg-slate-800/60"
+                  class="border-b border-gray-200 dark:border-slate-700 transition-all hover:bg-gray-100 dark:hover:bg-slate-800/60"
                   [ngClass]="idx % 2 === 0 ? 'bg-white dark:bg-slate-800/60' : 'bg-gray-50 dark:bg-slate-800/40'">
                 <td class="px-3 py-2.5">
                   <span class="font-mono font-black text-xs text-black dark:text-white">{{ m.record_number || m.report_number || '---' }}</span>
                 </td>
                 <td class="px-3 py-2.5">
-                  <span class="px-1.5 py-0.5 text-[9px] font-black uppercase border-2 border-black rounded" [ngClass]="getHistorialTypeClass(m)">
+                  <span class="text-[9px] font-black uppercase text-black dark:text-white">
                     {{ getHistorialTypeLabel(m) }}
                   </span>
                 </td>
@@ -363,11 +361,10 @@
                   <span class="text-xs font-bold text-black dark:text-white">{{ m.reported_by_name || m.requested_by_name || '---' }}</span>
                 </td>
                 <td class="px-3 py-2.5 text-center">
-                  <span class="text-xs font-bold text-gray-600 dark:text-gray-400">{{ getHistorialFecha(m) }}</span>
+                  <span class="text-xs font-bold text-black dark:text-white">{{ getHistorialFecha(m) }}</span>
                 </td>
                 <td class="px-3 py-2.5 text-center">
-                  <span class="px-1.5 py-0.5 text-[9px] font-black uppercase border-2 border-black rounded"
-                        [ngClass]="m._type === 'cuarentena' ? getStatusClass(m.status) : getBajaStatusClass(m.status)">
+                  <span class="text-[9px] font-black uppercase text-black dark:text-white">
                     {{ m._type === 'cuarentena' ? getStatusLabel(m.status) : getBajaStatusLabel(m.status) }}
                   </span>
                 </td>
@@ -449,21 +446,14 @@
             <!-- Izquierda: Nro · Fecha · Motivo -->
             <div class="w-full sm:w-[48%] flex flex-col gap-3">
 
-              <!-- Nro. Reporte — fila completa, campo más grande -->
+              <!-- Nro. Reporte — fila completa, campo más grande. Solo lectura: lo genera el
+                   backend (correlativo 'RDC') recién al finalizar el proceso de cuarentena. -->
               <div>
-                <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1.5 block">Nro. Reporte <span class="text-red-500">*</span></label>
+                <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1.5 block">Nro. Reporte</label>
                 <div class="relative">
-                  <input type="text" formControlName="nroReporteDiscrepancia"
+                  <input type="text" formControlName="nroReporteDiscrepancia" readonly
                          placeholder="Se genera al finalizar el proceso"
-                         class="w-full h-11 text-base font-black uppercase tracking-widest bg-white dark:bg-slate-800 dark:text-white border-2 rounded-xl pl-4 pr-12 outline-none transition-all duration-150 placeholder:text-stone-300 dark:placeholder:text-slate-600 placeholder:normal-case placeholder:font-normal placeholder:text-xs placeholder:tracking-normal"
-                         [ngClass]="reporteForm.get('nroReporteDiscrepancia')?.invalid && reporteForm.get('nroReporteDiscrepancia')?.touched
-                             ? 'border-red-400 focus:shadow-[2px_2px_0_#f87171]'
-                             : 'border-stone-300 dark:border-slate-600 hover:border-stone-400 dark:hover:border-slate-500 focus:border-black dark:focus:border-slate-400 focus:shadow-[3px_3px_0_#000]'">
-                  <button type="button" (click)="regenerarNroRDC()"
-                          class="absolute right-2 top-2 w-7 h-7 flex items-center justify-center rounded-lg bg-amber-400 border border-black hover:bg-amber-300 transition-all"
-                          matTooltip="Generar correlativo ahora">
-                    <mat-icon class="!text-sm text-black">refresh</mat-icon>
-                  </button>
+                         class="w-full h-11 text-base font-black uppercase tracking-widest bg-stone-100 dark:bg-slate-700 dark:text-slate-300 border-2 border-stone-200 dark:border-slate-600 rounded-xl pl-4 pr-4 outline-none cursor-not-allowed placeholder:text-stone-300 dark:placeholder:text-slate-600 placeholder:normal-case placeholder:font-normal placeholder:text-xs placeholder:tracking-normal">
                 </div>
               </div>
 
@@ -504,6 +494,28 @@
                 <div *ngIf="showPersonaDropdown"
                      class="absolute z-50 left-0 right-0 mt-1 top-full border-2 border-black rounded-xl bg-white dark:bg-slate-800 shadow-[4px_4px_0_#000] overflow-hidden max-h-44 overflow-y-auto divide-y divide-stone-100 dark:divide-slate-700">
                   <button *ngFor="let p of personasFiltradas" type="button" (mousedown)="selectPersona(p)"
+                          class="w-full px-3 py-2 text-left hover:bg-amber-50 dark:hover:bg-slate-700 transition-colors">
+                    <div class="text-xs font-black text-black dark:text-white uppercase">{{ p.nombre }}</div>
+                    <div class="text-[9px] font-bold text-stone-400 dark:text-slate-400 uppercase mt-0.5">{{ p.cargo }}</div>
+                  </button>
+                </div>
+              </div>
+
+              <div class="relative">
+                <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1.5 block">Aprobado Por / Jefe de Almacén</label>
+                <div class="relative">
+                  <input type="text"
+                         [value]="reporteForm.get('aprobadoPor')?.value"
+                         (input)="onAprobadoPorCInput($any($event.target).value)"
+                         (blur)="hideAprobadoPorCDropdown()"
+                         placeholder="Buscar funcionario..." autocomplete="off"
+                         class="w-full h-9 pl-9 pr-8 text-sm font-bold uppercase bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-xl outline-none transition-all duration-150 placeholder:text-stone-300 dark:placeholder:text-slate-500 hover:border-stone-400 dark:hover:border-slate-500 focus:border-black dark:focus:border-slate-400 focus:shadow-[3px_3px_0_#000]">
+                  <mat-icon class="absolute left-2.5 top-2 text-black/40 dark:text-white/40 !text-sm">verified_user</mat-icon>
+                  <mat-spinner *ngIf="aprobadoPorCLoading" diameter="14" class="absolute right-3 top-2.5"></mat-spinner>
+                </div>
+                <div *ngIf="showAprobadoPorCDropdown"
+                     class="absolute z-50 left-0 right-0 mt-1 top-full border-2 border-black rounded-xl bg-white dark:bg-slate-800 shadow-[4px_4px_0_#000] overflow-hidden max-h-44 overflow-y-auto divide-y divide-stone-100 dark:divide-slate-700">
+                  <button *ngFor="let p of aprobadoPorCFuncionarios" type="button" (mousedown)="selectAprobadoPorC(p)"
                           class="w-full px-3 py-2 text-left hover:bg-amber-50 dark:hover:bg-slate-700 transition-colors">
                     <div class="text-xs font-black text-black dark:text-white uppercase">{{ p.nombre }}</div>
                     <div class="text-[9px] font-bold text-stone-400 dark:text-slate-400 uppercase mt-0.5">{{ p.cargo }}</div>
@@ -813,17 +825,33 @@
                      class="w-full h-9 text-sm font-bold bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-xl px-3 outline-none transition-all duration-150 cursor-pointer hover:border-stone-400 dark:hover:border-slate-500 focus:border-black dark:focus:border-slate-400 focus:shadow-[3px_3px_0_#000]">
             </div>
 
-            <!-- Resolución / Resultado -->
+            <!-- Resolución (enum restringido) -->
             <div>
               <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1.5 block">
-                Resolución / Resultado <span class="text-red-500">*</span>
+                Resolución <span class="text-red-500">*</span>
               </label>
-              <textarea formControlName="resolution" rows="3"
+              <select formControlName="resolution"
+                      class="w-full h-9 text-sm font-bold bg-white dark:bg-slate-800 dark:text-white border-2 rounded-xl px-3 outline-none transition-all duration-150 cursor-pointer hover:border-stone-400 dark:hover:border-slate-500 focus:border-black dark:focus:border-slate-400 focus:shadow-[3px_3px_0_#000]"
+                      [ngClass]="resolverForm.get('resolution')?.invalid && resolverForm.get('resolution')?.touched
+                          ? 'border-red-400' : 'border-stone-300 dark:border-slate-600'">
+                <option value="" disabled>— Seleccionar —</option>
+                <option *ngFor="let r of resolucionesCuarentena" [value]="r.value">{{ r.label }}</option>
+              </select>
+              <p *ngIf="resolverForm.get('resolution')?.invalid && resolverForm.get('resolution')?.touched"
+                 class="text-[8px] font-bold text-red-500 mt-0.5">Campo requerido.</p>
+            </div>
+
+            <!-- Diagnóstico / Resultado (texto libre) -->
+            <div>
+              <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1.5 block">
+                Diagnóstico / Resultado <span class="text-red-500">*</span>
+              </label>
+              <textarea formControlName="diagnosis" rows="3"
                         placeholder="Describa el resultado de la inspección o evaluación..."
                         class="w-full text-sm font-normal bg-white dark:bg-slate-800 dark:text-white border-2 rounded-xl px-3 py-2 outline-none transition-all duration-150 resize-none placeholder:text-stone-300 dark:placeholder:text-slate-600 hover:border-stone-400 dark:hover:border-slate-500 focus:border-black dark:focus:border-slate-400 focus:shadow-[3px_3px_0_#000] custom-scrollbar-cb"
-                        [ngClass]="resolverForm.get('resolution')?.invalid && resolverForm.get('resolution')?.touched
+                        [ngClass]="resolverForm.get('diagnosis')?.invalid && resolverForm.get('diagnosis')?.touched
                             ? 'border-red-400' : 'border-stone-300 dark:border-slate-600'"></textarea>
-              <p *ngIf="resolverForm.get('resolution')?.invalid && resolverForm.get('resolution')?.touched"
+              <p *ngIf="resolverForm.get('diagnosis')?.invalid && resolverForm.get('diagnosis')?.touched"
                  class="text-[8px] font-bold text-red-500 mt-0.5">Campo requerido.</p>
             </div>
 
@@ -986,9 +1014,11 @@
                             </div>
                             <div>
                                 <label class="text-[8px] font-black uppercase tracking-[0.15em] text-stone-400 dark:text-slate-400 mb-1 block">Método Disposición</label>
-                                <input type="text" formControlName="disposalMethod"
-                                       placeholder="Destrucción, Reciclaje, Donación..."
-                                       class="w-full h-8 text-xs font-bold bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-lg px-2.5 outline-none transition-all duration-150 placeholder:text-stone-300 placeholder:font-normal hover:border-stone-400 focus:border-black focus:shadow-[2px_2px_0_#000]">
+                                <select formControlName="disposalMethod"
+                                        class="w-full h-8 text-xs font-bold bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-lg px-2 outline-none transition-all duration-150 cursor-pointer hover:border-stone-400 focus:border-black focus:shadow-[2px_2px_0_#000]">
+                                    <option value="">-- Seleccionar --</option>
+                                    <option *ngFor="let d of metodosDisposicion" [value]="d.value">{{ d.label }}</option>
+                                </select>
                             </div>
                             <div>
                                 <label class="text-[8px] font-black uppercase tracking-[0.15em] text-stone-400 dark:text-slate-400 mb-1 block">Base / Unidad</label>

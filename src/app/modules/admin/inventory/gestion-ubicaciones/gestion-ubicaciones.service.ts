@@ -63,8 +63,14 @@ interface BackendLevelTool {
     location_state?:   string;
     unit_of_measure?:  string;
     quantity_in_stock: number;
+    requires_calibration?:    boolean | string;
+    calibration_interval?:    number;
+    last_calibration_date?:   string;
+    next_calibration_date?:   string;
+    calibration_certificate?: string;
     image_base64?:     string;
     notes?:            string;
+    content_list?:     string;
     warehouse_id?:     number;
     rack_id:           number;
     level_id:          number;
@@ -133,7 +139,7 @@ export class GestionUbicacionesService {
     getOficinas(idLugar?: number | null): Observable<Oficina[]> {
         const params = {
             start: 0, limit: 500,
-            sort: 'nombre', dir: 'DESC',
+            ordenacion: 'nombre', dir_ordenacion: 'DESC',
             par_filtro: 'ofi.nombre#ofi.codigo#lug.nombre',
             query: ''
         };
@@ -171,7 +177,7 @@ export class GestionUbicacionesService {
     /* ════════ Warehouses ════════ */
 
     getWarehouses(): Observable<Warehouse[]> {
-        const params = { start: 0, limit: 1000, sort: 'id_warehouse', dir: 'asc' };
+        const params = { start: 0, limit: 1000, ordenacion: 'id_warehouse', dir_ordenacion: 'asc' };
         return from(this._api.post('herramientas/warehouses/listarWarehouses', params))
             .pipe(map((r: any) => (r?.datos || r?.data || []).map((w: BackendWarehouse) => this.toWarehouse(w))));
     }
@@ -215,7 +221,7 @@ export class GestionUbicacionesService {
 
     getRacks(warehouseId: number): Observable<Rack[]> {
         const params = {
-            start: 0, limit: 1000, sort: 'rk.id_rack', dir: 'asc',
+            start: 0, limit: 1000, ordenacion: 'rk.id_rack', dir_ordenacion: 'asc',
             filtro_adicional: `rk.warehouse_id = ${warehouseId}`,
             warehouse_id: warehouseId
         };
@@ -241,7 +247,7 @@ export class GestionUbicacionesService {
 
     getLevels(rackId: number): Observable<Level[]> {
         const params = {
-            start: 0, limit: 1000, sort: 'lv.number', dir: 'asc',
+            start: 0, limit: 1000, ordenacion: 'lv.number', dir_ordenacion: 'asc',
             filtro_adicional: `lv.rack_id = ${rackId}`,
             rack_id: rackId
         };
@@ -257,7 +263,7 @@ export class GestionUbicacionesService {
      */
     getLevelsByWarehouse(warehouseId: number): Observable<Level[]> {
         const params = {
-            start: 0, limit: 5000, sort: 'lv.number', dir: 'asc',
+            start: 0, limit: 5000, ordenacion: 'lv.number', dir_ordenacion: 'asc',
             filtro_adicional: `rk.warehouse_id = ${warehouseId}`,
             warehouse_id: warehouseId
         };
@@ -285,7 +291,7 @@ export class GestionUbicacionesService {
 
     getLevelTools(rackId: number): Observable<LevelTool[]> {
         const params = {
-            start: 0, limit: 5000, sort: 'tl.id_tool', dir: 'asc',
+            start: 0, limit: 5000, ordenacion: 'tl.id_tool', dir_ordenacion: 'asc',
             filtro_adicional: `tl.rack_id = ${rackId}`,
             rack_id: rackId
         };
@@ -297,7 +303,7 @@ export class GestionUbicacionesService {
 
     getLevelToolsByWarehouse(warehouseId: number): Observable<LevelTool[]> {
         const params = {
-            start: 0, limit: 5000, sort: 'tl.id_tool', dir: 'asc',
+            start: 0, limit: 5000, ordenacion: 'tl.id_tool', dir_ordenacion: 'asc',
             filtro_adicional: `tl.warehouse_id = ${warehouseId} and tl.level_id is not null`,
             warehouse_id: warehouseId
         };
@@ -318,7 +324,7 @@ export class GestionUbicacionesService {
      */
     getToolLocationsMap(): Observable<Map<number, { warehouseId: number; rackName: string; levelLabel: string }>> {
         const params = {
-            start: 0, limit: 5000, sort: 'tl.id_tool', dir: 'asc',
+            start: 0, limit: 5000, ordenacion: 'tl.id_tool', dir_ordenacion: 'asc',
             filtro_adicional: 'tl.level_id is not null',
         };
         return from(this._api.post('herramientas/leveltools/listarLevelTools', params)).pipe(
@@ -390,7 +396,7 @@ export class GestionUbicacionesService {
      */
     getKitsByWarehouse(warehouseId: number): Observable<LevelKit[]> {
         const params = {
-            start: 0, limit: 5000, sort: 'kit.id_kit', dir: 'asc',
+            start: 0, limit: 5000, ordenacion: 'kit.id_kit', dir_ordenacion: 'asc',
             filtro_adicional: `kit.warehouse_id = ${warehouseId} and kit.level_id is not null`,
             warehouse_id: warehouseId
         };
@@ -417,7 +423,7 @@ export class GestionUbicacionesService {
      */
     getMiscelaneosByWarehouse(warehouseId: number): Observable<LevelMiscelaneo[]> {
         const params = {
-            start: 0, limit: 5000, sort: 'mis.id_miscelaneo', dir: 'asc',
+            start: 0, limit: 5000, ordenacion: 'mis.id_miscelaneo', dir_ordenacion: 'asc',
             filtro_adicional: `mis.warehouse_id = ${warehouseId} and mis.level_id is not null`,
             warehouse_id: warehouseId
         };
@@ -472,7 +478,7 @@ export class GestionUbicacionesService {
 
     private toRack(b: BackendRack): Rack {
         return {
-            id:          b.id_rack,
+            id:          Number(b.id_rack),
             warehouseId: Number(b.warehouse_id),
             codigo:      b.code,
             nombre:      b.name,
@@ -500,8 +506,8 @@ export class GestionUbicacionesService {
 
     private toLevel(b: BackendLevel): Level {
         return {
-            id:          b.id_level,
-            rackId:      b.rack_id,
+            id:          Number(b.id_level),
+            rackId:      Number(b.rack_id),
             numero:      b.number != null ? Number(b.number) : null,
             codigo:      b.code,
             nombre:      b.name,
@@ -527,9 +533,9 @@ export class GestionUbicacionesService {
     private toLevelTool(b: BackendLevelTool): LevelTool {
         const estado: ToolEstado = (b.location_state as ToolEstado) || 'NUEVO';
         return {
-            id:            b.id_tool,
-            levelId:       b.level_id,
-            rackId:        b.rack_id,
+            id:            Number(b.id_tool),
+            levelId:       Number(b.level_id),
+            rackId:        Number(b.rack_id),
             rackCodigo:    b.rack_code,
             levelNumero:   Number(b.level_number),
             levelCodigo:   b.level_code,
@@ -543,14 +549,19 @@ export class GestionUbicacionesService {
             um:            b.unit_of_measure || 'UNIDAD',
             imagenBase64:  b.image_base64,
             observaciones: b.notes,
+            listaContenido: b.content_list,
+            requiereCalibracion:  this._parseBool(b.requires_calibration),
+            intervaloCalibracion: b.calibration_interval != null ? Number(b.calibration_interval) : null,
+            fechaCalibracion:     b.last_calibration_date ?? null,
+            nroCertificado:       b.calibration_certificate,
         };
     }
 
     private toLevelKit(b: BackendKit): LevelKit {
         return {
-            id:                 b.id_kit,
-            levelId:            b.level_id,
-            rackId:             b.rack_id,
+            id:                 Number(b.id_kit),
+            levelId:            Number(b.level_id),
+            rackId:             Number(b.rack_id),
             rackCodigo:         b.rack_name || '',
             levelNumero:        null,
             levelCodigo:        b.level_name || '',
@@ -567,9 +578,9 @@ export class GestionUbicacionesService {
 
     private toLevelMiscelaneo(b: BackendMiscelaneo): LevelMiscelaneo {
         return {
-            id:              b.id_miscelaneo,
-            levelId:         b.level_id,
-            rackId:          b.rack_id,
+            id:              Number(b.id_miscelaneo),
+            levelId:         Number(b.level_id),
+            rackId:          Number(b.rack_id),
             rackCodigo:      b.rack_name || '',
             levelNumero:     null,
             levelCodigo:     b.level_name || '',
@@ -596,6 +607,7 @@ export class GestionUbicacionesService {
             quantity_in_stock:    t.cantidad,
             image_base64:         t.imagenBase64 ?? '',
             notes:                t.observaciones ?? '',
+            content_list:         t.listaContenido ?? '',
             tool_type:            t.tipo ?? 'HERRAMIENTA',
             criticality_level:    t.nivelCriticidad ?? 'B',
             manufacture_origin:   t.fabricacion ?? 'INTERNACIONAL',

@@ -12,6 +12,7 @@ import { Subject, lastValueFrom, of } from 'rxjs';
 import { takeUntil, finalize, debounceTime, distinctUntilChanged, switchMap, map, catchError } from 'rxjs/operators';
 import { CalibrationService } from '../../../../../core/services/calibration.service';
 import { MovementService } from '../../../../../core/services/movement.service';
+import { localDateStr } from '../../../../../core/utils/date.utils';
 
 interface Funcionario { id: number; nombre: string; cargo: string; area: string; }
 
@@ -66,7 +67,7 @@ export class FormRetornoComponent implements OnInit, OnDestroy {
     duplicateError   = signal('');
     showFechaWarning = signal(false);
 
-    readonly todayStr = new Date().toISOString().split('T')[0];
+    readonly todayStr = localDateStr();
 
     get calibration(): any | undefined { return this.dialogData?.calibration || null; }
 
@@ -82,7 +83,7 @@ export class FormRetornoComponent implements OnInit, OnDestroy {
         try {
             const d = new Date(this.fechaCalStr + 'T00:00:00');
             d.setFullYear(d.getFullYear() + 1);
-            return d.toISOString().split('T')[0];
+            return localDateStr(d);
         } catch { return ''; }
     }
 
@@ -163,7 +164,8 @@ export class FormRetornoComponent implements OnInit, OnDestroy {
     isFechaAntesDeEnvio(): boolean {
         const cal = this.calibration;
         if (!cal?.send_date || !this.fechaCalStr) return false;
-        return new Date(this.fechaCalStr + 'T00:00:00') < new Date(cal.send_date + 'T00:00:00');
+        const sendDateOnly = String(cal.send_date).split('T')[0];
+        return this.fechaCalStr < sendDateOnly;
     }
 
     isRetrasado(): boolean {
@@ -212,8 +214,7 @@ export class FormRetornoComponent implements OnInit, OnDestroy {
             const isError = res?.error === true || res?.ROOT?.error === true;
 
             if (!isError) {
-                this.showMessage('Retorno registrado — generando certificado…', 'success');
-                this.calibrationService.generarYVerPdfRetorno(cal.id_calibration);
+                this.showMessage('Retorno registrado con éxito', 'success');
                 this.dialogRef.close(true);
             } else {
                 const msg = res?.detalle?.mensaje || res?.ROOT?.detalle?.mensaje || 'Error en el servidor';

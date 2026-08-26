@@ -228,9 +228,9 @@
 
             <!-- Selection bar -->
             <div *ngIf="getSelCountDevolucion() > 0"
-                 class="px-4 py-2.5 bg-[#FF1414FF] border-b-2 border-black/20 dark:border-slate-500 flex items-center gap-3 shrink-0 flex-wrap animate-fadeIn">
-                <mat-icon class="!text-base text-white">check_box</mat-icon>
-                <span class="text-xs font-black text-white uppercase">{{ getSelCountDevolucion() }} seleccionada(s) para devolver</span>
+                 class="px-4 py-2.5 bg-amber-400 border-b-2 border-black/20 dark:border-slate-500 flex items-center gap-3 shrink-0 flex-wrap animate-fadeIn">
+                <mat-icon class="!text-base text-black">check_box</mat-icon>
+                <span class="text-xs font-black text-black uppercase">{{ getSelCountDevolucion() }} seleccionada(s) para devolver</span>
             </div>
 
             <!-- Tabla devolución -->
@@ -254,7 +254,7 @@
                     <tbody>
                     <tr *ngFor="let item of dataSourceDevolucion; let idx = index"
                         class="border-b border-gray-200 dark:border-slate-700 cursor-pointer transition-all"
-                        [ngClass]="[idx%2===0 ? 'bg-white dark:bg-slate-800/60' : 'bg-gray-50 dark:bg-slate-800/40', item.selected ? 'bg-amber-50 dark:bg-amber-900/20' : 'hover:bg-red-50 dark:hover:bg-slate-800']"
+                        [ngClass]="[idx%2===0 ? 'bg-white dark:bg-slate-800/60' : 'bg-gray-50 dark:bg-slate-800/40', item.selected ? 'bg-amber-50 dark:bg-amber-900/20' : 'hover:bg-gray-100 dark:hover:bg-slate-800']"
                         (click)="toggleSelDevolucion(item)">
 
                         <td class="px-3 py-3">
@@ -262,7 +262,7 @@
                         </td>
 
                         <td class="px-3 py-3">
-                            <span class="font-mono font-black text-[11px] bg-[#FFC501FF] text-black px-2 py-1 rounded border-2 border-black block w-fit">{{ item.codigo }}</span>
+                            <span class="font-mono font-black text-[11px] text-black dark:text-white block w-fit">{{ item.codigo }}</span>
                             <span class="text-[10px] text-stone-400 font-mono block mt-1 leading-snug">P/N: {{ item.pn || '—' }}</span>
                             <span class="text-[10px] text-stone-400 font-mono block leading-snug">N/S: {{ item.sn || '—' }}</span>
                         </td>
@@ -270,13 +270,12 @@
                         <td class="px-3 py-3" style="max-width:150px">
                             <div class="text-xs font-bold text-black dark:text-white truncate">{{ item.descripcion }}</div>
                             <div class="text-[10px] text-stone-400">{{ item.marca || '' }}</div>
-                            <div *ngIf="item.listaContenido" class="text-[10px] text-blue-500 dark:text-blue-400 font-mono truncate" [title]="item.listaContenido">{{ item.listaContenido }}</div>
+                            <div *ngIf="item.listaContenido" class="text-[10px] text-black dark:text-white font-mono truncate" [title]="item.listaContenido">{{ item.listaContenido }}</div>
                         </td>
 
                         <td class="px-3 py-3">
                             <span class="text-[10px] font-bold text-stone-500 dark:text-slate-400 block mb-1">{{ item.fechaCalibracion || '—' }}</span>
-                            <span class="px-1.5 py-0.5 text-[10px] font-black uppercase border-2 border-black rounded inline-block"
-                                  [ngClass]="getEstadoPrestarClass(item.estadoAlPrestar)">
+                            <span class="text-[10px] font-black uppercase text-black dark:text-white inline-block">
                   {{ getEstadoPrestarLabel(item.estadoAlPrestar) }}
                 </span>
                         </td>
@@ -288,7 +287,7 @@
 
                         <td class="px-3 py-3">
                             <span class="text-[10px] font-bold text-stone-500 dark:text-slate-400 block mb-1">{{ item.fechaPrestamo | date:'dd/MM/yy' }}</span>
-                            <span class="px-2 py-0.5 text-[10px] font-black border rounded inline-block" [ngClass]="getDiasFueraClass(item.diasFuera)">{{ item.diasFuera }}d</span>
+                            <span class="text-[10px] font-black text-black dark:text-white inline-block">{{ item.diasFuera }}d</span>
                         </td>
 
                         <td class="px-3 py-3 text-center" (click)="$event.stopPropagation()">
@@ -301,8 +300,8 @@
                         <td class="px-3 py-3" (click)="$event.stopPropagation()">
                             <div class="flex flex-wrap gap-1">
                                 <button *ngFor="let c of condiciones" (click)="item.condicionDevolucion = c.value; onCondicionChange(item)"
-                                        class="px-2 py-1 text-[9px] font-black uppercase border-2 border-black rounded transition-all"
-                                        [ngClass]="item.condicionDevolucion === c.value ? c.bgColor + ' text-white shadow-[1px_1px_0_#000]' : 'bg-white dark:bg-slate-700 text-stone-500 dark:text-slate-400 hover:bg-stone-100'">
+                                        class="px-2 py-1 text-[9px] font-black uppercase border-2 rounded transition-all"
+                                        [ngClass]="item.condicionDevolucion === c.value ? 'border-black bg-white dark:bg-slate-700 shadow-[1px_1px_0_#000] text-black dark:text-white' : 'border-stone-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-stone-400 dark:text-slate-500 hover:border-stone-400'">
                                     {{ c.label }}
                                 </button>
                             </div>
@@ -373,9 +372,9 @@
             <div>
                 <p class="text-[9px] font-black uppercase tracking-[0.15em] text-stone-500 dark:text-slate-300 mb-2">Resumen por condición</p>
                 <div class="flex flex-wrap gap-2">
-                    <div *ngFor="let r of getResumenCondicion(); trackBy: trackByCondicion" class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border-2 border-black" [ngClass]="r.color">
-                        <span class="text-sm font-black text-white">{{ r.cantidad }}</span>
-                        <span class="text-[10px] font-black text-white uppercase">{{ r.condicion }}</span>
+                    <div *ngFor="let r of getResumenCondicion(); trackBy: trackByCondicion" class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border-2 border-black bg-white dark:bg-slate-800">
+                        <span class="text-sm font-black text-black dark:text-white">{{ r.cantidad }}</span>
+                        <span class="text-[10px] font-black text-black dark:text-white uppercase">{{ r.condicion }}</span>
                     </div>
                 </div>
             </div>
@@ -383,16 +382,12 @@
             <div class="max-h-44 overflow-y-auto flex flex-col gap-1.5 custom-scrollbar">
                 <p class="text-[9px] font-black uppercase tracking-[0.15em] text-stone-500 dark:text-slate-300 mb-1">Herramientas ({{ getSelCountDevolucion() }})</p>
                 <div *ngFor="let item of getSelDevolucionItems()"
-                     class="flex items-center gap-2 px-3 py-2 border-2 border-black rounded-xl"
-                     [ngClass]="item.condicionDevolucion === 'BUENO' ? 'bg-green-50 dark:bg-green-900/20'
-                        : item.condicionDevolucion === 'DAÑADO' ? 'bg-red-50 dark:bg-red-900/20'
-                        : item.condicionDevolucion === 'FALTANTE' ? 'bg-red-100 dark:bg-red-900/30'
-                        : 'bg-yellow-50 dark:bg-yellow-900/20'">
-                    <mat-icon class="!text-base" [ngClass]="item.condicionDevolucion === 'BUENO' ? 'text-green-600' : item.condicionDevolucion === 'DAÑADO' || item.condicionDevolucion === 'FALTANTE' ? 'text-red-600' : 'text-yellow-600'">
+                     class="flex items-center gap-2 px-3 py-2 border-2 border-black rounded-xl bg-white dark:bg-slate-800">
+                    <mat-icon class="!text-base text-black dark:text-white">
                         {{ getCondicionIcon(item.condicionDevolucion) }}
                     </mat-icon>
                     <div class="flex-1 min-w-0">
-                        <span class="font-mono text-xs font-black text-amber-700 dark:text-amber-400">{{ item.codigo }}</span>
+                        <span class="font-mono text-xs font-black text-black dark:text-white">{{ item.codigo }}</span>
                         <span class="text-xs text-stone-500 dark:text-slate-300 ml-2 truncate">{{ item.descripcion }}</span>
                     </div>
                     <span class="text-sm font-black text-black dark:text-white shrink-0">{{ item.cantidadDevolver }}/{{ item.cantidadPrestada }}</span>

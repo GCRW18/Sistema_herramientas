@@ -13,6 +13,7 @@ import { takeUntil, finalize, catchError, debounceTime, distinctUntilChanged, sw
 import { CalibrationService } from '../../../../../core/services/calibration.service';
 import { MaintenanceService } from '../../../../../core/services/maintenance.service';
 import { MovementService } from '../../../../../core/services/movement.service';
+import { localDateStr } from '../../../../../core/utils/date.utils';
 
 interface Funcionario { id: number; nombre: string; cargo: string; }
 
@@ -427,7 +428,7 @@ export class FormServicioComponent implements OnInit, OnDestroy {
 
         if (this.tipoMantenimientoRealizado === 'preventive') {
             base.setMonth(base.getMonth() + 6);
-            this.nextMaintenanceDateStr = base.toISOString().split('T')[0];
+            this.nextMaintenanceDateStr = localDateStr(base);
             this.proximoMantenimientoPeriodo = 'semiannual';
         } else if (this.tipoMantenimientoRealizado === 'corrective') {
             this.nextMaintenanceDateStr = '';
@@ -445,7 +446,7 @@ export class FormServicioComponent implements OnInit, OnDestroy {
         const base = new Date(this.actualReturnDateStr + 'T00:00:00');
         const months = this.proximoMantenimientoPeriodo === 'annual' ? 12 : 6;
         base.setMonth(base.getMonth() + months);
-        this.nextMaintenanceDateStr = base.toISOString().split('T')[0];
+        this.nextMaintenanceDateStr = localDateStr(base);
     }
 
     submitRetorno(): void {
@@ -491,11 +492,11 @@ export class FormServicioComponent implements OnInit, OnDestroy {
     // HELPERS
     // ============================================
     getTodayStr(): string {
-        return new Date().toISOString().split('T')[0];
+        return localDateStr();
     }
 
     private formatDate(date: Date): string {
-        return date.toISOString().split('T')[0];
+        return localDateStr(date);
     }
 
     private showMessage(message: string, type: 'success' | 'error' | 'warning'): void {
@@ -626,7 +627,7 @@ ${problem ? `<div style="margin-top:8px"><div class="label" style="font-size:8px
 ${notes   ? `<div style="margin-top:8px"><div class="label" style="font-size:8px;font-weight:700;color:#94a3b8;text-transform:uppercase">Notas</div><div style="margin-top:3px;font-size:11px">${notes}</div></div>` : ''}
 </div>
 <div class="sigs"><div><div class="sig-line">Tecnico emisor</div></div><div><div class="sig-line">Jefe de almacen</div></div><div><div class="sig-line">Recibido por taller</div></div></div>
-<div class="meta"><span>BOA &mdash; MGH-109 &middot; ${rn}</span><span>${today}</span></div>
+<div class="meta"><span>BOA &mdash; ${rn}</span><span>${today}</span></div>
 <script>window.onload=function(){window.print();}</script>
 </body></html>`;
     }
@@ -664,7 +665,7 @@ ${notes   ? `<div style="margin-top:8px"><div class="label" style="font-size:8px
 ${solution ? `<div style="margin-top:8px"><div class="label" style="font-size:8px;font-weight:700;color:#94a3b8;text-transform:uppercase">Trabajo Realizado</div><div style="margin-top:3px;font-size:11px">${solution}</div></div>` : ''}
 </div>
 <div class="sigs"><div><div class="sig-line">Tecnico receptor</div></div><div><div class="sig-line">Jefe de mantenimiento</div></div><div><div class="sig-line">Sello del taller</div></div></div>
-<div class="meta"><span>BOA &mdash; MGH-109 &middot; ${rn}</span><span>${today}</span></div>
+<div class="meta"><span>BOA &mdash; ${rn}</span><span>${today}</span></div>
 <script>window.onload=function(){window.print();}</script>
 </body></html>`;
     }

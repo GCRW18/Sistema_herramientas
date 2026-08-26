@@ -1,5 +1,5 @@
 import { Injectable, inject } from '@angular/core';
-import { from, Observable, of, ReplaySubject, switchMap, tap } from 'rxjs';
+import { from, Observable, of, ReplaySubject, switchMap, tap, throwError } from 'rxjs';
 import { Tool, ToolFilters } from '../models';
 import { ErpApiService } from '../api/api.service';
 
@@ -212,6 +212,67 @@ export class ToolService {
         })).pipe(
             switchMap((response: any) => {
                 return of(response?.data || {});
+            })
+        );
+    }
+
+    /**
+     * Genera la etiqueta con código QR de una o varias herramientas (reporte
+     * RCodigoQRTools, pensado para impresora de etiquetas Bixolon). Acepta un
+     * solo id_tool o un array (el backend soporta id_tool separados por coma
+     * y arma un único PDF con una etiqueta por herramienta). Misma forma de
+     * respuesta que generarPdfEnvioCalibracion/generarPdfEnvioMantenimiento:
+     * JSON con pdf_base64 + nombre_archivo dentro de ROOT.datos.
+     */
+    generarCodigoQR(id_tool: number | number[]): Observable<{ pdf_base64: string; nombre_archivo: string }> {
+        const ids = (Array.isArray(id_tool) ? id_tool : [id_tool])
+            .map(Number)
+            .filter(n => !isNaN(n) && n > 0);
+        if (ids.length === 0) {
+            return throwError(() => new Error('ID de herramienta inválido: ' + id_tool));
+        }
+
+        return from(this._api.post('herramientas/tools/listarCodigoQRHerramientas', {
+            id_tool: ids.join(',')
+        })).pipe(
+            switchMap((response: any) => {
+                let datos = null;
+                let error = false;
+                let mensaje = '';
+
+                if (response?.ROOT) {
+                    error = response.ROOT.error === true;
+                    mensaje = response.ROOT.detalle?.mensaje || response.ROOT.mensaje || '';
+                    datos = response.ROOT.datos;
+                }
+                else if (response?.datos) {
+                    error = response.error === true;
+                    mensaje = response.detalle?.mensaje || response.mensaje || '';
+                    datos = response.datos;
+                }
+                else if (Array.isArray(response)) {
+                    datos = response;
+                }
+                else if (response?.data) {
+                    datos = response.data;
+                }
+
+                let item = null;
+                if (Array.isArray(datos) && datos.length > 0) {
+                    item = datos[0];
+                } else if (datos && typeof datos === 'object') {
+                    item = datos;
+                }
+
+                if (error || !item?.pdf_base64) {
+                    const msg = mensaje || 'Error al generar el código QR';
+                    throw new Error(msg);
+                }
+
+                return of({
+                    pdf_base64: item.pdf_base64 as string,
+                    nombre_archivo: item.nombre_archivo ?? (ids.length > 1 ? 'codigos_qr.pdf' : `codigo_qr_${ids[0]}.pdf`)
+                });
             })
         );
     }

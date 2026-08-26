@@ -1,0 +1,427 @@
+<div class="bg-stone-100 dark:bg-slate-900 border-2 border-black overflow-hidden flex flex-col h-full">
+
+    <!-- Header -->
+    <div class="bg-[#0F172A] px-3 sm:px-5 py-3 flex items-center gap-2 sm:gap-3 shrink-0 select-none flex-wrap sm:flex-nowrap"
+         cdkDrag cdkDragRootElement=".cdk-overlay-pane" cdkDragHandle style="cursor:grab">
+        <div class="w-8 h-8 sm:w-9 sm:h-9 rounded bg-amber-400 border-2 border-black flex items-center justify-center shadow-[2px_2px_0_#fbbf24] shrink-0">
+            <mat-icon class="!text-base sm:!text-lg text-black">{{ isEditMode ? 'edit' : 'handyman' }}</mat-icon>
+        </div>
+        <div class="flex-1 min-w-0">
+            <p class="text-[9px] text-slate-400 font-bold uppercase tracking-[0.18em] leading-none mb-0.5 hidden sm:block">Ingresos · Recepción Manual</p>
+            <h2 class="text-xs sm:text-sm text-white font-black uppercase tracking-tight leading-none truncate">
+                {{ isEditMode ? 'Editar Herramienta' : 'Recepcionar Nueva Herramienta' }}
+            </h2>
+        </div>
+        <!-- Buscador herramienta existente -->
+        <div class="relative w-full sm:w-auto sm:shrink-0">
+            <input type="text"
+                   [value]="herBuscarValue"
+                   (input)="onHerBuscarInput($any($event.target).value)"
+                   (blur)="hideHerDD()"
+                   (focus)="onHerBuscarInput(herBuscarValue)"
+                   autocomplete="off"
+                   placeholder="Buscar herramienta existente..."
+                   class="w-full sm:w-44 md:w-52 h-8 text-[11px] font-bold border-2 border-white/20 rounded-xl px-3 pr-8 uppercase bg-white/10 text-white placeholder:text-white/40 focus:outline-none focus:border-amber-400 focus:bg-white/20 transition-all">
+            <mat-spinner *ngIf="herSearchLoading" diameter="12" class="absolute right-2 top-2"></mat-spinner>
+            <mat-icon *ngIf="!herSearchLoading && !herBuscarValue"
+                      class="absolute right-2 top-1.5 text-white/40 !text-base pointer-events-none">search</mat-icon>
+            <button *ngIf="herBuscarValue" type="button" (click)="limpiarHerBuscar()"
+                    class="absolute right-1.5 top-1 w-6 h-6 flex items-center justify-center rounded hover:bg-white/20 transition-colors">
+                <mat-icon class="!text-sm text-white/60">close</mat-icon>
+            </button>
+            <!-- Dropdown -->
+            <div *ngIf="showHerDD"
+                 class="absolute z-[300] w-72 bg-white dark:bg-slate-800 border-2 border-black dark:border-slate-600 rounded-xl shadow-[4px_4px_0_#000] max-h-52 overflow-y-auto mt-1 top-full right-0 custom-scrollbar-ing divide-y divide-stone-100 dark:divide-slate-700">
+                <div *ngFor="let tool of herSuggestions"
+                     (mousedown)="seleccionarHerExistente(tool)"
+                     class="px-3 py-2 hover:bg-stone-50 dark:hover:bg-slate-700 cursor-pointer transition-colors">
+                    <div class="text-[10px] font-black text-black dark:text-white font-mono">{{ tool.code }}</div>
+                    <div class="text-[9px] text-stone-500 dark:text-slate-400 truncate font-bold mt-0.5 uppercase">{{ tool.name || tool.description }}</div>
+                    <div class="text-[9px] text-stone-400 mt-0.5" *ngIf="tool.part_number">P/N: {{ tool.part_number }}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Body: dos columnas (foto izq. · campos der.) -->
+    <form [formGroup]="herramientaForm" class="flex-1 flex flex-col sm:flex-row overflow-hidden min-h-0">
+
+        <!-- ── COLUMNA IZQUIERDA: Foto ── -->
+        <div class="sm:w-2/5 shrink-0 flex flex-col items-center justify-center px-4 py-4">
+
+            <!-- Zona foto -->
+            <div class="w-full max-w-[260px] aspect-square border-2 border-dashed border-stone-300 dark:border-slate-600 rounded-xl bg-stone-50 dark:bg-slate-900 flex flex-col items-center justify-center relative overflow-hidden cursor-pointer hover:border-amber-400 transition-colors group"
+                 (click)="imgHerramientaInput.click()">
+                <ng-container *ngIf="herramientaImagen(); else noImgHer">
+                    <img [src]="herramientaImagen()" class="w-full h-full object-contain rounded" alt="Foto herramienta">
+                    <div class="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                        <span class="text-white text-[9px] font-black uppercase bg-black/60 px-2 py-1 border border-white rounded-lg">Cambiar foto</span>
+                    </div>
+                    <button type="button" (click)="clearHerramientaImagen(); $event.stopPropagation()"
+                            class="absolute top-2 right-2 w-7 h-7 bg-red-600 border-2 border-black rounded-lg flex items-center justify-center shadow-[2px_2px_0_#000] hover:shadow-none hover:translate-x-px hover:translate-y-px transition-all"
+                            matTooltip="Quitar foto">
+                        <mat-icon class="!text-sm text-white">delete</mat-icon>
+                    </button>
+                </ng-container>
+                <ng-template #noImgHer>
+                    <mat-icon class="!text-5xl text-stone-300 dark:text-slate-600 mb-1">add_photo_alternate</mat-icon>
+                    <span class="text-[9px] font-black uppercase text-stone-400">Click para subir</span>
+                    <span class="text-[8px] text-stone-300 dark:text-slate-600 mt-0.5">JPG · PNG · WEBP</span>
+                </ng-template>
+                <input #imgHerramientaInput type="file" accept="image/jpeg,image/png,image/webp" class="hidden"
+                       (change)="onHerramientaImageSelected($event)">
+            </div>
+        </div>
+
+        <!-- ── COLUMNA DERECHA: Campos ── -->
+        <div class="flex-1 overflow-y-auto custom-scrollbar-ing px-4 py-3 flex flex-col gap-2">
+
+            <!-- Fila 1: Código BOA · P/N · S/N -->
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                <div>
+                    <label class="text-[9px] font-black uppercase tracking-wider text-stone-400 dark:text-slate-400 mb-1 block">Código BOA <span class="text-red-500">*</span></label>
+                    <div class="flex gap-1">
+                        <input type="text" formControlName="codigoBoa"
+                               class="flex-1 w-0 h-8 text-xs font-black uppercase bg-white dark:bg-slate-900 dark:text-white border-2 rounded-lg px-2.5 outline-none transition-all"
+                               [ngClass]="hasHerramientaError('codigoBoa','required') ? 'border-red-400' : 'border-stone-300 dark:border-slate-600 hover:border-stone-400 focus:border-black focus:shadow-[2px_2px_0_#000]'">
+                        <button type="button" (click)="generarCodigoBoa()"
+                                class="h-8 px-2 flex items-center bg-amber-400 border-2 border-black rounded-lg shadow-[2px_2px_0_#000] hover:shadow-none hover:translate-x-px hover:translate-y-px transition-all shrink-0"
+                                matTooltip="Auto-generar código">
+                            <mat-icon class="!text-xs text-black">auto_awesome</mat-icon>
+                        </button>
+                    </div>
+                    <p *ngIf="hasHerramientaError('codigoBoa','required')" class="text-[8px] text-red-500 font-bold mt-0.5">Requerido.</p>
+                </div>
+                <div>
+                    <label class="text-[9px] font-black uppercase tracking-wider text-stone-400 dark:text-slate-400 mb-1 block">P/N <span class="text-red-500">*</span></label>
+                    <input type="text" formControlName="pn" placeholder="ABC-12345"
+                           class="w-full h-8 text-xs font-black uppercase bg-white dark:bg-slate-900 dark:text-white border-2 rounded-lg px-2.5 outline-none transition-all placeholder:text-stone-300 placeholder:font-normal placeholder:normal-case"
+                           [ngClass]="hasHerramientaError('pn','required') ? 'border-red-400' : 'border-stone-300 dark:border-slate-600 hover:border-stone-400 focus:border-black focus:shadow-[2px_2px_0_#000]'">
+                    <p *ngIf="hasHerramientaError('pn','required')" class="text-[8px] text-red-500 font-bold mt-0.5">Requerido.</p>
+                </div>
+                <div>
+                    <label class="text-[9px] font-black uppercase tracking-wider text-stone-400 dark:text-slate-400 mb-1 block">S/N</label>
+                    <input type="text" formControlName="sn" placeholder="Serie"
+                           class="w-full h-8 text-xs font-bold uppercase bg-white dark:bg-slate-900 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-lg px-2.5 outline-none transition-all placeholder:text-stone-300 placeholder:font-normal placeholder:normal-case hover:border-stone-400 focus:border-black focus:shadow-[2px_2px_0_#000]">
+                </div>
+            </div>
+
+            <!-- Fila 2: Nombre -->
+            <div>
+                <label class="text-[9px] font-black uppercase tracking-wider text-stone-400 dark:text-slate-400 mb-1 block">Nombre completo <span class="text-red-500">*</span></label>
+                <input type="text" formControlName="descripcion" placeholder="Nombre completo de la herramienta"
+                       class="w-full h-8 text-xs font-bold bg-white dark:bg-slate-900 dark:text-white border-2 rounded-lg px-2.5 outline-none transition-all placeholder:text-stone-300 placeholder:font-normal"
+                       [ngClass]="hasHerramientaError('descripcion','required') ? 'border-red-400' : 'border-stone-300 dark:border-slate-600 hover:border-stone-400 focus:border-black focus:shadow-[2px_2px_0_#000]'">
+                <p *ngIf="hasHerramientaError('descripcion','required')" class="text-[8px] text-red-500 font-bold mt-0.5">Requerido.</p>
+            </div>
+
+            <!-- Fila 3: Marca · Tipo -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <div>
+                    <label class="text-[9px] font-black uppercase tracking-wider text-stone-400 dark:text-slate-400 mb-1 block">Marca <span class="text-red-500">*</span></label>
+                    <input type="text" formControlName="marca" list="marcasList" placeholder="SNAP-ON…"
+                           class="w-full h-8 text-xs font-bold uppercase bg-white dark:bg-slate-900 dark:text-white border-2 rounded-lg px-2.5 outline-none transition-all placeholder:text-stone-300 placeholder:font-normal placeholder:normal-case"
+                           [ngClass]="hasHerramientaError('marca','required') ? 'border-red-400' : 'border-stone-300 dark:border-slate-600 hover:border-stone-400 focus:border-black focus:shadow-[2px_2px_0_#000]'">
+                    <datalist id="marcasList">
+                        <option *ngFor="let m of marcas" [value]="m"></option>
+                    </datalist>
+                    <p *ngIf="hasHerramientaError('marca','required')" class="text-[8px] text-red-500 font-bold mt-0.5">Requerido.</p>
+                </div>
+                <div>
+                    <label class="text-[9px] font-black uppercase tracking-wider text-stone-400 dark:text-slate-400 mb-1 block">Tipo <span class="text-red-500">*</span></label>
+                    <select formControlName="tipo"
+                            class="w-full h-8 text-xs font-bold bg-white dark:bg-slate-900 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-lg px-2.5 outline-none transition-all cursor-pointer hover:border-stone-400 focus:border-black focus:shadow-[2px_2px_0_#000]">
+                        <option *ngFor="let t of tiposHerramienta" [value]="t.value">{{ t.label }}</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Fila 4: Estado · Criticidad · Fabricación · Cant. · Unidad -->
+            <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2 items-end">
+                <div>
+                    <label class="text-[9px] font-black uppercase tracking-wider text-stone-400 dark:text-slate-400 mb-1 block">Estado <span class="text-red-500">*</span></label>
+                    <select formControlName="estado"
+                            class="w-full h-8 text-xs font-bold bg-white dark:bg-slate-900 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-lg px-1.5 outline-none transition-all cursor-pointer hover:border-stone-400 focus:border-black focus:shadow-[2px_2px_0_#000]">
+                        <option value="NUEVO">Nuevo</option>
+                        <option value="REACONDICIONADO">Reacondicionado</option>
+                        <option value="USADO">Usado</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="text-[9px] font-black uppercase tracking-wider text-stone-400 dark:text-slate-400 mb-1 block">Criticidad <span class="text-red-500">*</span></label>
+                    <select formControlName="nivelCriticidad"
+                            class="w-full h-8 text-xs font-bold bg-white dark:bg-slate-900 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-lg px-1.5 outline-none transition-all cursor-pointer hover:border-stone-400 focus:border-black focus:shadow-[2px_2px_0_#000]">
+                        <option value="A">A — Crítico</option>
+                        <option value="B">B — Normal</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="text-[9px] font-black uppercase tracking-wider text-stone-400 dark:text-slate-400 mb-1 block">Fabricación <span class="text-red-500">*</span></label>
+                    <select formControlName="fabricacion"
+                            class="w-full h-8 text-xs font-bold bg-white dark:bg-slate-900 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-lg px-1.5 outline-none transition-all cursor-pointer hover:border-stone-400 focus:border-black focus:shadow-[2px_2px_0_#000]">
+                        <option value="INTERNACIONAL">Intl.</option>
+                        <option value="LOCAL">Local</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="text-[9px] font-black uppercase tracking-wider text-stone-400 dark:text-slate-400 mb-1 block">Cant. <span class="text-red-500">*</span></label>
+                    <input type="number" formControlName="cantidad" min="1"
+                           class="w-full h-8 text-xs text-center font-black bg-white dark:bg-slate-900 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-lg px-1.5 outline-none transition-all hover:border-stone-400 focus:border-black focus:shadow-[2px_2px_0_#000]">
+                </div>
+                <div>
+                    <label class="text-[9px] font-black uppercase tracking-wider text-stone-400 dark:text-slate-400 mb-1 block">Unidad <span class="text-red-500">*</span></label>
+                    <select formControlName="unidadMedida"
+                            class="w-full h-8 text-xs font-bold bg-white dark:bg-slate-900 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-lg px-1.5 outline-none transition-all cursor-pointer hover:border-stone-400 focus:border-black focus:shadow-[2px_2px_0_#000]">
+                        <option *ngFor="let u of unidadesMedida" [value]="u.value">{{ u.label }}</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Fila 6: Ubicación — picker MatDialog -->
+            <div>
+                <label class="text-[9px] font-black uppercase tracking-wider text-stone-400 dark:text-slate-400 mb-1 block">Ubicación en Inventario</label>
+
+                <!-- Display + controles -->
+                <div class="flex gap-1.5">
+                    <div class="flex-1 flex items-center h-9 bg-white dark:bg-slate-800 border-2 rounded-lg px-2.5 gap-1.5 min-w-0 transition-all"
+                         [ngClass]="showUbicacionPanel ? 'border-black shadow-[2px_2px_0_#000]' : 'border-stone-300 dark:border-slate-600'">
+                        <mat-icon class="!text-sm text-amber-500 shrink-0">shelves</mat-icon>
+                        <span class="text-xs font-bold truncate"
+                              [ngClass]="ubSelectedWarehouse ? 'text-black dark:text-white' : 'text-stone-300 dark:text-slate-500'">
+                            <ng-container *ngIf="!ubSelectedWarehouse">Sin asignar</ng-container>
+                            <ng-container *ngIf="ubSelectedWarehouse">
+                                {{ ubSelectedWarehouse.codigo }}<ng-container *ngIf="ubSelectedRack"> → {{ ubSelectedRack.codigo }}</ng-container><ng-container *ngIf="ubSelectedLevel"> · {{ ubSelectedLevel.isFloor ? 'Suelo' : 'N°' + ubSelectedLevel.numero }}</ng-container>
+                            </ng-container>
+                        </span>
+                    </div>
+                    <button type="button" (click)="openUbicacionDialog()"
+                            class="h-9 px-2.5 border-2 border-black rounded-lg font-black shadow-[2px_2px_0_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all flex items-center shrink-0"
+                            [ngClass]="showUbicacionPanel ? 'bg-[#0F172A] text-white' : 'bg-amber-400 text-black'">
+                        <mat-icon class="!text-sm">{{ showUbicacionPanel ? 'expand_less' : 'account_tree' }}</mat-icon>
+                    </button>
+                    <button *ngIf="ubSelectedWarehouse" type="button" (click)="limpiarUbAlmacen()"
+                            class="h-9 w-9 flex items-center justify-center bg-red-100 border-2 border-black rounded-lg shadow-[2px_2px_0_#000] hover:bg-red-400 hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all shrink-0">
+                        <mat-icon class="!text-sm text-red-700">close</mat-icon>
+                    </button>
+                </div>
+
+                <!-- ── Mini ventana (MatDialog vía openUbicacionDialog()) ── -->
+                <ng-template #ubicDialogTpl>
+                    <div class="bg-white dark:bg-slate-800 border-2 border-black rounded-xl overflow-hidden flex flex-col" style="height:64vh; max-height:64vh">
+
+                        <!-- Título -->
+                        <div class="bg-[#0F172A] px-3 py-2.5 flex items-center justify-between shrink-0 select-none">
+                            <span class="text-white text-[10px] font-black uppercase tracking-wider flex items-center gap-1.5">
+                                <mat-icon class="!text-sm text-amber-400">account_tree</mat-icon>
+                                Seleccionar Ubicación
+                            </span>
+                            <button type="button" (click)="closeUbicacionDialog()"
+                                    class="w-6 h-6 flex items-center justify-center rounded hover:bg-white/10 transition-colors">
+                                <mat-icon class="!text-sm text-white/70 hover:text-white">close</mat-icon>
+                            </button>
+                        </div>
+
+                        <!-- Contenido: 3 columnas horizontales -->
+                        <div class="flex-1 min-h-0 overflow-hidden flex flex-col md:flex-row divide-y-2 md:divide-y-0 md:divide-x-2 divide-stone-200 dark:divide-slate-700">
+
+                        <!-- ─── COLUMNA 1: ALMACÉN ─── -->
+                        <div class="md:w-1/3 min-h-0 flex flex-col overflow-y-auto custom-scrollbar-ing px-3 py-3">
+                            <div class="flex items-center gap-2 mb-2">
+                                <span class="w-5 h-5 rounded border-2 flex items-center justify-center text-[9px] font-black shrink-0 transition-all"
+                                      [ngClass]="ubSelectedWarehouse ? 'border-black bg-black text-white' : 'border-stone-300 bg-white dark:bg-slate-800 text-stone-400'">
+                                    {{ ubSelectedWarehouse ? '✓' : '1' }}
+                                </span>
+                                <span class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400">Almacén</span>
+                                <div class="flex-1 h-px bg-stone-200 dark:bg-slate-700"></div>
+                                <button *ngIf="ubSelectedWarehouse && !showUbAlmacenGrid" type="button"
+                                        (click)="showUbAlmacenGrid = true"
+                                        class="flex items-center gap-0.5 text-[9px] font-black uppercase text-stone-500 hover:text-black dark:hover:text-white transition-colors">
+                                    <mat-icon class="!text-xs">edit</mat-icon> cambiar
+                                </button>
+                                <button *ngIf="showUbAlmacenGrid && ubSelectedWarehouse" type="button"
+                                        (click)="showUbAlmacenGrid = false"
+                                        class="flex items-center gap-0.5 text-[9px] font-black uppercase text-stone-400 hover:text-stone-600 transition-colors">
+                                    <mat-icon class="!text-xs">close</mat-icon> cerrar
+                                </button>
+                            </div>
+
+                            <div *ngIf="loadingAlmacenes" class="flex items-center gap-2 py-2">
+                                <div class="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin shrink-0"></div>
+                                <span class="text-[9px] text-stone-400 font-bold">Cargando almacenes...</span>
+                            </div>
+
+                            <!-- Chip seleccionado -->
+                            <div *ngIf="ubSelectedWarehouse && !showUbAlmacenGrid && !loadingAlmacenes"
+                                 class="flex items-center gap-2 bg-stone-50 dark:bg-slate-700 border-2 border-black rounded-xl px-3 py-2 shadow-[2px_2px_0_#000]">
+                                <mat-icon class="!text-sm text-black dark:text-white shrink-0">warehouse</mat-icon>
+                                <div class="flex-1 min-w-0">
+                                    <p class="text-[8px] text-stone-400 font-bold uppercase tracking-widest leading-none mb-0.5">{{ ubSelectedWarehouse.tipo }}</p>
+                                    <p class="text-xs font-black text-black dark:text-white truncate">{{ ubSelectedWarehouse.codigo }} · {{ ubSelectedWarehouse.nombre }}</p>
+                                </div>
+                                <mat-icon class="!text-sm text-black dark:text-white shrink-0">check_circle</mat-icon>
+                            </div>
+
+                            <!-- Lista de almacenes -->
+                            <div *ngIf="(!ubSelectedWarehouse || showUbAlmacenGrid) && !loadingAlmacenes" class="flex flex-col gap-1.5">
+                                <button *ngFor="let w of ubAlmacenes" type="button"
+                                        (click)="seleccionarUbAlmacen(w)"
+                                        class="flex items-center gap-2 border-2 rounded-xl px-3 py-2 text-left transition-all"
+                                        [ngClass]="ubSelectedWarehouse?.id === w.id
+                                            ? 'border-black bg-white dark:bg-slate-700 shadow-[2px_2px_0_#000]'
+                                            : 'border-stone-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:border-black hover:shadow-[2px_2px_0_#000]'">
+                                    <mat-icon class="!text-sm text-stone-400 shrink-0">warehouse</mat-icon>
+                                    <div class="flex-1 min-w-0">
+                                        <p class="text-[10px] font-black uppercase text-black dark:text-white truncate">{{ w.codigo }} · {{ w.nombre }}</p>
+                                        <p class="text-[8px] text-stone-400">{{ w.ciudad }}</p>
+                                    </div>
+                                    <mat-icon *ngIf="ubSelectedWarehouse?.id === w.id" class="!text-sm text-black dark:text-white shrink-0">check</mat-icon>
+                                </button>
+                                <div *ngIf="!ubAlmacenes.length && !loadingAlmacenes"
+                                     class="text-[9px] text-stone-400 italic text-center py-3">Sin almacenes activos</div>
+                            </div>
+                        </div>
+
+                        <!-- ─── COLUMNA 2: ESTANTE ─── -->
+                        <div class="md:w-1/3 min-h-0 flex flex-col overflow-y-auto custom-scrollbar-ing px-3 py-3">
+                            <div class="flex items-center gap-2 mb-2 shrink-0">
+                                <span class="w-5 h-5 rounded border-2 flex items-center justify-center text-[9px] font-black shrink-0 transition-all"
+                                      [ngClass]="ubSelectedRack ? 'border-black bg-black text-white' : 'border-stone-300 bg-white dark:bg-slate-800 text-stone-400'">
+                                    {{ ubSelectedRack ? '✓' : '2' }}
+                                </span>
+                                <span class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400">Estante</span>
+                                <span *ngIf="loadingRacks" class="ml-auto text-[8px] text-stone-400 italic animate-pulse">cargando...</span>
+                            </div>
+
+                            <ng-container *ngIf="ubSelectedWarehouse; else esperandoAlmacenIng">
+                                <div *ngIf="loadingRacks" class="grid grid-cols-3 gap-1.5">
+                                    <div *ngFor="let _ of [1,2,3,4,5,6]"
+                                         class="h-12 rounded-xl border-2 border-stone-200 dark:border-slate-700 bg-stone-100 dark:bg-slate-800 animate-pulse"></div>
+                                </div>
+
+                                <div *ngIf="!loadingRacks && ubRacks.length" class="grid grid-cols-3 gap-1.5 content-start">
+                                    <button *ngFor="let r of ubRacks" type="button" [title]="r.nombre"
+                                            (click)="seleccionarUbEstante(r)"
+                                            class="flex flex-col items-center border-2 rounded-xl p-1.5 text-center transition-all"
+                                            [ngClass]="ubSelectedRack?.id === r.id
+                                                ? 'border-black bg-white dark:bg-slate-700 shadow-[2px_2px_0_#000] -translate-y-px'
+                                                : 'border-stone-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:border-stone-400 hover:shadow-[1px_1px_0_#ccc] hover:-translate-y-px'">
+                                        <mat-icon class="!text-base mb-0.5 text-stone-400 dark:text-slate-500">view_column</mat-icon>
+                                        <p class="text-[9px] font-black text-black dark:text-white uppercase leading-none truncate w-full">{{ r.codigo }}</p>
+                                    </button>
+                                </div>
+
+                                <p *ngIf="!loadingRacks && !ubRacks.length"
+                                   class="text-[9px] text-stone-400 italic text-center py-3">Sin estantes disponibles</p>
+                            </ng-container>
+                            <ng-template #esperandoAlmacenIng>
+                                <div class="flex-1 flex items-center justify-center min-h-[100px]">
+                                    <p class="text-[9px] text-stone-300 dark:text-slate-600 italic text-center px-4">Selecciona un almacén primero</p>
+                                </div>
+                            </ng-template>
+                        </div>
+
+                        <!-- ─── COLUMNA 3: NIVEL ─── -->
+                        <div class="md:w-1/3 min-h-0 flex flex-col overflow-y-auto custom-scrollbar-ing px-3 py-3">
+                            <div class="flex items-center gap-2 mb-2 shrink-0">
+                                <span class="w-5 h-5 rounded border-2 flex items-center justify-center text-[9px] font-black shrink-0 transition-all"
+                                      [ngClass]="ubSelectedLevel ? 'border-black bg-black text-white' : 'border-stone-300 bg-white dark:bg-slate-800 text-stone-400'">
+                                    {{ ubSelectedLevel ? '✓' : '3' }}
+                                </span>
+                                <span class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400">Nivel</span>
+                                <span *ngIf="loadingLevels" class="ml-auto text-[8px] text-stone-400 italic animate-pulse">cargando...</span>
+                            </div>
+
+                            <ng-container *ngIf="ubSelectedRack; else esperandoEstanteIng">
+                                <div class="grid grid-cols-3 gap-1.5 content-start">
+                                    <button *ngFor="let l of ubLevels" type="button" [title]="l.nombre"
+                                            (click)="seleccionarUbNivelCard(l)"
+                                            class="flex flex-col items-center border-2 rounded-xl p-1.5 text-center transition-all"
+                                            [ngClass]="ubSelectedLevel?.id === l.id
+                                                ? 'border-black bg-white dark:bg-slate-700 shadow-[2px_2px_0_#000] -translate-y-px'
+                                                : 'border-stone-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:border-stone-400 hover:shadow-[1px_1px_0_#ccc] hover:-translate-y-px'">
+                                        <mat-icon class="!text-base mb-0.5 text-stone-400 dark:text-slate-500">layers</mat-icon>
+                                        <p class="text-[9px] font-black text-black dark:text-white uppercase leading-none">{{ l.isFloor ? 'Suelo' : 'N' + l.numero }}</p>
+                                    </button>
+                                </div>
+                                <p *ngIf="!ubLevels.length"
+                                   class="text-[9px] text-stone-400 italic text-center py-3">Sin niveles disponibles</p>
+                            </ng-container>
+                            <ng-template #esperandoEstanteIng>
+                                <div class="flex-1 flex items-center justify-center min-h-[100px]">
+                                    <p class="text-[9px] text-stone-300 dark:text-slate-600 italic text-center px-4">Selecciona un estante primero</p>
+                                </div>
+                            </ng-template>
+                        </div>
+
+                        </div><!-- /3 columnas -->
+                    </div><!-- /mini ventana -->
+                </ng-template>
+            </div>
+
+            <!-- Fila 7: Observación -->
+            <div>
+                <label class="text-[9px] font-black uppercase tracking-wider text-stone-400 dark:text-slate-400 mb-1 block">Observación</label>
+                <input type="text" formControlName="observacion" placeholder="Notas relevantes..."
+                       class="w-full h-8 text-xs font-bold bg-white dark:bg-slate-900 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-lg px-2.5 outline-none transition-all placeholder:text-stone-300 placeholder:font-normal hover:border-stone-400 focus:border-black focus:shadow-[2px_2px_0_#000]">
+            </div>
+
+            <!-- Fila 8: Calibración -->
+            <div>
+                <label class="text-[9px] font-black uppercase tracking-wider text-stone-400 dark:text-slate-400 mb-1 block">Calibración</label>
+                <div class="flex flex-col gap-2">
+                    <button type="button"
+                            (click)="herramientaForm.patchValue({requiereCalibracion: !herramientaForm.get('requiereCalibracion')?.value})"
+                            class="flex items-center gap-2.5 h-8 px-3 border-2 rounded-lg font-black text-[9px] uppercase transition-all w-full"
+                            [ngClass]="herramientaForm.get('requiereCalibracion')?.value
+                                ? 'border-black bg-white dark:bg-slate-900 shadow-[2px_2px_0_#000] text-black dark:text-white'
+                                : 'border-stone-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-stone-400 dark:text-slate-500 hover:border-stone-400'">
+                        <div class="w-7 h-3.5 rounded-full border-2 relative transition-all shrink-0"
+                             [ngClass]="herramientaForm.get('requiereCalibracion')?.value ? 'border-black bg-black dark:bg-amber-400 dark:border-amber-400' : 'border-stone-300 bg-stone-200 dark:bg-slate-600 dark:border-slate-500'">
+                            <div class="absolute top-0.5 w-2.5 h-2.5 rounded-full bg-white transition-all"
+                                 [ngClass]="herramientaForm.get('requiereCalibracion')?.value ? 'left-3' : 'left-0.5'"></div>
+                        </div>
+                        <span>{{ herramientaForm.get('requiereCalibracion')?.value ? 'Requiere Calibración Periódica' : 'Sin Calibración' }}</span>
+                    </button>
+                    <div *ngIf="herramientaForm.get('requiereCalibracion')?.value"
+                         class="grid grid-cols-2 sm:grid-cols-3 gap-2 p-2.5 bg-amber-50 dark:bg-amber-900/10 border-2 border-amber-300 dark:border-amber-700 rounded-lg animate-fadeIn">
+                        <div>
+                            <label class="text-[9px] font-black uppercase tracking-wider text-stone-400 dark:text-slate-400 mb-1 block">Intervalo (días) <span class="text-red-500">*</span></label>
+                            <input type="number" formControlName="intervaloCalibracion" min="1" placeholder="360"
+                                   class="w-full h-8 text-xs font-black text-center bg-white dark:bg-slate-900 dark:text-white border-2 border-amber-400 rounded-lg px-2.5 outline-none transition-all focus:border-black focus:shadow-[2px_2px_0_#000]">
+                        </div>
+                        <div>
+                            <label class="text-[9px] font-black uppercase tracking-wider text-stone-400 dark:text-slate-400 mb-1 block">Fecha Calibración</label>
+                            <input type="date" formControlName="fechaCalibracion"
+                                   class="w-full h-8 text-xs font-bold bg-white dark:bg-slate-900 dark:text-white border-2 border-amber-400 rounded-lg px-2.5 outline-none transition-all cursor-pointer focus:border-black focus:shadow-[2px_2px_0_#000]">
+                        </div>
+                        <div>
+                            <label class="text-[9px] font-black uppercase tracking-wider text-stone-400 dark:text-slate-400 mb-1 block">N° Certificado</label>
+                            <input type="text" formControlName="nroCertificado" placeholder="CERT-001"
+                                   class="w-full h-8 text-xs font-black uppercase bg-white dark:bg-slate-900 dark:text-white border-2 border-amber-400 rounded-lg px-2.5 outline-none transition-all placeholder:text-stone-300 placeholder:font-normal placeholder:normal-case focus:border-black focus:shadow-[2px_2px_0_#000]">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </form>
+
+    <!-- Footer -->
+    <div class="border-t-2 border-black bg-stone-200 dark:bg-slate-800 px-4 py-2 flex justify-between items-center gap-2 shrink-0">
+        <button type="button" (click)="cerrarModalHerramienta()"
+                class="flex items-center gap-1 px-3 py-1.5 bg-[#FF1414] text-white font-black text-[10px] border-2 border-black rounded-lg shadow-[2px_2px_0_#000] hover:shadow-none hover:translate-x-[1px] hover:translate-y-[1px] transition-all uppercase">
+            <mat-icon class="!text-xs">close</mat-icon>Cancelar
+        </button>
+        <div class="flex items-center gap-2">
+            <span class="text-[9px] font-bold text-stone-400 dark:text-slate-400 uppercase hidden sm:block">
+                {{ herramientaForm.value.estado }} · {{ herramientaForm.value.cantidad }} {{ herramientaForm.value.unidadMedida }}
+            </span>
+            <button type="button" (click)="agregarHerramienta()"
+                    class="flex items-center gap-1.5 px-3 py-1.5 bg-amber-400 text-black font-black text-[10px] border-2 border-black rounded-lg shadow-[2px_2px_0_#000] hover:shadow-none hover:translate-x-[1px] hover:translate-y-[1px] transition-all uppercase">
+                <mat-icon class="!text-xs">{{ isEditMode ? 'save' : 'move_to_inbox' }}</mat-icon>
+                <span class="hidden sm:inline">{{ isEditMode ? 'Actualizar' : 'Añadir a Recepción' }}</span>
+                <span class="sm:hidden">{{ isEditMode ? 'Actualizar' : 'Añadir' }}</span>
+            </button>
+        </div>
+    </div>
+</div>

@@ -141,19 +141,19 @@
 
                         <td class="px-3 py-2">
                             <div class="flex flex-col leading-tight">
-                                <span class="font-bold text-gray-900 dark:text-white text-sm">{{ lab.name }}</span>
+                                <span class="font-bold text-black dark:text-white text-sm">{{ lab.name }}</span>
                                 <span *ngIf="lab.email" class="text-[9px] text-gray-400">{{ lab.email }}</span>
                             </div>
                         </td>
 
                         <td class="px-3 py-2">
-                            <span class="text-gray-700 dark:text-gray-300 font-mono text-xs">{{ lab.rut_nit || '—' }}</span>
+                            <span class="text-black dark:text-white font-mono text-xs">{{ lab.rut_nit || '—' }}</span>
                             <span *ngIf="lab.city" class="text-[9px] text-gray-400 block">{{ lab.city }}</span>
                         </td>
 
                         <td class="px-3 py-2">
                             <div class="flex flex-col leading-tight">
-                                <span class="text-gray-700 dark:text-gray-300 text-sm">{{ lab.contact_person || '—' }}</span>
+                                <span class="text-black dark:text-white text-sm">{{ lab.contact_person || '—' }}</span>
                                 <span *ngIf="lab.phone" class="text-[9px] text-gray-400">{{ lab.phone }}</span>
                             </div>
                         </td>
@@ -184,12 +184,12 @@
                                 </button>
 
                                 <button *appHasPermission="'cal_labs.delete'" (click)="eliminarLaboratorio(lab, $event)"
-                                        matTooltip="{{ lab.active ? 'Desactivar empresa' : 'Eliminar empresa' }}"
+                                        matTooltip="Eliminar / desactivar empresa"
                                         class="w-8 h-8 flex items-center justify-center border-2 border-black
                                                    bg-red-100 dark:bg-red-900/50 hover:bg-red-200 dark:hover:bg-red-800
                                                    rounded-lg shadow-[2px_2px_0px_0px_#000]
                                                    active:translate-y-[1px] active:shadow-none transition-all">
-                                    <mat-icon class="text-red-600 dark:text-red-400 !text-base">{{ lab.active ? 'block' : 'delete' }}</mat-icon>
+                                    <mat-icon class="text-red-600 dark:text-red-400 !text-base">delete</mat-icon>
                                 </button>
                             </div>
                         </td>

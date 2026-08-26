@@ -102,8 +102,6 @@ export class FormDevolucionDialogComponent implements OnInit, OnDestroy {
         { value: 'FALTANTE',             label: 'Faltante',    bgColor: 'bg-red-700',    icon: 'help_outline'   }
     ];
 
-    private readonly _statusBloqueado = new Set(['decommissioned', 'in_calibration', 'quarantine', 'in_maintenance']);
-
     ngOnInit(): void {
         this.initDevolucionForm();
         this._setupFuncionarioSearch();
@@ -204,19 +202,18 @@ export class FormDevolucionDialogComponent implements OnInit, OnDestroy {
     }
     hideResponsableDropdown(): void { setTimeout(() => this.showResponsableDropdown = false, 150); }
 
-    private _toolDisponible(t: any): boolean {
-        const status  = (t.status ?? t.tool_status ?? '').toLowerCase();
-        const stock   = Number(t.quantity_in_stock ?? t.stock ?? t.existencia ?? 0);
-        const expiry  = t.next_calibration_date ?? t.calibration_due_date ?? null;
-        return !this._statusBloqueado.has(status) && stock > 0 && !(expiry && expiry < this._localDateStr());
-    }
-
+    // Autocomplete del código de herramienta a devolver. Sin filtro de disponibilidad:
+    // una herramienta en devolución está por definición prestada (stock 0 / status 'in_use',
+    // ver he.ft_prestamo_multiple.sql), así que filtrar por "disponible" la ocultaba siempre
+    // del buscador — el mismo problema que en el buscador de Préstamo Técnico (form-prestamo-
+    // dialog.component.ts). La búsqueda real (realizarConsulta) no depende de esta lista: solo
+    // filtra los ítems de los préstamos activos ya consultados, así que esto es puramente el
+    // helper de sugerencias mientras se escribe.
     private _cargarHerramientas(): void {
         this.movementSvc.getHerramientasDisponibles({}).pipe(
             takeUntil(this.destroy$), catchError(() => of([]))
         ).subscribe((tools: any[]) => {
             this.todasLasHerramientas = (tools || [])
-                .filter(t => this._toolDisponible(t))
                 .map((t: any) => ({
                     id: t.id_tool ?? t.id, codigo: t.code ?? t.codigo ?? '',
                     nombre: t.name ?? t.nombre ?? '', pn: t.part_number ?? t.pn ?? ''
@@ -367,24 +364,9 @@ export class FormDevolucionDialogComponent implements OnInit, OnDestroy {
         return this._condicionLabelMap[(est || '').toLowerCase()] || (est || '—').toUpperCase();
     }
 
-    getEstadoPrestarClass(est: string): string {
-        const e = (est || '').toLowerCase();
-        if (['good','serviceable','bueno','nuevo','new','excellent'].includes(e)) return 'bg-green-500 text-white';
-        if (['fair','en_calibracion','reconditioned'].includes(e))                return 'bg-yellow-400 text-black';
-        if (['damaged','poor','unserviceable'].includes(e))                       return 'bg-red-500 text-white';
-        return 'bg-stone-400 text-white';
-    }
-
     onCondicionChange(item: DevolucionItem): void { if (item.condicionDevolucion === 'BUENO') item.observacionItem = ''; }
     getCondicionIcon(cond: CondicionDevolucion): string { return this.condiciones.find(c => c.value === cond)?.icon || 'help_outline'; }
     validateCantidad(item: DevolucionItem): void { if (item.cantidadDevolver < 1) item.cantidadDevolver = 1; if (item.cantidadDevolver > item.cantidadPrestada) item.cantidadDevolver = item.cantidadPrestada; }
-
-    getDiasFueraClass(dias: number): string {
-        if (dias <= 3)  return 'bg-green-100 text-green-800 border-green-300';
-        if (dias <= 7)  return 'bg-yellow-100 text-yellow-800 border-yellow-300';
-        if (dias <= 15) return 'bg-orange-100 text-orange-800 border-orange-300';
-        return 'bg-red-100 text-red-800 border-red-400';
-    }
 
     private _validateDevolucion(): { valid: boolean; errors: string[] } {
         const errors: string[] = [];

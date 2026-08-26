@@ -1,7 +1,7 @@
 import { Component, OnInit, OnDestroy, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { MatDialogRef, MAT_DIALOG_DATA, MatDialogModule } from '@angular/material/dialog';
+import { MatDialog, MatDialogRef, MAT_DIALOG_DATA, MatDialogModule } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { Subject, of } from 'rxjs';
@@ -9,9 +9,11 @@ import { debounceTime, distinctUntilChanged, switchMap, takeUntil, finalize, map
 
 import { MovementService } from '../../../../../../core/services/movement.service';
 import { ToolService } from '../../../../../../core/services/tool.service';
+import { localDateStr } from '../../../../../../core/utils/date.utils';
 import {
     Ubicacion, ToolEnvioItem, Funcionario, PersonaTecnico, TIPOS_TRASPASO, CONDICIONES_ENVIO
 } from '../../retorno-traspaso.types';
+import { RetornoPdfService } from '../../retorno-pdf.service';
 
 export interface TraspasoTecnicoDialogData {
     almacenes: Ubicacion[];
@@ -37,10 +39,12 @@ export class TraspasoTecnicoDialogComponent implements OnInit, OnDestroy {
 
     private dialogRef = inject(MatDialogRef<TraspasoTecnicoDialogComponent>);
     data              = inject<TraspasoTecnicoDialogData>(MAT_DIALOG_DATA);
+    private dialog    = inject(MatDialog);
     private fb        = inject(FormBuilder);
     private snackBar  = inject(MatSnackBar);
     private movSvc    = inject(MovementService);
     private toolSvc   = inject(ToolService);
+    private pdfSvc    = inject(RetornoPdfService);
     private _unsub$   = new Subject<void>();
     private _srchTecnico$       = new Subject<string>();
     private _srchPersona$       = new Subject<string>();
@@ -48,7 +52,6 @@ export class TraspasoTecnicoDialogComponent implements OnInit, OnDestroy {
 
     traspasoTecnicoForm!: FormGroup;
     itemsTraspasoTecnico: ToolEnvioItem[] = [];
-    activeTecnicoChip: number | null = null;
     isSavingTraspasoTecnico = false;
 
     // Locations
@@ -74,8 +77,12 @@ export class TraspasoTecnicoDialogComponent implements OnInit, OnDestroy {
     tiposTraspasoTecnico = TIPOS_TRASPASO;
     condicionesEnvio     = CONDICIONES_ENVIO;
 
+    // Base destino autocomplete
+    basesFiltradas: Ubicacion[] = [];
+    showBaseDropdown = false;
+
     ngOnInit(): void {
-        const today = new Date().toISOString().split('T')[0];
+        const today = localDateStr();
         this.traspasoTecnicoForm = this.fb.group({
             nombreCompletoInput:   ['', Validators.required],
             nroLicencia:           ['', Validators.required],
@@ -84,11 +91,39 @@ export class TraspasoTecnicoDialogComponent implements OnInit, OnDestroy {
             unidad:                ['', Validators.required],
             fecha:                 [today, Validators.required],
             base:                  [null, Validators.required],
+            baseTexto:             [''],
             tipoTraspaso:          ['TEMPORAL'],
             fechaRetornoEsperada:  [''],
             observaciones:         ['']
         });
         this._setupSearches();
+
+        // Almacén destino autocomplete (lista ya cargada en memoria, filtro sincrónico).
+        // OJO: usa this.almacenes (he.twarehouses), NO this.bases (param.tlugar) — el
+        // campo se guarda en destination_warehouse_id, cuya FK apunta a he.twarehouses.
+        // Enviar un id_lugar ahí viola la FK (tmovements_dest_warehouse_fkey).
+        this.traspasoTecnicoForm.get('baseTexto')!.valueChanges.pipe(
+            debounceTime(100), takeUntil(this._unsub$)
+        ).subscribe(term => {
+            const seleccionActual = this.traspasoTecnicoForm.get('base')?.value as Ubicacion | null;
+            if (seleccionActual && seleccionActual.nombre !== term) {
+                this.traspasoTecnicoForm.patchValue({ base: null }, { emitEvent: false });
+            }
+            const q = (term || '').trim().toLowerCase();
+            this.basesFiltradas = q ? this.almacenes.filter(b => b.nombre.toLowerCase().includes(q)) : this.almacenes;
+            this.showBaseDropdown = this.basesFiltradas.length > 0;
+        });
+    }
+
+    onBaseFocus(): void {
+        const q = (this.traspasoTecnicoForm.get('baseTexto')?.value || '').trim().toLowerCase();
+        this.basesFiltradas = q ? this.almacenes.filter(b => b.nombre.toLowerCase().includes(q)) : this.almacenes;
+        this.showBaseDropdown = this.basesFiltradas.length > 0;
+    }
+    hideBaseDropdown(): void { setTimeout(() => this.showBaseDropdown = false, 150); }
+    selectBase(b: Ubicacion): void {
+        this.traspasoTecnicoForm.patchValue({ base: b, baseTexto: b.nombre }, { emitEvent: false });
+        this.showBaseDropdown = false;
     }
 
     ngOnDestroy(): void { this._unsub$.next(); this._unsub$.complete(); }
@@ -164,13 +199,13 @@ export class TraspasoTecnicoDialogComponent implements OnInit, OnDestroy {
     selectPersonaTecnico(p: PersonaTecnico): void {
         this.traspasoTecnicoForm.patchValue({
             nombreCompletoInput: p.nombre, nroLicencia: p.licencia, cargo: p.cargo, unidad: p.area || ''
-        });
+        }, { emitEvent: false });
         this.showPersonaTecnicoDropdown = false;
     }
 
     // — Entrega —
     hideFuncEntregaTecnicoDropdown(): void { setTimeout(() => this.showFuncEntregaTecnicoDropdown = false, 150); }
-    selectFuncEntregaTecnico(f: Funcionario): void { this.traspasoTecnicoForm.patchValue({ responsableEntrega: f.nombre }); this.showFuncEntregaTecnicoDropdown = false; }
+    selectFuncEntregaTecnico(f: Funcionario): void { this.traspasoTecnicoForm.patchValue({ responsableEntrega: f.nombre }, { emitEvent: false }); this.showFuncEntregaTecnicoDropdown = false; }
 
     // — Tool search —
     onToolSearchTecnico(term: string): void { this.toolSearchTecnico = term; this._srchTecnico$.next(term); }
@@ -187,6 +222,22 @@ export class TraspasoTecnicoDialogComponent implements OnInit, OnDestroy {
         this.toolSearchTecnico = ''; this.toolResultsTecnico = []; this.showToolDropTecnico = false;
     }
     removeToolTecnico(i: number): void { this.itemsTraspasoTecnico.splice(i, 1); }
+
+    async abrirDetalleHerramientaItem(item: ToolEnvioItem): Promise<void> {
+        const { DetalleHerramientaComponent } = await import('../../../ingresos-hub/detalle-herramienta/detalle-herramienta.component');
+        const editItem = {
+            toolId: item.toolId, codigoBoa: item.codigo, pn: item.pn, sn: item.sn,
+            descripcion: item.nombre, marca: item.marca, tipo: 'HERRAMIENTA',
+            estado: item.condicion, cantidad: item.cantidad, um: item.unidad, obs: item.notesTool,
+            imagenMaster: item.imagen, warehouseId: item.warehouseId,
+            rackId: item.rackId, levelId: item.levelId
+        };
+        this.dialog.open(DetalleHerramientaComponent, {
+            width: '800px', maxWidth: '96vw', height: '560px',
+            panelClass: 'no-padding-dialog', hasBackdrop: true, disableClose: false, autoFocus: false,
+            data: { editItem, viewOnly: true }
+        });
+    }
 
     requiereFechaRetornoTecnico(): boolean {
         const tipo = this.traspasoTecnicoForm.get('tipoTraspaso')?.value;
@@ -208,6 +259,9 @@ export class TraspasoTecnicoDialogComponent implements OnInit, OnDestroy {
             tool_id: it.toolId, quantity: it.cantidad,
             condition_on_movement: it.condicion, serial_number: it.sn || '', part_number: it.pn || '', notes: it.notas || ''
         })));
+        // Se abre en el mismo tick del clic (gesto de usuario) para que el navegador no
+        // bloquee la pestaña nueva cuando el PDF se genera después de que responda el guardado.
+        const pdfWin = window.open('', '_blank');
         this.isSavingTraspasoTecnico = true;
         const baseLabel = form.base?.codigo ? `${form.base.codigo} — ${form.base.nombre}` : (form.base?.nombre || '');
         const payload: any = {
@@ -217,6 +271,10 @@ export class TraspasoTecnicoDialogComponent implements OnInit, OnDestroy {
             department:         form.unidad              || '',
             requested_by_name:  form.responsableEntrega  || '',
             responsible_person: form.responsableEntrega  || '',
+            // El form no pide "Almacén Origen" explícito (es el almacén que entrega la
+            // herramienta) — se usa el almacén por defecto del hub para que "Origen" no
+            // quede vacío en la tabla de Activos.
+            source_warehouse_id: this.data.defaultAlmacen?.id ? Number(this.data.defaultAlmacen.id) : undefined,
             destination_warehouse_id: form.base?.id ? Number(form.base.id) : undefined,
             exit_reason:        'area_transfer',
             transfer_type:      form.tipoTraspaso        || 'TEMPORAL',
@@ -235,14 +293,15 @@ export class TraspasoTecnicoDialogComponent implements OnInit, OnDestroy {
             next: (result: any) => {
                 const nro = result?.movement_number || '---';
                 this._showMsg(`MGH-109 registrado: ${nro}`, 'success');
+                this.pdfSvc.generarPdfMGH109(nro, form, this.itemsTraspasoTecnico, pdfWin);
                 this.dialogRef.close({ refreshActivos: true, movementNumber: nro });
             },
-            error: (e: any) => this._showMsg('Error al registrar: ' + (e?.message || ''), 'error')
+            error: (e: any) => { pdfWin?.close(); this._showMsg('Error al registrar: ' + (e?.message || ''), 'error'); }
         });
     }
 
     resetTraspasoTecnicoTab(): void {
-        this.traspasoTecnicoForm.reset({ fecha: new Date().toISOString().split('T')[0], tipoTraspaso: 'TEMPORAL' });
+        this.traspasoTecnicoForm.reset({ fecha: localDateStr(), tipoTraspaso: 'TEMPORAL' });
         this.itemsTraspasoTecnico = [];
         this.personasTecnico = []; this.showPersonaTecnicoDropdown = false;
         this.funcEntregaTecnico = []; this.showFuncEntregaTecnicoDropdown = false;

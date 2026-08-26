@@ -1,5 +1,5 @@
 ﻿<div class="bg-stone-100 dark:bg-[#0F172A] sm:border-2 border-black rounded-2xl flex flex-col overflow-hidden relative w-full"
-     style="box-shadow:6px 6px 0 #000; height:560px">
+     style="box-shadow:6px 6px 0 #000; height:min(600px,90vh)">
 
   <!-- Saving overlay -->
   <div *ngIf="isSavingEnvio" class="absolute inset-0 bg-black/60 flex items-center justify-center z-50">
@@ -10,13 +10,13 @@
   </div>
 
   <!-- Header -->
-  <div class="bg-[#0F172A] px-4 py-2 flex items-center gap-3 shrink-0">
-    <div class="w-6 h-6 rounded bg-blue-500 border-2 border-black flex items-center justify-center shadow-[2px_2px_0_#1d4ed8] shrink-0">
-      <mat-icon class="!text-sm text-white">send</mat-icon>
+  <div class="bg-[#0F172A] px-4 py-3 flex items-center gap-3 shrink-0">
+    <div class="w-8 h-8 rounded bg-blue-500 border-2 border-black flex items-center justify-center shadow-[2px_2px_0_#1d4ed8] shrink-0">
+      <mat-icon class="!text-base text-white">send</mat-icon>
     </div>
     <div>
-      <p class="text-[8px] text-slate-400 font-bold uppercase tracking-[0.15em] leading-none mb-0.5">Salidas · Envíos a Base</p>
-      <h2 class="text-xs text-white font-black uppercase tracking-tight leading-none">Nuevo Envío — ENV</h2>
+      <p class="text-[9px] text-slate-400 font-bold uppercase tracking-[0.15em] leading-none mb-1">Salidas · Envíos a Base</p>
+      <h2 class="text-sm text-white font-black uppercase tracking-tight leading-none">Nuevo Envío — ENV</h2>
     </div>
     <div class="ml-auto flex items-center gap-2 shrink-0">
       <div class="flex items-center gap-1 bg-white/10 rounded-lg px-2 py-0.5 border border-white/20">
@@ -49,32 +49,32 @@
         <div>
           <label class="text-[9px] font-black uppercase tracking-tight text-stone-500 dark:text-slate-400 mb-1 block">Almacén Origen</label>
           <select formControlName="baseOrigen"
-                  class="w-full h-7 text-xs font-bold bg-white dark:bg-slate-800 dark:text-white border-2border-stone-300 dark:border-slate-500 rounded-lg px-2 outline-none appearance-none cursor-pointer focus:border-black transition-colors">
+                  class="w-full h-8 text-xs font-bold bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-500 rounded-lg px-2 outline-none appearance-none cursor-pointer focus:border-black transition-colors">
             <option [ngValue]="null">— Almacén actual —</option>
             <option *ngFor="let a of almacenes" [ngValue]="a">{{a.nombre}}</option>
           </select>
         </div>
 
         <div>
-          <label class="text-[9px] font-black uppercase tracking-tight text-stone-500 dark:text-slate-400 mb-1 block">Base Destino <span class="text-red-500">*</span></label>
+          <label class="text-[9px] font-black uppercase tracking-tight text-stone-500 dark:text-slate-400 mb-1 block">Almacén Destino <span class="text-red-500">*</span></label>
           <select formControlName="baseDestino"
-                  class="w-full h-7 text-xs font-bold bg-white dark:bg-slate-800 dark:text-white border-2rounded-lg px-2 outline-none appearance-none cursor-pointer focus:border-black transition-colors"
+                  class="w-full h-8 text-xs font-bold bg-white dark:bg-slate-800 dark:text-white border-2 rounded-lg px-2 outline-none appearance-none cursor-pointer focus:border-black transition-colors"
                   [ngClass]="envioForm.get('baseDestino')?.touched && envioForm.get('baseDestino')?.invalid ? 'border-red-500' : 'border-stone-300 dark:border-slate-500'">
             <option [ngValue]="null" disabled>Seleccionar…</option>
-            <option *ngFor="let b of getAllUbicaciones()" [ngValue]="b">{{b.nombre}}</option>
+            <option *ngFor="let a of almacenes" [ngValue]="a">{{a.nombre}}</option>
           </select>
         </div>
 
         <div>
           <label class="text-[9px] font-black uppercase tracking-tight text-stone-500 dark:text-slate-400 mb-1 block">Fecha Envío <span class="text-red-500">*</span></label>
           <input type="date" formControlName="fechaEnvio"
-                 class="w-full h-7 text-xs font-bold bg-white dark:bg-slate-800 dark:text-white border-2border-stone-300 dark:border-slate-500 rounded-lg px-2 outline-none focus:border-black transition-colors" />
+                 class="w-full h-8 text-xs font-bold bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-500 rounded-lg px-2 outline-none focus:border-black transition-colors" />
         </div>
 
         <div>
           <label class="text-[9px] font-black uppercase tracking-tight text-stone-500 dark:text-slate-400 mb-1 block">Hora</label>
           <input type="time" formControlName="horaEnvio"
-                 class="w-full h-7 text-xs font-bold bg-white dark:bg-slate-800 dark:text-white border-2border-stone-300 dark:border-slate-500 rounded-lg px-2 outline-none focus:border-black transition-colors" />
+                 class="w-full h-8 text-xs font-bold bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-500 rounded-lg px-2 outline-none focus:border-black transition-colors" />
         </div>
 
         <div class="col-span-2">
@@ -82,13 +82,13 @@
             <mat-icon class="!text-[10px] text-blue-500">swap_horiz</mat-icon>Tipo de Envío
           </label>
           <div class="flex items-center gap-1.5 flex-wrap">
-            <label *ngFor="let t of [['EVENTUAL','Eventual','bg-green-100 text-green-800 border-green-500'],['PERMANENTE','Permanente','bg-orange-100 text-orange-800 border-orange-500']]"
+            <label *ngFor="let t of [['EVENTUAL','Eventual'],['PERMANENTE','Permanente']]"
                    class="cursor-pointer">
               <input type="radio" formControlName="tipoEnvio" [value]="t[0]" class="sr-only" />
               <span class="px-2 py-0.5 rounded border-2 font-black text-[8px] uppercase transition-all cursor-pointer block"
                     [ngClass]="envioForm.get('tipoEnvio')?.value === t[0]
-                      ? t[2] + ' shadow-[2px_2px_0_#000] translate-x-[1px] translate-y-[1px]'
-                      : 'bg-white dark:bg-slate-800 text-stone-500 dark:text-slate-400 border-stone-300 dark:border-slate-500 hover:border-stone-400'"
+                      ? 'border-black bg-white dark:bg-slate-700 shadow-[2px_2px_0_#000] translate-x-[1px] translate-y-[1px] text-black dark:text-white'
+                      : 'bg-white dark:bg-slate-800 text-stone-400 dark:text-slate-500 border-stone-200 dark:border-slate-600 hover:border-stone-400'"
                     (click)="envioForm.patchValue({tipoEnvio: t[0]})">{{t[1]}}</span>
             </label>
             <span *ngIf="envioForm.get('tipoEnvio')?.value === 'PERMANENTE'"
@@ -113,13 +113,13 @@
         <div>
           <label class="text-[9px] font-black uppercase tracking-tight text-stone-500 dark:text-slate-400 mb-1 block">Nro. Vuelo</label>
           <input type="text" formControlName="nroVuelo" placeholder="OA-XXXX…"
-                 class="w-full h-7 text-xs font-bold bg-white dark:bg-slate-800 dark:text-white border-2border-stone-300 dark:border-slate-500 rounded-lg px-2 outline-none focus:border-black transition-colors placeholder:text-stone-300" />
+                 class="w-full h-8 text-xs font-bold bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-500 rounded-lg px-2 outline-none focus:border-black transition-colors placeholder:text-stone-300" />
         </div>
 
         <div>
           <label class="text-[9px] font-black uppercase tracking-tight text-stone-500 dark:text-slate-400 mb-1 block">Aeronave</label>
           <input type="text" formControlName="aeronave" placeholder="CP-XXXX…"
-                 class="w-full h-7 text-xs font-bold bg-white dark:bg-slate-800 dark:text-white border-2border-stone-300 dark:border-slate-500 rounded-lg px-2 outline-none focus:border-black transition-colors placeholder:text-stone-300" />
+                 class="w-full h-8 text-xs font-bold bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-500 rounded-lg px-2 outline-none focus:border-black transition-colors placeholder:text-stone-300" />
         </div>
 
         <div class="col-span-2 relative">
@@ -131,7 +131,7 @@
           </label>
           <input type="text" formControlName="responsableEnvia"
                  (blur)="hideFuncEnviaDropdown()" placeholder="Buscar funcionario…"
-                 class="w-full h-7 text-xs font-bold bg-white dark:bg-slate-800 dark:text-white border-2rounded-lg px-2 outline-none transition-colors placeholder:text-stone-300 focus:border-black"
+                 class="w-full h-8 text-xs font-bold bg-white dark:bg-slate-800 dark:text-white border-2 rounded-lg px-2 outline-none transition-colors placeholder:text-stone-300 focus:border-black"
                  [ngClass]="envioForm.get('responsableEnvia')?.touched && envioForm.get('responsableEnvia')?.invalid ? 'border-red-500' : 'border-stone-300 dark:border-slate-500'" />
           <div *ngIf="showFuncEnviaDropdown && funcionariosEnvia.length"
                class="absolute left-0 right-0 top-full mt-0.5 z-50 bg-white dark:bg-slate-800 border-2 border-black rounded-xl shadow-[3px_3px_0_#000] overflow-hidden max-h-36 overflow-y-auto custom-scrollbar divide-y divide-stone-100 dark:divide-slate-700">
@@ -152,7 +152,7 @@
           </label>
           <input type="text" formControlName="recibeEnDestino"
                  (blur)="hideFuncRecibeDropdown()" placeholder="Buscar funcionario…"
-                 class="w-full h-7 text-xs font-bold bg-white dark:bg-slate-800 dark:text-white border-2border-stone-300 dark:border-slate-500 rounded-lg px-2 outline-none transition-colors placeholder:text-stone-300 focus:border-black" />
+                 class="w-full h-8 text-xs font-bold bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-500 rounded-lg px-2 outline-none transition-colors placeholder:text-stone-300 focus:border-black" />
           <div *ngIf="showFuncRecibeDropdown && funcionariosRecibe.length"
                class="absolute left-0 right-0 top-full mt-0.5 z-50 bg-white dark:bg-slate-800 border-2 border-black rounded-xl shadow-[3px_3px_0_#000] overflow-hidden max-h-36 overflow-y-auto custom-scrollbar divide-y divide-stone-100 dark:divide-slate-700">
             <div *ngFor="let f of funcionariosRecibe" (mousedown)="selectFuncionarioRecibe(f)"
@@ -166,7 +166,7 @@
         <div>
           <label class="text-[9px] font-black uppercase tracking-tight text-stone-500 dark:text-slate-400 mb-1 block">Nro. Documento</label>
           <input type="text" formControlName="nroDocumento" placeholder="COMAT / nota…"
-                 class="w-full h-7 text-xs font-bold bg-white dark:bg-slate-800 dark:text-white border-2border-stone-300 dark:border-slate-500 rounded-lg px-2 outline-none focus:border-black transition-colors placeholder:text-stone-300" />
+                 class="w-full h-8 text-xs font-bold bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-500 rounded-lg px-2 outline-none focus:border-black transition-colors placeholder:text-stone-300" />
         </div>
 
         <div class="relative">
@@ -175,7 +175,7 @@
                  (input)="onDeptChangeEnvio($any($event.target).value)"
                  (blur)="hideDeptDropEnvio()"
                  placeholder="Base o área…"
-                 class="w-full h-7 text-xs font-bold bg-white dark:bg-slate-800 dark:text-white border-2border-stone-300 dark:border-slate-500 rounded-lg px-2 outline-none focus:border-black transition-colors placeholder:text-stone-300" />
+                 class="w-full h-8 text-xs font-bold bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-500 rounded-lg px-2 outline-none focus:border-black transition-colors placeholder:text-stone-300" />
           <div *ngIf="showDeptDropEnvio && deptUbicacionesEnvio.length"
                class="absolute left-0 right-0 top-full mt-0.5 z-50 bg-white dark:bg-slate-800 border-2 border-black rounded-xl shadow-[3px_3px_0_#000] overflow-hidden max-h-36 overflow-y-auto custom-scrollbar divide-y divide-stone-100 dark:divide-slate-700">
             <div *ngFor="let u of deptUbicacionesEnvio" (mousedown)="selectDeptEnvio(u.nombre)"
@@ -194,100 +194,105 @@
       </form>
     </div>
 
-    <!-- RIGHT: tool search + chips -->
+    <!-- RIGHT: tool search + items table (mismo patrón que Préstamo Técnico) -->
     <div class="flex-1 min-h-0 flex flex-col overflow-hidden">
 
-      <div class="px-3 pt-2 pb-1.5 border-b-2 border-black/20 dark:border-slate-600 shrink-0">
-        <div class="flex items-center gap-1 mb-1">
+      <!-- Add tools header -->
+      <div class="border-b-2 border-black/20 dark:border-slate-600 px-4 pt-3 pb-2.5 flex flex-col gap-2 shrink-0">
+
+        <div class="flex items-center gap-1.5">
           <mat-icon class="!text-xs text-blue-500">search</mat-icon>
-          <span class="text-[7px] font-black uppercase text-stone-400 dark:text-slate-300 tracking-tight">Herramientas a Enviar</span>
+          <span class="text-[9px] font-black uppercase text-stone-400 dark:text-slate-500 tracking-wider">Herramientas a Enviar</span>
         </div>
-        <div class="relative">
-          <mat-icon class="absolute left-2 top-1/2 -translate-y-1/2 !text-[11px] !w-[11px] !h-[11px] !leading-[11px] text-stone-400 pointer-events-none">build</mat-icon>
-          <input type="text" [ngModel]="toolSearchEnvio" [ngModelOptions]="{standalone:true}"
-                 (ngModelChange)="onToolSearchEnvio($event)" (blur)="hideToolDropEnvio()"
-                 placeholder="Código, nombre, S/N, P/N…"
-                 class="w-full h-6 text-[10px] font-bold bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-500 rounded-lg pl-7 pr-7 outline-none transition-all placeholder:text-stone-300 hover:border-stone-400 focus:border-black focus:shadow-[2px_2px_0_#000]" />
-          <div *ngIf="searchingToolsEnvio" class="absolute right-2 top-1/2 -translate-y-1/2">
-            <div class="w-3.5 h-3.5 border-2 border-[#FFC501FF] border-t-transparent rounded-full animate-spin"></div>
-          </div>
-          <div *ngIf="showToolDropEnvio && toolResultsEnvio.length"
-               class="absolute left-0 right-0 top-full mt-1 z-50 bg-white dark:bg-slate-800 border-2 border-black rounded-xl shadow-[3px_3px_0_#000] overflow-hidden max-h-52 overflow-y-auto custom-scrollbar divide-y divide-stone-100 dark:divide-slate-700">
-            <div *ngFor="let tool of toolResultsEnvio" (mousedown)="addToolEnvio(tool)"
-                 class="px-3 py-2 hover:bg-stone-50 dark:hover:bg-slate-700 cursor-pointer transition-colors">
-              <div class="flex items-center gap-2">
-                <span class="font-mono text-xs font-black text-black dark:text-white uppercase">{{tool.code || tool.codigo}}</span>
-                <span *ngIf="tool.serial_number" class="text-[9px] font-bold text-stone-400">S/N: {{tool.serial_number}}</span>
+
+        <div class="relative flex gap-2">
+          <div class="relative flex-1 min-w-0">
+            <input type="text" [ngModel]="toolSearchEnvio" [ngModelOptions]="{standalone:true}"
+                   (ngModelChange)="onToolSearchEnvio($event)" (blur)="hideToolDropEnvio()"
+                   placeholder="Código, nombre, S/N, P/N…"
+                   autocomplete="off"
+                   class="w-full h-8 text-xs font-bold bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-500 rounded-lg px-2.5 outline-none transition-all placeholder:text-stone-300 dark:placeholder:text-slate-500 hover:border-stone-400 focus:border-black focus:shadow-[2px_2px_0_#000]">
+            <div *ngIf="searchingToolsEnvio" class="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 border-2 border-[#FFC501FF] border-t-transparent rounded-full animate-spin"></div>
+            <div *ngIf="showToolDropEnvio && toolResultsEnvio.length"
+                 class="absolute z-50 w-full mt-1 top-full left-0 border-2 border-black dark:border-slate-600 rounded-xl bg-white dark:bg-slate-800 overflow-hidden shadow-[3px_3px_0_#000] divide-y divide-stone-100 dark:divide-slate-700 max-h-40 overflow-y-auto custom-scrollbar">
+              <div *ngFor="let tool of toolResultsEnvio" (mousedown)="addToolEnvio(tool)"
+                   class="px-3 py-2 hover:bg-blue-50 dark:hover:bg-slate-700 cursor-pointer transition-colors">
+                <div class="flex items-center gap-2">
+                  <span class="font-mono text-xs font-black text-black dark:text-white">{{tool.code || tool.codigo}}</span>
+                  <span *ngIf="tool.serial_number" class="text-[10px] font-bold text-stone-400 font-mono">S/N: {{tool.serial_number}}</span>
+                </div>
+                <div class="text-[10px] font-bold text-stone-400 dark:text-slate-400 truncate mt-0.5 uppercase">{{tool.description || tool.name}}</div>
               </div>
-              <div class="text-[9px] font-bold text-stone-400 truncate uppercase mt-0.5">{{tool.description || tool.name}}</div>
             </div>
           </div>
         </div>
       </div>
 
-      <div class="flex-1 p-2.5 relative" style="overflow:visible">
-        <div *ngIf="activeEnvioChip !== null" class="fixed inset-0 z-30" (click)="activeEnvioChip = null"></div>
-
-        <div *ngIf="itemsEnvio.length === 0" class="flex flex-col items-center justify-center gap-2 h-full text-center">
-          <mat-icon class="!text-3xl text-stone-300 dark:text-slate-600">inventory_2</mat-icon>
-          <p class="text-[9px] font-black uppercase text-stone-400 dark:text-slate-500">Agrega herramientas arriba</p>
+      <!-- Items list -->
+      <div class="flex-1 overflow-y-auto custom-scrollbar">
+        <div *ngIf="itemsEnvio.length === 0"
+             class="flex flex-col items-center justify-center gap-3 h-full py-10 text-center px-4">
+          <mat-icon class="!text-5xl text-stone-300 dark:text-slate-600">inventory_2</mat-icon>
+          <p class="text-sm font-black uppercase text-stone-400 dark:text-slate-500">Agrega herramientas arriba</p>
         </div>
 
-        <div *ngIf="itemsEnvio.length > 0" class="flex flex-wrap gap-1.5 content-start">
-          <div *ngFor="let item of itemsEnvio; let i = index" class="relative"
-               [style.z-index]="activeEnvioChip === i ? 40 : 10">
-
-            <button type="button"
-                    (click)="activeEnvioChip = activeEnvioChip === i ? null : i"
-                    class="relative w-16 h-16 flex flex-col items-center justify-center border-2 border-black rounded-xl transition-all select-none overflow-hidden"
-                    [ngClass]="activeEnvioChip === i
-                      ? 'bg-[#FFC501] shadow-none translate-x-[1px] translate-y-[1px]'
-                      : 'bg-white dark:bg-slate-700 shadow-[2px_2px_0_#000] hover:shadow-none hover:translate-x-[1px] hover:translate-y-[1px]'">
-              <span class="font-mono text-[7px] font-black text-black uppercase text-center leading-tight px-1 w-full truncate">{{item.codigo}}</span>
-              <span class="absolute bottom-0.5 right-0.5 min-w-[14px] h-3.5 rounded-full bg-black text-white text-[7px] font-black flex items-center justify-center px-0.5 leading-none">{{item.cantidad}}</span>
-            </button>
-
-            <div *ngIf="activeEnvioChip === i"
-                 class="absolute top-full left-0 mt-1 z-50 bg-white dark:bg-slate-800 border-2 border-black rounded-xl shadow-[4px_4px_0_#000] p-2.5 w-52 flex flex-col gap-1.5">
-              <div class="flex items-start justify-between gap-1 pb-1.5 border-b border-stone-200 dark:border-slate-600">
-                <div class="min-w-0 flex-1">
-                  <span class="font-mono text-[9px] font-black bg-[#FFC501] text-black px-1.5 py-0.5 rounded border border-black inline-block mb-0.5">{{item.codigo}}</span>
-                  <p class="text-[9px] font-bold text-black dark:text-white uppercase leading-tight">{{item.nombre | slice:0:32}}{{item.nombre?.length > 32 ? '…' : ''}}</p>
-                  <p *ngIf="item.pn || item.sn" class="font-mono text-[8px] text-stone-400 mt-0.5">
-                    {{item.pn ? 'P/N: '+item.pn : ''}}{{item.pn && item.sn ? ' · ' : ''}}{{item.sn ? 'S/N: '+item.sn : ''}}
-                  </p>
-                </div>
-                <div class="flex gap-1 shrink-0">
-                  <button type="button" (click)="removeToolEnvio(i); activeEnvioChip = null"
-                          class="w-5 h-5 flex items-center justify-center bg-red-50 hover:bg-red-500 text-red-400 hover:text-white border border-red-300 hover:border-red-500 rounded transition-all">
-                    <mat-icon class="!text-[11px]">delete</mat-icon>
-                  </button>
-                  <button type="button" (click)="activeEnvioChip = null"
-                          class="w-5 h-5 flex items-center justify-center bg-stone-100 dark:bg-slate-700 text-stone-500 border border-stone-300 dark:border-slate-500 rounded transition-all">
-                    <mat-icon class="!text-[11px]">close</mat-icon>
-                  </button>
-                </div>
-              </div>
-              <div>
-                <label class="text-[7px] font-black uppercase text-stone-400 mb-0.5 block">Cantidad</label>
-                <input type="number" [(ngModel)]="item.cantidad" [ngModelOptions]="{standalone:true}" min="1"
-                       class="w-full h-6 text-center px-1 border-2 border-stone-300 dark:border-slate-500 rounded-lg text-xs font-black bg-white dark:bg-slate-800 dark:text-white outline-none focus:border-black transition-all" />
-              </div>
-              <div>
-                <label class="text-[7px] font-black uppercase text-stone-400 mb-0.5 block">Condición</label>
-                <select [(ngModel)]="item.condicion" [ngModelOptions]="{standalone:true}"
-                        class="w-full h-6 px-2 bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-500 rounded-lg font-black text-[9px] uppercase outline-none focus:border-black cursor-pointer">
-                  <option *ngFor="let c of condicionesEnvio" [value]="c.value">{{c.label}}</option>
-                </select>
-              </div>
-              <div>
-                <label class="text-[7px] font-black uppercase text-stone-400 mb-0.5 block">Notas</label>
-                <input type="text" [(ngModel)]="item.notas" [ngModelOptions]="{standalone:true}" placeholder="Opcional…"
-                       class="w-full h-6 px-2 bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-500 rounded-lg font-bold text-[9px] outline-none focus:border-black transition-all placeholder:text-stone-300 placeholder:font-normal" />
-              </div>
-            </div>
-          </div>
-        </div>
+        <table *ngIf="itemsEnvio.length > 0" class="w-full min-w-[760px]">
+          <thead class="bg-stone-100 dark:bg-slate-700 border-b-2 border-black/20 sticky top-0">
+          <tr class="text-left text-[10px] font-black uppercase tracking-wider text-stone-500 dark:text-slate-300">
+            <th class="px-3 py-2 w-8">#</th>
+            <th class="px-3 py-2">Código</th>
+            <th class="px-3 py-2 min-w-[120px]">Descripción</th>
+            <th class="px-3 py-2">P/N · S/N</th>
+            <th class="px-3 py-2 w-16 text-center">Cant.</th>
+            <th class="px-3 py-2 w-28">Condición</th>
+            <th class="px-3 py-2 min-w-[90px]">Lista Cont.</th>
+            <th class="px-3 py-2 min-w-[100px]">Notas</th>
+            <th class="px-3 py-2 w-7"></th>
+          </tr>
+          </thead>
+          <tbody>
+          <tr *ngFor="let item of itemsEnvio; let i = index"
+              (click)="abrirDetalleHerramientaItem(item)"
+              title="Clic para ver detalle de la herramienta"
+              class="border-b border-stone-100 dark:border-slate-700 hover:bg-gray-100 dark:hover:bg-slate-700/50 transition-colors cursor-pointer">
+            <td class="px-3 py-2.5 text-xs font-black text-stone-400 text-center">{{ i + 1 }}</td>
+            <td class="px-3 py-2.5">
+              <span class="font-mono text-[11px] font-black text-black dark:text-white">{{ item.codigo }}</span>
+            </td>
+            <td class="px-3 py-2.5 text-xs font-bold text-black dark:text-white max-w-[140px] truncate" [title]="item.nombre">{{ item.nombre }}</td>
+            <td class="px-3 py-2.5">
+              <p class="font-mono text-[10px] text-stone-400 leading-snug">{{ item.pn || '—' }}</p>
+              <p class="font-mono text-[10px] text-stone-400 leading-snug">{{ item.sn || '—' }}</p>
+            </td>
+            <td class="px-3 py-2.5 text-center" (click)="$event.stopPropagation()">
+              <input type="number" [(ngModel)]="item.cantidad" [ngModelOptions]="{standalone:true}" min="1"
+                     class="w-14 h-8 px-1 text-sm font-black text-center border-2 border-black rounded-lg bg-white dark:bg-slate-700 dark:text-white focus:outline-none focus:bg-amber-50 transition-all">
+            </td>
+            <td class="px-3 py-2.5" (click)="$event.stopPropagation()">
+              <select [(ngModel)]="item.condicion" [ngModelOptions]="{standalone:true}"
+                      class="w-full h-8 px-1.5 text-[10px] font-bold border-2 border-stone-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 dark:text-white focus:outline-none focus:border-black transition-all cursor-pointer">
+                <option *ngFor="let c of condicionesEnvio" [value]="c.value">{{c.label}}</option>
+              </select>
+            </td>
+            <td class="px-3 py-2.5" style="max-width:100px">
+              <span class="text-[10px] text-stone-400 dark:text-slate-400 font-mono truncate block" [title]="item.listaContenido">
+                {{ item.listaContenido || '—' }}
+              </span>
+            </td>
+            <td class="px-3 py-2.5" (click)="$event.stopPropagation()">
+              <input type="text" [(ngModel)]="item.notas" [ngModelOptions]="{standalone:true}"
+                     placeholder="Opcional…"
+                     class="w-full h-8 px-2.5 text-[10px] font-bold border-2 border-stone-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 dark:text-white focus:outline-none focus:border-black transition-all placeholder:text-stone-300">
+            </td>
+            <td class="px-3 py-2.5 text-center" (click)="$event.stopPropagation()">
+              <button type="button" (click)="removeToolEnvio(i)"
+                      class="w-7 h-7 flex items-center justify-center bg-red-50 hover:bg-red-500 text-red-500 hover:text-white border-2 border-red-200 hover:border-red-600 rounded-lg transition-all">
+                <mat-icon class="!text-sm">close</mat-icon>
+              </button>
+            </td>
+          </tr>
+          </tbody>
+        </table>
       </div>
     </div>
   </div>

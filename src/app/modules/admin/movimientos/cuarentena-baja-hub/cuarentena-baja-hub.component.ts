@@ -11,6 +11,7 @@ import { Subject, forkJoin, of, lastValueFrom } from 'rxjs';
 import { takeUntil, finalize, catchError, debounceTime, distinctUntilChanged, switchMap, map } from 'rxjs/operators';
 import { MovementService } from '../../../../core/services/movement.service';
 import { QuarantineService } from '../../../../core/services/quarantine.service';
+import { ToolService } from '../../../../core/services/tool.service';
 import { HasPermissionDirective } from '../../../../core/directives/has-permission.directive';
 
 interface BajaItem {
@@ -25,7 +26,12 @@ interface BajaItem {
     base: string;
     marca: string;
     estadoFisico: string;
-    selected?: boolean;
+    observacion: string;
+    imagen: string | null;
+    warehouseId: number | null;
+    rackId: number | null;
+    levelId: number | null;
+    notesTool: string;
 }
 
 type TabType = 'cuarentena' | 'baja' | 'historial';
@@ -71,6 +77,7 @@ export class CuarentenaBajaHubComponent implements OnInit, OnDestroy {
     private snackBar      = inject(MatSnackBar);
     private movementSvc   = inject(MovementService);
     private quarantineSvc = inject(QuarantineService);
+    private toolSvc       = inject(ToolService);
     private destroy$      = new Subject<void>();
     private _logoBoaDataUri: Promise<string> | null = null;
 
@@ -103,7 +110,6 @@ export class CuarentenaBajaHubComponent implements OnInit, OnDestroy {
         { value: 'other',               label: 'OTRO'          }
     ];
 
-    herramientasCache:   any[]  = [];
     warehouses:          any[]  = [];
     toolsFiltradas:      any[]  = [];
     showToolDropdown            = false;
@@ -111,11 +117,30 @@ export class CuarentenaBajaHubComponent implements OnInit, OnDestroy {
     toolCSearchLoading          = false;
     private _toolCSearch$       = new Subject<string>();
     private toolIdActual        = 0;
+    // Ubicación real de la herramienta seleccionada (almacén/estante/nivel donde ya está
+    // guardada según Consultar Inventario) — distinta de "Base", que es a dónde se manda
+    // administrativamente en cuarentena. searchToolsAutocomplete ya trae estos 3 ids.
+    private toolWarehouseIdActual: number | null = null;
+    private toolRackIdActual:      number | null = null;
+    private toolLevelIdActual:     number | null = null;
+    // Marca/Observaciones REALES de la herramienta (ttools.brand / ttools.notes), para el
+    // detalle de solo-lectura — no confundir con el campo "Observaciones" opcional del form
+    // de cuarentena (motivo/notas de ESTA cuarentena, dato distinto).
+    private toolMarcaActual:  string = '';
+    private toolNotesActual:  string = '';
 
     private _personaSearch$ = new Subject<string>();
     personasFiltradas:   any[]  = [];
     showPersonaDropdown         = false;
     personaLoading              = false;
+
+    // Aprobado Por / Jefe de Almacén — mismo dato que "aprobadoPor" en Ajuste (ingresos-hub) y
+    // "autorizadoPor" en Baja; en Cuarentena faltaba, aunque el PDF impreso ya tiene el casillero
+    // de firma "JEFE DE ALMACÉN" esperando este nombre.
+    private _aprobadoPorCSearch$ = new Subject<string>();
+    aprobadoPorCFuncionarios: any[]  = [];
+    showAprobadoPorCDropdown        = false;
+    aprobadoPorCLoading             = false;
 
     reporteForm!:        FormGroup;
     toolCuarentenaForm!: FormGroup;
@@ -185,6 +210,16 @@ export class CuarentenaBajaHubComponent implements OnInit, OnDestroy {
     historialSearch           = new FormControl('');
 
     // ── Resolver cuarentena ────────────────────────────────────────────────
+    // he.tquarantines.resolution es varchar(30) con CHECK a estos 5 valores — no admite
+    // texto libre. El resultado/diagnóstico en prosa que escribe el usuario va a la
+    // columna "diagnosis" (text, sin restricción), no a "resolution".
+    resolucionesCuarentena = [
+        { value: 'released',         label: 'LIBERADA — VUELVE A SERVICIO' },
+        { value: 'repaired',         label: 'REPARADA' },
+        { value: 'sent_calibration', label: 'ENVIADA A CALIBRACIÓN' },
+        { value: 'decommissioned',   label: 'DADA DE BAJA' },
+        { value: 'pending',          label: 'PENDIENTE' }
+    ];
     resolverForm!:                 FormGroup;
     quarantenaSeleccionada:        any    = null;
     isResolviendo                        = false;
@@ -206,8 +241,13 @@ export class CuarentenaBajaHubComponent implements OnInit, OnDestroy {
         this._initFormBaja();
         this._initResolverForm();
         this._initAnularBajaForm();
-        this._cargarHerramientas();
         this._setupPersonaSearch();
+        this._setupFuncionarioSearch(
+            this._aprobadoPorCSearch$,
+            list => this.aprobadoPorCFuncionarios = list,
+            v    => this.aprobadoPorCLoading      = v,
+            v    => this.showAprobadoPorCDropdown  = v
+        );
         this._setupFuncionarioSearch(
             this._procesadoPorSearch$,
             list => this.procesadoPorFuncionarios = list,
@@ -253,43 +293,20 @@ export class CuarentenaBajaHubComponent implements OnInit, OnDestroy {
         return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
     }
 
-    private _rdcKey(): string {
-        const d = new Date();
-        return `rdc_v2_${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}`;
-    }
-
-    /** Lee el próximo número SIN incrementar el contador. Usado por el botón ↺. */
-    private _peekNroRDC(): string {
-        const d   = new Date();
-        const dia = String(d.getDate()).padStart(2, '0');
-        const mes = String(d.getMonth() + 1).padStart(2, '0');
-        const anio = d.getFullYear();
-        const seq = parseInt(sessionStorage.getItem(this._rdcKey()) || '0') + 1;
-        return `RDC-${dia}${mes}${anio}-${seq.toString().padStart(3, '0')}`;
-    }
-
-    /** Incrementa el contador y devuelve el número definitivo. Solo llamar al hacer submit. */
-    private _generarNroRDC(): string {
-        const d   = new Date();
-        const dia = String(d.getDate()).padStart(2, '0');
-        const mes = String(d.getMonth() + 1).padStart(2, '0');
-        const anio = d.getFullYear();
-        const key = this._rdcKey();
-        const seq = parseInt(sessionStorage.getItem(key) || '0') + 1;
-        sessionStorage.setItem(key, seq.toString());
-        return `RDC-${dia}${mes}${anio}-${seq.toString().padStart(3, '0')}`;
-    }
-
     private _initFormsCuarentena(): void {
         const today = this._today();
         const auth  = JSON.parse(localStorage.getItem('aut') || '{}');
         this.reporteForm = this.fb.group({
-            nroReporteDiscrepancia: ['', Validators.required],
+            // El N° de Reporte (RDC) lo genera el backend al finalizar (correlativo 'RDC' en
+            // he.tcorrelativos, igual que 'BJA' para Baja) — no es editable ni requerido aquí,
+            // se completa recién al terminar submitQuarantine().
+            nroReporteDiscrepancia: [''],
             fecha:          [today, Validators.required],
             motivo:         ['',    Validators.required],
             descripcion:    ['',    Validators.required],
             nombreApellido: [''],
-            realizadoPor:   [auth?.nombre_usuario || '']
+            realizadoPor:   [auth?.nombre_usuario || ''],
+            aprobadoPor:    ['']
         });
         this.toolCuarentenaForm = this.fb.group({
             id_tool:          [0],
@@ -308,11 +325,6 @@ export class CuarentenaBajaHubComponent implements OnInit, OnDestroy {
         });
     }
 
-    private _cargarHerramientas(): void {
-        this.movementSvc.getHerramientasDisponibles().pipe(takeUntil(this.destroy$))
-            .subscribe({ next: (t: any[]) => { this.herramientasCache = t; } });
-    }
-
     private _cargarWarehouses(): void {
         this.movementSvc.getWarehouses().pipe(takeUntil(this.destroy$))
             .subscribe({ next: (w: any[]) => { this.warehouses = w; } });
@@ -321,10 +333,6 @@ export class CuarentenaBajaHubComponent implements OnInit, OnDestroy {
     private _cargarBases(): void {
         this.movementSvc.getBases().pipe(takeUntil(this.destroy$))
             .subscribe({ next: (b: any[]) => { this.bases = b; } });
-    }
-
-    regenerarNroRDC(): void {
-        this.reporteForm.patchValue({ nroReporteDiscrepancia: this._peekNroRDC() });
     }
 
     abrirModalReporte(): void {
@@ -356,30 +364,30 @@ export class CuarentenaBajaHubComponent implements OnInit, OnDestroy {
 
     isReporteValido(): boolean { return this.reporteForm.valid; }
 
+    // Búsqueda en vivo contra el backend (ToolService.getTools con query → searchToolsAutocomplete),
+    // el mismo mecanismo que usa el buscador de detalle-herramienta.component.ts (Ajuste de
+    // Herramienta), en vez de precargar todas las herramientas y filtrar en el cliente.
     private _setupToolCSearch(): void {
         this._toolCSearch$.pipe(
-            debounceTime(250), distinctUntilChanged(),
+            debounceTime(300), distinctUntilChanged(),
+            switchMap(term => {
+                const q = term.trim();
+                if (q.length < 2) { this.showToolDropdown = false; return of([]); }
+                this.toolCSearchLoading = true;
+                return this.toolSvc.getTools({ query: q }).pipe(
+                    catchError(() => of([])),
+                    finalize(() => this.toolCSearchLoading = false)
+                );
+            }),
             takeUntil(this.destroy$)
-        ).subscribe(q => {
-            const query = q.trim().toLowerCase();
-            if (query.length < 2) { this.toolsFiltradas = []; this.showToolDropdown = false; this.toolCSearchLoading = false; return; }
-            this.toolsFiltradas = this.herramientasCache
-                .filter(t => {
-                    const nombre = (t.name || t.description || '').toLowerCase();
-                    return (t.code            ?? '').toLowerCase().includes(query) ||
-                           nombre.includes(query) ||
-                           (t.part_number    ?? '').toLowerCase().includes(query) ||
-                           (t.serial_number  ?? '').toLowerCase().includes(query);
-                })
-                .slice(0, 8);
-            this.showToolDropdown  = this.toolsFiltradas.length > 0;
-            this.toolCSearchLoading = false;
+        ).subscribe((tools: any[]) => {
+            this.toolsFiltradas   = (tools || []).slice(0, 8);
+            this.showToolDropdown = this.toolsFiltradas.length > 0;
         });
     }
 
     onBuscarToolCInput(value: string): void {
-        this.buscarValueC       = value;
-        this.toolCSearchLoading = value.trim().length >= 2;
+        this.buscarValueC = value;
         this._toolCSearch$.next(value);
     }
 
@@ -390,20 +398,12 @@ export class CuarentenaBajaHubComponent implements OnInit, OnDestroy {
         this.toolsFiltradas   = [];
         this.showToolDropdown = false;
         this.toolCuarentenaForm.patchValue({ id_tool: 0, codigo: '', nombre: '', partNumber: '', serialNumber: '', existencia: 0 });
-    }
-
-    filtrarHerramientas(event: Event): void {
-        const q = (event.target as HTMLInputElement).value.trim().toLowerCase();
-        if (q.length < 2) { this.toolsFiltradas = []; this.showToolDropdown = false; return; }
-        this.toolsFiltradas = this.herramientasCache
-            .filter(t => {
-                const nombre = (t.name || t.description || '').toLowerCase();
-                return (t.code ?? '').toLowerCase().includes(q) || nombre.includes(q) ||
-                       (t.part_number ?? '').toLowerCase().includes(q) ||
-                       (t.serial_number ?? '').toLowerCase().includes(q);
-            })
-            .slice(0, 6);
-        this.showToolDropdown = this.toolsFiltradas.length > 0;
+        this.selectedToolImage.set(null);
+        this.toolWarehouseIdActual = null;
+        this.toolRackIdActual      = null;
+        this.toolLevelIdActual     = null;
+        this.toolMarcaActual       = '';
+        this.toolNotesActual       = '';
     }
 
     selectTool(tool: any): void {
@@ -419,10 +419,21 @@ export class CuarentenaBajaHubComponent implements OnInit, OnDestroy {
             cantidad:     1,
             estadoFisico: 'BUENO'
         });
+        // Si la herramienta ya tiene una foto registrada (location_photo, vía
+        // searchToolsAutocomplete), se precarga — el usuario igual puede reemplazarla.
+        this.selectedToolImage.set(tool.location_photo || null);
+        // Ubicación real de la herramienta (almacén/estante/nivel), para mostrarla completa
+        // en el detalle de solo-lectura — searchToolsAutocomplete ya la trae.
+        this.toolWarehouseIdActual = tool.warehouse_id != null ? Number(tool.warehouse_id) : null;
+        this.toolRackIdActual      = tool.rack_id      != null ? Number(tool.rack_id)      : null;
+        this.toolLevelIdActual     = tool.level_id     != null ? Number(tool.level_id)     : null;
+        // Marca/Observaciones reales de la herramienta (catálogo), para el detalle de
+        // solo-lectura — no confundir con el motivo/notas que se llenan más abajo para ESTA
+        // cuarentena en particular.
+        this.toolMarcaActual = tool.brand ?? tool.marca ?? '';
+        this.toolNotesActual = tool.notes ?? '';
         this.showToolDropdown = false;
     }
-
-    ocultarSugerencias(): void { setTimeout(() => { this.showToolDropdown = false; }, 200); }
 
     onToolImageSelected(event: Event): void {
         const file = (event.target as HTMLInputElement).files?.[0];
@@ -443,11 +454,20 @@ export class CuarentenaBajaHubComponent implements OnInit, OnDestroy {
             this._showMsg('Esta herramienta ya está en la lista.', 'warning');
             return;
         }
-        if (fv.cantidad > fv.existencia) {
+        if (fv.existencia > 0 && fv.cantidad > fv.existencia) {
             this._showMsg(`Solo hay ${fv.existencia} unidades en stock.`, 'error');
             return;
         }
-        this.cuarentenaList = [...this.cuarentenaList, { ...fv, foto: this.selectedToolImage() }];
+        // Ubicación completa (almacén/estante/nivel) de la herramienta seleccionada — la real
+        // según Consultar Inventario, no solo "Base" (a dónde se manda administrativamente).
+        this.cuarentenaList = [...this.cuarentenaList, {
+            ...fv, foto: this.selectedToolImage(),
+            warehouseId: this.toolWarehouseIdActual,
+            rackId:      this.toolRackIdActual,
+            levelId:     this.toolLevelIdActual,
+            marcaTool:   this.toolMarcaActual,
+            notesTool:   this.toolNotesActual
+        }];
         this.dialogRefActual?.close();
         this._showMsg('Herramienta preparada para cuarentena.', 'success');
     }
@@ -457,43 +477,67 @@ export class CuarentenaBajaHubComponent implements OnInit, OnDestroy {
         this.cuarentenaList = [...this.cuarentenaList];
     }
 
+    // Clic en un ítem ya agregado a la lista → abre el mismo form de detalle de herramienta
+    // usado en ingresos-hub (Ajuste de Herramienta) y en préstamo técnico, en modo solo-vista.
+    async abrirDetalleHerramientaCuarentena(item: any): Promise<void> {
+        const { DetalleHerramientaComponent } = await import('../ingresos-hub/detalle-herramienta/detalle-herramienta.component');
+        const editItem = {
+            toolId: item.id_tool, codigoBoa: item.codigo, pn: item.partNumber, sn: item.serialNumber,
+            descripcion: item.nombre, cantidad: item.cantidad,
+            marca: item.marcaTool, obs: item.notesTool,
+            imagenMaster: item.foto, warehouseId: item.warehouseId,
+            rackId: item.rackId, levelId: item.levelId
+        };
+        this.dialog.open(DetalleHerramientaComponent, {
+            width: '800px', maxWidth: '96vw', height: '560px',
+            panelClass: 'no-padding-dialog', hasBackdrop: true, disableClose: false, autoFocus: false,
+            data: { editItem, viewOnly: true }
+        });
+    }
+
     getEstadoFisicoLabel(val: string): string {
         return this.estadosFisicos.find(e => e.value === val)?.label || val;
     }
 
     submitQuarantine(): void {
         if (!this.isReporteValido() || this.cuarentenaList.length === 0) return;
-        // Siempre genera (incrementa el contador) al momento del submit real,
-        // así el ↺ puede usarse N veces sin consumir números.
-        this.reporteForm.patchValue({ nroReporteDiscrepancia: this._generarNroRDC() });
         this.isSavingCuarentena = true;
         const rep = this.reporteForm.getRawValue();
         const requests = this.cuarentenaList.map(tool => {
-            const notesExtra = `Cant: ${tool.cantidad}. Base: ${tool.base || '-'}.` +
+            const notesExtra = `${rep.descripcion ? 'Descripción: ' + rep.descripcion + '. ' : ''}` +
+                               `${tool.motivoItem ? 'Motivo ítem: ' + tool.motivoItem + '. ' : ''}` +
+                               `Cant: ${tool.cantidad}. Base: ${tool.base || '-'}.` +
+                               (tool.observaciones ? ` Obs: ${tool.observaciones}.` : '') +
                                (tool.fechaVencimiento ? ` Vence: ${tool.fechaVencimiento}.` : '');
             const payload: any = {
-                report_number:      rep.nroReporteDiscrepancia,
-                record_number:      rep.nroReporteDiscrepancia,
+                // record_number / report_number: los genera el backend (correlativo 'RDC' en
+                // he.tcorrelativos) — no se envían desde aquí, ver he.ft_quarantines_ime.
                 tool_id:            tool.id_tool,
                 start_date:         rep.fecha,
                 reported_by_name:   rep.nombreApellido || rep.realizadoPor,
                 reason:             'other',       // valor fijo para satisfacer el CHECK constraint de tquarantines.reason
                 reason_description: rep.motivo,    // texto libre ingresado por el usuario
                 status:             'active',
-                notes:              notesExtra
+                notes:              notesExtra,
+                evaluator_name:     rep.aprobadoPor || ''   // Aprobado Por / Jefe de Almacén
             };
-            // reported_by_id no se envía: getPersonal() devuelve id_usuario (segu.tusuario)
-            // pero tquarantines.reported_by_id referencia he.temployees — IDs distintos.
-            // reported_by_name es suficiente para identificar al responsable.
+            // reported_by_id / evaluator_id no se envían: getPersonal() devuelve id_usuario
+            // (segu.tusuario) pero tquarantines.reported_by_id/evaluator_id referencian
+            // he.temployees — IDs distintos. El _name es suficiente para identificar al responsable.
             return this.quarantineSvc.createQuarantine(payload);
         });
         forkJoin(requests).pipe(
             finalize(() => { this.isSavingCuarentena = false; }),
             takeUntil(this.destroy$)
         ).subscribe({
-            next: () => {
-                this._abrirImpresionCuarentena(rep, this.cuarentenaList);
-                this._showMsg('Cuarentena procesada correctamente.', 'success');
+            next: (results: any[]) => {
+                // Cada herramienta genera su propio record_number único (RDC-N/YYYY); el N°
+                // mostrado/impreso en el reporte es el de la primera fila del lote, igual que
+                // "N° Nota" en Baja usa el record_number del primer resultado.
+                const nro = results[0]?.record_number || '---';
+                this.reporteForm.patchValue({ nroReporteDiscrepancia: nro });
+                this._abrirImpresionCuarentena({ ...rep, nroReporteDiscrepancia: nro }, this.cuarentenaList);
+                this._showMsg(`Cuarentena ${nro} procesada correctamente.`, 'success');
                 this.cuarentenaList = [];
                 this.reporteForm.reset({ fecha: this._today(), nroReporteDiscrepancia: '' });
                 this.historialItems = [];
@@ -540,6 +584,19 @@ export class CuarentenaBajaHubComponent implements OnInit, OnDestroy {
     }
 
     hidePersonaDropdown(): void { setTimeout(() => this.showPersonaDropdown = false, 200); }
+
+    onAprobadoPorCInput(v: string): void {
+        this.reporteForm.patchValue({ aprobadoPor: v }, { emitEvent: false });
+        if (v.length >= 2) this._aprobadoPorCSearch$.next(v);
+        else this.showAprobadoPorCDropdown = false;
+    }
+
+    selectAprobadoPorC(p: any): void {
+        this.reporteForm.patchValue({ aprobadoPor: p.nombre });
+        this.showAprobadoPorCDropdown = false;
+    }
+
+    hideAprobadoPorCDropdown(): void { setTimeout(() => this.showAprobadoPorCDropdown = false, 200); }
 
     // ══════════════════════════════════════════════════════════════════════════
     //  BAJA — lógica
@@ -673,7 +730,12 @@ export class CuarentenaBajaHubComponent implements OnInit, OnDestroy {
             base:         data.base         || '',
             marca:        data.marca        || '',
             estadoFisico: data.estadoFisico || 'INSERVIBLE',
-            selected:     false
+            observacion:  data.observacion  || '',
+            imagen:       data.imagen       || null,
+            warehouseId:  data.warehouseId  ?? null,
+            rackId:       data.rackId       ?? null,
+            levelId:      data.levelId      ?? null,
+            notesTool:    data.notesTool    || ''
         };
         this.bajaItems.update(items => [...items, item]);
     }
@@ -682,6 +744,23 @@ export class CuarentenaBajaHubComponent implements OnInit, OnDestroy {
         const removed = this.bajaItems()[index];
         this.bajaItems.update(items => { const n = [...items]; n.splice(index, 1); return n; });
         this._showMsg(`${removed.codigo} removida de la lista.`, 'info');
+    }
+
+    // Clic en un ítem ya agregado a la lista → abre el mismo form de detalle de herramienta
+    // usado en ingresos-hub (Ajuste de Herramienta) y en préstamo técnico, en modo solo-vista.
+    async abrirDetalleHerramientaBaja(item: BajaItem): Promise<void> {
+        const { DetalleHerramientaComponent } = await import('../ingresos-hub/detalle-herramienta/detalle-herramienta.component');
+        const editItem = {
+            toolId: item.toolId, codigoBoa: item.codigo, pn: item.pn, sn: item.sn,
+            descripcion: item.nombre, marca: item.marca, cantidad: item.cantidad, obs: item.notesTool,
+            imagenMaster: item.imagen, warehouseId: item.warehouseId,
+            rackId: item.rackId, levelId: item.levelId
+        };
+        this.dialog.open(DetalleHerramientaComponent, {
+            width: '800px', maxWidth: '96vw', height: '560px',
+            panelClass: 'no-padding-dialog', hasBackdrop: true, disableClose: false, autoFocus: false,
+            data: { editItem, viewOnly: true }
+        });
     }
 
     getTotalCantidad(): number {
@@ -728,7 +807,7 @@ export class CuarentenaBajaHubComponent implements OnInit, OnDestroy {
                 authorized_by_name:   fv.autorizadoPor       ?? '',
                 received_by_name:     fv.verificadoPor       ?? '',
                 notes:                fv.observaciones       ?? '',
-                condition_description: item.estadoFisico     || ''
+                condition_description: item.observacion      || item.estadoFisico || ''
             };
             return this.quarantineSvc.createDecommission(payload);
         });
@@ -803,11 +882,6 @@ export class CuarentenaBajaHubComponent implements OnInit, OnDestroy {
 
     getHistorialTypeLabel(m: any): string {
         return m._type === 'cuarentena' ? 'Cuarentena' : 'Baja';
-    }
-
-    getHistorialTypeClass(m: any): string {
-        if (m._type === 'cuarentena') return 'bg-amber-100 text-amber-800 border-amber-400';
-        return 'bg-[#FF1414]/10 text-[#FF1414] border-[#FF1414]/30';
     }
 
     /** Reimpresión de un único registro desde la pestaña Historial (cuarentena o
@@ -918,6 +992,7 @@ export class CuarentenaBajaHubComponent implements OnInit, OnDestroy {
             resolved_by_name: ['', Validators.required],
             resolution_date:  [this._today(), Validators.required],
             resolution:       ['', Validators.required],
+            diagnosis:        ['', Validators.required],
             action_taken:     ['']
         });
     }
@@ -932,18 +1007,13 @@ export class CuarentenaBajaHubComponent implements OnInit, OnDestroy {
         return labels[status] || (status || 'ACTIVO').toUpperCase();
     }
 
-    getStatusClass(status: string): string {
-        if (status === 'resolved')  return 'bg-green-100 text-green-800 border-green-400';
-        if (status === 'cancelled') return 'bg-gray-100 text-gray-600 border-gray-400';
-        return 'bg-amber-100 text-amber-800 border-amber-400';
-    }
-
     abrirModalResolver(item: any): void {
         this.quarantenaSeleccionada = item;
         this.resolverForm.reset({
             resolution_date:  this._today(),
             resolved_by_name: '',
             resolution:       '',
+            diagnosis:        '',
             action_taken:     ''
         });
         this.resolverPersonaFiltrados    = [];
@@ -986,7 +1056,8 @@ export class CuarentenaBajaHubComponent implements OnInit, OnDestroy {
             notes:              q.notes               || '',
             resolution_date:    fv.resolution_date,
             resolved_by_name:   fv.resolved_by_name,
-            resolution:         fv.resolution,
+            resolution:         fv.resolution,       // enum restringido (varchar(30) + CHECK)
+            diagnosis:          fv.diagnosis,         // texto libre del resultado/diagnóstico
             action_taken:       fv.action_taken       || ''
         };
         this.isResolviendo = true;
@@ -1022,13 +1093,6 @@ export class CuarentenaBajaHubComponent implements OnInit, OnDestroy {
             cancelled:  'ANULADO'
         };
         return labels[status] || (status || '---').toUpperCase();
-    }
-
-    getBajaStatusClass(status: string): string {
-        if (status === 'executed')  return 'bg-[#FF1414]/10 text-[#FF1414] border-[#FF1414]/30';
-        if (status === 'approved')  return 'bg-green-100 text-green-800 border-green-400';
-        if (status === 'cancelled' || status === 'rejected') return 'bg-gray-100 text-gray-500 border-gray-400';
-        return 'bg-yellow-100 text-yellow-800 border-yellow-400';
     }
 
     bajaEsAnulable(m: any): boolean {
@@ -1205,7 +1269,7 @@ export class CuarentenaBajaHubComponent implements OnInit, OnDestroy {
     <td>
       <div class="firma-lbl">JEFE DE ALMACÉN</div>
       <div class="firma-line"></div>
-      <div class="firma-sub">&nbsp;</div>
+      <div class="firma-sub">${rep.aprobadoPor || '&nbsp;'}</div>
     </td>
     <td>
       <div class="firma-lbl">CONTROL DE CALIDAD</div>

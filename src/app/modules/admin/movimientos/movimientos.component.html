@@ -195,12 +195,11 @@
                             class="border-b border-gray-200 dark:border-slate-700 hover:bg-stone-50 dark:hover:bg-slate-700/50 transition-colors">
                             <td class="py-2 px-3 font-mono text-[10px] font-bold text-gray-900 dark:text-white whitespace-nowrap">{{ m.fecha }}</td>
                             <td class="py-2 px-3">
-                                <span [ngClass]="getMovTypeClass(m.tipoRaw)"
-                                      class="px-1.5 py-0.5 rounded text-[9px] font-black border border-black uppercase">
+                                <span class="text-[9px] font-black uppercase text-black dark:text-white">
                                     {{ m.tipo }}
                                 </span>
                             </td>
-                            <td class="py-2 px-3 font-mono text-[10px] font-bold text-amber-700 dark:text-amber-400">{{ m.comprobante }}</td>
+                            <td class="py-2 px-3 font-mono text-[10px] font-bold text-black dark:text-white">{{ m.comprobante }}</td>
                             <td class="py-2 px-3 text-[10px] font-bold text-gray-700 dark:text-gray-300">{{ m.responsable }}</td>
                         </tr>
                         <tr *ngIf="recentMovements.length === 0 && !isLoadingRecents">

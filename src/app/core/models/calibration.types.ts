@@ -41,18 +41,6 @@ export type AlertUrgency =
     | 'IN_LAB';       // En laboratorio
 
 /**
- * Estado de lote de calibración
- * @deprecated Usar CalibrationBatchStatus de calibration-batch.types.ts
- */
-export type BatchStatus =
-    | 'open'        // Abierto para escaneo
-    | 'confirmed'   // Confirmado
-    | 'sent'        // Enviado a laboratorio
-    | 'in_process'  // En proceso en laboratorio
-    | 'completed'   // Completado
-    | 'cancelled';  // Cancelado
-
-/**
  * Tipo de servicio para Gatas (Jacks)
  */
 export type JackServiceType = 'semiannual' | 'annual' | 'both';
@@ -424,9 +412,6 @@ export interface ScanToolResult {
     base_name?:      string | null;
     warehouse_name?: string | null;
 }
-
-// CalibrationBatch y CalibrationBatchItem se definen en calibration-batch.types.ts
-// (version canonica con todos los campos del backend PXP incluyendo Jack/Gata)
 
 /**
  * Alerta de calibración PXP (HE_CLS_ALERTS)

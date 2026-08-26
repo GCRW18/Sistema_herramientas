@@ -10,9 +10,10 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { DomSanitizer } from '@angular/platform-browser';
 import { DragDropModule } from '@angular/cdk/drag-drop';
 import { takeUntil, finalize } from 'rxjs/operators';
-import { Subject, of } from 'rxjs';
+import { Subject, of, forkJoin } from 'rxjs';
 import { CalibrationService } from '../../../core/services/calibration.service';
 import { MovementService } from '../../../core/services/movement.service';
+import { MaintenanceService } from '../../../core/services/maintenance.service';
 
 interface OpenTab {
     id: number;
@@ -96,6 +97,7 @@ export class CalibracionesComponent implements OnInit, OnDestroy, AfterViewInit 
     private dialog             = inject(MatDialog);
     private calibrationService = inject(CalibrationService);
     private movementService    = inject(MovementService);
+    private maintenanceService = inject(MaintenanceService);
     private injector           = inject(Injector);
     private iconRegistry       = inject(MatIconRegistry);
     private sanitizer          = inject(DomSanitizer);
@@ -162,16 +164,24 @@ export class CalibracionesComponent implements OnInit, OnDestroy, AfterViewInit 
     selectedEntry: CalibrationRecord | null = null;
 
     // ── Paginación ────────────────────────────────────────────────────────────
-    totalRecords        = 0;
+    // Cliente-side: se cargan de una las últimas N de ambas fuentes (calibraciones +
+    // mantenimientos), se combinan y ordenan por fecha, y se pagina el array ya en
+    // memoria — evita el problema de paginar dos fuentes independientes en el server
+    // y tener que intercalarlas por página.
     pageSize            = 10;
     pageIndex           = 0;
-    recentCalibrations: CalibrationRecord[] = [];
+    private _allRecent: CalibrationRecord[] = [];
 
+    get totalRecords():      number { return this._allRecent.length; }
     get totalPagesRecents(): number { return Math.ceil(this.totalRecords / this.pageSize) || 1; }
     get recentsStart():      number { return this.totalRecords === 0 ? 0 : this.pageIndex * this.pageSize + 1; }
     get recentsEnd():        number { return Math.min((this.pageIndex + 1) * this.pageSize, this.totalRecords); }
-    nextRecentsPage(): void { if (this.pageIndex < this.totalPagesRecents - 1) { this.pageIndex++; this.loadRecentCalibrations(); } }
-    prevRecentsPage(): void { if (this.pageIndex > 0) { this.pageIndex--; this.loadRecentCalibrations(); } }
+    get recentCalibrations(): CalibrationRecord[] {
+        const s = this.pageIndex * this.pageSize;
+        return this._allRecent.slice(s, s + this.pageSize);
+    }
+    nextRecentsPage(): void { if (this.pageIndex < this.totalPagesRecents - 1) { this.pageIndex++; this.cdr.detectChanges(); } }
+    prevRecentsPage(): void { if (this.pageIndex > 0) { this.pageIndex--; this.cdr.detectChanges(); } }
 
     constructor() {
         this.registerIcons();
@@ -180,6 +190,13 @@ export class CalibracionesComponent implements OnInit, OnDestroy, AfterViewInit 
     ngOnInit(): void {
         this.loadAlertCount();
         this.loadRecentCalibrations();
+
+        this.calibrationService.calibrationsChanged$.pipe(
+            takeUntil(this._unsubscribeAll),
+        ).subscribe(() => {
+            this.loadAlertCount();
+            this.loadRecentCalibrations();
+        });
     }
 
     ngAfterViewInit(): void {
@@ -306,20 +323,21 @@ export class CalibracionesComponent implements OnInit, OnDestroy, AfterViewInit 
 
     loadRecentCalibrations(): void {
         this.isLoading = true;
+        this.pageIndex = 0;
         this.cdr.detectChanges();
 
-        this.calibrationService.getCalibrations({
-            start: this.pageIndex * this.pageSize,
-            limit: this.pageSize
+        forkJoin({
+            cal: this.calibrationService.getCalibrations({ start: 0, limit: 100 }),
+            mnt: this.maintenanceService.getMaintenances({ start: 0, limit: 100 }),
         }).pipe(
             takeUntil(this._unsubscribeAll),
             finalize(() => setTimeout(() => { this.isLoading = false; this.cdr.detectChanges(); }))
         ).subscribe({
-            next: (items: any[]) => {
+            next: ({ cal, mnt }) => {
                 setTimeout(() => {
-                    const arr = items || [];
-                    this.recentCalibrations = arr.map((item: any) => ({
+                    const calRows = (cal || []).map((item: any) => ({
                         id: String(item.id_calibration || item.id || ''),
+                        _rawDate: item.send_date || item.request_date || item.fecha_reg || '',
                         fecha: this.formatDate(item.send_date || item.request_date || item.fecha_reg),
                         tipo: this.mapCalType(item.calibration_type || item.tipo || item.type),
                         estado: this.mapStatus(item.status || item.estado),
@@ -327,21 +345,46 @@ export class CalibracionesComponent implements OnInit, OnDestroy, AfterViewInit 
                         nroComprobante: item.record_number || item.nroComprobante || '-',
                         items: 0
                     }));
-                    this.totalRecords = arr.length < this.pageSize
-                        ? this.pageIndex * this.pageSize + arr.length
-                        : (this.pageIndex + 1) * this.pageSize + 1;
+                    const mntRows = (mnt || []).map((item: any) => ({
+                        id: String(item.id_maintenance || item.id || ''),
+                        _rawDate: item.send_date || item.request_date || item.fecha_reg || '',
+                        fecha: this.formatDate(item.send_date || item.request_date || item.fecha_reg),
+                        tipo: this.mapMaintType(item.type),
+                        estado: this.mapMaintStatus(item.status),
+                        responsable: item.requested_by_name || 'N/A',
+                        nroComprobante: item.record_number || '-',
+                        items: 0
+                    }));
+                    this._allRecent = [...calRows, ...mntRows]
+                        .sort((a, b) => (b._rawDate || '').localeCompare(a._rawDate || ''))
+                        .map(({ _rawDate, ...rest }) => rest);
                     this.cdr.detectChanges();
                 });
             },
-            error: () => setTimeout(() => { this.recentCalibrations = []; this.totalRecords = 0; this.cdr.detectChanges(); })
+            error: () => setTimeout(() => { this._allRecent = []; this.cdr.detectChanges(); })
         });
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────
     private formatDate(date: string): string {
         if (!date) return '-';
-        try { return new Date(date).toLocaleDateString('es-BO', { day: '2-digit', month: '2-digit', year: 'numeric' }); }
-        catch { return date; }
+        // Texto puro (YYYY-MM-DD → DD/MM/YYYY), no new Date(): una fecha "solo fecha" se
+        // interpreta como medianoche UTC, que en Bolivia (UTC-4) muestra el día anterior.
+        const parts = String(date).split('T')[0].split('-');
+        return parts.length === 3 ? `${parts[2]}/${parts[1]}/${parts[0]}` : date;
+    }
+
+    private mapMaintType(type: string): string {
+        const map: Record<string, string> = { preventive: 'MANT. PREVENTIVO', corrective: 'MANT. CORRECTIVO' };
+        return map[type] || 'MANTENIMIENTO';
+    }
+
+    private mapMaintStatus(status: string): string {
+        const map: Record<string, string> = {
+            scheduled: 'PROGRAMADO', sent: 'EN TALLER', in_progress: 'EN PROCESO',
+            completed: 'COMPLETADO', returned: 'RETORNADO', cancelled: 'CANCELADO'
+        };
+        return map[status] || status?.toUpperCase() || 'N/A';
     }
 
     private mapCalType(type: string): string {
@@ -364,8 +407,8 @@ export class CalibracionesComponent implements OnInit, OnDestroy, AfterViewInit 
     getStatusClass(estado: string): string {
         switch (estado) {
             case 'COMPLETADO': case 'RETORNADO': return 'bg-green-600 text-white border-black';
-            case 'PENDIENTE':                    return 'bg-amber-500 text-black border-black';
-            case 'EN LABORATORIO': case 'ENVIADO': case 'EN PROCESO': case 'EN TRÁNSITO': return 'bg-blue-700 text-white border-black';
+            case 'PENDIENTE': case 'PROGRAMADO': return 'bg-amber-500 text-black border-black';
+            case 'EN LABORATORIO': case 'EN TALLER': case 'ENVIADO': case 'EN PROCESO': case 'EN TRÁNSITO': return 'bg-blue-700 text-white border-black';
             case 'RECHAZADO': case 'CANCELADO':  return 'bg-red-600 text-white border-black';
             default:                             return 'bg-gray-500 text-white border-black';
         }

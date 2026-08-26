@@ -54,8 +54,8 @@ export class KitsService {
         const params: any = {
             start: ((filters?.page ?? 1) - 1) * (filters?.limit ?? 50),
             limit: filters?.limit ?? 50,
-            sort: 'id_kit',
-            dir: 'desc'
+            ordenacion: 'id_kit',
+            dir_ordenacion: 'desc'
         };
         if (filters?.status)   params.status   = filters.status;
         if (filters?.category) params.category = filters.category;
@@ -152,8 +152,8 @@ export class KitsService {
         return from(this._api.post('herramientas/kitcomponents/listarKitComponents', {
             start: 0, limit: 200,
             kit_id: kitId,
-            sort:   'id_kit_component',
-            dir:    'asc'
+            ordenacion:     'id_kit_component',
+            dir_ordenacion: 'asc'
         })).pipe(
             map((r: any) => this._normalize(r)),
             catchError(() => of([]))
@@ -192,7 +192,7 @@ export class KitsService {
 
     getKitCategories(): Observable<{ id_kit_category: number; name: string; active: boolean }[]> {
         return from(this._api.post('herramientas/kitcategories/listarKitCategorias', {
-            start: 0, limit: 100, sort: 'name', dir: 'asc'
+            start: 0, limit: 100, ordenacion: 'name', dir_ordenacion: 'asc'
         })).pipe(
             map((r: any) => this._normalize(r) as { id_kit_category: number; name: string; active: boolean }[]),
             catchError(() => of([]))
@@ -298,7 +298,7 @@ export class KitsService {
     }
 
     getKitLoans(kitId?: number): Observable<any[]> {
-        const params: any = { start: 0, limit: 100, sort: 'id_kit_loan', dir: 'desc' };
+        const params: any = { start: 0, limit: 100, ordenacion: 'id_kit_loan', dir_ordenacion: 'desc' };
         if (kitId) params.kit_id = kitId;
         return from(this._api.post('herramientas/kitloans/listarKitLoans', params)).pipe(
             map((r: any) => this._normalize(r)),

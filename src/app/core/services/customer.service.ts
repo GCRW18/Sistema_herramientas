@@ -38,7 +38,7 @@ export class CustomerService {
     }
 
     getCustomers(filters?: any): Observable<Customer[]> {
-        const params: any = { start: 0, limit: 500, sort: 'name', dir: 'asc', ...filters };
+        const params: any = { start: 0, limit: 500, ordenacion: 'name', dir_ordenacion: 'asc', ...filters };
         return from(this._api.post('herramientas/customers/listarCustomers', params)).pipe(
             switchMap((response: any) => {
                 const customers = response?.datos || response?.data || [];

@@ -114,6 +114,7 @@ export class FormHerramientaNivelComponent implements OnInit, OnDestroy {
             fechaCalibracion:     [t?.fechaCalibracion   ?? null],
             nroCertificado:       [t?.nroCertificado     ?? ''],
             observaciones:        [t?.observaciones      ?? ''],
+            listaContenido:       [t?.listaContenido     ?? ''],
         });
 
         this.movementSvc.getIngresosCategories().pipe(
@@ -173,17 +174,45 @@ export class FormHerramientaNivelComponent implements OnInit, OnDestroy {
         this._search$.next(value.trim());
     }
 
+    /** Traduce condition (inglés: new/used/refurbished) a los valores de `estados`
+     *  de este form (NUEVO/USADO/REACONDICIONADO). */
+    private _conditionMap: Record<string, string> = {
+        new: 'NUEVO', NUEVO: 'NUEVO',
+        used: 'USADO', USADO: 'USADO',
+        refurbished: 'REACONDICIONADO', REACONDICIONADO: 'REACONDICIONADO',
+    };
+
     seleccionarHerramienta(tool: any): void {
         const codigo = tool.code ?? tool.tool_code ?? 'BOA-H-';
         this.buscarValue      = codigo;
         this.showToolDropdown = false;
+
+        const estado          = this._conditionMap[tool.condition];
+        const um               = this.unidadesMedida.some(u => u.value === tool.unit_of_measure) ? tool.unit_of_measure : undefined;
+        const nivelCriticidad  = this.nivelesCriticidad.some(n => n.value === tool.criticality_level) ? tool.criticality_level : undefined;
+        const fabricacion      = this.origenesFabricacion.some(f => f.value === tool.manufacture_origin) ? tool.manufacture_origin : undefined;
+        const requiereCalib    = tool.requires_calibration === true || tool.requires_calibration === 't';
+
         this.form.patchValue({
-            codigo: codigo,
-            pn:     tool.part_number   ?? tool.model       ?? tool.pn ?? '',
-            sn:     tool.serial_number ?? tool.sn          ?? '',
-            nombre: tool.name          ?? tool.tool_name   ?? '',
-            marca:  tool.brand         ?? tool.marca       ?? '',
+            codigo:               codigo,
+            pn:                   tool.part_number   ?? tool.model       ?? tool.pn ?? '',
+            sn:                   tool.serial_number ?? tool.sn          ?? '',
+            nombre:               tool.name          ?? tool.tool_name   ?? '',
+            marca:                tool.brand         ?? tool.marca       ?? '',
+            estado:               estado              ?? this.form.get('estado')?.value,
+            um:                   um                  ?? this.form.get('um')?.value,
+            cantidad:             tool.quantity_in_stock ? Number(tool.quantity_in_stock) : this.form.get('cantidad')?.value,
+            nivelCriticidad:      nivelCriticidad     ?? this.form.get('nivelCriticidad')?.value,
+            fabricacion:          fabricacion         ?? this.form.get('fabricacion')?.value,
+            requiereCalibracion:  requiereCalib,
+            intervaloCalibracion: tool.calibration_interval ? Number(tool.calibration_interval) : null,
+            fechaCalibracion:     tool.next_calibration_date || null,
+            nroCertificado:       tool.calibration_certificate || '',
+            observaciones:        tool.notes || '',
+            listaContenido:       tool.content_list || '',
         });
+
+        if (tool.location_photo) this.selectedImage.set(tool.location_photo);
     }
 
     hideBuscarDropdown(): void {
@@ -239,6 +268,7 @@ export class FormHerramientaNivelComponent implements OnInit, OnDestroy {
             nroCertificado:       v.requiereCalibracion ? v.nroCertificado       : '',
             imagenBase64:         this.selectedImage()    ?? undefined,
             observaciones:        v.observaciones?.trim() || undefined,
+            listaContenido:       v.listaContenido?.trim() || undefined,
         };
         this.dialogRef.close(out);
     }

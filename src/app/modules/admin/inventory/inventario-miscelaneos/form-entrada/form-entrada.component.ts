@@ -13,6 +13,7 @@ import { debounceTime, distinctUntilChanged, finalize, switchMap, takeUntil, map
 import { MovementService }     from '../../../../../core/services/movement.service';
 import { MiscelaneosService }  from '../../../../../core/services/miscelaneos.service';
 import { Entrada, DialogMode, Material } from '../interfaces';
+import { localDateStr } from '../../../../../core/utils/date.utils';
 
 interface Funcionario { id: number; nombre: string; cargo: string; }
 
@@ -63,7 +64,7 @@ export class FormEntradaComponent implements OnInit, OnDestroy {
     private _recibidoSearch$ = new Subject<string>();
 
     // ── Campos compartidos ──────────────────────────────────
-    fecha            = new Date().toISOString().split('T')[0];
+    fecha            = localDateStr();
     hora             = new Date().toTimeString().slice(0, 5);
     recibidoPorName  = '';
     recibidoPorValue = '';

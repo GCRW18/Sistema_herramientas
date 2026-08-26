@@ -30,8 +30,8 @@ export class AuditService {
         const params: any = {
             start: 0,
             limit: 100,
-            sort: 'timestamp',
-            dir: 'desc',
+            ordenacion: 'timestamp',
+            dir_ordenacion: 'desc',
             ...filters,
         };
 

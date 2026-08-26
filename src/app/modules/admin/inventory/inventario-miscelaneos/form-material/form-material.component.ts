@@ -13,6 +13,7 @@ import { Material, DialogMode } from '../interfaces';
 import { GestionUbicacionesService } from '../../gestion-ubicaciones/gestion-ubicaciones.service';
 import { Warehouse, Rack, Level } from '../../gestion-ubicaciones/interfaces';
 import { MovementService } from '../../../../../core/services/movement.service';
+import { localDateStr } from '../../../../../core/utils/date.utils';
 
 @Component({
     selector: 'app-form-material',
@@ -92,7 +93,7 @@ export class FormMaterialComponent implements OnInit, OnDestroy {
         ubicacion:  [''],
         activo:     [true],
         recibidoPor:[''],
-        fecha:      [new Date().toISOString().split('T')[0]],
+        fecha:      [localDateStr()],
         hora:       [new Date().toTimeString().slice(0, 5)],
         observacion:[''],
     });

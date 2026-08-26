@@ -222,15 +222,6 @@ export class FormDevolucionExternoDialogComponent implements OnInit, OnDestroy {
 
     updateCondicion(item: DevolucionExternoItem, c: CondicionExt): void { item.condicionDevolucion = c; item.selected = true; }
     getCondicionIcon(c: string): string { return this.condiciones.find(x => x.value === c)?.icon || 'help_outline'; }
-    getCondicionBg(c: string): string { return this.condiciones.find(x => x.value === c)?.bgColor || 'bg-gray-500'; }
-
-    getDiasFueraClass(dias: number): string {
-        if (dias <= 7)  return 'bg-green-100 text-green-800 border-green-300';
-        if (dias <= 30) return 'bg-yellow-100 text-yellow-800 border-yellow-300';
-        if (dias <= 60) return 'bg-orange-100 text-orange-800 border-orange-300';
-        return 'bg-red-100 text-red-800 border-red-400';
-    }
-
     hasError(field: string, error: string): boolean {
         const c = this.busquedaForm.get(field);
         return c ? c.hasError(error) && c.touched : false;

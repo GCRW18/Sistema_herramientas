@@ -242,7 +242,7 @@ export class DashboardAlertasComponent implements OnInit, OnDestroy {
 <div class="header">
   <div class="header-left">
     <h1>Alertas de Calibración</h1>
-    <p>Sistema de Gestión de Herramientas · MGH-109</p>
+    <p>Sistema de Gestión de Herramientas</p>
   </div>
   <div class="header-right">
     <div class="label">Filtro aplicado</div>
@@ -346,7 +346,9 @@ export class DashboardAlertasComponent implements OnInit, OnDestroy {
 
     private formatDate(date: string): string {
         if (!date) return '—';
-        try { return new Date(date).toLocaleDateString('es-BO', { day: '2-digit', month: '2-digit', year: 'numeric' }); }
-        catch { return date; }
+        // Texto puro (YYYY-MM-DD → DD/MM/YYYY), no new Date(): una fecha "solo fecha" se
+        // interpreta como medianoche UTC, que en Bolivia (UTC-4) muestra el día anterior.
+        const parts = String(date).split('T')[0].split('-');
+        return parts.length === 3 ? `${parts[2]}/${parts[1]}/${parts[0]}` : date;
     }
 }

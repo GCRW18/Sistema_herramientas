@@ -11,8 +11,8 @@ export class SupplierService {
         const params: any = {
             start: 0,
             limit: 50,
-            sort: 'name',
-            dir: 'asc',
+            ordenacion: 'name',
+            dir_ordenacion: 'asc',
             ...filters
         };
 

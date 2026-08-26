@@ -21,9 +21,14 @@ interface HerramientaOption {
     tipo:         string;
     sn:           string;
     estado:       string;
+    /** Estado traducido para mostrar en el buscador (estado viene crudo del backend
+     *  en inglés — "available", "in_use", etc. — y se usa tal cual para el match
+     *  contra `estados` al seleccionar, así que se traduce aparte solo para UI). */
+    estadoLabel:  string;
     ubicacion:    string;
     um:           string;
     imagen?:      string;
+    observaciones?: string;
     warehouse_id?: number;
     rack_id?:      number;
     level_id?:     number;
@@ -44,6 +49,20 @@ interface HerramientaOption {
         .custom-scrollbar::-webkit-scrollbar-track { background: transparent; border-radius: 3px; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #FF6A00; border-radius: 3px; }
         .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #e55a00; }
+        /* En modo solo-lectura (viewOnly) todo el form queda disabled, y el navegador
+           grisea el texto de inputs/selects deshabilitados por defecto — se fuerza negro
+           (blanco en dark) para que el detalle siga siendo legible. */
+        input:disabled, select:disabled, textarea:disabled {
+            color: #000 !important;
+            opacity: 1 !important;
+            -webkit-text-fill-color: #000 !important;
+        }
+        :host-context(.dark) input:disabled,
+        :host-context(.dark) select:disabled,
+        :host-context(.dark) textarea:disabled {
+            color: #fff !important;
+            -webkit-text-fill-color: #fff !important;
+        }
     `]
 })
 export class DetalleHerramientaComponent implements OnInit, OnDestroy {
@@ -84,6 +103,8 @@ export class DetalleHerramientaComponent implements OnInit, OnDestroy {
     /* ════════ Form ════════ */
     detalleForm!: FormGroup;
     isEditMode = signal<boolean>(false);
+    /** Modo solo-lectura: mismo form/estilo, sin buscador ni acción de guardar (ver data.viewOnly). */
+    viewOnly = signal<boolean>(false);
     imagenOriginal = signal<string | null>(null);
     imagenNueva    = signal<string | null>(null);
 
@@ -133,7 +154,6 @@ export class DetalleHerramientaComponent implements OnInit, OnDestroy {
             warehouseId:    [null],
             rackId:         [null],
             levelId:        [null],
-            documento:      [''],
             observaciones:  [''],
             tipoAjuste:     [this.data?.tipoAjuste || 'INVENTARIO'],
         });
@@ -142,6 +162,9 @@ export class DetalleHerramientaComponent implements OnInit, OnDestroy {
             this.isEditMode.set(true);
             this._loadEditData(this.data.editItem);
         }
+
+        this.viewOnly.set(!!this.data?.viewOnly);
+        if (this.viewOnly()) { this.detalleForm.disable({ emitEvent: false }); }
 
         this._setupSearch();
         this._loadAlmacenes();
@@ -171,9 +194,11 @@ export class DetalleHerramientaComponent implements OnInit, OnDestroy {
                         tipo:         t.tool_type       || t.category    || '',
                         sn:           t.serial_number   || '',
                         estado:       t.status          || '',
+                        estadoLabel:  this._statusLabel(t.status),
                         ubicacion:    t.location        || '',
                         um:           t.unit_of_measure || 'UNIDAD',
-                        imagen:       t.image_url       || t.image_base64 || null,
+                        imagen:       t.location_photo  || null,
+                        observaciones: t.notes          || '',
                         warehouse_id: t.warehouse_id    ? Number(t.warehouse_id)  : null,
                         rack_id:      t.rack_id         ? Number(t.rack_id)       : null,
                         level_id:     t.level_id        ? Number(t.level_id)      : null,
@@ -196,6 +221,27 @@ export class DetalleHerramientaComponent implements OnInit, OnDestroy {
 
     hideBuscarDropdown(): void { setTimeout(() => { this.showToolDropdown = false; }, 180); }
 
+    /** Traduce el status crudo de he.ttools (inglés: available/in_use/...) a una
+     *  etiqueta en español para el buscador. Mismo criterio que consultar-inventario. */
+    private _statusLabel(raw: string | null | undefined): string {
+        const map: Record<string, string> = {
+            available:      'DISPONIBLE',
+            in_calibration: 'EN CALIBRACIÓN', calibration: 'EN CALIBRACIÓN',
+            in_use:         'EN USO',          loaned:      'EN PRÉSTAMO',
+            transferred:    'EN PRÉSTAMO',
+            in_maintenance: 'EN MANTENIMIENTO', maintenance: 'EN MANTENIMIENTO',
+            quarantine:     'CUARENTENA',
+            decommissioned: 'BAJA',             lost:        'BAJA',
+        };
+        if (!raw) return '';
+        return map[raw] || raw.toUpperCase().replace(/_/g, ' ');
+    }
+
+    /** Clase de color del badge de estado en el buscador, en base al mismo status crudo. */
+    getEstadoBadgeClass(raw: string | null | undefined): string {
+        return 'bg-stone-100 dark:bg-slate-700 text-black dark:text-white';
+    }
+
     seleccionarHerramienta(tool: HerramientaOption): void {
         this.buscarValue      = `${tool.codigo} · ${tool.nombre}`;
         this.showToolDropdown = false;
@@ -209,6 +255,7 @@ export class DetalleHerramientaComponent implements OnInit, OnDestroy {
             tipo:   this.tiposHerramienta.some(t => t.value === tool.tipo) ? tool.tipo : 'HERRAMIENTA',
             estado: this.estados.some(e => e.value === tool.estado) ? tool.estado : 'SERVICEABLE',
             um:     this.unidades.some(u => u.value === tool.um)    ? tool.um     : 'UNIDAD',
+            observaciones: tool.observaciones || '',
         });
         if (tool.imagen) this.imagenOriginal.set(tool.imagen);
 
@@ -302,6 +349,7 @@ export class DetalleHerramientaComponent implements OnInit, OnDestroy {
     }
 
     openUbicacionDialog(): void {
+        if (this.viewOnly()) return;
         if (this.ubicDialogRef) { this.closeUbicacionDialog(); return; }
         this.showUbicacionPanel = true;
         this.ubicDialogRef = this.dialog.open(this.ubicDialogTpl, {
@@ -360,6 +408,7 @@ export class DetalleHerramientaComponent implements OnInit, OnDestroy {
     }
 
     limpiarUbicacion(): void {
+        if (this.viewOnly()) return;
         this.ubSelectedWarehouse = null;
         this.ubSelectedRack      = null;
         this.ubSelectedLevel     = null;
@@ -400,7 +449,6 @@ export class DetalleHerramientaComponent implements OnInit, OnDestroy {
             warehouseId:     item.warehouseId  || null,
             rackId:          item.rackId       || null,
             levelId:         item.levelId      || null,
-            documento:       item.documentos   || '',
             observaciones:   item.obs          || '',
             tipoAjuste:      item.tipoAjuste   || 'INVENTARIO',
         });
@@ -414,6 +462,7 @@ export class DetalleHerramientaComponent implements OnInit, OnDestroy {
 
     /* ════════ Foto ════════ */
     onImageSelected(event: Event): void {
+        if (this.viewOnly()) return;
         const file = (event.target as HTMLInputElement).files?.[0];
         if (!file) return;
         const reader = new FileReader();

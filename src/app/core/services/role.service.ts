@@ -11,8 +11,8 @@ export class RoleService {
         return from(this._api.post('herramientas/roles/listarRoles', {
             start: 0,
             limit: 200,
-            sort: 'name',
-            dir: 'asc'
+            ordenacion: 'name',
+            dir_ordenacion: 'asc'
         })).pipe(
             switchMap((response: any) => of(response?.datos || response?.data || []))
         );

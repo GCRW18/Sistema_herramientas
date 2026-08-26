@@ -16,15 +16,21 @@ export class MaintenanceService {
         const params: any = {
             start: 0,
             limit: 50,
-            sort: 'id_maintenance',
-            dir: 'desc',
+            ordenacion: 'id_maintenance',
+            dir_ordenacion: 'desc',
             ...filters
         };
 
         return from(this._api.post('herramientas/maintenances/listMaintenances', params)).pipe(
             switchMap((response: any) => {
                 const raw: any[] = response?.ROOT?.datos ?? response?.datos ?? response?.data ?? [];
+                // ...item primero: preserva TODOS los campos crudos que devuelve el backend
+                // (requested_by_name, expected_return_date, preventive_subtype, etc.) — antes
+                // se armaba el objeto campo por campo y cualquiera no listado explícitamente
+                // se perdía en silencio para los consumidores (consulta-auditoria, registros
+                // recientes de calibraciones.component.ts), aunque el backend sí lo mandaba.
                 const maintenances = raw.map((item: any) => ({
+                    ...item,
                     id: item.id_maintenance,
                     id_maintenance: item.id_maintenance,
                     toolId: item.tool_id,
@@ -40,18 +46,18 @@ export class MaintenanceService {
                     notes: item.notes,
                     createdAt: item.created_at ? new Date(item.created_at) : undefined,
                     updatedAt: item.updated_at ? new Date(item.updated_at) : undefined,
-                    // campos extra que usa consulta-auditoria
+                    // campos extra que usa consulta-auditoria / registros recientes
                     record_number: item.record_number,
                     tool_code: item.tool_code || '',
                     tool_name: item.tool_name || '',
                     tool_serial: item.tool_serial,
                     provider: item.provider ?? item.supplier_name,
                     send_date: item.send_date,
+                    expected_return_date: item.expected_return_date,
                     actual_return_date: item.actual_return_date,
                     return_date: item.actual_return_date,
                     result: item.result,
-                    certificate_number: item.certificate_number,
-                    next_calibration_date: item.next_maintenance_date,
+                    requested_by_name: item.requested_by_name,
                 }));
                 return of(maintenances);
             })
@@ -65,7 +71,7 @@ export class MaintenanceService {
      */
     getActiveMaintenancesPxp(): Observable<any[]> {
         return from(this._api.post('herramientas/maintenances/listarMaintenancesActivos', {
-            start: 0, limit: 100, sort: 'send_date', dir: 'desc'
+            start: 0, limit: 100, ordenacion: 'send_date', dir_ordenacion: 'desc'
         })).pipe(
             switchMap((response: any) => {
                 const raw = response?.ROOT?.datos ?? response?.datos ?? [];

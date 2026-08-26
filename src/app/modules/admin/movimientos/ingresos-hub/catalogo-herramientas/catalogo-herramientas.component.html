@@ -1,0 +1,152 @@
+<div class="bg-stone-100 dark:bg-slate-900 border-2 border-black overflow-hidden flex flex-col h-full">
+
+    <!-- Header -->
+    <div class="bg-[#0F172A] px-4 sm:px-5 py-3 flex items-center gap-3 shrink-0 select-none"
+         cdkDrag cdkDragRootElement=".cdk-overlay-pane" cdkDragHandle style="cursor:grab">
+        <div class="w-9 h-9 rounded bg-[#FFC501FF] border-2 border-black flex items-center justify-center shadow-[2px_2px_0_#fbbf24] shrink-0">
+            <mat-icon class="!text-lg text-black">manage_search</mat-icon>
+        </div>
+        <div class="flex-1 min-w-0">
+            <p class="text-[9px] text-slate-400 font-bold uppercase tracking-[0.18em] leading-none mb-0.5">Ingresos · Nueva Herramienta</p>
+            <h2 class="text-sm text-white font-black uppercase tracking-tight leading-none truncate">Copiar de Herramienta Existente</h2>
+        </div>
+        <!-- Contador de resultados -->
+        <span *ngIf="catalogItems.length > 0"
+              class="shrink-0 bg-[#FFC501FF] text-black border-2 border-black rounded-lg px-2 py-0.5 text-[10px] font-black">
+            {{ catalogItems.length }}
+        </span>
+    </div>
+
+    <!-- Barra de búsqueda -->
+    <div class="px-4 sm:px-5 pt-3 pb-3 shrink-0 bg-white dark:bg-slate-800">
+        <div class="relative">
+            <input type="text" [value]="catalogSearch"
+                   (input)="onCatalogSearch($any($event.target).value)"
+                   placeholder="Código BOA, P/N o descripción..."
+                   autofocus
+                   class="w-full h-10 pl-10 pr-10 bg-stone-50 dark:bg-slate-700 text-black dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-xl text-sm font-bold outline-none focus:border-black dark:focus:border-amber-400 focus:shadow-[3px_3px_0_#000] transition-all placeholder:font-normal placeholder:text-stone-400 dark:placeholder:text-slate-500">
+            <mat-icon class="absolute left-3 top-2.5 text-stone-400 dark:text-slate-500 !text-base pointer-events-none">search</mat-icon>
+            <!-- Spinner de carga -->
+            <div *ngIf="catalogLoading" class="absolute right-3 top-3">
+                <div class="w-4 h-4 border-2 border-amber-400 border-t-transparent rounded-full animate-spin"></div>
+            </div>
+            <!-- Limpiar búsqueda -->
+            <button *ngIf="catalogSearch.length > 0 && !catalogLoading" type="button"
+                    (click)="onCatalogSearch('')"
+                    class="absolute right-3 top-2.5 text-stone-400 hover:text-black dark:hover:text-white transition-colors">
+                <mat-icon class="!text-base">close</mat-icon>
+            </button>
+        </div>
+        <p class="text-[9px] text-stone-400 dark:text-slate-500 mt-1.5 leading-relaxed">
+            Seleccionar pre-llena el formulario de recepción. Mín. 2 caracteres.
+        </p>
+    </div>
+
+    <!-- Lista de resultados -->
+    <div class="flex-1 overflow-y-auto custom-scrollbar-ing">
+
+        <!-- Estado vacío: esperando búsqueda -->
+        <div *ngIf="catalogItems.length === 0 && !catalogLoading && catalogSearch.length < 2"
+             class="flex flex-col items-center justify-center py-12 gap-3 px-6 text-center h-full">
+            <div class="w-16 h-16 bg-stone-100 dark:bg-slate-800 border-2 border-stone-200 dark:border-slate-700 rounded-2xl flex items-center justify-center">
+                <mat-icon class="!text-3xl text-stone-300 dark:text-slate-600">search</mat-icon>
+            </div>
+            <div>
+                <p class="text-xs font-black uppercase text-stone-400 dark:text-slate-500">Busca una herramienta</p>
+                <p class="text-[10px] text-stone-400 dark:text-slate-500 mt-1 max-w-[220px] leading-relaxed">
+                    Escribe el código BOA, P/N o descripción para buscar en el inventario existente
+                </p>
+            </div>
+        </div>
+
+        <!-- Estado vacío: sin resultados -->
+        <div *ngIf="catalogItems.length === 0 && !catalogLoading && catalogSearch.length >= 2"
+             class="flex flex-col items-center justify-center py-12 gap-3 px-6 text-center h-full">
+            <div class="w-16 h-16 bg-amber-50 dark:bg-amber-900/20 border-2 border-amber-200 dark:border-amber-800 rounded-2xl flex items-center justify-center">
+                <mat-icon class="!text-3xl text-amber-400">search_off</mat-icon>
+            </div>
+            <div>
+                <p class="text-xs font-black uppercase text-stone-500 dark:text-slate-400">Sin resultados</p>
+                <p class="text-[10px] text-stone-400 dark:text-slate-500 mt-1 max-w-[220px] leading-relaxed">
+                    No se encontró "<strong>{{ catalogSearch }}</strong>" en el inventario.
+                    Usa "Ingresar Nueva" para registrarla por primera vez.
+                </p>
+            </div>
+            <button type="button" (click)="ingresarNueva()"
+                    class="h-8 px-4 flex items-center gap-1.5 bg-amber-400 text-black border-2 border-black rounded-lg font-black text-[10px] uppercase shadow-[2px_2px_0_#000] hover:translate-x-px hover:translate-y-px hover:shadow-none transition-all">
+                <mat-icon class="!text-sm">add</mat-icon> Ingresar Nueva
+            </button>
+        </div>
+
+        <!-- Resultados -->
+        <div *ngFor="let t of catalogItems; let i = index"
+             (click)="selectFromCatalog(t)"
+             class="flex items-center gap-3 px-4 sm:px-5 py-3 border-b border-stone-200 dark:border-slate-700 last:border-0 hover:bg-amber-50 dark:hover:bg-slate-800/80 cursor-pointer transition-colors group">
+
+            <!-- Icono tipo -->
+            <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-stone-100 dark:bg-slate-700 border-2 border-stone-300 dark:border-slate-600 flex items-center justify-center shrink-0 group-hover:bg-[#FFC501FF] group-hover:border-black transition-all">
+                <mat-icon class="!text-base text-stone-400 dark:text-slate-500 group-hover:text-black transition-colors">
+                    {{ (t.tool_type || t.tipo) === 'BANCO_PRUEBA' ? 'science' :
+                       (t.tool_type || t.tipo) === 'CONSUMIBLE'   ? 'inventory' :
+                       (t.tool_type || t.tipo) === 'EQUIPO_MEDICION' ? 'speed' : 'handyman' }}
+                </mat-icon>
+            </div>
+
+            <!-- Datos -->
+            <div class="flex-1 min-w-0">
+                <!-- Fila 1: código + P/N + S/N -->
+                <div class="flex items-center gap-1.5 flex-wrap mb-0.5">
+                    <span class="font-mono font-black text-[10px] bg-[#0F172A] text-white px-1.5 py-0.5 rounded leading-none">
+                        {{ t.code || t.codigo || '—' }}
+                    </span>
+                    <span *ngIf="t.part_number || t.pn"
+                          class="font-mono text-[9px] text-stone-500 dark:text-slate-400 font-bold">
+                        P/N: {{ t.part_number || t.pn }}
+                    </span>
+                    <span *ngIf="t.serial_number || t.sn"
+                          class="font-mono text-[9px] text-[#FF1414] dark:text-red-400 font-bold hidden sm:inline">
+                        S/N: {{ t.serial_number || t.sn }}
+                    </span>
+                </div>
+                <!-- Fila 2: nombre -->
+                <p class="font-black text-xs text-black dark:text-white truncate leading-tight">
+                    {{ t.name || t.description || t.descripcion || '—' }}
+                </p>
+                <!-- Fila 3: marca + tipo + ubicación -->
+                <div class="flex items-center gap-2 mt-0.5 flex-wrap">
+                    <span class="text-[9px] font-bold text-stone-400 dark:text-slate-500 uppercase">
+                        {{ t.brand || t.marca || 'S/M' }}
+                    </span>
+                    <span *ngIf="t.tool_type || t.tipo"
+                          class="text-[9px] font-bold text-blue-600 dark:text-blue-400 uppercase">
+                        · {{ t.tool_type || t.tipo }}
+                    </span>
+                    <span *ngIf="t.location || t.ubicacion"
+                          class="text-[9px] font-bold text-stone-400 dark:text-slate-500 hidden sm:inline">
+                        · <mat-icon class="!text-[9px] !w-3 !h-3 align-middle">place</mat-icon>{{ t.location || t.ubicacion }}
+                    </span>
+                </div>
+            </div>
+
+            <!-- Flecha -->
+            <mat-icon class="text-stone-300 dark:text-slate-600 group-hover:text-[#FF1414] !text-xl transition-colors shrink-0">
+                arrow_forward
+            </mat-icon>
+        </div>
+
+    </div>
+
+    <!-- Footer -->
+    <div class="border-t-2 border-black bg-stone-200 dark:bg-slate-800 px-4 sm:px-5 py-3 flex justify-between items-center gap-3 shrink-0">
+        <button type="button" (click)="cerrar()"
+                class="px-4 py-2 bg-[#FF1414] text-white font-black text-[10px] border-2 border-black rounded-xl shadow-[2px_2px_0_#000] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all uppercase">
+            Cancelar
+        </button>
+        <button type="button" (click)="ingresarNueva()"
+                class="flex items-center gap-2 px-4 py-2 bg-amber-400 text-black font-black text-[10px] border-2 border-black rounded-xl shadow-[2px_2px_0_#000] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all uppercase">
+            <mat-icon class="!text-sm">add_circle</mat-icon>
+            <span class="hidden sm:inline">Ingresar Nueva Herramienta</span>
+            <span class="sm:hidden">Nueva Herramienta</span>
+        </button>
+    </div>
+</div>
