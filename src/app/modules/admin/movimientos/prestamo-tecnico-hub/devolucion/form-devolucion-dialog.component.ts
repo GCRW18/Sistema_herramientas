@@ -14,7 +14,7 @@ import { PrestamoPdfService, PrestamoPdfData } from '../prestamo-pdf.service';
 type CondicionDevolucion = 'BUENO' | 'DAÑADO' | 'IRREPARABLE' | 'REQUIERE_CALIBRACION' | 'FALTANTE';
 
 interface DevolucionItem {
-    toolId?: string; imagen?: string; codigo: string; descripcion: string; pn: string; sn: string;
+    toolId?: string; loanItemId?: number; imagen?: string; codigo: string; descripcion: string; pn: string; sn: string;
     und: string; marca?: string; listaContenido: string; fechaCalibracion: string;
     estadoAlPrestar: string; fechaPrestamo: string; cantidadPrestada: number;
     cantidadDevolver: number; aeronave: string; ordenTrabajo?: string;
@@ -255,12 +255,14 @@ export class FormDevolucionDialogComponent implements OnInit, OnDestroy {
         this._deliveredBy = '';
         this._specialWork = false;
 
-        let filtro = `status = 'active' AND loan_type = 'internal'`;
+        // Columnas calificadas con loa.* : he.ft_loans_sel hace JOIN a he.tmovements (que
+        // también tiene 'status') → sin el prefijo, "status = ..." es ambiguo en el WHERE.
+        let filtro = `loa.status = 'active' AND loa.loan_type = 'internal'`;
         if (nombre) {
             const nombreSafe = nombre.replace(/'/g, "''");
             // Usar licencia solo si el nombre del form coincide con el seleccionado del dropdown
             const licSafe = (nombre === this._funcionarioNombre) ? this._funcionarioLicencia.replace(/'/g, "''") : '';
-            filtro += ` AND (borrower_name ILIKE '%${nombreSafe}%'` + (licSafe ? ` OR borrower_license = '${licSafe}'` : '') + `)`;
+            filtro += ` AND (loa.borrower_name ILIKE '%${nombreSafe}%'` + (licSafe ? ` OR loa.borrower_license = '${licSafe}'` : '') + `)`;
         }
 
         // 1. Primero obtener los préstamos filtrados por técnico
@@ -310,7 +312,9 @@ export class FormDevolucionDialogComponent implements OnInit, OnDestroy {
                 let resultado: DevolucionItem[] = loans.flatMap((loan: any) => {
                     const loanItems = (items || []).filter((i: any) => String(i.loan_id) === String(loan.id_loan));
                     return loanItems.map((item: any) => ({
-                        toolId: String(item.tool_id || ''), codigo: item.code || '',
+                        toolId: String(item.tool_id || ''),
+                        loanItemId: Number(item.id_loan_item) || undefined,
+                        codigo: item.code || '',
                         imagen: item.image_url || null, descripcion: item.description || item.name || '',
                         pn: item.part_number || '', sn: item.serial_number || '',
                         und: item.unit_of_measure || 'UND', marca: item.brand || '',
@@ -413,7 +417,8 @@ export class FormDevolucionDialogComponent implements OnInit, OnDestroy {
         this.isSaving = true;
         const sel = this.getSelDevolucionItems();
         const itemsJson = JSON.stringify(sel.map(i => ({
-            tool_id: Number(i.toolId), quantity: i.cantidadDevolver, condicion: i.condicionDevolucion,
+            tool_id: Number(i.toolId), id_loan_item: i.loanItemId ?? '',
+            quantity: i.cantidadDevolver, condicion: i.condicionDevolucion,
             unit_of_measure: i.und || '', content_list: i.listaContenido || '',
             estado_al_prestar: i.estadoAlPrestar || '', notes: i.observacionItem || ''
         })));

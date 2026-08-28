@@ -11,7 +11,7 @@ import { MovementService } from '../../../../../../core/services/movement.servic
 import { ToolService } from '../../../../../../core/services/tool.service';
 import { localDateStr } from '../../../../../../core/utils/date.utils';
 import {
-    Ubicacion, ToolEnvioItem, Funcionario, PersonaTecnico, TIPOS_TRASPASO, CONDICIONES_ENVIO
+    Ubicacion, ToolEnvioItem, Funcionario, PersonaTecnico, TIPOS_TRASPASO, CONDICIONES_ENVIO, motivoBloqueoSalida
 } from '../../retorno-traspaso.types';
 import { RetornoPdfService } from '../../retorno-pdf.service';
 
@@ -213,6 +213,8 @@ export class TraspasoTecnicoDialogComponent implements OnInit, OnDestroy {
     addToolTecnico(tool: any): void {
         const id = tool.id_tool ?? tool.id;
         if (this.itemsTraspasoTecnico.some(i => i.toolId === id)) { this._showMsg('Herramienta ya en la lista', 'warning'); return; }
+        const motivo = motivoBloqueoSalida(tool);
+        if (motivo) { this._showMsg(`"${tool.name ?? tool.code ?? 'La herramienta'}" no puede salir del almacén: ${motivo}`, 'warning'); return; }
         this.itemsTraspasoTecnico.push({
             toolId: id, codigo: tool.code ?? tool.codigo ?? '',
             nombre: tool.name ?? tool.description ?? '', pn: tool.part_number ?? '',

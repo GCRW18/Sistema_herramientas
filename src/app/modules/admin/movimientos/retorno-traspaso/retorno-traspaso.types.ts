@@ -1,5 +1,7 @@
 // Shared types and interfaces for retorno-traspaso dialogs
 
+import { localDateStr } from '../../../../core/utils/date.utils';
+
 export type ActiveTab    = 'envio' | 'traspaso' | 'retorno' | 'activos' | 'traspaso-tecnico';
 export type TipoOrigen   = 'BASE' | 'TRASPASO';
 export type CondRetorno  = 'BUENO' | 'DAÑADO' | 'REQUIERE_CALIBRACION' | 'FALTANTE';
@@ -184,6 +186,50 @@ export function mapRawMovimientoActivo(m: any): MovimientoActivo {
         return_movement_number:     m.return_movement_number || '',
         return_id_movement:         Number(m.return_id_movement) || 0,
     };
+}
+
+/**
+ * Motivo por el que una herramienta NO puede salir del almacen (traspaso a otra area,
+ * envio a otra base, traspaso a tecnico). Devuelve null si puede salir.
+ *
+ * Refleja el candado del backend (he.fn_block_expired_calibration_movement): una herramienta
+ * con calibracion vencida no puede salir, salvo que vaya a calibracion / cuarentena / baja.
+ * Aca ademas se cubren los estados operativos (en calibracion, cuarentena, baja, mantenimiento)
+ * para avisar al agregar la herramienta y no despues de llenar todo el formulario. Mismo
+ * criterio que el form de Prestamo a Tecnico (_motivoBloqueoPrestamo).
+ *
+ * Acepta tanto el registro crudo del autocompletar (status / next_calibration_date) como el
+ * item ya mapeado (fechaCalibracion / fechaVencCal).
+ */
+export function motivoBloqueoSalida(tool: any): string | null {
+    const status = String(tool?.status ?? tool?.tool_status ?? '').toLowerCase();
+    switch (status) {
+        case '':
+        case 'available':
+        case 'disponible':
+            break;
+        case 'decommissioned':
+        case 'baja':           return 'Herramienta dada de baja';
+        case 'in_calibration':
+        case 'calibracion':    return 'En proceso de calibración';
+        case 'quarantine':
+        case 'cuarentena':     return 'En cuarentena / no serviciable';
+        case 'in_maintenance': return 'En mantenimiento';
+        case 'in_use':
+        case 'loaned':         return 'Actualmente prestada';
+        case 'sent':
+        case 'in_transit':     return 'Ya enviada / en tránsito';
+        default:               return `No disponible (estado: ${status})`;
+    }
+    const venc = tool?.next_calibration_date ?? tool?.calibration_expiry_date
+        ?? tool?.calibration_due_date ?? tool?.fechaCalibracion ?? tool?.fechaVencCal ?? null;
+    if (venc) {
+        const vencYmd = String(venc).slice(0, 10);
+        if (/^\d{4}-\d{2}-\d{2}$/.test(vencYmd) && vencYmd < localDateStr()) {
+            return `Calibración vencida (${vencYmd})`;
+        }
+    }
+    return null;
 }
 
 export function abrirBlob(html: string): void {

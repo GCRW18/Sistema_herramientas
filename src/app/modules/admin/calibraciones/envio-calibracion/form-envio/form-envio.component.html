@@ -298,14 +298,22 @@
         <div class="flex items-center gap-2 shrink-0">
             <span class="text-[10px] font-black text-black dark:text-white shrink-0">
                 <span *ngIf="toolList.length === 0">Agregue herramientas al lote</span>
-                <span *ngIf="toolList.length > 0 && !isProcessing() && getDoneCount() < toolList.length">
-                    {{ toolList.length }} herramienta{{ toolList.length > 1 ? 's' : '' }} para envío
-                </span>
+                <ng-container *ngIf="toolList.length > 0 && !isProcessing()">
+                    <span *ngIf="getMissingFields().length > 0"
+                          class="text-[#FF1414] dark:text-red-400 flex items-center gap-1"
+                          [title]="'Falta: ' + getMissingFields().join(', ')">
+                        <mat-icon class="!text-xs">error</mat-icon>
+                        Faltan {{ getMissingFields().length }} campo{{ getMissingFields().length > 1 ? 's' : '' }}
+                    </span>
+                    <span *ngIf="getMissingFields().length === 0">
+                        {{ toolList.length }} herramienta{{ toolList.length > 1 ? 's' : '' }} para envío
+                    </span>
+                </ng-container>
                 <span *ngIf="isProcessing()" class="text-amber-600 dark:text-amber-400">
                     Procesando {{ processedCount + 1 }} de {{ toolList.length }}...
                 </span>
             </span>
-            <button type="button" (click)="submitAll()" [disabled]="!canSubmit() || isProcessing()"
+            <button type="button" (click)="submitAll()" [disabled]="isProcessing() || getPendingCount() === 0"
                     class="flex items-center gap-1.5 px-3 py-1.5 bg-black text-white font-black text-[10px] uppercase border-2 border-black rounded-lg shadow-[2px_2px_0_#fbbf24] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all disabled:opacity-40 disabled:cursor-not-allowed disabled:translate-x-0 disabled:translate-y-0 disabled:shadow-none">
                 <div *ngIf="isProcessing()" class="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                 <mat-icon *ngIf="!isProcessing()" class="!text-xs">send</mat-icon>

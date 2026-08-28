@@ -218,17 +218,6 @@ export interface KitTypeCount {
     incompleteCount: number;
 }
 
-/**
- * Filtros para kits
- */
-export interface KitFilters {
-    status?: KitStatus[];
-    kitType?: KitType[];
-    isComplete?: boolean;
-    warehouseId?: string;
-    search?: string;
-}
-
 // Backwards compatibility
 export type KitItem = KitComponent;
 export interface KitCalibrationStatus {

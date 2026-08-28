@@ -7,6 +7,7 @@ import { FormsModule } from '@angular/forms';
 import { MatDialog, MatDialogRef } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { forkJoin, of } from 'rxjs';
 import { catchError, finalize } from 'rxjs/operators';
 
@@ -74,15 +75,6 @@ export interface UnifiedItem {
     _raw?:                any;
 }
 
-interface CommandFilters {
-    tipo?:       string;
-    stockDesde?: number;
-    stockHasta?: number;
-    estado?:     string;
-    categoria?:  string;
-    ubicacion?:  string;
-}
-
 // ─── Componente ───────────────────────────────────────────────────────────────
 
 @Component({
@@ -90,7 +82,7 @@ interface CommandFilters {
     standalone:    true,
     imports: [
         CommonModule, RouterModule, FormsModule,
-        MatIconModule, MatTooltipModule
+        MatIconModule, MatTooltipModule, MatSnackBarModule
     ],
     encapsulation: ViewEncapsulation.None,
     templateUrl:  './consultar-inventario.component.html',
@@ -112,6 +104,7 @@ export class ConsultarInventarioComponent implements OnInit {
     // ── Servicios ─────────────────────────────────────────────────────────────
     private router            = inject(Router);
     private dialog            = inject(MatDialog);
+    private snackBar          = inject(MatSnackBar);
     private toolService       = inject(ToolService);
     private kitsService       = inject(KitsService);
     private miscelaneosService = inject(MiscelaneosService);
@@ -142,7 +135,6 @@ export class ConsultarInventarioComponent implements OnInit {
 
     // ── Filtros clásicos ──────────────────────────────────────────────────────
     searchTerm        = signal('');
-    commandSearch     = signal('');
     selectedTipo      = signal<string>('todos');
     selectedCategoria = signal<string>('todas');
     selectedEstado    = signal<string>('todos');
@@ -155,8 +147,6 @@ export class ConsultarInventarioComponent implements OnInit {
             ? this.ubicaciones.filter(u => u.toLowerCase().includes(q))
             : this.ubicaciones;
     });
-    stockDesde        = signal<number | null>(null);
-    stockHasta        = signal<number | null>(null);
     periodoMovimiento = signal<string>('todo');
 
     // ── Paginación ────────────────────────────────────────────────────────────
@@ -206,32 +196,7 @@ export class ConsultarInventarioComponent implements OnInit {
                 ); break;
         }
 
-        // 2. Filtros por comandos (parseados)
-        const cmd = this.parseCommand(this.commandSearch());
-        if (cmd.tipo) {
-            data = data.filter(i => i.tipo === cmd.tipo);
-        }
-        if (cmd.estado) {
-            data = data.filter(i => i.estado === cmd.estado);
-        }
-        if (cmd.categoria) {
-            data = data.filter(i =>
-                (i.categoria || '').toLowerCase().includes(cmd.categoria!.toLowerCase())
-            );
-        }
-        if (cmd.ubicacion) {
-            data = data.filter(i =>
-                (i.ubicacion || '').toLowerCase().includes(cmd.ubicacion!.toLowerCase())
-            );
-        }
-        if (cmd.stockDesde != null) {
-            data = data.filter(i => i.stockActual >= cmd.stockDesde!);
-        }
-        if (cmd.stockHasta != null) {
-            data = data.filter(i => i.stockActual <= cmd.stockHasta!);
-        }
-
-        // 3. Filtros clásicos
+        // 2. Filtros clásicos
         const term = this.searchTerm().toLowerCase().trim();
         if (term) {
             data = data.filter(i =>
@@ -257,12 +222,6 @@ export class ConsultarInventarioComponent implements OnInit {
         const ubQ = this.ubicacionSearch().trim().toLowerCase();
         if (ubQ) {
             data = data.filter(i => (i.ubicacion ?? '').toLowerCase().includes(ubQ));
-        }
-        if (this.stockDesde() != null) {
-            data = data.filter(i => i.stockActual >= this.stockDesde()!);
-        }
-        if (this.stockHasta() != null) {
-            data = data.filter(i => i.stockActual <= this.stockHasta()!);
         }
         if (this.periodoMovimiento() !== 'todo') {
             const dias    = parseInt(this.periodoMovimiento(), 10);
@@ -325,13 +284,10 @@ export class ConsultarInventarioComponent implements OnInit {
     // ¿Hay filtros activos? (para mostrar indicador)
     hasActiveFilters = computed(() =>
         this.searchTerm()          !== '' ||
-        this.commandSearch()       !== '' ||
         this.selectedTipo()        !== 'todos' ||
         this.selectedCategoria()   !== 'todas' ||
         this.selectedEstado()      !== 'todos' ||
         this.ubicacionSearch()     !== ''      ||
-        this.stockDesde()          !== null  ||
-        this.stockHasta()          !== null  ||
         this.periodoMovimiento()   !== 'todo'
     );
 
@@ -341,10 +297,9 @@ export class ConsultarInventarioComponent implements OnInit {
         // Resetear página cuando cambia cualquier filtro o pestaña
         effect(() => {
             // Leer todos los signals de filtro para que el effect se re-ejecute cuando cambien
-            this.searchTerm(); this.commandSearch();
+            this.searchTerm();
             this.selectedTipo(); this.selectedCategoria();
             this.selectedEstado(); this.ubicacionSearch();
-            this.stockDesde(); this.stockHasta();
             this.periodoMovimiento(); this.activeTab();
             // Resetear sin untracked para evitar loop — usamos un timeout micro
             Promise.resolve().then(() => this.currentPage.set(1));
@@ -363,7 +318,7 @@ export class ConsultarInventarioComponent implements OnInit {
 
         forkJoin({
             tools:      this.toolService.getTools().pipe(catchError(() => of([]))),
-            kits:       this.kitsService.getKits({ limit: 1000 }).pipe(catchError(() => of([]))),
+            kits:       this.kitsService.getKits({ limit: 5000 }).pipe(catchError(() => of([]))),
             miscs:      this.miscelaneosService.getMiscelaneos().pipe(catchError(() => of([]))),
             warehouses: this.warehouseService.getWarehouses().pipe(catchError(() => of([]))),
             locations:  this.warehouseService.getAllLocations().pipe(catchError(() => of([]))),
@@ -452,19 +407,13 @@ export class ConsultarInventarioComponent implements OnInit {
         let estado: UnifiedStatus = statusMap[t.status] || 'DISPONIBLE';
         if (estado === 'DISPONIBLE' && (t.quantity_in_stock ?? 0) <= 0) estado = 'SIN STOCK';
 
-        // listTools devuelve ttools.images (text[], en la práctica siempre vacío — nada lo
-        // escribe hoy) y location_photo (columna escalar aparte, subconsulta a
-        // he.ttool_files/'location_photo' — la foto real, la misma que ya usan "Agregar
-        // Herramienta al Nivel" y Recepción). location_photo va en columna propia y NO
-        // dentro de t.images porque es una data-URL con comas ("data:...;base64,xxx") y el
-        // parseo manual de arrays de abajo corta el string en la primera coma que encuentra.
+        // La foto real de la herramienta llega en t.location_photo (subconsulta a
+        // he.ttool_files/'location_photo', la misma que usan "Agregar Herramienta al Nivel"
+        // y Recepción). t.images (text[]) queda como fallback histórico pero nadie lo
+        // escribe hoy (he.ft_tools_ime no tiene caller en el frontend).
         let imagen: string | undefined;
         const rawImgs = t.images;
-        let primera: string | undefined;
-        if (Array.isArray(rawImgs) && rawImgs.length) primera = rawImgs[0];
-        else if (typeof rawImgs === 'string' && rawImgs.length > 2 && rawImgs.startsWith('{')) {
-            primera = rawImgs.slice(1, -1).split(',')[0]?.replace(/^"|"$/g, '') || undefined;
-        }
+        let primera: string | undefined = Array.isArray(rawImgs) && rawImgs.length ? rawImgs[0] : undefined;
         if (!primera && t.location_photo) primera = t.location_photo;
         if (primera) {
             imagen = (primera.startsWith('data:') || primera.startsWith('http'))
@@ -489,7 +438,10 @@ export class ConsultarInventarioComponent implements OnInit {
             almacen:             wName,
             estante:             t.estante || undefined,
             stockActual:         t.quantity_in_stock ?? 0,
-            stockMinimo:         0,
+            // he.ttools no tiene columna de stock mínimo — se deja undefined (no 0) para
+            // que "Bajo stock" no aplique a herramientas; solo cuentan como críticas con
+            // stockActual === 0 (ver tabFilteredData / kpiStats / tabCounts).
+            stockMinimo:         undefined,
             stockMaximo:         undefined,
             estado,
             nivelCriticidad:      t.criticality_level        || undefined,
@@ -526,13 +478,16 @@ export class ConsultarInventarioComponent implements OnInit {
             tipo:             'KIT',
             codigo:           k.code         || `KIT-${k.id_kit}`,
             nombre:           k.name         || '',
-            descripcion:      k.description  || undefined,
+            descripcion:      k.notes || k.description || undefined,
             categoria:        k.category     || undefined,
             unidad:           'Kit',
             ubicacion,
             almacen:          k.location_name || undefined,
-            stockActual:      k.available_quantity ?? 1,   // kits disponibles
-            stockMinimo:      1,
+            // Un kit es una unidad física: 1 si está en almacén, 0 si está prestado
+            // (current_loan_id lo setea he.ft_kit_loans_ime al prestar y lo limpia al
+            // devolver). stockMinimo undefined — no participa de "Bajo stock".
+            stockActual:      k.current_loan_id ? 0 : 1,
+            stockMinimo:      undefined,
             totalComponentes: k.total_components   ?? 0,
             responsable:      k.funcionario_nombre  || undefined,
             partNumber:          k.part_number   || undefined,
@@ -552,7 +507,8 @@ export class ConsultarInventarioComponent implements OnInit {
     private mapMisc(m: any): UnifiedItem {
         // getMiscelaneos() retorna objetos Material ya mapeados:
         //   m.id, m.codigoBoaM, m.producto, m.pn, m.marca,
-        //   m.tipoItem, m.stock, m.stockMin, m.stockMax, m.ubicacion, m.activo
+        //   m.tipoItem, m.stock, m.stockMin, m.stockMax, m.ubicacion, m.activo,
+        //   m.fecha (alta del catálogo), m.lastMovementDate (última entrada/salida real).
         // Se soportan también los campos raw por compatibilidad.
         const stock    = Number(m.stock    ?? m.quantity_in_stock ?? 0);
         const stockMin = Number(m.stockMin ?? m.stock_min         ?? 0);
@@ -581,70 +537,19 @@ export class ConsultarInventarioComponent implements OnInit {
             stockMinimo:  stockMin || undefined,
             stockMaximo:  Number(m.stockMax ?? m.stock_max ?? 0) || undefined,
             estado,
-            ultimoMovimiento: m.fecha
-                ? new Date(m.fecha)
-                : m.fecha_mod
-                    ? new Date(m.fecha_mod)
-                    : m.fecha_reg ? new Date(m.fecha_reg) : undefined,
+            // "Últ. mov." real = fecha de la última entrada/salida (he.tmiscelaneo_movimientos),
+            // no la fecha de alta del catálogo (m.fecha) — esa iba en fechaRegistro.
+            // 'T00:00:00' fuerza interpretación en hora local (sin él, 'YYYY-MM-DD' se
+            // parsea como medianoche UTC y en UTC-4 corre un día atrás).
+            ultimoMovimiento: m.lastMovementDate
+                ? new Date(`${m.lastMovementDate}T00:00:00`)
+                : m.fecha_mod ? new Date(m.fecha_mod) : undefined,
             fechaRegistro:    m.fecha
-                ? new Date(m.fecha)
+                ? new Date(`${m.fecha}T00:00:00`)
                 : m.fecha_reg ? new Date(m.fecha_reg) : new Date(),
             activo: m.activo ?? (m.active === true || m.active === 't' || m.active === 'true'),
             _raw:   m,
         };
-    }
-
-    // ── Parser de comandos ────────────────────────────────────────────────────
-
-    parseCommand(cmd: string): CommandFilters {
-        if (!cmd.trim()) return {};
-        const result: CommandFilters = {};
-
-        const tipoMatch = cmd.match(/tipo:(\w+)/i);
-        if (tipoMatch) {
-            const t = tipoMatch[1].toUpperCase();
-            const tipoMap: Record<string, string> = {
-                HERRAMIENTA: 'HERRAMIENTA', HERRAMIENTAS: 'HERRAMIENTA',
-                KIT: 'KIT', KITS: 'KIT',
-                MISCELANEO: 'MISCELANEO', MISCELANEOS: 'MISCELANEO',
-                MISC: 'MISCELANEO',
-            };
-            result.tipo = tipoMap[t] as ItemType;
-        }
-
-        const stockLtMatch = cmd.match(/stock[<≤](\d+)/i);
-        if (stockLtMatch) result.stockHasta = parseInt(stockLtMatch[1], 10);
-
-        const stockGtMatch = cmd.match(/stock[>≥](\d+)/i);
-        if (stockGtMatch) result.stockDesde = parseInt(stockGtMatch[1], 10);
-
-        const estadoMatch = cmd.match(/estado:(\w+)/i);
-        if (estadoMatch) {
-            const estadoMap: Record<string, UnifiedStatus> = {
-                disponible:    'DISPONIBLE',
-                prestado:      'EN PRESTAMO',
-                uso:           'EN USO',
-                agotado:       'SIN STOCK',
-                sinstock:      'SIN STOCK',
-                critico:       'SIN STOCK',
-                calibracion:   'EN CALIBRACION',
-                mantenimiento: 'EN MANTENIMIENTO',
-                cuarentena:    'CUARENTENA',
-                completo:      'COMPLETO',
-                incompleto:    'INCOMPLETO',
-                baja:          'BAJA',
-                bajostock:     'BAJO STOCK',
-            };
-            result.estado = estadoMap[estadoMatch[1].toLowerCase()];
-        }
-
-        const catMatch = cmd.match(/categoria:["']?([^"'\s]+)["']?/i);
-        if (catMatch) result.categoria = catMatch[1];
-
-        const ubMatch = cmd.match(/ubicacion:["']([^"']+)["']|ubicacion:(\S+)/i);
-        if (ubMatch) result.ubicacion = ubMatch[1] || ubMatch[2];
-
-        return result;
     }
 
     // ── Acciones de filtros ───────────────────────────────────────────────────
@@ -665,14 +570,11 @@ export class ConsultarInventarioComponent implements OnInit {
 
     resetFilters(): void {
         this.searchTerm.set('');
-        this.commandSearch.set('');
         this.selectedTipo.set('todos');
         this.selectedCategoria.set('todas');
         this.selectedEstado.set('todos');
         this.ubicacionSearch.set('');
         this.showUbicacionDrop.set(false);
-        this.stockDesde.set(null);
-        this.stockHasta.set(null);
         this.periodoMovimiento.set('todo');
         this.currentPage.set(1);
     }
@@ -760,9 +662,13 @@ export class ConsultarInventarioComponent implements OnInit {
                     this.clearSelection();
                 } catch (e) {
                     console.error('Error abriendo códigos QR:', e);
+                    this.snackBar.open('No se pudo abrir el PDF de códigos QR', 'OK', { duration: 5000 });
                 }
             },
-            error: (e) => console.error('Error al generar códigos QR:', e)
+            error: (e) => {
+                console.error('Error al generar códigos QR:', e);
+                this.snackBar.open(e?.message || 'Error al generar los códigos QR', 'OK', { duration: 5000 });
+            }
         });
     }
 
@@ -772,6 +678,11 @@ export class ConsultarInventarioComponent implements OnInit {
         const data  = this.tabFilteredData();
         const fecha = new Date().toLocaleDateString('es-BO', { day: '2-digit', month: '2-digit', year: 'numeric' });
         const hora  = new Date().toLocaleTimeString('es-BO', { hour: '2-digit', minute: '2-digit' });
+
+        // Escapa texto libre (nombre/código/P·N/marca/…) antes de inyectarlo en el HTML
+        // del reporte: un valor con < > & " rompía el layout de la ventana de impresión.
+        const esc = (v: unknown): string =>
+            String(v ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c] as string));
 
         const tabLabels: Record<string, string> = {
             todos: 'Todos los ítems', herramientas: 'Herramientas',
@@ -815,24 +726,24 @@ export class ConsultarInventarioComponent implements OnInit {
                     </span>
                 </td>
                 <td style="padding:6px 10px; border-bottom:1px solid #e5e7eb; font-family:monospace; font-size:10px; font-weight:700;">
-                    ${i.codigo}
-                    ${i.partNumber   ? `<br><span style="color:#6b7280; font-size:9px;">P/N ${i.partNumber}</span>`   : ''}
-                    ${i.serialNumber ? `<br><span style="color:#6b7280; font-size:9px;">S/N ${i.serialNumber}</span>` : ''}
+                    ${esc(i.codigo)}
+                    ${i.partNumber   ? `<br><span style="color:#6b7280; font-size:9px;">P/N ${esc(i.partNumber)}</span>`   : ''}
+                    ${i.serialNumber ? `<br><span style="color:#6b7280; font-size:9px;">S/N ${esc(i.serialNumber)}</span>` : ''}
                 </td>
                 <td style="padding:6px 10px; border-bottom:1px solid #e5e7eb; max-width:200px;">
-                    <div style="font-size:11px; font-weight:700;">${i.nombre}</div>
-                    ${i.marca ? `<div style="font-size:9px; color:#6b7280;">${i.marca}</div>` : ''}
+                    <div style="font-size:11px; font-weight:700;">${esc(i.nombre)}</div>
+                    ${i.marca ? `<div style="font-size:9px; color:#6b7280;">${esc(i.marca)}</div>` : ''}
                 </td>
-                <td style="padding:6px 10px; border-bottom:1px solid #e5e7eb; font-size:10px; color:#374151;">${i.categoria || '—'}</td>
-                <td style="padding:6px 10px; border-bottom:1px solid #e5e7eb; font-size:10px; max-width:140px;">${i.ubicacion}</td>
+                <td style="padding:6px 10px; border-bottom:1px solid #e5e7eb; font-size:10px; color:#374151;">${esc(i.categoria || '—')}</td>
+                <td style="padding:6px 10px; border-bottom:1px solid #e5e7eb; font-size:10px; max-width:140px;">${esc(i.ubicacion)}</td>
                 <td style="padding:6px 10px; border-bottom:1px solid #e5e7eb; text-align:center; font-weight:900; font-size:14px; color:${stockColor};">
                     ${i.stockActual}
                     ${(i.stockMinimo ?? 0) > 0 ? `<br><span style="font-size:8px; color:#9ca3af; font-weight:400;">mín ${i.stockMinimo}</span>` : ''}
-                    <br><span style="font-size:8px; color:#9ca3af; font-weight:400;">${i.unidad ?? ''}</span>
+                    <br><span style="font-size:8px; color:#9ca3af; font-weight:400;">${esc(i.unidad ?? '')}</span>
                 </td>
                 <td style="padding:6px 10px; border-bottom:1px solid #e5e7eb; text-align:center;">
                     <span style="display:inline-block; padding:2px 6px; background:${estadoC}20; color:${estadoC}; border:1px solid ${estadoC}60; font-size:8px; font-weight:900; border-radius:3px; text-transform:uppercase; white-space:nowrap;">
-                        ${i.estado}
+                        ${esc(i.estado)}
                     </span>
                 </td>
                 <td style="padding:6px 10px; border-bottom:1px solid #e5e7eb; font-size:9px; color:#6b7280; text-align:center;">

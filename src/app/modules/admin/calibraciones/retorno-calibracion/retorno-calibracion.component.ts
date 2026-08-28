@@ -26,6 +26,7 @@ interface CalibrationDisplay {
     base:                 string;
     almacen:              string;
     status:               string;
+    has_certificate_file: boolean;
 }
 
 @Component({
@@ -116,6 +117,7 @@ export class RetornoCalibracionComponent implements OnInit, OnDestroy {
                     base:                 r.base ?? '—',
                     almacen:              r.almacen ?? '—',
                     status:               r.status ?? 'sent',
+                    has_certificate_file: r.has_certificate_file === true || r.has_certificate_file === 't' || r.has_certificate_file === 'true',
                 }));
                 this.applyFilters();
             },
@@ -250,6 +252,20 @@ export class RetornoCalibracionComponent implements OnInit, OnDestroy {
                 }
             },
             error: () => this.showMsg('Certificado no disponible o error de generación', 'error')
+        });
+    }
+
+    verCertificadoAdjunto(cal: CalibrationDisplay): void {
+        if (!cal.id_calibration) return;
+        this.isLoading.set(true);
+        this.calibrationService.getCertificateFile(cal.id_calibration).pipe(
+            finalize(() => this.isLoading.set(false))
+        ).subscribe({
+            next: (b64) => {
+                if (b64) this.calibrationService.abrirPdf(b64, `certificado_${cal.record_number}.pdf`);
+                else this.showMsg('No hay certificado PDF adjunto para esta calibración', 'warning');
+            },
+            error: () => this.showMsg('No se pudo abrir el certificado adjunto', 'error')
         });
     }
 

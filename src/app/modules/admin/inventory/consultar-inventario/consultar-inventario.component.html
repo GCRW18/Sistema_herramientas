@@ -23,11 +23,11 @@
       </div>
     </div>
 
-    <!-- Búsquedas — fila propia, se expanden al ancho disponible -->
-    <div class="flex items-center gap-2 shrink-0">
+    <!-- Filtros de búsqueda — una sola línea, scroll horizontal si no entra -->
+    <div class="flex items-center gap-2 flex-nowrap overflow-x-auto scrollbar-none shrink-0 pb-0.5">
 
       <!-- Búsqueda libre -->
-      <div class="relative flex-1 min-w-0">
+      <div class="relative flex-1 min-w-[150px]">
         <input type="text"
                [ngModel]="searchTerm()" (ngModelChange)="searchTerm.set($event)"
                placeholder="Código, nombre, P/N..."
@@ -37,23 +37,6 @@
                       placeholder:font-normal placeholder:normal-case placeholder:text-gray-400" />
         <mat-icon class="absolute left-2.5 top-2 text-black dark:text-white !text-sm">search</mat-icon>
       </div>
-
-      <!-- Búsqueda por comandos — solo sm+ -->
-      <div class="relative w-44 shrink-0 hidden sm:block">
-        <input type="text"
-               [ngModel]="commandSearch()" (ngModelChange)="commandSearch.set($event)"
-               placeholder="tipo:kit  stock&lt;5"
-               class="h-9 pl-9 pr-3 w-full bg-white dark:bg-[#0F172AFF] text-black dark:text-white
-                      border-[2px] border-purple-400 rounded-lg font-mono text-xs
-                      focus:outline-none focus:shadow-[3px_3px_0px_0px_#7c3aed] focus:-translate-y-[1px] transition-all
-                      placeholder:font-normal placeholder:text-purple-300" />
-        <mat-icon class="absolute left-2.5 top-2 text-purple-500 !text-sm">terminal</mat-icon>
-      </div>
-
-    </div>
-
-    <!-- Filtros dropdown — scroll horizontal en mobile, sin wrapping -->
-    <div class="flex items-center gap-2 overflow-x-auto scrollbar-none flex-nowrap shrink-0">
 
       <!-- Tipo -->
       <select [ngModel]="selectedTipo()" (ngModelChange)="selectedTipo.set($event)"
@@ -116,28 +99,10 @@
         </div>
       </div>
 
-    </div>
-
-    <!-- Fila de filtros secundarios -->
-    <div class="flex items-center gap-2 flex-nowrap overflow-x-auto scrollbar-none pb-0.5 shrink-0">
-
-      <!-- Stock range — sólo md+ -->
-      <div class="items-center gap-1 hidden md:flex">
-        <span class="text-[11px] font-black text-gray-500 dark:text-gray-400 uppercase">Stock</span>
-        <input type="number" min="0" placeholder="Min"
-               [value]="stockDesde() ?? ''"
-               (change)="stockDesde.set($any($event.target).value !== '' ? +$any($event.target).value : null)"
-               class="h-8 w-14 px-2 text-xs bg-white dark:bg-[#0F172AFF] text-black dark:text-white border-[2px] border-black rounded-lg font-bold focus:outline-none transition-all" />
-        <span class="text-[11px] text-gray-400">—</span>
-        <input type="number" min="0" placeholder="Max"
-               [value]="stockHasta() ?? ''"
-               (change)="stockHasta.set($any($event.target).value !== '' ? +$any($event.target).value : null)"
-               class="h-8 w-14 px-2 text-xs bg-white dark:bg-[#0F172AFF] text-black dark:text-white border-[2px] border-black rounded-lg font-bold focus:outline-none transition-all" />
-      </div>
-
+      <!-- Período de movimiento -->
       <select [ngModel]="periodoMovimiento()" (ngModelChange)="periodoMovimiento.set($event)"
-              class="h-8 px-2 sm:px-3 bg-white dark:bg-[#0F172AFF] text-black dark:text-white
-                     border-[2px] border-black rounded-lg font-bold text-[11px] uppercase
+              class="h-9 px-2 sm:px-3 bg-white dark:bg-[#0F172AFF] text-black dark:text-white
+                     border-[2px] border-black rounded-lg font-black text-xs uppercase
                      focus:outline-none transition-all cursor-pointer shrink-0">
         <option value="todo">Cualquier período</option>
         <option value="7">Últ. 7 días</option>
@@ -145,8 +110,9 @@
         <option value="90">Últ. 90 días</option>
       </select>
 
+      <!-- Limpiar filtros -->
       <button *ngIf="hasActiveFilters()" (click)="resetFilters()"
-              class="h-8 px-3 flex items-center gap-1 text-[11px] font-black uppercase
+              class="h-9 px-3 flex items-center gap-1 text-[11px] font-black uppercase
                      bg-red-100 text-red-700 border-[2px] border-red-400 rounded-lg
                      hover:bg-red-200 transition-all shrink-0">
         <mat-icon class="!text-xs !w-3.5 !h-3.5">filter_alt_off</mat-icon>
@@ -154,7 +120,7 @@
       </button>
 
       <span *ngIf="hasActiveFilters()"
-            class="text-[10px] font-black uppercase px-2 py-0.5 bg-[#FFC501FF] border-2 border-black rounded text-black shrink-0">
+            class="text-[10px] font-black uppercase px-2 py-1 bg-[#FFC501FF] border-2 border-black rounded text-black shrink-0 whitespace-nowrap">
         Filtros activos
       </span>
     </div>

@@ -18,13 +18,10 @@ interface KitCategory {
     imports: [CommonModule, FormsModule, MatIconModule],
     template: `
 <div class="bg-stone-100 dark:bg-slate-900 border-2 border-black rounded-2xl overflow-hidden flex flex-col"
-     style="width: 420px; max-width: 95vw;">
+     style="width: 380px; max-width: 95vw;">
 
     <!-- HEADER -->
-    <div class="bg-[#0F172A] px-4 py-3 flex items-center gap-3 shrink-0">
-        <div class="w-8 h-8 rounded-lg bg-amber-400 border-2 border-black flex items-center justify-center shadow-[2px_2px_0_#000] shrink-0">
-            <mat-icon class="!text-sm text-black">category</mat-icon>
-        </div>
+    <div class="bg-[#0F172A] px-4 py-2.5 flex items-center gap-3 shrink-0">
         <div class="flex-1">
             <p class="text-[8px] text-slate-400 font-bold uppercase tracking-[0.18em] leading-none mb-0.5">Inventario · Kits</p>
             <h2 class="text-sm text-white font-black uppercase tracking-tight leading-none">Gestionar Categorías</h2>
@@ -200,7 +197,7 @@ export class CategoriaManagerDialogComponent implements OnInit {
             error: () => {
                 this.deletingId.set(null);
                 this.confirmDeleteId.set(null);
-                this.errorMsg.set('No se pudo eliminar. Puede estar en uso por algún kit.');
+                this.errorMsg.set('No se pudo quitar la categoría.');
             }
         });
     }

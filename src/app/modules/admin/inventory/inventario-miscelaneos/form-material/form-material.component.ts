@@ -36,6 +36,22 @@ import { localDateStr } from '../../../../../core/utils/date.utils';
         .neo-scrollbar::-webkit-scrollbar { width: 6px; }
         .neo-scrollbar::-webkit-scrollbar-track { background: transparent; }
         .neo-scrollbar::-webkit-scrollbar-thumb { background: #0F172A; border: 1px solid #000; border-radius: 3px; }
+        /* Modo "Detalle del Ítem" (readOnly): todo el form queda disabled, pero el texto debe
+           leerse como un detalle normal, no como un campo apagado — se fuerza negro/blanco por
+           encima del gris de "input:disabled" del navegador y de las clases text-stone-400. */
+        .readonly-detail input:disabled,
+        .readonly-detail select:disabled,
+        .readonly-detail textarea:disabled {
+            color: #000 !important;
+            -webkit-text-fill-color: #000 !important;
+            opacity: 1 !important;
+        }
+        :host-context(.dark) .readonly-detail input:disabled,
+        :host-context(.dark) .readonly-detail select:disabled,
+        :host-context(.dark) .readonly-detail textarea:disabled {
+            color: #fff !important;
+            -webkit-text-fill-color: #fff !important;
+        }
     `]
 })
 export class FormMaterialComponent implements OnInit, OnDestroy {
@@ -80,7 +96,7 @@ export class FormMaterialComponent implements OnInit, OnDestroy {
     showFuncionarioSuggestions    = false;
 
     form: FormGroup = this.fb.group({
-        codigoBoaM: ['', [Validators.required, Validators.maxLength(40)]],
+        codigoBoaM: ['', [Validators.maxLength(40)]],
         producto:   ['', [Validators.required, Validators.maxLength(200)]],
         tipoItem:   ['CONSUMIBLE', Validators.required],
         tipoCompra: ['COMPRA DIRECTA', Validators.required],
@@ -95,6 +111,7 @@ export class FormMaterialComponent implements OnInit, OnDestroy {
         recibidoPor:[''],
         fecha:      [localDateStr()],
         hora:       [new Date().toTimeString().slice(0, 5)],
+        fechaAdquisicion: [''],
         observacion:[''],
     });
 
@@ -114,10 +131,9 @@ export class FormMaterialComponent implements OnInit, OnDestroy {
         this.form.get('recibidoPor')?.disable();
         this.form.get('fecha')?.disable();
         this.form.get('hora')?.disable();
-        // El código es inmutable una vez creado (identificador único del ítem)
-        if (this.mode === 'edit') {
-            this.form.get('codigoBoaM')?.disable();
-        }
+        // El código es siempre generado por el servidor (correlativo BOA-M-NNN al crear,
+        // ver HE_MIS_INS) — nunca lo escribe el usuario, ni en alta ni en edición.
+        this.form.get('codigoBoaM')?.disable();
         if (this.readOnly) {
             this.form.disable();
         }
@@ -360,6 +376,7 @@ export class FormMaterialComponent implements OnInit, OnDestroy {
             recibidoPor: v.recibidoPor?.trim() || '',
             fecha:       v.fecha,
             hora:        v.hora,
+            fechaAdquisicion: v.fechaAdquisicion || '',
             observacion: v.observacion?.trim() || undefined,
             warehouseId: this.selWarehouse?.id   ?? null,
             rackId:      this.selRack?.id        ?? null,

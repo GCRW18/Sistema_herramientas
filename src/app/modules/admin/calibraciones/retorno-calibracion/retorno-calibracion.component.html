@@ -233,6 +233,16 @@
                                     <mat-icon class="text-white !text-base">workspace_premium</mat-icon>
                                 </button>
 
+                                <!-- Certificado PDF adjunto (solo si se subió uno) -->
+                                <button *ngIf="cal.has_certificate_file"
+                                        (click)="verCertificadoAdjunto(cal)"
+                                        matTooltip="Ver certificado PDF adjunto"
+                                        class="w-8 h-8 flex items-center justify-center border-2 border-black
+                                               bg-red-500 hover:bg-red-400 rounded-lg shadow-[2px_2px_0px_0px_#000]
+                                               active:translate-y-[1px] active:shadow-none transition-all">
+                                    <mat-icon class="text-white !text-base">picture_as_pdf</mat-icon>
+                                </button>
+
                             </div>
                         </td>
                     </tr>

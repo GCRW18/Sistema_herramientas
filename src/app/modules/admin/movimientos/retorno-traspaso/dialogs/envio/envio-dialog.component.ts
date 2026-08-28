@@ -13,7 +13,7 @@ import { ToolService } from '../../../../../../core/services/tool.service';
 import { localDateStr } from '../../../../../../core/utils/date.utils';
 import {
     Ubicacion, ToolEnvioItem, Funcionario,
-    CONDICIONES_ENVIO, abrirBlob
+    CONDICIONES_ENVIO, abrirBlob, motivoBloqueoSalida
 } from '../../retorno-traspaso.types';
 import { EnvioBasePdfService, EnvioBasePdfData } from '../../envio-base-pdf.service';
 
@@ -204,6 +204,8 @@ export class EnvioDialogComponent implements OnInit, OnDestroy {
     addToolEnvio(tool: any): void {
         const id = tool.id_tool ?? tool.id;
         if (this.itemsEnvio.some(i => i.toolId === id)) { this._showMsg('Herramienta ya en la lista', 'warning'); return; }
+        const motivo = motivoBloqueoSalida(tool);
+        if (motivo) { this._showMsg(`"${tool.name ?? tool.code ?? 'La herramienta'}" no puede salir del almacén: ${motivo}`, 'warning'); return; }
         this.itemsEnvio.push({
             toolId: id, codigo: tool.code ?? tool.codigo ?? '',
             nombre: tool.name ?? tool.description ?? '',

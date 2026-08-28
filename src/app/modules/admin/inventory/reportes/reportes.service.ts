@@ -1,6 +1,32 @@
 import { Injectable, inject } from '@angular/core';
 import { from, Observable, of } from 'rxjs';
-import { catchError, switchMap } from 'rxjs/operators';
+import { catchError, map, switchMap } from 'rxjs/operators';
+
+/** 'YYYY-MM-DD' → Date en hora local (evita el corrimiento de un día de new Date('YYYY-MM-DD')). */
+function parseYMD(s: string | null | undefined): Date | null {
+    if (!s) return null;
+    const m = String(s).match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (m) return new Date(+m[1], +m[2] - 1, +m[3]);
+    const d = new Date(s);
+    return isNaN(d.getTime()) ? null : d;
+}
+
+const MS_DAY = 86400000;
+
+/** Completa days_overdue / days_loaned (no los calcula ninguna transacción SQL). */
+function enrichLoanRow(r: any): any {
+    const loan     = parseYMD(r.loan_date);
+    const expected = parseYMD(r.expected_return_date);
+    const actual   = parseYMD(r.actual_return_date);
+    const today    = new Date(); today.setHours(0, 0, 0, 0);
+    return {
+        ...r,
+        days_loaned:  loan ? Math.max(0, Math.floor(((actual ?? today).getTime() - loan.getTime()) / MS_DAY)) : null,
+        days_overdue: (expected && !actual)
+            ? Math.max(0, Math.floor((today.getTime() - expected.getTime()) / MS_DAY))
+            : 0,
+    };
+}
 import { ErpApiService } from '../../../../core/api/api.service';
 
 /* ── Filtros genéricos ─────────────────────────────────────────────────── */
@@ -196,11 +222,13 @@ export class ReportesService {
     /* ── Préstamos / Deudores ─────────────────────────────────────────── */
 
     getReportePrestamos(f: FiltrosReporte = {}): Observable<LoanReporteRow[]> {
-        return this._req<LoanReporteRow>('herramientas/reportes/listarReportePrestamos', f);
+        return this._req<LoanReporteRow>('herramientas/reportes/listarReportePrestamos', f)
+            .pipe(map(rows => rows.map(enrichLoanRow)));
     }
 
     getReporteDeudores(f: FiltrosReporte = {}): Observable<LoanReporteRow[]> {
-        return this._req<LoanReporteRow>('herramientas/reportes/listarReporteDeudores', f);
+        return this._req<LoanReporteRow>('herramientas/reportes/listarReporteDeudores', f)
+            .pipe(map(rows => rows.map(enrichLoanRow)));
     }
 
     /* ── Misceláneos ──────────────────────────────────────────────────── */

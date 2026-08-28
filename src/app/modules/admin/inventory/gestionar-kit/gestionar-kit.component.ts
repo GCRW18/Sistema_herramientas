@@ -142,7 +142,9 @@ export class GestionarKitComponent implements OnInit, OnDestroy {
                 estado:         kit.status      ?? 'complete',
                 funcionario:    kit.funcionario_nombre ?? kit.responsable ?? '',
                 ubicacion:      kit.location_name ?? kit.ubicacion ?? '',
-                descripcionKit: kit.description ?? kit.descripcion ?? ''
+                // El campo "Descripción / Notas" se guarda en la columna notes (ver onSubmit);
+                // description es legacy y nunca se escribe. Se lee notes primero.
+                descripcionKit: kit.notes ?? kit.description ?? kit.descripcion ?? ''
             });
             this.prefillUbicacion(kit);
             // Cargar componentes existentes desde el backend (no desde _raw, que no los tiene)
@@ -258,11 +260,18 @@ export class GestionarKitComponent implements OnInit, OnDestroy {
     }
 
     seleccionarHerramienta(tool: any): void {
-        this.items.push(this._buildItemGroup(
-            tool.name ?? tool.tool_name ?? '',
-            tool.code ?? tool.tool_code ?? '',
-            tool.id_tool ?? tool.tool_id ?? null
-        ));
+        const toolId = tool.id_tool ?? tool.tool_id ?? null;
+        // No repetir: la BD tiene UNIQUE(kit_id, tool_id) y el guardado fallaría entero.
+        if (toolId && this.items.value.some((it: any) => it.tool_id === toolId)) {
+            this.errorMsg = 'Esa herramienta ya está en el kit';
+            setTimeout(() => this.errorMsg = '', 2500);
+        } else {
+            this.items.push(this._buildItemGroup(
+                tool.name ?? tool.tool_name ?? '',
+                tool.code ?? tool.tool_code ?? '',
+                toolId
+            ));
+        }
         this.toolSearchValue  = '';
         this.toolSuggestions  = [];
         this.showToolDropdown = false;
@@ -436,9 +445,12 @@ export class GestionarKitComponent implements OnInit, OnDestroy {
             name:               raw.nombreKit,
             category:           raw.categoria,
             status:             raw.estado,
-            funcionario_nombre: raw.funcionario || null,
-            location_name:      raw.ubicacion   || null,
-            notes:              raw.descripcionKit || null,
+            // '' en vez de null: updateKit() descarta del payload cualquier valor null (pensado
+            // para campos numéricos/fecha), así que al vaciar estos campos de texto y guardar,
+            // la clave nunca llegaba al backend y el cambio se perdía en silencio.
+            funcionario_nombre: raw.funcionario || '',
+            location_name:      raw.ubicacion   || '',
+            notes:              raw.descripcionKit || '',
             kit_type:           'MAINTENANCE',
             active:             true,
             is_complete:        false,
@@ -496,17 +508,19 @@ export class GestionarKitComponent implements OnInit, OnDestroy {
     }
 
     /**
-     * En modo edicion, HE_KIT_MOD nunca toca rack_id/level_id (a proposito, ver
-     * ft_kits_ime.sql). Si el usuario cambio la ubicacion en el picker, se dispara
-     * HE_KIT_MOV por separado a traves de moverKit().
+     * La ubicacion no va por HE_KIT_MOD. Si el usuario la cambio en el picker se llama a
+     * moverKit; si la quito, a desasignarKit. Mismo criterio que inventario-miscelaneos.
      */
     private _moverKitSiCambioUbicacion(id_kit: number) {
         const rackId  = this.selRack?.id      ?? null;
         const levelId = this.selectedLevelId  ?? null;
-        const changed = rackId  !== (this.originalLocation?.rackId  ?? null)
-                     || levelId !== (this.originalLocation?.levelId ?? null);
-        if (!changed || !rackId || !levelId) return of(null);
-        return this.kitsService.moverKit(id_kit, rackId, levelId);
+        const origRack  = this.originalLocation?.rackId  ?? null;
+        const origLevel = this.originalLocation?.levelId ?? null;
+        const changed = rackId !== origRack || levelId !== origLevel;
+        if (!changed) return of(null);
+        if (rackId && levelId) return this.kitsService.moverKit(id_kit, rackId, levelId);
+        if (origRack || origLevel) return this.kitsService.desasignarKit(id_kit);
+        return of(null);
     }
 
     // ── Helpers ────────────────────────────────────────────────────────

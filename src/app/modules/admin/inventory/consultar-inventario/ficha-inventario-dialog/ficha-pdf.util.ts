@@ -23,6 +23,10 @@ function getMovResponsable(mov: any): string {
 }
 function formatFecha(raw: string): string {
     if (!raw) return '—';
+    // 'YYYY-MM-DD' se parsea como medianoche UTC → en UTC-4 corre un día atrás.
+    // Se toma la parte de fecha del string tal cual.
+    const m = String(raw).match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (m) return `${m[3]}/${m[2]}/${m[1]}`;
     const d = new Date(raw);
     return isNaN(d.getTime()) ? '—' : d.toLocaleDateString('es-BO');
 }
@@ -34,6 +38,12 @@ function getLoanDate(loan: any): string     { return formatFecha(loan.loan_date 
 function getLoanWO(loan: any): string       { return loan.work_order_number || loan.loan_number || '—'; }
 function getLoanReturn(loan: any): string   { return formatFecha(loan.expected_return_date || loan.return_date || ''); }
 
+/** Escapa `< > & "` para inyectar de forma segura en el HTML del PDF. */
+function escHtml(v: unknown): string {
+    return String(v ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c] as string));
+}
+
+/** Valor de campo crudo: '—' si viene vacío. El escape se aplica al renderizar. */
 function esc(v: unknown): string {
     if (v === null || v === undefined || v === '') return '—';
     return String(v);
@@ -90,8 +100,8 @@ export function buildFichaPdfHtml(item: UnifiedItem, detail: FichaPdfDetail): st
 
     const camposHtml = campos.map(([label, value]) => `
         <div class="campo">
-            <span class="campo-lbl">${label}</span>
-            <span class="campo-val">${value}</span>
+            <span class="campo-lbl">${escHtml(label)}</span>
+            <span class="campo-val">${escHtml(value)}</span>
         </div>`).join('');
 
     let seccionExtra = '';
@@ -104,9 +114,9 @@ export function buildFichaPdfHtml(item: UnifiedItem, detail: FichaPdfDetail): st
                 ${detail.components.map((c, i) => `
                 <tr>
                     <td style="text-align:center">${i + 1}</td>
-                    <td style="font-family:monospace">${getCompCode(c)}</td>
-                    <td>${getCompName(c)}</td>
-                    <td>${getCompStatus(c)}</td>
+                    <td style="font-family:monospace">${escHtml(getCompCode(c))}</td>
+                    <td>${escHtml(getCompName(c))}</td>
+                    <td>${escHtml(getCompStatus(c))}</td>
                 </tr>`).join('')}
             </tbody>
         </table>`;
@@ -121,10 +131,10 @@ export function buildFichaPdfHtml(item: UnifiedItem, detail: FichaPdfDetail): st
             <tbody>
                 ${detail.loans.slice(0, 10).map(l => `
                 <tr>
-                    <td>${getLoanDate(l)}</td>
-                    <td style="font-family:monospace">${getLoanWO(l)}</td>
-                    <td>${getLoanBorrower(l)}</td>
-                    <td>${getLoanReturn(l)}</td>
+                    <td>${escHtml(getLoanDate(l))}</td>
+                    <td style="font-family:monospace">${escHtml(getLoanWO(l))}</td>
+                    <td>${escHtml(getLoanBorrower(l))}</td>
+                    <td>${escHtml(getLoanReturn(l))}</td>
                 </tr>`).join('')}
             </tbody>
         </table>`;
@@ -136,10 +146,10 @@ export function buildFichaPdfHtml(item: UnifiedItem, detail: FichaPdfDetail): st
             <tbody>
                 ${detail.movements.slice(0, 10).map(m => `
                 <tr>
-                    <td>${formatFecha(m.fecha || m.date || '')}</td>
-                    <td>${getMovTipo(m)}</td>
-                    <td>${getMovDescripcion(m)}</td>
-                    <td>${getMovResponsable(m)}</td>
+                    <td>${escHtml(formatFecha(m.fecha || m.date || ''))}</td>
+                    <td>${escHtml(getMovTipo(m))}</td>
+                    <td>${escHtml(getMovDescripcion(m))}</td>
+                    <td>${escHtml(getMovResponsable(m))}</td>
                 </tr>`).join('')}
             </tbody>
         </table>`;
@@ -149,7 +159,7 @@ export function buildFichaPdfHtml(item: UnifiedItem, detail: FichaPdfDetail): st
 <html lang="es">
 <head>
 <meta charset="UTF-8"/>
-<title>Ficha de Inventario — ${item.codigo} — ${fecha}</title>
+<title>Ficha de Inventario — ${escHtml(item.codigo)} — ${fecha}</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: 'Segoe UI', Arial, sans-serif; font-size: 11px; color: #111827; background: #fff; }
@@ -191,11 +201,11 @@ export function buildFichaPdfHtml(item: UnifiedItem, detail: FichaPdfDetail): st
   <div class="page-header">
     <div>
       <div class="page-header-title">FICHA DE INVENTARIO</div>
-      <span class="page-header-sub">${tipoLabel[item.tipo]} · ${item.codigo}</span>
+      <span class="page-header-sub">${escHtml(tipoLabel[item.tipo])} · ${escHtml(item.codigo)}</span>
     </div>
     <div class="page-header-meta">
       <strong>Fecha:</strong> ${fecha} ${hora}<br>
-      <strong>${item.nombre}</strong><br>
+      <strong>${escHtml(item.nombre)}</strong><br>
       <strong>Sistema de Herramientas — BOA</strong>
     </div>
   </div>

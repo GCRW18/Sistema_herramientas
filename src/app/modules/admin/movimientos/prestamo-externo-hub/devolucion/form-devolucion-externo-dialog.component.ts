@@ -160,7 +160,8 @@ export class FormDevolucionExternoDialogComponent implements OnInit, OnDestroy {
         this.isSearching = true;
         this.dataSource = [];
         const razon  = (this._terceroSeleccionado.razonSocial||'').replace(/'/g,"''");
-        const filtro = `status = 'active' AND loan_type = 'external' AND borrower_name ILIKE '%${razon}%'`;
+        // loa.* : he.ft_loans_sel hace JOIN a he.tmovements (que también tiene 'status').
+        const filtro = `loa.status = 'active' AND loa.loan_type = 'external' AND loa.borrower_name ILIKE '%${razon}%'`;
 
         this.movementSvc.getActiveLoans({ filtro_adicional: filtro }).pipe(
             switchMap((loans: any[]) => {

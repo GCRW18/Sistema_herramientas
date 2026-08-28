@@ -125,6 +125,24 @@ export class GestionUbicacionesService {
 
     private _api = inject(ErpApiService);
 
+    /**
+     * Normaliza la respuesta de una operación de escritura y LANZA si el backend
+     * reportó un error. Necesario porque ErpApiService.post atrapa el rechazo de
+     * PxpClient y devuelve el objeto de error como si fuera un valor normal — sin
+     * esto, el callback `next` de cada subscribe corría igual y la UI mostraba
+     * "creado / actualizado" en falso (mismo patrón que miscelaneos/kits.service).
+     */
+    private _unwrap(r: any): any {
+        if (r instanceof Error) throw r;
+        const root = r?.ROOT ?? r;
+        if (root?.error === true || root?.error === 'true' || root?.tipoRespuesta === 'error') {
+            throw new Error(
+                root?.detalle?.mensaje ?? root?.mensaje ?? root?.message ?? 'No se pudo completar la operación'
+            );
+        }
+        return root?.datos ?? root;
+    }
+
     /* ════════ Paramétricas ════════ */
 
     getBasesAeronauticas(): Observable<any> {
@@ -183,15 +201,13 @@ export class GestionUbicacionesService {
     }
 
     insertWarehouse(w: Warehouse): Observable<any> {
-        return from(this._api.post('herramientas/warehouses/insertarWarehouses', this.fromWarehouse(w)));
+        return from(this._api.post('herramientas/warehouses/insertarWarehouses', this.fromWarehouse(w)))
+            .pipe(map(r => this._unwrap(r)));
     }
 
     updateWarehouse(w: Warehouse): Observable<any> {
-        return from(this._api.post('herramientas/warehouses/insertarWarehouses', { ...this.fromWarehouse(w), id_warehouse: w.id }));
-    }
-
-    deleteWarehouse(id: number): Observable<any> {
-        return from(this._api.post('herramientas/warehouses/eliminarWarehouses', { id_warehouse: id }));
+        return from(this._api.post('herramientas/warehouses/insertarWarehouses', { ...this.fromWarehouse(w), id_warehouse: w.id }))
+            .pipe(map(r => this._unwrap(r)));
     }
 
     /**
@@ -232,15 +248,18 @@ export class GestionUbicacionesService {
     }
 
     insertRack(r: Rack): Observable<any> {
-        return from(this._api.post('herramientas/racks/insertarRacks', this.fromRack(r)));
+        return from(this._api.post('herramientas/racks/insertarRacks', this.fromRack(r)))
+            .pipe(map(x => this._unwrap(x)));
     }
 
     updateRack(r: Rack): Observable<any> {
-        return from(this._api.post('herramientas/racks/insertarRacks', { ...this.fromRack(r), id_rack: r.id }));
+        return from(this._api.post('herramientas/racks/insertarRacks', { ...this.fromRack(r), id_rack: r.id }))
+            .pipe(map(x => this._unwrap(x)));
     }
 
     deleteRack(id: number): Observable<any> {
-        return from(this._api.post('herramientas/racks/eliminarRacks', { id_rack: id }));
+        return from(this._api.post('herramientas/racks/eliminarRacks', { id_rack: id }))
+            .pipe(map(x => this._unwrap(x)));
     }
 
     /* ════════ Levels ════════ */
@@ -276,15 +295,18 @@ export class GestionUbicacionesService {
     }
 
     insertLevel(l: Level): Observable<any> {
-        return from(this._api.post('herramientas/levels/insertarLevels', this.fromLevel(l)));
+        return from(this._api.post('herramientas/levels/insertarLevels', this.fromLevel(l)))
+            .pipe(map(x => this._unwrap(x)));
     }
 
     updateLevel(l: Level): Observable<any> {
-        return from(this._api.post('herramientas/levels/insertarLevels', { ...this.fromLevel(l), id_level: l.id }));
+        return from(this._api.post('herramientas/levels/insertarLevels', { ...this.fromLevel(l), id_level: l.id }))
+            .pipe(map(x => this._unwrap(x)));
     }
 
     deleteLevel(id: number): Observable<any> {
-        return from(this._api.post('herramientas/levels/eliminarLevels', { id_level: id }));
+        return from(this._api.post('herramientas/levels/eliminarLevels', { id_level: id }))
+            .pipe(map(x => this._unwrap(x)));
     }
 
     /* ════════ Level Tools ════════ */
@@ -370,21 +392,22 @@ export class GestionUbicacionesService {
 
     insertLevelTool(t: LevelTool, warehouseId: number): Observable<any> {
         return from(this._api.post('herramientas/leveltools/insertarLevelTools',
-            { ...this.fromLevelTool(t), warehouse_id: warehouseId }));
+            { ...this.fromLevelTool(t), warehouse_id: warehouseId })).pipe(map(x => this._unwrap(x)));
     }
 
     updateLevelTool(t: LevelTool): Observable<any> {
         return from(this._api.post('herramientas/leveltools/insertarLevelTools',
-            { ...this.fromLevelTool(t), id_tool: t.id }));
+            { ...this.fromLevelTool(t), id_tool: t.id })).pipe(map(x => this._unwrap(x)));
     }
 
     moveLevelTool(toolId: number, rackId: number, levelId: number): Observable<any> {
         return from(this._api.post('herramientas/leveltools/moverLevelTools',
-            { id_tool: toolId, rack_id: rackId, level_id: levelId }));
+            { id_tool: toolId, rack_id: rackId, level_id: levelId })).pipe(map(x => this._unwrap(x)));
     }
 
     unassignLevelTool(toolId: number): Observable<any> {
-        return from(this._api.post('herramientas/leveltools/eliminarLevelTools', { id_tool: toolId }));
+        return from(this._api.post('herramientas/leveltools/eliminarLevelTools', { id_tool: toolId }))
+            .pipe(map(x => this._unwrap(x)));
     }
 
     /* ════════ Kits (ubicados en rack/nivel) ════════ */
@@ -411,7 +434,8 @@ export class GestionUbicacionesService {
     }
 
     moveKit(kitId: number, rackId: number, levelId: number): Observable<any> {
-        return from(this._api.post('herramientas/kits/moverKits', { id_kit: kitId, rack_id: rackId, level_id: levelId }));
+        return from(this._api.post('herramientas/kits/moverKits', { id_kit: kitId, rack_id: rackId, level_id: levelId }))
+            .pipe(map(x => this._unwrap(x)));
     }
 
     /* ════════ Misceláneos (ubicados en rack/nivel) ════════ */
@@ -438,7 +462,8 @@ export class GestionUbicacionesService {
     }
 
     moveMiscelaneo(id: number, rackId: number, levelId: number): Observable<any> {
-        return from(this._api.post('herramientas/miscelaneos/moverMiscelaneos', { id_miscelaneo: id, rack_id: rackId, level_id: levelId }));
+        return from(this._api.post('herramientas/miscelaneos/moverMiscelaneos', { id_miscelaneo: id, rack_id: rackId, level_id: levelId }))
+            .pipe(map(x => this._unwrap(x)));
     }
 
     /* ════════ Mapeos ════════ */
@@ -463,17 +488,21 @@ export class GestionUbicacionesService {
     }
 
     private fromWarehouse(w: Warehouse): any {
-        return {
-            id_lugar:       w.id_lugar,
+        const payload: any = {
             code:           w.codigo,
             name:           w.nombre,
             description:    w.descripcion ?? '',
             address:        '',
             active:         w.estado === 'ACTIVO' ? 'true' : 'false',
-            city:           w.ciudad,
-            id_oficina:     w.id_oficina,
+            city:           w.ciudad ?? '',
             warehouse_type: w.tipo,
         };
+        // id_lugar es obligatorio en el form; id_oficina es opcional (13/15 almacenes
+        // sembrados no la tienen). Se omiten si vienen nulos — pxp-client serializa
+        // null como el string "null" y revienta un parámetro int4.
+        if (w.id_lugar != null)   payload.id_lugar   = w.id_lugar;
+        if (w.id_oficina != null) payload.id_oficina = w.id_oficina;
+        return payload;
     }
 
     private toRack(b: BackendRack): Rack {

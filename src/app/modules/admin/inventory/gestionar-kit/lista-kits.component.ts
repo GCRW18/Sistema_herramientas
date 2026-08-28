@@ -442,10 +442,11 @@ export class ListaKitsComponent implements OnInit {
         return {
             id:                  k.id_kit,
             nombre:              k.name         ?? '',
-            descripcion:         k.description  ?? '',
+            descripcion:         k.notes ?? k.description ?? '',
             cantidadItems:       Number(k.total_components ?? 0),
             ubicacion:           k.location_name ?? undefined,
-            ultimaActualizacion: k.fecha_reg ? new Date(k.fecha_reg) : new Date(),
+            ultimaActualizacion: k.fecha_mod ? new Date(k.fecha_mod)
+                                 : k.fecha_reg ? new Date(k.fecha_reg) : new Date(),
             categoria:           k.category      ?? 'GENERAL',
             estado:              this._statusMap[k.status] ?? k.status ?? 'COMPLETO',
             responsable:         k.funcionario_nombre ?? undefined,
@@ -460,14 +461,25 @@ export class ListaKitsComponent implements OnInit {
             const kitCompleto = {
                 ...kit,
                 items: components.map(c => ({
-                    descripcion:  c.tool_name ?? c.name ?? '',
-                    codigoBoamm:  c.tool_code ?? c.code ?? '',
-                    codigo:       c.tool_code ?? c.code ?? '',
-                    tool_id:      c.tool_id ?? null
+                    descripcion:     c.tool_name ?? c.name ?? '',
+                    codigoBoamm:     c.tool_code ?? c.code ?? '',
+                    codigo:          c.tool_code ?? c.code ?? '',
+                    tool_id:         c.tool_id ?? null,
+                    part_number:     c.part_number ?? '',
+                    serial_number:   c.serial_number ?? '',
+                    brand:           c.brand ?? '',
+                    unit_of_measure: c.unit_of_measure ?? '',
+                    quantity:        c.quantity ?? 1,
+                    tool_status:     c.tool_status ?? '',
+                    tool_notes:      c.tool_notes ?? '',
+                    location_photo:  c.location_photo ?? null,
+                    warehouse_id:    c.warehouse_id ?? null,
+                    rack_id:         c.rack_id ?? null,
+                    level_id:        c.level_id ?? null,
                 }))
             };
             this.dialog.open(DetalleKitDialogComponent, {
-                width: '640px', maxWidth: '95vw', height: 'auto', maxHeight: '88vh',
+                width: '560px', maxWidth: '95vw', height: 'auto', maxHeight: '85vh',
                 panelClass: 'neo-dialog', data: kitCompleto
             });
         });
@@ -490,23 +502,23 @@ export class ListaKitsComponent implements OnInit {
     async editarKit(kit: Kit): Promise<void> {
         const { GestionarKitComponent } = await import('./gestionar-kit.component');
         const ref = this.dialog.open(GestionarKitComponent, {
-            width: '920px', maxWidth: '95vw', height: '640px', maxHeight: '88vh',
+            width: '840px', maxWidth: '95vw', height: '600px', maxHeight: '85vh',
             panelClass: 'neo-dialog', data: { mode: 'edit', kit: kit._raw ?? kit }
         });
-        ref.afterClosed().subscribe(result => {
-            if (result?.saved) this.cargarKits();
-        });
+        // Recarga siempre, sin depender de result?.saved: si el diálogo se cierra por backdrop
+        // o Escape en vez del flujo normal de guardado, Material no garantiza ese valor y la
+        // lista se quedaba con datos viejos aunque el kit sí se hubiera actualizado (mismo
+        // problema ya corregido en gestion-estantes.component.ts).
+        ref.afterClosed().subscribe(() => this.cargarKits());
     }
 
     async crearNuevoKit(): Promise<void> {
         const { GestionarKitComponent } = await import('./gestionar-kit.component');
         const ref = this.dialog.open(GestionarKitComponent, {
-            width: '920px', maxWidth: '95vw', height: '640px', maxHeight: '88vh',
+            width: '840px', maxWidth: '95vw', height: '600px', maxHeight: '85vh',
             panelClass: 'neo-dialog'
         });
-        ref.afterClosed().subscribe(result => {
-            if (result?.saved) this.cargarKits();
-        });
+        ref.afterClosed().subscribe(() => this.cargarKits());
     }
 
     cargarCategorias(): void {
@@ -518,12 +530,12 @@ export class ListaKitsComponent implements OnInit {
     async prestarKit(kit: Kit): Promise<void> {
         const { PrestarKitDialogComponent } = await import('./prestar-kit-dialog/prestar-kit-dialog.component');
         const ref = this.dialog.open(PrestarKitDialogComponent, {
-            width: '520px', maxWidth: '95vw', height: 'auto', maxHeight: '88vh',
+            width: '440px', maxWidth: '95vw', height: 'auto', maxHeight: '85vh',
             panelClass: 'neo-dialog', data: kit._raw ?? kit
         });
         ref.afterClosed().subscribe(result => {
+            this.cargarKits();
             if (result?.prestado) {
-                this.cargarKits();
                 const ot = result.work_order_number ? ` · OT: ${result.work_order_number}` : '';
                 this.prestamoMsg.set(`Préstamo registrado${ot}`);
                 setTimeout(() => this.prestamoMsg.set(''), 6000);
@@ -534,7 +546,7 @@ export class ListaKitsComponent implements OnInit {
     async devolverKit(kit: Kit): Promise<void> {
         const { DevolverKitDialogComponent } = await import('./devolver-kit-dialog/devolver-kit-dialog.component');
         const ref = this.dialog.open(DevolverKitDialogComponent, {
-            width: '560px', maxWidth: '95vw', height: 'auto', maxHeight: '90vh',
+            width: '480px', maxWidth: '95vw', height: 'auto', maxHeight: '85vh',
             panelClass: 'neo-dialog',
             data: {
                 kit:          kit._raw ?? kit,
@@ -542,9 +554,7 @@ export class ListaKitsComponent implements OnInit {
                 loan_number:  kit._raw?.loan_number ?? null
             }
         });
-        ref.afterClosed().subscribe(result => {
-            if (result?.devuelto) this.cargarKits();
-        });
+        ref.afterClosed().subscribe(() => this.cargarKits());
     }
 
     async abrirCategorias(): Promise<void> {
@@ -553,9 +563,7 @@ export class ListaKitsComponent implements OnInit {
             panelClass: 'neo-dialog',
             disableClose: false
         });
-        ref.afterClosed().subscribe(result => {
-            if (result?.recargar) this.cargarCategorias();
-        });
+        ref.afterClosed().subscribe(() => this.cargarCategorias());
     }
 
     getEstadoClass(estado: string): string {

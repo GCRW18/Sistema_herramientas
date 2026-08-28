@@ -11,6 +11,7 @@ import { MovementService } from '../../../../../core/services/movement.service';
 import { CalibrationService } from '../../../../../core/services/calibration.service';
 import { ToolService } from '../../../../../core/services/tool.service';
 import { PrestamoExternoPdfService, PrestamoExternoPdfData } from '../prestamo-externo-pdf.service';
+import { motivoBloqueoSalida } from '../../retorno-traspaso/retorno-traspaso.types';
 
 interface ExternalLoanItem {
     toolId: number; id: number; codigo: string; pn: string; descripcion: string; sn: string;
@@ -190,6 +191,7 @@ export class FormPrestamoExternoDialogComponent implements OnInit, OnDestroy {
                             id: t.id_tool ?? t.id, codigo: t.code ?? t.codigo ?? '',
                             nombre: t.name ?? t.nombre ?? '', pn: t.part_number ?? t.pn ?? '',
                             sn: t.serial_number ?? t.sn ?? '', marca: t.brand ?? t.marca ?? '',
+                            status:           (t.status ?? 'available').toLowerCase(),
                             fechaCalibracion: t.next_calibration_date ?? t.calibration_due_date ?? '',
                             listaContenido:   t.content_list ?? '',
                             imagen:           t.location_photo ?? null,
@@ -223,6 +225,8 @@ export class FormPrestamoExternoDialogComponent implements OnInit, OnDestroy {
 
     private _agregarToolPe(tool: any): void {
         if (this.dataSource().some(i => i.codigo === tool.codigo)) { this.showMsg('info', `"${tool.nombre}" ya está en la lista`); return; }
+        const motivo = motivoBloqueoSalida(tool);
+        if (motivo) { this.showMsg('warning', `"${tool.nombre}" no se puede prestar: ${motivo}`); return; }
         const item: ExternalLoanItem = {
             toolId: tool.id ?? 0, id: Date.now(), codigo: tool.codigo || '',
             pn: tool.pn || '', descripcion: tool.nombre || '', sn: tool.sn || '',

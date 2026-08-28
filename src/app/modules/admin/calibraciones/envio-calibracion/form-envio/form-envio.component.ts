@@ -300,15 +300,48 @@ export class FormEnvioComponent implements OnInit, OnDestroy {
 
     closePhoto(): void { this.viewingPhoto.set(null); }
 
+    /** Herramientas del lote que todavía no se enviaron. */
+    getPendingCount(): number { return this.toolList.filter(t => t.status !== 'done').length; }
+
+    /**
+     * Campos obligatorios sin completar. Lista vacía = se puede enviar.
+     * Se usa para bloquear el envío y para mostrar el detalle de lo que falta.
+     */
+    getMissingFields(): string[] {
+        const missing: string[] = [];
+        if (!this.almacen)                  missing.push('Almacén');
+        if (!this.base)                     missing.push('Base Origen');
+        if (!this.sendDate)                 missing.push('Fecha de Envío');
+        if (!this.requestedByName?.trim())  missing.push('Solicitado Por');
+
+        const pendientes = this.toolList.filter(t => t.status !== 'done');
+        if (pendientes.length === 0) {
+            missing.push('al menos una herramienta en el lote');
+            return missing;
+        }
+        pendientes.forEach((t, idx) => {
+            const cod = t.tool.code ?? t.tool.tool_code ?? `#${idx + 1}`;
+            if (!t.supplierId)         missing.push(`Laboratorio de ${cod}`);
+            if (!t.expectedReturnDate) missing.push(`Retorno estimado de ${cod}`);
+            if (t.workType === 'calibration_repair' && !t.repairDescription?.trim())
+                missing.push(`Descripción de reparación de ${cod}`);
+        });
+        return missing;
+    }
+
     canSubmit(): boolean {
-        if (!this.almacen || !this.base) return false;
-        const pending = this.toolList.filter(t => t.status !== 'done');
-        if (pending.length === 0) return false;
-        return pending.every(t => !!t.supplierId);
+        return this.getMissingFields().length === 0;
     }
 
     async submitAll(): Promise<void> {
-        if (!this.canSubmit()) return;
+        if (this.isProcessing()) return;
+
+        const missing = this.getMissingFields();
+        if (missing.length > 0) {
+            this.showMsg('Complete los campos obligatorios: ' + missing.join(' · '), 'warning');
+            return;
+        }
+
         this.isProcessing.set(true);
         this.processedCount = 0;
 

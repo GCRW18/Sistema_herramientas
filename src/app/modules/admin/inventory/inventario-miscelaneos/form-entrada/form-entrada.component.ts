@@ -13,7 +13,7 @@ import { debounceTime, distinctUntilChanged, finalize, switchMap, takeUntil, map
 import { MovementService }     from '../../../../../core/services/movement.service';
 import { MiscelaneosService }  from '../../../../../core/services/miscelaneos.service';
 import { Entrada, DialogMode, Material } from '../interfaces';
-import { localDateStr } from '../../../../../core/utils/date.utils';
+import { localDateStr, formatDateDMY } from '../../../../../core/utils/date.utils';
 
 interface Funcionario { id: number; nombre: string; cargo: string; }
 
@@ -114,6 +114,9 @@ export class FormEntradaComponent implements OnInit, OnDestroy {
 
     get readOnly(): boolean { return this.mode === 'view'; }
     get isEdit():   boolean { return this.mode === 'edit'; }
+
+    /** Fecha almacenada como 'YYYY-MM-DD' → 'DD/MM/YYYY' para el detalle de solo lectura. */
+    formatFecha(fecha: string): string { return formatDateDMY(fecha); }
 
     get titulo(): string {
         if (this.mode === 'new')  return 'Nueva Entrada de Material';

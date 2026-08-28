@@ -60,7 +60,8 @@ export class MaintenanceService {
                     requested_by_name: item.requested_by_name,
                 }));
                 return of(maintenances);
-            })
+            }),
+            catchError((error) => { console.error('Error en getMaintenances:', error); return of([] as Maintenance[]); })
         );
     }
 
@@ -135,8 +136,14 @@ export class MaintenanceService {
     }): Observable<any> {
         return from(this._api.post('herramientas/maintenances/retornarMantenimiento', params)).pipe(
             switchMap((response: any) => {
-                if (response?.error) throw new Error(response?.mensaje || 'Error al retornar mantenimiento');
-                return of(response?.datos?.[0] || response?.datos || response);
+                const hasError = response?.ROOT?.error === true || response?.error === true || response instanceof Error;
+                if (hasError) {
+                    const msg = response?.ROOT?.detalle?.mensaje || response?.ROOT?.mensaje
+                        || response?.mensaje || response?.message || 'Error al retornar mantenimiento';
+                    throw new Error(msg);
+                }
+                const datos = response?.ROOT?.datos ?? response?.datos;
+                return of(datos?.[0] ?? datos ?? response);
             })
         );
     }

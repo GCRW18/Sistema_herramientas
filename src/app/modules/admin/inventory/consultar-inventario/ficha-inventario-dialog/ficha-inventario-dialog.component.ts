@@ -5,6 +5,7 @@ import { CommonModule }        from '@angular/common';
 import { MatIconModule }       from '@angular/material/icon';
 import { MatDialogModule, MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
 import { MatTooltipModule }    from '@angular/material/tooltip';
+import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { DragDropModule }      from '@angular/cdk/drag-drop';
 import { forkJoin, of }        from 'rxjs';
 import { catchError, finalize } from 'rxjs/operators';
@@ -13,8 +14,6 @@ import { KitsService }         from 'app/core/services/kits.service';
 import { MiscelaneosService }  from 'app/core/services/miscelaneos.service';
 import { MovementService }          from 'app/core/services/movement.service';
 import { ToolService }              from 'app/core/services/tool.service';
-import { GestionUbicacionesService } from 'app/modules/admin/inventory/gestion-ubicaciones/gestion-ubicaciones.service';
-import { LevelTool }                 from 'app/modules/admin/inventory/gestion-ubicaciones/interfaces';
 import { UnifiedItem }               from '../consultar-inventario.component';
 import { buildFichaPdfHtml }         from './ficha-pdf.util';
 
@@ -34,7 +33,7 @@ interface TabDef { id: FichaTab; label: string; icon: string; }
     standalone:    true,
     imports: [
         CommonModule, MatIconModule, MatDialogModule,
-        MatTooltipModule, DragDropModule,
+        MatTooltipModule, MatSnackBarModule, DragDropModule,
     ],
     encapsulation: ViewEncapsulation.None,
     styles: [`
@@ -111,8 +110,8 @@ export class FichaInventarioDialogComponent implements OnInit {
     private kitsService        = inject(KitsService);
     private miscelaneosService = inject(MiscelaneosService);
     private movementService    = inject(MovementService);
-    private gestionUbicSvc     = inject(GestionUbicacionesService);
     private toolService        = inject(ToolService);
+    private snackBar           = inject(MatSnackBar);
 
     item!: UnifiedItem;
 
@@ -122,19 +121,16 @@ export class FichaInventarioDialogComponent implements OnInit {
 
     isGeneratingQR = signal(false);
 
-    // ── Detalle (movimientos / componentes / préstamos / ubicación) ────────
+    // ── Detalle (movimientos / componentes / préstamos) ───────────────────
     isLoadingDetail   = signal(false);
     detailMovements   = signal<any[]>([]);
     detailComponents  = signal<any[]>([]);
     detailLoans       = signal<any[]>([]);
-    locationData      = signal<LevelTool | null>(null);
-    isLoadingLocation = signal(false);
 
     ngOnInit(): void {
         this.item = this.data.item;
         this.tabs = this.buildTabs();
         this.loadDetail();
-        if (this.item.tipo === 'HERRAMIENTA') this.loadLocationData();
     }
 
     private buildTabs(): TabDef[] {
@@ -162,13 +158,10 @@ export class FichaInventarioDialogComponent implements OnInit {
     }
 
     // ── Imagen ────────────────────────────────────────────────────────────
+    // item.imagen ya trae la foto real: mapTool la resuelve desde t.location_photo
+    // (he.ttool_files/'location_photo'), la misma que edita "Agregar Herramienta al Nivel".
     imagenSrc(): string | null {
-        if (this.item.imagen) return this.item.imagen;
-        const b64 = this.locationData()?.imagenBase64;
-        if (!b64) return null;
-        return (b64.startsWith('data:') || b64.startsWith('http'))
-            ? b64
-            : `data:image/jpeg;base64,${b64}`;
+        return this.item.imagen || null;
     }
 
     // ── Badge classes ─────────────────────────────────────────────────────
@@ -205,6 +198,11 @@ export class FichaInventarioDialogComponent implements OnInit {
     // ── Formato de fecha ─────────────────────────────────────────────────
     formatDateShort(dateStr: string): string {
         if (!dateStr) return '—';
+        // El backend manda 'YYYY-MM-DD' o 'YYYY-MM-DD HH:mm:ss'. new Date('YYYY-MM-DD')
+        // lo interpreta como medianoche UTC → en UTC-4 (Bolivia) getDate() devuelve el
+        // día anterior. Se toma la parte de fecha del string directamente.
+        const m = String(dateStr).match(/^(\d{4})-(\d{2})-(\d{2})/);
+        if (m) return `${m[3]}/${m[2]}/${m[1]}`;
         const d = new Date(dateStr);
         if (isNaN(d.getTime())) return '—';
         return `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`;
@@ -218,15 +216,6 @@ export class FichaInventarioDialogComponent implements OnInit {
     getLoanDate(loan: any): string       { return this.formatDateShort(loan.loan_date || loan.fecha || ''); }
     getLoanReturnDate(loan: any): string { return this.formatDateShort(loan.expected_return_date || loan.return_date || ''); }
     getLoanWO(loan: any): string         { return loan.work_order_number || loan.loan_number || '—'; }
-
-    // ── Location loading (solo alimenta el fallback de foto — la pestaña de
-    //    Ubicación se quitó, pero algunas fotos solo viven en he.ttool_files) ──
-    private loadLocationData(): void {
-        this.isLoadingLocation.set(true);
-        this.gestionUbicSvc.findToolByCodeAny(this.item.codigo)
-            .pipe(catchError(() => of(null)), finalize(() => this.isLoadingLocation.set(false)))
-            .subscribe(loc => this.locationData.set(loc));
-    }
 
     // ── Data loading ──────────────────────────────────────────────────────
     private loadDetail(): void {
@@ -304,9 +293,13 @@ export class FichaInventarioDialogComponent implements OnInit {
                     setTimeout(() => window.URL.revokeObjectURL(url), 300);
                 } catch (e) {
                     console.error('Error abriendo código QR:', e);
+                    this.snackBar.open('No se pudo abrir el PDF del código QR', 'OK', { duration: 5000 });
                 }
             },
-            error: (e) => console.error('Error al generar código QR:', e)
+            error: (e) => {
+                console.error('Error al generar código QR:', e);
+                this.snackBar.open(e?.message || 'Error al generar el código QR', 'OK', { duration: 5000 });
+            }
         });
     }
 }

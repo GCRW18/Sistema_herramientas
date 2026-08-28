@@ -422,7 +422,11 @@ export class MovementService {
                 if (root?.error === true || root?.error === 'true') {
                     throw new Error(root?.detalle?.mensaje || root.mensaje || 'Error al registrar el préstamo');
                 }
-                return of(root?.datos?.[0] || root?.datos || root?.data?.[0] || root?.data || {});
+                const datos = root?.datos?.[0] || root?.datos || root?.data?.[0] || root?.data || {};
+                if (datos?.error === 'true' || datos?.error === true) {
+                    throw new Error(datos.mensaje || 'Error al registrar el préstamo');
+                }
+                return of(datos);
             })
         );
     }
@@ -452,7 +456,11 @@ export class MovementService {
                 if (root?.error === true || root?.error === 'true') {
                     throw new Error(root?.detalle?.mensaje || root.mensaje || 'Error al registrar la devolución');
                 }
-                return of(root?.datos?.[0] || root?.datos || root?.data?.[0] || root?.data || {});
+                const datos = root?.datos?.[0] || root?.datos || root?.data?.[0] || root?.data || {};
+                if (datos?.error === 'true' || datos?.error === true) {
+                    throw new Error(datos.mensaje || 'Error al registrar la devolución');
+                }
+                return of(datos);
             })
         );
     }
@@ -550,7 +558,11 @@ export class MovementService {
                 if (root?.error === true || root?.error === 'true') {
                     throw new Error(root?.detalle?.mensaje || root.mensaje || 'Error al registrar el traspaso');
                 }
-                return of(root?.datos?.[0] || root?.datos || root?.data?.[0] || root?.data || {});
+                const datos = root?.datos?.[0] || root?.datos || root?.data?.[0] || root?.data || {};
+                if (datos?.error === 'true' || datos?.error === true) {
+                    throw new Error(datos.mensaje || 'Error al registrar el traspaso');
+                }
+                return of(datos);
             })
         );
     }
@@ -583,7 +595,11 @@ export class MovementService {
                 if (root?.error === true || root?.error === 'true') {
                     throw new Error(root?.detalle?.mensaje || root.mensaje || 'Error al registrar el envío');
                 }
-                return of(root?.datos?.[0] || root?.datos || root?.data?.[0] || root?.data || {});
+                const datos = root?.datos?.[0] || root?.datos || root?.data?.[0] || root?.data || {};
+                if (datos?.error === 'true' || datos?.error === true) {
+                    throw new Error(datos.mensaje || 'Error al registrar el envío');
+                }
+                return of(datos);
             })
         );
     }

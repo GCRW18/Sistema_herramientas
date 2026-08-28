@@ -287,8 +287,8 @@ export class LaboratoriosComponent implements OnInit, OnDestroy {
         this.calibrationService.deleteLaboratory(lab.id_laboratory!).pipe(
             takeUntil(this._destroy$)
         ).subscribe({
-            next: () => {
-                this.showMsg(`Operación completada para "${lab.name}"`, 'success');
+            next: (msg: string) => {
+                this.showMsg(msg || `Operación completada para "${lab.name}"`, 'success');
                 this.loadLaboratorios();
             },
             error: (err) => {

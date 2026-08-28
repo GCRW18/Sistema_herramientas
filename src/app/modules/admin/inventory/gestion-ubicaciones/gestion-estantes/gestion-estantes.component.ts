@@ -244,8 +244,12 @@ export class GestionEstantesComponent implements OnInit, OnChanges, OnDestroy {
         };
         this.dialog.open(NivelHerramientasDialogComponent, {
             width: '640px', maxWidth: '95vw', panelClass: 'no-padding-dialog', data,
-        }).afterClosed().subscribe((changed: boolean) => {
-            if (changed) this.cargarEstantes();
+        }).afterClosed().subscribe(() => {
+            // Siempre recargar, sin depender de `changed`: si el diálogo se cierra por click
+            // en el backdrop o con Escape (en vez del botón "X" -> cerrar()), Material devuelve
+            // undefined y el grid se quedaba con datos viejos aunque el movimiento sí se hubiera
+            // guardado en el backend (ej. un kit movido de nivel seguía apareciendo en el viejo).
+            this.cargarEstantes();
         });
     }
 
@@ -312,7 +316,11 @@ export class GestionEstantesComponent implements OnInit, OnChanges, OnDestroy {
 
     eliminarEstante(r: Rack, ev: Event) {
         ev.stopPropagation();
-        const data: ConfirmDeleteData = { itemKind: 'estante', itemCode: r.codigo, itemName: r.nombre, warning: r.niveles.length ? `Se eliminarán también ${r.niveles.length} nivel(es) asociados.` : undefined };
+        const contenido = this.contarHerramientas(r) + this.contarKits(r) + this.contarMiscelaneos(r);
+        const partes: string[] = [];
+        if (r.niveles.length) partes.push(`Se eliminarán también ${r.niveles.length} nivel(es).`);
+        if (contenido) partes.push(`${contenido} ítem(s) (herramientas/kits/misceláneos) quedarán sin ubicación asignada.`);
+        const data: ConfirmDeleteData = { itemKind: 'estante', itemCode: r.codigo, itemName: r.nombre, warning: partes.length ? partes.join(' ') : undefined };
         this.dialog.open(ConfirmDeleteComponent, { width: '420px', maxWidth: '95vw', panelClass: 'no-padding-dialog', data, hasBackdrop: true }).afterClosed().subscribe(ok => {
             if (!ok) return;
             this.svc.deleteRack(r.id).subscribe({
@@ -379,7 +387,8 @@ export class GestionEstantesComponent implements OnInit, OnChanges, OnDestroy {
 
     eliminarNivel(r: Rack, l: Level, ev: Event) {
         ev.stopPropagation();
-        const data: ConfirmDeleteData = { itemKind: 'nivel', itemCode: l.codigo, itemName: `Nivel ${l.numero} · ${l.nombre}`, warning: (l.tools?.length ?? 0) > 0 ? `Se desasignarán ${l.tools!.length} herramienta(s) de este nivel.` : undefined };
+        const enNivel = (l.tools?.length ?? 0) + (l.kits?.length ?? 0) + (l.miscelaneos?.length ?? 0);
+        const data: ConfirmDeleteData = { itemKind: 'nivel', itemCode: l.codigo, itemName: `Nivel ${l.numero} · ${l.nombre}`, warning: enNivel > 0 ? `${enNivel} ítem(s) (herramientas/kits/misceláneos) quedarán sin ubicación asignada.` : undefined };
         this.dialog.open(ConfirmDeleteComponent, { width: '420px', maxWidth: '95vw', panelClass: 'no-padding-dialog', data, hasBackdrop: true }).afterClosed().subscribe(ok => {
             if (!ok) return;
             this.svc.deleteLevel(l.id).subscribe({

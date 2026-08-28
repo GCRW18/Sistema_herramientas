@@ -1,12 +1,9 @@
-<div class="bg-stone-100 dark:bg-slate-900 border-2 border-black overflow-hidden flex flex-col w-full h-full max-h-[88vh] rounded-2xl"
+<div class="bg-stone-100 dark:bg-slate-900 border-2 border-black overflow-hidden flex flex-col w-full h-full max-h-[85vh] rounded-2xl"
 >
 
     <!-- ═══ HEADER (drag handle) ═══ -->
-    <div class="bg-[#0F172A] px-5 py-3 flex items-center gap-3 shrink-0 select-none"
+    <div class="bg-[#0F172A] px-5 py-2.5 flex items-center gap-3 shrink-0 select-none"
          cdkDrag cdkDragRootElement=".cdk-overlay-pane" cdkDragHandle style="cursor:grab">
-        <div class="w-9 h-9 rounded bg-amber-400 border-2 border-black flex items-center justify-center shadow-[2px_2px_0_#fbbf24] shrink-0">
-            <mat-icon class="!text-lg text-black">inventory_2</mat-icon>
-        </div>
         <div>
             <p class="text-[9px] text-slate-400 font-bold uppercase tracking-[0.18em] leading-none mb-0.5">Configuración de Activos</p>
             <h2 class="text-sm text-white font-black uppercase tracking-tight leading-none">
@@ -439,7 +436,7 @@
         <p *ngIf="errorMsg" class="text-[9px] font-black text-red-600 text-center uppercase">{{ errorMsg }}</p>
         <div class="flex flex-col-reverse sm:flex-row justify-between items-stretch sm:items-center gap-2">
             <button type="button" (click)="cerrar()" [disabled]="saving"
-                    class="w-full sm:w-auto text-center px-4 py-2 bg-[#FF1414] text-white font-black text-[10px] border-2 border-black rounded-xl shadow-[2px_2px_0_#000] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all uppercase disabled:opacity-40">
+                    class="w-full sm:w-auto text-center px-3 py-1.5 bg-[#FF1414] text-white font-black text-[9px] border-2 border-black rounded-lg shadow-[2px_2px_0_#000] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all uppercase disabled:opacity-40">
                 Cancelar
             </button>
             <div class="flex items-center gap-3 w-full sm:w-auto justify-end">
@@ -448,9 +445,8 @@
                     {{ items.length }} herramienta{{ items.length !== 1 ? 's' : '' }} en el kit
                 </span>
                 <button type="button" (click)="onSubmit()" [disabled]="!kitForm.valid || saving || itemsLoading"
-                        class="flex items-center gap-2 px-5 py-2 bg-amber-400 text-black font-black text-[10px] border-2 border-black rounded-xl shadow-[3px_3px_0_#000] hover:shadow-none hover:translate-x-[3px] hover:translate-y-[3px] transition-all uppercase disabled:opacity-40 disabled:cursor-not-allowed disabled:pointer-events-none">
-                    <span *ngIf="saving" class="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin"></span>
-                    <mat-icon *ngIf="!saving" class="!text-black">save</mat-icon>
+                        class="flex items-center gap-1.5 px-3 py-1.5 bg-amber-400 text-black font-black text-[9px] border-2 border-black rounded-lg shadow-[2px_2px_0_#000] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all uppercase disabled:opacity-40 disabled:cursor-not-allowed disabled:pointer-events-none">
+                    <span *ngIf="saving" class="w-3.5 h-3.5 border-2 border-black border-t-transparent rounded-full animate-spin"></span>
                     {{ saving ? 'Guardando...' : (modoEdicion ? 'Actualizar Kit' : 'Guardar Kit') }}
                 </button>
             </div>

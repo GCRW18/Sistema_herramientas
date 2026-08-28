@@ -141,7 +141,7 @@ export class FormLaboratorioComponent implements OnDestroy {
         }
 
         this.isSaving.set(true);
-        this.calibrationService.saveLaboratory(this.laboratory).pipe(
+        this.calibrationService.saveLaboratory(this.buildPayload()).pipe(
             takeUntil(this._destroy$),
             finalize(() => this.isSaving.set(false))
         ).subscribe({
@@ -161,6 +161,51 @@ export class FormLaboratorioComponent implements OnDestroy {
      */
     close(): void {
         this.dialogRef.close(false);
+    }
+
+    /**
+     * Arma el payload que se manda al backend. Los campos vacíos viajan como '' (el SQL
+     * los interpreta como NULL) y los numéricos sin valor se omiten para no romper el cast.
+     */
+    private buildPayload(): any {
+        const l = this.laboratory;
+        const s = (v: any) => (v ?? '').toString().trim();
+
+        const payload: any = {
+            code:                 s(l.code),
+            name:                 s(l.name),
+            tipo_servicio:        l.tipo_servicio ?? '',
+            rut_nit:              s(l.rut_nit),
+            address:              s(l.address),
+            city:                 s(l.city),
+            country:              s(l.country),
+            contact_person:       s(l.contact_person),
+            phone:                s(l.phone),
+            email:                s(l.email),
+            website:              s(l.website),
+            is_certified:         !!l.is_certified,
+            certification_number: l.is_certified ? s(l.certification_number) : '',
+            certification_types:  l.is_certified ? s(l.certification_types) : '',
+            active:               !!l.active,
+            observaciones:        s(l.observaciones),
+        };
+
+        if (l.id_laboratory != null) payload.id_laboratory = l.id_laboratory;
+
+        const rating = this.clampNumber(l.rating, 0, 5);
+        if (rating !== null) payload.rating = rating;
+
+        const dias = this.clampNumber(l.average_delivery_days, 1, 3650);
+        if (dias !== null) payload.average_delivery_days = dias;
+
+        return payload;
+    }
+
+    private clampNumber(value: any, min: number, max: number): number | null {
+        if (value === null || value === undefined || value === '') return null;
+        const n = Number(value);
+        if (isNaN(n)) return null;
+        return Math.min(max, Math.max(min, n));
     }
 
     /**

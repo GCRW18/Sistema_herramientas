@@ -1,12 +1,9 @@
-<div class="bg-stone-100 dark:bg-slate-900 border-2 border-black flex flex-col w-full max-h-[88vh] rounded-2xl overflow-hidden"
+<div class="bg-stone-100 dark:bg-slate-900 border-2 border-black flex flex-col w-full max-h-[85vh] rounded-2xl overflow-hidden"
 >
 
     <!-- HEADER -->
-    <div class="bg-[#0F172A] px-5 py-3 flex items-center gap-3 shrink-0 select-none"
+    <div class="bg-[#0F172A] px-5 py-2.5 flex items-center gap-3 shrink-0 select-none"
          cdkDrag cdkDragRootElement=".cdk-overlay-pane" cdkDragHandle style="cursor:grab">
-        <div class="w-9 h-9 rounded bg-amber-400 border-2 border-black flex items-center justify-center shadow-[2px_2px_0_#000] shrink-0">
-            <mat-icon class="!text-lg text-black">inventory_2</mat-icon>
-        </div>
         <div class="flex-1 min-w-0">
             <p class="text-[9px] text-slate-400 font-bold uppercase tracking-[0.18em] leading-none mb-0.5">Gestión de Kits</p>
             <h2 class="text-sm text-white font-black uppercase tracking-tight leading-none truncate">{{ kit.nombre || 'Sin nombre' }}</h2>
@@ -71,8 +68,8 @@
             </div>
         </div>
 
-        <!-- TABLA DE HERRAMIENTAS -->
-        <div class="flex flex-col gap-1">
+        <!-- HERRAMIENTAS (lista) -->
+        <div class="flex flex-col gap-1.5">
             <div class="flex items-center justify-between">
                 <span class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400">Herramientas del Kit</span>
                 <span class="px-2 py-0.5 text-[9px] font-black uppercase border-2 border-black rounded bg-amber-400 text-black shadow-[1px_1px_0_#000]">
@@ -80,38 +77,27 @@
                 </span>
             </div>
 
-            <div class="border-2 border-black rounded-xl overflow-hidden shadow-[3px_3px_0_#000]">
-
-                <!-- Cabecera tabla -->
-                <div class="bg-[#0F172A] px-4 py-2 grid grid-cols-[2rem_1fr_7rem] gap-3 border-b-2 border-black">
-                    <span class="text-[8px] font-black uppercase text-slate-400 text-center">#</span>
-                    <span class="text-[8px] font-black uppercase text-slate-400">Herramienta</span>
-                    <span class="text-[8px] font-black uppercase text-slate-400 text-center">Código</span>
-                </div>
-
-                <!-- Filas -->
-                <div *ngFor="let item of kit.items; let i = index"
-                     class="grid grid-cols-[2rem_1fr_7rem] gap-3 items-center px-4 py-2.5 border-b-2 border-stone-100 dark:border-slate-700 last:border-0 bg-white dark:bg-slate-800 hover:bg-amber-50 dark:hover:bg-slate-750 transition-colors">
-                    <div class="w-6 h-6 bg-[#0F172A] text-white font-black rounded border-2 border-black flex items-center justify-center text-[9px] mx-auto">
-                        {{ i + 1 }}
-                    </div>
-                    <span class="text-[11px] font-black text-black dark:text-white uppercase truncate">
-                        {{ item.descripcion || item.tool_name || '—' }}
+            <ul class="flex flex-col border-2 border-stone-200 dark:border-slate-700 rounded-xl overflow-hidden divide-y-2 divide-stone-100 dark:divide-slate-700">
+                <li *ngFor="let item of kit.items; let i = index"
+                    (click)="item.tool_id && verHerramienta(item)"
+                    class="group flex items-center gap-3 px-3 py-2 bg-white dark:bg-slate-800 hover:bg-amber-50 dark:hover:bg-slate-750 transition-colors"
+                    [class.cursor-pointer]="item.tool_id">
+                    <span class="w-4 shrink-0 text-right text-[9px] font-black text-stone-400 dark:text-slate-500">{{ i + 1 }}</span>
+                    <span class="flex-1 min-w-0 flex items-center gap-1.5 text-[11px] font-black text-black dark:text-white uppercase">
+                        <span class="truncate">{{ item.descripcion || item.tool_name || '—' }}</span>
+                        <mat-icon *ngIf="item.tool_id"
+                                  class="!text-sm text-amber-500 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">visibility</mat-icon>
                     </span>
-                    <div class="text-center">
-                        <span class="inline-block bg-stone-100 dark:bg-slate-700 px-2 py-0.5 border-2 border-black rounded font-mono font-black text-[10px] text-black dark:text-white shadow-[1px_1px_0_#000]">
-                            {{ item.codigoBoamm || item.codigo || '—' }}
-                        </span>
-                    </div>
-                </div>
+                    <span class="shrink-0 font-mono font-black text-[10px] text-stone-500 dark:text-slate-400">
+                        {{ item.codigoBoamm || item.codigo || '—' }}
+                    </span>
+                </li>
 
-                <!-- Empty state -->
-                <div *ngIf="!kit.items?.length" class="flex flex-col items-center py-8 gap-2 bg-white dark:bg-slate-800">
-                    <mat-icon class="!text-3xl text-stone-300 dark:text-slate-600">inventory</mat-icon>
-                    <p class="text-[10px] font-black uppercase text-stone-400 dark:text-slate-500">Sin herramientas registradas</p>
-                </div>
-
-            </div>
+                <li *ngIf="!kit.items?.length"
+                    class="px-3 py-6 text-center text-[10px] font-black uppercase text-stone-400 dark:text-slate-500 bg-white dark:bg-slate-800">
+                    Sin herramientas registradas
+                </li>
+            </ul>
         </div>
 
     </div>
@@ -124,12 +110,11 @@
         </div>
         <div class="flex items-center gap-2">
             <button type="button" (click)="cerrar()"
-                    class="px-4 py-2 bg-[#FF1414] text-white font-black text-[10px] border-2 border-black rounded-xl shadow-[2px_2px_0_#000] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all uppercase">
+                    class="px-3 py-1.5 bg-[#FF1414] text-white font-black text-[9px] border-2 border-black rounded-lg shadow-[2px_2px_0_#000] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all uppercase">
                 Cerrar
             </button>
             <button type="button" (click)="imprimir()"
-                    class="flex items-center gap-2 px-5 py-2 bg-amber-400 text-black font-black text-[10px] border-2 border-black rounded-xl shadow-[3px_3px_0_#000] hover:shadow-none hover:translate-x-[3px] hover:translate-y-[3px] transition-all uppercase">
-                <mat-icon class="!text-sm">print</mat-icon>
+                    class="px-3 py-1.5 bg-amber-400 text-black font-black text-[9px] border-2 border-black rounded-lg shadow-[2px_2px_0_#000] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all uppercase">
                 Imprimir
             </button>
         </div>

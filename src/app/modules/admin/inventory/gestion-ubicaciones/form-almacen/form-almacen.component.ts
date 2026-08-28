@@ -286,12 +286,8 @@ export class FormAlmacenComponent implements OnInit {
             : this.svc.updateWarehouse(buildPayload(v.codigo));
 
         req$.subscribe({
-            next: (resp: any) => {
+            next: () => {
                 this.saving.set(false);
-                if (!resp || resp.tipoRespuesta === 'error' || resp.tipoRespuesta === 'ERROR') {
-                    this.mostrarError(resp?.mensaje || 'Error al guardar cambios');
-                    return;
-                }
                 this.snackBar.open(
                     this.mode === 'new' ? 'Almacén creado' : 'Almacén actualizado',
                     'Cerrar', { duration: 2500 }
@@ -301,7 +297,10 @@ export class FormAlmacenComponent implements OnInit {
             error: (err) => {
                 this.saving.set(false);
                 console.error('Error guardando almacén', err);
-                this.mostrarError(this.mode === 'new' ? 'Error al generar código o guardar el almacén' : 'Error crítico al conectar con el servidor');
+                this.mostrarError(
+                    err?.message
+                    ?? (this.mode === 'new' ? 'Error al generar código o guardar el almacén' : 'Error al guardar el almacén')
+                );
             },
         });
     }

@@ -51,7 +51,9 @@ export class ToolService {
             );
         }
 
-        const params: any = { start: 0, limit: 1000 };
+        // limit 5000: con >2000 herramientas activas, el tope de 1000 (ordenado por
+        // id_tool ASC) dejaba fuera de la vista unificada / dashboard a las más nuevas.
+        const params: any = { start: 0, limit: 5000 };
 
         if (filters?.categoryId) params.category_id = filters.categoryId;
         if (filters?.warehouseId) params.warehouse_id = filters.warehouseId;

@@ -3,9 +3,6 @@ import { from, Observable, of, forkJoin, ReplaySubject, map, catchError, switchM
 import { ErpApiService } from '../api/api.service';
 
 export interface KitFilters {
-    status?: string;
-    category?: string;
-    search?: string;
     page?: number;
     limit?: number;
 }
@@ -57,9 +54,6 @@ export class KitsService {
             ordenacion: 'id_kit',
             dir_ordenacion: 'desc'
         };
-        if (filters?.status)   params.status   = filters.status;
-        if (filters?.category) params.category = filters.category;
-        if (filters?.search)   params.search   = filters.search;
 
         return from(this._api.post('herramientas/kits/listarKits', params)).pipe(
             map((r: any) => {
@@ -72,13 +66,15 @@ export class KitsService {
     }
 
     createKit(kit: any): Observable<{ id_kit: number; code: string }> {
+        // Defaults antes del spread: son un piso para que las claves lleguen siempre, sin pisar
+        // los valores que ya trae el form (ej. total_components = items.length).
         return from(this._api.post('herramientas/kits/insertarKits', {
-            ...kit,
             active: true,
             is_complete: false,
             total_components: 0,
             present_components: 0,
-            completeness_percentage: 0
+            completeness_percentage: 0,
+            ...kit
         })).pipe(
             map((r: any) => {
                 const d = r?.ROOT ?? r;
@@ -121,6 +117,11 @@ export class KitsService {
         return this._postOrThrow('herramientas/kits/moverKits', { id_kit, rack_id, level_id });
     }
 
+    // Quita la ubicación asignada al kit (HE_KIT_UBIC_ELI). Se usa al limpiar el picker.
+    desasignarKit(id_kit: number): Observable<any> {
+        return this._postOrThrow('herramientas/kits/desasignarKits', { id_kit });
+    }
+
     // -----------------------------------------------------------------------------------------------------
     // @ Correlativos — código auto-generado
     // -----------------------------------------------------------------------------------------------------
@@ -161,7 +162,14 @@ export class KitsService {
     }
 
     saveKitComponents(kitId: number, items: any[]): Observable<any[]> {
-        const validos = items.filter(i => i.tool_id);
+        // Dedupe por tool_id: he.tkit_components tiene UNIQUE(kit_id, tool_id), una repetida
+        // haría fallar todo el guardado.
+        const seen = new Set<number>();
+        const validos = items.filter(i => {
+            if (!i.tool_id || seen.has(i.tool_id)) return false;
+            seen.add(i.tool_id);
+            return true;
+        });
         if (!validos.length) return of([]);
         const calls = validos.map(i =>
             this._postOrThrow('herramientas/kitcomponents/insertarKitComponents', {
@@ -243,7 +251,21 @@ export class KitsService {
         delivered_by_name?: string;
         notes?: string;
     }): Observable<{ id_kit_loan: number; loan_number: string }> {
-        return from(this._api.post('herramientas/kitloans/prestarKit', data)).pipe(
+        // Payload explícito: solo se mandan las claves con valor real (pxp-client serializa
+        // `undefined` como el string "undefined" y rompe los casts de fecha en el backend).
+        const payload: any = {
+            kit_id:        data.kit_id,
+            borrower_name: data.borrower_name,
+        };
+        if (data.borrower_id)          payload.borrower_id          = data.borrower_id;
+        if (data.department)           payload.department           = data.department;
+        if (data.work_order_number)    payload.work_order_number    = data.work_order_number;
+        if (data.loan_date)            payload.loan_date            = data.loan_date;
+        if (data.expected_return_date) payload.expected_return_date = data.expected_return_date;
+        if (data.delivered_by_name)    payload.delivered_by_name    = data.delivered_by_name;
+        if (data.notes)                payload.notes                = data.notes;
+
+        return from(this._api.post('herramientas/kitloans/prestarKit', payload)).pipe(
             map((r: any) => {
                 const root = r?.ROOT ?? r;
                 if (root?.error === true) throw new Error(root?.detalle?.mensaje ?? root?.mensaje ?? 'Error al registrar préstamo');

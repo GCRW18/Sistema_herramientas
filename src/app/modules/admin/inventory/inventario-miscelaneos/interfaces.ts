@@ -15,6 +15,12 @@ export interface Material {
     recibidoPor: string;
     fecha: string;
     hora: string;
+    /** Fecha de adquisición/compra del ítem — editable por el usuario. Distinta de `fecha`
+     *  (fecha_reg), que la asigna el framework automáticamente al crear el registro. */
+    fechaAdquisicion?: string;
+    /** Fecha de la última entrada/salida registrada del ítem (he.tmiscelaneo_movimientos).
+     *  Vacío si nunca tuvo movimientos. Solo lectura. */
+    lastMovementDate?: string;
     observacion?: string;
     /** Ubicación real Almacén→Estante→Nivel (ver he.tmiscelaneos.rack_id/level_id) */
     warehouseId?: number | null;
@@ -49,9 +55,6 @@ export interface Salida {
     fecha: string;
     hora: string;
     nroLicencia: string;
-    nro: string;
-    apellidoPaterno: string;
-    apellidoMaterno: string;
     nombre: string;
     area: string;
     despachadoPor: string;

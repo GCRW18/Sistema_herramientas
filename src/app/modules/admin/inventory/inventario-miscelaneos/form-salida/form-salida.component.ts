@@ -13,7 +13,7 @@ import { debounceTime, distinctUntilChanged, finalize, switchMap, takeUntil, map
 import { MovementService }    from '../../../../../core/services/movement.service';
 import { MiscelaneosService } from '../../../../../core/services/miscelaneos.service';
 import { Salida, DialogMode, Material } from '../interfaces';
-import { localDateStr } from '../../../../../core/utils/date.utils';
+import { localDateStr, formatDateDMY } from '../../../../../core/utils/date.utils';
 
 interface Funcionario { id: number; nombre: string; cargo: string; area?: string; }
 
@@ -143,6 +143,9 @@ export class FormSalidaComponent implements OnInit, OnDestroy {
 
     get readOnly(): boolean { return this.mode === 'view'; }
     get isEdit():   boolean { return this.mode === 'edit'; }
+
+    /** Fecha almacenada como 'YYYY-MM-DD' → 'DD/MM/YYYY' para el detalle de solo lectura. */
+    formatFecha(fecha: string): string { return formatDateDMY(fecha); }
 
     get titulo(): string {
         if (this.mode === 'new')  return 'Nueva Salida de Material';
@@ -465,7 +468,7 @@ export class FormSalidaComponent implements OnInit, OnDestroy {
         const ordenTrabajo  = s.ordenTrabajo        || '---';
         const matricula     = s.buscadorAeronave    || '---';
         const observaciones = s.observaciones       || '---';
-        const fechaHora     = [s.fecha, s.hora].filter(Boolean).join('  ') || '---';
+        const fechaHora     = [formatDateDMY(s.fecha), s.hora].filter(Boolean).join('  ') || '---';
         const entregadoPor  = s.despachadoPor       || '---';
 
         const html = `<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8">

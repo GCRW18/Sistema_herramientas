@@ -22,19 +22,14 @@ interface CompState {
     imports: [CommonModule, ReactiveFormsModule, MatIconModule, DragDropModule, MatDialogModule],
     styles: [`:host { display: flex; flex-direction: column; }`],
     template: `
-<div class="bg-stone-100 dark:bg-slate-900 border-2 border-black flex flex-col w-full max-h-[90vh] rounded-2xl overflow-hidden"
+<div class="bg-stone-100 dark:bg-slate-900 border-2 border-black flex flex-col w-full max-h-[85vh] rounded-2xl overflow-hidden"
 >
 
     <!-- HEADER -->
-    <div class="bg-[#0F172A] px-5 py-3 flex items-center gap-3 shrink-0 select-none"
+    <div class="bg-[#0F172A] px-5 py-2.5 shrink-0 select-none"
          cdkDrag cdkDragRootElement=".cdk-overlay-pane" cdkDragHandle style="cursor:grab">
-        <div class="w-9 h-9 rounded bg-orange-500 border-2 border-black flex items-center justify-center shadow-[2px_2px_0_#000] shrink-0">
-            <mat-icon class="!text-lg text-white">assignment_return</mat-icon>
-        </div>
-        <div>
-            <p class="text-[9px] text-slate-400 font-bold uppercase tracking-[0.18em] leading-none mb-0.5">Gestión de Kits</p>
-            <h2 class="text-sm text-white font-black uppercase tracking-tight leading-none">Registrar Devolución</h2>
-        </div>
+        <p class="text-[9px] text-slate-400 font-bold uppercase tracking-[0.18em] leading-none mb-0.5">Gestión de Kits</p>
+        <h2 class="text-sm text-white font-black uppercase tracking-tight leading-none">Registrar Devolución</h2>
     </div>
 
     <!-- KIT BANNER -->
@@ -201,7 +196,6 @@ interface CompState {
             <button type="button" (click)="onSubmit()" [disabled]="!form.valid || saving"
                     class="flex items-center gap-2 px-5 py-2 bg-orange-500 text-white font-black text-[10px] border-2 border-black rounded-xl shadow-[3px_3px_0_#000] hover:shadow-none hover:translate-x-[3px] hover:translate-y-[3px] transition-all uppercase disabled:opacity-40 disabled:cursor-not-allowed disabled:pointer-events-none">
                 <span *ngIf="saving" class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
-                <mat-icon *ngIf="!saving" class="!text-white">assignment_return</mat-icon>
                 {{ saving ? 'Registrando...' : 'Confirmar Devolución' }}
             </button>
         </div>

@@ -8,7 +8,7 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { ReportesService, DashboardStats } from './reportes.service';
-import { REPORTE_CONFIGS, ColDef } from './reporte-visor-dialog.component';
+import { REPORTE_CONFIGS, ColDef } from './reporte-configs';
 import { HasPermissionDirective } from '../../../../core/directives/has-permission.directive';
 
 /* ── Opciones de sub-reporte por tab ───────────────────────────────────────── */
@@ -228,13 +228,22 @@ export class ReportsComponent implements OnInit {
     nextPage(): void { if (this.pageIndex() < this.totalPages() - 1) this.pageIndex.update(p => p + 1); }
 
     /* ── Helpers de celda ── */
+    /** Formatea fechas del backend. 'YYYY-MM-DD' se toma tal cual (new Date lo
+     *  interpretaría como medianoche UTC → un día atrás en UTC-4). */
+    fmtDate(v: any, year: '2-digit' | 'numeric' = '2-digit'): string {
+        if (v == null || v === '') return '—';
+        const m = String(v).match(/^(\d{4})-(\d{2})-(\d{2})/);
+        if (m) return year === 'numeric' ? `${m[3]}/${m[2]}/${m[1]}` : `${m[3]}/${m[2]}/${m[1].slice(2)}`;
+        const d = new Date(v);
+        return isNaN(d.getTime())
+            ? String(v)
+            : d.toLocaleDateString('es-BO', { day: '2-digit', month: '2-digit', year });
+    }
+
     getCellText(row: any, col: ColDef): string {
         const v = row[col.key];
         if (v == null || v === '') return '—';
-        if (col.tipo === 'date') {
-            try { return new Date(v).toLocaleDateString('es-BO', { day: '2-digit', month: '2-digit', year: '2-digit' }); }
-            catch { return String(v); }
-        }
+        if (col.tipo === 'date') return this.fmtDate(v);
         if (col.tipo === 'days') return `${v}d`;
         if (col.tipo === 'bool') return v === true ? '✔' : '—';
         return String(v);
@@ -314,7 +323,7 @@ export class ReportsComponent implements OnInit {
                 let v: any = row[c.key];
                 if (v == null || v === '') return '<td>—</td>';
                 if (c.tipo === 'date') {
-                    try { v = new Date(v).toLocaleDateString('es-BO', { day: '2-digit', month: '2-digit', year: 'numeric' }); } catch {}
+                    v = this.fmtDate(v, 'numeric');
                 } else if (c.tipo === 'bool')  { v = v === true ? '✔' : '—'; }
                   else if (c.tipo === 'days')  { v = `${v}d`; }
                 return `<td>${String(v).replace(/</g, '&lt;').replace(/>/g, '&gt;')}</td>`;
@@ -388,7 +397,7 @@ export class ReportsComponent implements OnInit {
                 let v: any = row[c.key];
                 if (v == null || v === '') return '<td>—</td>';
                 if (c.tipo === 'date') {
-                    try { v = new Date(v).toLocaleDateString('es-BO', { day: '2-digit', month: '2-digit', year: 'numeric' }); } catch {}
+                    v = this.fmtDate(v, 'numeric');
                 } else if (c.tipo === 'bool')  { v = v === true ? '✔' : '—'; }
                   else if (c.tipo === 'days')  { v = `${v}d`; }
                 return `<td>${String(v).replace(/</g, '&lt;').replace(/>/g, '&gt;')}</td>`;

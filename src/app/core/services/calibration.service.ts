@@ -155,9 +155,26 @@ export class CalibrationService {
         supplier_id?: number; certificate_file?: string;
     }): Observable<any> {
         return from(this._api.post('herramientas/calibrations/processCalibrationReturn', params)).pipe(
-            tap((raw: any) => { if (!this._isPxpError(raw)) this._calibrationsChanged.next(); }),
-            switchMap((response: any) => of(this._normalizeSingleResponse(response) ?? response)),
+            switchMap((response: any) => {
+                if (this._isPxpError(response)) throw new Error(this._extractErrorMessage(response, 'Error al procesar el retorno de calibración'));
+                this._calibrationsChanged.next();
+                return of(this._normalizeSingleResponse(response) ?? response);
+            }),
             catchError((error) => { console.error('Error en processCalibrationReturnPxp:', error); throw error; })
+        );
+    }
+
+    // Guarda el PDF del certificado en una llamada aparte del retorno: el base64
+    // (varios MB) infla la respuesta de pXP y la trunca si va dentro de HE_CLS_RETURN.
+    saveReturnCertificate(id_calibration: number, certificate_file: string): Observable<any> {
+        return from(this._api.post('herramientas/calibrations/guardarCertificadoRetorno', {
+            id_calibration, certificate_file,
+        })).pipe(
+            switchMap((response: any) => {
+                if (this._isPxpError(response)) throw new Error(this._extractErrorMessage(response, 'Error al guardar el certificado'));
+                return of(this._normalizeSingleResponse(response) ?? response);
+            }),
+            catchError((error) => { console.error('Error en saveReturnCertificate:', error); throw error; })
         );
     }
 
@@ -292,17 +309,24 @@ export class CalibrationService {
         const payload: any = { ...laboratory };
         if (payload.id_laboratory == null) delete payload.id_laboratory;
         return from(this._api.post('herramientas/calibrations/saveLaboratory', payload)).pipe(
-            switchMap((response: any) => of(this._normalizeSingleResponse(response) as CalibrationLaboratory ?? laboratory as CalibrationLaboratory)),
+            switchMap((response: any) => {
+                if (this._isPxpError(response)) throw new Error(this._extractErrorMessage(response, 'Error al guardar la empresa'));
+                return of(this._normalizeSingleResponse(response) as CalibrationLaboratory ?? laboratory as CalibrationLaboratory);
+            }),
             tap(() => this.getLaboratories().subscribe()),
             catchError((error) => { console.error('Error en saveLaboratory:', error); throw error; })
         );
     }
 
-    deleteLaboratory(id: string): Observable<boolean> {
+    deleteLaboratory(id: string): Observable<string> {
         return from(this._api.post('herramientas/calibrations/deleteLaboratory', { id_laboratory: id })).pipe(
-            switchMap((response: any) => of(response?.success ?? true)),
+            switchMap((response: any) => {
+                if (this._isPxpError(response)) throw new Error(this._extractErrorMessage(response, 'Error al eliminar la empresa'));
+                const norm = this._normalizeSingleResponse(response);
+                return of((norm?.mensaje as string) ?? 'Operación completada');
+            }),
             tap(() => this.getLaboratories().subscribe()),
-            catchError((error) => { console.error('Error en deleteLaboratory:', error); return of(false); })
+            catchError((error) => { console.error('Error en deleteLaboratory:', error); throw error; })
         );
     }
 

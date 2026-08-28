@@ -35,8 +35,15 @@ export class MiscelaneosService {
             ubicacion:   raw.location_name    ?? '',
             activo:      raw.active === true || raw.active === 'true' || raw.active === 't',
             recibidoPor: raw.usr_reg           ?? '',
-            fecha:       raw.fecha_reg        ? (raw.fecha_reg as string).split('T')[0] : '',
-            hora:        raw.fecha_reg        ? (raw.fecha_reg as string).split('T')[1]?.slice(0,5) ?? '' : '',
+            // Postgres devuelve el timestamp separado por espacio ("2026-08-26 23:38:57"), no
+            // por 'T' como ISO 8601 — de ahí el regex [T ] (antes con split('T') se guardaba
+            // el string completo sin separar en "fecha" y "hora" quedaba siempre vacío).
+            fecha:       raw.fecha_reg        ? (raw.fecha_reg as string).split(/[T ]/)[0] : '',
+            hora:        raw.fecha_reg        ? (raw.fecha_reg as string).split(/[T ]/)[1]?.slice(0,5) ?? '' : '',
+            fechaAdquisicion: raw.acquisition_date ? (raw.acquisition_date as string).split(/[T ]/)[0] : '',
+            // Fecha de la última entrada/salida real (he.tmiscelaneo_movimientos.date), no el alta
+            // del catálogo. La usa Consultar Inventario para "Último movimiento".
+            lastMovementDate: raw.last_movement_date ? (raw.last_movement_date as string).split(/[T ]/)[0] : '',
             observacion: raw.notes            ?? '',
             warehouseId: raw.warehouse_id != null ? Number(raw.warehouse_id) : null,
             rackId:      raw.rack_id      != null ? Number(raw.rack_id)      : null,
@@ -74,9 +81,6 @@ export class MiscelaneosService {
             fecha:           raw.date                  ?? '',
             hora:            raw.time?.slice(0,5)      ?? '',
             nroLicencia:     raw.license_number        ?? '',
-            nro:             '',
-            apellidoPaterno: '',
-            apellidoMaterno: '',
             nombre:          raw.name                  ?? '',
             area:            raw.area                  ?? '',
             despachadoPor:   raw.authorized_by         ?? '',
@@ -93,67 +97,75 @@ export class MiscelaneosService {
 
     // ── Catálogo ──────────────────────────────────────────────────────────────
 
-    getMiscelaneos(search?: string): Observable<Material[]> {
-        const params: any = { start: 0, limit: 200, ordenacion: 'code', dir_ordenacion: 'asc' };
-        if (search?.trim()) params.search = search.trim();
+    getMiscelaneos(): Observable<Material[]> {
+        // limit 2000: el catálogo, las notificaciones de bajo stock y la vista unificada
+        // consumen la lista completa — con 200 se truncaba silenciosamente.
+        const params: any = { start: 0, limit: 2000, ordenacion: 'code', dir_ordenacion: 'asc' };
         return from(this._api.post('herramientas/miscelaneos/listarMiscelaneos', params)).pipe(
             map((r: any) => this._normalize(r).map(x => this._mapMaterial(x))),
             catchError(() => of([]))
         );
     }
 
-    createMiscelaneo(mat: Partial<Material>): Observable<{ id: number }> {
+    createMiscelaneo(mat: Partial<Material>): Observable<{ id: number; code: string }> {
+        // Payload explícito: solo claves con valor real (pxp-client serializa null como el string
+        // "null" y rompe casts de fecha/int en el backend). code se genera solo (correlativo BOA-M).
         const payload: any = {
-            code:             mat.codigoBoaM?.trim().toUpperCase(),
-            name:             mat.producto?.trim(),
-            description:      mat.observacion?.trim() || null,
-            brand:            mat.marca?.trim()        || null,
-            part_number:      mat.pn?.trim()           || null,
-            unit_of_measure:  mat.unidad               || 'UND',
-            purchase_type:    mat.tipoCompra           || 'COMPRA DIRECTA',
-            item_type:        mat.tipoItem             || 'CONSUMIBLE',
-            quantity_in_stock:mat.stock                ?? 0,
-            stock_min:        mat.stockMin             ?? 0,
-            stock_max:        mat.stockMax             ?? 0,
-            location_name:    mat.ubicacion?.trim()    || null,
-            notes:            mat.observacion?.trim()  || null,
-            active:           mat.activo               ?? true,
+            name:              mat.producto?.trim() || '',
+            unit_of_measure:   mat.unidad     || 'UND',
+            purchase_type:     mat.tipoCompra || 'COMPRA DIRECTA',
+            item_type:         mat.tipoItem   || 'CONSUMIBLE',
+            quantity_in_stock: mat.stock    ?? 0,
+            stock_min:         mat.stockMin ?? 0,
+            stock_max:         mat.stockMax ?? 0,
+            active:            mat.activo ?? true,
         };
-        // pxp-client serializa JS null como la string 'null', que Postgres rechaza al castear
-        // a int4 — por eso rack_id/level_id/warehouse_id solo se agregan si hay ubicación
-        // elegida (mismo criterio que kits.service.ts#createKit).
+        const obs = mat.observacion?.trim();
+        if (mat.marca?.trim())     payload.brand           = mat.marca.trim();
+        if (mat.pn?.trim())        payload.part_number     = mat.pn.trim();
+        if (mat.ubicacion?.trim()) payload.location_name   = mat.ubicacion.trim();
+        if (mat.fechaAdquisicion)  payload.acquisition_date = mat.fechaAdquisicion;
+        if (obs) { payload.description = obs; payload.notes = obs; }
+        // warehouse_id no se manda: HE_MIS_INS lo deriva del rack.
         if (mat.rackId && mat.levelId) {
-            payload.warehouse_id = mat.warehouseId ?? null;
-            payload.rack_id      = mat.rackId;
-            payload.level_id     = mat.levelId;
+            payload.rack_id  = mat.rackId;
+            payload.level_id = mat.levelId;
         }
         return from(this._api.post('herramientas/miscelaneos/insertarMiscelaneos', payload)).pipe(
             map((r: any) => {
                 const root = r?.ROOT ?? r;
                 if (root?.error === true) throw new Error(root?.detalle?.mensaje ?? root?.mensaje ?? 'Error al crear misceláneo');
                 const d = root?.datos ?? root;
-                return { id: Number(d?.id_miscelaneo ?? 0) };
+                return { id: Number(d?.id_miscelaneo ?? 0), code: d?.code ?? '' };
             }),
             catchError(err => { throw err; })
         );
     }
 
     updateMiscelaneo(id: number, mat: Partial<Material>): Observable<any> {
-        const payload: any = { id_miscelaneo: id };
-        if (mat.codigoBoaM  !== undefined) payload.code            = mat.codigoBoaM.trim().toUpperCase();
-        if (mat.producto    !== undefined) payload.name            = mat.producto.trim();
-        if (mat.observacion !== undefined) payload.description     = mat.observacion.trim() || null;
-        if (mat.marca       !== undefined) payload.brand           = mat.marca.trim() || null;
-        if (mat.pn          !== undefined) payload.part_number     = mat.pn.trim() || null;
-        if (mat.unidad      !== undefined) payload.unit_of_measure = mat.unidad;
-        if (mat.tipoCompra  !== undefined) payload.purchase_type   = mat.tipoCompra;
-        if (mat.tipoItem    !== undefined) payload.item_type       = mat.tipoItem;
-        if (mat.stock       !== undefined) payload.quantity_in_stock = mat.stock;
-        if (mat.stockMin    !== undefined) payload.stock_min       = mat.stockMin;
-        if (mat.stockMax    !== undefined) payload.stock_max       = mat.stockMax;
-        if (mat.ubicacion   !== undefined) payload.location_name   = mat.ubicacion.trim() || null;
-        if (mat.observacion !== undefined) payload.notes           = mat.observacion.trim() || null;
-        if (mat.activo      !== undefined) payload.active          = mat.activo;
+        // Payload completo con valores limpios ('' para texto vacío, nunca null). El backend
+        // (HE_MIS_MOD) interpreta '' como "borrar el campo" y la clave ausente como "no tocar".
+        // code es inmutable (correlativo BOA-M) — no se envía.
+        const obs = mat.observacion?.trim() ?? '';
+        const payload: any = {
+            id_miscelaneo:     id,
+            name:              mat.producto?.trim() ?? '',
+            brand:             mat.marca?.trim() ?? '',
+            part_number:       mat.pn?.trim() ?? '',
+            unit_of_measure:   mat.unidad ?? 'UND',
+            purchase_type:     mat.tipoCompra ?? 'COMPRA DIRECTA',
+            item_type:         mat.tipoItem ?? 'CONSUMIBLE',
+            quantity_in_stock: mat.stock ?? 0,
+            stock_min:         mat.stockMin ?? 0,
+            stock_max:         mat.stockMax ?? 0,
+            location_name:     mat.ubicacion?.trim() ?? '',
+            description:       obs,
+            notes:             obs,
+            active:            mat.activo ?? true,
+        };
+        // acquisition_date es date: '' o 'null' revientan el casteo — se omite si está vacío
+        // (el backend deja el valor previo).
+        if (mat.fechaAdquisicion) payload.acquisition_date = mat.fechaAdquisicion;
 
         return from(this._api.post('herramientas/miscelaneos/insertarMiscelaneos', payload)).pipe(
             map((r: any) => {
@@ -174,6 +186,23 @@ export class MiscelaneosService {
             map((r: any) => {
                 const root = r?.ROOT ?? r;
                 if (root?.error === true) throw new Error(root?.detalle?.mensaje ?? root?.mensaje ?? 'Error al mover misceláneo');
+                return root;
+            }),
+            catchError(err => { throw err; })
+        );
+    }
+
+    // Libera rack_id/level_id/warehouse_id (a diferencia de HE_MIS_MOD, que nunca los toca).
+    // Usar cuando el usuario quita la ubicación en el picker del catálogo (ver
+    // inventario-miscelaneos.component.ts#editarCatalogo) — sin esto, el item quedaba huérfano
+    // en la grilla de Gestión de Ubicaciones aunque el catálogo mostrara "Sin asignar".
+    desasignarMiscelaneo(id: number): Observable<any> {
+        return from(this._api.post('herramientas/miscelaneos/desasignarMiscelaneos', {
+            id_miscelaneo: id
+        })).pipe(
+            map((r: any) => {
+                const root = r?.ROOT ?? r;
+                if (root?.error === true) throw new Error(root?.detalle?.mensaje ?? root?.mensaje ?? 'Error al desasignar ubicación');
                 return root;
             }),
             catchError(err => { throw err; })
@@ -226,15 +255,16 @@ export class MiscelaneosService {
         factura?:      string;
         observacion?:  string;
     }): Observable<{ id: number; numero: string }> {
-        return from(this._api.post('herramientas/miscelaneomovimientos/entradaMiscelaneos', {
-            miscelaneo_id:  data.miscelaneo_id,
-            quantity:       data.cantidad,
-            date:           data.fecha,
-            time:           data.hora,
-            name:           data.recibidoPor,
-            invoice_number: data.factura  || null,
-            notes:          data.observacion || null,
-        })).pipe(
+        const payload: any = {
+            miscelaneo_id: data.miscelaneo_id,
+            quantity:      data.cantidad,
+            date:          data.fecha,
+            time:          data.hora,
+            name:          data.recibidoPor,
+        };
+        if (data.factura?.trim())     payload.invoice_number = data.factura.trim();
+        if (data.observacion?.trim()) payload.notes          = data.observacion.trim();
+        return from(this._api.post('herramientas/miscelaneomovimientos/entradaMiscelaneos', payload)).pipe(
             map((r: any) => {
                 const root = r?.ROOT ?? r;
                 if (root?.error === true) throw new Error(root?.detalle?.mensaje ?? root?.mensaje ?? 'Error al registrar entrada');
@@ -259,20 +289,21 @@ export class MiscelaneosService {
         buscadorAutorizado?: string;
         observaciones?:     string;
     }): Observable<{ id: number; numero: string }> {
-        return from(this._api.post('herramientas/miscelaneomovimientos/salidaMiscelaneos', {
-            miscelaneo_id:    data.miscelaneo_id,
-            quantity:         data.cantidad,
-            date:             data.fecha,
-            time:             data.hora,
-            name:             data.nombre,
-            area:             data.area,
-            authorized_by:    data.despachadoPor,
-            license_number:   data.nroLicencia       || null,
-            work_order_number:data.ordenTrabajo       || null,
-            aircraft:         data.buscadorAeronave   || null,
-            reason:           data.buscadorAutorizado || null,
-            notes:            data.observaciones      || null,
-        })).pipe(
+        const payload: any = {
+            miscelaneo_id: data.miscelaneo_id,
+            quantity:      data.cantidad,
+            date:          data.fecha,
+            time:          data.hora,
+            name:          data.nombre,
+            area:          data.area,
+            authorized_by: data.despachadoPor,
+        };
+        if (data.nroLicencia?.trim())        payload.license_number    = data.nroLicencia.trim();
+        if (data.ordenTrabajo?.trim())       payload.work_order_number = data.ordenTrabajo.trim();
+        if (data.buscadorAeronave?.trim())   payload.aircraft          = data.buscadorAeronave.trim();
+        if (data.buscadorAutorizado?.trim()) payload.reason            = data.buscadorAutorizado.trim();
+        if (data.observaciones?.trim())      payload.notes             = data.observaciones.trim();
+        return from(this._api.post('herramientas/miscelaneomovimientos/salidaMiscelaneos', payload)).pipe(
             map((r: any) => {
                 const root = r?.ROOT ?? r;
                 if (root?.error === true) throw new Error(root?.detalle?.mensaje ?? root?.mensaje ?? 'Error al registrar salida');
@@ -292,15 +323,16 @@ export class MiscelaneosService {
         factura?:    string;
         observacion?:string;
     }): Observable<void> {
-        return from(this._api.post('herramientas/miscelaneomovimientos/actualizarMiscelaneoMovimientos', {
-            id_mov_misc:    data.id,
-            quantity:       data.cantidad,
-            date:           data.fecha,
-            time:           data.hora,
-            name:           data.recibidoPor,
-            invoice_number: data.factura    || null,
-            notes:          data.observacion || null,
-        })).pipe(
+        const payload: any = {
+            id_mov_misc: data.id,
+            quantity:    data.cantidad,
+            date:        data.fecha,
+            time:        data.hora,
+            name:        data.recibidoPor,
+        };
+        if (data.factura?.trim())     payload.invoice_number = data.factura.trim();
+        if (data.observacion?.trim()) payload.notes          = data.observacion.trim();
+        return from(this._api.post('herramientas/miscelaneomovimientos/actualizarMiscelaneoMovimientos', payload)).pipe(
             map((r: any) => {
                 const root = r?.ROOT ?? r;
                 if (root?.error === true) throw new Error(root?.detalle?.mensaje ?? root?.mensaje ?? 'Error al actualizar entrada');
@@ -335,20 +367,21 @@ export class MiscelaneosService {
         buscadorAutorizado?: string;
         observaciones?:      string;
     }): Observable<void> {
-        return from(this._api.post('herramientas/miscelaneomovimientos/actualizarSalidaMiscelaneos', {
-            id_mov_misc:       data.id,
-            quantity:          data.cantidad,
-            date:              data.fecha,
-            time:              data.hora,
-            name:              data.nombre,
-            area:              data.area,
-            authorized_by:     data.despachadoPor,
-            license_number:    data.nroLicencia        || null,
-            work_order_number: data.ordenTrabajo       || null,
-            aircraft:          data.buscadorAeronave   || null,
-            reason:            data.buscadorAutorizado || null,
-            notes:             data.observaciones      || null,
-        })).pipe(
+        const payload: any = {
+            id_mov_misc:   data.id,
+            quantity:      data.cantidad,
+            date:          data.fecha,
+            time:          data.hora,
+            name:          data.nombre,
+            area:          data.area,
+            authorized_by: data.despachadoPor,
+        };
+        if (data.nroLicencia?.trim())        payload.license_number    = data.nroLicencia.trim();
+        if (data.ordenTrabajo?.trim())       payload.work_order_number = data.ordenTrabajo.trim();
+        if (data.buscadorAeronave?.trim())   payload.aircraft          = data.buscadorAeronave.trim();
+        if (data.buscadorAutorizado?.trim()) payload.reason            = data.buscadorAutorizado.trim();
+        if (data.observaciones?.trim())      payload.notes             = data.observaciones.trim();
+        return from(this._api.post('herramientas/miscelaneomovimientos/actualizarSalidaMiscelaneos', payload)).pipe(
             map((r: any) => {
                 const root = r?.ROOT ?? r;
                 if (root?.error === true) throw new Error(root?.detalle?.mensaje ?? root?.mensaje ?? 'Error al actualizar salida');

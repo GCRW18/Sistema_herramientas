@@ -55,6 +55,7 @@ export class FormRetornoComponent implements OnInit, OnDestroy {
     empresaIdOverride: number | null = null;
     observations = '';
     receivedByName = '';
+    resultado: 'approved' | 'conditional' | 'rejected' = 'approved';
     selectedFile: File | null = null;
     selectedFileBase64: string | null = null;
     private readonly MAX_PDF_BYTES = 5 * 1024 * 1024;
@@ -152,8 +153,13 @@ export class FormRetornoComponent implements OnInit, OnDestroy {
     }
 
     canSubmit(): boolean {
-        return !!(this.calibration && this.certificateNumber?.trim() && this.fechaCalStr && !this.isFechaFutura());
+        if (!this.calibration || !this.fechaCalStr || this.isFechaFutura()) return false;
+        // El certificado es obligatorio salvo cuando la herramienta fue rechazada en calibración.
+        if (this.resultado !== 'rejected' && !this.certificateNumber?.trim()) return false;
+        return true;
     }
+
+    get isRechazado(): boolean { return this.resultado === 'rejected'; }
 
     isFechaFutura(): boolean {
         if (!this.fechaCalStr) return false;
@@ -197,33 +203,50 @@ export class FormRetornoComponent implements OnInit, OnDestroy {
         const params: any = {
             id_calibration:       cal.id_calibration,
             tool_id:              cal.tool_id,
-            result:               'approved',
+            result:               this.resultado,
             actual_return_date:   this.todayStr,
             certificate_number:   this.certificateNumber.trim(),
             calibration_date:     this.fechaCalStr,
+            // El backend recalcula el vencimiento con el intervalo real de la herramienta;
+            // esto va solo como fallback si la herramienta no tiene intervalo configurado.
             next_calibration_date: this.fechaVencimientoDisplay,
             observations:         this.observations || '',
             received_by_name:     this.receivedByName.trim(),
         };
 
         if (this.empresaIdOverride) params.supplier_id = this.empresaIdOverride;
-        if (this.selectedFileBase64) params.certificate_file = this.selectedFileBase64;
+        // El PDF NO va en el payload del retorno: se sube aparte para no truncar la respuesta.
 
         try {
             const res: any = await lastValueFrom(this.calibrationService.processCalibrationReturnPxp(params));
             const isError = res?.error === true || res?.ROOT?.error === true;
 
-            if (!isError) {
-                this.showMessage('Retorno registrado con éxito', 'success');
-                this.dialogRef.close(true);
-            } else {
+            if (isError) {
                 const msg = res?.detalle?.mensaje || res?.ROOT?.detalle?.mensaje || 'Error en el servidor';
                 this.duplicateError.set(msg);
                 this.showMessage(msg, 'error');
+                return;
             }
+
+            // El retorno ya quedó registrado; el certificado es secundario.
+            if (this.selectedFileBase64) {
+                try {
+                    await lastValueFrom(this.calibrationService.saveReturnCertificate(cal.id_calibration, this.selectedFileBase64));
+                } catch (certErr: any) {
+                    console.error('Error guardando certificado:', certErr);
+                    this.showMessage('Retorno registrado, pero el certificado PDF no se pudo guardar. Adjúntelo más tarde.', 'warning');
+                    this.dialogRef.close(true);
+                    return;
+                }
+            }
+
+            this.showMessage('Retorno registrado con éxito', 'success');
+            this.dialogRef.close(true);
         } catch (err: any) {
             console.error('Error retorno:', err);
-            this.showMessage('Error de conexión con el servidor', 'error');
+            const msg = err?.message || 'Error de conexión con el servidor';
+            this.duplicateError.set(msg);
+            this.showMessage(msg, 'error');
         } finally {
             this.isProcessing.set(false);
             this.cdr.detectChanges();
