@@ -97,7 +97,18 @@ export class RetornoCalibracionComponent implements OnInit, OnDestroy {
 
     loadCalibraciones(): void {
         this.isLoading.set(true);
-        this.calibrationService.getCalibrations({ limit: 500 }).pipe(
+        // ordenacion por id_calibration (PK) en vez de send_date (sin índice, con
+        // NULLs de históricas primero) + excluye transcripciones históricas
+        // server-side (filtro_adicional, no 'filtro' que el ACT ignora).
+        this.calibrationService.getCalibrations({
+            limit: 500,
+            ordenacion: 'id_calibration',
+            dir_ordenacion: 'desc',
+            filtro_adicional: "(COALESCE(cls.is_historical, false) = false"
+                + " AND (cls.internal_notes IS NULL"
+                + " OR (cls.internal_notes NOT LIKE '[TRANSCRIPCION HISTORICA%'"
+                + " AND cls.internal_notes NOT LIKE '[TRANSCRIPCIÓN HISTÓRICA%')))",
+        }).pipe(
             takeUntil(this._destroy$),
             finalize(() => this.isLoading.set(false)),
         ).subscribe({
@@ -216,6 +227,22 @@ export class RetornoCalibracionComponent implements OnInit, OnDestroy {
         } catch (e) {
             this.showMsg('Error al inicializar el módulo de retorno', 'error');
         }
+    }
+
+    // Reporte PDF de herramientas ya retornadas (espejo del botón "NO RETORNADAS"
+    // del submódulo de Envío). PDF real vía ACTreportes/RReporteRetornadas.
+    printRetornadas(): void {
+        this.isLoading.set(true);
+        this.calibrationService.generarPdfRetornadas().pipe(
+            takeUntil(this._destroy$),
+            finalize(() => this.isLoading.set(false)),
+        ).subscribe({
+            next: (result) => this.calibrationService.abrirPdf(result.pdf_base64, result.nombre_archivo),
+            error: (error) => {
+                console.error('Error al generar el reporte de retornadas:', error);
+                this.showMsg('Error al generar el reporte de herramientas retornadas', 'error');
+            },
+        });
     }
 
     formatDateDisplay(isoStr: string | null | undefined): string {

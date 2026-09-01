@@ -83,7 +83,7 @@
                     <div class="flex gap-1">
                         <input type="text" formControlName="codigoBoa"
                                class="flex-1 w-0 h-8 text-xs font-black uppercase bg-white dark:bg-slate-900 dark:text-white border-2 rounded-lg px-2.5 outline-none transition-all"
-                               [ngClass]="hasHerramientaError('codigoBoa','required') ? 'border-red-400' : 'border-stone-300 dark:border-slate-600 hover:border-stone-400 focus:border-black focus:shadow-[2px_2px_0_#000]'">
+                               [ngClass]="(hasHerramientaError('codigoBoa','required') || hasHerramientaError('codigoBoa','pattern')) ? 'border-red-400' : 'border-stone-300 dark:border-slate-600 hover:border-stone-400 focus:border-black focus:shadow-[2px_2px_0_#000]'">
                         <button type="button" (click)="generarCodigoBoa()"
                                 class="h-8 px-2 flex items-center bg-amber-400 border-2 border-black rounded-lg shadow-[2px_2px_0_#000] hover:shadow-none hover:translate-x-px hover:translate-y-px transition-all shrink-0"
                                 matTooltip="Auto-generar código">
@@ -91,6 +91,7 @@
                         </button>
                     </div>
                     <p *ngIf="hasHerramientaError('codigoBoa','required')" class="text-[8px] text-red-500 font-bold mt-0.5">Requerido.</p>
+                    <p *ngIf="hasHerramientaError('codigoBoa','pattern')" class="text-[8px] text-red-500 font-bold mt-0.5">Solo letras, números y guiones.</p>
                 </div>
                 <div>
                     <label class="text-[9px] font-black uppercase tracking-wider text-stone-400 dark:text-slate-400 mb-1 block">P/N <span class="text-red-500">*</span></label>

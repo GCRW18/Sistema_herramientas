@@ -229,4 +229,35 @@ export class MaintenanceService {
         window.open(url, '_blank');
         setTimeout(() => window.URL.revokeObjectURL(url), 30000);
     }
+
+    // MGH-125 — Listado de gatas hidráulicas (PDF real vía ACTreportes/RReporteGatasHidraulicas).
+    generarPdfGatasHidraulicas(): Observable<{ pdf_base64: string; nombre_archivo: string }> {
+        return from(this._api.post('herramientas/reportes/generarPDFGatasHidraulicas', {})).pipe(
+            switchMap((response: any) => {
+                // pxp-client puede dejar {ROOT:{...}} o desenvolverlo a {error,detalle,datos}.
+                const root = response?.ROOT ?? response ?? {};
+                const mensaje = root?.detalle?.mensaje ?? root?.mensaje ?? response?.mensaje;
+                if (root?.error === true || response?.error === true) {
+                    throw new Error(mensaje || 'Error al generar el reporte de gatas');
+                }
+                let datos = root?.datos ?? response?.datos ?? response?.data;
+                const item = Array.isArray(datos) ? datos[0] : datos;
+                if (!item?.pdf_base64) {
+                    throw new Error(mensaje || 'Respuesta sin PDF (el backend no devolvió el documento)');
+                }
+                return of({
+                    pdf_base64: item.pdf_base64 as string,
+                    nombre_archivo: item.nombre_archivo || 'gatas_hidraulicas.pdf',
+                });
+            }),
+            catchError((error) => { throw error; })
+        );
+    }
+
+    generarYVerPdfGatas(): void {
+        this.generarPdfGatasHidraulicas().subscribe({
+            next: (result) => this.abrirPdf(result.pdf_base64, result.nombre_archivo),
+            error: (error) => console.error('Error al generar el listado de gatas hidráulicas:', error),
+        });
+    }
 }

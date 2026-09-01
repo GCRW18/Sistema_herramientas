@@ -134,7 +134,7 @@ export class RolesComponent implements OnInit {
                     this.snackBar.open('Rol creado', 'Cerrar', { duration: 2500 });
                     this.loadRoles();
                 },
-                error: () => this.snackBar.open('Error al crear rol', 'Cerrar', { duration: 4000 }),
+                error: (err: any) => this.snackBar.open(err?.message || 'Error al crear rol', 'Cerrar', { duration: 4000 }),
             });
         });
     }
@@ -167,7 +167,7 @@ export class RolesComponent implements OnInit {
                         activo:      payload.active,
                     });
                 },
-                error: () => this.snackBar.open('Error al actualizar rol', 'Cerrar', { duration: 4000 }),
+                error: (err: any) => this.snackBar.open(err?.message || 'Error al actualizar rol', 'Cerrar', { duration: 4000 }),
             });
         });
     }
@@ -216,7 +216,7 @@ export class RolesComponent implements OnInit {
                 this.snackBar.open(`Rol ${!r.activo ? 'activado' : 'desactivado'}`, 'Cerrar', { duration: 2500 });
                 this.applyOptimisticUpdate(r.id, { activo: payload.active });
             },
-            error: () => this.snackBar.open('Error al cambiar estado', 'Cerrar', { duration: 4000 }),
+            error: (err: any) => this.snackBar.open(err?.message || 'Error al cambiar estado', 'Cerrar', { duration: 4000 }),
         });
     }
 

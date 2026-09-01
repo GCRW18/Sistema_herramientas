@@ -12,7 +12,7 @@ import { MovementService }    from '../../../../core/services/movement.service';
 import { CalibrationService }   from '../../../../core/services/calibration.service';
 import { GestionUbicacionesService } from '../../inventory/gestion-ubicaciones/gestion-ubicaciones.service';
 import { HasPermissionDirective } from '../../../../core/directives/has-permission.directive';
-import { localDateStr } from '../../../../core/utils/date.utils';
+import { localDateStr, formatDateDMY } from '../../../../core/utils/date.utils';
 import { IngresoPdfService, IngresoPdfItem } from './ingreso-pdf.service';
 
 export interface HerramientaItem {
@@ -143,7 +143,7 @@ export class IngresosHubComponent implements OnInit, OnDestroy {
         const ref = this.dialog.open(DetalleRecepcionComponent, {
             width: '460px', maxWidth: '95vw',
             panelClass: 'no-padding-dialog', disableClose: false, autoFocus: false,
-            data: { recepcion: this.recepcionForm.value }
+            data: { recepcion: { ...this.recepcionForm.value, fechaIngreso: formatDateDMY(this.recepcionForm.value.fechaIngreso) } }
         });
         ref.afterClosed().subscribe((result: any) => {
             if (result?.action === 'edit') this.abrirModalRecepcion();
@@ -284,7 +284,7 @@ export class IngresosHubComponent implements OnInit, OnDestroy {
         const { ConfirmarRecepcionComponent } = await import('./confirmar-recepcion/confirmar-recepcion.component');
         const ref = this.dialog.open(ConfirmarRecepcionComponent, {
             width: '580px', maxWidth: '95vw', panelClass: 'no-padding-dialog', disableClose: true,
-            data: { recepcion: this.recepcionForm.value, items: this.dataSource }
+            data: { recepcion: { ...this.recepcionForm.value, fechaIngreso: formatDateDMY(this.recepcionForm.value.fechaIngreso) }, items: this.dataSource }
         });
         ref.afterClosed().subscribe((result: any) => {
             if (result?.action === 'revisar') this.abrirModalRecepcion();
@@ -371,7 +371,11 @@ export class IngresosHubComponent implements OnInit, OnDestroy {
                     });
                     this.loadHistorial();
                 },
-                error: (err: any) => this._showMsg(err?.message || 'Error al registrar', 'error')
+                error: (err: any) => {
+                    const msg = err?.message || 'Error al registrar';
+                    const esCodigoDuplicado = /ya esta registrad[oa]/i.test(msg);
+                    this._showMsg(msg, esCodigoDuplicado ? 'warning' : 'error');
+                }
             });
     }
 
@@ -490,7 +494,7 @@ export class IngresosHubComponent implements OnInit, OnDestroy {
         }
         const { ConfirmarAjusteComponent } = await import('./confirmar-ajuste/confirmar-ajuste.component');
         const ref = this.dialog.open(ConfirmarAjusteComponent, {
-            width: '800px', maxWidth: '95vw', panelClass: 'neo-dialog-transparent', disableClose: true,
+            width: '580px', maxWidth: '95vw', panelClass: 'no-padding-dialog', disableClose: true,
             data: { resumen: this._buildResumenAjuste() }
         });
         ref.afterClosed().subscribe((result: any) => {
@@ -639,7 +643,7 @@ export class IngresosHubComponent implements OnInit, OnDestroy {
     getRealizadoPorNombre(): string { return this.ajusteForm.value.realizadoPorInput || 'No seleccionado'; }
     getAprobadoPorNombre():  string { return this.ajusteForm.value.aprobadoPorInput  || 'No seleccionado'; }
     getDocumentoText():      string { return this.ajusteForm.value.documento || 'S/D'; }
-    getFechaText():          string { return this.ajusteForm.value.fecha || ''; }
+    getFechaText():          string { return formatDateDMY(this.ajusteForm.value.fecha); }
 
     getTipoAjusteLabel(tipo: string): string {
         return this.tiposAjuste.find(t => t.value === tipo)?.label || tipo;
@@ -789,16 +793,14 @@ export class IngresosHubComponent implements OnInit, OnDestroy {
             descripcion:      h.descripcion || '',
             unidad:           h.unidadMedida || 'UND',
             cantidad:         h.cantidad,
-            fechaVencimiento: h.fechaVencimiento
-                ? new Date(h.fechaVencimiento).toLocaleDateString('es-BO', { day: '2-digit', month: '2-digit', year: 'numeric' })
-                : '',
+            fechaVencimiento: formatDateDMY(h.fechaVencimiento),
             origenAB: IngresoPdfService.origenAB(h.fabricacion),
             tipoAB:   IngresoPdfService.tipoAB(h.tipo),
             lote:     h.loteNumero || ''
         }));
         this.ingresoPdfSvc.generarPdf({
             nroNota:       nro,
-            fechaIngreso:  rec.fechaIngreso || '',
+            fechaIngreso:  formatDateDMY(rec.fechaIngreso),
             observaciones: (rec.tipoDe ? '[' + rec.tipoDe + '] ' : '') + (rec.observaciones || ''),
             entregadoPor:  rec.recibiConforme    || '',
             recibidoPor:   rec.funcionarioRecibe || '',
@@ -875,7 +877,7 @@ export class IngresosHubComponent implements OnInit, OnDestroy {
       <td class="lbl">AUTORIZÓ:</td><td>${fv.aprobadoPorInput || fv.aprobadoPor || '—'}</td>
     </tr>
     <tr>
-      <td class="lbl">FECHA:</td><td>${fv.fecha || '—'}</td>
+      <td class="lbl">FECHA:</td><td>${formatDateDMY(fv.fecha) || '—'}</td>
       <td class="lbl">OBSERVACIÓN:</td><td>${fv.descripcion || '—'}</td>
     </tr>
   </table>

@@ -382,6 +382,31 @@ ${notes   ? `<div style="margin-top:8px"><div class="label" style="font-size:8px
 </body></html>`;
     }
 
+    // MGH-125 — Listado de Gatas Hidráulicas (PDF real vía backend).
+    printGatasHidraulicas(): void {
+        this.isLoading.set(true);
+        this.maintenanceService.generarPdfGatasHidraulicas().pipe(
+            takeUntil(this._destroy$),
+            finalize(() => this.isLoading.set(false)),
+        ).subscribe({
+            next: (result) => {
+                try {
+                    const bytes = new Uint8Array(atob(result.pdf_base64).split('').map(c => c.charCodeAt(0)));
+                    const url = window.URL.createObjectURL(new Blob([bytes], { type: 'application/pdf' }));
+                    window.open(url, '_blank');
+                    setTimeout(() => window.URL.revokeObjectURL(url), 30000);
+                } catch {
+                    this.showMsg('No se pudo abrir el PDF generado', 'error');
+                }
+            },
+            error: (error) => {
+                console.error('Error al generar el listado de gatas hidráulicas:', error);
+                const msg = error?.message || error?.ROOT?.detalle?.mensaje || 'Error al generar el listado de gatas hidráulicas';
+                this.showMsg(msg, 'error');
+            },
+        });
+    }
+
     // ============================================================
     // REPORTE DE AUDITORÍA
     // ============================================================

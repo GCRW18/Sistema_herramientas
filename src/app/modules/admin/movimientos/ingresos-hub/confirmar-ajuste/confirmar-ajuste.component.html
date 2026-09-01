@@ -1,70 +1,85 @@
-<div class="bg-white dark:bg-slate-800 rounded-2xl border-[3px] border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] overflow-hidden flex flex-col w-full max-w-2xl">
-    <div class="bg-[#FF1414] text-white px-6 py-5 border-b-[3px] border-black flex justify-between items-center shrink-0">
-        <div class="flex items-center gap-4">
-            <div class="bg-white/20 p-2 rounded-lg border-2 border-white/50">
-                <mat-icon class="text-white !text-3xl block">fact_check</mat-icon>
-            </div>
-            <div>
-                <h2 class="text-xl font-black uppercase tracking-wider leading-none">Confirmar Ajuste</h2>
-                <p class="text-[10px] font-bold mt-1.5 uppercase tracking-widest text-red-100">Verifique los datos antes de procesar el inventario</p>
-            </div>
+<div cdkDrag cdkDragRootElement=".cdk-overlay-pane"
+     class="bg-stone-100 dark:bg-slate-900 border-2 border-black overflow-hidden flex flex-col w-full">
+
+    <!-- Header draggable -->
+    <div cdkDragHandle
+         class="bg-[#0F172A] px-4 py-3 flex items-center gap-3 shrink-0 cursor-grab active:cursor-grabbing select-none">
+        <div class="w-9 h-9 rounded-lg bg-amber-400 border-2 border-white/20 flex items-center justify-center shrink-0 shadow-[2px_2px_0_rgba(0,0,0,0.4)]">
+            <mat-icon class="text-black !text-xl">fact_check</mat-icon>
         </div>
-        <button (click)="revisar()" class="hover:bg-white hover:text-black rounded-lg border-2 border-transparent hover:border-black p-1 transition-all">
-            <mat-icon class="!text-lg">close</mat-icon>
+        <div class="flex-1 min-w-0">
+            <h2 class="font-black text-sm text-white leading-none uppercase">Confirmar Ajuste</h2>
+            <p class="text-[9px] text-white/50 font-bold leading-none mt-0.5 uppercase tracking-wider">Verifique los datos antes de procesar el inventario</p>
+        </div>
+        <button (click)="revisar()"
+                class="w-7 h-7 flex items-center justify-center bg-white/10 hover:bg-white/20 rounded-lg border border-white/20 transition-all shrink-0">
+            <mat-icon class="text-white !text-sm">close</mat-icon>
         </button>
     </div>
-    <div class="p-6 flex flex-col gap-5 max-h-[70vh] overflow-y-auto custom-scrollbar-ing bg-[#f8f9fc] dark:bg-[#0F172AFF]">
-        <div class="bg-white dark:bg-slate-800 border-[3px] border-black rounded-xl p-5 shadow-[4px_4px_0px_0px_#000]">
-            <h3 class="text-xs font-black uppercase tracking-widest text-black dark:text-white border-b-[3px] border-black pb-2 mb-3">1. Datos Generales</h3>
-            <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+
+    <!-- Body -->
+    <div class="p-4 overflow-y-auto custom-scrollbar-ing" style="max-height: 75vh">
+
+        <!-- Card única -->
+        <div class="bg-white dark:bg-slate-800 border-2 border-black rounded-xl shadow-[3px_3px_0_#000] overflow-hidden">
+
+            <!-- Datos generales -->
+            <div class="px-4 py-3 grid grid-cols-2 gap-x-6 gap-y-3 border-b border-black/8 dark:border-slate-700">
                 <div>
-                    <p class="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Realizado Por:</p>
-                    <p class="font-black text-sm text-black dark:text-white mt-1">{{ data?.resumen?.realizadoPor }}</p>
+                    <p class="text-[8px] font-black uppercase tracking-wider text-blue-600 dark:text-blue-400 mb-0.5">Realizado Por</p>
+                    <p class="font-black text-sm text-black dark:text-white truncate">{{ data?.resumen?.realizadoPor }}</p>
                 </div>
                 <div>
-                    <p class="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Aprobado Por:</p>
-                    <p class="font-black text-sm text-black dark:text-white mt-1">{{ data?.resumen?.aprobadoPor }}</p>
+                    <p class="text-[8px] font-black uppercase tracking-wider text-blue-600 dark:text-blue-400 mb-0.5">Aprobado Por</p>
+                    <p class="font-black text-sm text-black dark:text-white truncate">{{ data?.resumen?.aprobadoPor }}</p>
                 </div>
                 <div>
-                    <p class="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Tipo / Fecha:</p>
-                    <p class="font-black text-sm text-black dark:text-white mt-1">{{ data?.resumen?.tipoLabel }} <br><span class="text-xs">{{ data?.resumen?.fecha }}</span></p>
+                    <p class="text-[8px] font-black uppercase tracking-wider text-blue-600 dark:text-blue-400 mb-0.5">Tipo / Fecha</p>
+                    <p class="font-black text-sm text-black dark:text-white truncate">{{ data?.resumen?.tipoLabel }} <span class="text-[10px] font-bold text-stone-400">· {{ data?.resumen?.fecha }}</span></p>
                 </div>
                 <div>
-                    <p class="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Documento REF:</p>
-                    <p class="font-black text-sm text-black dark:text-white mt-1">{{ data?.resumen?.documento }}</p>
+                    <p class="text-[8px] font-black uppercase tracking-wider text-blue-600 dark:text-blue-400 mb-0.5">Documento REF</p>
+                    <p class="font-black text-sm text-black dark:text-white truncate">{{ data?.resumen?.documento || 'N/A' }}</p>
                 </div>
-                <div class="md:col-span-2">
-                    <p class="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Descripción / Motivo:</p>
-                    <p class="font-black text-sm text-black dark:text-white mt-1">{{ data?.resumen?.descripcion || 'Sin descripción' }}</p>
+                <div class="col-span-2">
+                    <p class="text-[8px] font-black uppercase tracking-wider text-blue-600 dark:text-blue-400 mb-0.5">Descripción / Motivo</p>
+                    <p class="font-bold text-xs text-black dark:text-white">{{ data?.resumen?.descripcion || 'Sin descripción' }}</p>
                 </div>
             </div>
-        </div>
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
-            <div class="bg-gray-100 dark:bg-slate-700 border-[3px] border-black rounded-xl p-5 shadow-[4px_4px_0px_0px_#000] text-center flex flex-col justify-center">
-                <p class="text-[10px] font-black text-gray-600 dark:text-gray-300 uppercase tracking-widest">Total Líneas Ítems</p>
-                <p class="font-black text-4xl text-black dark:text-white mt-2">{{ data?.resumen?.totalLineas }}</p>
+
+            <!-- Separador con contadores -->
+            <div class="px-4 py-2.5 flex items-center gap-2 bg-stone-50 dark:bg-slate-900 border-b border-black/8 dark:border-slate-700">
+                <mat-icon class="text-stone-400 !text-sm">inventory_2</mat-icon>
+                <span class="text-[9px] font-black uppercase tracking-wider text-stone-400 dark:text-slate-500">Resumen de Ítems</span>
+                <span class="ml-auto bg-[#0F172A] text-white border border-black rounded px-1.5 py-0.5 font-black text-[9px]">{{ data?.resumen?.totalLineas }} líneas</span>
+                <span class="bg-amber-400 text-black border border-black rounded px-1.5 py-0.5 font-black text-[9px]">{{ data?.resumen?.totalCantidad }} unidades</span>
             </div>
-            <div class="bg-[#FFC501FF] border-[3px] border-black rounded-xl p-5 shadow-[4px_4px_0px_0px_#000] text-center flex flex-col justify-center">
-                <p class="text-[10px] font-black text-black uppercase tracking-widest">Unidades Físicas</p>
-                <p class="font-black text-4xl text-black mt-2">{{ data?.resumen?.totalCantidad }}</p>
-            </div>
-        </div>
-        <div class="mt-2">
-            <h3 class="text-[10px] font-black uppercase tracking-widest text-gray-600 dark:text-gray-400 mb-3">3. Resumen por Tipo de Ajuste</h3>
-            <div class="flex flex-wrap gap-3">
+
+            <!-- Chips por tipo -->
+            <div class="px-4 py-3 flex flex-wrap gap-2">
                 <div *ngFor="let tipo of data?.resumen?.porTipo"
-                     class="border-[3px] border-black px-4 py-2 rounded-xl flex items-center gap-3 shadow-[3px_3px_0px_0px_#000] bg-white dark:bg-slate-800 text-black dark:text-white">
-                    <mat-icon class="!text-base text-black dark:text-white">{{ tipo.icon }}</mat-icon>
-                    <span class="text-xs font-black uppercase">{{ tipo.label }}</span>
-                    <span class="text-base font-black bg-gray-100 dark:bg-slate-700 px-2 py-0.5 rounded-lg border-[2px] border-black">{{ tipo.count }}</span>
+                     class="border border-black/20 dark:border-slate-600 px-2.5 py-1 rounded-lg flex items-center gap-1.5 bg-stone-50 dark:bg-slate-700 text-black dark:text-white">
+                    <mat-icon class="!text-sm text-stone-500 dark:text-stone-300">{{ tipo.icon }}</mat-icon>
+                    <span class="text-[10px] font-black uppercase">{{ tipo.label }}</span>
+                    <span class="text-[10px] font-black bg-white dark:bg-slate-800 px-1.5 py-0.5 rounded border border-black/20 dark:border-slate-600">{{ tipo.count }}</span>
                 </div>
+                <span *ngIf="!data?.resumen?.porTipo?.length" class="text-[10px] font-bold text-stone-400 uppercase">Sin ítems clasificados</span>
             </div>
+
         </div>
+
     </div>
-    <div class="border-t-[3px] border-black p-5 bg-white dark:bg-slate-900 flex justify-end gap-4 shrink-0">
-        <button (click)="revisar()" class="px-5 py-3 bg-gray-100 dark:bg-slate-800 text-black dark:text-white font-black text-xs border-[3px] border-black rounded-xl shadow-[4px_4px_0px_0px_#000] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[1px_1px_0px_0px_#000] transition-all uppercase">Revisar Nuevamente</button>
-        <button (click)="confirmar()" class="px-6 py-3 bg-[#FF1414] text-white font-black text-xs border-[3px] border-black rounded-xl shadow-[4px_4px_0px_0px_#000] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[1px_1px_0px_0px_#000] transition-all uppercase flex items-center gap-2">
+
+    <!-- Footer -->
+    <div class="border-t-2 border-black bg-stone-200 dark:bg-slate-800 px-4 py-2.5 flex justify-between items-center shrink-0">
+        <button (click)="revisar()"
+                class="h-8 px-4 flex items-center gap-1.5 bg-[#0F172A] text-white border-2 border-black rounded-xl font-black text-[10px] uppercase shadow-[2px_2px_0_#000] hover:translate-x-px hover:translate-y-px hover:shadow-none transition-all">
+            <mat-icon class="!text-sm">arrow_back</mat-icon> Revisar
+        </button>
+        <button (click)="confirmar()"
+                class="h-8 px-4 flex items-center gap-1.5 bg-[#FF1414] text-white border-2 border-black rounded-xl font-black text-[10px] uppercase shadow-[2px_2px_0_#000] hover:translate-x-px hover:translate-y-px hover:shadow-none transition-all">
             <mat-icon class="!text-sm">done_all</mat-icon> Confirmar y Procesar
         </button>
     </div>
+
 </div>

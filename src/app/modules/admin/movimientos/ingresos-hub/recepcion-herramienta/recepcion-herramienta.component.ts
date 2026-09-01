@@ -115,8 +115,8 @@ export class RecepcionHerramientaComponent implements OnInit, OnDestroy {
         this.isEditMode = this.data?.mode === 'editar';
 
         this.herramientaForm = this.fb.group({
-            pn:                   ['', [Validators.required, Validators.minLength(2), Validators.pattern(/^[A-Za-z0-9\-_]+$/)]],
-            sn:                   ['', Validators.pattern(/^[A-Za-z0-9\-_]*$/)],
+            pn:                   ['', [Validators.required, Validators.minLength(2)]],
+            sn:                   [''],
             descripcion:          ['', [Validators.required, Validators.minLength(3)]],
             codigoBoa:            ['BOA-H-', [Validators.required, Validators.pattern(/^[A-Za-z0-9\-]+$/)]],
             cantidad:             [1, [Validators.required, Validators.min(1), Validators.max(9999)]],

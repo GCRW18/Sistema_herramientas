@@ -58,7 +58,9 @@ export class FormRetornoComponent implements OnInit, OnDestroy {
     resultado: 'approved' | 'conditional' | 'rejected' = 'approved';
     selectedFile: File | null = null;
     selectedFileBase64: string | null = null;
-    private readonly MAX_PDF_BYTES = 5 * 1024 * 1024;
+    // 3 MB: por encima de esto el base64 (~4 MB) suele superar el límite de
+    // cuerpo del servidor y el PDF llega truncado / no se guarda.
+    private readonly MAX_PDF_BYTES = 3 * 1024 * 1024;
 
     receivedByFuncionarios: Funcionario[] = [];
     receivedByLoading = false;
@@ -234,7 +236,8 @@ export class FormRetornoComponent implements OnInit, OnDestroy {
                     await lastValueFrom(this.calibrationService.saveReturnCertificate(cal.id_calibration, this.selectedFileBase64));
                 } catch (certErr: any) {
                     console.error('Error guardando certificado:', certErr);
-                    this.showMessage('Retorno registrado, pero el certificado PDF no se pudo guardar. Adjúntelo más tarde.', 'warning');
+                    const detalle = certErr?.message ? ` (${certErr.message})` : '';
+                    this.showMessage('Retorno registrado, pero el certificado PDF NO se guardó' + detalle + '. Adjúntelo de nuevo con un PDF más liviano.', 'warning');
                     this.dialogRef.close(true);
                     return;
                 }
@@ -276,7 +279,7 @@ export class FormRetornoComponent implements OnInit, OnDestroy {
             return;
         }
         if (file.size > this.MAX_PDF_BYTES) {
-            this.showMessage('El PDF supera los 5 MB permitidos', 'warning');
+            this.showMessage('El PDF supera los 3 MB permitidos. Comprímalo o redúzcalo antes de adjuntarlo.', 'warning');
             input.value = '';
             return;
         }

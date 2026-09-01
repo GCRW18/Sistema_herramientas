@@ -156,13 +156,13 @@
             <ng-container *ngIf="activeTab() === 'baja'">
               <button (click)="abrirModalDatos()"
                       class="h-7 px-2.5 flex items-center gap-1.5 rounded-lg border border-black font-black text-[10px] uppercase shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all shrink-0"
-                      [ngClass]="isProcessValid() ? 'bg-[#FF1414] text-white' : 'bg-white/10 text-white'"
+                      [ngClass]="isProcessValid() ? 'bg-amber-400 text-black' : 'bg-white/10 text-white'"
                       [matTooltip]="isProcessValid() ? 'Proceso configurado: ' + bajaForm.value.procesadoPor : 'Configurar datos del proceso de baja (requerido para procesar)'">
-                <mat-icon class="!text-xs !w-3.5 !h-3.5 text-white">edit_document</mat-icon>
+                <mat-icon class="!text-xs !w-3.5 !h-3.5" [class.text-black]="isProcessValid()" [class.text-white]="!isProcessValid()">edit_document</mat-icon>
                 <span class="hidden sm:inline">
                   {{ isProcessValid() ? (bajaForm.value.procesadoPor | slice:0:14) : 'Datos Baja' }}
                 </span>
-                <mat-icon *ngIf="isProcessValid()" class="!text-xs !w-3.5 !h-3.5 text-white">check_circle</mat-icon>
+                <mat-icon *ngIf="isProcessValid()" class="!text-xs !w-3.5 !h-3.5 text-black">check_circle</mat-icon>
                 <mat-icon *ngIf="!isProcessValid()" class="!text-xs !w-3.5 !h-3.5 text-white">warning</mat-icon>
               </button>
               <button (click)="openHerramientaABaja()"
@@ -172,7 +172,7 @@
               </button>
               <button *appHasPermission="'cuarentena.baja'" (click)="procesarEImprimir()"
                       [disabled]="bajaItems().length === 0 || !isProcessValid()"
-                      class="h-7 px-2.5 flex items-center gap-1.5 rounded-lg bg-[#FF1414] text-white border border-black font-black text-[10px] uppercase shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all shrink-0 disabled:opacity-40 disabled:cursor-not-allowed disabled:translate-x-0 disabled:translate-y-0 disabled:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+                      class="h-7 px-2.5 flex items-center gap-1.5 rounded-lg bg-amber-400 text-black border border-black font-black text-[10px] uppercase shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all shrink-0 disabled:opacity-40 disabled:cursor-not-allowed disabled:translate-x-0 disabled:translate-y-0 disabled:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
                 <mat-icon class="!text-xs !w-3.5 !h-3.5">print</mat-icon>
                 <span class="hidden sm:inline">Procesar Baja</span>
               </button>
@@ -210,9 +210,11 @@
               <tr *ngFor="let item of cuarentenaList; let i = index"
                   (click)="abrirDetalleHerramientaCuarentena(item)"
                   title="Clic para ver detalle de la herramienta"
-                  class="border-b border-gray-200 dark:border-slate-700 transition-all hover:bg-gray-100 dark:hover:bg-slate-800/80 cursor-pointer"
+                  class="animate-fadeIn border-b border-gray-200 dark:border-slate-700 transition-all hover:bg-gray-100 dark:hover:bg-slate-800/80 cursor-pointer"
                   [ngClass]="i % 2 === 0 ? 'bg-white dark:bg-slate-800/60' : 'bg-gray-50 dark:bg-slate-800/40'">
-                <td class="px-3 py-2.5 text-center font-black text-sm text-gray-400">{{ i + 1 }}</td>
+                <td class="px-3 py-2.5 text-center">
+                  <span class="w-6 h-6 inline-flex bg-[#0F172A] dark:bg-slate-700 text-white rounded-md font-black text-[9px] items-center justify-center">{{ i + 1 }}</span>
+                </td>
                 <td class="px-3 py-2.5">
                   <span class="font-mono font-black text-black dark:text-white text-[10px] uppercase">{{ item.codigo }}</span>
                 </td>
@@ -225,14 +227,15 @@
                   <span class="bg-gray-100 dark:bg-slate-800 border-[2px] border-black text-black dark:text-white rounded px-2 py-0.5 font-black text-sm block w-fit mx-auto">{{ item.cantidad }}</span>
                 </td>
                 <td class="px-3 py-2.5 text-center">
-                  <span class="text-[10px] font-black uppercase text-black dark:text-white">
+                  <span class="inline-flex items-center text-[9px] font-black uppercase border px-1.5 py-0.5 rounded-md"
+                        [ngClass]="getEstadoFisicoColor(item.estadoFisico)">
                     {{ getEstadoFisicoLabel(item.estadoFisico) }}
                   </span>
                 </td>
                 <td class="px-3 py-2.5 text-center" (click)="$event.stopPropagation()">
                   <button (click)="removerDeLista(i)" matTooltip="Quitar de lista"
-                          class="w-7 h-7 bg-[#FF1414] text-white rounded-lg border-[2px] border-black shadow-[2px_2px_0px_0px_#000] hover:shadow-none hover:translate-x-[1px] hover:translate-y-[1px] transition-all flex items-center justify-center mx-auto">
-                    <mat-icon class="!text-sm">delete</mat-icon>
+                          class="w-7 h-7 flex items-center justify-center border border-black bg-red-100 hover:bg-red-200 rounded-md shadow-[1px_1px_0_#000] hover:shadow-none hover:translate-x-px hover:translate-y-px transition-all mx-auto">
+                    <mat-icon class="text-[#FF1414] !text-[13px]">delete</mat-icon>
                   </button>
                 </td>
               </tr>
@@ -278,9 +281,11 @@
               <tr *ngFor="let item of bajaItems(); let i = index"
                   (click)="abrirDetalleHerramientaBaja(item)"
                   title="Clic para ver detalle de la herramienta"
-                  class="border-b border-gray-200 dark:border-slate-700 transition-all hover:bg-gray-100 dark:hover:bg-slate-800/80 cursor-pointer"
+                  class="animate-fadeIn border-b border-gray-200 dark:border-slate-700 transition-all hover:bg-gray-100 dark:hover:bg-slate-800/80 cursor-pointer"
                   [ngClass]="i % 2 === 0 ? 'bg-white dark:bg-slate-800/60' : 'bg-gray-50 dark:bg-slate-800/40'">
-                <td class="px-3 py-2.5 text-center font-black text-sm text-gray-400">{{ i + 1 }}</td>
+                <td class="px-3 py-2.5 text-center">
+                  <span class="w-6 h-6 inline-flex bg-[#0F172A] dark:bg-slate-700 text-white rounded-md font-black text-[9px] items-center justify-center">{{ i + 1 }}</span>
+                </td>
                 <td class="px-3 py-2.5">
                   <span class="font-mono font-black text-black dark:text-white text-[10px] uppercase">{{ item.codigo }}</span>
                 </td>
@@ -294,12 +299,15 @@
                   <span class="bg-gray-100 dark:bg-slate-800 border-[2px] border-black text-black dark:text-white rounded px-2 py-0.5 font-black text-sm block w-fit mx-auto">{{ item.cantidad }}</span>
                 </td>
                 <td class="px-3 py-2.5 text-center">
-                  <span class="text-[10px] font-black uppercase text-black dark:text-white">{{ item.estadoFisico }}</span>
+                  <span class="inline-flex items-center text-[9px] font-black uppercase border px-1.5 py-0.5 rounded-md"
+                        [ngClass]="getEstadoFisicoColor(item.estadoFisico)">
+                    {{ item.estadoFisico }}
+                  </span>
                 </td>
                 <td class="px-3 py-2.5 text-center" (click)="$event.stopPropagation()">
                   <button (click)="removeItemBaja(i)" matTooltip="Eliminar"
-                          class="w-7 h-7 bg-[#FF1414] text-white rounded-lg border-[2px] border-black shadow-[2px_2px_0px_0px_#000] hover:shadow-none hover:translate-x-[1px] hover:translate-y-[1px] transition-all flex items-center justify-center mx-auto">
-                    <mat-icon class="!text-sm">delete</mat-icon>
+                          class="w-7 h-7 flex items-center justify-center border border-black bg-red-100 hover:bg-red-200 rounded-md shadow-[1px_1px_0_#000] hover:shadow-none hover:translate-x-px hover:translate-y-px transition-all mx-auto">
+                    <mat-icon class="text-[#FF1414] !text-[13px]">delete</mat-icon>
                   </button>
                 </td>
               </tr>
@@ -312,7 +320,7 @@
                     </div>
                     <p class="text-xs font-black uppercase text-gray-500">Sin ítems para dar de baja</p>
                     <button (click)="openHerramientaABaja()"
-                            class="h-8 px-4 rounded-xl border-[2px] border-black bg-[#FF1414] text-white font-black text-xs uppercase shadow-[2px_2px_0_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all mt-1 flex items-center gap-1.5">
+                            class="h-8 px-4 rounded-xl border-[2px] border-black bg-amber-400 text-black font-black text-xs uppercase shadow-[2px_2px_0_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all mt-1 flex items-center gap-1.5">
                       <mat-icon class="!text-sm">add_circle</mat-icon>Agregar ítem
                     </button>
                   </div>
@@ -347,7 +355,7 @@
             </thead>
             <tbody class="bg-white dark:bg-[#0F172AFF]">
               <tr *ngFor="let m of filteredHistorial; let idx = index"
-                  class="border-b border-gray-200 dark:border-slate-700 transition-all hover:bg-gray-100 dark:hover:bg-slate-800/60"
+                  class="animate-fadeIn border-b border-gray-200 dark:border-slate-700 transition-all hover:bg-gray-100 dark:hover:bg-slate-800/60"
                   [ngClass]="idx % 2 === 0 ? 'bg-white dark:bg-slate-800/60' : 'bg-gray-50 dark:bg-slate-800/40'">
                 <td class="px-3 py-2.5">
                   <span class="font-mono font-black text-xs text-black dark:text-white">{{ m.record_number || m.report_number || '---' }}</span>
@@ -364,7 +372,8 @@
                   <span class="text-xs font-bold text-black dark:text-white">{{ getHistorialFecha(m) }}</span>
                 </td>
                 <td class="px-3 py-2.5 text-center">
-                  <span class="text-[9px] font-black uppercase text-black dark:text-white">
+                  <span class="inline-flex items-center text-[9px] font-black uppercase border px-1.5 py-0.5 rounded-md"
+                        [ngClass]="m._type === 'cuarentena' ? getStatusColor(m.status) : getBajaStatusColor(m.status)">
                     {{ m._type === 'cuarentena' ? getStatusLabel(m.status) : getBajaStatusLabel(m.status) }}
                   </span>
                 </td>
@@ -425,7 +434,7 @@
     <!-- Header -->
     <div class="bg-[#0F172A] px-5 py-3.5 flex items-center gap-3 shrink-0 select-none"
          cdkDrag cdkDragRootElement=".cdk-overlay-pane" cdkDragHandle style="cursor:grab">
-      <div class="w-9 h-9 rounded bg-amber-400 border-2 border-black flex items-center justify-center shadow-[2px_2px_0_#fbbf24] shrink-0">
+      <div class="w-9 h-9 rounded-lg bg-amber-400 border-2 border-white/20 flex items-center justify-center shrink-0">
         <mat-icon class="!text-lg text-black">warning_amber</mat-icon>
       </div>
       <div>
@@ -438,7 +447,7 @@
     <div class="px-4 sm:px-5 py-4 flex flex-col custom-scrollbar-cb">
 
       <!-- Card único sin header -->
-      <div class="border-2 border-black rounded-xl overflow-hidden shadow-[3px_3px_0_#000]">
+      <div class="animate-fadeIn border-2 border-black rounded-xl overflow-hidden shadow-[3px_3px_0_#000]">
         <div class="bg-white dark:bg-slate-800 p-4 flex flex-col sm:flex-row gap-3 sm:gap-4">
 
           <form [formGroup]="reporteForm" class="contents">
@@ -559,7 +568,7 @@
         <!-- Header -->
         <div class="bg-[#0F172A] px-4 sm:px-5 py-3 flex items-center gap-3 shrink-0 select-none flex-wrap sm:flex-nowrap"
              cdkDrag cdkDragRootElement=".cdk-overlay-pane" cdkDragHandle style="cursor:grab">
-            <div class="w-8 h-8 rounded bg-amber-400 border-2 border-black flex items-center justify-center shadow-[2px_2px_0_#fbbf24] shrink-0">
+            <div class="w-8 h-8 rounded-lg bg-amber-400 border-2 border-white/20 flex items-center justify-center shrink-0">
                 <mat-icon class="!text-base text-black">warning_amber</mat-icon>
             </div>
             <div class="flex-1 min-w-0">
@@ -605,7 +614,7 @@
         </div>
 
         <!-- Body -->
-        <div class="flex-1 overflow-hidden">
+        <div class="animate-fadeIn flex-1 overflow-hidden">
             <form [formGroup]="toolCuarentenaForm" class="h-full flex flex-col sm:flex-row overflow-hidden min-h-0">
 
                 <!-- Columna izquierda -->
@@ -759,7 +768,7 @@
     <!-- Header -->
     <div class="bg-[#0F172A] px-5 py-3.5 flex items-center gap-3 shrink-0 select-none"
          cdkDrag cdkDragRootElement=".cdk-overlay-pane" cdkDragHandle style="cursor:grab">
-      <div class="w-9 h-9 rounded bg-green-500 border-2 border-black flex items-center justify-center shadow-[2px_2px_0_#16a34a] shrink-0">
+      <div class="w-9 h-9 rounded-lg bg-green-500 border-2 border-white/20 flex items-center justify-center shrink-0">
         <mat-icon class="!text-lg text-white">check_circle</mat-icon>
       </div>
       <div>
@@ -784,7 +793,7 @@
     <div class="px-5 py-4 flex flex-col gap-3">
       <form [formGroup]="resolverForm" class="flex flex-col gap-3">
 
-        <div class="border-2 border-black rounded-xl overflow-hidden shadow-[3px_3px_0_#000]">
+        <div class="animate-fadeIn border-2 border-black rounded-xl overflow-hidden shadow-[3px_3px_0_#000]">
           <div class="bg-white dark:bg-slate-800 p-4 flex flex-col gap-3">
 
             <!-- Resuelto por -->
@@ -894,7 +903,7 @@
         <!-- Header -->
         <div class="bg-[#0F172A] px-4 py-2.5 flex items-center gap-2.5 shrink-0 select-none"
              cdkDrag cdkDragRootElement=".cdk-overlay-pane" cdkDragHandle style="cursor:grab">
-            <div class="w-8 h-8 rounded bg-amber-400 border-2 border-black flex items-center justify-center shadow-[2px_2px_0_#fbbf24] shrink-0">
+            <div class="w-8 h-8 rounded-lg bg-amber-400 border-2 border-white/20 flex items-center justify-center shrink-0">
                 <mat-icon class="!text-base text-black">edit_document</mat-icon>
             </div>
             <div>
@@ -907,7 +916,7 @@
         <div class="px-3 sm:px-4 py-3 flex flex-col gap-2 custom-scrollbar-cb overflow-y-auto max-h-[78vh]">
             <form [formGroup]="bajaForm" class="flex flex-col gap-2">
 
-                <div class="border-2 border-black rounded-xl overflow-hidden shadow-[3px_3px_0_#000]">
+                <div class="animate-fadeIn border-2 border-black rounded-xl overflow-hidden shadow-[3px_3px_0_#000]">
                     <div class="bg-white dark:bg-slate-800 p-3 flex flex-col gap-2">
 
                         <!-- Fila 1: Procesado Por | Verificado Por | Autorizado Por -->
@@ -1077,7 +1086,7 @@
     <!-- Header -->
     <div class="bg-[#0F172A] px-5 py-3.5 flex items-center gap-3 shrink-0 select-none"
          cdkDrag cdkDragRootElement=".cdk-overlay-pane" cdkDragHandle style="cursor:grab">
-      <div class="w-9 h-9 rounded bg-orange-500 border-2 border-black flex items-center justify-center shadow-[2px_2px_0_#f97316] shrink-0">
+      <div class="w-9 h-9 rounded-lg bg-orange-500 border-2 border-white/20 flex items-center justify-center shrink-0">
         <mat-icon class="!text-lg text-white">undo</mat-icon>
       </div>
       <div>
@@ -1116,7 +1125,7 @@
     <div class="px-5 py-4 flex flex-col gap-3">
       <form [formGroup]="anularBajaForm" class="flex flex-col gap-3">
 
-        <div class="border-2 border-black rounded-xl overflow-hidden shadow-[3px_3px_0_#000]">
+        <div class="animate-fadeIn border-2 border-black rounded-xl overflow-hidden shadow-[3px_3px_0_#000]">
           <div class="bg-white dark:bg-slate-800 p-4 flex flex-col gap-3">
 
             <!-- Motivo de anulación -->

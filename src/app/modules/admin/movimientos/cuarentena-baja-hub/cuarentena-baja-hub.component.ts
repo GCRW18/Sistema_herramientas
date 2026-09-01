@@ -499,6 +499,16 @@ export class CuarentenaBajaHubComponent implements OnInit, OnDestroy {
         return this.estadosFisicos.find(e => e.value === val)?.label || val;
     }
 
+    getEstadoFisicoColor(val: string): string {
+        const colors: Record<string, string> = {
+            BUENO:      'bg-green-100 text-green-800 border-green-400',
+            REGULAR:    'bg-amber-100 text-amber-800 border-amber-400',
+            MALO:       'bg-orange-100 text-orange-800 border-orange-400',
+            INSERVIBLE: 'bg-red-100 text-red-800 border-red-400'
+        };
+        return colors[val] || 'bg-stone-100 text-stone-600 border-stone-300';
+    }
+
     submitQuarantine(): void {
         if (!this.isReporteValido() || this.cuarentenaList.length === 0) return;
         this.isSavingCuarentena = true;
@@ -542,7 +552,7 @@ export class CuarentenaBajaHubComponent implements OnInit, OnDestroy {
                 this.reporteForm.reset({ fecha: this._today(), nroReporteDiscrepancia: '' });
                 this.historialItems = [];
             },
-            error: () => this._showMsg('Error al procesar la cuarentena.', 'error')
+            error: (err: any) => this._showMsg(err?.message || 'Error al procesar la cuarentena.', 'error')
         });
     }
 
@@ -893,8 +903,11 @@ export class CuarentenaBajaHubComponent implements OnInit, OnDestroy {
         const nro    = m.record_number || m.report_number || '---';
         const fecha  = m.start_date || m.request_date || (m.fecha_reg ? String(m.fecha_reg).slice(0,10) : '') || '---';
         const resp   = m.reported_by_name || m.requested_by_name || '---';
+        // Cuarentena guarda siempre reason='other' (motivo real es texto libre, no coincide
+        // con el enum del CHECK); el motivo real vive en reason_description, no en reason —
+        // buscar la label por m.reason siempre resolvía a "OTRO".
         const motivo = isCuarentena
-            ? (this.motivosCuarentena.find(x => x.value === m.reason)?.label || m.reason || '---')
+            ? (m.reason_description || m.reason || '---')
             : (m.reason || '---');
         const desc   = m.reason_description || m.notes || '---';
         const codigo = m.tool?.code || m.tool_code || m.code || '---';
@@ -1007,6 +1020,16 @@ export class CuarentenaBajaHubComponent implements OnInit, OnDestroy {
         return labels[status] || (status || 'ACTIVO').toUpperCase();
     }
 
+    getStatusColor(status: string): string {
+        const colors: Record<string, string> = {
+            active:    'bg-amber-100 text-amber-800 border-amber-400',
+            resolved:  'bg-green-100 text-green-800 border-green-400',
+            cancelled: 'bg-stone-100 text-stone-600 border-stone-300',
+            pending:   'bg-stone-100 text-stone-600 border-stone-300'
+        };
+        return colors[status] || 'bg-amber-100 text-amber-800 border-amber-400';
+    }
+
     abrirModalResolver(item: any): void {
         this.quarantenaSeleccionada = item;
         this.resolverForm.reset({
@@ -1082,6 +1105,17 @@ export class CuarentenaBajaHubComponent implements OnInit, OnDestroy {
         this.anularBajaForm = this.fb.group({
             motivoAnulacion: ['', Validators.required]
         });
+    }
+
+    getBajaStatusColor(status: string): string {
+        const colors: Record<string, string> = {
+            requested: 'bg-amber-100 text-amber-800 border-amber-400',
+            approved:  'bg-blue-100 text-blue-800 border-blue-400',
+            rejected:  'bg-red-100 text-red-800 border-red-400',
+            executed:  'bg-stone-200 text-stone-700 border-stone-400',
+            cancelled: 'bg-stone-100 text-stone-600 border-stone-300'
+        };
+        return colors[status] || 'bg-amber-100 text-amber-800 border-amber-400';
     }
 
     getBajaStatusLabel(status: string): string {

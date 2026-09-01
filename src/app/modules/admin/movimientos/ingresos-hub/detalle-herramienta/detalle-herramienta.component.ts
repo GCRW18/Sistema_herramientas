@@ -242,6 +242,25 @@ export class DetalleHerramientaComponent implements OnInit, OnDestroy {
         return 'bg-stone-100 dark:bg-slate-700 text-black dark:text-white';
     }
 
+    /** Traduce el status crudo de he.ttools (inglés/español mezclado: available, in_use,
+     *  in_calibration, quarantine, decommissioned, lost, DISPONIBLE, CUARENTENA, BAJA,
+     *  CALIBRACION) a una de las opciones de `estados` (condición del ajuste). Sin esto,
+     *  seleccionarHerramienta() comparaba el status crudo contra los values de `estados`
+     *  (SERVICEABLE/UNSERVICEABLE/...) que nunca matchean, y el campo caía siempre al
+     *  default 'SERVICEABLE' sin reflejar el estado real de la herramienta. */
+    private _estadoAjusteDesdeStatus(raw: string | null | undefined): string {
+        const map: Record<string, string> = {
+            available: 'SERVICEABLE', DISPONIBLE: 'SERVICEABLE',
+            in_use: 'SERVICEABLE',
+            in_calibration: 'EN_CALIBRACION', CALIBRACION: 'EN_CALIBRACION',
+            in_maintenance: 'REPARACION',
+            quarantine: 'UNSERVICEABLE', CUARENTENA: 'UNSERVICEABLE',
+            decommissioned: 'UNSERVICEABLE', BAJA: 'UNSERVICEABLE',
+            lost: 'UNSERVICEABLE',
+        };
+        return (raw && map[raw]) || 'SERVICEABLE';
+    }
+
     seleccionarHerramienta(tool: HerramientaOption): void {
         this.buscarValue      = `${tool.codigo} · ${tool.nombre}`;
         this.showToolDropdown = false;
@@ -253,7 +272,7 @@ export class DetalleHerramientaComponent implements OnInit, OnDestroy {
             nombre: tool.nombre,
             marca:  tool.marca,
             tipo:   this.tiposHerramienta.some(t => t.value === tool.tipo) ? tool.tipo : 'HERRAMIENTA',
-            estado: this.estados.some(e => e.value === tool.estado) ? tool.estado : 'SERVICEABLE',
+            estado: this._estadoAjusteDesdeStatus(tool.estado),
             um:     this.unidades.some(u => u.value === tool.um)    ? tool.um     : 'UNIDAD',
             observaciones: tool.observaciones || '',
         });

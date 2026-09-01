@@ -151,13 +151,13 @@
 
 <ng-template #formDialogTemplate>
     <div class="bg-stone-100 dark:bg-slate-900 border-2 border-black overflow-hidden flex flex-col relative"
-         style="width:660px; max-width:95vw; max-height:90vh">
+         style="width:600px; max-width:95vw; max-height:90vh">
 
         <!-- Header -->
-        <div class="bg-[#0F172A] px-5 py-3.5 flex items-center gap-3 shrink-0 select-none"
+        <div class="bg-[#0F172A] px-4 py-2.5 flex items-center gap-2 shrink-0 select-none"
              cdkDrag cdkDragRootElement=".cdk-overlay-pane" cdkDragHandle style="cursor:grab">
-            <div class="w-9 h-9 rounded bg-amber-400 border-2 border-black flex items-center justify-center shadow-[2px_2px_0_#fbbf24] shrink-0">
-                <mat-icon class="!text-lg text-black">edit_note</mat-icon>
+            <div class="w-8 h-8 rounded bg-amber-400 border-2 border-black flex items-center justify-center shadow-[2px_2px_0_#fbbf24] shrink-0">
+                <mat-icon class="!text-base text-black">edit_note</mat-icon>
             </div>
             <div>
                 <p class="text-[9px] text-slate-400 font-bold uppercase tracking-[0.18em] leading-none mb-0.5">Calibraciones Históricas</p>
@@ -166,9 +166,9 @@
         </div>
 
         <!-- Context bar (visible al seleccionar herramienta) -->
-        <div *ngIf="selectedTool" class="border-b-2 border-black bg-white dark:bg-slate-800 px-5 py-3 flex items-center gap-3 shrink-0">
-            <div class="w-9 h-9 rounded-xl border-2 border-stone-200 dark:border-slate-700 bg-stone-50 dark:bg-slate-700 flex items-center justify-center shrink-0">
-                <mat-icon class="!text-base text-stone-400 dark:text-slate-400">handyman</mat-icon>
+        <div *ngIf="selectedTool" class="border-b-2 border-black bg-white dark:bg-slate-800 px-4 py-2 flex items-center gap-2 shrink-0">
+            <div class="w-8 h-8 rounded-xl border-2 border-stone-200 dark:border-slate-700 bg-stone-50 dark:bg-slate-700 flex items-center justify-center shrink-0">
+                <mat-icon class="!text-sm text-stone-400 dark:text-slate-400">handyman</mat-icon>
             </div>
             <div class="flex-1 min-w-0">
                 <p class="text-[8px] text-stone-400 dark:text-slate-400 font-black uppercase tracking-widest leading-none mb-0.5">Herramienta seleccionada</p>
@@ -180,22 +180,22 @@
         </div>
 
         <!-- Body -->
-        <div class="flex-1 overflow-y-auto px-5 py-5 flex flex-col gap-5 custom-scrollbar">
+        <div class="flex-1 overflow-y-auto px-4 py-3 flex flex-col gap-2 custom-scrollbar">
 
             <!-- Sección 1: Herramienta -->
-            <div class="flex flex-col gap-3">
-                <p class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 flex items-center gap-1.5 border-b border-stone-200 dark:border-slate-700 pb-2">
+            <div class="flex flex-col gap-2">
+                <p class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 flex items-center gap-1.5 border-b border-stone-200 dark:border-slate-700 pb-1.5">
                     <mat-icon class="!text-sm">handyman</mat-icon> 1. Herramienta
                 </p>
 
                 <div class="relative">
-                    <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1.5 flex justify-between items-center">
+                    <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1 flex justify-between items-center">
                         <span>Buscar Herramienta *</span>
                         <mat-spinner *ngIf="toolSearchLoading" diameter="10"></mat-spinner>
                     </label>
                     <input type="text" [(ngModel)]="toolSearch" (ngModelChange)="onToolInput($event)" (blur)="hideToolDropdown()"
                            placeholder="Código, Nombre o P/N..."
-                           class="w-full h-10 text-sm font-bold bg-white dark:bg-slate-800 dark:text-white border-2 rounded-xl px-3 outline-none transition-all duration-150 placeholder:text-stone-300 dark:placeholder:text-slate-600 uppercase"
+                           class="w-full h-8 text-xs font-bold bg-white dark:bg-slate-800 dark:text-white border-2 rounded-xl px-3 outline-none transition-all duration-150 placeholder:text-stone-300 dark:placeholder:text-slate-600 uppercase"
                            [class]="showToolError()
                                ? 'border-red-400 focus:shadow-[2px_2px_0_#f87171]'
                                : 'border-stone-300 dark:border-slate-600 hover:border-stone-400 dark:hover:border-slate-500 focus:border-black dark:focus:border-slate-400 focus:shadow-[3px_3px_0_#000]'" />
@@ -212,39 +212,39 @@
 
                 <div class="grid grid-cols-1 sm:grid-cols-4 gap-2">
                     <div class="col-span-1">
-                        <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1.5 block">Código</label>
+                        <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1 block">Código</label>
                         <input type="text" [value]="selectedTool?.tool_code || ''" readonly
-                               class="w-full h-10 text-sm font-bold bg-stone-200 dark:bg-slate-700 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-xl px-3 outline-none cursor-not-allowed uppercase" />
+                               class="w-full h-8 text-xs font-bold bg-stone-200 dark:bg-slate-700 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-xl px-3 outline-none cursor-not-allowed uppercase" />
                     </div>
                     <div class="col-span-3">
-                        <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1.5 block">Nombre / Descripción</label>
+                        <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1 block">Nombre / Descripción</label>
                         <input type="text" [value]="selectedTool?.tool_name || ''" readonly
-                               class="w-full h-10 text-sm font-bold bg-stone-200 dark:bg-slate-700 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-xl px-3 outline-none cursor-not-allowed uppercase truncate" />
+                               class="w-full h-8 text-xs font-bold bg-stone-200 dark:bg-slate-700 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-xl px-3 outline-none cursor-not-allowed uppercase truncate" />
                     </div>
                 </div>
             </div>
 
             <!-- Sección 2: Datos del Certificado -->
-            <div class="flex flex-col gap-3">
-                <p class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 flex items-center gap-1.5 border-b border-stone-200 dark:border-slate-700 pb-2">
+            <div class="flex flex-col gap-2">
+                <p class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 flex items-center gap-1.5 border-b border-stone-200 dark:border-slate-700 pb-1.5">
                     <mat-icon class="!text-sm">description</mat-icon> 2. Datos del Certificado
                 </p>
 
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
                     <div>
-                        <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1.5 block">N° Certificado *</label>
+                        <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1 block">N° Certificado *</label>
                         <input type="text" [(ngModel)]="certificateNumber" (ngModelChange)="showCertError.set(false)"
                                placeholder="Ej: CERT-123"
-                               class="w-full h-10 text-sm font-bold bg-white dark:bg-slate-800 dark:text-white border-2 rounded-xl px-3 outline-none transition-all duration-150 placeholder:text-stone-300 dark:placeholder:text-slate-600 uppercase"
+                               class="w-full h-8 text-xs font-bold bg-white dark:bg-slate-800 dark:text-white border-2 rounded-xl px-3 outline-none transition-all duration-150 placeholder:text-stone-300 dark:placeholder:text-slate-600 uppercase"
                                [class]="showCertError()
                                    ? 'border-red-400 focus:shadow-[2px_2px_0_#f87171]'
                                    : 'border-stone-300 dark:border-slate-600 hover:border-stone-400 dark:hover:border-slate-500 focus:border-black dark:focus:border-slate-400 focus:shadow-[3px_3px_0_#000]'" />
                         <p *ngIf="showCertError()" class="text-[8px] font-bold text-red-500 mt-1">Número requerido.</p>
                     </div>
                     <div>
-                        <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1.5 block">Resultado *</label>
+                        <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1 block">Resultado *</label>
                         <select [(ngModel)]="result"
-                                class="w-full h-10 text-sm font-bold bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-xl px-3 outline-none transition-all duration-150 hover:border-stone-400 dark:hover:border-slate-500 focus:border-black dark:focus:border-slate-400 focus:shadow-[3px_3px_0_#000]">
+                                class="w-full h-8 text-xs font-bold bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-xl px-3 outline-none transition-all duration-150 hover:border-stone-400 dark:hover:border-slate-500 focus:border-black dark:focus:border-slate-400 focus:shadow-[3px_3px_0_#000]">
                             <option value="approved">Aprobado</option>
                             <option value="conditional">Condicional</option>
                             <option value="rejected">Rechazado</option>
@@ -252,65 +252,65 @@
                     </div>
                 </div>
 
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
                     <div>
-                        <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1.5 block">Fecha Calibración *</label>
+                        <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1 block">Fecha Calibración *</label>
                         <input type="date" [(ngModel)]="calibrationDateStr"
                                (ngModelChange)="autoCalcNextDate(); showDateError.set(false)"
                                [max]="todayStr"
-                               class="w-full h-10 text-sm font-bold bg-white dark:bg-slate-800 dark:text-white border-2 rounded-xl px-3 outline-none transition-all duration-150"
+                               class="w-full h-8 text-xs font-bold bg-white dark:bg-slate-800 dark:text-white border-2 rounded-xl px-3 outline-none transition-all duration-150"
                                [class]="showDateError()
                                    ? 'border-red-400 focus:shadow-[2px_2px_0_#f87171]'
                                    : 'border-stone-300 dark:border-slate-600 hover:border-stone-400 dark:hover:border-slate-500 focus:border-black dark:focus:border-slate-400 focus:shadow-[3px_3px_0_#000]'" />
                         <p *ngIf="showDateError()" class="text-[8px] font-bold text-red-500 mt-1">Fecha requerida.</p>
                     </div>
                     <div>
-                        <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1.5 block">Próxima Calibración</label>
+                        <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1 block">Próxima Calibración</label>
                         <input type="date" [(ngModel)]="nextCalibrationDate"
-                               class="w-full h-10 text-sm font-bold bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-xl px-3 outline-none transition-all duration-150 hover:border-stone-400 dark:hover:border-slate-500 focus:border-black dark:focus:border-slate-400 focus:shadow-[3px_3px_0_#000]" />
+                               class="w-full h-8 text-xs font-bold bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-xl px-3 outline-none transition-all duration-150 hover:border-stone-400 dark:hover:border-slate-500 focus:border-black dark:focus:border-slate-400 focus:shadow-[3px_3px_0_#000]" />
                     </div>
                 </div>
             </div>
 
             <!-- Sección 3: Laboratorio -->
-            <div class="flex flex-col gap-3">
-                <p class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 flex items-center gap-1.5 border-b border-stone-200 dark:border-slate-700 pb-2">
+            <div class="flex flex-col gap-2">
+                <p class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 flex items-center gap-1.5 border-b border-stone-200 dark:border-slate-700 pb-1.5">
                     <mat-icon class="!text-sm">science</mat-icon> 3. Laboratorio
                 </p>
 
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
                     <div>
-                        <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1.5 block">Laboratorio Sistema</label>
+                        <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1 block">Laboratorio Sistema</label>
                         <select [(ngModel)]="labId" (ngModelChange)="onLabChange()"
-                                class="w-full h-10 text-sm font-bold bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-xl px-3 outline-none transition-all duration-150 hover:border-stone-400 dark:hover:border-slate-500 focus:border-black dark:focus:border-slate-400 focus:shadow-[3px_3px_0_#000]">
+                                class="w-full h-8 text-xs font-bold bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-xl px-3 outline-none transition-all duration-150 hover:border-stone-400 dark:hover:border-slate-500 focus:border-black dark:focus:border-slate-400 focus:shadow-[3px_3px_0_#000]">
                             <option [ngValue]="null">— Ingreso Manual —</option>
                             <option *ngFor="let lab of laboratories" [ngValue]="lab.id_laboratory">{{ lab.name }}</option>
                         </select>
                     </div>
                     <div>
-                        <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1.5 block">Nombre (Manual)</label>
+                        <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1 block">Nombre (Manual)</label>
                         <input type="text" [(ngModel)]="labNameOverride" [disabled]="!!labId"
                                placeholder="Si no está en lista..."
-                               class="w-full h-10 text-sm font-bold bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-xl px-3 outline-none transition-all duration-150 placeholder:text-stone-300 dark:placeholder:text-slate-600 uppercase hover:border-stone-400 dark:hover:border-slate-500 focus:border-black dark:focus:border-slate-400 focus:shadow-[3px_3px_0_#000] disabled:bg-stone-200 disabled:dark:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-60" />
+                               class="w-full h-8 text-xs font-bold bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-xl px-3 outline-none transition-all duration-150 placeholder:text-stone-300 dark:placeholder:text-slate-600 uppercase hover:border-stone-400 dark:hover:border-slate-500 focus:border-black dark:focus:border-slate-400 focus:shadow-[3px_3px_0_#000] disabled:bg-stone-200 disabled:dark:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-60" />
                     </div>
                 </div>
             </div>
 
             <!-- PDF Opcional -->
             <div class="flex flex-col gap-2">
-                <p class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 flex items-center gap-1.5 border-b border-stone-200 dark:border-slate-700 pb-2">
+                <p class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 flex items-center gap-1.5 border-b border-stone-200 dark:border-slate-700 pb-1.5">
                     <mat-icon class="!text-sm">attach_file</mat-icon> Archivo PDF <span class="normal-case font-medium ml-1">(Opcional)</span>
                 </p>
 
                 <div *ngIf="!selectedFile"
                      (click)="fileInput.click()"
-                     class="w-full h-20 border-2 border-dashed border-stone-300 dark:border-slate-600 rounded-xl flex flex-col items-center justify-center gap-1.5 cursor-pointer transition-all duration-150 hover:border-stone-400 dark:hover:border-slate-500 hover:bg-white dark:hover:bg-slate-800">
-                    <mat-icon class="!text-2xl text-stone-300 dark:text-slate-500">upload_file</mat-icon>
+                     class="w-full h-14 border-2 border-dashed border-stone-300 dark:border-slate-600 rounded-xl flex flex-col items-center justify-center gap-1.5 cursor-pointer transition-all duration-150 hover:border-stone-400 dark:hover:border-slate-500 hover:bg-white dark:hover:bg-slate-800">
+                    <mat-icon class="!text-xl text-stone-300 dark:text-slate-500">upload_file</mat-icon>
                     <span class="text-[8px] font-black uppercase text-stone-400 dark:text-slate-500">Click para adjuntar PDF</span>
                 </div>
 
                 <div *ngIf="selectedFile"
-                     class="w-full border-2 border-black bg-white dark:bg-slate-800 rounded-xl px-4 py-3 flex items-center gap-3 shadow-[2px_2px_0_#000]">
+                     class="w-full border-2 border-black bg-white dark:bg-slate-800 rounded-xl px-4 py-3 flex items-center gap-2 shadow-[2px_2px_0_#000]">
                     <mat-icon class="!text-xl text-red-500 shrink-0">picture_as_pdf</mat-icon>
                     <span class="flex-1 text-xs font-bold text-black dark:text-white truncate">{{ selectedFile.name }}</span>
                     <button type="button" (click)="removeFile()"
@@ -324,13 +324,13 @@
         </div>
 
         <!-- Footer -->
-        <div class="border-t-2 border-black bg-stone-200 dark:bg-slate-800 px-5 py-3 flex justify-between items-center shrink-0">
+        <div class="border-t-2 border-black bg-stone-200 dark:bg-slate-800 px-4 py-2 flex justify-between items-center shrink-0">
             <button type="button" (click)="closeDialog()"
-                    class="px-4 py-2 bg-[#FF1414] text-white font-black text-[10px] border-2 border-black rounded-xl shadow-[2px_2px_0_#000] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all uppercase">
+                    class="px-3 py-1.5 bg-[#FF1414] text-white font-black text-[10px] border-2 border-black rounded-xl shadow-[2px_2px_0_#000] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all uppercase">
                 Cancelar
             </button>
             <button type="button" (click)="save()" [disabled]="!canSubmit()"
-                    class="flex items-center gap-2 px-5 py-2 bg-amber-400 text-black font-black text-[10px] border-2 border-black rounded-xl shadow-[3px_3px_0_#000] hover:shadow-none hover:translate-x-[3px] hover:translate-y-[3px] transition-all uppercase disabled:opacity-50 disabled:cursor-not-allowed">
+                    class="flex items-center gap-2 px-4 py-1.5 bg-amber-400 text-black font-black text-[10px] border-2 border-black rounded-xl shadow-[3px_3px_0_#000] hover:shadow-none hover:translate-x-[3px] hover:translate-y-[3px] transition-all uppercase disabled:opacity-50 disabled:cursor-not-allowed">
                 <mat-icon class="!text-sm">save</mat-icon>
                 {{ isProcessing() ? 'Guardando...' : 'Guardar Registro' }}
             </button>
@@ -340,7 +340,7 @@
         <div *ngIf="showConfirm()" class="absolute inset-0 bg-black/80 backdrop-blur-sm z-[9999] flex flex-col items-center justify-center p-4">
             <div class="bg-stone-100 dark:bg-slate-800 border-2 border-black overflow-hidden w-full max-w-sm"
                  style="box-shadow: 6px 6px 0 #fbbf24">
-                <div class="bg-[#0F172A] px-5 py-3.5 flex items-center gap-3 border-b-2 border-black">
+                <div class="bg-[#0F172A] px-5 py-2.5 flex items-center gap-2 border-b-2 border-black">
                     <div class="w-8 h-8 rounded bg-amber-400 border-2 border-black flex items-center justify-center shrink-0">
                         <mat-icon class="!text-base text-black">help_center</mat-icon>
                     </div>
@@ -350,7 +350,7 @@
                     <p class="text-[10px] font-bold text-center text-stone-600 dark:text-slate-300 mb-4 uppercase">
                         Está a punto de guardar este registro histórico. ¿Desea proceder?
                     </p>
-                    <div class="flex gap-3">
+                    <div class="flex gap-2">
                         <button type="button" (click)="cancelConfirm()"
                                 class="flex-1 px-3 py-2 text-[10px] font-black uppercase border-2 border-black rounded-xl bg-white dark:bg-slate-700 dark:text-white shadow-[2px_2px_0_#000] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all">
                             Cancelar

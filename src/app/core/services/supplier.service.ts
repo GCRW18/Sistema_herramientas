@@ -24,8 +24,11 @@ export class SupplierService {
     createSupplier(supplier: Partial<any>): Observable<any> {
         return from(this._api.post('herramientas/suppliers/insertarSuppliers', supplier)).pipe(
             switchMap((response: any) => {
-                const newSupplier = response?.datos || response?.data || supplier;
-                return of(newSupplier);
+                const root = response?.ROOT || response;
+                if (root?.error === true || root?.error === 'true') {
+                    throw new Error(root?.detalle?.mensaje || root?.mensaje || 'Error al registrar proveedor');
+                }
+                return of(root?.datos || root?.data || supplier);
             })
         );
     }
@@ -36,8 +39,11 @@ export class SupplierService {
             id_supplier: id
         })).pipe(
             switchMap((response: any) => {
-                const updatedSupplier = response?.datos || response?.data || supplier;
-                return of(updatedSupplier);
+                const root = response?.ROOT || response;
+                if (root?.error === true || root?.error === 'true') {
+                    throw new Error(root?.detalle?.mensaje || root?.mensaje || 'Error al actualizar proveedor');
+                }
+                return of(root?.datos || root?.data || supplier);
             })
         );
     }

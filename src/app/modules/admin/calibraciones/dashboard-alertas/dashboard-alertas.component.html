@@ -55,6 +55,22 @@
                     <mat-icon class="!text-base">print</mat-icon>
                     <span class="hidden sm:inline">IMPRIMIR</span>
                 </button>
+
+                <!-- MGH-104 · Próximas a vencer (días de holgura) -->
+                <button (click)="printVencerHolgura()" [disabled]="isLoading"
+                        matTooltip="Reporte de próximas a vencer — días de holgura (MGH-104)"
+                        class="h-9 px-3 flex items-center gap-2 bg-white dark:bg-slate-800 text-black dark:text-white border-[2px] border-black rounded-xl font-black text-xs uppercase shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] active:translate-y-[1px] active:shadow-none transition-all disabled:opacity-40 hover:bg-gray-50 dark:hover:bg-slate-700">
+                    <mat-icon class="!text-base">event_busy</mat-icon>
+                    <span class="hidden sm:inline">MGH-104</span>
+                </button>
+
+                <!-- MGH-123 · Reporte mensual próximas a vencer -->
+                <button (click)="printVencerMensual()" [disabled]="isLoading"
+                        matTooltip="Reporte mensual de próximas a vencer (MGH-123)"
+                        class="h-9 px-3 flex items-center gap-2 bg-white dark:bg-slate-800 text-black dark:text-white border-[2px] border-black rounded-xl font-black text-xs uppercase shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] active:translate-y-[1px] active:shadow-none transition-all disabled:opacity-40 hover:bg-gray-50 dark:hover:bg-slate-700">
+                    <mat-icon class="!text-base">calendar_month</mat-icon>
+                    <span class="hidden sm:inline">MGH-123</span>
+                </button>
             </div>
         </div>
 

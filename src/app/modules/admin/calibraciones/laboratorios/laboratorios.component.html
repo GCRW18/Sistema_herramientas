@@ -39,18 +39,20 @@
                     <mat-icon class="absolute left-2.5 top-1.5 text-gray-400 !text-lg">search</mat-icon>
                 </div>
 
-                <select [formControl]="filterTipoServicio"
+                <select [formControl]="filterPrincipal"
                         class="h-9 px-3 bg-white dark:bg-[#0F172AFF] text-black dark:text-white
                                border-[2px] border-black rounded-xl font-bold text-sm
                                focus:outline-none focus:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-all">
-                    <option *ngFor="let t of tiposServicio" [value]="t.value">{{ t.label }}</option>
-                </select>
-
-                <select [formControl]="filterEstado"
-                        class="h-9 px-3 bg-white dark:bg-[#0F172AFF] text-black dark:text-white
-                               border-[2px] border-black rounded-xl font-bold text-sm
-                               focus:outline-none focus:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-all">
-                    <option *ngFor="let e of estadosFiltro" [value]="e.value">{{ e.label }}</option>
+                    <option value="">Todas</option>
+                    <optgroup label="Tipo de servicio">
+                        <option value="tipo:calibracion">Calibración</option>
+                        <option value="tipo:mantenimiento">Mantenimiento</option>
+                        <option value="tipo:ambos">Ambos</option>
+                    </optgroup>
+                    <optgroup label="Estado">
+                        <option value="estado:true">Activos</option>
+                        <option value="estado:false">Inactivos</option>
+                    </optgroup>
                 </select>
 
                 <button *appHasPermission="'cal_labs.create'" (click)="nuevoLaboratorio()"
@@ -199,12 +201,12 @@
                         <td colspan="7" class="p-10 text-center bg-white dark:bg-[#0F172AFF]">
                             <mat-icon class="!text-5xl text-gray-300 dark:text-gray-600 mb-2">business</mat-icon>
                             <p class="text-gray-500 dark:text-gray-400 font-bold">
-                                {{ searchControl.value || filterTipoServicio.value || filterEstado.value
+                                {{ searchControl.value || filterPrincipal.value
                                 ? 'No se encontraron empresas con esos criterios'
                                 : 'No hay empresas registradas' }}
                             </p>
                             <ng-container *appHasPermission="'cal_labs.create'">
-                                <button *ngIf="!searchControl.value && !filterTipoServicio.value && !filterEstado.value"
+                                <button *ngIf="!searchControl.value && !filterPrincipal.value"
                                         (click)="nuevoLaboratorio()"
                                         class="mt-4 px-4 py-2 bg-[#0F172AFF] text-white font-black text-sm
                                                    border-[2px] border-black rounded-full

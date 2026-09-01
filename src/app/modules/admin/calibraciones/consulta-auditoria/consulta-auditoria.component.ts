@@ -323,6 +323,25 @@ export class ConsultaAuditoriaComponent implements OnInit, OnDestroy {
         setTimeout(() => this.isLoading.set(false), 1000);
     }
 
+    // MGH-111 — Herramientas y Equipos Enviados a Calibración (PDF real vía backend).
+    printEnviadasCalibracion(): void {
+        this.isLoading.set(true);
+        this.calibrationService.generarPdfEnviadasCalibracionForm().pipe(
+            takeUntil(this._destroy$),
+        ).subscribe({
+            next: (result) => {
+                this.isLoading.set(false);
+                this.calibrationService.abrirPdf(result.pdf_base64, result.nombre_archivo);
+            },
+            error: (error) => {
+                this.isLoading.set(false);
+                console.error('Error al generar MGH-111:', error);
+                this.snackBar.open('Error al generar el reporte de enviadas a calibración', 'Cerrar',
+                    { duration: 4000, panelClass: ['snackbar-error'] });
+            },
+        });
+    }
+
     imprimirReporte(): void {
         const win = window.open('', '_blank');
         if (!win) return;

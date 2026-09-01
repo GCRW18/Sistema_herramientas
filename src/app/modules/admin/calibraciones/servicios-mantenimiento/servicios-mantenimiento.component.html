@@ -70,6 +70,17 @@
                     <span class="hidden sm:inline">Reporte</span>
                 </button>
 
+                <!-- MGH-125 · Gatas hidráulicas -->
+                <button (click)="printGatasHidraulicas()"
+                        matTooltip="Listado de gatas hidráulicas (MGH-125)"
+                        class="h-9 px-4 flex items-center gap-2 bg-white dark:bg-slate-800 text-black dark:text-white
+                               border-[2px] border-black rounded-xl font-black text-xs uppercase
+                               shadow-[3px_3px_0px_0px_#000] active:translate-y-[1px] active:shadow-none
+                               transition-all hover:bg-gray-50 dark:hover:bg-slate-700">
+                    <mat-icon class="!text-base">construction</mat-icon>
+                    <span class="hidden sm:inline">Gatas</span>
+                </button>
+
                 <!-- Nuevo Envío -->
                 <button *appHasPermission="'mantenimiento.create'" (click)="nuevoLote()"
                         matTooltip="Enviar herramientas a mantenimiento"

@@ -57,27 +57,15 @@ export class LaboratoriosComponent implements OnInit, OnDestroy {
     private calibrationService = inject(CalibrationService);
     private _destroy$ = new Subject<void>();
 
-    // Form Controls para búsqueda y filtros
+    // Form Controls para búsqueda y filtros. Tipo de servicio y estado
+    // (activo/inactivo) se combinan en un solo <select> con optgroups:
+    // ''  → todas | 'tipo:<x>' → por tipo de servicio | 'estado:true|false' → por estado
     searchControl = new FormControl('');
-    filterTipoServicio = new FormControl('');
-    filterEstado = new FormControl('');
+    filterPrincipal = new FormControl('');
 
     isLoading = signal(false);
     laboratorios: Laboratory[] = [];
     filteredLaboratorios: Laboratory[] = [];
-
-    tiposServicio = [
-        { value: '', label: 'Todos' },
-        { value: 'calibracion', label: 'Calibración' },
-        { value: 'mantenimiento', label: 'Mantenimiento' },
-        { value: 'ambos', label: 'Ambos' },
-    ];
-
-    estadosFiltro = [
-        { value: '', label: 'Todos' },
-        { value: 'true', label: 'Activos' },
-        { value: 'false', label: 'Inactivos' },
-    ];
 
     ngOnInit(): void {
         this.loadLaboratorios();
@@ -133,8 +121,7 @@ export class LaboratoriosComponent implements OnInit, OnDestroy {
     setupFilters(): void {
         combineLatest([
             this.searchControl.valueChanges.pipe(startWith('')),
-            this.filterTipoServicio.valueChanges.pipe(startWith('')),
-            this.filterEstado.valueChanges.pipe(startWith('')),
+            this.filterPrincipal.valueChanges.pipe(startWith('')),
         ]).pipe(
             debounceTime(300),
             takeUntil(this._destroy$),
@@ -154,15 +141,13 @@ export class LaboratoriosComponent implements OnInit, OnDestroy {
             );
         }
 
-        const tipo = this.filterTipoServicio.value;
-        if (tipo) {
+        const f = this.filterPrincipal.value ?? '';
+        if (f.startsWith('tipo:')) {
+            const tipo = f.slice(5);
             list = list.filter(lab => lab.tipo_servicio === tipo);
-        }
-
-        const estado = this.filterEstado.value;
-        if (estado === 'true') {
+        } else if (f === 'estado:true') {
             list = list.filter(lab => lab.active === true);
-        } else if (estado === 'false') {
+        } else if (f === 'estado:false') {
             list = list.filter(lab => lab.active === false);
         }
 
@@ -171,8 +156,7 @@ export class LaboratoriosComponent implements OnInit, OnDestroy {
 
     limpiarFiltros(): void {
         this.searchControl.setValue('');
-        this.filterTipoServicio.setValue('');
-        this.filterEstado.setValue('');
+        this.filterPrincipal.setValue('');
     }
 
     getActivosCount(): number {

@@ -168,7 +168,12 @@ export class CalibrationService {
     // (varios MB) infla la respuesta de pXP y la trunca si va dentro de HE_CLS_RETURN.
     saveReturnCertificate(id_calibration: number, certificate_file: string): Observable<any> {
         return from(this._api.post('herramientas/calibrations/guardarCertificadoRetorno', {
-            id_calibration, certificate_file,
+            id_calibration,
+            certificate_file,
+            // El backend compara esta longitud con lo que recibe: si es menor, el
+            // PDF viajó truncado (límite de tamaño del servidor) y responde con error
+            // claro en vez de guardar un PDF corrupto.
+            certificate_file_len: certificate_file?.length ?? 0,
         })).pipe(
             switchMap((response: any) => {
                 if (this._isPxpError(response)) throw new Error(this._extractErrorMessage(response, 'Error al guardar el certificado'));
@@ -442,6 +447,77 @@ export class CalibrationService {
                 throw error;
             })
         );
+    }
+
+    // Normaliza la respuesta pXP { ROOT: { error, detalle, datos:[{pdf_base64,...}] } }
+    // de los endpoints de reporte PDF (ACTreportes/generarPDF*).
+    private _pdfReporte(endpoint: string, fallbackName: string, params: any = {}): Observable<{ pdf_base64: string; nombre_archivo: string }> {
+        return from(this._api.post(endpoint, params)).pipe(
+            switchMap((response: any) => {
+                let datos: any = null;
+                let error = false;
+                let mensaje = '';
+
+                if (response?.ROOT) {
+                    error = response.ROOT.error === true;
+                    mensaje = response.ROOT.detalle?.mensaje || response.ROOT.mensaje || '';
+                    datos = response.ROOT.datos;
+                } else if (response?.datos) {
+                    error = response.error === true;
+                    mensaje = response.detalle?.mensaje || response.mensaje || '';
+                    datos = response.datos;
+                } else if (Array.isArray(response)) {
+                    datos = response;
+                } else if (response?.data) {
+                    datos = response.data;
+                }
+
+                let item: any = null;
+                if (Array.isArray(datos) && datos.length > 0) item = datos[0];
+                else if (datos && typeof datos === 'object') item = datos;
+
+                if (error || !item?.pdf_base64) {
+                    throw new Error(mensaje || 'Error al generar el reporte');
+                }
+
+                return of({
+                    pdf_base64: item.pdf_base64 as string,
+                    nombre_archivo: item.nombre_archivo ?? fallbackName,
+                });
+            }),
+            catchError((err) => {
+                console.error('Error en', endpoint, err);
+                throw err;
+            })
+        );
+    }
+
+    // Reporte de herramientas enviadas y NO retornadas (submódulo Envío a
+    // Calibración). PDF real (TCPDF vía ACTreportes/RReporteNoRetornadas), mismo
+    // diseño que la nota de envío — reemplaza al HTML client-side de printNoRetornadas().
+    generarPdfNoRetornadas(): Observable<{ pdf_base64: string; nombre_archivo: string }> {
+        return this._pdfReporte('herramientas/reportes/generarPDFNoRetornadas', 'pendientes_retorno.pdf');
+    }
+
+    // Espejo del anterior para el submódulo Retorno / Bandeja de Retornos:
+    // herramientas ya retornadas de calibración.
+    generarPdfRetornadas(): Observable<{ pdf_base64: string; nombre_archivo: string }> {
+        return this._pdfReporte('herramientas/reportes/generarPDFRetornadas', 'retornadas_calibracion.pdf');
+    }
+
+    // MGH-111 — Herramientas y equipos enviados a calibración (Consultoría y Auditoría).
+    generarPdfEnviadasCalibracionForm(): Observable<{ pdf_base64: string; nombre_archivo: string }> {
+        return this._pdfReporte('herramientas/reportes/generarPDFEnviadasCalibracionForm', 'enviadas_calibracion.pdf');
+    }
+
+    // MGH-104 — Próximas a vencer por días de holgura (Centro de Control).
+    generarPdfVencerHolgura(diasHolgura = 60): Observable<{ pdf_base64: string; nombre_archivo: string }> {
+        return this._pdfReporte('herramientas/reportes/generarPDFVencerHolgura', 'vencer_calibracion.pdf', { dias_holgura: diasHolgura });
+    }
+
+    // MGH-123 — Reporte mensual de próximas a vencer, por período en días (Centro de Control).
+    generarPdfVencerMensual(periodoDias = 30): Observable<{ pdf_base64: string; nombre_archivo: string }> {
+        return this._pdfReporte('herramientas/reportes/generarPDFVencerMensual', 'vencer_mensual.pdf', { periodo_dias: periodoDias });
     }
 
     abrirPdf(pdfBase64: string, filename: string = 'documento.pdf'): void {

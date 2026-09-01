@@ -199,7 +199,7 @@ export class ProveedoresComponent implements OnInit {
                     this.snackBar.open('Proveedor creado', 'Cerrar', { duration: 2500 });
                     this.loadProveedores();
                 },
-                error: () => this.snackBar.open('Error al crear proveedor', 'Cerrar', { duration: 4000 }),
+                error: (err: any) => this.snackBar.open(err?.message || 'Error al crear proveedor', 'Cerrar', { duration: 4000 }),
             });
         });
     }
@@ -219,7 +219,7 @@ export class ProveedoresComponent implements OnInit {
                     this.snackBar.open('Proveedor actualizado', 'Cerrar', { duration: 2500 });
                     this.loadProveedores();
                 },
-                error: () => this.snackBar.open('Error al actualizar proveedor', 'Cerrar', { duration: 4000 }),
+                error: (err: any) => this.snackBar.open(err?.message || 'Error al actualizar proveedor', 'Cerrar', { duration: 4000 }),
             });
         });
     }
@@ -253,7 +253,7 @@ export class ProveedoresComponent implements OnInit {
                     this.snackBar.open(`Proveedor ${!p.activo ? 'activado' : 'desactivado'}`, 'Cerrar', { duration: 2500 });
                     this.loadProveedores();
                 },
-                error: () => this.snackBar.open('Error al cambiar estado', 'Cerrar', { duration: 4000 }),
+                error: (err: any) => this.snackBar.open(err?.message || 'Error al cambiar estado', 'Cerrar', { duration: 4000 }),
             });
         });
     }

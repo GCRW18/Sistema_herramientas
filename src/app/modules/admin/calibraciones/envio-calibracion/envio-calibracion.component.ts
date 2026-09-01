@@ -173,21 +173,23 @@ export class EnvioCalibracionComponent implements OnInit, OnDestroy {
         this.isLoading.set(true);
         this.pageIndex = 0;
 
-        const estado = this.filterEstado.value;
-        // Excluir TODAS las transcripciones históricas: por flag is_historical y por
-        // ambos marcadores de internal_notes ('[TRANSCRIPCIÓN HISTÓRICA]' del form y
-        // '[TRANSCRIPCION HISTORICA - LISTADO MGH-102]' del baseline DAT-10). Antes solo
-        // se excluía la igualdad exacta del marcador viejo: las 487 transcripciones del
-        // baseline (send_date NULL → primeras con sort desc) llenaban el limit y
-        // empujaban los envíos reales fuera de la página.
+        // Una sola carga con TODOS los estados; el filtro de estado es client-side
+        // (applyFilters) para no pegar al servidor en cada cambio de combo.
+        // - ordenacion por id_calibration (PK): scan hacia atrás del índice + LIMIT,
+        //   instantáneo. Antes ordenaba por send_date (sin índice y con NULLs de las
+        //   transcripciones históricas primero) → sort de toda la tabla en cada carga.
+        // - filtro_adicional (no 'filtro', que ACTcalibrations ignora): excluye las
+        //   ~487 transcripciones históricas server-side (flag + marcadores de
+        //   internal_notes del form y del baseline DAT-10).
         const params: any = {
-            limit: 200,
-            filtro: "(COALESCE(cls.is_historical, false) = false"
+            limit: 300,
+            ordenacion: 'id_calibration',
+            dir_ordenacion: 'desc',
+            filtro_adicional: "(COALESCE(cls.is_historical, false) = false"
                 + " AND (cls.internal_notes IS NULL"
                 + " OR (cls.internal_notes NOT LIKE '[TRANSCRIPCION HISTORICA%'"
                 + " AND cls.internal_notes NOT LIKE '[TRANSCRIPCIÓN HISTÓRICA%')))",
         };
-        if (estado) params.status = estado;
 
         this.calibrationService.getCalibrations(params).pipe(
             takeUntil(this._destroy$),
@@ -241,10 +243,10 @@ export class EnvioCalibracionComponent implements OnInit, OnDestroy {
             takeUntil(this._destroy$),
         ).subscribe(() => this.applyFilters());
 
+        // Client-side: no recarga del servidor al cambiar el combo de estado.
         this.filterEstado.valueChanges.pipe(
-            debounceTime(400),
             takeUntil(this._destroy$),
-        ).subscribe(() => this.loadCalibraciones());
+        ).subscribe(() => this.applyFilters());
     }
 
     applyFilters(): void {
@@ -265,8 +267,12 @@ export class EnvioCalibracionComponent implements OnInit, OnDestroy {
         }
 
         const estado = this.filterEstado.value;
-        if (estado === 'returned') {
+        if (estado === 'sent') {
+            list = list.filter(c => c.status === 'sent' || c.status === 'in_process');
+        } else if (estado === 'returned') {
             list = list.filter(c => this.isCompleted(c.status));
+        } else if (estado === 'cancelled') {
+            list = list.filter(c => c.status === 'cancelled');
         }
 
         this.filteredCalibraciones = list;
@@ -316,116 +322,35 @@ export class EnvioCalibracionComponent implements OnInit, OnDestroy {
 
     getStatusChipClass(s: string): string {
         const classes: Record<string, string> = {
-            sent:       'bg-blue-700 text-gray-100 border-black',
-            returned:   'bg-green-600 text-black border-black',
-            completed:  'bg-green-600 text-black border-black',
-            cancelled:  'bg-red-600 text-gray-100 border-black'
+            sent:       'bg-blue-700 text-white border-black',
+            in_process: 'bg-amber-600 text-white border-black',
+            returned:   'bg-green-600 text-white border-black',
+            completed:  'bg-green-600 text-white border-black',
+            cancelled:  'bg-red-600 text-white border-black'
         };
-        return classes[s] ?? 'bg-gray-100 text-gray-700 border-gray-500';
+        return classes[s] ?? 'bg-gray-500 text-white border-black';
     }
 
     // ── Imprimir herramientas no retornadas ───────
+    // PDF real (TCPDF vía ACTreportes/RReporteNoRetornadas), mismo diseño que la
+    // nota de envío. Antes se armaba un HTML client-side con window.open().
     printNoRetornadas(): void {
         const pendientes = this.calibraciones.filter(c => c.status === 'sent' || c.status === 'in_process');
         if (!pendientes.length) {
             this.showMsg('No hay herramientas pendientes de retorno', 'info');
             return;
         }
-        const now = new Date().toLocaleDateString('es-BO', {
-            day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit'
+        this.isLoading.set(true);
+        this.calibrationService.generarPdfNoRetornadas().pipe(
+            takeUntil(this._destroy$),
+            finalize(() => this.isLoading.set(false)),
+        ).subscribe({
+            next: (result) => this.calibrationService.abrirPdf(result.pdf_base64, result.nombre_archivo),
+            error: (error) => {
+                console.error('Error al generar el reporte de pendientes:', error);
+                this.showMsg('Error al generar el reporte de pendientes de retorno', 'error');
+            },
         });
-
-        const rows = pendientes.map((c, i) => `
-            <tr class="${this.isRetrasado(c) ? 'row-delayed' : ''}">
-                <td class="text-center">${i + 1}</td>
-                <td class="mono">${c.tool_code}</td>
-                <td class="mono small">${c.part_number !== '—' ? c.part_number : ''}</td>
-                <td>${c.tool_name}</td>
-                <td class="small">${c.ubicacion !== '—' ? c.ubicacion : ''}</td>
-                <td>${c.supplier_name}</td>
-                <td class="mono">${c.record_number}</td>
-                <td class="mono">${c.send_date}</td>
-                <td class="mono ${this.isRetrasado(c) ? 'text-delayed' : ''}">
-                    ${c.expected_return_date || '—'}${this.isRetrasado(c) ? ` <strong>(+${this.getDiasRetrasado(c)}d)</strong>` : ''}
-                </td>
-                <td>${c.base}</td>
-            </tr>
-        `).join('');
-
-        const html = `<!DOCTYPE html>
-<html lang="es">
-<head>
-<meta charset="UTF-8">
-<title>Herramientas Pendientes de Retorno</title>
-<style>
-  * { margin:0; padding:0; box-sizing:border-box; }
-  body { font-family: Arial, sans-serif; font-size: 9px; color: #000; padding: 16px; }
-  .header { border: 3px solid #000; padding: 10px 14px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: flex-start; }
-  .header h1 { font-size: 15px; font-weight: 900; text-transform: uppercase; }
-  .header p  { font-size: 8px; color: #555; margin-top: 2px; }
-  .header-right { text-align: right; }
-  .header-right .label { font-size: 7px; font-weight: 700; text-transform: uppercase; color: #888; }
-  .header-right .value { font-size: 10px; font-weight: 900; }
-  .filter-bar { background: #000; color: #fff; padding: 5px 10px; font-size: 8px; font-weight: 900; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px; display: flex; justify-content: space-between; }
-  table { width: 100%; border-collapse: collapse; }
-  thead tr { background: #000; color: #fff; }
-  thead th { padding: 5px 6px; font-size: 8px; font-weight: 900; text-transform: uppercase; text-align: left; }
-  tbody tr { border-bottom: 1px solid #ddd; }
-  tbody tr:nth-child(even) { background: #f9f9f9; }
-  tbody tr.row-delayed { background: #fff0f0 !important; }
-  td { padding: 4px 6px; font-size: 8.5px; vertical-align: middle; }
-  td.text-center { text-align: center; }
-  td.mono { font-family: monospace; }
-  td.small { font-size: 7.5px; }
-  .text-delayed { color: #dc2626; font-weight: 900; }
-  .footer { margin-top: 12px; font-size: 7px; color: #888; text-align: right; border-top: 1px solid #ddd; padding-top: 5px; }
-  @media print { body { padding: 8px; } @page { margin: 12mm; size: landscape; } }
-</style>
-</head>
-<body>
-<div class="header">
-  <div>
-    <h1>Herramientas Pendientes de Retorno</h1>
-    <p>Sistema de Gestión de Herramientas · Envío a Calibración</p>
-  </div>
-  <div class="header-right">
-    <div class="label">Total pendientes</div>
-    <div class="value">${pendientes.length}</div>
-    <div class="label" style="margin-top:4px">Generado</div>
-    <div class="value" style="font-size:8px">${now}</div>
-  </div>
-</div>
-<div class="filter-bar">
-  <span>Herramientas enviadas y NO retornadas al ${now}</span>
-  <span>Retrasadas: ${pendientes.filter(c => this.isRetrasado(c)).length}</span>
-</div>
-<table>
-  <thead>
-    <tr>
-      <th style="width:24px">#</th>
-      <th style="width:80px">Código</th>
-      <th style="width:85px">P/N</th>
-      <th>Herramienta</th>
-      <th style="width:80px">Ubicación</th>
-      <th style="width:100px">Empresa</th>
-      <th style="width:80px">N° Nota</th>
-      <th style="width:70px">Envío</th>
-      <th style="width:90px">Ret. Estimado</th>
-      <th style="width:50px">Base</th>
-    </tr>
-  </thead>
-  <tbody>${rows}</tbody>
-</table>
-<div class="footer">Documento generado el ${now} · Sistema Herramientas</div>
-</body>
-</html>`;
-
-        const win = window.open('', '_blank', 'width=1100,height=750');
-        if (win) {
-            win.document.write(html);
-            win.document.close();
-            setTimeout(() => win.print(), 500);
-        }
     }
 
     // ── Actions ──────────────────────────────────

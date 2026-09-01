@@ -209,9 +209,9 @@ export class TranscripcionManualComponent implements OnInit, OnDestroy {
     openFormDialog(): void {
         this.resetForm();
         this.activeDialogRef = this.dialog.open(this.formDialogTemplate, {
-            width: '660px',
+            width: '600px',
             maxWidth: '95vw',
-            height: '88vh',
+            maxHeight: '95vh',
             panelClass: 'no-padding-dialog',
             hasBackdrop: true,
             disableClose: true,

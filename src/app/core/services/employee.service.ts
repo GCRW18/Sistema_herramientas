@@ -63,7 +63,13 @@ export class EmployeeService {
 
     createEmployee(data: Partial<Employee>): Observable<any> {
         return from(this._api.post('herramientas/employees/insertarEmployees', data)).pipe(
-            switchMap((response: any) => of(response?.data || {}))
+            switchMap((response: any) => {
+                const root = response?.ROOT || response;
+                if (root?.error === true || root?.error === 'true') {
+                    throw new Error(root?.detalle?.mensaje || root?.mensaje || 'Error al registrar funcionario');
+                }
+                return of(root?.datos || root?.data || {});
+            })
         );
     }
 
@@ -71,13 +77,25 @@ export class EmployeeService {
         // ACTEmployees no tiene un método "modificarEmployees" propio: insertarEmployees()
         // decide internamente si inserta o modifica según venga o no id_employee (patrón pxp).
         return from(this._api.post('herramientas/employees/insertarEmployees', { ...data, id_employee: id })).pipe(
-            switchMap((response: any) => of(response?.data || {}))
+            switchMap((response: any) => {
+                const root = response?.ROOT || response;
+                if (root?.error === true || root?.error === 'true') {
+                    throw new Error(root?.detalle?.mensaje || root?.mensaje || 'Error al actualizar funcionario');
+                }
+                return of(root?.datos || root?.data || {});
+            })
         );
     }
 
     deleteEmployee(id: string): Observable<void> {
         return from(this._api.post('herramientas/employees/eliminarEmployees', { id_employee: id })).pipe(
-            switchMap(() => of(undefined))
+            switchMap((response: any) => {
+                const root = response?.ROOT || response;
+                if (root?.error === true || root?.error === 'true') {
+                    throw new Error(root?.detalle?.mensaje || root?.mensaje || 'Error al eliminar funcionario');
+                }
+                return of(undefined);
+            })
         );
     }
 }

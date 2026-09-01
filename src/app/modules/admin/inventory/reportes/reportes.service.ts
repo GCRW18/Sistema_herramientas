@@ -267,7 +267,8 @@ export class ReportesService {
     /* ── Exportación ──────────────────────────────────────────────────── */
 
     exportarPDF(tipoReporte: string, filtros: FiltrosReporte = {}): void {
-        // Usa POST autenticado → recibe JSON con html_content → abre como blob
+        // Usa POST autenticado → recibe JSON con pdf_base64 (PDF real, TCPDF)
+        // o, para los tipos que aún no se convirtieron, html_content → abre como blob
         const params = {
             tipo_reporte: tipoReporte,
             cantidad: '5000',
@@ -280,8 +281,20 @@ export class ReportesService {
         };
         from(this._api.post('herramientas/reportes/exportarPDF', params)).pipe(
             switchMap((r: any) => {
-                const html: string = this._norm(r)?.[0]?.html_content ?? '';
-                if (html) {
+                const row: any = this._norm(r)?.[0];
+                const pdfBase64: string = row?.pdf_base64 ?? '';
+                const html: string = row?.html_content ?? '';
+
+                if (pdfBase64) {
+                    const byteChars = atob(pdfBase64);
+                    const byteNumbers = new Array(byteChars.length);
+                    for (let i = 0; i < byteChars.length; i++) byteNumbers[i] = byteChars.charCodeAt(i);
+                    const blob = new Blob([new Uint8Array(byteNumbers)], { type: 'application/pdf' });
+                    const url  = URL.createObjectURL(blob);
+                    const win  = window.open(url, '_blank');
+                    if (!win) console.warn('Permita ventanas emergentes para ver el reporte PDF');
+                    setTimeout(() => URL.revokeObjectURL(url), 10000);
+                } else if (html) {
                     const blob = new Blob([html], { type: 'text/html; charset=utf-8' });
                     const url  = URL.createObjectURL(blob);
                     const win  = window.open(url, '_blank');

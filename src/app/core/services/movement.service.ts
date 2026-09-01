@@ -291,6 +291,8 @@ export class MovementService {
 
     createIngresosCategory(name: string): Observable<any> {
         const upper = name.trim().toUpperCase();
+        // parent_category_id se omite (en vez de mandar null): pxp-client serializa el null
+        // de JS como el string literal "null", lo que rompe el cast a int4 en el backend.
         return from(this._api.post('herramientas/categories/insertCategory', {
             name: upper,
             code: upper.replace(/\s+/g, '_'),
@@ -299,16 +301,30 @@ export class MovementService {
             icon: 'category',
             display_order: 0,
             is_fixed: false,
-            parent_category_id: null,
             level: 1,
             has_children: false,
             active: true
-        })).pipe(catchError(err => { throw err; }));
+        })).pipe(
+            switchMap((response: any) => {
+                const root = response?.ROOT || response;
+                if (root?.error === true || root?.error === 'true') {
+                    throw new Error(root?.detalle?.mensaje || root.mensaje || 'Error al crear la categoría');
+                }
+                return of(root?.datos?.[0] || root?.datos || root?.data?.[0] || root?.data || {});
+            })
+        );
     }
 
     deleteIngresosCategory(id_category: number): Observable<any> {
-        return from(this._api.post('herramientas/categories/deleteCategory', { id_category }))
-            .pipe(catchError(err => { throw err; }));
+        return from(this._api.post('herramientas/categories/deleteCategory', { id_category })).pipe(
+            switchMap((response: any) => {
+                const root = response?.ROOT || response;
+                if (root?.error === true || root?.error === 'true') {
+                    throw new Error(root?.detalle?.mensaje || root.mensaje || 'No se pudo eliminar la categoría. Puede estar en uso.');
+                }
+                return of(root?.datos?.[0] || root?.datos || root?.data?.[0] || root?.data || {});
+            })
+        );
     }
 
     /**

@@ -2,6 +2,7 @@ import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatIconModule } from '@angular/material/icon';
 import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
+import { DragDropModule } from '@angular/cdk/drag-drop';
 
 export interface ConfirmarAjusteData {
     resumen: {
@@ -24,7 +25,7 @@ export interface ConfirmarAjusteResult {
 @Component({
     selector: 'app-confirmar-ajuste',
     standalone: true,
-    imports: [CommonModule, MatIconModule],
+    imports: [CommonModule, MatIconModule, DragDropModule],
     templateUrl: './confirmar-ajuste.component.html',
     styles: [`
         :host { display: block; width: 100%; }

@@ -109,6 +109,7 @@ export class MovimientosComponent implements OnInit, OnDestroy {
         TRASPASO:                      'TRASPASO',
         CALIBRACION:                   'CALIBRACIÓN',
         BAJA:                          'BAJA',
+        CUARENTENA:                    'CUARENTENA',
         AJUSTE:                        'AJUSTE',
         // fallback lowercase (por si algún tipo usa minúsculas)
         entry:        'ENTRADA',

@@ -33,7 +33,13 @@ export class RoleService {
 
     createRole(data: RoleFormData): Observable<Role> {
         return from(this._api.post('herramientas/roles/insertarRoles', data)).pipe(
-            switchMap((response: any) => of(response?.datos?.[0] || response?.data?.[0] || data))
+            switchMap((response: any) => {
+                const root = response?.ROOT || response;
+                if (root?.error === true || root?.error === 'true') {
+                    throw new Error(root?.detalle?.mensaje || root?.mensaje || 'Error al crear el rol');
+                }
+                return of(root?.datos?.[0] || root?.data?.[0] || data);
+            })
         );
     }
 
@@ -42,7 +48,13 @@ export class RoleService {
             ...data,
             id_role: id
         })).pipe(
-            switchMap((response: any) => of(response?.datos?.[0] || response?.data?.[0] || data))
+            switchMap((response: any) => {
+                const root = response?.ROOT || response;
+                if (root?.error === true || root?.error === 'true') {
+                    throw new Error(root?.detalle?.mensaje || root?.mensaje || 'Error al actualizar el rol');
+                }
+                return of(root?.datos?.[0] || root?.data?.[0] || data);
+            })
         );
     }
 
@@ -50,7 +62,13 @@ export class RoleService {
         return from(this._api.post('herramientas/roles/eliminarRoles', {
             id_role: id
         })).pipe(
-            switchMap(() => of(undefined))
+            switchMap((response: any) => {
+                const root = response?.ROOT || response;
+                if (root?.error === true || root?.error === 'true') {
+                    throw new Error(root?.detalle?.mensaje || root?.mensaje || 'Error al eliminar el rol');
+                }
+                return of(undefined);
+            })
         );
     }
 
@@ -87,6 +105,14 @@ export class RoleService {
             nombres:    payload.nombres,
             apellidos:  payload.apellidos,
             email:      payload.email || ''
-        })).pipe(switchMap(() => of(undefined)));
+        })).pipe(
+            switchMap((response: any) => {
+                const root = response?.ROOT || response;
+                if (root?.error === true || root?.error === 'true') {
+                    throw new Error(root?.detalle?.mensaje || root?.mensaje || 'Error al asignar el rol');
+                }
+                return of(undefined);
+            })
+        );
     }
 }

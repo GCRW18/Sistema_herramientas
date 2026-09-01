@@ -286,6 +286,30 @@ export class DashboardAlertasComponent implements OnInit, OnDestroy {
         }
     }
 
+    // MGH-104 — Próximas a vencer por días de holgura (PDF real vía backend).
+    printVencerHolgura(): void {
+        this.isLoading = true;
+        this.calibrationService.generarPdfVencerHolgura(60).pipe(
+            takeUntil(this._unsubscribeAll),
+            finalize(() => this.isLoading = false),
+        ).subscribe({
+            next: (r) => this.calibrationService.abrirPdf(r.pdf_base64, r.nombre_archivo),
+            error: (e) => console.error('Error al generar MGH-104:', e),
+        });
+    }
+
+    // MGH-123 — Reporte mensual de próximas a vencer (PDF real vía backend).
+    printVencerMensual(): void {
+        this.isLoading = true;
+        this.calibrationService.generarPdfVencerMensual(30).pipe(
+            takeUntil(this._unsubscribeAll),
+            finalize(() => this.isLoading = false),
+        ).subscribe({
+            next: (r) => this.calibrationService.abrirPdf(r.pdf_base64, r.nombre_archivo),
+            error: (e) => console.error('Error al generar MGH-123:', e),
+        });
+    }
+
     private getRangeLabel(range: RangeKey): string {
         const map: Record<RangeKey, string> = {
             all:    'Todas las alertas',

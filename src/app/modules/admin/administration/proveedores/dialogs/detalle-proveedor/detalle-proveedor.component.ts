@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MAT_DIALOG_DATA, MatDialogRef, MatDialogModule, MatDialog } from '@angular/material/dialog';
+import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { DragDropModule } from '@angular/cdk/drag-drop';
 import { SupplierService } from '../../../../../../core/services/supplier.service';
 import { HasPermissionDirective } from '../../../../../../core/directives/has-permission.directive';
@@ -15,6 +16,7 @@ import { HasPermissionDirective } from '../../../../../../core/directives/has-pe
         MatButtonModule,
         MatIconModule,
         MatDialogModule,
+        MatSnackBarModule,
         DragDropModule,
         HasPermissionDirective
     ],
@@ -29,6 +31,7 @@ import { HasPermissionDirective } from '../../../../../../core/directives/has-pe
 export class DetalleProveedorComponent {
     private dialogRef      = inject(MatDialogRef<DetalleProveedorComponent>);
     private dialog         = inject(MatDialog);
+    private snackBar       = inject(MatSnackBar);
     private supplierService = inject(SupplierService);
 
     constructor(@Inject(MAT_DIALOG_DATA) public data: { proveedor: any }) {}
@@ -52,7 +55,7 @@ export class DetalleProveedorComponent {
                     this.mapFormToBackend(result)
                 ).subscribe({
                     next: () => this.dialogRef.close('updated'),
-                    error: (err) => console.error('Error al actualizar proveedor:', err)
+                    error: (err: any) => this.snackBar.open(err?.message || 'Error al actualizar proveedor', 'Cerrar', { duration: 4000 })
                 });
             }
         });
