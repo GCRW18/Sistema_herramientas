@@ -11,6 +11,7 @@ import { FormControl, ReactiveFormsModule }              from '@angular/forms';
 import { Subject, from, of }                             from 'rxjs';
 import { debounceTime, takeUntil, finalize, catchError } from 'rxjs/operators';
 import { CalibrationService }                            from '../../../../core/services/calibration.service';
+import { BlobStorageService }                            from '../../../../core/services/blob-storage.service';
 import { ErpApiService }                                 from 'app/core/api/api.service';
 import { HasPermissionDirective }                        from '../../../../core/directives/has-permission.directive';
 import { localDateStr }                                  from '../../../../core/utils/date.utils';
@@ -82,12 +83,14 @@ export class EnvioCalibracionComponent implements OnInit, OnDestroy {
     private snackBar           = inject(MatSnackBar);
     private calibrationService = inject(CalibrationService);
     private _api               = inject(ErpApiService);
+    private _blobStorage       = inject(BlobStorageService);
     private _destroy$          = new Subject<void>();
 
     searchControl = new FormControl('');
     filterEstado  = new FormControl('');
 
     isLoading             = signal(false);
+    draftCount            = signal(0);
     calibraciones:         CalibrationDisplay[] = [];
     filteredCalibraciones: CalibrationDisplay[] = [];
 
@@ -123,6 +126,7 @@ export class EnvioCalibracionComponent implements OnInit, OnDestroy {
         this.loadLocationMap();
         this.setupFilters();
         this.loadCalibraciones();
+        this.loadDraftCount();
 
         // Las tabs de Calibraciones quedan montadas en segundo plano (display:none) al
         // cambiar de tab, así que un envío/retorno hecho en la tab RETORNO no se reflejaba
@@ -132,6 +136,16 @@ export class EnvioCalibracionComponent implements OnInit, OnDestroy {
             takeUntil(this._destroy$),
         ).subscribe(() => {
             if (!this.isLoading()) this.loadCalibraciones();
+            this.loadDraftCount();
+        });
+    }
+
+    loadDraftCount(): void {
+        this.calibrationService.getDraftEnvio().pipe(
+            takeUntil(this._destroy$),
+        ).subscribe({
+            next: (rows) => this.draftCount.set((rows || []).length),
+            error: () => { /* no bloquea la vista */ },
         });
     }
 
@@ -143,6 +157,7 @@ export class EnvioCalibracionComponent implements OnInit, OnDestroy {
     @HostListener('window:focus')
     onWindowFocus(): void {
         if (!this.isLoading()) this.loadCalibraciones();
+        this.loadDraftCount();
     }
 
     // ── Carga mapa de ubicaciones (una vez) ──────
@@ -358,10 +373,11 @@ export class EnvioCalibracionComponent implements OnInit, OnDestroy {
         try {
             const { FormEnvioComponent } = await import('./form-envio/form-envio.component');
             const ref = this.dialog.open(FormEnvioComponent, {
-                width: 'min(820px, 100vw)', maxWidth: '100vw', maxHeight: '100dvh',
+                width: 'min(1080px, 100vw)', maxWidth: '100vw', maxHeight: '100dvh',
                 panelClass: 'neo-dialog-transparent', disableClose: false, autoFocus: false
             });
             ref.afterClosed().subscribe(ok => {
+                this.loadDraftCount();
                 if (ok) { this.loadCalibraciones(); this.showMsg('Envío registrado exitosamente', 'success'); }
             });
         } catch (error) {
@@ -427,11 +443,14 @@ export class EnvioCalibracionComponent implements OnInit, OnDestroy {
         if (!cal.has_certificate_file) { this.showMsg('No se adjuntó un certificado en este retorno', 'warning'); return; }
         this.isLoading.set(true);
         this.calibrationService.getCertificateFile(cal.id_calibration).subscribe({
-            next: (dataUrl) => {
+            next: (val) => {
                 this.isLoading.set(false);
-                if (!dataUrl) { this.showMsg('No se encontró el certificado adjunto', 'warning'); return; }
+                if (!val) { this.showMsg('No se encontró el certificado adjunto', 'warning'); return; }
+                // El certificado ahora se guarda en Blob Storage (ruta_bs); el base64
+                // heredado se sigue soportando.
+                if (this._blobStorage.isRutaBs(val)) { this._blobStorage.open(val); return; }
                 try {
-                    const base64 = dataUrl.includes(',') ? dataUrl.split(',')[1] : dataUrl;
+                    const base64 = val.includes(',') ? val.split(',')[1] : val;
                     const bytes  = atob(base64);
                     const arr    = new Uint8Array(bytes.length);
                     for (let i = 0; i < bytes.length; i++) arr[i] = bytes.charCodeAt(i);

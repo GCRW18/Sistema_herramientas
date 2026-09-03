@@ -11,6 +11,7 @@ import { Subject, of } from 'rxjs';
 import { takeUntil, debounceTime, distinctUntilChanged, switchMap, catchError, finalize } from 'rxjs/operators';
 import { ToolService } from '../../../../../core/services/tool.service';
 import { MovementService } from '../../../../../core/services/movement.service';
+import { BlobStorageService } from '../../../../../core/services/blob-storage.service';
 import { GestionUbicacionesService } from '../../../inventory/gestion-ubicaciones/gestion-ubicaciones.service';
 import { Warehouse, Rack, Level } from '../../../inventory/gestion-ubicaciones/interfaces';
 import type { HerramientaItem } from '../ingresos-hub.component';
@@ -53,6 +54,7 @@ export class RecepcionHerramientaComponent implements OnInit, OnDestroy {
     private snackBar  = inject(MatSnackBar);
     private toolSvc   = inject(ToolService);
     private movementSvc = inject(MovementService);
+    public  blobStorage = inject(BlobStorageService);
     private ubicSvc   = inject(GestionUbicacionesService);
     private destroy$  = new Subject<void>();
 
@@ -118,7 +120,7 @@ export class RecepcionHerramientaComponent implements OnInit, OnDestroy {
             pn:                   ['', [Validators.required, Validators.minLength(2)]],
             sn:                   [''],
             descripcion:          ['', [Validators.required, Validators.minLength(3)]],
-            codigoBoa:            ['BOA-H-', [Validators.required, Validators.pattern(/^[A-Za-z0-9\-]+$/)]],
+            codigoBoa:            ['BOA-H-', [Validators.required, Validators.pattern(/^[A-Za-z0-9\-/]+$/)]],
             cantidad:             [1, [Validators.required, Validators.min(1), Validators.max(9999)]],
             unidadMedida:         ['UNIDAD', Validators.required],
             estado:               ['NUEVO', Validators.required],
@@ -140,7 +142,9 @@ export class RecepcionHerramientaComponent implements OnInit, OnDestroy {
 
         if (this.data?.item) {
             this.herramientaForm.patchValue(this.data.item);
-            if ((this.data.item as any).imagen) this.herramientaImagen.set((this.data.item as any).imagen);
+            const it = this.data.item as any;
+            if (it.imagen) this.herramientaImagen.set(it.imagen);
+            if (it.imagenFile) this.herramientaImagenFile = it.imagenFile;
         }
 
         this.herramientaForm.get('requiereCalibracion')?.valueChanges.pipe(
@@ -266,15 +270,19 @@ export class RecepcionHerramientaComponent implements OnInit, OnDestroy {
     }
 
     /* ════════ Imagen ════════ */
+    herramientaImagenFile: File | null = null;
+
     onHerramientaImageSelected(event: Event): void {
         const file = (event.target as HTMLInputElement).files?.[0];
         if (!file) return;
+        if (file.size > 8 * 1024 * 1024) return;
+        this.herramientaImagenFile = file;
         const reader = new FileReader();
-        reader.onload = () => this.herramientaImagen.set(reader.result as string);
+        reader.onload = () => this.herramientaImagen.set(reader.result as string); // solo preview
         reader.readAsDataURL(file);
     }
 
-    clearHerramientaImagen(): void { this.herramientaImagen.set(null); }
+    clearHerramientaImagen(): void { this.herramientaImagen.set(null); this.herramientaImagenFile = null; }
 
     /* ════════ Ubicación ════════ */
     private _loadAlmacenes(): void {
@@ -421,7 +429,8 @@ export class RecepcionHerramientaComponent implements OnInit, OnDestroy {
             intervaloCalibracion: f.requiereCalibracion ? f.intervaloCalibracion : null,
             fechaCalibracion:     f.requiereCalibracion ? f.fechaCalibracion     : null,
             nroCertificado:       f.requiereCalibracion ? f.nroCertificado       : '',
-            imagen:               this.herramientaImagen() || null
+            imagen:               this.herramientaImagen() || null,
+            imagenFile:           this.herramientaImagenFile,
         };
         const result: RecepcionHerramientaResult = { action: this.isEditMode ? 'actualizar' : 'agregar', data: item };
         this.dialogRef?.close(result);

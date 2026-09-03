@@ -6,9 +6,10 @@ import { MatDialogRef, MatDialog } from '@angular/material/dialog';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatTooltipModule } from '@angular/material/tooltip';
-import { Subject, of, forkJoin } from 'rxjs';
+import { Subject, of, forkJoin, lastValueFrom } from 'rxjs';
 import { takeUntil, finalize, catchError, debounceTime, map, mergeMap } from 'rxjs/operators';
 import { MovementService }    from '../../../../core/services/movement.service';
+import { BlobStorageService } from '../../../../core/services/blob-storage.service';
 import { CalibrationService }   from '../../../../core/services/calibration.service';
 import { GestionUbicacionesService } from '../../inventory/gestion-ubicaciones/gestion-ubicaciones.service';
 import { HasPermissionDirective } from '../../../../core/directives/has-permission.directive';
@@ -39,7 +40,8 @@ export interface HerramientaItem {
      *  y he.tmovement_items.batch_number respectivamente. */
     fechaVencimiento?: string | null;
     loteNumero?: string;
-    imagen?: string | null;
+    imagen?: string | null;      // preview (dataURL / URL) o ruta_bs ya guardada
+    imagenFile?: File | null;    // archivo nuevo a subir al Blob Storage antes de enviar
     warehouseId?: number | null;
     rackId?: number | null;
     levelId?: number | null;
@@ -65,7 +67,8 @@ interface AjusteItem {
     warehouseId?: number | null;
     rackId?: number | null;
     levelId?: number | null;
-    imagen?: string | null;
+    imagen?: string | null;       // valor crudo guardado (ruta_bs/base64) o dataURL de preview
+    imagenFile?: File | null;     // archivo nuevo a subir al Blob Storage
 }
 
 type TabType = 'nueva' | 'ajuste' | 'historial';
@@ -105,6 +108,7 @@ export class IngresosHubComponent implements OnInit, OnDestroy {
     private fb          = inject(FormBuilder);
     private snackBar    = inject(MatSnackBar);
     private movementSvc    = inject(MovementService);
+    private blobStorage    = inject(BlobStorageService);
     private calibrationSvc = inject(CalibrationService);
     private ubicSvc        = inject(GestionUbicacionesService);
     private ingresoPdfSvc  = inject(IngresoPdfService);
@@ -325,21 +329,54 @@ export class IngresosHubComponent implements OnInit, OnDestroy {
         this._showMsg('Ítem copiado. Ajuste el S/N si es necesario.', 'info');
     }
 
+    /**
+     * Sube al Blob Storage la foto nueva de cada ítem (si la hay) y devuelve, en el
+     * mismo orden, el valor a poner en `image_base64` del items_json:
+     * ruta_bs de la subida · ruta_bs ya guardada que se reenvía · '' (sin foto nueva).
+     */
+    private async _subirFotosItems<T extends { imagen?: string | null; imagenFile?: File | null }>(
+        items: T[], seedFn: (it: T) => string | number,
+    ): Promise<string[]> {
+        const out: string[] = [];
+        for (const it of items) {
+            if (it.imagenFile) {
+                out.push(await lastValueFrom(this.blobStorage.upload(it.imagenFile, 'Imagenes', seedFn(it))));
+            } else if (it.imagen && this.blobStorage.isRutaBs(it.imagen)) {
+                out.push(it.imagen);
+            } else {
+                out.push('');
+            }
+        }
+        return out;
+    }
+
     // ── Nueva: finalize ───────────────────────────────────────────────────────
-    finalizarIngreso(): void {
+    async finalizarIngreso(): Promise<void> {
         this.isSaving = true;
         const rec = this.recepcionForm.value;
         const prov = rec.proveedor;
         const provNombre = typeof prov === 'object' ? prov?.nombre : prov || '';
         const itemsSnapshot = [...this.dataSource];
-        const itemsJson = JSON.stringify(itemsSnapshot.map(h => ({
+
+        // Sube las fotos al Blob Storage ANTES de armar el items_json.
+        // La herramienta aún no existe → se usa el código BOA como semilla del nombre.
+        let fotos: string[];
+        try {
+            fotos = await this._subirFotosItems(itemsSnapshot, h => (h.codigoBoa || '').toUpperCase());
+        } catch (e: any) {
+            this.isSaving = false;
+            this._showMsg('No se pudo subir una foto: ' + (e?.message || 'error') + '. Intente de nuevo.', 'error');
+            return;
+        }
+
+        const itemsJson = JSON.stringify(itemsSnapshot.map((h, i) => ({
             code: h.codigoBoa, name: h.descripcion, description: h.descripcion,
             tool_type: h.tipo || 'HERRAMIENTA',
             brand: h.marca || '', part_number: h.pn || '', serial_number: h.sn || '',
             quantity: h.cantidad,
             shelf: h.estante || '', shelf_level: h.nivelUbicacion || '', accessories: h.accesorios || '',
             warehouse_id: h.warehouseId || null, rack_id: h.rackId || null, level_id: h.levelId || null,
-            image_base64: h.imagen || '',
+            image_path: fotos[i] || '',
             document_ref: '', unit_of_measure: h.unidadMedida || 'UNIDAD',
             condition: h.estado === 'NUEVO' ? 'new' : h.estado === 'REACONDICIONADO' ? 'reconditioned' : 'good',
             criticality_level: h.nivelCriticidad || 'B', manufacture_origin: h.fabricacion || 'INTERNACIONAL',
@@ -561,7 +598,10 @@ export class IngresosHubComponent implements OnInit, OnDestroy {
                 warehouseId:     result.data.warehouseId     || null,
                 rackId:          result.data.rackId          || null,
                 levelId:         result.data.levelId         || null,
-                imagen:          result.data.imagenNueva || result.data.imagenMaster || null,
+                // `imagen` = valor crudo ya guardado (para reenviarlo si no hay foto nueva);
+                // `imagenFile` = foto nueva a subir al Blob Storage.
+                imagen:          result.data.imagenMaster || null,
+                imagenFile:      result.data.imagenNuevaFile || null,
             };
             if (editItem) {
                 const idx = this.dataSourceAjuste.findIndex(i => i.id === editItem.id);
@@ -584,7 +624,7 @@ export class IngresosHubComponent implements OnInit, OnDestroy {
     }
 
     // ── Ajuste: finalize ──────────────────────────────────────────────────────
-    finalizarAjuste(): void {
+    async finalizarAjuste(): Promise<void> {
         const fv = this.ajusteForm.value;
         if (!fv.aprobadoPor) { this._showMsg('Debe seleccionar un aprobador', 'error'); return; }
         if (this.dataSourceAjuste.length === 0) { this._showMsg('No hay items', 'error'); return; }
@@ -594,7 +634,18 @@ export class IngresosHubComponent implements OnInit, OnDestroy {
             return;
         }
         this.isSavingAjuste = true;
-        const itemsJson = JSON.stringify(this.dataSourceAjuste.map(i => ({
+
+        const itemsAjuste = [...this.dataSourceAjuste];
+        let fotos: string[];
+        try {
+            fotos = await this._subirFotosItems(itemsAjuste, i => Number(i.toolId));
+        } catch (e: any) {
+            this.isSavingAjuste = false;
+            this._showMsg('No se pudo subir una foto: ' + (e?.message || 'error') + '. Intente de nuevo.', 'error');
+            return;
+        }
+
+        const itemsJson = JSON.stringify(itemsAjuste.map((i, idx) => ({
             tool_id:  Number(i.toolId),
             quantity: i.cantidad,
             condicion: i.estado || 'SERVICEABLE',
@@ -602,7 +653,7 @@ export class IngresosHubComponent implements OnInit, OnDestroy {
                 i.tipoAjuste  ? '[' + i.tipoAjuste + ']'   : '',
                 i.obs || ''
             ].filter(Boolean).join(' | '),
-            image_base64: i.imagen || ''
+            image_path: fotos[idx] || ''
         })));
         const tipoLabel = fv.tipoAjuste || 'INVENTARIO';
         // Ubicación elegida en el picker (rack/nivel) de cada item: registrarAjusteIngreso

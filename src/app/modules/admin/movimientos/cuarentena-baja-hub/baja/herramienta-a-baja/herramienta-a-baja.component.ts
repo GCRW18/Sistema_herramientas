@@ -13,6 +13,7 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { Subject, of, takeUntil, debounceTime, distinctUntilChanged, switchMap, catchError } from 'rxjs';
 import { ToolService } from '../../../../../../core/services/tool.service';
 import { MovementService } from '../../../../../../core/services/movement.service';
+import { BlobStorageService } from '../../../../../../core/services/blob-storage.service';
 
 interface HerramientaOption {
     id_tool?: number;
@@ -67,6 +68,7 @@ export class HerramientaABajaComponent implements OnInit, OnDestroy {
     private snackBar = inject(MatSnackBar);
     private toolSvc = inject(ToolService);
     private movementSvc = inject(MovementService);
+    private blobStorage = inject(BlobStorageService);
 
     private _unsubscribeAll = new Subject<void>();
     private _search$ = new Subject<string>();
@@ -214,24 +216,27 @@ export class HerramientaABajaComponent implements OnInit, OnDestroy {
             observacion: `Baja de herramienta: ${herramienta.codigo} - ${herramienta.nombre}`
         });
 
-        this.selectedImage.set(herramienta.imagen ?? null);
+        this.selectedImage.set(this.blobStorage.resolveImageSrc(herramienta.imagen) ?? null);
         this.showMessage(`Ítem seleccionado correctamente`, 'success');
     }
+
+    selectedImageFile: File | null = null;
 
     onImageSelected(event: Event): void {
         const file = (event.target as HTMLInputElement).files?.[0];
         if (!file) return;
 
-        if (file.size > 5 * 1024 * 1024) {
-            this.showMessage('La imagen no debe superar 5MB', 'error');
+        if (file.size > 8 * 1024 * 1024) {
+            this.showMessage('La imagen no debe superar 8MB', 'error');
             return;
         }
 
+        this.selectedImageFile = file;
         this.isLoading = true;
         const reader = new FileReader();
 
         reader.onload = () => {
-            this.selectedImage.set(reader.result as string);
+            this.selectedImage.set(reader.result as string); // solo preview
             this.isLoading = false;
             (event.target as HTMLInputElement).value = '';
         };
@@ -263,6 +268,7 @@ export class HerramientaABajaComponent implements OnInit, OnDestroy {
             levelId: this.levelId_actual,
             notesTool: this.notesTool_actual,
             imagen: this.selectedImage(),
+            imagenFile: this.selectedImageFile,
             id: crypto.randomUUID ? crypto.randomUUID() : Date.now().toString()
         };
 

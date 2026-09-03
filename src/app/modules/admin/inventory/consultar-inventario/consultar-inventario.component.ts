@@ -16,6 +16,7 @@ import { KitsService }        from 'app/core/services/kits.service';
 import { MiscelaneosService } from 'app/core/services/miscelaneos.service';
 import { WarehouseService }   from 'app/core/services/warehouse.service';
 import { MovementService }    from 'app/core/services/movement.service';
+import { BlobStorageService } from 'app/core/services/blob-storage.service';
 import { GestionUbicacionesService } from '../gestion-ubicaciones/gestion-ubicaciones.service';
 import { FichaInventarioDialogComponent } from './ficha-inventario-dialog/ficha-inventario-dialog.component';
 
@@ -110,6 +111,7 @@ export class ConsultarInventarioComponent implements OnInit {
     private miscelaneosService = inject(MiscelaneosService);
     private warehouseService  = inject(WarehouseService);
     private movementService   = inject(MovementService);
+    private _blobStorage      = inject(BlobStorageService);
     private ubicacionesService = inject(GestionUbicacionesService);
     public  dialogRef         = inject(MatDialogRef<ConsultarInventarioComponent>, { optional: true });
 
@@ -407,18 +409,15 @@ export class ConsultarInventarioComponent implements OnInit {
         let estado: UnifiedStatus = statusMap[t.status] || 'DISPONIBLE';
         if (estado === 'DISPONIBLE' && (t.quantity_in_stock ?? 0) <= 0) estado = 'SIN STOCK';
 
-        // La foto real de la herramienta llega en t.location_photo (subconsulta a
-        // he.ttool_files/'location_photo', la misma que usan "Agregar Herramienta al Nivel"
-        // y Recepción). t.images (text[]) queda como fallback histórico pero nadie lo
-        // escribe hoy (he.ft_tools_ime no tiene caller en el frontend).
+        // Foto real: t.location_photo (subconsulta a he.ttool_files/'location_photo') —
+        // ruta_bs del Blob Storage o base64/data-URL heredado.
         let imagen: string | undefined;
-        const rawImgs = t.images;
-        let primera: string | undefined = Array.isArray(rawImgs) && rawImgs.length ? rawImgs[0] : undefined;
-        if (!primera && t.location_photo) primera = t.location_photo;
-        if (primera) {
-            imagen = (primera.startsWith('data:') || primera.startsWith('http'))
-                ? primera
-                : `data:image/jpeg;base64,${primera}`;
+        const foto: string | undefined = t.location_photo || undefined;
+        if (foto) {
+            const resuelta = this._blobStorage.resolveImageSrc(foto);
+            imagen = (resuelta === foto && !foto.startsWith('data:') && !foto.startsWith('http'))
+                ? `data:image/jpeg;base64,${foto}`
+                : (resuelta ?? undefined);
         }
 
         return {

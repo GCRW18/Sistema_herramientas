@@ -9,9 +9,11 @@ import { DragDropModule } from '@angular/cdk/drag-drop';
 import { Subject, of } from 'rxjs';
 import { debounceTime, distinctUntilChanged, finalize, switchMap, takeUntil } from 'rxjs/operators';
 
+import { lastValueFrom } from 'rxjs';
 import { Level, LevelTool, Rack, ToolEstado } from '../interfaces';
 import { CalibrationService } from 'app/core/services/calibration.service';
 import { MovementService } from 'app/core/services/movement.service';
+import { BlobStorageService } from 'app/core/services/blob-storage.service';
 
 type Mode = 'new' | 'edit';
 
@@ -51,6 +53,7 @@ export class FormHerramientaNivelComponent implements OnInit, OnDestroy {
     private data        = inject<DialogData>(MAT_DIALOG_DATA);
     private calibSvc    = inject(CalibrationService);
     private movementSvc = inject(MovementService);
+    private blobStorage = inject(BlobStorageService);
     private _destroy$   = new Subject<void>();
     private _search$    = new Subject<string>();
 
@@ -59,7 +62,10 @@ export class FormHerramientaNivelComponent implements OnInit, OnDestroy {
     level: Level = this.data.level;
 
     form!: FormGroup;
-    selectedImage = signal<string | null>(null);
+    selectedImage = signal<string | null>(null);       // src YA resuelto para el <img> de preview
+    private selectedImageFile: File | null = null;     // archivo nuevo a subir al Blob Storage
+    private existingPhotoRef: string | null = null;    // ruta_bs/base64 ya guardada (se reenvía si no se cambia)
+    guardando = signal(false);
 
     /* ════════ Buscador header (mismo patrón que form-envio) ════════ */
     buscarValue       = 'BOA-H-';
@@ -95,7 +101,10 @@ export class FormHerramientaNivelComponent implements OnInit, OnDestroy {
 
     ngOnInit(): void {
         const t = this.data.tool;
-        if (t?.imagenBase64) this.selectedImage.set(t.imagenBase64);
+        if (t?.imagenBase64) {
+            this.existingPhotoRef = t.imagenBase64;
+            this.selectedImage.set(this.blobStorage.resolveImageSrc(t.imagenBase64));
+        }
 
         this.form = this.fb.group({
             codigo:               [t?.codigo             ?? 'BOA-H-',       [Validators.required, Validators.maxLength(40)]],
@@ -212,7 +221,10 @@ export class FormHerramientaNivelComponent implements OnInit, OnDestroy {
             listaContenido:       tool.content_list || '',
         });
 
-        if (tool.location_photo) this.selectedImage.set(tool.location_photo);
+        if (tool.location_photo) {
+            this.existingPhotoRef = tool.location_photo;
+            this.selectedImage.set(this.blobStorage.resolveImageSrc(tool.location_photo));
+        }
     }
 
     hideBuscarDropdown(): void {
@@ -228,8 +240,10 @@ export class FormHerramientaNivelComponent implements OnInit, OnDestroy {
     onImageSelected(event: Event): void {
         const file = (event.target as HTMLInputElement).files?.[0];
         if (!file) return;
+        if (file.size > 8 * 1024 * 1024) { return; }
+        this.selectedImageFile = file;
         const reader = new FileReader();
-        reader.onload = () => this.selectedImage.set(reader.result as string);
+        reader.onload = () => this.selectedImage.set(reader.result as string); // solo preview
         reader.readAsDataURL(file);
     }
 
@@ -238,12 +252,30 @@ export class FormHerramientaNivelComponent implements OnInit, OnDestroy {
         return !!c && c.hasError(error) && c.touched;
     }
 
-    procesar(): void {
+    async procesar(): Promise<void> {
         if (this.form.invalid) {
             this.form.markAllAsTouched();
             return;
         }
         const v = this.form.getRawValue();
+
+        // La foto se sube al Blob Storage; a HE_LTL_INS/MOD se manda la ruta_bs
+        // (el campo sigue llamándose image_base64 por compatibilidad del contrato).
+        let fotoRef: string | undefined = this.existingPhotoRef ?? undefined;
+        if (this.selectedImageFile) {
+            this.guardando.set(true);
+            try {
+                const seedId = this.data.tool?.id || v.codigo.trim();
+                fotoRef = await lastValueFrom(this.blobStorage.upload(this.selectedImageFile, 'Imagenes', seedId));
+            } catch (e: any) {
+                this.guardando.set(false);
+                this.form.markAllAsTouched();
+                alert('No se pudo subir la foto: ' + (e?.message || 'error') + '. Intente de nuevo.');
+                return;
+            }
+            this.guardando.set(false);
+        }
+
         const out: LevelTool = {
             id:                   this.data.tool?.id ?? 0,
             levelId:              this.level.id,
@@ -266,7 +298,7 @@ export class FormHerramientaNivelComponent implements OnInit, OnDestroy {
             intervaloCalibracion: v.requiereCalibracion ? v.intervaloCalibracion : null,
             fechaCalibracion:     v.requiereCalibracion ? v.fechaCalibracion     : null,
             nroCertificado:       v.requiereCalibracion ? v.nroCertificado       : '',
-            imagenBase64:         this.selectedImage()    ?? undefined,
+            imagenBase64:         fotoRef,
             observaciones:        v.observaciones?.trim() || undefined,
             listaContenido:       v.listaContenido?.trim() || undefined,
         };

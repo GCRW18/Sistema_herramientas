@@ -1,5 +1,5 @@
-<div class="bg-stone-100 dark:bg-[#0F172A] border-2 border-black rounded-xl flex flex-col w-full h-full overflow-hidden relative"
->
+<div class="bg-stone-100 dark:bg-[#0F172A] border-2 border-black rounded-xl flex flex-col w-full max-h-[95vh] overflow-hidden relative">
+
 
     <!-- OVERLAY PROCESANDO -->
     <div *ngIf="isProcessing()" class="absolute inset-0 bg-black/60 flex items-center justify-center z-50">
@@ -10,252 +10,240 @@
     </div>
 
     <!-- HEADER -->
-    <div class="bg-[#0F172A] px-5 py-3 flex items-center gap-3 shrink-0 select-none"
+    <div class="bg-[#0F172A] px-4 py-2.5 flex items-center gap-2.5 shrink-0 select-none"
          cdkDrag cdkDragRootElement=".cdk-overlay-pane" cdkDragHandle style="cursor:grab">
-        <div class="w-8 h-8 rounded bg-amber-400 border-2 border-black flex items-center justify-center shadow-[2px_2px_0_#fbbf24] shrink-0">
-            <mat-icon class="!text-base text-black">fact_check</mat-icon>
+        <div class="w-7 h-7 rounded bg-amber-400 border-2 border-black flex items-center justify-center shadow-[2px_2px_0_#fbbf24] shrink-0">
+            <mat-icon class="!text-sm text-black">fact_check</mat-icon>
         </div>
-        <div>
-            <p class="text-[9px] text-slate-400 font-bold uppercase tracking-[0.18em] leading-none mb-0.5">Calibraciones · MGH-109</p>
-            <h2 class="text-sm text-white font-black uppercase tracking-tight leading-none">Confirmar Retorno</h2>
+        <div class="min-w-0">
+            <p class="text-[8px] text-slate-400 font-bold uppercase tracking-[0.18em] leading-none mb-0.5">Calibraciones · MGH-109</p>
+            <h2 class="text-xs sm:text-sm text-white font-black uppercase tracking-tight leading-none">Confirmar Retorno</h2>
+        </div>
+        <div *ngIf="queue" class="ml-auto flex items-center gap-2 shrink-0">
+            <span class="px-2 py-1 bg-amber-400 text-black font-black text-[9px] border-2 border-black rounded leading-none uppercase">
+                {{ queue.pos }} / {{ queue.total }}
+            </span>
         </div>
     </div>
 
     <!-- BARRA DE CONTEXTO -->
-    <div *ngIf="calibration" class="border-b-2 border-black bg-white dark:bg-slate-800 px-4 py-2.5 flex items-center gap-3 shrink-0 flex-wrap">
-        <div class="w-7 h-7 rounded-lg border-2 border-black bg-stone-100 dark:bg-slate-700 flex items-center justify-center shrink-0">
-            <mat-icon class="!text-sm text-black dark:text-white">construction</mat-icon>
-        </div>
-        <div class="flex-1 min-w-0">
-            <p class="text-[8px] text-stone-500 dark:text-slate-300 font-black uppercase tracking-widest leading-none mb-0.5">Herramienta</p>
-            <p class="text-xs font-black text-black dark:text-white truncate">
-                {{ calibration.tool_code || calibration.code }} — {{ calibration.tool_name || calibration.name }}
-            </p>
-        </div>
-        <div class="flex items-center gap-2 shrink-0">
-            <span class="font-mono font-black bg-black text-amber-400 px-2 py-0.5 rounded border-2 border-amber-400 text-[10px]">
-                {{ calibration.record_number }}
-            </span>
-            <span class="text-[9px] font-black text-stone-500 dark:text-slate-400 bg-stone-100 dark:bg-slate-700 px-2 py-0.5 rounded border border-stone-300 dark:border-slate-600">
-                Envío: {{ formatDateDisplay(calibration.send_date) }}
-            </span>
-            <span *ngIf="isRetrasado()"
-                  class="bg-red-500 text-white px-1.5 py-0.5 rounded text-[9px] font-black uppercase border-2 border-black flex items-center gap-1">
-                <mat-icon class="!text-[11px] !w-3 !h-3">warning</mat-icon> RETRASADO
-            </span>
-        </div>
+    <div *ngIf="calibration" class="border-b-2 border-black bg-white dark:bg-slate-800 px-3 py-1.5 flex items-center gap-2 shrink-0">
+        <mat-icon class="!text-sm text-black dark:text-white shrink-0">construction</mat-icon>
+        <p class="flex-1 min-w-0 text-[11px] font-black text-black dark:text-white truncate">
+            {{ calibration.tool_code || calibration.code }} — {{ calibration.tool_name || calibration.name }}
+        </p>
+        <span class="font-mono font-black bg-black text-amber-400 px-1.5 py-0.5 rounded border border-amber-400 text-[9px] shrink-0">
+            {{ calibration.record_number }}
+        </span>
+        <span *ngIf="isRetrasado()"
+              class="bg-red-500 text-white px-1.5 py-0.5 rounded text-[8px] font-black uppercase border border-black flex items-center gap-0.5 shrink-0">
+            <mat-icon class="!text-[10px] !w-2.5 !h-2.5">warning</mat-icon> RETRASADO
+        </span>
     </div>
 
     <!-- BODY -->
-    <div class="flex-1 overflow-y-auto px-5 py-4 flex flex-col gap-3 custom-scrollbar">
+    <div class="flex-1 min-h-0 overflow-y-auto px-3 py-2.5 flex flex-col gap-2 custom-scrollbar">
 
-        <!-- FECHA DE RETORNO REAL -->
-        <div class="bg-white dark:bg-slate-800 border-2 border-black rounded-xl p-2.5 flex items-center gap-3 shadow-[2px_2px_0_#000]">
-            <div class="w-8 h-8 rounded-lg bg-black flex items-center justify-center shrink-0">
-                <mat-icon class="!text-sm text-white">today</mat-icon>
-            </div>
-            <div>
-                <p class="text-[8px] font-black uppercase tracking-widest text-stone-500 dark:text-slate-300 leading-none mb-0.5">Fecha de Retorno Real</p>
-                <p class="text-sm font-black text-black dark:text-white">{{ formatDateDisplay(todayStr) }}</p>
-            </div>
-            <span class="ml-auto text-[9px] font-black text-white bg-black px-2 py-0.5 rounded uppercase shrink-0">
-                Automático · Hoy
-            </span>
+        <!-- ══ GRUPO: RESULTADO Y CERTIFICADO ══ -->
+        <div class="flex items-center gap-1.5">
+            <mat-icon class="!text-xs text-amber-500 shrink-0">verified</mat-icon>
+            <span class="text-[9px] font-black uppercase text-stone-400 dark:text-slate-500 tracking-wider">Resultado y Certificado</span>
+            <div class="flex-1 h-px bg-stone-200 dark:bg-slate-600 ml-1"></div>
         </div>
 
-        <!-- CAMPOS DEL FORMULARIO -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-
-            <!-- Resultado de la calibración -->
-            <div class="sm:col-span-2">
-                <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-500 dark:text-slate-300 mb-1.5 block">
-                    Resultado <span class="text-black dark:text-white font-black">*</span>
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+            <!-- Resultado -->
+            <div class="sm:col-span-3">
+                <label class="text-[8px] font-black uppercase tracking-[0.15em] text-stone-500 dark:text-slate-300 mb-1 block">
+                    Resultado de la Calibración <span class="text-red-500">*</span>
                 </label>
                 <div class="grid grid-cols-3 gap-2">
                     <button type="button" (click)="resultado = 'approved'"
-                            class="h-10 text-[10px] font-black uppercase border-2 border-black rounded-xl transition-all"
+                            class="h-7 text-[10px] font-black uppercase border-2 border-black rounded-lg transition-all"
                             [class]="resultado === 'approved' ? 'bg-emerald-400 text-black shadow-[2px_2px_0_#000]' : 'bg-white dark:bg-slate-800 dark:text-white'">
                         Aprobado
                     </button>
                     <button type="button" (click)="resultado = 'conditional'"
-                            class="h-10 text-[10px] font-black uppercase border-2 border-black rounded-xl transition-all"
+                            class="h-7 text-[10px] font-black uppercase border-2 border-black rounded-lg transition-all"
                             [class]="resultado === 'conditional' ? 'bg-amber-400 text-black shadow-[2px_2px_0_#000]' : 'bg-white dark:bg-slate-800 dark:text-white'">
                         Condicional
                     </button>
                     <button type="button" (click)="resultado = 'rejected'"
-                            class="h-10 text-[10px] font-black uppercase border-2 border-black rounded-xl transition-all"
+                            class="h-7 text-[10px] font-black uppercase border-2 border-black rounded-lg transition-all"
                             [class]="resultado === 'rejected' ? 'bg-red-500 text-white shadow-[2px_2px_0_#000]' : 'bg-white dark:bg-slate-800 dark:text-white'">
                         Rechazado
                     </button>
                 </div>
-                <p *ngIf="isRechazado" class="text-[9px] font-bold text-black dark:text-white mt-1.5 flex items-center gap-1">
+                <p *ngIf="isRechazado" class="text-[9px] font-bold text-red-600 dark:text-red-400 mt-1 flex items-center gap-1">
                     <mat-icon class="!text-[11px] !w-3 !h-3">warning</mat-icon>
-                    La herramienta pasará a CUARENTENA y no se actualizará su fecha de calibración.
+                    Pasa a CUARENTENA y no se actualiza su fecha de calibración.
                 </p>
             </div>
 
             <!-- N° Certificado -->
             <div class="sm:col-span-2">
-                <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-500 dark:text-slate-300 mb-1.5 block">
-                    N° de Certificado <span *ngIf="!isRechazado" class="text-black dark:text-white font-black">*</span>
+                <label class="text-[8px] font-black uppercase tracking-[0.15em] text-stone-500 dark:text-slate-300 mb-1 block">
+                    N° de Certificado <span *ngIf="!isRechazado" class="text-red-500">*</span>
                 </label>
                 <div class="relative">
-                    <mat-icon class="absolute left-3 top-2.5 !text-sm text-black dark:text-white pointer-events-none">workspace_premium</mat-icon>
+                    <mat-icon class="absolute left-2.5 top-2 !text-sm text-black dark:text-white pointer-events-none">workspace_premium</mat-icon>
                     <input type="text"
                            [(ngModel)]="certificateNumber"
                            (ngModelChange)="onCertChange()"
                            placeholder="Ej. LAB-2026-001"
-                           class="w-full h-10 text-sm font-bold bg-white dark:bg-slate-800 dark:text-white border-2 rounded-xl pl-9 pr-3 outline-none transition-all duration-150 placeholder:text-stone-300 dark:placeholder:text-slate-500 uppercase"
+                           class="w-full h-8 text-xs font-bold bg-white dark:bg-slate-800 dark:text-white border-2 rounded-lg pl-8 pr-3 outline-none transition-all placeholder:text-stone-300 dark:placeholder:text-slate-500 uppercase"
                            [class]="(showCertError() || duplicateError())
                                ? 'border-red-500 shadow-[2px_2px_0_#ef4444]'
-                               : 'border-black dark:border-slate-300 focus:shadow-[3px_3px_0_#000] dark:focus:shadow-[3px_3px_0_#FFC501]'">
+                               : 'border-black dark:border-slate-300 focus:shadow-[2px_2px_0_#000] dark:focus:shadow-[2px_2px_0_#FFC501]'">
                 </div>
-                <p *ngIf="duplicateError()" class="text-[8px] font-bold text-black dark:text-white mt-1 flex items-center gap-1">
+                <p *ngIf="duplicateError()" class="text-[8px] font-bold text-red-600 dark:text-red-400 mt-0.5 flex items-center gap-1">
                     <mat-icon class="!text-[10px]">error</mat-icon> {{ duplicateError() }}
                 </p>
             </div>
 
+            <!-- Certificado PDF -->
+            <div>
+                <label class="text-[8px] font-black uppercase tracking-[0.15em] text-stone-500 dark:text-slate-300 mb-1 block">Certificado PDF</label>
+                <div *ngIf="!selectedFile" (click)="fileInput.click()"
+                     class="w-full h-8 border-2 border-dashed border-stone-300 dark:border-slate-400 hover:border-solid hover:border-black dark:hover:border-amber-400 rounded-lg flex items-center justify-center gap-1.5 bg-white dark:bg-slate-800 cursor-pointer transition-all group">
+                    <mat-icon class="text-stone-400 group-hover:text-black dark:group-hover:text-amber-400 !text-base transition-colors">upload_file</mat-icon>
+                    <span class="text-[9px] font-black text-stone-400 group-hover:text-black dark:group-hover:text-amber-400 uppercase">PDF · Máx. 3 MB</span>
+                </div>
+                <div *ngIf="selectedFile"
+                     class="w-full h-8 border-2 border-black dark:border-slate-300 rounded-lg px-2 bg-white dark:bg-slate-800 shadow-[2px_2px_0_#000] dark:shadow-[2px_2px_0_#FFC501] flex items-center gap-1.5">
+                    <mat-icon class="text-black dark:text-white !text-sm shrink-0">picture_as_pdf</mat-icon>
+                    <span class="text-[9px] font-black text-black dark:text-white flex-1 truncate">{{ selectedFile.name }}</span>
+                    <span class="text-[8px] text-stone-500 dark:text-slate-300 shrink-0">{{ (selectedFile.size / 1024 / 1024).toFixed(1) }}MB</span>
+                    <button (click)="removeFile()" matTooltip="Quitar"
+                            class="w-5 h-5 bg-black text-white border border-black rounded flex items-center justify-center hover:bg-red-500 transition-all shrink-0">
+                        <mat-icon class="!text-[11px]">close</mat-icon>
+                    </button>
+                </div>
+                <input #fileInput id="pdfInputRetorno" type="file" accept="application/pdf" class="hidden" (change)="onFileSelected($event)">
+            </div>
+        </div>
+
+        <!-- ══ GRUPO: FECHAS ══ -->
+        <div class="flex items-center gap-1.5 mt-0.5">
+            <mat-icon class="!text-xs text-amber-500 shrink-0">event</mat-icon>
+            <span class="text-[9px] font-black uppercase text-stone-400 dark:text-slate-500 tracking-wider">Fechas</span>
+            <div class="flex-1 h-px bg-stone-200 dark:bg-slate-600 ml-1"></div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+            <!-- Fecha de Retorno Real (auto) -->
+            <div>
+                <label class="text-[8px] font-black uppercase tracking-[0.15em] text-stone-500 dark:text-slate-300 mb-1 flex justify-between items-center">
+                    <span>Retorno Real</span>
+                    <span class="bg-black text-white px-1 py-0.5 rounded text-[7px] font-black leading-none">HOY</span>
+                </label>
+                <input type="text" [value]="formatDateDisplay(todayStr)" readonly
+                       class="w-full h-8 text-xs font-bold bg-stone-100 dark:bg-slate-800 dark:text-slate-300 border-2 border-black dark:border-slate-500 rounded-lg px-3 outline-none cursor-not-allowed">
+            </div>
+
             <!-- Fecha Calibración -->
             <div>
-                <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-500 dark:text-slate-300 mb-1.5 block">
-                    Fecha Calibración <span class="text-black dark:text-white font-black">*</span>
+                <label class="text-[8px] font-black uppercase tracking-[0.15em] text-stone-500 dark:text-slate-300 mb-1 block">
+                    Fecha Calibración <span class="text-red-500">*</span>
                 </label>
-                <input type="date"
-                       [(ngModel)]="fechaCalStr"
-                       [max]="todayStr"
-                       (ngModelChange)="onFechaCalChange()"
-                       class="w-full h-10 text-sm font-bold bg-white dark:bg-slate-800 dark:text-white border-2 rounded-xl px-3 outline-none transition-all duration-150"
+                <input type="date" [(ngModel)]="fechaCalStr" [max]="todayStr" (ngModelChange)="onFechaCalChange()"
+                       class="w-full h-8 text-xs font-bold bg-white dark:bg-slate-800 dark:text-white border-2 rounded-lg px-2.5 outline-none transition-all"
                        [class]="isFechaFutura()
                            ? 'border-red-500 shadow-[2px_2px_0_#ef4444]'
-                           : 'border-black dark:border-slate-300 focus:shadow-[3px_3px_0_#000] dark:focus:shadow-[3px_3px_0_#FFC501]'">
+                           : 'border-black dark:border-slate-300 focus:shadow-[2px_2px_0_#000] dark:focus:shadow-[2px_2px_0_#FFC501]'">
             </div>
 
             <!-- Próximo Vencimiento -->
             <div *ngIf="!isRechazado">
-                <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-500 dark:text-slate-300 mb-1.5 flex justify-between items-center">
+                <label class="text-[8px] font-black uppercase tracking-[0.15em] text-stone-500 dark:text-slate-300 mb-1 flex justify-between items-center">
                     <span>Próx. Vencimiento</span>
-                    <span class="bg-black text-white border border-black px-1.5 py-0.5 rounded text-[8px] font-black">ESTIMADO</span>
+                    <span class="bg-stone-400 dark:bg-slate-500 text-white px-1 py-0.5 rounded text-[7px] font-black leading-none">EST.</span>
                 </label>
-                <input type="text"
-                       [value]="formatDateDisplay(fechaVencimientoDisplay)"
-                       readonly
-                       class="w-full h-10 text-sm font-bold bg-stone-100 dark:bg-slate-800 dark:text-slate-400 border-2 border-dashed border-stone-300 dark:border-slate-500 rounded-xl px-3 outline-none cursor-not-allowed text-stone-400">
-                <p class="text-[8px] font-bold text-stone-400 dark:text-slate-400 mt-1">
-                    El sistema lo ajusta según el intervalo de calibración de la herramienta.
-                </p>
+                <input type="text" [value]="formatDateDisplay(fechaVencimientoDisplay)" readonly
+                       class="w-full h-8 text-xs font-bold bg-stone-100 dark:bg-slate-800 dark:text-slate-400 border-2 border-dashed border-stone-300 dark:border-slate-500 rounded-lg px-3 outline-none cursor-not-allowed text-stone-400">
             </div>
+        </div>
 
-            <!-- Advertencia de fecha -->
-            <div *ngIf="showFechaWarning()" class="sm:col-span-2 flex items-center gap-2 p-2.5 bg-white dark:bg-slate-800 border-2 border-black rounded-xl shadow-[2px_2px_0_#000]">
-                <mat-icon class="text-black dark:text-white shrink-0 !text-base">warning</mat-icon>
-                <p class="text-[10px] text-black dark:text-white font-black uppercase">
-                    La fecha de calibración es anterior al envío ({{ formatDateDisplay(calibration?.send_date) }}).
-                </p>
-            </div>
+        <!-- Advertencia de fecha -->
+        <div *ngIf="showFechaWarning()" class="flex items-center gap-2 p-2 bg-amber-100 dark:bg-amber-900/30 border-2 border-amber-400 rounded-lg">
+            <mat-icon class="text-amber-700 dark:text-amber-400 shrink-0 !text-sm">warning</mat-icon>
+            <p class="text-[9px] text-amber-800 dark:text-amber-300 font-black uppercase leading-tight">
+                La fecha de calibración es anterior al envío ({{ formatDateDisplay(calibration?.send_date) }}).
+            </p>
+        </div>
 
-            <!-- Funcionario Receptor -->
-            <div class="relative">
-                <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-500 dark:text-slate-300 mb-1.5 block">
-                    Funcionario Receptor
-                </label>
-                <div class="relative">
-                    <mat-icon class="absolute left-3 top-2.5 !text-sm text-black dark:text-white pointer-events-none">how_to_reg</mat-icon>
-                    <input type="text"
-                           [(ngModel)]="receivedByName"
-                           (input)="onReceivedByInput($any($event.target).value)"
-                           (blur)="hideReceivedByDropdown()"
-                           placeholder="Buscar funcionario..."
-                           class="w-full h-10 text-sm font-bold bg-white dark:bg-slate-800 dark:text-white border-2 border-black dark:border-slate-400 rounded-xl pl-9 pr-8 outline-none transition-all duration-150 placeholder:text-stone-300 dark:placeholder:text-slate-500 focus:shadow-[3px_3px_0_#000]">
-                    <mat-spinner *ngIf="receivedByLoading" diameter="14" class="absolute right-3 top-3"></mat-spinner>
-                </div>
-                <div *ngIf="showReceivedByDropdown"
-                     class="absolute z-50 w-full bg-white dark:bg-slate-800 border-2 border-black rounded-xl shadow-[3px_3px_0_#000] dark:shadow-[3px_3px_0_#FFC501] max-h-36 overflow-y-auto mt-1 divide-y divide-stone-200 dark:divide-slate-600">
-                    <div *ngFor="let f of receivedByFuncionarios"
-                         (mousedown)="selectReceivedBy(f)"
-                         class="px-3 py-2 hover:bg-stone-100 dark:hover:bg-slate-700 cursor-pointer transition-colors dark:text-white">
-                        <div class="text-[11px] font-black text-black dark:text-white">{{ f.nombre }}</div>
-                        <div class="text-[9px] text-stone-500 dark:text-slate-300">{{ f.cargo }}</div>
-                    </div>
-                </div>
-            </div>
+        <!-- ══ GRUPO: SERVICIO Y RECEPCIÓN ══ -->
+        <div class="flex items-center gap-1.5 mt-0.5">
+            <mat-icon class="!text-xs text-amber-500 shrink-0">handshake</mat-icon>
+            <span class="text-[9px] font-black uppercase text-stone-400 dark:text-slate-500 tracking-wider">Servicio y Recepción</span>
+            <div class="flex-1 h-px bg-stone-200 dark:bg-slate-600 ml-1"></div>
+        </div>
 
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
             <!-- Cambiar Laboratorio -->
             <div>
-                <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-500 dark:text-slate-300 mb-1.5 block">
-                    Cambiar Laboratorio
-                </label>
+                <label class="text-[8px] font-black uppercase tracking-[0.15em] text-stone-500 dark:text-slate-300 mb-1 block">Laboratorio</label>
                 <select [(ngModel)]="empresaIdOverride"
-                        class="w-full h-10 text-sm font-bold bg-white dark:bg-slate-800 dark:text-white border-2 border-black dark:border-slate-300 rounded-xl px-3 outline-none transition-all duration-150 cursor-pointer appearance-none focus:shadow-[3px_3px_0_#000] dark:focus:shadow-[3px_3px_0_#FFC501]">
+                        class="w-full h-8 text-xs font-bold bg-white dark:bg-slate-800 dark:text-white border-2 border-black dark:border-slate-300 rounded-lg px-2.5 outline-none transition-all cursor-pointer appearance-none focus:shadow-[2px_2px_0_#000] dark:focus:shadow-[2px_2px_0_#FFC501]">
                     <option [ngValue]="null">Igual al envío ({{ calibration?.supplier_name }})</option>
                     <option *ngFor="let lab of laboratories" [ngValue]="lab.id_laboratory">{{ lab.name }}</option>
                 </select>
             </div>
 
+            <!-- Costo del Servicio -->
+            <div>
+                <label class="text-[8px] font-black uppercase tracking-[0.15em] text-stone-500 dark:text-slate-300 mb-1 block">Costo del Servicio (Bs)</label>
+                <input type="number" min="0" step="0.01" [(ngModel)]="costo" placeholder="0.00"
+                       class="w-full h-8 text-xs font-bold bg-white dark:bg-slate-800 dark:text-white border-2 border-black dark:border-slate-300 rounded-lg px-3 outline-none transition-all placeholder:text-stone-300 dark:placeholder:text-slate-500 focus:shadow-[2px_2px_0_#000] dark:focus:shadow-[2px_2px_0_#FFC501]">
+            </div>
+
+            <!-- Funcionario Receptor -->
+            <div class="relative sm:col-span-2">
+                <label class="text-[8px] font-black uppercase tracking-[0.15em] text-stone-500 dark:text-slate-300 mb-1 block">Funcionario Receptor</label>
+                <div class="relative">
+                    <mat-icon class="absolute left-2.5 top-2 !text-sm text-black dark:text-white pointer-events-none">how_to_reg</mat-icon>
+                    <input type="text"
+                           [(ngModel)]="receivedByName"
+                           (input)="onReceivedByInput($any($event.target).value)"
+                           (blur)="hideReceivedByDropdown()"
+                           placeholder="Buscar funcionario..."
+                           class="w-full h-8 text-xs font-bold bg-white dark:bg-slate-800 dark:text-white border-2 border-black dark:border-slate-400 rounded-lg pl-8 pr-8 outline-none transition-all placeholder:text-stone-300 dark:placeholder:text-slate-500 focus:shadow-[2px_2px_0_#000]">
+                    <mat-spinner *ngIf="receivedByLoading" diameter="14" class="absolute right-3 top-2.5"></mat-spinner>
+                </div>
+                <div *ngIf="showReceivedByDropdown"
+                     class="absolute z-50 w-full bg-white dark:bg-slate-800 border-2 border-black rounded-lg shadow-[3px_3px_0_#000] dark:shadow-[3px_3px_0_#FFC501] max-h-32 overflow-y-auto mt-1 divide-y divide-stone-200 dark:divide-slate-600">
+                    <div *ngFor="let f of receivedByFuncionarios"
+                         (mousedown)="selectReceivedBy(f)"
+                         class="px-3 py-1.5 hover:bg-stone-100 dark:hover:bg-slate-700 cursor-pointer transition-colors dark:text-white">
+                        <div class="text-[10px] font-black text-black dark:text-white">{{ f.nombre }}</div>
+                        <div class="text-[9px] text-stone-500 dark:text-slate-300">{{ f.cargo }}</div>
+                    </div>
+                </div>
+            </div>
+
             <!-- Observaciones -->
-            <div>
-                <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-500 dark:text-slate-300 mb-1.5 block">
-                    Observaciones
-                </label>
-                <textarea [(ngModel)]="observations"
-                          rows="3"
+            <div class="sm:col-span-2">
+                <label class="text-[8px] font-black uppercase tracking-[0.15em] text-stone-500 dark:text-slate-300 mb-1 block">Observaciones</label>
+                <textarea [(ngModel)]="observations" rows="2"
                           placeholder="Notas o tolerancias del certificado..."
-                          class="w-full h-[76px] text-sm font-normal bg-white dark:bg-slate-800 dark:text-white border-2 border-black dark:border-slate-300 rounded-xl px-3 py-2.5 outline-none transition-all duration-150 resize-none placeholder:text-stone-300 dark:placeholder:text-slate-500 focus:shadow-[3px_3px_0_#000] dark:focus:shadow-[3px_3px_0_#FFC501] custom-scrollbar"></textarea>
+                          class="w-full h-[42px] text-xs font-normal bg-white dark:bg-slate-800 dark:text-white border-2 border-black dark:border-slate-300 rounded-lg px-3 py-1.5 outline-none transition-all resize-none placeholder:text-stone-300 dark:placeholder:text-slate-500 focus:shadow-[2px_2px_0_#000] dark:focus:shadow-[2px_2px_0_#FFC501] custom-scrollbar"></textarea>
             </div>
-
-            <!-- PDF Upload -->
-            <div>
-                <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-500 dark:text-slate-300 mb-1.5 block">
-                    Certificado PDF
-                </label>
-
-                <!-- Sin archivo -->
-                <div *ngIf="!selectedFile"
-                     (click)="fileInput.click()"
-                     class="w-full h-[76px] border-2 border-dashed border-stone-300 dark:border-slate-400
-                            hover:border-solid hover:border-black dark:hover:border-amber-400 hover:bg-stone-100 dark:hover:bg-slate-700
-                            rounded-xl flex flex-col items-center justify-center gap-1
-                            bg-white dark:bg-slate-800 cursor-pointer transition-all group">
-                    <mat-icon class="text-stone-400 group-hover:text-black dark:group-hover:text-amber-400 !text-2xl transition-colors">upload_file</mat-icon>
-                    <span class="text-[9px] font-black text-stone-400 group-hover:text-black dark:group-hover:text-amber-400 uppercase transition-colors">PDF · Máx. 3 MB</span>
-                </div>
-
-                <!-- Con archivo -->
-                <div *ngIf="selectedFile"
-                     class="w-full h-[76px] border-2 border-black dark:border-slate-300 rounded-xl px-3
-                            bg-white dark:bg-slate-800 shadow-[2px_2px_0_#000] dark:shadow-[2px_2px_0_#FFC501]
-                            flex items-center gap-2">
-                    <div class="w-7 h-7 bg-black rounded-lg flex items-center justify-center shrink-0">
-                        <mat-icon class="text-white !text-base">picture_as_pdf</mat-icon>
-                    </div>
-                    <div class="flex-1 overflow-hidden">
-                        <span class="text-[10px] font-black text-black dark:text-white block truncate leading-tight">{{ selectedFile.name }}</span>
-                        <span class="text-[9px] text-stone-500 dark:text-slate-300">{{ (selectedFile.size / 1024 / 1024).toFixed(2) }} MB</span>
-                    </div>
-                    <button (click)="removeFile()" matTooltip="Quitar"
-                            class="w-6 h-6 bg-black text-white border-2 border-black rounded-md flex items-center justify-center shadow-[1px_1px_0_#000] hover:shadow-none hover:translate-y-[1px] transition-all shrink-0">
-                        <mat-icon class="!text-xs">close</mat-icon>
-                    </button>
-                </div>
-
-                <input #fileInput id="pdfInputRetorno" type="file" accept="application/pdf" class="hidden" (change)="onFileSelected($event)">
-            </div>
-
         </div>
     </div>
 
     <!-- FOOTER -->
-    <div class="border-t-2 border-black bg-stone-200 dark:bg-slate-900 px-5 py-3 flex justify-between items-center shrink-0">
+    <div class="border-t-2 border-black bg-stone-200 dark:bg-slate-900 px-3 py-2 flex justify-between items-center shrink-0">
         <button mat-dialog-close
-                class="px-4 py-2 bg-[#FF1414] text-white font-black text-[10px] border-2 border-black rounded-xl shadow-[2px_2px_0_#000] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all uppercase flex items-center gap-1.5">
+                class="px-3 py-1.5 bg-[#FF1414] text-white font-black text-[10px] border-2 border-black rounded-lg shadow-[2px_2px_0_#000] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all uppercase flex items-center gap-1.5">
             <mat-icon class="!text-sm">close</mat-icon>
             Cancelar
         </button>
         <button (click)="save()"
                 [disabled]="!canSubmit() || isProcessing()"
-                class="flex items-center gap-2 px-5 py-2 bg-amber-400 text-black font-black text-[10px] border-2 border-black rounded-xl shadow-[3px_3px_0_#000] hover:shadow-none hover:translate-x-[3px] hover:translate-y-[3px] transition-all uppercase disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-stone-300 disabled:shadow-none disabled:translate-x-0 disabled:translate-y-0">
+                class="flex items-center gap-2 px-4 py-1.5 bg-amber-400 text-black font-black text-[10px] border-2 border-black rounded-lg shadow-[3px_3px_0_#000] hover:shadow-none hover:translate-x-[3px] hover:translate-y-[3px] transition-all uppercase disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-stone-300 disabled:shadow-none disabled:translate-x-0 disabled:translate-y-0">
             <mat-spinner *ngIf="isProcessing()" diameter="16" class="inline-block"></mat-spinner>
-            <mat-icon *ngIf="!isProcessing()" class="!text-sm">check_circle</mat-icon>
-            {{ isProcessing() ? 'GUARDANDO...' : 'CONFIRMAR RETORNO' }}
+            <mat-icon *ngIf="!isProcessing()" class="!text-sm">{{ queue?.hasNext ? 'skip_next' : 'check_circle' }}</mat-icon>
+            {{ isProcessing() ? 'GUARDANDO...' : (queue?.hasNext ? 'GUARDAR Y SIGUIENTE' : 'CONFIRMAR RETORNO') }}
         </button>
     </div>
 

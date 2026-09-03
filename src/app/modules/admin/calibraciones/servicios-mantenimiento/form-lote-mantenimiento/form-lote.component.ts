@@ -100,6 +100,7 @@ export class FormLoteMantenimientoComponent implements OnInit, OnDestroy {
     ];
 
     ngOnInit(): void {
+        this.requestedByName = this._currentUser();
         this.loadProviders();
         this._setupToolSearch();
         this._setupRequestedBySearch();

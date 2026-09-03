@@ -9,9 +9,10 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { DragDropModule } from '@angular/cdk/drag-drop';
-import { Subject } from 'rxjs';
+import { Subject, lastValueFrom } from 'rxjs';
 import { takeUntil, finalize, debounceTime, distinctUntilChanged, switchMap, startWith } from 'rxjs/operators';
 import { CalibrationService } from '../../../../core/services/calibration.service';
+import { BlobStorageService } from '../../../../core/services/blob-storage.service';
 import { HasPermissionDirective } from '../../../../core/directives/has-permission.directive';
 import { localDateStr } from '../../../../core/utils/date.utils';
 
@@ -44,6 +45,7 @@ interface TranscriptionRecord { id: string | number; tool_id: string | number; f
 export class TranscripcionManualComponent implements OnInit, OnDestroy {
 
     private calibrationService = inject(CalibrationService);
+    private blobStorage        = inject(BlobStorageService);
     private dialog             = inject(MatDialog);
     private snackBar           = inject(MatSnackBar);
 
@@ -91,8 +93,7 @@ export class TranscripcionManualComponent implements OnInit, OnDestroy {
     labNameOverride      = '';
     result: 'approved' | 'conditional' | 'rejected' = 'approved';
     selectedFile: File | null = null;
-    selectedFileBase64: string | null = null;
-    private readonly MAX_PDF_BYTES = 5 * 1024 * 1024;
+    private readonly MAX_PDF_BYTES = 8 * 1024 * 1024;
 
     showCertError    = signal(false);
     showDateError    = signal(false);
@@ -236,7 +237,6 @@ export class TranscripcionManualComponent implements OnInit, OnDestroy {
         this.labNameOverride = '';
         this.result = 'approved';
         this.selectedFile = null;
-        this.selectedFileBase64 = null;
         this.showConfirm.set(false);
         this.isProcessing.set(false);
         this.showToolError.set(false);
@@ -322,22 +322,14 @@ export class TranscripcionManualComponent implements OnInit, OnDestroy {
         if (!input.files?.length) return;
         const file = input.files[0];
         if (file.type !== 'application/pdf') { this.showMessage('Solo se permiten archivos PDF.', 'warning'); input.value = ''; return; }
-        if (file.size > this.MAX_PDF_BYTES) { this.showMessage('El PDF supera los 5 MB permitidos.', 'warning'); input.value = ''; return; }
+        if (file.size > this.MAX_PDF_BYTES) { this.showMessage('El PDF supera los 8 MB permitidos.', 'warning'); input.value = ''; return; }
 
-        const reader = new FileReader();
-        reader.onload = () => {
-            this.selectedFile = file;
-            const result = reader.result as string;
-            this.selectedFileBase64 = result.includes(',') ? result.split(',')[1] : result;
-        };
-        reader.onerror = () => this.showMessage('No se pudo leer el archivo.', 'error');
-        reader.readAsDataURL(file);
+        this.selectedFile = file;
         input.value = '';
     }
 
     removeFile(): void {
         this.selectedFile = null;
-        this.selectedFileBase64 = null;
     }
 
     // Validación unificada para habilitar el botón superior
@@ -368,7 +360,6 @@ export class TranscripcionManualComponent implements OnInit, OnDestroy {
             result: this.result,
             is_historical: true,
         };
-        if (this.selectedFileBase64) params.certificate_file = this.selectedFileBase64;
 
         if (this.labId) {
             params.supplier_id = this.labId;
@@ -379,14 +370,29 @@ export class TranscripcionManualComponent implements OnInit, OnDestroy {
 
         this.calibrationService.createHistoricalCalibration(params).pipe(
             takeUntil(this._destroy$),
-            finalize(() => this.isProcessing.set(false))
         ).subscribe({
-            next: (res: any) => {
+            next: async (res: any) => {
+                // El certificado PDF va al Blob Storage con el id_calibration recién creado.
+                const idCal = Number(res?.id_calibration) || 0;
+                if (this.selectedFile && idCal) {
+                    try {
+                        const rutaBs = await lastValueFrom(this.blobStorage.upload(this.selectedFile, 'Documentos', idCal));
+                        await lastValueFrom(this.calibrationService.saveReturnCertificate(idCal, rutaBs));
+                    } catch (e: any) {
+                        this.isProcessing.set(false);
+                        this.showMessage('Transcripción registrada, pero el PDF no se subió' + (e?.message ? ` (${e.message})` : '') + '.', 'warning');
+                        this.closeDialog();
+                        this.loadTranscriptions();
+                        return;
+                    }
+                }
+                this.isProcessing.set(false);
                 this.showMessage('Transcripción registrada exitosamente.', 'success');
                 this.closeDialog();
                 this.loadTranscriptions();
             },
             error: () => {
+                this.isProcessing.set(false);
                 this.showMessage('Error al registrar la transcripción.', 'error');
                 this.showConfirm.set(false);
             }
@@ -403,6 +409,7 @@ export class TranscripcionManualComponent implements OnInit, OnDestroy {
             next: (dataUrl) => {
                 this.isLoading = false;
                 if (!dataUrl) { this.showMessage('No se encontró el PDF adjunto', 'warning'); return; }
+                if (this.blobStorage.isRutaBs(dataUrl)) { this.blobStorage.open(dataUrl); return; }
                 try {
                     const base64 = dataUrl.includes(',') ? dataUrl.split(',')[1] : dataUrl;
                     const bytes  = atob(base64);

@@ -53,7 +53,7 @@
             <div class="w-full max-w-[260px] aspect-square border-2 border-dashed border-stone-300 dark:border-slate-600 rounded-xl bg-stone-50 dark:bg-slate-900 flex flex-col items-center justify-center relative overflow-hidden cursor-pointer hover:border-amber-400 transition-colors group"
                  (click)="imgHerramientaInput.click()">
                 <ng-container *ngIf="herramientaImagen(); else noImgHer">
-                    <img [src]="herramientaImagen()" class="w-full h-full object-contain rounded" alt="Foto herramienta">
+                    <img [src]="blobStorage.resolveImageSrc(herramientaImagen())" class="w-full h-full object-contain rounded" alt="Foto herramienta">
                     <div class="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                         <span class="text-white text-[9px] font-black uppercase bg-black/60 px-2 py-1 border border-white rounded-lg">Cambiar foto</span>
                     </div>
@@ -91,7 +91,7 @@
                         </button>
                     </div>
                     <p *ngIf="hasHerramientaError('codigoBoa','required')" class="text-[8px] text-red-500 font-bold mt-0.5">Requerido.</p>
-                    <p *ngIf="hasHerramientaError('codigoBoa','pattern')" class="text-[8px] text-red-500 font-bold mt-0.5">Solo letras, números y guiones.</p>
+                    <p *ngIf="hasHerramientaError('codigoBoa','pattern')" class="text-[8px] text-red-500 font-bold mt-0.5">Solo letras, números, guiones y /.</p>
                 </div>
                 <div>
                     <label class="text-[9px] font-black uppercase tracking-wider text-stone-400 dark:text-slate-400 mb-1 block">P/N <span class="text-red-500">*</span></label>

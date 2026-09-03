@@ -7,10 +7,12 @@ import {
     PxpCalibrationAlert
 } from '../models';
 import { ErpApiService } from '../api/api.service';
+import { BlobStorageService } from './blob-storage.service';
 
 @Injectable({ providedIn: 'root' })
 export class CalibrationService {
     private _api = inject(ErpApiService);
+    private _blob = inject(BlobStorageService);
     private _calibrations: ReplaySubject<CalibrationRecord[]> = new ReplaySubject<CalibrationRecord[]>(1);
     private _laboratories: ReplaySubject<CalibrationLaboratory[]> = new ReplaySubject<CalibrationLaboratory[]>(1);
 
@@ -83,16 +85,6 @@ export class CalibrationService {
         );
     }
 
-    getNextRecordNumber(prefix: 'EC' | 'EM' = 'EC'): Observable<string> {
-        return from(this._api.post('herramientas/calibrations/getNextRecordNumber', { prefijo: prefix })).pipe(
-            switchMap((response: any) => {
-                const num = this._normalizeResponse(response)?.[0]?.next_record_number ?? null;
-                return of(num ?? `${prefix}-${new Date().getFullYear()}/001`);
-            }),
-            catchError(() => of(`${prefix}-${new Date().getFullYear()}/001`))
-        );
-    }
-
     cancelCalibration(id: string, reason: string): Observable<CalibrationRecord> {
         return from(this._api.post('herramientas/calibrations/anularEnvio', {
             id_calibration: id,
@@ -126,24 +118,9 @@ export class CalibrationService {
 
     // -----------------------------------------------------------------------------------------------------
     // @ PXP Backend v3: Flujo de Calibración
+    //   El envío ya NO es una llamada suelta: se arma en el borrador compartido
+    //   (getDraftEnvio / addDraftEnvioItem / … / confirmDraftEnvio, más abajo).
     // -----------------------------------------------------------------------------------------------------
-
-    sendToCalibrationPxp(params: {
-        tool_id: number; calibration_type?: string; work_type?: string; supplier_id?: number;
-        supplier_name?: string; base?: string; base_id?: number; request_date?: string;
-        send_date?: string; expected_return_date?: string; service_order?: string; cost?: number;
-        currency?: string; notes?: string; observations?: string;
-        delivered_by_name?: string; requested_by_name?: string; provider_contact?: string;
-    }): Observable<any> {
-        return from(this._api.post('herramientas/calibrations/sendToCalibration', params)).pipe(
-            switchMap((response: any) => {
-                if (this._isPxpError(response)) throw new Error(this._extractErrorMessage(response, 'Error al enviar a calibración'));
-                return of(this._normalizeSingleResponse(response) ?? response);
-            }),
-            tap(() => this._calibrationsChanged.next()),
-            catchError((error) => { console.error('Error en sendToCalibrationPxp:', error); throw error; })
-        );
-    }
 
     processCalibrationReturnPxp(params: {
         id_calibration: number; tool_id?: number; result: 'approved' | 'conditional' | 'rejected';
@@ -166,13 +143,13 @@ export class CalibrationService {
 
     // Guarda el PDF del certificado en una llamada aparte del retorno: el base64
     // (varios MB) infla la respuesta de pXP y la trunca si va dentro de HE_CLS_RETURN.
+    /** Guarda la referencia del certificado en he.tcalibrations.certificate_file.
+     *  Ahora `certificate_file` es la `ruta_bs` del Blob Storage (texto corto), no el base64. */
     saveReturnCertificate(id_calibration: number, certificate_file: string): Observable<any> {
         return from(this._api.post('herramientas/calibrations/guardarCertificadoRetorno', {
             id_calibration,
             certificate_file,
-            // El backend compara esta longitud con lo que recibe: si es menor, el
-            // PDF viajó truncado (límite de tamaño del servidor) y responde con error
-            // claro en vez de guardar un PDF corrupto.
+            // Chequeo de truncamiento del backend: con una ruta_bs corta siempre coincide.
             certificate_file_len: certificate_file?.length ?? 0,
         })).pipe(
             switchMap((response: any) => {
@@ -180,6 +157,83 @@ export class CalibrationService {
                 return of(this._normalizeSingleResponse(response) ?? response);
             }),
             catchError((error) => { console.error('Error en saveReturnCertificate:', error); throw error; })
+        );
+    }
+
+    // -----------------------------------------------------------------------------------------------------
+    // @ Borrador compartido de envío a calibración (he.tcalibration_send_draft)
+    //   Un único borrador global 'open': los técnicos agrupan herramientas entre
+    //   turnos hasta que alguien confirma y se genera UNA sola nota de envío.
+    // -----------------------------------------------------------------------------------------------------
+
+    /** Herramientas del borrador de envío en curso + sus datos comunes. */
+    getDraftEnvio(): Observable<any[]> {
+        return from(this._api.post('herramientas/calibrations/listDraftEnvio', { start: 0, limit: 500 })).pipe(
+            map((resp: any) => this._normalizeResponse(resp)),
+            catchError((error) => { console.error('Error en getDraftEnvio:', error); return of([]); })
+        );
+    }
+
+    addDraftEnvioItem(payload: {
+        tool_id: number;
+        almacen?: string; base?: string; id_lugar?: number | null;
+        send_date?: string; requested_by_name?: string; added_by_name?: string;
+        supplier_id?: number | null; supplier_name?: string; work_type?: string;
+        calibration_type?: string; expected_return_date?: string; cost?: number | null;
+    }): Observable<any> {
+        return this._draftPost('addDraftEnvioItem', payload, 'Error al agregar la herramienta al borrador');
+    }
+
+    saveDraftEnvioComun(payload: {
+        almacen?: string; base?: string; id_lugar?: number | null;
+        send_date?: string; requested_by_name?: string;
+    }): Observable<any> {
+        return this._draftPost('saveDraftEnvioComun', payload, 'Error al guardar los datos comunes');
+    }
+
+    updateDraftEnvioItem(payload: {
+        id_draft_item: number;
+        supplier_id?: number | null; supplier_name?: string; work_type?: string;
+        expected_return_date?: string; cost?: number | null; notes?: string;
+        repair_description?: string; discrepancy_report?: string;
+    }): Observable<any> {
+        return this._draftPost('updateDraftEnvioItem', payload, 'Error al actualizar la herramienta');
+    }
+
+    deleteDraftEnvioItem(id_draft_item: number): Observable<any> {
+        return this._draftPost('deleteDraftEnvioItem', { id_draft_item }, 'Error al quitar la herramienta');
+    }
+
+    cancelDraftEnvio(): Observable<any> {
+        return this._draftPost('cancelDraftEnvio', {}, 'Error al descartar el borrador');
+    }
+
+    /** Cierra el borrador: genera una nota (record_number) y un envío + movimiento por herramienta. */
+    confirmDraftEnvio(payload: {
+        almacen?: string; base?: string; id_lugar?: number | null;
+        send_date?: string; requested_by_name?: string; delivered_by_name?: string;
+    }): Observable<{ record_number: string; total: number; id_calibration: number }> {
+        return this._draftPost('confirmDraftEnvio', payload, 'Error al confirmar el envío');
+    }
+
+    private _draftPost(action: string, payload: any, fallbackMsg: string): Observable<any> {
+        // pxp-client serializa `undefined` como el string "undefined" y lo mete crudo
+        // en el INSERT de la tabla temporal → "column undefined does not exist".
+        // Se descartan las claves sin valor: la función SQL lee NULL para las ausentes.
+        const clean: any = {};
+        for (const k of Object.keys(payload || {})) {
+            const v = payload[k];
+            if (v === undefined || v === null) continue;
+            if (typeof v === 'number' && isNaN(v)) continue;
+            clean[k] = v;
+        }
+        return from(this._api.post('herramientas/calibrations/' + action, clean)).pipe(
+            switchMap((response: any) => {
+                if (this._isPxpError(response)) throw new Error(this._extractErrorMessage(response, fallbackMsg));
+                return of(this._normalizeSingleResponse(response) ?? response);
+            }),
+            tap(() => this._calibrationsChanged.next()),
+            catchError((error) => { console.error('Error en ' + action + ':', error); throw error; })
         );
     }
 
@@ -208,15 +262,13 @@ export class CalibrationService {
         })).pipe(
             map((resp: any) => {
                 const row = this._normalizeResponse(resp)?.[0];
-                const raw = row?.images;
-                if (!raw) return [];
-                if (Array.isArray(raw)) return raw.filter(Boolean);
-                const s = String(raw).trim();
-                if (!s || s === '{}' || s === 'NULL') return [];
-                return s.replace(/^\{|\}$/g, '')
-                    .split(',')
-                    .map(x => x.trim().replace(/^"|"$/g, ''))
-                    .filter(Boolean);
+                // Foto real: location_photo (he.ttool_files/'location_photo') — ruta_bs del
+                // Blob Storage o base64/data-URL heredado.
+                const foto = row?.location_photo ? String(row.location_photo) : '';
+                if (!foto) return [];
+                const src = this._blob.resolveImageSrc(foto)
+                    ?? (foto.startsWith('data:') || foto.startsWith('http') ? foto : `data:image/jpeg;base64,${foto}`);
+                return src ? [src] : [];
             }),
             catchError(() => of([] as string[]))
         );

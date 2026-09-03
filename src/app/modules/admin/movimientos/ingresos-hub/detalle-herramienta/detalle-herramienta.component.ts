@@ -9,6 +9,7 @@ import { DragDropModule } from '@angular/cdk/drag-drop';
 import { Subject, of } from 'rxjs';
 import { takeUntil, debounceTime, distinctUntilChanged, switchMap, map, catchError, finalize } from 'rxjs/operators';
 import { ToolService } from '../../../../../core/services/tool.service';
+import { BlobStorageService } from '../../../../../core/services/blob-storage.service';
 import { GestionUbicacionesService } from '../../../inventory/gestion-ubicaciones/gestion-ubicaciones.service';
 import { Warehouse, Rack, Level } from '../../../inventory/gestion-ubicaciones/interfaces';
 
@@ -70,6 +71,7 @@ export class DetalleHerramientaComponent implements OnInit, OnDestroy {
     public  data      = inject(MAT_DIALOG_DATA, { optional: true });
     private fb        = inject(FormBuilder);
     private toolSvc   = inject(ToolService);
+    public  blobStorage = inject(BlobStorageService);
     private ubicSvc   = inject(GestionUbicacionesService);
     private dialog    = inject(MatDialog);
     private destroy$  = new Subject<void>();
@@ -473,6 +475,7 @@ export class DetalleHerramientaComponent implements OnInit, OnDestroy {
         });
         if (item.imagenMaster) this.imagenOriginal.set(item.imagenMaster);
         if (item.imagenNueva)  this.imagenNueva.set(item.imagenNueva);
+        if (item.imagenNuevaFile) this.imagenNuevaFile = item.imagenNuevaFile;
 
         if (item.warehouseId) {
             this._pendingAutoSelect = { wId: item.warehouseId, rId: item.rackId, lId: item.levelId };
@@ -480,12 +483,16 @@ export class DetalleHerramientaComponent implements OnInit, OnDestroy {
     }
 
     /* ════════ Foto ════════ */
+    imagenNuevaFile: File | null = null;
+
     onImageSelected(event: Event): void {
         if (this.viewOnly()) return;
         const file = (event.target as HTMLInputElement).files?.[0];
         if (!file) return;
+        if (file.size > 8 * 1024 * 1024) return;
+        this.imagenNuevaFile = file;
         const reader = new FileReader();
-        reader.onload = () => { this.imagenNueva.set(reader.result as string); };
+        reader.onload = () => { this.imagenNueva.set(reader.result as string); }; // solo preview
         reader.readAsDataURL(file);
     }
 
@@ -507,8 +514,9 @@ export class DetalleHerramientaComponent implements OnInit, OnDestroy {
             data: {
                 ...v,
                 ubicacion,
-                imagenMaster: this.imagenOriginal(),
-                imagenNueva:  this.imagenNueva(),
+                imagenMaster:     this.imagenOriginal(),
+                imagenNueva:      this.imagenNueva(),
+                imagenNuevaFile:  this.imagenNuevaFile,
             }
         });
     }

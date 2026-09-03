@@ -9,6 +9,7 @@ import { FormControl, ReactiveFormsModule }              from '@angular/forms';
 import { Subject, combineLatest }                        from 'rxjs';
 import { debounceTime, startWith, takeUntil, finalize }  from 'rxjs/operators';
 import { CalibrationService }                            from '../../../../core/services/calibration.service';
+import { BlobStorageService }                            from '../../../../core/services/blob-storage.service';
 import { HasPermissionDirective }                        from '../../../../core/directives/has-permission.directive';
 
 interface CalibrationDisplay {
@@ -27,6 +28,7 @@ interface CalibrationDisplay {
     almacen:              string;
     status:               string;
     has_certificate_file: boolean;
+    cost?:                number | null;
 }
 
 @Component({
@@ -61,6 +63,7 @@ export class RetornoCalibracionComponent implements OnInit, OnDestroy {
     private dialog             = inject(MatDialog);
     private snackBar           = inject(MatSnackBar);
     private calibrationService = inject(CalibrationService);
+    private blobStorage        = inject(BlobStorageService);
     private _destroy$          = new Subject<void>();
 
     searchControl = new FormControl('');
@@ -129,7 +132,9 @@ export class RetornoCalibracionComponent implements OnInit, OnDestroy {
                     almacen:              r.almacen ?? '—',
                     status:               r.status ?? 'sent',
                     has_certificate_file: r.has_certificate_file === true || r.has_certificate_file === 't' || r.has_certificate_file === 'true',
+                    cost:                 r.cost ?? null,
                 }));
+                this._recalcularPendientesPorNota();
                 this.applyFilters();
             },
             error: (err) => {
@@ -210,13 +215,82 @@ export class RetornoCalibracionComponent implements OnInit, OnDestroy {
         } catch { return 0; }
     }
 
+    // Nº de herramientas EN LAB por nota — se recalcula al cargar, para no
+    // filtrar toda la lista en cada ciclo de detección de cambios.
+    private _pendientesPorNota: Record<string, number> = {};
+
+    private _recalcularPendientesPorNota(): void {
+        const m: Record<string, number> = {};
+        for (const c of this.calibraciones) {
+            if (c.status !== 'sent' && c.status !== 'in_process') continue;
+            const rn = (c.record_number || '').trim();
+            if (!rn || rn === '—') continue;
+            m[rn] = (m[rn] || 0) + 1;
+        }
+        this._pendientesPorNota = m;
+    }
+
+    /** Cuántas herramientas de la nota de esta fila siguen en el laboratorio (>=1). */
+    contarPendientesNota(cal: CalibrationDisplay): number {
+        const rn = (cal.record_number || '').trim();
+        return this._pendientesPorNota[rn] || 1;
+    }
+
+    /** Herramientas de la misma nota que siguen en el laboratorio, ordenadas. */
+    pendientesEnNota(cal: CalibrationDisplay): CalibrationDisplay[] {
+        const rn = (cal.record_number || '').trim();
+        if (!rn || rn === '—') return [cal];
+        return this.calibraciones
+            .filter(c => (c.record_number || '').trim() === rn && (c.status === 'sent' || c.status === 'in_process'))
+            .sort((a, b) => (a.tool_code || '').localeCompare(b.tool_code || '') || a.id_calibration - b.id_calibration);
+    }
+
+    /** Dispatcher del botón "Retorno": guiado por nota si hay varias herramientas pendientes. */
+    iniciarRetorno(cal: CalibrationDisplay): void {
+        const cola = this.pendientesEnNota(cal);
+        if (cola.length > 1) {
+            this._abrirColaRetorno(cola, 0);
+        } else {
+            this.abrirConfirmarRetorno(cal);
+        }
+    }
+
+    private async _abrirColaRetorno(cola: CalibrationDisplay[], idx: number): Promise<void> {
+        try {
+            const { FormRetornoComponent } = await import('./form-retorno/form-retorno.component');
+            const ref = this.dialog.open(FormRetornoComponent, {
+                width: 'min(560px, 95vw)', maxWidth: '95vw', maxHeight: '95vh',
+                panelClass: 'no-padding-dialog', disableClose: true,
+                data: {
+                    calibration: cola[idx],
+                    queue: {
+                        pos: idx + 1,
+                        total: cola.length,
+                        record_number: cola[idx].record_number,
+                        hasNext: idx + 1 < cola.length,
+                    },
+                },
+            });
+            ref.afterClosed().subscribe(async (saved) => {
+                this.loadCalibraciones();
+                if (saved && idx + 1 < cola.length) {
+                    await this._abrirColaRetorno(cola, idx + 1);
+                } else if (saved && idx + 1 >= cola.length) {
+                    this.showMsg(`Retorno de la nota ${cola[0].record_number} completado`, 'success');
+                }
+            });
+        } catch (e) {
+            this.showMsg('Error al inicializar el módulo de retorno', 'error');
+        }
+    }
+
     async abrirConfirmarRetorno(cal: CalibrationDisplay): Promise<void> {
         try {
             const { FormRetornoComponent } = await import('./form-retorno/form-retorno.component');
             const ref = this.dialog.open(FormRetornoComponent, {
-                width: '680px',
-                maxWidth: '96vw',
-                height: '82vh',
+                width: 'min(560px, 95vw)',
+                maxWidth: '95vw',
+                maxHeight: '95vh',
                 panelClass: 'no-padding-dialog',
                 disableClose: true,
                 data: { calibration: cal }
@@ -288,9 +362,10 @@ export class RetornoCalibracionComponent implements OnInit, OnDestroy {
         this.calibrationService.getCertificateFile(cal.id_calibration).pipe(
             finalize(() => this.isLoading.set(false))
         ).subscribe({
-            next: (b64) => {
-                if (b64) this.calibrationService.abrirPdf(b64, `certificado_${cal.record_number}.pdf`);
-                else this.showMsg('No hay certificado PDF adjunto para esta calibración', 'warning');
+            next: (val) => {
+                if (!val) { this.showMsg('No hay certificado PDF adjunto para esta calibración', 'warning'); return; }
+                if (this.blobStorage.isRutaBs(val)) this.blobStorage.open(val);
+                else this.calibrationService.abrirPdf(val, `certificado_${cal.record_number}.pdf`); // base64 heredado
             },
             error: () => this.showMsg('No se pudo abrir el certificado adjunto', 'error')
         });

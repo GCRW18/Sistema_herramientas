@@ -410,6 +410,12 @@ export class GestionUbicacionesService {
             .pipe(map(x => this._unwrap(x)));
     }
 
+    /** Adjunta/reemplaza la foto de una herramienta (ruta_bs del Blob Storage). */
+    attachToolPhoto(toolId: number, rutaBs: string): Observable<any> {
+        return from(this._api.post('herramientas/leveltools/adjuntarFotoHerramienta',
+            { id_tool: toolId, image_path: rutaBs })).pipe(map(x => this._unwrap(x)));
+    }
+
     /* ════════ Kits (ubicados en rack/nivel) ════════ */
 
     /**
@@ -634,7 +640,7 @@ export class GestionUbicacionesService {
             location_state:       t.estado,
             unit_of_measure:      t.um,
             quantity_in_stock:    t.cantidad,
-            image_base64:         t.imagenBase64 ?? '',
+            image_path:           t.imagenBase64 ?? '',   // ruta_bs del Blob Storage (el nombre "imagenBase64" quedó por herencia)
             notes:                t.observaciones ?? '',
             content_list:         t.listaContenido ?? '',
             tool_type:            t.tipo ?? 'HERRAMIENTA',

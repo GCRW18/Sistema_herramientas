@@ -223,10 +223,10 @@
                 class="px-3 py-1 bg-[#FF1414] text-white font-black text-[9px] border-2 border-black rounded-lg shadow-[2px_2px_0_#000] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all uppercase">
             Cancelar
         </button>
-        <button type="button" (click)="procesar()"
-                class="flex items-center gap-1.5 px-3 py-1 bg-amber-400 text-black font-black text-[9px] border-2 border-black rounded-lg shadow-[2px_2px_0_#000] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all uppercase">
-            <mat-icon class="!text-xs">save</mat-icon>
-            {{ mode === 'new' ? 'Agregar Herramienta' : 'Guardar Cambios' }}
+        <button type="button" (click)="procesar()" [disabled]="guardando()"
+                class="flex items-center gap-1.5 px-3 py-1 bg-amber-400 text-black font-black text-[9px] border-2 border-black rounded-lg shadow-[2px_2px_0_#000] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all uppercase disabled:opacity-50">
+            <mat-icon class="!text-xs">{{ guardando() ? 'hourglass_top' : 'save' }}</mat-icon>
+            {{ guardando() ? 'SUBIENDO FOTO…' : (mode === 'new' ? 'Agregar Herramienta' : 'Guardar Cambios') }}
         </button>
     </div>
 </div>

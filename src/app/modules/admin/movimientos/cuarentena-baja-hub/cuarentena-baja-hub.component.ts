@@ -11,6 +11,8 @@ import { Subject, forkJoin, of, lastValueFrom } from 'rxjs';
 import { takeUntil, finalize, catchError, debounceTime, distinctUntilChanged, switchMap, map } from 'rxjs/operators';
 import { MovementService } from '../../../../core/services/movement.service';
 import { QuarantineService } from '../../../../core/services/quarantine.service';
+import { BlobStorageService } from '../../../../core/services/blob-storage.service';
+import { GestionUbicacionesService } from '../../inventory/gestion-ubicaciones/gestion-ubicaciones.service';
 import { ToolService } from '../../../../core/services/tool.service';
 import { HasPermissionDirective } from '../../../../core/directives/has-permission.directive';
 
@@ -28,6 +30,7 @@ interface BajaItem {
     estadoFisico: string;
     observacion: string;
     imagen: string | null;
+    imagenFile?: File | null;
     warehouseId: number | null;
     rackId: number | null;
     levelId: number | null;
@@ -77,8 +80,24 @@ export class CuarentenaBajaHubComponent implements OnInit, OnDestroy {
     private snackBar      = inject(MatSnackBar);
     private movementSvc   = inject(MovementService);
     private quarantineSvc = inject(QuarantineService);
+    private blobStorage   = inject(BlobStorageService);
+    private ubicSvc       = inject(GestionUbicacionesService);
     private toolSvc       = inject(ToolService);
     private destroy$      = new Subject<void>();
+
+    /** Sube a Blob Storage las fotos nuevas de los ítems y las adjunta a cada herramienta.
+     *  Best-effort: un fallo de foto no revierte la cuarentena/baja ya registrada. */
+    private async _persistirFotos(items: { toolId: number; file: File | null | undefined }[]): Promise<void> {
+        for (const it of items) {
+            if (!it.file || !it.toolId) continue;
+            try {
+                const ruta = await lastValueFrom(this.blobStorage.upload(it.file, 'Imagenes', it.toolId));
+                await lastValueFrom(this.ubicSvc.attachToolPhoto(it.toolId, ruta));
+            } catch (e) {
+                console.warn('No se pudo guardar la foto de la herramienta', it.toolId, e);
+            }
+        }
+    }
     private _logoBoaDataUri: Promise<string> | null = null;
 
     // ── Tab ────────────────────────────────────────────────────────────────────
@@ -351,7 +370,7 @@ export class CuarentenaBajaHubComponent implements OnInit, OnDestroy {
     abrirModalHerramientaCuarentena(): void {
         const today = this._today();
         this.toolCuarentenaForm.reset({ existencia: 0, cantidad: 1, estadoFisico: 'BUENO', base: 'ALM-CBB-0001', fechaInicio: today, motivoItem: '', observaciones: '' });
-        this.selectedToolImage.set(null);
+        this.selectedToolImage.set(null); this.selectedToolImageFile = null;
         this.showToolDropdown = false;
         this.buscarValueC     = '';
         this.toolsFiltradas   = [];
@@ -398,7 +417,7 @@ export class CuarentenaBajaHubComponent implements OnInit, OnDestroy {
         this.toolsFiltradas   = [];
         this.showToolDropdown = false;
         this.toolCuarentenaForm.patchValue({ id_tool: 0, codigo: '', nombre: '', partNumber: '', serialNumber: '', existencia: 0 });
-        this.selectedToolImage.set(null);
+        this.selectedToolImage.set(null); this.selectedToolImageFile = null;
         this.toolWarehouseIdActual = null;
         this.toolRackIdActual      = null;
         this.toolLevelIdActual     = null;
@@ -421,7 +440,7 @@ export class CuarentenaBajaHubComponent implements OnInit, OnDestroy {
         });
         // Si la herramienta ya tiene una foto registrada (location_photo, vía
         // searchToolsAutocomplete), se precarga — el usuario igual puede reemplazarla.
-        this.selectedToolImage.set(tool.location_photo || null);
+        this.selectedToolImage.set(this.blobStorage.resolveImageSrc(tool.location_photo) || null);
         // Ubicación real de la herramienta (almacén/estante/nivel), para mostrarla completa
         // en el detalle de solo-lectura — searchToolsAutocomplete ya la trae.
         this.toolWarehouseIdActual = tool.warehouse_id != null ? Number(tool.warehouse_id) : null;
@@ -435,11 +454,15 @@ export class CuarentenaBajaHubComponent implements OnInit, OnDestroy {
         this.showToolDropdown = false;
     }
 
+    selectedToolImageFile: File | null = null;
+
     onToolImageSelected(event: Event): void {
         const file = (event.target as HTMLInputElement).files?.[0];
         if (!file) return;
+        if (file.size > 8 * 1024 * 1024) { this._showMsg('La imagen no debe superar 8MB', 'error'); return; }
+        this.selectedToolImageFile = file;
         const reader = new FileReader();
-        reader.onload = () => this.selectedToolImage.set(reader.result as string);
+        reader.onload = () => this.selectedToolImage.set(reader.result as string); // solo preview
         reader.readAsDataURL(file);
     }
 
@@ -461,7 +484,7 @@ export class CuarentenaBajaHubComponent implements OnInit, OnDestroy {
         // Ubicación completa (almacén/estante/nivel) de la herramienta seleccionada — la real
         // según Consultar Inventario, no solo "Base" (a dónde se manda administrativamente).
         this.cuarentenaList = [...this.cuarentenaList, {
-            ...fv, foto: this.selectedToolImage(),
+            ...fv, foto: this.selectedToolImage(), fotoFile: this.selectedToolImageFile,
             warehouseId: this.toolWarehouseIdActual,
             rackId:      this.toolRackIdActual,
             levelId:     this.toolLevelIdActual,
@@ -546,6 +569,7 @@ export class CuarentenaBajaHubComponent implements OnInit, OnDestroy {
                 // "N° Nota" en Baja usa el record_number del primer resultado.
                 const nro = results[0]?.record_number || '---';
                 this.reporteForm.patchValue({ nroReporteDiscrepancia: nro });
+                void this._persistirFotos(this.cuarentenaList.map((t: any) => ({ toolId: t.id_tool, file: t.fotoFile })));
                 this._abrirImpresionCuarentena({ ...rep, nroReporteDiscrepancia: nro }, this.cuarentenaList);
                 this._showMsg(`Cuarentena ${nro} procesada correctamente.`, 'success');
                 this.cuarentenaList = [];
@@ -742,6 +766,7 @@ export class CuarentenaBajaHubComponent implements OnInit, OnDestroy {
             estadoFisico: data.estadoFisico || 'INSERVIBLE',
             observacion:  data.observacion  || '',
             imagen:       data.imagen       || null,
+            imagenFile:   data.imagenFile   ?? null,
             warehouseId:  data.warehouseId  ?? null,
             rackId:       data.rackId       ?? null,
             levelId:      data.levelId      ?? null,
@@ -828,6 +853,7 @@ export class CuarentenaBajaHubComponent implements OnInit, OnDestroy {
             next: (results: any[]) => {
                 const nro = results[0]?.decommission_number || results[0]?.record_number || 'BJA';
                 this.nroNota.set(nro);
+                void this._persistirFotos(items.map(i => ({ toolId: i.toolId, file: i.imagenFile })));
                 this._abrirImpresionBaja({
                     nroNota: nro, ...fv,
                     herramientas: items,

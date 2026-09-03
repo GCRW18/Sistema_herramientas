@@ -59,14 +59,17 @@
                     <span class="hidden sm:inline">NO RETORNADAS</span>
                 </button>
 
-                <!-- Nuevo envío -->
+                <!-- Borrador / Nuevo envío -->
                 <button *appHasPermission="'cal_envio.enviar'" (click)="nuevoEnvio()"
-                        class="px-5 py-2 bg-[#FFC501FF] text-black font-black text-xs
-                               border-[2px] border-black rounded-xl
+                        [matTooltip]="draftCount() > 0 ? 'Hay un borrador de envío en curso — ábrelo para agregar o confirmar' : 'Iniciar un borrador de envío'"
+                        class="relative px-5 py-2 font-black text-xs border-[2px] border-black rounded-xl
                                shadow-[3px_3px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px]
-                               hover:shadow-none transition-all uppercase flex items-center gap-2">
-                    <mat-icon class="!text-sm text-black">add_circle</mat-icon>
-                    <span class="hidden sm:inline">Nuevo Envío</span>
+                               hover:shadow-none transition-all uppercase flex items-center gap-2"
+                        [ngClass]="draftCount() > 0 ? 'bg-amber-400 text-black animate-pulse' : 'bg-[#FFC501FF] text-black'">
+                    <mat-icon class="!text-sm text-black">{{ draftCount() > 0 ? 'inventory_2' : 'add_circle' }}</mat-icon>
+                    <span class="hidden sm:inline">{{ draftCount() > 0 ? 'Borrador de Envío' : 'Nuevo Envío' }}</span>
+                    <span *ngIf="draftCount() > 0"
+                          class="ml-1 px-1.5 py-0.5 bg-black text-amber-400 rounded text-[10px] leading-none">{{ draftCount() }}</span>
                 </button>
             </div>
         </div>

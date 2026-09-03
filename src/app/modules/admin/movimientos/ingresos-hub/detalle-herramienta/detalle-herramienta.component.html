@@ -69,7 +69,7 @@
                      [class.cursor-pointer]="!viewOnly()" [class.hover:border-amber-400]="!viewOnly()"
                      (click)="!viewOnly() && fileInput.click()">
                     <div *ngIf="imagenNueva() || imagenOriginal(); else noImg" class="w-full h-full p-2 relative">
-                        <img [src]="imagenNueva() || imagenOriginal()" class="w-full h-full object-contain rounded" alt="Foto">
+                        <img [src]="imagenNueva() || blobStorage.resolveImageSrc(imagenOriginal())" class="w-full h-full object-contain rounded" alt="Foto">
                         <div *ngIf="!viewOnly()" class="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                             <span class="text-white text-[9px] font-black uppercase bg-black/60 px-2 py-1 border border-white rounded-lg">Cambiar foto</span>
                         </div>

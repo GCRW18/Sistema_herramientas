@@ -12,6 +12,7 @@ import { FleetService } from '../../../../../core/services/fleet.service';
 import { KitsService } from '../../../../../core/services/kits.service';
 import { ToolService } from '../../../../../core/services/tool.service';
 import { PrestamoPdfService, PrestamoPdfData } from '../prestamo-pdf.service';
+import { motivoBloqueoSalida } from '../../retorno-traspaso/retorno-traspaso.types';
 
 interface InternalLoanItem {
     toolId: number; id: number; codigo: string; pn: string; descripcion: string; sn: string;
@@ -228,26 +229,16 @@ export class FormPrestamoDialogComponent implements OnInit, OnDestroy {
         });
     }
 
-    private readonly _statusBloqueado = new Set(['decommissioned', 'in_calibration', 'quarantine', 'in_maintenance']);
-
     private _toolDisponible(t: any): boolean {
-        const status  = (t.status ?? t.tool_status ?? '').toLowerCase();
-        const stock   = Number(t.quantity_in_stock ?? t.stock ?? t.existencia ?? 0);
-        const expiry  = t.next_calibration_date ?? t.calibration_due_date ?? null;
-        const vencida = expiry ? expiry < this._localDateStr() : false;
-        return !this._statusBloqueado.has(status) && stock > 0 && !vencida;
+        const stock = Number(t.quantity_in_stock ?? t.stock ?? t.existencia ?? 0);
+        return !motivoBloqueoSalida(t) && stock > 0;
     }
 
     private _motivoNoDisponible(t: any): string {
-        const status = (t.status ?? t.tool_status ?? '').toLowerCase();
-        const stock  = Number(t.quantity_in_stock ?? t.stock ?? t.existencia ?? 0);
-        const expiry = t.next_calibration_date ?? t.calibration_due_date ?? null;
-        if (status === 'decommissioned') return 'Herramienta dada de baja';
-        if (status === 'in_calibration') return 'En proceso de calibración';
-        if (status === 'quarantine')     return 'En cuarentena / no serviciable';
-        if (status === 'in_maintenance') return 'En mantenimiento';
-        if (stock <= 0)                  return 'Sin stock disponible';
-        if (expiry && expiry < this._localDateStr()) return `Calibración vencida (${expiry})`;
+        const motivo = motivoBloqueoSalida(t);
+        if (motivo) return motivo;
+        const stock = Number(t.quantity_in_stock ?? t.stock ?? t.existencia ?? 0);
+        if (stock <= 0) return 'Sin stock disponible';
         return 'No disponible';
     }
 
@@ -263,17 +254,9 @@ export class FormPrestamoDialogComponent implements OnInit, OnDestroy {
     // el mismo mecanismo y sin filtrar disponibilidad — igual que el buscador de
     // detalle-herramienta.component.ts (Ajuste de Herramienta) — en vez de precargar todas las
     // herramientas y filtrar en el cliente. La disponibilidad (estado bloqueado / calibración
-    // vencida) se valida recién al agregar (_agregarToolPt), no aquí: filtrarla en la búsqueda
-    // hacía que herramientas reales (ej. recién migradas con calibración vencida) no aparecieran
-    // nunca, aunque el usuario supiera que existían.
-    private _motivoBloqueoPrestamo(t: any): string | null {
-        const status = (t.status ?? '').toLowerCase();
-        if (this._statusBloqueado.has(status)) return this._motivoNoDisponible(t);
-        const expiry = t.fechaCalibracion || null;
-        if (expiry && expiry < this._localDateStr()) return `Calibración vencida (${expiry})`;
-        return null;
-    }
-
+    // vencida) se valida recién al agregar (_agregarToolPt, con motivoBloqueoSalida), no aquí:
+    // filtrarla en la búsqueda hacía que herramientas reales (ej. recién migradas con
+    // calibración vencida) no aparecieran nunca, aunque el usuario supiera que existían.
     private _setupToolSearchPt(): void {
         this._toolSearchPt$.pipe(
             debounceTime(300), distinctUntilChanged(),
@@ -323,7 +306,7 @@ export class FormPrestamoDialogComponent implements OnInit, OnDestroy {
     private _agregarToolPt(tool: any): void {
         if (this.internalDataSource().some(i => i.codigo === tool.codigo)) { this.showMsg('info', `"${tool.nombre}" ya está en la lista`); return; }
         if (this._toolIdsEnPrestamo.has(Number(tool.id))) { this.showMsg('warning', `"${tool.nombre}" ya tiene un préstamo activo y no está disponible`); return; }
-        const motivoBloqueo = this._motivoBloqueoPrestamo(tool);
+        const motivoBloqueo = motivoBloqueoSalida(tool);
         if (motivoBloqueo) { this.showMsg('warning', `"${tool.nombre}" no se puede prestar: ${motivoBloqueo}`); return; }
         const item: InternalLoanItem = {
             toolId: tool.id ?? 0, id: Date.now(), codigo: tool.codigo,

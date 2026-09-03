@@ -12,6 +12,7 @@ import { Subject, lastValueFrom, of } from 'rxjs';
 import { takeUntil, finalize, debounceTime, distinctUntilChanged, switchMap, map, catchError } from 'rxjs/operators';
 import { CalibrationService } from '../../../../../core/services/calibration.service';
 import { MovementService } from '../../../../../core/services/movement.service';
+import { BlobStorageService } from '../../../../../core/services/blob-storage.service';
 import { localDateStr } from '../../../../../core/utils/date.utils';
 
 interface Funcionario { id: number; nombre: string; cargo: string; area: string; }
@@ -38,6 +39,7 @@ export class FormRetornoComponent implements OnInit, OnDestroy {
 
     private calibrationService = inject(CalibrationService);
     private movementService    = inject(MovementService);
+    private blobStorage        = inject(BlobStorageService);
     public  dialogRef          = inject(MatDialogRef<FormRetornoComponent>);
     private snackBar           = inject(MatSnackBar);
     private cdr                = inject(ChangeDetectorRef);
@@ -55,12 +57,12 @@ export class FormRetornoComponent implements OnInit, OnDestroy {
     empresaIdOverride: number | null = null;
     observations = '';
     receivedByName = '';
+    costo: number | null = null;
     resultado: 'approved' | 'conditional' | 'rejected' = 'approved';
     selectedFile: File | null = null;
-    selectedFileBase64: string | null = null;
-    // 3 MB: por encima de esto el base64 (~4 MB) suele superar el límite de
-    // cuerpo del servidor y el PDF llega truncado / no se guarda.
-    private readonly MAX_PDF_BYTES = 3 * 1024 * 1024;
+    // El PDF se sube al Blob Storage (no como base64), así que el límite es solo
+    // el del servidor de subida.
+    private readonly MAX_PDF_BYTES = 8 * 1024 * 1024;
 
     receivedByFuncionarios: Funcionario[] = [];
     receivedByLoading = false;
@@ -73,6 +75,11 @@ export class FormRetornoComponent implements OnInit, OnDestroy {
     readonly todayStr = localDateStr();
 
     get calibration(): any | undefined { return this.dialogData?.calibration || null; }
+
+    /** Metadatos del retorno guiado por nota ({ pos, total, record_number, hasNext }) o null. */
+    get queue(): { pos: number; total: number; record_number: string; hasNext: boolean } | null {
+        return this.dialogData?.queue || null;
+    }
 
     formatDateDisplay(isoStr: string | null | undefined): string {
         if (!isoStr) return '—';
@@ -92,8 +99,18 @@ export class FormRetornoComponent implements OnInit, OnDestroy {
 
     ngOnInit(): void {
         this.fechaCalStr = this.todayStr;
+        this.receivedByName = this._currentUser();
+        const prevCost = this.calibration?.cost;
+        this.costo = (prevCost === null || prevCost === undefined || prevCost === '') ? null : Number(prevCost);
         this.loadLaboratorios();
         this.setupFuncionarioSearch();
+    }
+
+    private _currentUser(): string {
+        try {
+            const auth = JSON.parse(localStorage.getItem('aut') || '{}');
+            return auth.nombre_usuario || '';
+        } catch { return ''; }
     }
 
     ngOnDestroy(): void {
@@ -214,10 +231,13 @@ export class FormRetornoComponent implements OnInit, OnDestroy {
             next_calibration_date: this.fechaVencimientoDisplay,
             observations:         this.observations || '',
             received_by_name:     this.receivedByName.trim(),
+            cost:                 this.costo ?? undefined,
+            currency:             'BOB',
         };
 
         if (this.empresaIdOverride) params.supplier_id = this.empresaIdOverride;
-        // El PDF NO va en el payload del retorno: se sube aparte para no truncar la respuesta.
+        // El PDF NO va en el payload del retorno: se sube al Blob Storage aparte y se
+        // guarda solo la ruta.
 
         try {
             const res: any = await lastValueFrom(this.calibrationService.processCalibrationReturnPxp(params));
@@ -231,13 +251,16 @@ export class FormRetornoComponent implements OnInit, OnDestroy {
             }
 
             // El retorno ya quedó registrado; el certificado es secundario.
-            if (this.selectedFileBase64) {
+            if (this.selectedFile) {
                 try {
-                    await lastValueFrom(this.calibrationService.saveReturnCertificate(cal.id_calibration, this.selectedFileBase64));
+                    const rutaBs = await lastValueFrom(
+                        this.blobStorage.upload(this.selectedFile, 'Documentos', cal.id_calibration)
+                    );
+                    await lastValueFrom(this.calibrationService.saveReturnCertificate(cal.id_calibration, rutaBs));
                 } catch (certErr: any) {
                     console.error('Error guardando certificado:', certErr);
                     const detalle = certErr?.message ? ` (${certErr.message})` : '';
-                    this.showMessage('Retorno registrado, pero el certificado PDF NO se guardó' + detalle + '. Adjúntelo de nuevo con un PDF más liviano.', 'warning');
+                    this.showMessage('Retorno registrado, pero el certificado PDF NO se subió' + detalle + '. Vuelva a adjuntarlo desde la fila del retorno.', 'warning');
                     this.dialogRef.close(true);
                     return;
                 }
@@ -279,25 +302,17 @@ export class FormRetornoComponent implements OnInit, OnDestroy {
             return;
         }
         if (file.size > this.MAX_PDF_BYTES) {
-            this.showMessage('El PDF supera los 3 MB permitidos. Comprímalo o redúzcalo antes de adjuntarlo.', 'warning');
+            this.showMessage('El PDF supera los 8 MB permitidos. Comprímalo o redúzcalo antes de adjuntarlo.', 'warning');
             input.value = '';
             return;
         }
 
-        const reader = new FileReader();
-        reader.onload = () => {
-            this.selectedFile = file;
-            const result = reader.result as string;
-            this.selectedFileBase64 = result.includes(',') ? result.split(',')[1] : result;
-            this.cdr.detectChanges();
-        };
-        reader.onerror = () => this.showMessage('No se pudo leer el archivo', 'error');
-        reader.readAsDataURL(file);
+        this.selectedFile = file;
+        this.cdr.detectChanges();
     }
 
     removeFile(): void {
         this.selectedFile = null;
-        this.selectedFileBase64 = null;
         const fileInput = document.getElementById('pdfInputRetorno') as HTMLInputElement;
         if (fileInput) fileInput.value = '';
     }
