@@ -135,6 +135,12 @@ export class AdministrationComponent implements OnDestroy {
             svgIcon: 'heroicons_outline:shield-check',
             loader: async () => (await import('./roles/roles.component')).RolesComponent
         },
+        {
+            type: 4, label: 'CLIENTES /', sublabel: 'TERCEROS',
+            color: '#0D9488', textColor: '#fff',
+            svgIcon: 'heroicons_outline:identification',
+            loader: async () => (await import('./clientes/clientes.component')).ClientesComponent
+        },
     ];
 
     // ── Tab system methods ───────────────────────────────────────────────────

@@ -1,7 +1,7 @@
-﻿<div class="flex flex-col w-full h-full bg-[#f8f9fc] dark:bg-[#0F172AFF] transition-colors duration-300 font-sans overflow-hidden">
+<div class="flex flex-col w-full h-full bg-[#f8f9fc] dark:bg-[#0F172AFF] transition-colors duration-300 font-sans overflow-hidden">
 
   <!-- Spinner superpuesto -->
-  <div *ngIf="isSavingCuarentena || isSavingBaja" class="spinner-overlay">
+  <div *ngIf="isSavingCuarentena || isSavingBaja" class="fixed inset-0 z-[120] bg-black/60 flex items-center justify-center">
     <div class="bg-white dark:bg-slate-800 border-[3px] border-black rounded-2xl shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] p-8 flex flex-col items-center gap-4">
       <mat-spinner diameter="40"></mat-spinner>
       <p class="text-xs font-black uppercase text-black dark:text-white">
@@ -11,8 +11,8 @@
   </div>
 
   <!-- Círculos decorativos -->
-  <div class="fixed top-20 right-10 w-40 h-40 bg-[#FF1414] rounded-full border-[3px] border-black opacity-5 pointer-events-none z-0 hidden lg:block"></div>
-  <div class="fixed bottom-10 left-10 w-24 h-24 bg-amber-400 rotate-12 border-[3px] border-black opacity-5 pointer-events-none z-0 hidden lg:block"></div>
+  <div class="fixed top-20 right-10 w-40 h-40 bg-[#0F172AFF] rounded-full border-[3px] border-black opacity-5 pointer-events-none hidden lg:block"></div>
+  <div class="fixed bottom-10 left-10 w-24 h-24 bg-[#FFC501FF] rotate-12 border-[3px] border-black opacity-5 pointer-events-none hidden lg:block"></div>
 
   <div class="flex-1 flex flex-col p-3 sm:p-4 gap-3 overflow-hidden relative z-10">
 
@@ -21,7 +21,7 @@
 
       <div class="flex items-center gap-4">
         <div class="flex items-center justify-center w-10 h-10 bg-white dark:bg-[#0F172AFF] border-[3px] border-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] rounded-xl shrink-0">
-          <mat-icon class="text-black dark:text-amber-400 !text-base">warning</mat-icon>
+          <mat-icon class="text-black dark:text-[#FFC501FF] !text-base">report_problem</mat-icon>
         </div>
         <div>
           <h1 class="text-xl font-black text-black dark:text-white uppercase tracking-tighter leading-none">
@@ -34,11 +34,12 @@
       </div>
 
       <div class="flex items-center gap-2 flex-wrap">
+
         <!-- Búsqueda historial (solo visible en tab historial) -->
-        <div *ngIf="activeTab() === 'historial'" class="relative">
+        <div *ngIf="activeTab() === 'historial'" class="relative flex-1 min-w-[140px] sm:flex-none">
           <input type="text" [formControl]="historialSearch"
-                 placeholder="Buscar registro..."
-                 class="w-44 h-9 pl-9 pr-3 bg-white dark:bg-slate-800 text-black dark:text-white
+                 placeholder="Buscar N° doc, responsable..."
+                 class="w-full sm:w-56 h-9 pl-9 pr-3 bg-white dark:bg-slate-800 text-black dark:text-white
                         border-[2px] border-black dark:border-slate-500 rounded-lg font-black text-xs uppercase
                         focus:outline-none focus:shadow-[3px_3px_0px_0px_#000] focus:-translate-y-[1px] transition-all
                         placeholder:font-bold placeholder:normal-case dark:placeholder:text-slate-500">
@@ -50,9 +51,9 @@
           <button (click)="setTab('cuarentena')"
                   class="h-9 px-3 flex items-center gap-1.5 rounded-lg border-[2px] border-black font-black text-[10px] uppercase transition-all"
                   [ngClass]="activeTab() === 'cuarentena'
-                      ? 'bg-amber-500 text-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]'
-                      : 'bg-white dark:bg-white/10 text-black dark:text-white hover:bg-amber-50 dark:hover:bg-white/20'">
-            <mat-icon class="!text-sm">warning</mat-icon>
+                      ? 'bg-[#FF1414] text-white shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]'
+                      : 'bg-white dark:bg-white/10 text-black dark:text-white hover:bg-red-50 dark:hover:bg-white/20'">
+            <mat-icon class="!text-sm">report_problem</mat-icon>
             Cuarentena
             <span class="bg-black/20 text-[8px] font-black px-1 rounded">{{ cuarentenaList.length }}</span>
           </button>
@@ -60,7 +61,7 @@
                   class="h-9 px-3 flex items-center gap-1.5 rounded-lg border-[2px] border-black font-black text-[10px] uppercase transition-all"
                   [ngClass]="activeTab() === 'baja'
                       ? 'bg-[#FF1414] text-white shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]'
-                      : 'bg-white dark:bg-white/10 text-black dark:text-white hover:bg-[#FF1414]/5 dark:hover:bg-white/20'">
+                      : 'bg-white dark:bg-white/10 text-black dark:text-white hover:bg-red-50 dark:hover:bg-white/20'">
             <mat-icon class="!text-sm">delete_sweep</mat-icon>
             Baja
             <span class="bg-black/20 text-[8px] font-black px-1 rounded">{{ bajaItems().length }}</span>
@@ -68,10 +69,11 @@
           <button (click)="setTab('historial')"
                   class="h-9 px-3 flex items-center gap-1.5 rounded-lg border-[2px] border-black font-black text-[10px] uppercase transition-all"
                   [ngClass]="activeTab() === 'historial'
-                      ? 'bg-[#0F172A] text-white shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]'
-                      : 'bg-white dark:bg-white/10 text-black dark:text-white hover:bg-slate-100 dark:hover:bg-white/20'">
+                      ? 'bg-[#0F172A] text-[#FFC501FF] shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]'
+                      : 'bg-white dark:bg-white/10 text-black dark:text-white hover:bg-gray-50 dark:hover:bg-white/20'">
             <mat-icon class="!text-sm">history</mat-icon>
             Historial
+            <span class="bg-black/20 text-[8px] font-black px-1 rounded">{{ filteredHistorial.length }}</span>
           </button>
         </div>
       </div>
@@ -86,40 +88,55 @@
 
           <!-- ── Tab Cuarentena ── -->
           <ng-container *ngIf="activeTab() === 'cuarentena'">
-            <div class="flex items-center gap-1.5 bg-amber-500/30 rounded-lg px-2.5 py-1.5 border border-amber-400 shrink-0">
-              <mat-icon class="!text-[10px] text-white">warning_amber</mat-icon>
+            <div class="flex items-center gap-1.5 bg-white/10 rounded-lg px-2.5 py-2.5 border border-white/20 shrink-0">
+              <mat-icon class="!text-[10px] text-[#FFC501FF]">report_problem</mat-icon>
               <div>
                 <div class="text-[8px] font-black uppercase text-white/70 leading-none">Cuarentena</div>
                 <div class="text-sm font-black text-white leading-none">{{ cuarentenaList.length }}</div>
               </div>
             </div>
             <div *ngIf="isReporteValido() && reporteForm.value.nroReporteDiscrepancia"
-                 class="hidden sm:flex items-center gap-1.5 bg-white/10 rounded-lg px-2.5 py-1.5 border border-white/20 shrink-0">
-              <mat-icon class="!text-[10px] text-white">receipt_long</mat-icon>
+                 class="hidden sm:flex items-center gap-1.5 bg-white/10 rounded-lg px-2.5 py-2.5 border border-white/20 shrink-0">
+              <mat-icon class="!text-[10px] text-amber-300">receipt_long</mat-icon>
               <div>
                 <div class="text-[8px] font-black uppercase text-white/70 leading-none">Reporte</div>
-                <div class="text-[10px] font-black text-white leading-none max-w-[100px] truncate">{{ reporteForm.value.nroReporteDiscrepancia }}</div>
+                <div class="text-[10px] font-black text-white leading-none max-w-[120px] truncate">{{ reporteForm.value.nroReporteDiscrepancia }}</div>
               </div>
             </div>
           </ng-container>
 
           <!-- ── Tab Baja ── -->
           <ng-container *ngIf="activeTab() === 'baja'">
-            <div class="flex items-center gap-1.5 bg-[#FF1414]/40 rounded-lg px-2.5 py-1.5 border border-[#FF1414] shrink-0">
-              <mat-icon class="!text-[10px] text-white">delete_sweep</mat-icon>
+            <div class="flex items-center gap-1.5 bg-white/10 rounded-lg px-2.5 py-2.5 border border-white/20 shrink-0">
+              <mat-icon class="!text-[10px] text-red-300">delete_sweep</mat-icon>
               <div>
                 <div class="text-[8px] font-black uppercase text-white/70 leading-none">A Baja</div>
                 <div class="text-sm font-black text-white leading-none">{{ bajaItems().length }}</div>
+              </div>
+            </div>
+            <div *ngIf="isProcessValid() && bajaForm.value.procesadoPor"
+                 class="hidden sm:flex items-center gap-1.5 bg-white/10 rounded-lg px-2.5 py-2.5 border border-white/20 shrink-0">
+              <mat-icon class="!text-[10px] text-amber-300">edit_document</mat-icon>
+              <div>
+                <div class="text-[8px] font-black uppercase text-white/70 leading-none">Procesa</div>
+                <div class="text-[10px] font-black text-white leading-none max-w-[120px] truncate">{{ bajaForm.value.procesadoPor }}</div>
               </div>
             </div>
           </ng-container>
 
           <!-- ── Tab Historial ── -->
           <ng-container *ngIf="activeTab() === 'historial'">
-            <div class="flex items-center gap-1.5 bg-white/10 rounded-lg px-2.5 py-1.5 border border-white/20 shrink-0">
-              <mat-icon class="!text-[10px] text-white">history</mat-icon>
+            <div class="flex items-center gap-1.5 bg-white/10 rounded-lg px-2.5 py-2.5 border border-white/20 shrink-0">
+              <mat-icon class="!text-[10px] text-[#FFC501FF]">history</mat-icon>
               <div>
                 <div class="text-[8px] font-black uppercase text-white/70 leading-none">Registros</div>
+                <div class="text-sm font-black text-white leading-none">{{ filteredHistorial.length }}</div>
+              </div>
+            </div>
+            <div class="flex items-center gap-1.5 bg-white/10 rounded-lg px-2.5 py-2.5 border border-white/20 shrink-0">
+              <mat-icon class="!text-[10px] text-red-300">summarize</mat-icon>
+              <div>
+                <div class="text-[8px] font-black uppercase text-white/70 leading-none">Total BD</div>
                 <div class="text-sm font-black text-white leading-none">{{ historialTotal }}</div>
               </div>
             </div>
@@ -130,18 +147,18 @@
 
             <ng-container *ngIf="activeTab() === 'cuarentena'">
               <button (click)="abrirModalReporte()"
-                      class="h-7 px-2.5 flex items-center gap-1.5 rounded-lg border border-black font-black text-[10px] uppercase shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all shrink-0"
-                      [ngClass]="isReporteValido() ? 'bg-amber-400 text-black' : 'bg-white/10 text-white'"
+                      class="flex items-center gap-1.5 h-7 px-2.5 rounded-lg border font-black text-[10px] uppercase shrink-0 transition-all"
+                      [class]="isReporteValido()
+                          ? 'border-blue-400/50 bg-blue-500/15 text-blue-300 hover:bg-blue-500/25'
+                          : 'border-amber-400/50 bg-amber-500/15 text-amber-300 hover:bg-amber-500/25'"
                       [matTooltip]="isReporteValido() ? (reporteForm.value.nroReporteDiscrepancia ? 'Reporte: ' + reporteForm.value.nroReporteDiscrepancia : 'Datos del reporte completos (N° se genera al finalizar)') : 'Completar reporte de discrepancia (requerido para finalizar)'">
-                <mat-icon class="!text-xs !w-3.5 !h-3.5" [class.text-black]="isReporteValido()" [class.text-white]="!isReporteValido()">receipt_long</mat-icon>
-                <span class="hidden sm:inline">
-                  {{ isReporteValido() ? (reporteForm.value.nroReporteDiscrepancia ? (reporteForm.value.nroReporteDiscrepancia | slice:0:14) : 'Reporte OK') : 'Reporte Disc.' }}
+                <mat-icon class="!text-sm !w-4 !h-4">{{ isReporteValido() ? 'receipt_long' : 'warning' }}</mat-icon>
+                <span class="hidden sm:inline font-mono">
+                  {{ isReporteValido() ? (reporteForm.value.nroReporteDiscrepancia ? (reporteForm.value.nroReporteDiscrepancia | slice:0:14) : 'Reporte OK') : 'Sin reporte' }}
                 </span>
-                <mat-icon *ngIf="isReporteValido()" class="!text-xs !w-3.5 !h-3.5 text-black">check_circle</mat-icon>
-                <mat-icon *ngIf="!isReporteValido()" class="!text-xs !w-3.5 !h-3.5 text-white">warning</mat-icon>
               </button>
               <button (click)="abrirModalHerramientaCuarentena()"
-                      class="h-7 px-2.5 flex items-center gap-1.5 rounded-lg bg-white dark:bg-white/10 border border-black text-black dark:text-white font-black text-[10px] uppercase shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all shrink-0">
+                      class="flex items-center gap-1.5 h-7 px-2.5 rounded-lg border border-white/30 text-white hover:bg-white/20 transition-all font-black text-[10px] uppercase shrink-0">
                 <mat-icon class="!text-xs !w-3.5 !h-3.5">add_circle</mat-icon>
                 <span class="hidden sm:inline">Agregar Ítem</span>
               </button>
@@ -155,32 +172,32 @@
 
             <ng-container *ngIf="activeTab() === 'baja'">
               <button (click)="abrirModalDatos()"
-                      class="h-7 px-2.5 flex items-center gap-1.5 rounded-lg border border-black font-black text-[10px] uppercase shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all shrink-0"
-                      [ngClass]="isProcessValid() ? 'bg-amber-400 text-black' : 'bg-white/10 text-white'"
+                      class="flex items-center gap-1.5 h-7 px-2.5 rounded-lg border font-black text-[10px] uppercase shrink-0 transition-all"
+                      [class]="isProcessValid()
+                          ? 'border-blue-400/50 bg-blue-500/15 text-blue-300 hover:bg-blue-500/25'
+                          : 'border-amber-400/50 bg-amber-500/15 text-amber-300 hover:bg-amber-500/25'"
                       [matTooltip]="isProcessValid() ? 'Proceso configurado: ' + bajaForm.value.procesadoPor : 'Configurar datos del proceso de baja (requerido para procesar)'">
-                <mat-icon class="!text-xs !w-3.5 !h-3.5" [class.text-black]="isProcessValid()" [class.text-white]="!isProcessValid()">edit_document</mat-icon>
-                <span class="hidden sm:inline">
+                <mat-icon class="!text-sm !w-4 !h-4">{{ isProcessValid() ? 'edit_document' : 'warning' }}</mat-icon>
+                <span class="hidden sm:inline font-mono">
                   {{ isProcessValid() ? (bajaForm.value.procesadoPor | slice:0:14) : 'Datos Baja' }}
                 </span>
-                <mat-icon *ngIf="isProcessValid()" class="!text-xs !w-3.5 !h-3.5 text-black">check_circle</mat-icon>
-                <mat-icon *ngIf="!isProcessValid()" class="!text-xs !w-3.5 !h-3.5 text-white">warning</mat-icon>
               </button>
               <button (click)="openHerramientaABaja()"
-                      class="h-7 px-2.5 flex items-center gap-1.5 rounded-lg bg-white dark:bg-white/10 border border-black text-black dark:text-white font-black text-[10px] uppercase shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all shrink-0">
+                      class="flex items-center gap-1.5 h-7 px-2.5 rounded-lg border border-white/30 text-white hover:bg-white/20 transition-all font-black text-[10px] uppercase shrink-0">
                 <mat-icon class="!text-xs !w-3.5 !h-3.5">add_circle</mat-icon>
                 <span class="hidden sm:inline">Agregar Ítem</span>
               </button>
               <button *appHasPermission="'cuarentena.baja'" (click)="procesarEImprimir()"
                       [disabled]="bajaItems().length === 0 || !isProcessValid()"
-                      class="h-7 px-2.5 flex items-center gap-1.5 rounded-lg bg-amber-400 text-black border border-black font-black text-[10px] uppercase shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all shrink-0 disabled:opacity-40 disabled:cursor-not-allowed disabled:translate-x-0 disabled:translate-y-0 disabled:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
-                <mat-icon class="!text-xs !w-3.5 !h-3.5">print</mat-icon>
+                      class="h-7 px-2.5 flex items-center gap-1.5 rounded-lg bg-[#FFC501FF] border border-black text-black font-black text-[10px] uppercase shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all shrink-0 disabled:opacity-40 disabled:cursor-not-allowed disabled:translate-x-0 disabled:translate-y-0 disabled:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+                <mat-icon class="!text-xs !w-3.5 !h-3.5">check_circle</mat-icon>
                 <span class="hidden sm:inline">Procesar Baja</span>
               </button>
             </ng-container>
 
             <button *ngIf="activeTab() === 'historial'" (click)="loadHistorial()" [disabled]="isLoadingHistorial"
                     class="flex items-center gap-1.5 h-7 px-2.5 rounded-lg border border-white/30 text-white hover:bg-white/20 transition-all disabled:opacity-40 font-black text-[10px] uppercase shrink-0">
-              <mat-icon class="!text-sm !w-4 !h-4 text-white" [class.animate-spin]="isLoadingHistorial">refresh</mat-icon>
+              <mat-icon class="!text-sm !w-4 !h-4 text-[#FFC501FF]" [class.animate-spin]="isLoadingHistorial">refresh</mat-icon>
               Actualizar
             </button>
           </div>
@@ -188,151 +205,149 @@
         </div>
       </div>
 
-      <!-- ════════════ TAB CUARENTENA ════════════ -->
-      <div [hidden]="activeTab() !== 'cuarentena'" class="flex-1 flex flex-col overflow-hidden">
+      <!-- ══ TABS WRAPPER ══ -->
+      <div class="flex-1 overflow-hidden">
 
-        <!-- Tabla cuarentena -->
-        <div class="flex-1 overflow-auto custom-scrollbar-cb mt-3">
-          <table class="w-full min-w-[700px] border-collapse">
+      <!-- ════════════ TAB CUARENTENA ════════════ -->
+      <div [hidden]="activeTab() !== 'cuarentena'" class="h-full flex flex-col overflow-hidden">
+        <div class="flex-1 overflow-auto custom-scrollbar-cb">
+          <table class="w-full min-w-[720px]">
             <thead class="bg-gray-100 dark:bg-slate-800 border-b-[2px] border-black sticky top-0 z-10">
               <tr class="text-left text-[10px] font-black uppercase tracking-wider text-black dark:text-white">
-                <th class="px-3 py-2.5 w-10 text-center">#</th>
-                <th class="px-3 py-2.5 w-32">Código</th>
-                <th class="px-3 py-2.5">Herramienta</th>
-                <th class="px-3 py-2.5 w-24 text-center">P/N</th>
-                <th class="px-3 py-2.5 w-24 text-center">S/N</th>
-                <th class="px-3 py-2.5 w-16 text-center">Cant.</th>
-                <th class="px-3 py-2.5 w-28 text-center">Estado</th>
-                <th class="px-3 py-2.5 w-16 text-center">Acc.</th>
+                <th class="px-3 py-2.5 text-center w-10">#</th>
+                <th class="px-3 py-2.5">Identificación</th>
+                <th class="px-3 py-2.5">Descripción</th>
+                <th class="px-3 py-2.5 text-center w-16">Cant.</th>
+                <th class="px-3 py-2.5 text-center w-28">Estado</th>
+                <th class="px-3 py-2.5 text-center w-16">Acc.</th>
               </tr>
             </thead>
-            <tbody class="bg-white dark:bg-[#0F172AFF]">
+            <tbody>
               <tr *ngFor="let item of cuarentenaList; let i = index"
                   (click)="abrirDetalleHerramientaCuarentena(item)"
                   title="Clic para ver detalle de la herramienta"
-                  class="animate-fadeIn border-b border-gray-200 dark:border-slate-700 transition-all hover:bg-gray-100 dark:hover:bg-slate-800/80 cursor-pointer"
+                  class="border-b border-gray-200 dark:border-slate-700 transition-all cursor-pointer hover:bg-gray-100 dark:hover:bg-slate-800/80"
                   [ngClass]="i % 2 === 0 ? 'bg-white dark:bg-slate-800/60' : 'bg-gray-50 dark:bg-slate-800/40'">
-                <td class="px-3 py-2.5 text-center">
+                <td class="px-3 py-3 text-center align-middle">
                   <span class="w-6 h-6 inline-flex bg-[#0F172A] dark:bg-slate-700 text-white rounded-md font-black text-[9px] items-center justify-center">{{ i + 1 }}</span>
                 </td>
-                <td class="px-3 py-2.5">
-                  <span class="font-mono font-black text-black dark:text-white text-[10px] uppercase">{{ item.codigo }}</span>
+                <td class="px-3 py-3 align-middle">
+                  <div class="flex flex-col gap-0.5">
+                    <span class="font-mono font-black text-[11px] text-black dark:text-white leading-none">{{ item.codigo }}</span>
+                    <span class="font-mono text-[9px] text-stone-400 dark:text-slate-500 font-bold leading-none pt-0.5">P/N {{ item.partNumber || '—' }}</span>
+                    <span *ngIf="item.serialNumber" class="font-mono text-[9px] text-black dark:text-white font-bold leading-none">S/N {{ item.serialNumber }}</span>
+                  </div>
                 </td>
-                <td class="px-3 py-2.5">
-                  <div class="font-black text-xs text-black dark:text-white leading-tight">{{ item.nombre }}</div>
+                <td class="px-3 py-3 align-middle">
+                  <p class="font-black text-[11px] text-black dark:text-white leading-snug line-clamp-2">{{ item.nombre }}</p>
                 </td>
-                <td class="px-3 py-2.5 text-center font-mono text-xs font-bold text-black dark:text-white">{{ item.partNumber || '-' }}</td>
-                <td class="px-3 py-2.5 text-center font-mono text-xs font-bold text-black dark:text-white">{{ item.serialNumber || '-' }}</td>
-                <td class="px-3 py-2.5 text-center">
-                  <span class="bg-gray-100 dark:bg-slate-800 border-[2px] border-black text-black dark:text-white rounded px-2 py-0.5 font-black text-sm block w-fit mx-auto">{{ item.cantidad }}</span>
+                <td class="px-3 py-3 text-center align-middle">
+                  <span class="font-black text-sm text-black dark:text-white leading-none">{{ item.cantidad }}</span>
                 </td>
-                <td class="px-3 py-2.5 text-center">
+                <td class="px-3 py-3 text-center align-middle">
                   <span class="inline-flex items-center text-[9px] font-black uppercase border px-1.5 py-0.5 rounded-md"
                         [ngClass]="getEstadoFisicoColor(item.estadoFisico)">
                     {{ getEstadoFisicoLabel(item.estadoFisico) }}
                   </span>
                 </td>
-                <td class="px-3 py-2.5 text-center" (click)="$event.stopPropagation()">
+                <td class="px-3 py-3 text-center align-middle" (click)="$event.stopPropagation()">
                   <button (click)="removerDeLista(i)" matTooltip="Quitar de lista"
                           class="w-7 h-7 flex items-center justify-center border border-black bg-red-100 hover:bg-red-200 rounded-md shadow-[1px_1px_0_#000] hover:shadow-none hover:translate-x-px hover:translate-y-px transition-all mx-auto">
                     <mat-icon class="text-[#FF1414] !text-[13px]">delete</mat-icon>
                   </button>
                 </td>
               </tr>
-              <!-- Empty state -->
-              <tr *ngIf="cuarentenaList.length === 0">
-                <td colspan="8" class="py-16 text-center">
-                  <div class="flex flex-col items-center gap-3">
-                    <div class="w-16 h-16 bg-gray-100 dark:bg-slate-800 border-[3px] border-black rounded-2xl flex items-center justify-center shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]">
-                      <mat-icon class="!text-3xl text-black/20 dark:text-white/20">assignment_late</mat-icon>
-                    </div>
-                    <p class="text-xs font-black uppercase text-gray-500">Sin ítems en cuarentena</p>
-                    <button (click)="abrirModalHerramientaCuarentena()"
-                            class="h-8 px-4 rounded-xl border-[2px] border-black bg-amber-400 text-black font-black text-xs uppercase shadow-[2px_2px_0_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all mt-1 flex items-center gap-1.5">
-                      <mat-icon class="!text-sm">add_circle</mat-icon>Agregar ítem
-                    </button>
-                  </div>
-                </td>
-              </tr>
             </tbody>
           </table>
+
+          <!-- Empty state -->
+          <div *ngIf="cuarentenaList.length === 0" class="flex flex-col items-center justify-center py-16 gap-3">
+            <div class="w-16 h-16 bg-stone-100 dark:bg-slate-800 border-2 border-black rounded-2xl shadow-[3px_3px_0_#000] flex items-center justify-center">
+              <mat-icon class="!text-3xl text-stone-300 dark:text-slate-600">assignment_late</mat-icon>
+            </div>
+            <p class="text-xs font-black uppercase text-stone-400 dark:text-slate-500">Sin ítems en cuarentena</p>
+            <button (click)="abrirModalHerramientaCuarentena()"
+                    class="px-4 py-2.5 bg-amber-400 text-black border-2 border-black rounded-lg font-black text-xs uppercase shadow-[2px_2px_0_#000] hover:translate-y-px hover:shadow-none transition-all">
+              Agregar Ítem
+            </button>
+          </div>
         </div>
       </div>
 
       <!-- ════════════ TAB BAJA ════════════ -->
-      <div [hidden]="activeTab() !== 'baja'" class="flex-1 flex flex-col overflow-hidden">
-
-        <!-- Tabla baja -->
-        <div class="flex-1 overflow-auto custom-scrollbar-cb mt-3">
-          <table class="w-full min-w-[700px] border-collapse">
+      <div [hidden]="activeTab() !== 'baja'" class="h-full flex flex-col overflow-hidden">
+        <div class="flex-1 overflow-auto custom-scrollbar-cb">
+          <table class="w-full min-w-[720px]">
             <thead class="bg-gray-100 dark:bg-slate-800 border-b-[2px] border-black sticky top-0 z-10">
               <tr class="text-left text-[10px] font-black uppercase tracking-wider text-black dark:text-white">
-                <th class="px-3 py-2.5 w-10 text-center">#</th>
-                <th class="px-3 py-2.5 w-32">Código</th>
-                <th class="px-3 py-2.5">Herramienta</th>
-                <th class="px-3 py-2.5 w-24 text-center">P/N</th>
-                <th class="px-3 py-2.5 w-24 text-center">S/N</th>
-                <th class="px-3 py-2.5 w-16 text-center">Cant.</th>
-                <th class="px-3 py-2.5 w-28 text-center">Estado</th>
-                <th class="px-3 py-2.5 w-16 text-center">Acc.</th>
+                <th class="px-3 py-2.5 text-center w-10">#</th>
+                <th class="px-3 py-2.5">Identificación</th>
+                <th class="px-3 py-2.5">Descripción · Base</th>
+                <th class="px-3 py-2.5 text-center w-16">Cant.</th>
+                <th class="px-3 py-2.5 text-center w-28">Estado</th>
+                <th class="px-3 py-2.5 text-center w-16">Acc.</th>
               </tr>
             </thead>
-            <tbody class="bg-white dark:bg-[#0F172AFF]">
+            <tbody>
               <tr *ngFor="let item of bajaItems(); let i = index"
                   (click)="abrirDetalleHerramientaBaja(item)"
                   title="Clic para ver detalle de la herramienta"
-                  class="animate-fadeIn border-b border-gray-200 dark:border-slate-700 transition-all hover:bg-gray-100 dark:hover:bg-slate-800/80 cursor-pointer"
+                  class="border-b border-gray-200 dark:border-slate-700 transition-all cursor-pointer hover:bg-gray-100 dark:hover:bg-slate-800/80"
                   [ngClass]="i % 2 === 0 ? 'bg-white dark:bg-slate-800/60' : 'bg-gray-50 dark:bg-slate-800/40'">
-                <td class="px-3 py-2.5 text-center">
+                <td class="px-3 py-3 text-center align-middle">
                   <span class="w-6 h-6 inline-flex bg-[#0F172A] dark:bg-slate-700 text-white rounded-md font-black text-[9px] items-center justify-center">{{ i + 1 }}</span>
                 </td>
-                <td class="px-3 py-2.5">
-                  <span class="font-mono font-black text-black dark:text-white text-[10px] uppercase">{{ item.codigo }}</span>
+                <td class="px-3 py-3 align-middle">
+                  <div class="flex flex-col gap-0.5">
+                    <span class="font-mono font-black text-[11px] text-black dark:text-white leading-none">{{ item.codigo }}</span>
+                    <span class="font-mono text-[9px] text-stone-400 dark:text-slate-500 font-bold leading-none pt-0.5">P/N {{ item.pn || '—' }}</span>
+                    <span *ngIf="item.sn" class="font-mono text-[9px] text-black dark:text-white font-bold leading-none">S/N {{ item.sn }}</span>
+                  </div>
                 </td>
-                <td class="px-3 py-2.5">
-                  <div class="font-black text-xs text-black dark:text-white leading-tight line-clamp-2" [matTooltip]="item.nombre">{{ item.nombre }}</div>
-                  <div class="font-bold text-[10px] uppercase text-gray-400 mt-0.5">{{ item.base }}</div>
+                <td class="px-3 py-3 align-middle">
+                  <p class="font-black text-[11px] text-black dark:text-white leading-snug line-clamp-2" [matTooltip]="item.nombre">{{ item.nombre }}</p>
+                  <div class="flex flex-wrap gap-1 mt-1">
+                    <span *ngIf="item.marca" class="inline-flex items-center gap-0.5 text-[9px] font-black uppercase bg-stone-100 dark:bg-slate-700 text-stone-600 dark:text-slate-300 border border-stone-300 dark:border-slate-600 px-1.5 py-0.5 rounded-md">{{ item.marca }}</span>
+                    <span *ngIf="item.base" class="inline-flex items-center gap-0.5 text-[9px] font-black uppercase bg-stone-200 dark:bg-slate-700 text-stone-700 dark:text-slate-300 border border-stone-400 dark:border-slate-600 px-1.5 py-0.5 rounded-md">
+                      <mat-icon class="!text-[8px] !w-2.5 !h-2.5">shelves</mat-icon> {{ item.base }}
+                    </span>
+                  </div>
                 </td>
-                <td class="px-3 py-2.5 text-center font-mono text-xs font-bold text-black dark:text-white">{{ item.pn || '-' }}</td>
-                <td class="px-3 py-2.5 text-center font-mono text-xs font-bold text-black dark:text-white">{{ item.sn || '-' }}</td>
-                <td class="px-3 py-2.5 text-center">
-                  <span class="bg-gray-100 dark:bg-slate-800 border-[2px] border-black text-black dark:text-white rounded px-2 py-0.5 font-black text-sm block w-fit mx-auto">{{ item.cantidad }}</span>
+                <td class="px-3 py-3 text-center align-middle">
+                  <span class="font-black text-sm text-black dark:text-white leading-none">{{ item.cantidad }}</span>
                 </td>
-                <td class="px-3 py-2.5 text-center">
+                <td class="px-3 py-3 text-center align-middle">
                   <span class="inline-flex items-center text-[9px] font-black uppercase border px-1.5 py-0.5 rounded-md"
                         [ngClass]="getEstadoFisicoColor(item.estadoFisico)">
                     {{ item.estadoFisico }}
                   </span>
                 </td>
-                <td class="px-3 py-2.5 text-center" (click)="$event.stopPropagation()">
+                <td class="px-3 py-3 text-center align-middle" (click)="$event.stopPropagation()">
                   <button (click)="removeItemBaja(i)" matTooltip="Eliminar"
                           class="w-7 h-7 flex items-center justify-center border border-black bg-red-100 hover:bg-red-200 rounded-md shadow-[1px_1px_0_#000] hover:shadow-none hover:translate-x-px hover:translate-y-px transition-all mx-auto">
                     <mat-icon class="text-[#FF1414] !text-[13px]">delete</mat-icon>
                   </button>
                 </td>
               </tr>
-              <!-- Empty state -->
-              <tr *ngIf="bajaItems().length === 0">
-                <td colspan="8" class="py-16 text-center">
-                  <div class="flex flex-col items-center gap-3">
-                    <div class="w-16 h-16 bg-gray-100 dark:bg-slate-800 border-[3px] border-black rounded-2xl flex items-center justify-center shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]">
-                      <mat-icon class="!text-3xl text-black/20 dark:text-white/20">delete_sweep</mat-icon>
-                    </div>
-                    <p class="text-xs font-black uppercase text-gray-500">Sin ítems para dar de baja</p>
-                    <button (click)="openHerramientaABaja()"
-                            class="h-8 px-4 rounded-xl border-[2px] border-black bg-amber-400 text-black font-black text-xs uppercase shadow-[2px_2px_0_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all mt-1 flex items-center gap-1.5">
-                      <mat-icon class="!text-sm">add_circle</mat-icon>Agregar ítem
-                    </button>
-                  </div>
-                </td>
-              </tr>
             </tbody>
           </table>
+
+          <!-- Empty state -->
+          <div *ngIf="bajaItems().length === 0" class="flex flex-col items-center justify-center py-16 gap-3">
+            <div class="w-16 h-16 bg-stone-100 dark:bg-slate-800 border-2 border-black rounded-2xl shadow-[3px_3px_0_#000] flex items-center justify-center">
+              <mat-icon class="!text-3xl text-stone-300 dark:text-slate-600">delete_sweep</mat-icon>
+            </div>
+            <p class="text-xs font-black uppercase text-stone-400 dark:text-slate-500">Sin ítems para dar de baja</p>
+            <button (click)="openHerramientaABaja()"
+                    class="px-4 py-2.5 bg-amber-400 text-black border-2 border-black rounded-lg font-black text-xs uppercase shadow-[2px_2px_0_#000] hover:translate-y-px hover:shadow-none transition-all">
+              Agregar Ítem
+            </button>
+          </div>
         </div>
       </div>
 
       <!-- ════════════ TAB HISTORIAL ════════════ -->
-      <div [hidden]="activeTab() !== 'historial'" class="flex-1 flex flex-col overflow-hidden">
+      <div [hidden]="activeTab() !== 'historial'" class="h-full flex flex-col overflow-hidden">
 
         <!-- Loading historial -->
         <div *ngIf="isLoadingHistorial" class="flex-1 flex flex-col items-center justify-center gap-4">
@@ -340,9 +355,25 @@
           <p class="text-sm font-black uppercase text-gray-500 dark:text-gray-400">Cargando historial…</p>
         </div>
 
+        <!-- Empty state -->
+        <div *ngIf="!isLoadingHistorial && filteredHistorial.length === 0"
+             class="flex-1 flex flex-col items-center justify-center gap-3 py-12 px-4 text-center">
+          <div class="w-16 h-16 bg-stone-100 dark:bg-slate-800 border-2 border-black rounded-2xl shadow-[3px_3px_0_#000] flex items-center justify-center">
+            <mat-icon class="!text-3xl text-stone-300 dark:text-slate-600">history</mat-icon>
+          </div>
+          <p class="text-xs font-black uppercase text-stone-400 dark:text-slate-500">
+            {{ historialSearch.value ? 'Sin resultados para el filtro aplicado' : 'Sin registros de cuarentena / baja' }}
+          </p>
+          <button *ngIf="!historialSearch.value" (click)="loadHistorial()"
+                  class="h-8 px-4 rounded-xl border-[2px] border-black bg-[#0F172A] text-[#FFC501FF] font-black text-xs uppercase shadow-[2px_2px_0_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all mt-1 flex items-center gap-1.5">
+            <mat-icon class="!text-sm">refresh</mat-icon>Recargar
+          </button>
+        </div>
+
         <!-- Tabla historial -->
-        <div *ngIf="!isLoadingHistorial" class="flex-1 overflow-auto custom-scrollbar-cb">
-          <table class="w-full min-w-[700px] border-collapse">
+        <div *ngIf="!isLoadingHistorial && filteredHistorial.length > 0"
+             class="flex-1 overflow-auto custom-scrollbar-cb bg-gray-50 dark:bg-[#0F172AFF]">
+          <table class="w-full min-w-[720px]">
             <thead class="bg-gray-100 dark:bg-slate-800 border-b-[2px] border-black sticky top-0 z-10">
               <tr class="text-left text-[10px] font-black uppercase tracking-wider text-black dark:text-white">
                 <th class="px-3 py-2.5">N° Documento</th>
@@ -350,27 +381,23 @@
                 <th class="px-3 py-2.5">Responsable</th>
                 <th class="px-3 py-2.5 text-center w-28">Fecha</th>
                 <th class="px-3 py-2.5 text-center w-24">Estado</th>
-                <th class="px-3 py-2.5 text-center w-24">Acciones</th>
+                <th class="px-3 py-2.5 text-center w-28">Acciones</th>
               </tr>
             </thead>
-            <tbody class="bg-white dark:bg-[#0F172AFF]">
+            <tbody>
               <tr *ngFor="let m of filteredHistorial; let idx = index"
-                  class="animate-fadeIn border-b border-gray-200 dark:border-slate-700 transition-all hover:bg-gray-100 dark:hover:bg-slate-800/60"
+                  class="border-b border-gray-200 dark:border-slate-700 transition-all hover:bg-gray-100 dark:hover:bg-slate-700/60"
                   [ngClass]="idx % 2 === 0 ? 'bg-white dark:bg-slate-800/60' : 'bg-gray-50 dark:bg-slate-800/40'">
                 <td class="px-3 py-2.5">
-                  <span class="font-mono font-black text-xs text-black dark:text-white">{{ m.record_number || m.report_number || '---' }}</span>
+                  <span class="font-mono font-black text-[10px] text-black dark:text-white whitespace-nowrap">{{ m.record_number || m.report_number || '—' }}</span>
                 </td>
                 <td class="px-3 py-2.5">
-                  <span class="text-[9px] font-black uppercase text-black dark:text-white">
-                    {{ getHistorialTypeLabel(m) }}
-                  </span>
+                  <span class="text-[9px] font-black uppercase text-black dark:text-white">{{ getHistorialTypeLabel(m) }}</span>
                 </td>
                 <td class="px-3 py-2.5">
-                  <span class="text-xs font-bold text-black dark:text-white">{{ m.reported_by_name || m.requested_by_name || '---' }}</span>
+                  <div class="text-xs font-bold text-black dark:text-white">{{ m.reported_by_name || m.requested_by_name || '—' }}</div>
                 </td>
-                <td class="px-3 py-2.5 text-center">
-                  <span class="text-xs font-bold text-black dark:text-white">{{ getHistorialFecha(m) }}</span>
-                </td>
+                <td class="px-3 py-2.5 text-center text-xs font-bold text-black dark:text-white whitespace-nowrap">{{ getHistorialFecha(m) }}</td>
                 <td class="px-3 py-2.5 text-center">
                   <span class="inline-flex items-center text-[9px] font-black uppercase border px-1.5 py-0.5 rounded-md"
                         [ngClass]="m._type === 'cuarentena' ? getStatusColor(m.status) : getBajaStatusColor(m.status)">
@@ -379,37 +406,24 @@
                 </td>
                 <td class="px-3 py-2.5">
                   <div class="flex items-center justify-center gap-1.5">
-                    <button (click)="pdfHistorialItem(m)" matTooltip="Ver PDF"
-                            class="w-7 h-7 bg-[#0F172A] text-white rounded-lg border-[2px] border-black shadow-[2px_2px_0px_0px_#000] hover:shadow-none hover:translate-x-[1px] hover:translate-y-[1px] transition-all flex items-center justify-center">
-                      <mat-icon class="!text-sm">print</mat-icon>
+                    <button (click)="pdfHistorialItem(m)" matTooltip="Imprimir constancia"
+                            class="w-7 h-7 flex items-center justify-center bg-[#FF1414] border-2 border-black rounded-lg shadow-[2px_2px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all">
+                      <mat-icon class="!text-sm text-white">print</mat-icon>
                     </button>
                     <ng-container *appHasPermission="'cuarentena.resolver'">
                       <button *ngIf="m._type === 'cuarentena' && m.status !== 'resolved' && m.status !== 'cancelled'"
-                              (click)="abrirModalResolver(m)"
-                              matTooltip="Resolver cuarentena"
-                              class="w-7 h-7 bg-green-600 text-white rounded-lg border-[2px] border-black shadow-[2px_2px_0px_0px_#000] hover:shadow-none hover:translate-x-[1px] hover:translate-y-[1px] transition-all flex items-center justify-center">
+                              (click)="abrirModalResolver(m)" matTooltip="Resolver cuarentena"
+                              class="w-7 h-7 flex items-center justify-center bg-green-600 text-white border-2 border-black rounded-lg shadow-[2px_2px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all">
                         <mat-icon class="!text-sm">check_circle</mat-icon>
                       </button>
                     </ng-container>
                     <ng-container *appHasPermission="'cuarentena.anular'">
                       <button *ngIf="bajaEsAnulable(m)"
-                              (click)="abrirModalAnularBaja(m)"
-                              matTooltip="Anular baja — devolver a disponible"
-                              class="w-7 h-7 bg-orange-500 text-white rounded-lg border-[2px] border-black shadow-[2px_2px_0px_0px_#000] hover:shadow-none hover:translate-x-[1px] hover:translate-y-[1px] transition-all flex items-center justify-center">
+                              (click)="abrirModalAnularBaja(m)" matTooltip="Anular baja — devolver a disponible"
+                              class="w-7 h-7 flex items-center justify-center bg-orange-500 text-white border-2 border-black rounded-lg shadow-[2px_2px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all">
                         <mat-icon class="!text-sm">undo</mat-icon>
                       </button>
                     </ng-container>
-                  </div>
-                </td>
-              </tr>
-              <!-- Empty state historial -->
-              <tr *ngIf="filteredHistorial.length === 0">
-                <td colspan="6" class="py-16 text-center">
-                  <div class="flex flex-col items-center gap-3">
-                    <div class="w-16 h-16 bg-gray-100 dark:bg-slate-800 border-[3px] border-black rounded-2xl flex items-center justify-center shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]">
-                      <mat-icon class="!text-3xl text-black/20 dark:text-white/20">history</mat-icon>
-                    </div>
-                    <p class="text-xs font-black uppercase text-gray-500">Sin registros de cuarentena / baja</p>
                   </div>
                 </td>
               </tr>
@@ -417,6 +431,8 @@
           </table>
         </div>
       </div>
+
+      </div><!-- /tabs wrapper -->
 
     </div><!-- /card -->
   </div><!-- /p-3 sm:p-4 -->
@@ -434,7 +450,7 @@
     <!-- Header -->
     <div class="bg-[#0F172A] px-5 py-3.5 flex items-center gap-3 shrink-0 select-none"
          cdkDrag cdkDragRootElement=".cdk-overlay-pane" cdkDragHandle style="cursor:grab">
-      <div class="w-9 h-9 rounded-lg bg-amber-400 border-2 border-white/20 flex items-center justify-center shrink-0">
+      <div class="w-9 h-9 rounded-lg bg-amber-400 border-2 border-black shadow-[2px_2px_0_rgba(0,0,0,0.35)] flex items-center justify-center shrink-0">
         <mat-icon class="!text-lg text-black">warning_amber</mat-icon>
       </div>
       <div>
@@ -568,7 +584,7 @@
         <!-- Header -->
         <div class="bg-[#0F172A] px-4 sm:px-5 py-3 flex items-center gap-3 shrink-0 select-none flex-wrap sm:flex-nowrap"
              cdkDrag cdkDragRootElement=".cdk-overlay-pane" cdkDragHandle style="cursor:grab">
-            <div class="w-8 h-8 rounded-lg bg-amber-400 border-2 border-white/20 flex items-center justify-center shrink-0">
+            <div class="w-8 h-8 rounded-lg bg-amber-400 border-2 border-black shadow-[2px_2px_0_rgba(0,0,0,0.35)] flex items-center justify-center shrink-0">
                 <mat-icon class="!text-base text-black">warning_amber</mat-icon>
             </div>
             <div class="flex-1 min-w-0">
@@ -768,7 +784,7 @@
     <!-- Header -->
     <div class="bg-[#0F172A] px-5 py-3.5 flex items-center gap-3 shrink-0 select-none"
          cdkDrag cdkDragRootElement=".cdk-overlay-pane" cdkDragHandle style="cursor:grab">
-      <div class="w-9 h-9 rounded-lg bg-green-500 border-2 border-white/20 flex items-center justify-center shrink-0">
+      <div class="w-9 h-9 rounded-lg bg-green-500 border-2 border-black shadow-[2px_2px_0_rgba(0,0,0,0.35)] flex items-center justify-center shrink-0">
         <mat-icon class="!text-lg text-white">check_circle</mat-icon>
       </div>
       <div>
@@ -903,7 +919,7 @@
         <!-- Header -->
         <div class="bg-[#0F172A] px-4 py-2.5 flex items-center gap-2.5 shrink-0 select-none"
              cdkDrag cdkDragRootElement=".cdk-overlay-pane" cdkDragHandle style="cursor:grab">
-            <div class="w-8 h-8 rounded-lg bg-amber-400 border-2 border-white/20 flex items-center justify-center shrink-0">
+            <div class="w-8 h-8 rounded-lg bg-amber-400 border-2 border-black shadow-[2px_2px_0_rgba(0,0,0,0.35)] flex items-center justify-center shrink-0">
                 <mat-icon class="!text-base text-black">edit_document</mat-icon>
             </div>
             <div>
@@ -985,6 +1001,30 @@
                             </div>
                         </div>
 
+                        <!-- Fila 1b: datos del solicitante / autorizante para la nota MGH-119 (se autocompletan al elegir del buscador, editables) -->
+                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                            <div>
+                                <label class="text-[8px] font-black uppercase tracking-[0.15em] text-stone-400 dark:text-slate-400 mb-1 block">Cargo Solicitante</label>
+                                <input type="text" formControlName="cargo" placeholder="Cargo..."
+                                       class="w-full h-8 text-xs font-bold uppercase bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-lg px-2.5 outline-none transition-all duration-150 placeholder:text-stone-300 placeholder:font-normal hover:border-stone-400 focus:border-black focus:shadow-[2px_2px_0_#000]">
+                            </div>
+                            <div>
+                                <label class="text-[8px] font-black uppercase tracking-[0.15em] text-stone-400 dark:text-slate-400 mb-1 block">Licencia</label>
+                                <input type="text" formControlName="licencia" placeholder="Licencia..."
+                                       class="w-full h-8 text-xs font-bold uppercase bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-lg px-2.5 outline-none transition-all duration-150 placeholder:text-stone-300 placeholder:font-normal hover:border-stone-400 focus:border-black focus:shadow-[2px_2px_0_#000]">
+                            </div>
+                            <div>
+                                <label class="text-[8px] font-black uppercase tracking-[0.15em] text-stone-400 dark:text-slate-400 mb-1 block">Departamento</label>
+                                <input type="text" formControlName="departamento" placeholder="Departamento..."
+                                       class="w-full h-8 text-xs font-bold uppercase bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-lg px-2.5 outline-none transition-all duration-150 placeholder:text-stone-300 placeholder:font-normal hover:border-stone-400 focus:border-black focus:shadow-[2px_2px_0_#000]">
+                            </div>
+                            <div>
+                                <label class="text-[8px] font-black uppercase tracking-[0.15em] text-stone-400 dark:text-slate-400 mb-1 block">Cargo Autorizante</label>
+                                <input type="text" formControlName="autorizadoCargo" placeholder="Cargo..."
+                                       class="w-full h-8 text-xs font-bold uppercase bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-lg px-2.5 outline-none transition-all duration-150 placeholder:text-stone-300 placeholder:font-normal hover:border-stone-400 focus:border-black focus:shadow-[2px_2px_0_#000]">
+                            </div>
+                        </div>
+
                         <!-- Fila 2: Estado | Fecha | Hora -->
                         <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
                             <div>
@@ -1033,11 +1073,14 @@
                                 <label class="text-[8px] font-black uppercase tracking-[0.15em] text-stone-400 dark:text-slate-400 mb-1 block">Base / Unidad</label>
                                 <select formControlName="unidad"
                                         class="w-full h-8 text-xs font-bold bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-lg px-2 outline-none transition-all duration-150 cursor-pointer hover:border-stone-400 focus:border-black focus:shadow-[2px_2px_0_#000]">
-                                    <option [ngValue]="null">-- Todas --</option>
-                                    <option *ngFor="let b of bases" [ngValue]="b.codigo">
-                                        {{ b.codigo ? (b.codigo + ' — ' + b.nombre) : b.nombre }}
+                                    <option [ngValue]="null">-- Seleccionar --</option>
+                                    <option *ngFor="let w of warehouses" [ngValue]="w.codigo">
+                                        {{ w.codigo ? (w.codigo + ' — ' + w.nombre) : w.nombre }}
                                     </option>
                                 </select>
+                                <p *ngIf="basesEnLista().length" class="text-[8px] font-bold text-amber-600 dark:text-amber-400 mt-0.5 truncate">
+                                    Herramientas en: {{ basesEnLista().join(' · ') }}
+                                </p>
                             </div>
                         </div>
 
@@ -1086,7 +1129,7 @@
     <!-- Header -->
     <div class="bg-[#0F172A] px-5 py-3.5 flex items-center gap-3 shrink-0 select-none"
          cdkDrag cdkDragRootElement=".cdk-overlay-pane" cdkDragHandle style="cursor:grab">
-      <div class="w-9 h-9 rounded-lg bg-orange-500 border-2 border-white/20 flex items-center justify-center shrink-0">
+      <div class="w-9 h-9 rounded-lg bg-orange-500 border-2 border-black shadow-[2px_2px_0_rgba(0,0,0,0.35)] flex items-center justify-center shrink-0">
         <mat-icon class="!text-lg text-white">undo</mat-icon>
       </div>
       <div>

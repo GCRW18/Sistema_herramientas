@@ -113,6 +113,11 @@ export class FormServicioComponent implements OnInit, OnDestroy {
     // ── Lifecycle ──────────────────────────────────────────
     ngOnInit(): void {
         this._setupReceivedBySearch();
+        // Prellena "Recibido por" con el usuario logueado (editable).
+        try {
+            const auth = JSON.parse(localStorage.getItem('aut') || '{}');
+            if (auth.nombre_usuario) this.receivedByName = auth.nombre_usuario;
+        } catch { /* ignore */ }
     }
 
     ngOnDestroy(): void {

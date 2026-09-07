@@ -1,16 +1,15 @@
-import { Component, OnInit, OnDestroy, signal, inject, ViewChild, TemplateRef } from '@angular/core';
+import { Component, OnInit, OnDestroy, signal, inject, ViewChild, TemplateRef, ElementRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, FormsModule, Validators } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
 import { MatDialogRef, MatDialogModule, MatDialog } from '@angular/material/dialog';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatTooltipModule } from '@angular/material/tooltip';
-import { Subject, forkJoin, of } from 'rxjs';
+import { Subject, of } from 'rxjs';
 import { takeUntil, finalize, catchError, debounceTime, distinctUntilChanged, switchMap, map } from 'rxjs/operators';
 import { MovementService } from '../../../../../core/services/movement.service';
-import { CalibrationService } from '../../../../../core/services/calibration.service';
+import { CustomerService } from '../../../../../core/services/customer.service';
 import { ToolService } from '../../../../../core/services/tool.service';
-import { PrestamoExternoPdfService, PrestamoExternoPdfData } from '../prestamo-externo-pdf.service';
 import { motivoBloqueoSalida } from '../../retorno-traspaso/retorno-traspaso.types';
 
 interface ExternalLoanItem {
@@ -45,6 +44,7 @@ interface ExternalLoanItem {
 export class FormPrestamoExternoDialogComponent implements OnInit, OnDestroy {
 
     @ViewChild('confirmExternoModal') confirmExternoModal!: TemplateRef<any>;
+    @ViewChild('scanInput') scanInputRef!: ElementRef<HTMLInputElement>;
 
     dialogRef        = inject(MatDialogRef<FormPrestamoExternoDialogComponent>);
     private _confirmRef: any = null;
@@ -53,9 +53,8 @@ export class FormPrestamoExternoDialogComponent implements OnInit, OnDestroy {
     private fb          = inject(FormBuilder);
     private snackBar    = inject(MatSnackBar);
     private movementSvc     = inject(MovementService);
-    private calibrationSvc  = inject(CalibrationService);
+    private customerSvc     = inject(CustomerService);
     private toolSvc         = inject(ToolService);
-    private pdfSvc          = inject(PrestamoExternoPdfService);
     private destroy$        = new Subject<void>();
 
     isSaving = false;
@@ -97,12 +96,24 @@ export class FormPrestamoExternoDialogComponent implements OnInit, OnDestroy {
         this._setupEntregadorSearch();
         this._cargarTerceros();
         this._setupToolSearchPe();
+        setTimeout(() => this._focusScanPe(), 150);
     }
 
     ngOnDestroy(): void { this.destroy$.next(); this.destroy$.complete(); }
 
+    private _focusScanPe(): void {
+        try { this.scanInputRef?.nativeElement.focus(); } catch { /* vista no lista */ }
+    }
+
     private _localDateStr(d = new Date()): string {
         return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    }
+
+    private _currentUserName(): string {
+        try {
+            const auth = JSON.parse(localStorage.getItem('aut') || '{}');
+            return auth.nombre_usuario || '';
+        } catch { return ''; }
     }
 
     private initForm(): void {
@@ -113,7 +124,8 @@ export class FormPrestamoExternoDialogComponent implements OnInit, OnDestroy {
             contacto:       [''],
             telefono:       [''],
             motivoPrestamo: ['', Validators.required],
-            autorizado:     ['', Validators.required],
+            // "Autorizado por" prellenado con el usuario logueado (editable).
+            autorizado:     [this._currentUserName(), Validators.required],
             fecha:          [this._localDateStr(), Validators.required],
             hora:           [`${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}`, Validators.required],
             observaciones:  [''],
@@ -121,16 +133,18 @@ export class FormPrestamoExternoDialogComponent implements OnInit, OnDestroy {
     }
 
     private _cargarTerceros(): void {
-        this.calibrationSvc.getLaboratories().pipe(
+        this.customerSvc.getCustomers({ limit: 1000 }).pipe(
             takeUntil(this.destroy$), catchError(() => of([]))
-        ).subscribe((labs: any[]) => {
-            this._tercerosList = (labs || []).map((l: any) => ({
-                razonSocial:    l.name                               || '',
-                nit:            l.rut_nit    || l.code               || '',
-                nombreContacto: l.contact_person || l.contactPerson  || '',
-                telefono:       l.phone                              || '',
-                email:          l.email                              || '',
-            }));
+        ).subscribe((clientes: any[]) => {
+            this._tercerosList = (clientes || [])
+                .filter((c: any) => c.active !== false && c.active !== 'f' && c.active !== 'false')
+                .map((c: any) => ({
+                    razonSocial:    c.name           || c.company_name || '',
+                    nit:            c.tax_id         || c.code         || '',
+                    nombreContacto: c.contact_person || '',
+                    telefono:       c.phone          || '',
+                    email:          c.email          || '',
+                }));
         });
     }
 
@@ -214,13 +228,45 @@ export class FormPrestamoExternoDialogComponent implements OnInit, OnDestroy {
     hideToolDropPe(): void { setTimeout(() => this.showToolDropPe = false, 150); }
     selectToolSuggestionPe(tool: any): void { this.toolSearchPe = tool.codigo; this.showToolDropPe = false; this._agregarToolPe(tool); }
 
-    addToolPeFromInput(): void {
+    addToolPeFromInput(): void { this.scanAndAddPe(); }
+
+    /** Enter / lector físico: coincidencia exacta en sugerencias, si no resuelve
+     *  el código directo contra el backend (getToolByCode). */
+    scanAndAddPe(): void {
         const code = this.toolSearchPe.trim();
         if (!code) return;
-        const tool = this.toolSuggestionsPe.find(h => h.codigo.toLowerCase() === code.toLowerCase())
-            || (this.toolSuggestionsPe.length === 1 ? this.toolSuggestionsPe[0] : null);
-        if (!tool) { this.showMsg('warning', `Seleccione la herramienta de la lista de sugerencias`); return; }
-        this._agregarToolPe(tool);
+        const exact = this.toolSuggestionsPe.find(h => h.codigo.toLowerCase() === code.toLowerCase());
+        if (exact) { this._agregarToolPe(exact); return; }
+        this.toolSearchLoadingPe = true;
+        this.toolSvc.getToolByCode(code).pipe(
+            finalize(() => this.toolSearchLoadingPe = false),
+            takeUntil(this.destroy$)
+        ).subscribe({
+            next: (raw: any) => {
+                if (!raw) { this.showMsg('warning', `No se encontró la herramienta "${code}"`); return; }
+                this._agregarToolPe(this._mapToolRow(raw));
+            },
+            error: () => this.showMsg('error', 'Error al buscar la herramienta')
+        });
+    }
+
+    private _mapToolRow(t: any): any {
+        return {
+            id:               t.id_tool ?? t.id,
+            codigo:           t.code ?? t.codigo ?? '',
+            nombre:           t.name ?? t.nombre ?? t.description ?? '',
+            pn:               t.part_number ?? t.pn ?? '',
+            sn:               t.serial_number ?? t.sn ?? '',
+            marca:            t.brand ?? t.marca ?? '',
+            status:           (t.status ?? 'available').toLowerCase(),
+            fechaCalibracion: t.next_calibration_date ?? t.calibration_due_date ?? '',
+            listaContenido:   t.content_list ?? '',
+            imagen:           t.location_photo ?? null,
+            notesTool:        t.notes ?? '',
+            warehouseId:      t.warehouse_id != null ? Number(t.warehouse_id) : null,
+            rackId:           t.rack_id      != null ? Number(t.rack_id)      : null,
+            levelId:          t.level_id     != null ? Number(t.level_id)     : null,
+        };
     }
 
     private _agregarToolPe(tool: any): void {
@@ -240,6 +286,8 @@ export class FormPrestamoExternoDialogComponent implements OnInit, OnDestroy {
         this.showMsg('success', `"${item.descripcion}" agregada`);
         this.toolSearchPe = '';
         this.toolSuggestionsPe = [];
+        this.showToolDropPe = false;
+        setTimeout(() => this._focusScanPe(), 50);
     }
 
     async abrirDetalleHerramientaItem(item: ExternalLoanItem): Promise<void> {
@@ -274,7 +322,7 @@ export class FormPrestamoExternoDialogComponent implements OnInit, OnDestroy {
         if (this.externalForm.invalid) { this.showMsg('error', 'Complete los datos requeridos'); return; }
         if (this.dataSource().length === 0) { this.showMsg('warning', 'Agregue al menos una herramienta'); return; }
         this._confirmRef = this.dialog.open(this.confirmExternoModal, {
-            width: '620px', maxWidth: '95vw', panelClass: 'no-padding-dialog', disableClose: true
+            width: 'min(920px, 95vw)', maxWidth: '95vw', panelClass: 'no-padding-dialog', disableClose: true
         });
     }
     cerrarConfirm(): void { this._confirmRef?.close(); }
@@ -282,6 +330,7 @@ export class FormPrestamoExternoDialogComponent implements OnInit, OnDestroy {
     finalizar(): void {
         this.cerrarConfirm();
         this.isSaving = true;
+        const notaWin = this.movementSvc.preAbrirVentanaPdf();
         const fv    = this.externalForm.getRawValue();
         const items = this.dataSource();
         const itemsJson = JSON.stringify(items.map(i => ({
@@ -298,11 +347,13 @@ export class FormPrestamoExternoDialogComponent implements OnInit, OnDestroy {
         }).pipe(finalize(() => this.isSaving = false), takeUntil(this.destroy$)).subscribe({
             next: (result: any) => {
                 const nro = result?.movement_number || '---';
-                this._imprimir(nro, fv, items);
+                const idLoan = Number(result?.id_loan);
+                if (idLoan) this.movementSvc.verNotaPrestamo(idLoan, 'mgh100', true, notaWin);
+                else { try { notaWin?.close(); } catch { /* noop */ } this.showMsg('warning', `Préstamo ${nro} registrado, pero no se pudo abrir la nota (sin id_loan)`); }
                 this.showMsg('success', `Préstamo externo registrado: ${nro}`);
                 this.dialogRef.close({ success: true, movement_number: nro });
             },
-            error: (err: any) => this.showMsg('error', err?.message || 'Error al registrar'),
+            error: (err: any) => { try { notaWin?.close(); } catch { /* noop */ } this.showMsg('error', err?.message || 'Error al registrar'); },
         });
     }
 
@@ -310,24 +361,6 @@ export class FormPrestamoExternoDialogComponent implements OnInit, OnDestroy {
         if (this.dataSource().length > 0 &&
             !confirm(`¿Cancelar el préstamo? Se perderán los ${this.dataSource().length} ítem(s) agregado(s).`)) return;
         this.dialogRef.close();
-    }
-
-    private _imprimir(nro: string, fv: any, items: ExternalLoanItem[]): void {
-        const data: PrestamoExternoPdfData = {
-            nroPrestamo: nro,
-            solicitante: fv.contacto || '',
-            empresa: fv.nombreEmpresa || '',
-            fechaHoraPrestamo: `${fv.fecha||''} ${fv.hora||''}`.trim(),
-            observaciones: fv.observaciones || '',
-            entregadoPor: fv.autorizado || '',
-            devuelto: false,
-            items: items.map(i => ({
-                codigo: i.codigo, pn: i.pn, sn: i.sn, cantidad: i.cantidad,
-                descripcion: i.descripcion, listaContenido: i.listaContenido,
-                obs: i.contenido || '',
-            })),
-        };
-        this.pdfSvc.generarPdf(data);
     }
 
     private showMsg(type: 'success'|'error'|'info'|'warning', text: string): void {

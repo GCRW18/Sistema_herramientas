@@ -10,11 +10,11 @@ import { Subject, of, forkJoin, lastValueFrom } from 'rxjs';
 import { takeUntil, finalize, catchError, debounceTime, map, mergeMap } from 'rxjs/operators';
 import { MovementService }    from '../../../../core/services/movement.service';
 import { BlobStorageService } from '../../../../core/services/blob-storage.service';
+import { ToolService }        from '../../../../core/services/tool.service';
 import { CalibrationService }   from '../../../../core/services/calibration.service';
 import { GestionUbicacionesService } from '../../inventory/gestion-ubicaciones/gestion-ubicaciones.service';
 import { HasPermissionDirective } from '../../../../core/directives/has-permission.directive';
 import { localDateStr, formatDateDMY } from '../../../../core/utils/date.utils';
-import { IngresoPdfService, IngresoPdfItem } from './ingreso-pdf.service';
 
 export interface HerramientaItem {
     pn: string;
@@ -109,9 +109,9 @@ export class IngresosHubComponent implements OnInit, OnDestroy {
     private snackBar    = inject(MatSnackBar);
     private movementSvc    = inject(MovementService);
     private blobStorage    = inject(BlobStorageService);
+    private toolSvc        = inject(ToolService);
     private calibrationSvc = inject(CalibrationService);
     private ubicSvc        = inject(GestionUbicacionesService);
-    private ingresoPdfSvc  = inject(IngresoPdfService);
     private destroy$       = new Subject<void>();
 
     // ── Tab state ──────────────────────────────────────────────────────────────
@@ -241,7 +241,8 @@ export class IngresosHubComponent implements OnInit, OnDestroy {
     async abrirModalRecepcion(): Promise<void> {
         const { DatosRecepcionComponent } = await import('./datos-recepcion/datos-recepcion.component');
         this.dialog.open(DatosRecepcionComponent, {
-            width: '520px', maxWidth: '95vw', height: '88vh', panelClass: 'no-padding-dialog', disableClose: true,
+            width: 'min(1060px, 96vw)', maxWidth: '96vw', maxHeight: '94vh',
+            panelClass: 'no-padding-dialog', disableClose: true,
             data: { form: this.recepcionForm }
         });
     }
@@ -256,12 +257,20 @@ export class IngresosHubComponent implements OnInit, OnDestroy {
         ref.afterClosed().subscribe((result: any) => this._procesarResultadoHerramienta(result, isEdit ? index : undefined));
     }
 
-    private _procesarResultadoHerramienta(result: { action: string; data: HerramientaItem } | undefined, editIndex?: number): void {
+    private async _procesarResultadoHerramienta(result: { action: string; data: HerramientaItem } | undefined, editIndex?: number): Promise<void> {
         if (!result) return;
         const item = result.data;
         const existeIndex = this.dataSource.findIndex(i => i.codigoBoa.toUpperCase() === item.codigoBoa.toUpperCase());
         if (existeIndex >= 0 && editIndex !== existeIndex) {
             this._showMsg('Ya existe una herramienta con este código BOA', 'warning');
+            return;
+        }
+        // Guarda contra la BD: el código no puede pertenecer a una herramienta ya
+        // registrada — he.ft_nueva_compra rechaza el lote completo si choca. Se
+        // valida al agregar el ítem (no al confirmar todo el lote) para avisar antes.
+        const yaRegistrado = await this._codigosRegistradosEnBD([item.codigoBoa]);
+        if (yaRegistrado.length > 0) {
+            this._showMsg(`El código ${yaRegistrado[0]} ya está registrado en otra herramienta del sistema`, 'warning');
             return;
         }
         if (editIndex !== undefined) {
@@ -285,6 +294,20 @@ export class IngresosHubComponent implements OnInit, OnDestroy {
             this._showMsg('Agregue al menos una herramienta a la lista', 'warning');
             return;
         }
+        // Guarda de código duplicado ANTES del diálogo de confirmación: así el
+        // camino "confirmar → guardar → nota" queda tan corto como el de préstamos
+        // (sin este chequeo entre la pestaña reservada y el PDF).
+        this.isSaving = true;
+        const codigosDuplicados = await this._codigosRegistradosEnBD(this.dataSource.map(h => h.codigoBoa));
+        this.isSaving = false;
+        if (codigosDuplicados.length > 0) {
+            const uno = codigosDuplicados.length === 1;
+            this._showMsg(
+                `No se puede registrar: ${uno ? 'el código' : 'los códigos'} ${codigosDuplicados.join(', ')} ` +
+                `${uno ? 'ya pertenece' : 'ya pertenecen'} a otra herramienta del sistema. Corrija el código antes de continuar.`,
+                'error');
+            return;
+        }
         const { ConfirmarRecepcionComponent } = await import('./confirmar-recepcion/confirmar-recepcion.component');
         const ref = this.dialog.open(ConfirmarRecepcionComponent, {
             width: '580px', maxWidth: '95vw', panelClass: 'no-padding-dialog', disableClose: true,
@@ -292,7 +315,7 @@ export class IngresosHubComponent implements OnInit, OnDestroy {
         });
         ref.afterClosed().subscribe((result: any) => {
             if (result?.action === 'revisar') this.abrirModalRecepcion();
-            else if (result?.action === 'confirmar') this.finalizarIngreso();
+            else if (result?.action === 'confirmar') this.finalizarIngreso(result.printWindow ?? null);
         });
     }
 
@@ -337,26 +360,52 @@ export class IngresosHubComponent implements OnInit, OnDestroy {
     private async _subirFotosItems<T extends { imagen?: string | null; imagenFile?: File | null }>(
         items: T[], seedFn: (it: T) => string | number,
     ): Promise<string[]> {
-        const out: string[] = [];
-        for (const it of items) {
+        // Las subidas van en paralelo — en serie, un lote con varias fotos dejaba
+        // la pestaña del PDF esperando un request tras otro.
+        return Promise.all(items.map(it => {
             if (it.imagenFile) {
-                out.push(await lastValueFrom(this.blobStorage.upload(it.imagenFile, 'Imagenes', seedFn(it))));
-            } else if (it.imagen && this.blobStorage.isRutaBs(it.imagen)) {
-                out.push(it.imagen);
-            } else {
-                out.push('');
+                return lastValueFrom(this.blobStorage.upload(it.imagenFile, 'Imagenes', seedFn(it)));
             }
+            if (it.imagen && this.blobStorage.isRutaBs(it.imagen)) {
+                return Promise.resolve(it.imagen);
+            }
+            return Promise.resolve('');
+        }));
+    }
+
+    /**
+     * De la lista de códigos dada, devuelve los que YA existen en una herramienta
+     * activa de la BD (mismo criterio que la guarda de he.ft_nueva_compra:
+     * code + estado_reg='activo'). Ante un fallo de red devuelve [] — no bloquea,
+     * el backend sigue siendo la guarda real.
+     */
+    private async _codigosRegistradosEnBD(codes: string[]): Promise<string[]> {
+        const unicos = [...new Set(
+            codes.map(c => (c || '').trim().toUpperCase()).filter(c => c.length >= 2)
+        )];
+        if (unicos.length === 0) return [];
+        try {
+            const listas = await lastValueFrom(forkJoin(
+                unicos.map(code => this.toolSvc.getTools({ query: code }).pipe(catchError(() => of([] as any[]))))
+            ));
+            return unicos.filter((code, i) =>
+                (listas[i] || []).some((t: any) => (t?.code || '').trim().toUpperCase() === code));
+        } catch {
+            return [];
         }
-        return out;
     }
 
     // ── Nueva: finalize ───────────────────────────────────────────────────────
-    async finalizarIngreso(): Promise<void> {
+    async finalizarIngreso(printWin: Window | null = null): Promise<void> {
         this.isSaving = true;
         const rec = this.recepcionForm.value;
         const prov = rec.proveedor;
         const provNombre = typeof prov === 'object' ? prov?.nombre : prov || '';
         const itemsSnapshot = [...this.dataSource];
+
+        // La guarda de código duplicado ya corrió en abrirModalConfirmacionNueva()
+        // (antes de reservar la pestaña del PDF). El backend igual la revalida de
+        // forma transaccional, así que aquí no se repite.
 
         // Sube las fotos al Blob Storage ANTES de armar el items_json.
         // La herramienta aún no existe → se usa el código BOA como semilla del nombre.
@@ -365,6 +414,7 @@ export class IngresosHubComponent implements OnInit, OnDestroy {
             fotos = await this._subirFotosItems(itemsSnapshot, h => (h.codigoBoa || '').toUpperCase());
         } catch (e: any) {
             this.isSaving = false;
+            try { printWin?.close(); } catch { /* noop */ }
             this._showMsg('No se pudo subir una foto: ' + (e?.message || 'error') + '. Intente de nuevo.', 'error');
             return;
         }
@@ -399,7 +449,9 @@ export class IngresosHubComponent implements OnInit, OnDestroy {
             .subscribe({
                 next: (resp: any) => {
                     this._showMsg(`Recepción registrada: ${resp?.movement_number || rec.nroCmr}`, 'success');
-                    this._abrirImpresionIngreso(resp?.movement_number || rec.nroCmr, itemsSnapshot, rec, provNombre);
+                    // Nota de Ingreso MGH-116 (PDF real TCPDF backend).
+                    if (resp?.id_movement) this.movementSvc.verNotaIngreso(Number(resp.id_movement), printWin);
+                    else { try { printWin?.close(); } catch { /* noop */ } }
                     // Reset in-place — no navigate
                     this.dataSource = [];
                     this.recepcionForm.reset({
@@ -409,6 +461,7 @@ export class IngresosHubComponent implements OnInit, OnDestroy {
                     this.loadHistorial();
                 },
                 error: (err: any) => {
+                    try { printWin?.close(); } catch { /* noop */ }
                     const msg = err?.message || 'Error al registrar';
                     const esCodigoDuplicado = /ya esta registrad[oa]/i.test(msg);
                     this._showMsg(msg, esCodigoDuplicado ? 'warning' : 'error');
@@ -487,7 +540,8 @@ export class IngresosHubComponent implements OnInit, OnDestroy {
     async abrirModalDatosAjuste(): Promise<void> {
         const { DatosAjusteComponent } = await import('./datos-ajuste/datos-ajuste.component');
         this.dialog.open(DatosAjusteComponent, {
-            width: '820px', maxWidth: '98vw', height: '88vh', panelClass: 'no-padding-dialog', disableClose: true,
+            width: 'min(940px, 96vw)', maxWidth: '96vw', height: 'min(600px, 92vh)',
+            panelClass: 'no-padding-dialog', disableClose: true,
             data: { form: this.ajusteForm }
         });
     }
@@ -536,7 +590,7 @@ export class IngresosHubComponent implements OnInit, OnDestroy {
         });
         ref.afterClosed().subscribe((result: any) => {
             if (result?.action === 'revisar') this.abrirModalDatosAjuste();
-            else if (result?.action === 'confirmar') this.finalizarAjuste();
+            else if (result?.action === 'confirmar') this.finalizarAjuste(result.printWindow ?? null);
         });
     }
 
@@ -623,24 +677,72 @@ export class IngresosHubComponent implements OnInit, OnDestroy {
         });
     }
 
+    /**
+     * De los ítems de ajuste dados, devuelve los que `he.ft_ajuste_ingreso`
+     * rechazaría por estado de la herramienta (in_use / in_calibration), lo que
+     * hace rollback del lote completo. Se usa como guarda previa a la subida de
+     * fotos para no dejarlas huérfanas en el Blob Storage. Solo bloquea sobre un
+     * estado confirmado: si el buscador no devuelve la herramienta, no bloquea
+     * (deja que el backend decida). Ante fallo de red devuelve [].
+     */
+    private async _itemsAjusteNoValidos(items: AjusteItem[]): Promise<{ codigo: string; motivo: string }[]> {
+        const conCodigo = items.filter(i => (i.codigoBoa || '').trim().length >= 2);
+        if (conCodigo.length === 0) return [];
+        try {
+            const listas = await lastValueFrom(forkJoin(
+                conCodigo.map(i => this.toolSvc.getTools({ query: i.codigoBoa.trim() }).pipe(catchError(() => of([] as any[]))))
+            ));
+            const out: { codigo: string; motivo: string }[] = [];
+            conCodigo.forEach((i, idx) => {
+                const code = i.codigoBoa.trim().toUpperCase();
+                const tool = (listas[idx] || []).find((t: any) => (t?.code || '').trim().toUpperCase() === code);
+                if (!tool) return;
+                const st = String(tool.status || '').toLowerCase();
+                if (st === 'in_use')         out.push({ codigo: i.codigoBoa, motivo: 'en préstamo (in_use)' });
+                else if (st === 'in_calibration') out.push({ codigo: i.codigoBoa, motivo: 'en calibración (in_calibration)' });
+            });
+            return out;
+        } catch {
+            return [];
+        }
+    }
+
     // ── Ajuste: finalize ──────────────────────────────────────────────────────
-    async finalizarAjuste(): Promise<void> {
+    async finalizarAjuste(printWin: Window | null = null): Promise<void> {
         const fv = this.ajusteForm.value;
-        if (!fv.aprobadoPor) { this._showMsg('Debe seleccionar un aprobador', 'error'); return; }
-        if (this.dataSourceAjuste.length === 0) { this._showMsg('No hay items', 'error'); return; }
+        const abortar = (msg: string) => { try { printWin?.close(); } catch { /* noop */ } this._showMsg(msg, 'error'); };
+        if (!fv.aprobadoPor) { abortar('Debe seleccionar un aprobador'); return; }
+        if (this.dataSourceAjuste.length === 0) { abortar('No hay items'); return; }
         const sinId = this.dataSourceAjuste.filter(i => !i.toolId || isNaN(i.toolId));
         if (sinId.length > 0) {
-            this._showMsg(`${sinId.length} herramienta(s) sin ID de sistema`, 'error');
+            abortar(`${sinId.length} herramienta(s) sin ID de sistema`);
             return;
         }
         this.isSavingAjuste = true;
 
         const itemsAjuste = [...this.dataSourceAjuste];
+
+        // Guarda previa (misma idea que finalizarIngreso): si el backend va a
+        // rechazar algún ítem (herramienta en préstamo / calibración), abortamos
+        // ANTES de subir fotos al Blob Storage para no dejarlas huérfanas.
+        const noValidos = await this._itemsAjusteNoValidos(itemsAjuste);
+        if (noValidos.length > 0) {
+            this.isSavingAjuste = false;
+            try { printWin?.close(); } catch { /* noop */ }
+            this._showMsg(
+                'No se puede registrar el ajuste: ' +
+                noValidos.map(n => `${n.codigo} (${n.motivo})`).join(', ') +
+                '. Use Devolución de Préstamo o Retorno de Calibración.',
+                'error');
+            return;
+        }
+
         let fotos: string[];
         try {
             fotos = await this._subirFotosItems(itemsAjuste, i => Number(i.toolId));
         } catch (e: any) {
             this.isSavingAjuste = false;
+            try { printWin?.close(); } catch { /* noop */ }
             this._showMsg('No se pudo subir una foto: ' + (e?.message || 'error') + '. Intente de nuevo.', 'error');
             return;
         }
@@ -679,14 +781,17 @@ export class IngresosHubComponent implements OnInit, OnDestroy {
             finalize(() => this.isSavingAjuste = false)
         ).subscribe({
             next: (result: any) => {
-                const nro = result?.movement_number || '---';
-                this._abrirImpresionAjuste(nro, this.dataSourceAjuste, fv);
+                const nro   = result?.movement_number || '---';
+                const idMov = Number(result?.id_movement);
+                // Comprobante de Ajuste por Ingreso — PDF real TCPDF backend.
+                if (idMov) this.movementSvc.verNotaAjuste(idMov, printWin);
+                else { try { printWin?.close(); } catch { /* noop */ } }
                 this._showMsg(`Ajuste registrado exitosamente: ${nro}`, 'success');
                 this.dataSourceAjuste = [];
                 this.ajusteForm.reset({ tipoAjuste: 'INVENTARIO', fecha: localDateStr() });
                 this.loadHistorial();
             },
-            error: (err: any) => this._showMsg('Error al registrar el ajuste: ' + (err?.message || ''), 'error')
+            error: (err: any) => { try { printWin?.close(); } catch { /* noop */ } this._showMsg('Error al registrar el ajuste: ' + (err?.message || ''), 'error'); }
         });
     }
 
@@ -740,231 +845,19 @@ export class IngresosHubComponent implements OnInit, OnDestroy {
         return (m.movement_number || '').toUpperCase().startsWith('AI-');
     }
 
-    /** Reimpresión desde el historial. COMPRA usa el formato oficial MGH-116
-     *  (IngresoPdfService, mismo layout que la impresión inmediata al guardar);
-     *  AJUSTE_INGRESO sigue con el layout genérico propio de esta función —
-     *  fuera de alcance de la consolidación MGH-116 (tiene su propia hoja Excel
-     *  "AJUSTE INGRESO" pendiente de recalcar aparte). */
+    /** Reimpresión desde el historial. COMPRA → Nota de Ingreso MGH-116;
+     *  AJUSTE INGRESO → Comprobante de Ajuste por Ingreso. Ambas son PDF real
+     *  TCPDF de backend, mismo camino que las notas de préstamo: pestaña
+     *  reservada dentro del click + un solo POST. */
     pdfHistorialItem(m: any): void {
-        if (!this.isAjusteIngreso(m)) {
-            this._pdfHistorialCompraOficial(m);
+        const ventana = this.movementSvc.preAbrirVentanaPdf();
+        if (!m?.id_movement) {
+            try { ventana?.close(); } catch { /* noop */ }
+            this._showMsg('No se pudo identificar el registro', 'error');
             return;
         }
-        const generarPdfConItems = (items: any[]) => {
-            const nro   = m.movement_number || '---';
-            const fecha = m.date ? new Date(m.date).toLocaleDateString('es-BO') : '';
-            const resp  = m.received_by_name || m.responsible_person || '---';
-            const prov  = m.supplier || m.document_number || '---';
-            const rows = items.length
-                ? items.map((it: any, idx: number) => `
-                    <tr>
-                        <td style="text-align:center">${idx + 1}</td>
-                        <td style="font-family:monospace;font-weight:700">${it.code || it.codigo || '-'}</td>
-                        <td style="font-family:monospace;font-size:9px">${it.part_number || it.pn || '-'}</td>
-                        <td style="font-family:monospace;font-size:9px">${it.serial_number || it.sn || '-'}</td>
-                        <td style="text-align:center;font-weight:700">${it.quantity || it.cantidad || 1}</td>
-                        <td>${it.description || it.name || it.descripcion || '-'}</td>
-                    </tr>`).join('')
-                : `<tr><td colspan="6" style="text-align:center;color:#888">Sin detalle disponible</td></tr>`;
-            const css = `<style>@page{size:A4;margin:12mm}*{box-sizing:border-box}body{font-family:Arial,sans-serif;font-size:10px;color:#000;margin:0}h1{text-align:center;font-size:12px;font-weight:900;text-transform:uppercase;background:#111A43;color:white;padding:7px 10px;margin:0 0 7px;border:1px solid #000}.info-tbl{width:100%;border-collapse:collapse;border:1px solid #000;margin-bottom:7px}.info-tbl td{border:1px solid #ddd;padding:3px 6px}.lbl{background:#f0f0f0;font-weight:700;font-size:9px;width:130px}.nro-cell{background:#f0f0f0;text-align:center;font-weight:900;font-size:15px;vertical-align:middle;width:120px}.sec{background:#111A43;color:white;padding:3px 8px;font-weight:900;font-size:10px;text-transform:uppercase;border:1px solid #000}table.det{width:100%;border-collapse:collapse;border:1px solid #000}table.det th{background:#111A43;color:white;padding:4px;font-size:8px;font-weight:900;text-transform:uppercase;border:1px solid #000;text-align:center}table.det td{padding:3px 4px;border:1px solid #ddd;font-size:9px}table.det tr:nth-child(even) td{background:#f9f9f9}.footer{text-align:center;margin-top:10px;font-size:7.5px;color:#888;border-top:1px dotted #ccc;padding-top:4px}@media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact}}</style>`;
-            const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Ingreso ${nro}</title>${css}<script>window.onload=function(){setTimeout(function(){window.print();},500);};<\/script></head><body>
-<h1>NOTA DE INGRESO A ALMACÉN</h1>
-<table class="info-tbl"><tr><td class="lbl">N° DOCUMENTO:</td><td><strong>${nro}</strong></td><td class="nro-cell" rowspan="2">N°<br>${nro}</td></tr><tr><td class="lbl">FECHA:</td><td>${fecha}</td></tr><tr><td class="lbl">RECIBIDO POR:</td><td>${resp}</td><td class="lbl">PROVEEDOR / REF:</td><td>${prov}</td></tr></table>
-<div class="sec">DETALLE</div>
-<table class="det"><thead><tr><th>#</th><th>CÓDIGO</th><th>P/N</th><th>S/N</th><th>CANT.</th><th>DESCRIPCIÓN</th></tr></thead><tbody>${rows}</tbody></table>
-<div class="footer">Sistema de Gestión de Herramientas - BOA &nbsp;|&nbsp; ${new Date().toLocaleString('es-BO')}</div>
-</body></html>`;
-            const blob = new Blob([html], { type: 'text/html' });
-            const url  = URL.createObjectURL(blob);
-            const a    = document.createElement('a');
-            a.href = url; a.target = '_blank'; a.rel = 'noopener';
-            document.body.appendChild(a); a.click(); document.body.removeChild(a);
-            setTimeout(() => URL.revokeObjectURL(url), 60000);
-        };
-
-        if (m.id_movement) {
-            this.movementSvc.getMovementItems(Number(m.id_movement)).pipe(
-                takeUntil(this.destroy$),
-                catchError(() => of([]))
-            ).subscribe(items => generarPdfConItems(items));
-        } else {
-            generarPdfConItems([]);
-        }
-    }
-
-    private _pdfHistorialCompraOficial(m: any): void {
-        const nro          = m.movement_number || '---';
-        const fecha        = m.date ? new Date(m.date).toLocaleDateString('es-BO', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '';
-        const proveedor    = m.supplier || m.document_number || '';
-        const factura      = m.invoice_number || '';
-        const entregadoPor = m.received_by_name || '';
-        const recibidoPor  = m.responsible_person || '';
-
-        const build = (items: any[]) => {
-            const pdfItems: IngresoPdfItem[] = items.map(it => ({
-                codigo:           it.code || '',
-                pn:               it.part_number || it.pn || '',
-                proveedor,
-                factura,
-                descripcion:      it.description || it.name || it.descripcion || '',
-                unidad:           it.unit_of_measure || 'UND',
-                cantidad:         Number(it.quantity ?? it.cantidad ?? 1),
-                fechaVencimiento: it.warranty_expiration
-                    ? new Date(it.warranty_expiration).toLocaleDateString('es-BO', { day: '2-digit', month: '2-digit', year: 'numeric' })
-                    : '',
-                origenAB: IngresoPdfService.origenAB(it.manufacture_origin),
-                tipoAB:   IngresoPdfService.tipoAB(it.category_code),
-                lote:     it.batch_number || ''
-            }));
-            this.ingresoPdfSvc.generarPdf({
-                nroNota: nro, fechaIngreso: fecha, observaciones: m.notes || '',
-                entregadoPor, recibidoPor, items: pdfItems
-            });
-        };
-
-        if (m.id_movement) {
-            this.movementSvc.getMovementItems(Number(m.id_movement)).pipe(
-                takeUntil(this.destroy$),
-                catchError(() => of([]))
-            ).subscribe(items => build(items));
-        } else {
-            build([]);
-        }
-    }
-
-    // ══════════════════════════════════════════════════════════════════════════
-    //  PDF — NUEVA HERRAMIENTA (INGRESO POR COMPRA) — formato oficial MGH-116
-    // ══════════════════════════════════════════════════════════════════════════
-    private _abrirImpresionIngreso(nro: string, items: HerramientaItem[], rec: any, provNombre: string): void {
-        const pdfItems: IngresoPdfItem[] = items.map(h => ({
-            codigo:           h.codigoBoa,
-            pn:               h.pn || '',
-            proveedor:        provNombre || '',
-            factura:          rec.nroFactura || '',
-            descripcion:      h.descripcion || '',
-            unidad:           h.unidadMedida || 'UND',
-            cantidad:         h.cantidad,
-            fechaVencimiento: formatDateDMY(h.fechaVencimiento),
-            origenAB: IngresoPdfService.origenAB(h.fabricacion),
-            tipoAB:   IngresoPdfService.tipoAB(h.tipo),
-            lote:     h.loteNumero || ''
-        }));
-        this.ingresoPdfSvc.generarPdf({
-            nroNota:       nro,
-            fechaIngreso:  formatDateDMY(rec.fechaIngreso),
-            observaciones: (rec.tipoDe ? '[' + rec.tipoDe + '] ' : '') + (rec.observaciones || ''),
-            entregadoPor:  rec.recibiConforme    || '',
-            recibidoPor:   rec.funcionarioRecibe || '',
-            items: pdfItems
-        });
-    }
-
-    // ══════════════════════════════════════════════════════════════════════════
-    //  PDF — AJUSTE INGRESO
-    // ══════════════════════════════════════════════════════════════════════════
-    private _abrirImpresionAjuste(nro: string, items: AjusteItem[], fv: any): void {
-        const now = new Date().toLocaleString('es-BO');
-        const rows = items.map((item, idx) => `
-            <tr>
-                <td style="text-align:center">${idx + 1}</td>
-                <td><span style="font-family:monospace;font-weight:700;background:#0f172a;color:white;padding:1px 5px;border-radius:3px;font-size:9px">${item.codigoBoa || '-'}</span></td>
-                <td style="font-family:monospace;font-size:9px">${item.pn || '-'}</td>
-                <td style="font-family:monospace;font-size:9px">${item.sn || '-'}</td>
-                <td style="text-align:center;font-weight:700">${item.cantidad}</td>
-                <td style="font-size:9px">${item.descripcion || '-'}</td>
-                <td style="text-align:center"><span style="padding:2px 5px;border:1px solid #000;font-size:8px;font-weight:700">${item.estado || '-'}</span></td>
-                <td style="font-size:8.5px">${item.ubicacion || '-'}</td>
-                <td style="font-size:8.5px">${item.obs || ''}</td>
-            </tr>`).join('');
-        const tipoLabel = this.getTipoAjusteLabel(fv.tipoAjuste || 'INVENTARIO');
-        const html = `<!DOCTYPE html>
-<html><head><meta charset="UTF-8"><title>Ajuste Ingreso ${nro}</title>
-<style>
-  @page { size: A4 landscape; margin: 12mm 10mm; }
-  * { box-sizing: border-box; }
-  body { font-family: Arial, sans-serif; font-size: 10px; color: #000; margin: 0; }
-  .top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 5px; }
-  .code-box { border: 2px solid #000; padding: 3px 10px; font-weight: 900; font-size: 13px; display: inline-block; }
-  h1 { text-align: center; font-size: 12px; font-weight: 900; text-transform: uppercase;
-       background: #111A43; color: white; padding: 7px 10px; margin: 0 0 7px; border: 1px solid #000; }
-  .info-tbl { width: 100%; border-collapse: collapse; border: 1px solid #000; margin-bottom: 7px; }
-  .info-tbl td { border: 1px solid #ddd; padding: 3px 6px; }
-  .lbl { background: #f0f0f0; font-weight: 700; font-size: 9px; width: 130px; }
-  .nro-cell { background: #f0f0f0; text-align: center; font-weight: 900; font-size: 15px; vertical-align: middle; width: 120px; }
-  .sec { background: #111A43; color: white; padding: 3px 8px; font-weight: 900; font-size: 10px;
-         text-transform: uppercase; border: 1px solid #000; margin-bottom: 0; }
-  table.det { width: 100%; border-collapse: collapse; border: 1px solid #000; }
-  table.det th { background: #111A43; color: white; padding: 4px 3px; font-size: 8px; font-weight: 900;
-                 text-transform: uppercase; border: 1px solid #000; text-align: center; }
-  table.det td { padding: 3px 4px; border: 1px solid #ddd; font-size: 9px; }
-  table.det tr:nth-child(even) td { background: #f9f9f9; }
-  .sigs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 16px; }
-  .sig { border: 1px solid #000; padding: 6px 8px; text-align: center; }
-  .sig-ttl { font-weight: 900; font-size: 9px; text-transform: uppercase; margin-bottom: 26px; }
-  .sig-line { border-top: 1px solid #000; padding-top: 3px; font-size: 8.5px; }
-  .footer { text-align: center; margin-top: 10px; font-size: 7.5px; color: #888; border-top: 1px dotted #ccc; padding-top: 4px; }
-  @media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
-</style>
-<script>window.onload = function() { setTimeout(function(){ window.print(); }, 500); };</script>
-</head><body>
-  <div class="top">
-    <div style="font-weight:900;font-size:11px">BoAMM &nbsp; OAM145# N-114</div>
-    <div style="text-align:right">
-      <div class="code-box">API</div><br>
-      <span style="font-size:9px">AJUSTE POR INGRESO</span>
-    </div>
-  </div>
-  <h1>COMPROBANTE AJUSTE POR INGRESO<br>
-    <span style="font-size:10px;font-weight:400">HERRAMIENTAS, BANCOS DE PRUEBA Y EQUIPOS DE APOYO</span>
-  </h1>
-  <table class="info-tbl">
-    <tr>
-      <td class="lbl">DOCUMENTO REF.:</td><td>${fv.documento || '—'}</td>
-      <td class="lbl">TIPO AJUSTE:</td><td><strong>${tipoLabel}</strong></td>
-      <td class="nro-cell" rowspan="3"><div style="font-size:8px;font-weight:400">N° AJUSTE</div>${nro}</td>
-    </tr>
-    <tr>
-      <td class="lbl">ELABORÓ AJUSTE:</td><td>${fv.realizadoPorInput || fv.realizadoPor || '—'}</td>
-      <td class="lbl">AUTORIZÓ:</td><td>${fv.aprobadoPorInput || fv.aprobadoPor || '—'}</td>
-    </tr>
-    <tr>
-      <td class="lbl">FECHA:</td><td>${formatDateDMY(fv.fecha) || '—'}</td>
-      <td class="lbl">OBSERVACIÓN:</td><td>${fv.descripcion || '—'}</td>
-    </tr>
-  </table>
-  <div class="sec">DETALLE DE HERRAMIENTAS AJUSTADAS</div>
-  <table class="det">
-    <thead><tr>
-      <th style="width:25px">ITEM</th><th>CÓDIGO BOA</th><th>P/N</th><th>S/N</th>
-      <th style="width:35px">CANT.</th><th>DESCRIPCIÓN</th><th>ESTADO</th>
-      <th>UBICACIÓN</th><th>OBS</th>
-    </tr></thead>
-    <tbody>${rows}</tbody>
-  </table>
-  <div class="sigs">
-    <div class="sig">
-      <div class="sig-ttl">ELABORÓ AJUSTE</div>
-      <div style="font-size:9px;margin-bottom:16px">${fv.realizadoPorInput || fv.realizadoPor || '____________________'}</div>
-      <div class="sig-line">Firma / Cargo</div>
-    </div>
-    <div class="sig">
-      <div class="sig-ttl">AUTORIZÓ</div>
-      <div style="font-size:9px;margin-bottom:16px">${fv.aprobadoPorInput || fv.aprobadoPor || '____________________'}</div>
-      <div class="sig-line">Firma / Cargo</div>
-    </div>
-    <div class="sig">
-      <div class="sig-ttl">RECIBIÓ ALMACÉN</div>
-      <div class="sig-line">Firma Almacén Herramientas</div>
-    </div>
-  </div>
-  <div class="footer">Sistema de Gestión de Herramientas - BOA &nbsp;|&nbsp; ${now}</div>
-</body></html>`;
-        const blob = new Blob([html], { type: 'text/html' });
-        const url  = URL.createObjectURL(blob);
-        const a    = document.createElement('a');
-        a.href = url; a.target = '_blank'; a.rel = 'noopener';
-        document.body.appendChild(a); a.click(); document.body.removeChild(a);
-        setTimeout(() => URL.revokeObjectURL(url), 60000);
+        if (this.isAjusteIngreso(m)) this.movementSvc.verNotaAjuste(Number(m.id_movement), ventana);
+        else                        this.movementSvc.verNotaIngreso(Number(m.id_movement), ventana);
     }
 
     // ══════════════════════════════════════════════════════════════════════════

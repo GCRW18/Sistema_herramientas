@@ -1,12 +1,12 @@
 import {
-    Component, OnInit, OnDestroy, inject
+    Component, OnInit, OnDestroy, inject, ViewChild, ElementRef
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
 import { MatDialogRef, MatDialogModule, MatDialog, MAT_DIALOG_DATA } from '@angular/material/dialog';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
-import { Subject, takeUntil, finalize, debounceTime, distinctUntilChanged, switchMap, of, map } from 'rxjs';
+import { Subject, takeUntil, finalize, debounceTime, distinctUntilChanged, switchMap, of, map, catchError } from 'rxjs';
 
 import { MovementService } from '../../../../../../core/services/movement.service';
 import { ToolService } from '../../../../../../core/services/tool.service';
@@ -15,7 +15,6 @@ import {
     Ubicacion, ToolEnvioItem, Funcionario,
     CONDICIONES_ENVIO, abrirBlob, motivoBloqueoSalida
 } from '../../retorno-traspaso.types';
-import { EnvioBasePdfService, EnvioBasePdfData } from '../../envio-base-pdf.service';
 
 export interface EnvioDialogData {
     almacenes: Ubicacion[];
@@ -40,6 +39,8 @@ export interface EnvioDialogData {
 })
 export class EnvioDialogComponent implements OnInit, OnDestroy {
 
+    @ViewChild('scanInputEnv') scanInputRef!: ElementRef<HTMLInputElement>;
+
     private dialogRef = inject(MatDialogRef<EnvioDialogComponent>);
     private dialog    = inject(MatDialog);
     data              = inject<EnvioDialogData>(MAT_DIALOG_DATA);
@@ -47,16 +48,20 @@ export class EnvioDialogComponent implements OnInit, OnDestroy {
     private snackBar  = inject(MatSnackBar);
     private movSvc    = inject(MovementService);
     private toolSvc   = inject(ToolService);
-    private pdfSvc    = inject(EnvioBasePdfService);
     private _unsub$   = new Subject<void>();
     private _srchEnvio$ = new Subject<string>();
     private _logoBoaDataUri: Promise<string> | null = null;
 
+    // ── Escaneo QR / wedge ──
+    scanValueEnv = '';
+    scanningEnv  = false;
+    private _scanEnv$ = new Subject<string>();
+    private _pendingScanEnv = '';
+
     envioForm!: FormGroup;
     itemsEnvio: ToolEnvioItem[] = [];
 
-    // Tool search
-    toolSearchEnvio     = '';
+    // Tool search (mismo input que el escaneo — ver scanValueEnv/onScanEnvInput)
     toolResultsEnvio: any[] = [];
     showToolDropEnvio   = false;
     searchingToolsEnvio = false;
@@ -86,12 +91,50 @@ export class EnvioDialogComponent implements OnInit, OnDestroy {
     ngOnInit(): void {
         this._initForm();
         this._setupToolSearch();
+        this._setupScanEnv();
         this._setupFuncSearch();
         this._setDefaultAlmacen();
+        this._setDefaultResponsable();
         this._fetchCorrelativoPreview();
+        setTimeout(() => { try { this.scanInputRef?.nativeElement.focus(); } catch { /* view not ready */ } }, 150);
     }
 
     ngOnDestroy(): void { this._unsub$.next(); this._unsub$.complete(); }
+
+    // ── Escaneo: código → busca la herramienta y la agrega (mismo chequeo que la búsqueda) ──
+    private _setupScanEnv(): void {
+        this._scanEnv$.pipe(
+            debounceTime(120), distinctUntilChanged(),
+            switchMap(code => {
+                const q = code.trim();
+                if (q.length < 2) return of({ code: q, tools: [] as any[] });
+                this.scanningEnv = true;
+                return this.toolSvc.getTools({ query: q }).pipe(
+                    catchError(() => of([] as any[])),
+                    finalize(() => this.scanningEnv = false),
+                    map(tools => ({ code: q, tools: (tools || []) as any[] }))
+                );
+            }),
+            takeUntil(this._unsub$)
+        ).subscribe(({ code, tools }) => {
+            if (!this._pendingScanEnv || this._pendingScanEnv !== code) return;
+            this._pendingScanEnv = '';
+            const exact = tools.find((t: any) => String(t.code ?? t.codigo ?? '').trim().toUpperCase() === code.toUpperCase());
+            const target = exact || (tools.length === 1 ? tools[0] : null);
+            if (target) { this.addToolEnvio(target); this.scanValueEnv = ''; this._focusScanEnv(); }
+            else this._showMsg(`"${code}" — sin coincidencia exacta, use la búsqueda`, 'warning');
+        });
+    }
+    private _focusScanEnv(): void { setTimeout(() => { try { this.scanInputRef?.nativeElement.focus(); } catch { /* noop */ } }, 50); }
+    /** Un solo input hace de escáner (Enter/wedge → coincidencia exacta) y de buscador
+     *  (dropdown de sugerencias mientras se escribe), igual que Préstamo Técnico. */
+    onScanEnvInput(v: string): void { this.scanValueEnv = v; this._srchEnvio$.next(v); }
+    scanEnvEnter(): void {
+        const code = this.scanValueEnv.trim();
+        if (!code) return;
+        this._pendingScanEnv = code;
+        this._scanEnv$.next(code);
+    }
 
     getAllUbicaciones(): Ubicacion[] { return [...this.bases, ...this.almacenes]; }
 
@@ -185,6 +228,20 @@ export class EnvioDialogComponent implements OnInit, OnDestroy {
         if (cbba) this.envioForm.patchValue({ baseOrigen: cbba }, { emitEvent: false });
     }
 
+    /** Prellena "Responsable / Envía" con el usuario logueado (editable). emitEvent:false
+     *  para no disparar el autocompletado de funcionarios al abrir el formulario. */
+    private _setDefaultResponsable(): void {
+        const user = this._currentUserName();
+        if (user) this.envioForm.patchValue({ responsableEnvia: user }, { emitEvent: false });
+    }
+
+    private _currentUserName(): string {
+        try {
+            const auth = JSON.parse(localStorage.getItem('aut') || '{}');
+            return auth.nombre_usuario || '';
+        } catch { return ''; }
+    }
+
     private _fetchCorrelativoPreview(): void {
         this.loadingCorrelativo = true;
         this.envCorrelativoPreview = '';
@@ -198,7 +255,6 @@ export class EnvioDialogComponent implements OnInit, OnDestroy {
 
     // ── Tool search ────────────────────────────────────────────────────────────
 
-    onToolSearchEnvio(term: string): void { this.toolSearchEnvio = term; this._srchEnvio$.next(term); }
     hideToolDropEnvio(): void { setTimeout(() => this.showToolDropEnvio = false, 150); }
 
     addToolEnvio(tool: any): void {
@@ -221,7 +277,8 @@ export class EnvioDialogComponent implements OnInit, OnDestroy {
             rackId:      tool.rack_id      != null ? Number(tool.rack_id)      : null,
             levelId:     tool.level_id     != null ? Number(tool.level_id)     : null,
         });
-        this.toolSearchEnvio = ''; this.toolResultsEnvio = []; this.showToolDropEnvio = false;
+        this.scanValueEnv = ''; this.toolResultsEnvio = []; this.showToolDropEnvio = false;
+        this._focusScanEnv();
     }
 
     removeToolEnvio(i: number): void { this.itemsEnvio.splice(i, 1); }
@@ -294,9 +351,9 @@ export class EnvioDialogComponent implements OnInit, OnDestroy {
             unit_of_measure: it.unidad || '', content_list: it.listaContenido || ''
         })));
 
-        // Se abre en el mismo tick del clic (gesto de usuario) para que el navegador no
-        // bloquee la pestaña nueva cuando el PDF se genera después de que responda el guardado.
-        const pdfWin = window.open('', '_blank');
+        // Pestaña reservada en el gesto (click) para la nota "Registro de Herramientas
+        // en Otras Bases" — PDF real TCPDF backend generado tras responder el guardado.
+        const pdfWin = this.movSvc.preAbrirVentanaPdf();
         this.isSavingEnvio = true;
         this.movSvc.registrarEnvioOtrasBases({
             date: form.fechaEnvio, time: (form.horaEnvio || '00:00') + ':00',
@@ -319,10 +376,13 @@ export class EnvioDialogComponent implements OnInit, OnDestroy {
             next: (result: any) => {
                 const nro = result?.movement_number || '---';
                 this._showMsg(`Envío registrado: ${nro}`, 'success');
-                this._pdfEnvioOficial(nro, this.itemsEnvio, form, pdfWin);
+                // Nota "Registro de Herramientas en Otras Bases" — PDF real TCPDF backend.
+                const idMov = Number(result?.id_movement);
+                if (idMov) this.movSvc.verNotaEnvio(idMov, pdfWin);
+                else { try { pdfWin?.close(); } catch { /* noop */ } }
                 this.dialogRef.close({ refreshActivos: true });
             },
-            error: (err) => { pdfWin?.close(); this._showMsg('Error al registrar envío: ' + (err?.message || ''), 'error'); }
+            error: (err) => { try { pdfWin?.close(); } catch { /* noop */ } this._showMsg('Error al registrar envío: ' + (err?.message || ''), 'error'); }
         });
     }
 
@@ -350,26 +410,6 @@ export class EnvioDialogComponent implements OnInit, OnDestroy {
     cerrarFormEnvio(): void { this.dialogRef.close(); }
 
     // ── PDF ────────────────────────────────────────────────────────────────────
-
-    /** Nota de "Registro de Herramientas en Otras Bases" (formato oficial calcado del Excel). */
-    private _pdfEnvioOficial(nro: string, items: ToolEnvioItem[], form: any, win?: Window | null): void {
-        const data: EnvioBasePdfData = {
-            nroNota: nro,
-            origen: form.baseOrigen?.nombre || '---',
-            destino: form.baseDestino?.nombre || '---',
-            fechaEnvio: new Date(form.fechaEnvio || new Date()).toLocaleDateString('es-BO', { day: '2-digit', month: '2-digit', year: 'numeric' }),
-            responsable: form.responsableEnvia || '',
-            recibe: form.recibeEnDestino || '',
-            tipoEnvio: form.tipoEnvio || 'EVENTUAL',
-            fechaEsperadaRetorno: form.fechaEsperadaRetorno || '',
-            nroDocumento: form.nroDocumento || '',
-            nroVuelo: form.nroVuelo || '',
-            aeronave: form.aeronave || '',
-            observaciones: form.notas || '',
-            items: items.map(it => ({ descripcion: it.nombre, pn: it.pn, sn: it.sn })),
-        };
-        this.pdfSvc.generarPdf(data, win);
-    }
 
     /**
      * "Solicitud de Envío — CO-MAT", calcado de "Sistema Herramientas con Macros/Formularios.xlsx",

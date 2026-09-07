@@ -327,13 +327,13 @@ export class DashboardAlertasComponent implements OnInit, OnDestroy {
     // ── Estilos Visuales ────────────────────────────────────────────────────────
     getUrgencyClass(urgency: string): string {
         switch (urgency) {
-            case 'EXPIRED':       return 'bg-red-600 text-gray-100 border-black';
-            case 'CRITICAL_7D':   return 'bg-orange-500 text-black border-black';
-            case 'URGENT_15D':    return 'bg-yellow-400 text-black border-black';
-            case 'UPCOMING_30D':  return 'bg-blue-700 text-gray-100 border-black';
-            case 'UPCOMING_90D':  return 'bg-sky-600 text-white border-black';
-            case 'IN_LAB':        return 'bg-purple-700 text-white border-black';
-            default:              return 'bg-gray-100 text-gray-700 border-gray-500';
+            case 'EXPIRED':       return 'bg-red-100 text-red-800 border-red-200';
+            case 'CRITICAL_7D':   return 'bg-orange-100 text-orange-800 border-orange-200';
+            case 'URGENT_15D':    return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+            case 'UPCOMING_30D':  return 'bg-blue-100 text-blue-800 border-blue-200';
+            case 'UPCOMING_90D':  return 'bg-sky-100 text-sky-800 border-sky-200';
+            case 'IN_LAB':        return 'bg-purple-100 text-purple-800 border-purple-200';
+            default:              return 'bg-gray-100 text-gray-700 border-gray-200';
         }
     }
 
@@ -362,10 +362,9 @@ export class DashboardAlertasComponent implements OnInit, OnDestroy {
     }
 
     getDaysColor(days: number): string {
-        if (days <= 0) return 'text-red-600 dark:text-red-400';
-        if (days <= 4) return 'text-red-500 dark:text-red-400';
-        if (days <= 7) return 'text-orange-600 dark:text-orange-400';
-        return 'text-amber-600 dark:text-amber-400';
+        if (days <= 4) return 'bg-red-100 text-red-800 border-red-200';
+        if (days <= 7) return 'bg-orange-100 text-orange-800 border-orange-200';
+        return 'bg-amber-100 text-amber-800 border-amber-200';
     }
 
     private formatDate(date: string): string {

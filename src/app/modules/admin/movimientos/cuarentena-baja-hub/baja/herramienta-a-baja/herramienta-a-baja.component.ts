@@ -24,6 +24,7 @@ interface HerramientaOption {
     base: string;
     marca: string;
     existencia: number;
+    status: string;
     imagen?: string;
     warehouseId?: number | null;
     rackId?: number | null;
@@ -122,6 +123,7 @@ export class HerramientaABajaComponent implements OnInit, OnDestroy {
                 base:       this._resolverBase(t.warehouse_id),
                 marca:      t.brand ?? t.marca ?? '',
                 existencia: t.quantity_in_stock ?? t.existencia ?? 0,
+                status:     String(t.status ?? '').toLowerCase(),
                 imagen:     t.location_photo ?? null,
                 warehouseId: t.warehouse_id != null ? Number(t.warehouse_id) : null,
                 rackId:      t.rack_id      != null ? Number(t.rack_id)      : null,
@@ -137,6 +139,22 @@ export class HerramientaABajaComponent implements OnInit, OnDestroy {
         if (warehouseId == null) return '';
         const w = this.warehouses.find(x => x.id === warehouseId);
         return w ? (w.codigo ? `${w.codigo} — ${w.nombre}` : w.nombre) : '';
+    }
+
+    /** Motivo por el que una herramienta no puede darse de baja (refleja las
+     *  guardas de he.ft_decommissions_ime). */
+    private _motivoNoBaja(status: string): string | null {
+        switch (String(status || '').toLowerCase()) {
+            case 'decommissioned':
+            case 'baja':           return 'ya está dada de baja';
+            case 'lost':           return 'está registrada como perdida';
+            case 'in_use':
+            case 'loaned':         return 'está prestada — registre primero su devolución';
+            case 'in_calibration':
+            case 'calibracion':    return 'está en calibración — registre primero su retorno';
+            case 'in_maintenance': return 'está en mantenimiento — registre primero su retorno';
+            default:               return null;
+        }
     }
 
     ngOnDestroy(): void {
@@ -175,6 +193,12 @@ export class HerramientaABajaComponent implements OnInit, OnDestroy {
     }
 
     selectHerramienta(herramienta: HerramientaOption): void {
+        const motivo = this._motivoNoBaja(herramienta.status);
+        if (motivo) {
+            this.showMessage(`${herramienta.codigo || 'La herramienta'} ${motivo}.`, 'warning');
+            this.showSuggestions = false;
+            return;
+        }
         this.id_tool_actual = herramienta.id_tool ?? 0;
         this.warehouseId_actual = herramienta.warehouseId ?? null;
         this.rackId_actual      = herramienta.rackId ?? null;

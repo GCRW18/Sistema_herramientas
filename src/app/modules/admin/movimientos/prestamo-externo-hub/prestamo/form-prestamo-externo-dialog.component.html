@@ -1,6 +1,6 @@
 ﻿<!-- FORM DIALOG: NUEVO PRÉSTAMO EXTERNO / TERCEROS -->
 <div class="bg-stone-100 dark:bg-[#0F172A] sm:border-2 border-black rounded-2xl flex flex-col overflow-hidden relative w-full"
-     style="box-shadow:6px 6px 0 #000; height:min(560px,90vh)">
+     style="box-shadow:6px 6px 0 #000; height:min(820px,92vh)">
 
   <!-- Saving overlay -->
   <div *ngIf="isSaving" class="absolute inset-0 bg-black/60 flex items-center justify-center z-50">
@@ -31,7 +31,7 @@
   <div class="flex flex-col sm:flex-row flex-1 overflow-hidden min-h-0">
 
     <!-- LEFT: form -->
-    <div class="sm:basis-[33%] shrink-0 overflow-y-auto custom-scrollbar border-b-2 sm:border-b-0 sm:border-r-2 border-black/20 dark:border-slate-500">
+    <div class="sm:basis-[340px] sm:max-w-[380px] shrink-0 overflow-y-auto custom-scrollbar border-b-2 sm:border-b-0 sm:border-r-2 border-black/20 dark:border-slate-500">
       <form [formGroup]="externalForm" class="px-4 py-3 flex flex-col gap-3">
 
         <!-- ── Datos de la Empresa ── -->
@@ -159,20 +159,21 @@
       <div class="border-b-2 border-black/20 dark:border-slate-500 px-4 pt-3 pb-2.5 flex flex-col gap-2 shrink-0">
 
         <div class="flex items-center gap-1.5">
-          <mat-icon class="!text-xs text-[#7113CF]">search</mat-icon>
-          <span class="text-[9px] font-black uppercase text-stone-400 dark:text-slate-500 tracking-wider">Añadir Herramienta al Préstamo</span>
+          <mat-icon class="!text-sm text-[#7113CF]">qr_code_scanner</mat-icon>
+          <span class="text-[9px] font-black uppercase text-stone-400 dark:text-slate-500 tracking-wider">Escanear / Añadir Herramienta</span>
         </div>
 
         <!-- Search input row -->
         <div class="relative flex gap-2">
           <div class="relative flex-1 min-w-0">
-            <input type="text" [value]="toolSearchPe"
+            <input #scanInput type="text" [value]="toolSearchPe"
                    (input)="onToolInputPe($any($event.target).value)"
                    (blur)="hideToolDropPe()"
-                   (keydown.enter)="addToolPeFromInput()"
-                   placeholder="Código, nombre o P/N..."
+                   (keydown.enter)="scanAndAddPe()"
+                   placeholder="Escanee el QR o escriba código / nombre / P/N + Enter"
                    autocomplete="off"
-                   class="w-full h-8 text-xs font-bold bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-500 rounded-lg px-2.5 outline-none transition-all placeholder:text-stone-300 dark:placeholder:text-slate-500 hover:border-stone-400 focus:border-black focus:shadow-[2px_2px_0_#000]">
+                   class="w-full h-8 pl-8 text-xs font-bold bg-white dark:bg-slate-800 dark:text-white border-2 border-black rounded-lg px-2.5 outline-none transition-all placeholder:text-stone-300 dark:placeholder:text-slate-500 hover:border-stone-400 focus:shadow-[2px_2px_0_#000]">
+            <mat-icon class="absolute left-2 top-1/2 -translate-y-1/2 text-stone-400 !text-sm !w-[14px] !h-[14px] !leading-[14px] pointer-events-none">hardware</mat-icon>
             <div *ngIf="toolSearchLoadingPe" class="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 border-2 border-[#7113CF] border-t-transparent rounded-full animate-spin"></div>
             <div *ngIf="showToolDropPe && toolSuggestionsPe.length"
                  class="absolute z-50 w-full mt-1 top-full left-0 border-2 border-black dark:border-slate-600 rounded-xl bg-white dark:bg-slate-800 overflow-hidden shadow-[3px_3px_0_#000] divide-y divide-stone-100 dark:divide-slate-700 max-h-40 overflow-y-auto custom-scrollbar">
@@ -186,7 +187,7 @@
               </div>
             </div>
           </div>
-          <button type="button" (click)="addToolPeFromInput()" [disabled]="!toolSearchPe.trim()"
+          <button type="button" (click)="scanAndAddPe()" [disabled]="!toolSearchPe.trim()"
                   class="h-8 px-3 bg-[#7113CF] text-white font-black text-[10px] border-2 border-black rounded-lg shadow-[2px_2px_0_#000] hover:shadow-none hover:translate-x-[1px] hover:translate-y-[1px] transition-all flex items-center gap-1.5 shrink-0 disabled:opacity-50">
             <mat-icon class="!text-sm">add_circle</mat-icon>
             <span class="hidden sm:inline">AGREGAR</span>
@@ -198,21 +199,18 @@
       <div class="flex-1 overflow-y-auto custom-scrollbar">
         <div *ngIf="dataSource().length === 0"
              class="flex flex-col items-center justify-center gap-3 h-full py-10 text-center px-4">
-          <mat-icon class="!text-5xl text-stone-300 dark:text-slate-600">storefront</mat-icon>
-          <p class="text-sm font-black uppercase text-stone-400 dark:text-slate-500">Agrega herramientas al préstamo</p>
+          <mat-icon class="!text-5xl text-stone-300 dark:text-slate-600">qr_code_scanner</mat-icon>
+          <p class="text-sm font-black uppercase text-stone-400 dark:text-slate-500">Escanee una herramienta</p>
         </div>
 
-        <table *ngIf="dataSource().length > 0" class="w-full min-w-[700px]">
-          <thead class="bg-stone-100 dark:bg-slate-700 border-b-2 border-black/20 sticky top-0">
+        <table *ngIf="dataSource().length > 0" class="w-full min-w-[600px]">
+          <thead class="bg-stone-100 dark:bg-slate-700 border-b-2 border-black/20 sticky top-0 z-10">
             <tr class="text-left text-[10px] font-black uppercase tracking-wider text-stone-500 dark:text-slate-300">
               <th class="px-3 py-2 w-8">#</th>
-              <th class="px-3 py-2">Código</th>
-              <th class="px-3 py-2 min-w-[120px]">Descripción</th>
-              <th class="px-3 py-2">P/N · S/N</th>
-              <th class="px-3 py-2 w-16 text-center">Cant.</th>
+              <th class="px-3 py-2 min-w-[230px]">Herramienta</th>
+              <th class="px-3 py-2 w-14 text-center">Cant.</th>
               <th class="px-3 py-2 w-28">Estado</th>
-              <th class="px-3 py-2 min-w-[90px]">Lista Cont.</th>
-              <th class="px-3 py-2 min-w-[100px]">Obs. Ítem</th>
+              <th class="px-3 py-2 min-w-[130px]">Obs. Ítem</th>
               <th class="px-3 py-2 w-7"></th>
             </tr>
           </thead>
@@ -220,37 +218,33 @@
             <tr *ngFor="let item of dataSource(); let i = index"
                 (click)="abrirDetalleHerramientaItem(item)"
                 title="Clic para ver detalle de la herramienta"
-                class="border-b border-stone-100 dark:border-slate-700 hover:bg-gray-100 dark:hover:bg-slate-700/50 transition-colors cursor-pointer">
-              <td class="px-3 py-2.5 text-xs font-black text-stone-400 text-center">{{ i + 1 }}</td>
-              <td class="px-3 py-2.5">
-                <span class="font-mono text-[11px] font-black text-black dark:text-white">{{ item.codigo }}</span>
+                class="border-b border-stone-100 dark:border-slate-700 hover:bg-gray-100 dark:hover:bg-slate-700/50 transition-colors cursor-pointer align-top">
+              <td class="px-3 py-3 text-xs font-black text-stone-400 text-center">{{ i + 1 }}</td>
+              <td class="px-3 py-3">
+                <span class="font-mono text-xs font-black text-black dark:text-white">{{ item.codigo }}</span>
+                <div class="text-xs font-bold text-black dark:text-white mt-0.5">{{ item.descripcion }}</div>
+                <div class="text-[10px] text-stone-400 font-mono mt-0.5">P/N: {{ item.pn || '—' }} · S/N: {{ item.sn || '—' }}<span *ngIf="item.marca"> · {{ item.marca }}</span></div>
+                <div class="text-[10px] text-stone-400 mt-0.5">
+                  <span *ngIf="item.fechaCalibracion">Calib: {{ item.fechaCalibracion }}</span>
+                  <span *ngIf="item.listaContenido" [title]="item.listaContenido"> · Lista: {{ item.listaContenido }}</span>
+                </div>
               </td>
-              <td class="px-3 py-2.5 text-xs font-bold text-black dark:text-white max-w-[140px] truncate" [title]="item.descripcion">{{ item.descripcion }}</td>
-              <td class="px-3 py-2.5">
-                <p class="font-mono text-[10px] text-stone-400 leading-snug">{{ item.pn || '—' }}</p>
-                <p class="font-mono text-[10px] text-stone-400 leading-snug">{{ item.sn || '—' }}</p>
-              </td>
-              <td class="px-3 py-2.5 text-center">
+              <td class="px-3 py-3 text-center">
                 <span class="text-base font-black text-black dark:text-white">{{ item.cantidad }}</span>
               </td>
-              <td class="px-3 py-2.5" (click)="$event.stopPropagation()">
+              <td class="px-3 py-3" (click)="$event.stopPropagation()">
                 <select [(ngModel)]="item.estado" [ngModelOptions]="{standalone:true}"
                         class="w-full h-8 px-1.5 text-[10px] font-bold border-2 border-stone-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 dark:text-white focus:outline-none focus:border-black transition-all cursor-pointer">
                   <option value="SERVICEABLE">SERVICEABLE</option>
                   <option value="EN_CALIBRACION">EN CALIBRACIÓN</option>
                 </select>
               </td>
-              <td class="px-3 py-2.5" style="max-width:100px">
-                <span class="text-[10px] text-stone-400 dark:text-slate-400 font-mono truncate block" [title]="item.listaContenido">
-                  {{ item.listaContenido || '—' }}
-                </span>
-              </td>
-              <td class="px-3 py-2.5" (click)="$event.stopPropagation()">
+              <td class="px-3 py-3" (click)="$event.stopPropagation()">
                 <input type="text" [(ngModel)]="item.contenido" [ngModelOptions]="{standalone:true}"
                        placeholder="Observación…"
                        class="w-full h-8 px-2.5 text-[10px] font-bold border-2 border-stone-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 dark:text-white focus:outline-none focus:border-black transition-all placeholder:text-stone-300">
               </td>
-              <td class="px-3 py-2.5 text-center" (click)="$event.stopPropagation()">
+              <td class="px-3 py-3 text-center" (click)="$event.stopPropagation()">
                 <button type="button" (click)="eliminarItem(i)"
                         class="w-7 h-7 flex items-center justify-center bg-red-50 hover:bg-red-500 text-red-500 hover:text-white border-2 border-red-200 hover:border-red-600 rounded-lg transition-all">
                   <mat-icon class="!text-sm">close</mat-icon>
@@ -283,51 +277,78 @@
   </div>
 </div>
 
-<!-- MODAL: CONFIRMAR PRÉSTAMO EXTERNO -->
+<!-- MODAL: CONFIRMAR PRÉSTAMO EXTERNO (panel doble: Datos / Herramientas) -->
 <ng-template #confirmExternoModal>
   <div class="bg-stone-100 dark:bg-[#0F172A] border-2 border-black overflow-hidden flex flex-col"
-       style="width:600px; max-width:95vw; max-height:90vh">
+       style="width:min(920px,95vw); height:min(600px,88vh)">
 
     <div class="bg-[#0F172A] px-4 py-3 flex items-center gap-3 shrink-0">
       <div class="w-8 h-8 rounded bg-[#7113CF] border-2 border-black flex items-center justify-center shadow-[2px_2px_0_#000] shrink-0">
         <mat-icon class="!text-base text-white">send</mat-icon>
       </div>
       <div>
-        <p class="text-[9px] text-slate-400 font-bold uppercase tracking-[0.15em] leading-none mb-1">Préstamo Externo</p>
+        <p class="text-[9px] text-slate-400 font-bold uppercase tracking-[0.15em] leading-none mb-1">Préstamo Externo · MGH-100</p>
         <h2 class="text-sm text-white font-black uppercase tracking-tight leading-none">Confirmar Préstamo</h2>
       </div>
+      <span class="ml-auto px-2 py-1 bg-[#7113CF] text-white font-black text-[10px] border border-black rounded leading-none shrink-0">
+        {{ dataSource().length }} ítem{{ dataSource().length !== 1 ? 's' : '' }}
+      </span>
     </div>
 
-    <div class="flex-1 overflow-y-auto px-4 py-4 flex flex-col gap-3 custom-scrollbar">
+    <!-- Body: LEFT (Datos) / RIGHT (Herramientas) -->
+    <div class="flex flex-col sm:flex-row flex-1 overflow-hidden min-h-0">
 
-      <div class="bg-white dark:bg-slate-800 border-2 border-black rounded-xl p-3 flex flex-col gap-1.5">
-        <p class="text-[9px] font-black uppercase tracking-[0.15em] text-stone-500 dark:text-slate-300 mb-0.5">Empresa</p>
-        <div class="font-black text-sm text-black dark:text-white">{{ externalForm.get('nombreEmpresa')?.value }}</div>
-        <div class="flex items-center gap-3 text-xs font-bold text-stone-500 dark:text-slate-300 flex-wrap">
-          <span *ngIf="externalForm.get('nit')?.value">NIT: {{ externalForm.get('nit')?.value }}</span>
-          <span *ngIf="externalForm.get('contacto')?.value">· Contacto: {{ externalForm.get('contacto')?.value }}</span>
-          <span>· {{ externalForm.get('fecha')?.value }} {{ externalForm.get('hora')?.value }}</span>
+      <!-- LEFT: Datos -->
+      <div class="sm:basis-[320px] sm:max-w-[360px] shrink-0 overflow-y-auto custom-scrollbar border-b-2 sm:border-b-0 sm:border-r-2 border-black/20 dark:border-slate-600 px-4 py-4 flex flex-col gap-3">
+        <div class="bg-white dark:bg-slate-800 border-2 border-black rounded-xl p-3 flex flex-col gap-1.5">
+          <p class="text-[9px] font-black uppercase tracking-[0.15em] text-stone-500 dark:text-slate-300 mb-0.5">Empresa</p>
+          <div class="font-black text-sm text-black dark:text-white">{{ externalForm.get('nombreEmpresa')?.value }}</div>
+          <div class="flex flex-col gap-0.5 text-xs font-bold text-stone-500 dark:text-slate-300">
+            <span *ngIf="externalForm.get('nit')?.value">NIT: {{ externalForm.get('nit')?.value }}</span>
+            <span *ngIf="externalForm.get('contacto')?.value">Contacto: {{ externalForm.get('contacto')?.value }}</span>
+            <span>{{ externalForm.get('fecha')?.value }} {{ externalForm.get('hora')?.value }}</span>
+            <span>Motivo: {{ externalForm.get('motivoPrestamo')?.value }}</span>
+            <span *ngIf="externalForm.get('observaciones')?.value">Obs: {{ externalForm.get('observaciones')?.value }}</span>
+          </div>
+          <div *ngIf="externalForm.get('autorizado')?.value"
+               class="flex items-center gap-1.5 mt-1 text-xs font-bold text-stone-500 dark:text-slate-300">
+            <mat-icon class="!text-sm text-[#7113CF]">badge</mat-icon>
+            Autorizado por: <span class="font-black text-black dark:text-white">{{ externalForm.get('autorizado')?.value }}</span>
+          </div>
         </div>
-        <div class="text-xs font-bold text-stone-500 dark:text-slate-300 mt-0.5">
-          Motivo: {{ externalForm.get('motivoPrestamo')?.value }}
-        </div>
-        <div *ngIf="externalForm.get('autorizado')?.value"
-             class="flex items-center gap-1.5 mt-1 text-xs font-bold text-stone-500 dark:text-slate-300">
-          <mat-icon class="!text-sm text-[#7113CF]">badge</mat-icon>
-          Autorizado por: <span class="font-black text-black dark:text-white">{{ externalForm.get('autorizado')?.value }}</span>
-        </div>
+        <p class="text-xs font-bold text-stone-500 dark:text-slate-400 bg-purple-50 dark:bg-purple-900/20 border-2 border-purple-300 dark:border-purple-700 rounded-xl px-3 py-2.5">
+          Se generará la nota <strong>MGH-100</strong> y se registrará el préstamo externo.
+        </p>
       </div>
 
-      <div class="flex flex-col gap-1.5 max-h-48 overflow-y-auto custom-scrollbar">
-        <p class="text-[9px] font-black uppercase tracking-[0.15em] text-stone-500 dark:text-slate-300 mb-0.5">Herramientas ({{ dataSource().length }})</p>
-        <div *ngFor="let item of dataSource()"
-             class="flex items-center gap-2 px-3 py-2 bg-purple-50 dark:bg-slate-800 border-2 border-black rounded-xl">
-          <mat-icon class="!text-base text-[#7113CF]">storefront</mat-icon>
-          <div class="flex-1 min-w-0">
-            <span class="font-mono text-xs font-black text-[#7113CF] dark:text-purple-400">{{ item.codigo }}</span>
-            <span class="text-xs text-stone-500 dark:text-slate-300 ml-2 truncate">{{ item.descripcion }}</span>
-          </div>
-          <span class="text-sm font-black text-black dark:text-white shrink-0">{{ item.cantidad }} u.</span>
+      <!-- RIGHT: Herramientas -->
+      <div class="flex-1 min-h-0 flex flex-col overflow-hidden">
+        <div class="px-4 pt-3 pb-2 shrink-0">
+          <p class="text-[9px] font-black uppercase tracking-[0.15em] text-stone-500 dark:text-slate-300">Herramientas ({{ dataSource().length }})</p>
+        </div>
+        <div class="flex-1 overflow-y-auto custom-scrollbar">
+          <table class="w-full">
+            <thead class="bg-stone-100 dark:bg-slate-700 border-b-2 border-black/20 sticky top-0 z-10">
+              <tr class="text-left text-[10px] font-black uppercase tracking-wider text-stone-500 dark:text-slate-300">
+                <th class="px-3 py-2 w-8">#</th>
+                <th class="px-3 py-2">Herramienta</th>
+                <th class="px-3 py-2 w-20 text-center">Cant.</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let item of dataSource(); let i = index" class="border-b border-stone-100 dark:border-slate-700 align-top">
+                <td class="px-3 py-2.5 text-xs font-black text-stone-400 text-center">{{ i + 1 }}</td>
+                <td class="px-3 py-2.5">
+                  <span class="font-mono text-xs font-black text-black dark:text-white">{{ item.codigo }}</span>
+                  <div class="text-xs font-bold text-black dark:text-white mt-0.5">{{ item.descripcion }}</div>
+                  <div *ngIf="item.pn || item.sn" class="text-[10px] text-stone-400 font-mono mt-0.5">P/N: {{ item.pn || '—' }} · S/N: {{ item.sn || '—' }}</div>
+                </td>
+                <td class="px-3 py-2.5 text-center">
+                  <span class="text-base font-black text-black dark:text-white">{{ item.cantidad }}</span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
         </div>
       </div>
     </div>
@@ -339,8 +360,8 @@
       </button>
       <button (click)="finalizar()"
               class="flex items-center gap-1.5 px-3 py-1.5 bg-[#7113CF] text-white font-black text-[10px] border-2 border-black rounded-lg shadow-[2px_2px_0_#000] hover:shadow-none hover:translate-x-[1px] hover:translate-y-[1px] transition-all uppercase">
-        <mat-icon class="!text-sm">print</mat-icon>
-        Registrar e Imprimir
+        <mat-icon class="!text-sm">send</mat-icon>
+        Registrar préstamo
       </button>
     </div>
   </div>

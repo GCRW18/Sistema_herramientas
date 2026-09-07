@@ -16,12 +16,16 @@ export class MovementService {
      * Get all movements
      */
     getMovements(filters?: any): Observable<Movement[]> {
-        const params = {
+        const f = filters || {};
+        // pXP (CTParametro::iniciaParametro) lee el orden SOLO de 'sort'/'dir',
+        // NO de 'ordenacion'/'dir_ordenacion'. Con las claves equivocadas el ACT
+        // aplicaba su default (id_movement ASC = los más viejos primero).
+        const params: any = {
             start: 0,
             limit: 50,
-            ordenacion: 'date',
-            dir_ordenacion: 'desc',
-            ...filters
+            ...f,
+            sort: f.sort || f.ordenacion || 'id_movement',
+            dir:  f.dir  || f.dir_ordenacion || 'desc',
         };
 
         return from(this._api.post('herramientas/movements/listarMovements', params)).pipe(
@@ -378,7 +382,7 @@ export class MovementService {
      */
     getActiveLoans(params?: { filtro_adicional?: string; [key: string]: any }): Observable<any[]> {
         const { filtro_adicional, ...rest } = params || {};
-        const postParams: any = { start: 0, limit: 200, ordenacion: 'id_loan', dir_ordenacion: 'desc', ...rest };
+        const postParams: any = { start: 0, limit: 3000, ordenacion: 'id_loan', dir_ordenacion: 'desc', ...rest };
         if (filtro_adicional) { postParams.filtro_adicional = filtro_adicional; }
         return from(this._api.post('herramientas/movements/listarLoans', postParams)).pipe(
             switchMap((response: any) => {
@@ -393,7 +397,7 @@ export class MovementService {
 
     getActiveLoanItems(params?: { filtro_adicional?: string; [key: string]: any }): Observable<any[]> {
         return from(this._api.post('herramientas/movements/listarLoanItems', {
-            start: 0, limit: 1000, ordenacion: 'id_loan_item', dir_ordenacion: 'asc',
+            start: 0, limit: 8000, ordenacion: 'id_loan_item', dir_ordenacion: 'asc',
             ...params
         })).pipe(
             switchMap((response: any) => {
@@ -453,12 +457,274 @@ export class MovementService {
      * Incrementa stock, actualiza estado segun condicion y marca prestamo como DEVUELTO.
      * items_json: JSON.stringify([{tool_id, quantity, condicion, notes}])
      */
+    /**
+     * PDF real (TCPDF backend) de un préstamo técnico.
+     *  - 'mgh100'   → Nota de Préstamo - Devolución MGH-100 (REV. 2)
+     *  - 'mgh100_1' → Control para Préstamo - Devolución MGH-100-1 (Rev. 0)
+     * Devuelve { pdf_base64, nombre_archivo }; usar abrirPdfNota() para verlo.
+     */
+    generarPdfNotaPrestamo(id_loan: number, formato: 'mgh100' | 'mgh100_1' = 'mgh100', terceros = false): Observable<{ pdf_base64: string; nombre_archivo: string }> {
+        return from(this._api.post('herramientas/movements/generarPdfNotaPrestamo', { id_loan: Number(id_loan), formato, terceros: terceros ? 'true' : 'false' })).pipe(
+            switchMap((response: any) => {
+                const root = response?.ROOT || response;
+                const error = root?.error === true || root?.error === 'true';
+                const datos = root?.datos || root?.data || [];
+                const item = Array.isArray(datos) ? datos[0] : datos;
+                if (error || !item?.pdf_base64) {
+                    throw new Error(root?.detalle?.mensaje || root?.mensaje || 'Error al generar la nota MGH-100');
+                }
+                return of({
+                    pdf_base64: item.pdf_base64 as string,
+                    nombre_archivo: item.nombre_archivo ?? `nota_prestamo_${id_loan}.pdf`
+                });
+            })
+        );
+    }
+
+    /**
+     * Abre una pestaña YA, sincrónicamente, DENTRO del gesto del usuario (click).
+     * El bloqueador de pop-ups sólo permite window.open si viene de un gesto; como
+     * el PDF llega después de un POST, hay que reservar la pestaña antes y luego
+     * navegarla con abrirPdfNota(..., ventana). Devuelve null si el bloqueador
+     * igual lo impide (ahí abrirPdfNota cae a descarga).
+     */
+    preAbrirVentanaPdf(): Window | null {
+        try {
+            const w = window.open('', '_blank');
+            if (w) {
+                w.document.write('<!doctype html><title>Generando documento…</title>' +
+                    '<body style="font:14px system-ui;margin:2rem;color:#334155">Generando el documento PDF… no cierre esta pestaña.</body>');
+            }
+            return w;
+        } catch { return null; }
+    }
+
+    /**
+     * atob(base64) → Blob PDF → pestaña. Si se pasa `ventana` (reservada con
+     * preAbrirVentanaPdf en el gesto), se navega esa; si no, intenta window.open
+     * y, si el bloqueador lo corta, fuerza la descarga del archivo.
+     */
+    abrirPdfNota(pdfBase64: string, filename = 'nota.pdf', ventana?: Window | null): void {
+        if (!pdfBase64) { try { ventana?.close(); } catch { /* noop */ } return; }
+        try {
+            const bin = atob(pdfBase64);
+            const bytes = new Uint8Array(bin.length);
+            for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+            const blob = new Blob([bytes], { type: 'application/pdf' });
+            const url = window.URL.createObjectURL(blob);
+
+            let win: Window | null = ventana ?? null;
+            if (win) {
+                try { win.location.href = url; } catch { win = window.open(url, '_blank'); }
+            } else {
+                win = window.open(url, '_blank');
+            }
+            if (!win) {
+                // Bloqueador de pop-ups sin gesto → descarga directa.
+                const a = document.createElement('a');
+                a.href = url; a.download = filename || 'nota.pdf'; a.rel = 'noopener';
+                document.body.appendChild(a); a.click(); a.remove();
+            }
+            setTimeout(() => window.URL.revokeObjectURL(url), 60000);
+        } catch (e) {
+            console.error('abrirPdfNota:', e, filename);
+            try { ventana?.close(); } catch { /* noop */ }
+        }
+    }
+
+    /** Genera y abre el PDF de un préstamo en una sola llamada.
+     *  `ventana` = pestaña reservada con preAbrirVentanaPdf() dentro del gesto. */
+    verNotaPrestamo(id_loan: number, formato: 'mgh100' | 'mgh100_1' = 'mgh100', terceros = false, ventana?: Window | null): void {
+        this.generarPdfNotaPrestamo(id_loan, formato, terceros).subscribe({
+            next: (r) => this.abrirPdfNota(r.pdf_base64, r.nombre_archivo, ventana),
+            error: (e) => { try { ventana?.close(); } catch { /* noop */ } console.error('verNotaPrestamo:', e?.message || e); }
+        });
+    }
+
+    /**
+     * PDF real (TCPDF backend) de la Nota de Ingreso de Materiales, Herramientas y
+     * Equipos para Servicio en Aeronaves (MGH-116) de un ingreso por compra.
+     */
+    generarPdfNotaIngreso(id_movement: number): Observable<{ pdf_base64: string; nombre_archivo: string }> {
+        return from(this._api.post('herramientas/movements/generarPdfNotaIngreso', { id_movement: Number(id_movement) })).pipe(
+            switchMap((response: any) => {
+                const root = response?.ROOT || response;
+                const error = root?.error === true || root?.error === 'true';
+                const datos = root?.datos || root?.data || [];
+                const item = Array.isArray(datos) ? datos[0] : datos;
+                if (error || !item?.pdf_base64) {
+                    throw new Error(root?.detalle?.mensaje || root?.mensaje || 'Error al generar la nota MGH-116');
+                }
+                return of({
+                    pdf_base64: item.pdf_base64 as string,
+                    nombre_archivo: item.nombre_archivo ?? `nota_ingreso_${id_movement}.pdf`
+                });
+            })
+        );
+    }
+
+    /** Genera y abre la nota de ingreso MGH-116 en una sola llamada.
+     *  `ventana` = pestaña reservada con preAbrirVentanaPdf() dentro del gesto. */
+    verNotaIngreso(id_movement: number, ventana?: Window | null): void {
+        this.generarPdfNotaIngreso(id_movement).subscribe({
+            next: (r) => this.abrirPdfNota(r.pdf_base64, r.nombre_archivo, ventana),
+            error: (e) => { try { ventana?.close(); } catch { /* noop */ } console.error('verNotaIngreso:', e?.message || e); }
+        });
+    }
+
+    /**
+     * PDF real (TCPDF backend) del "Comprobante de Ajuste por Ingreso" de un
+     * ajuste (type AJUSTE_INGRESO, AI-N/YYYY).
+     */
+    generarPdfNotaAjuste(id_movement: number): Observable<{ pdf_base64: string; nombre_archivo: string }> {
+        return from(this._api.post('herramientas/movements/generarPdfNotaAjuste', { id_movement: Number(id_movement) })).pipe(
+            switchMap((response: any) => {
+                const root = response?.ROOT || response;
+                const error = root?.error === true || root?.error === 'true';
+                const datos = root?.datos || root?.data || [];
+                const item = Array.isArray(datos) ? datos[0] : datos;
+                if (error || !item?.pdf_base64) {
+                    throw new Error(root?.detalle?.mensaje || root?.mensaje || 'Error al generar la nota de ajuste');
+                }
+                return of({
+                    pdf_base64: item.pdf_base64 as string,
+                    nombre_archivo: item.nombre_archivo ?? `nota_ajuste_${id_movement}.pdf`
+                });
+            })
+        );
+    }
+
+    /** Genera y abre la nota de ajuste por ingreso en una sola llamada.
+     *  `ventana` = pestaña reservada con preAbrirVentanaPdf() dentro del gesto. */
+    verNotaAjuste(id_movement: number, ventana?: Window | null): void {
+        this.generarPdfNotaAjuste(id_movement).subscribe({
+            next: (r) => this.abrirPdfNota(r.pdf_base64, r.nombre_archivo, ventana),
+            error: (e) => { try { ventana?.close(); } catch { /* noop */ } console.error('verNotaAjuste:', e?.message || e); }
+        });
+    }
+
+    /**
+     * PDF real (TCPDF backend) de la "Acta de Retorno" de un retorno de base
+     * (RB-N/YYYY) o traspaso (RTR-N/YYYY).
+     */
+    generarPdfNotaRetorno(id_movement: number): Observable<{ pdf_base64: string; nombre_archivo: string }> {
+        return from(this._api.post('herramientas/movements/generarPdfNotaRetorno', { id_movement: Number(id_movement) })).pipe(
+            switchMap((response: any) => {
+                const root = response?.ROOT || response;
+                const error = root?.error === true || root?.error === 'true';
+                const datos = root?.datos || root?.data || [];
+                const item = Array.isArray(datos) ? datos[0] : datos;
+                if (error || !item?.pdf_base64) {
+                    throw new Error(root?.detalle?.mensaje || root?.mensaje || 'Error al generar la acta de retorno');
+                }
+                return of({
+                    pdf_base64: item.pdf_base64 as string,
+                    nombre_archivo: item.nombre_archivo ?? `acta_retorno_${id_movement}.pdf`
+                });
+            })
+        );
+    }
+
+    /** Genera y abre la acta de retorno en una sola llamada.
+     *  `ventana` = pestaña reservada con preAbrirVentanaPdf() dentro del gesto. */
+    verNotaRetorno(id_movement: number, ventana?: Window | null): void {
+        this.generarPdfNotaRetorno(id_movement).subscribe({
+            next: (r) => this.abrirPdfNota(r.pdf_base64, r.nombre_archivo, ventana),
+            error: (e) => { try { ventana?.close(); } catch { /* noop */ } console.error('verNotaRetorno:', e?.message || e); }
+        });
+    }
+
+    /** PDF real (TCPDF backend) de la "Nota de Traspaso" MGH-109 de un traspaso a otra área. */
+    generarPdfNotaTraspaso(id_movement: number): Observable<{ pdf_base64: string; nombre_archivo: string }> {
+        return from(this._api.post('herramientas/movements/generarPdfNotaTraspaso', { id_movement: Number(id_movement) })).pipe(
+            switchMap((response: any) => {
+                const root = response?.ROOT || response;
+                const error = root?.error === true || root?.error === 'true';
+                const datos = root?.datos || root?.data || [];
+                const item = Array.isArray(datos) ? datos[0] : datos;
+                if (error || !item?.pdf_base64) {
+                    throw new Error(root?.detalle?.mensaje || root?.mensaje || 'Error al generar la nota de traspaso MGH-109');
+                }
+                return of({
+                    pdf_base64: item.pdf_base64 as string,
+                    nombre_archivo: item.nombre_archivo ?? `nota_traspaso_${id_movement}.pdf`
+                });
+            })
+        );
+    }
+
+    /** Genera y abre la Nota de Traspaso MGH-109 en una sola llamada.
+     *  `ventana` = pestaña reservada con preAbrirVentanaPdf() dentro del gesto. */
+    verNotaTraspaso(id_movement: number, ventana?: Window | null): void {
+        this.generarPdfNotaTraspaso(id_movement).subscribe({
+            next: (r) => this.abrirPdfNota(r.pdf_base64, r.nombre_archivo, ventana),
+            error: (e) => { try { ventana?.close(); } catch { /* noop */ } console.error('verNotaTraspaso:', e?.message || e); }
+        });
+    }
+
+    /** PDF real (TCPDF backend) de la "Nota de Traspaso Técnico" MGH-109 de un traspaso a una persona/técnico. */
+    generarPdfNotaTraspasoTecnico(id_movement: number): Observable<{ pdf_base64: string; nombre_archivo: string }> {
+        return from(this._api.post('herramientas/movements/generarPdfNotaTraspasoTecnico', { id_movement: Number(id_movement) })).pipe(
+            switchMap((response: any) => {
+                const root = response?.ROOT || response;
+                const error = root?.error === true || root?.error === 'true';
+                const datos = root?.datos || root?.data || [];
+                const item = Array.isArray(datos) ? datos[0] : datos;
+                if (error || !item?.pdf_base64) {
+                    throw new Error(root?.detalle?.mensaje || root?.mensaje || 'Error al generar la nota de traspaso técnico MGH-109');
+                }
+                return of({
+                    pdf_base64: item.pdf_base64 as string,
+                    nombre_archivo: item.nombre_archivo ?? `nota_traspaso_tecnico_${id_movement}.pdf`
+                });
+            })
+        );
+    }
+
+    /** Genera y abre la Nota de Traspaso Técnico MGH-109 en una sola llamada.
+     *  `ventana` = pestaña reservada con preAbrirVentanaPdf() dentro del gesto. */
+    verNotaTraspasoTecnico(id_movement: number, ventana?: Window | null): void {
+        this.generarPdfNotaTraspasoTecnico(id_movement).subscribe({
+            next: (r) => this.abrirPdfNota(r.pdf_base64, r.nombre_archivo, ventana),
+            error: (e) => { try { ventana?.close(); } catch { /* noop */ } console.error('verNotaTraspasoTecnico:', e?.message || e); }
+        });
+    }
+
+    /** PDF real (TCPDF backend) de la nota "Registro de Herramientas en Otras Bases" (envío a base). */
+    generarPdfNotaEnvio(id_movement: number): Observable<{ pdf_base64: string; nombre_archivo: string }> {
+        return from(this._api.post('herramientas/movements/generarPdfNotaEnvio', { id_movement: Number(id_movement) })).pipe(
+            switchMap((response: any) => {
+                const root = response?.ROOT || response;
+                const error = root?.error === true || root?.error === 'true';
+                const datos = root?.datos || root?.data || [];
+                const item = Array.isArray(datos) ? datos[0] : datos;
+                if (error || !item?.pdf_base64) {
+                    throw new Error(root?.detalle?.mensaje || root?.mensaje || 'Error al generar la nota de envío a base');
+                }
+                return of({
+                    pdf_base64: item.pdf_base64 as string,
+                    nombre_archivo: item.nombre_archivo ?? `nota_envio_base_${id_movement}.pdf`
+                });
+            })
+        );
+    }
+
+    /** Genera y abre la nota de envío a base en una sola llamada.
+     *  `ventana` = pestaña reservada con preAbrirVentanaPdf() dentro del gesto. */
+    verNotaEnvio(id_movement: number, ventana?: Window | null): void {
+        this.generarPdfNotaEnvio(id_movement).subscribe({
+            next: (r) => this.abrirPdfNota(r.pdf_base64, r.nombre_archivo, ventana),
+            error: (e) => { try { ventana?.close(); } catch { /* noop */ } console.error('verNotaEnvio:', e?.message || e); }
+        });
+    }
+
     registrarDevolucionPrestamo(data: {
         type: 'DEVOLUCION_PRESTAMO_INTERNO' | 'DEVOLUCION_PRESTAMO_EXTERNO';
         date: string;
         time: string;
         requested_by_name: string;
         responsible_person: string;
+        returned_by_name?: string;
         recipient?: string;
         customer?: string;
         notes?: string;

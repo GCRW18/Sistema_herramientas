@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { MatIconModule } from '@angular/material/icon';
 import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
 import { DragDropModule } from '@angular/cdk/drag-drop';
+import { MovementService } from '../../../../../core/services/movement.service';
 
 export interface ConfirmarAjusteData {
     resumen: {
@@ -20,6 +21,9 @@ export interface ConfirmarAjusteData {
 
 export interface ConfirmarAjusteResult {
     action: 'revisar' | 'confirmar';
+    /** Pestaña reservada en el gesto para imprimir la nota de ajuste sin que la
+     *  corte el bloqueador de pop-ups (sólo en 'confirmar'). */
+    printWindow?: Window | null;
 }
 
 @Component({
@@ -37,6 +41,7 @@ export interface ConfirmarAjusteResult {
 export class ConfirmarAjusteComponent {
     public dialogRef = inject(MatDialogRef<ConfirmarAjusteComponent>, { optional: true });
     public data = inject<ConfirmarAjusteData>(MAT_DIALOG_DATA, { optional: true });
+    private movementSvc = inject(MovementService);
 
     revisar(): void {
         const result: ConfirmarAjusteResult = { action: 'revisar' };
@@ -44,7 +49,10 @@ export class ConfirmarAjusteComponent {
     }
 
     confirmar(): void {
-        const result: ConfirmarAjusteResult = { action: 'confirmar' };
+        // Mismo helper que las notas de préstamo / ingreso: reserva la pestaña
+        // dentro del gesto para que el bloqueador de pop-ups no la corte tras el POST.
+        const printWindow = this.movementSvc.preAbrirVentanaPdf();
+        const result: ConfirmarAjusteResult = { action: 'confirmar', printWindow };
         this.dialogRef?.close(result);
     }
 }

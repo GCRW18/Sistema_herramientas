@@ -198,7 +198,7 @@ interface KitItem {
                         <tbody>
                         <tr *ngFor="let kit of (isLoading() ? [] : kitsPagina())"
                             (click)="verDetalle(kit)"
-                            class="border-b border-gray-200 dark:border-slate-700 hover:bg-gray-100 dark:hover:bg-slate-800 cursor-pointer transition-all">
+                            class="border-b border-gray-200 dark:border-slate-700 hover:bg-gray-300 dark:hover:bg-slate-800 cursor-pointer transition-all">
 
                             <td class="px-4 py-3 font-mono text-xs font-black text-black dark:text-white whitespace-nowrap">
                                 #{{ kit.id }}

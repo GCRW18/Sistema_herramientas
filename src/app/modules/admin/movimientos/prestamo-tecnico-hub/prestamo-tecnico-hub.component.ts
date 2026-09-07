@@ -10,7 +10,6 @@ import { debounceTime, startWith, takeUntil, finalize, catchError } from 'rxjs/o
 import { of }                       from 'rxjs';
 import { MovementService }          from '../../../../core/services/movement.service';
 import { HasPermissionDirective }   from '../../../../core/directives/has-permission.directive';
-import { PrestamoPdfService, PrestamoPdfData } from './prestamo-pdf.service';
 
 interface LoanDisplay {
     id_loan:                 number;
@@ -31,6 +30,7 @@ interface LoanDisplay {
     diasFuera:               number;
     actual_return_date:      string;
     received_return_by_name: string;
+    returned_by_name:        string;
     return_notes:            string;
 }
 
@@ -72,7 +72,6 @@ export class PrestamoTecnicoHubComponent implements OnInit, OnDestroy {
     private movementSvc   = inject(MovementService);
     private dialog        = inject(MatDialog);
     private snackBar      = inject(MatSnackBar);
-    private prestamoPdfSvc = inject(PrestamoPdfService);
     private destroy$      = new Subject<void>();
 
     isLoading = signal(false);
@@ -153,6 +152,7 @@ export class PrestamoTecnicoHubComponent implements OnInit, OnDestroy {
                                              : this._calcDias(l.loan_date),
                 actual_return_date:      l.actual_return_date       || '',
                 received_return_by_name: l.received_return_by_name  || '',
+                returned_by_name:        l.returned_by_name         || '',
                 return_notes:            l.return_notes             || '',
             }));
             this.loanItems = items || [];
@@ -243,7 +243,7 @@ export class PrestamoTecnicoHubComponent implements OnInit, OnDestroy {
     async abrirFormPrestamo(): Promise<void> {
         const { FormPrestamoDialogComponent } = await import('./prestamo/form-prestamo-dialog.component');
         this.dialog.open(FormPrestamoDialogComponent, {
-            width: 'min(820px, 100vw)', maxWidth: '100vw', maxHeight: '100dvh',
+            width: 'min(1240px, 96vw)', maxWidth: '100vw', maxHeight: '100dvh',
             panelClass: 'neo-dialog-transparent', disableClose: false, autoFocus: false
         }).afterClosed().subscribe(r => { if (r?.success) { this.showMsg('Préstamo registrado', 'success'); this.loadData(); } });
     }
@@ -251,81 +251,29 @@ export class PrestamoTecnicoHubComponent implements OnInit, OnDestroy {
     async abrirFormDevolucion(): Promise<void> {
         const { FormDevolucionDialogComponent } = await import('./devolucion/form-devolucion-dialog.component');
         this.dialog.open(FormDevolucionDialogComponent, {
-            width: 'min(820px, 100vw)', maxWidth: '100vw', maxHeight: '100dvh',
+            width: 'min(1240px, 96vw)', maxWidth: '100vw', maxHeight: '100dvh',
             panelClass: 'neo-dialog-transparent', disableClose: false, autoFocus: false
         }).afterClosed().subscribe(r => { if (r?.success) { this.showMsg('Devolución registrada', 'success'); this.loadData(); } });
     }
 
-    // ── PDF MGH-100 desde la fila de la tabla ────────────────────────────
-    pdfPrestamo(loan: LoanDisplay): void {
-        const items = this.loanItems.filter((i: any) => String(i.loan_id) === String(loan.id_loan));
-        const data: PrestamoPdfData = {
-            nroPrestamo: loan.loan_number,
-            solicitante: loan.borrower_name,
-            licencia: loan.borrower_license,
-            matriculaAeronave: loan.aircraft,
-            fechaHoraPrestamo: this.formatFecha(loan.loan_date, loan.loan_time),
-            unidadDestino: loan.department,
-            ordenTrabajo: loan.work_order_number,
-            trabajoEspecial: !!loan.special_work,
-            observaciones: loan.loan_notes,
-            entregadoPor: loan.delivered_by_name,
-            devuelto: false,
-            items: items.map((it: any) => ({
-                codigo: it.code, pn: it.part_number, sn: it.serial_number, cantidad: it.quantity || 1,
-                unidad: it.unit_of_measure || 'UND', descripcion: it.description || it.name,
-                listaContenido: it.content_list, fechaCalibracion: it.next_calibration_date,
-                estado: this.getCondicionLabel(it.condition_on_loan || ''), obs: '',
-            })),
-        };
-        this.prestamoPdfSvc.generarPdf(data);
+    /** Nota MGH-100 (nota de préstamo - devolución, formato horizontal) — PDF real TCPDF backend. */
+    verNotaPrestamo(loan: LoanDisplay): void {
+        if (!loan?.id_loan) { this.showMsg('No se pudo identificar el préstamo', 'error'); return; }
+        const win = this.movementSvc.preAbrirVentanaPdf();
+        this.movementSvc.generarPdfNotaPrestamo(loan.id_loan, 'mgh100').pipe(takeUntil(this.destroy$)).subscribe({
+            next: (r) => this.movementSvc.abrirPdfNota(r.pdf_base64, r.nombre_archivo, win),
+            error: (e) => { try { win?.close(); } catch { /* noop */ } this.showMsg('Error al generar la nota MGH-100: ' + (e?.message || ''), 'error'); }
+        });
     }
 
-    pdfDevolucion(loan: LoanDisplay): void {
-        const items = this.loanItems.filter((i: any) => String(i.loan_id) === String(loan.id_loan));
-        const condLabel: Record<string, string> = {
-            BUENO:'Bueno', bueno:'Bueno', good:'Bueno',
-            DAÑADO:'Dañado', damaged:'Dañado',
-            REQUIERE_CALIBRACION:'Req. Calib.', fair:'Req. Calib.',
-            IRREPARABLE:'Irreparable', poor:'Irreparable',
-            FALTANTE:'Faltante'
-        };
-        const estadoLabel: Record<string, string> = {
-            good:'SERVICEABLE', new:'NUEVO', fair:'REGULAR', poor:'MALO', damaged:'DAÑADO',
-            bueno:'SERVICEABLE', nuevo:'NUEVO'
-        };
-        const fechaDev  = loan.actual_return_date ? new Date(loan.actual_return_date).toLocaleString('es-BO') : '—';
-        const recibePor = loan.received_return_by_name || '—';
-
-        const data: PrestamoPdfData = {
-            nroPrestamo: loan.loan_number,
-            nroDevolucion: loan.loan_number,
-            solicitante: loan.borrower_name,
-            licencia: loan.borrower_license,
-            matriculaAeronave: loan.aircraft,
-            fechaHoraPrestamo: this.formatFecha(loan.loan_date, loan.loan_time),
-            unidadDestino: loan.department,
-            ordenTrabajo: loan.work_order_number,
-            trabajoEspecial: !!loan.special_work,
-            observaciones: loan.loan_notes,
-            entregadoPor: loan.delivered_by_name,
-            devuelto: true,
-            fechaHoraDevolucion: fechaDev,
-            recibioAlmacen: recibePor,
-            items: items.map((it: any) => {
-                const cond = it.condition_on_return || '';
-                return {
-                    codigo: it.code, pn: it.part_number, sn: it.serial_number, cantidad: it.quantity || 1,
-                    unidad: it.unit_of_measure || 'UND', descripcion: it.description || it.name,
-                    listaContenido: it.content_list, fechaCalibracion: it.next_calibration_date,
-                    estado: estadoLabel[(it.condition_on_loan || '').toLowerCase()] || it.condition_on_loan || '',
-                    obs: '',
-                    condicionDevolucion: condLabel[cond] || condLabel[cond.toLowerCase()] || cond || '—',
-                    obsDevolucion: it.notes || loan.return_notes || '',
-                };
-            }),
-        };
-        this.prestamoPdfSvc.generarPdf(data);
+    /** Control MGH-100-1 (hoja de control, formato vertical) — PDF real TCPDF backend. */
+    verControlPrestamo(loan: LoanDisplay): void {
+        if (!loan?.id_loan) { this.showMsg('No se pudo identificar el préstamo', 'error'); return; }
+        const win = this.movementSvc.preAbrirVentanaPdf();
+        this.movementSvc.generarPdfNotaPrestamo(loan.id_loan, 'mgh100_1').pipe(takeUntil(this.destroy$)).subscribe({
+            next: (r) => this.movementSvc.abrirPdfNota(r.pdf_base64, r.nombre_archivo, win),
+            error: (e) => { try { win?.close(); } catch { /* noop */ } this.showMsg('Error al generar el control MGH-100-1: ' + (e?.message || ''), 'error'); }
+        });
     }
 
     private showMsg(message: string, type: 'success' | 'error' | 'warning' | 'info'): void {

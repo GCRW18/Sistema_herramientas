@@ -1,4 +1,4 @@
-import { Component, OnInit, AfterViewInit, ViewChild, ElementRef, signal, inject } from '@angular/core';
+import { Component, OnInit, OnDestroy, AfterViewInit, ViewChild, ElementRef, signal, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule, Router } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
@@ -7,7 +7,8 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { Chart, ChartConfiguration, registerables } from 'chart.js';
-import { forkJoin } from 'rxjs';
+import { forkJoin, of } from 'rxjs';
+import { catchError } from 'rxjs/operators';
 import { ToolService } from 'app/core/services/tool.service';
 import { MovementService } from 'app/core/services/movement.service';
 import { CalibrationService } from 'app/core/services/calibration.service';
@@ -118,7 +119,7 @@ interface QuickAction {
         .overflow-y-auto::-webkit-scrollbar-thumb:hover { background: #000000; }
     `]
 })
-export class DashboardComponent implements OnInit, AfterViewInit {
+export class DashboardComponent implements OnInit, OnDestroy, AfterViewInit {
     @ViewChild('movementsChart') movementsCanvas!: ElementRef<HTMLCanvasElement>;
     @ViewChild('topToolsChart') topToolsCanvas!: ElementRef<HTMLCanvasElement>;
     @ViewChild('calibrationChart') calibrationCanvas!: ElementRef<HTMLCanvasElement>;
@@ -129,23 +130,7 @@ export class DashboardComponent implements OnInit, AfterViewInit {
     private calibrationService = inject(CalibrationService);
     private _dialog           = inject(MatDialog);
 
-    isLoading     = signal(true);
-    currentPanel  = signal(0);
-
-    readonly panelLabels = ['Indicadores', 'Gráficas', 'Actividad'];
-    readonly TOTAL_PANELS = 3;
-
-    prevPanel(): void {
-        this.currentPanel.update(p => (p - 1 + this.TOTAL_PANELS) % this.TOTAL_PANELS);
-    }
-
-    nextPanel(): void {
-        this.currentPanel.update(p => (p + 1) % this.TOTAL_PANELS);
-    }
-
-    goToPanel(index: number): void {
-        this.currentPanel.set(index);
-    }
+    isLoading = signal(true);
 
     private movementsChartInstance?: Chart;
     private topToolsChartInstance?: Chart;
@@ -170,9 +155,9 @@ export class DashboardComponent implements OnInit, AfterViewInit {
         ]);
 
         forkJoin({
-            tools:      this.toolService.getTools(),
-            movements:  this.movService.getMovements({ limit: 500 }),
-            calibAlerts: this.calibrationService.getCalibrationAlertsPxp({ limit: 100 })
+            tools:      this.toolService.getTools().pipe(catchError(() => of([] as any[]))),
+            movements:  this.movService.getMovements({ limit: 500 }).pipe(catchError(() => of([] as any[]))),
+            calibAlerts: this.calibrationService.getCalibrationAlertsPxp({ limit: 100 }).pipe(catchError(() => of([] as any[])))
         }).subscribe({
             next: ({ tools, movements, calibAlerts }) => {
                 const alertsArr: any[] = Array.isArray(calibAlerts) ? calibAlerts : (calibAlerts as any)?.data || [];
@@ -189,12 +174,17 @@ export class DashboardComponent implements OnInit, AfterViewInit {
                 this.buildKPIs([]);
                 this.buildActivities([]);
                 this.isLoading.set(false);
-                setTimeout(() => this.checkCalibrationAlerts(), 1200);
             }
         });
     }
 
     ngAfterViewInit(): void {}
+
+    ngOnDestroy(): void {
+        this.movementsChartInstance?.destroy();
+        this.topToolsChartInstance?.destroy();
+        this.calibrationChartInstance?.destroy();
+    }
 
     // ── KPIs ────────────────────────────────────────────────────────────────────
     private buildKPIs(calibAlerts: any[] = []): void {
@@ -292,7 +282,8 @@ export class DashboardComponent implements OnInit, AfterViewInit {
             salidas.push(movMes.filter(isSalida).length);
         }
 
-        new Chart(ctx, {
+        this.movementsChartInstance?.destroy();
+        this.movementsChartInstance = new Chart(ctx, {
             type: 'line',
             data: {
                 labels,
@@ -323,7 +314,8 @@ export class DashboardComponent implements OnInit, AfterViewInit {
         const data   = sorted.map(([, v]) => v);
         const colors = ['#111A43','#fbae05','#fd0f02','#27C93F','#3B82F6','#8b5cf6','#ec4899','#06b6d4'];
 
-        new Chart(ctx, {
+        this.topToolsChartInstance?.destroy();
+        this.topToolsChartInstance = new Chart(ctx, {
             type: 'bar',
             data: {
                 labels: labels.length ? labels : ['Sin datos'],
@@ -343,7 +335,8 @@ export class DashboardComponent implements OnInit, AfterViewInit {
         const vencida   = this.calibAlerts.filter(a => a.alert_type === 'EXPIRED').length;
         const porVencer = this.calibAlerts.filter(a => ['CRITICAL_7D', 'URGENT_15D'].includes(a.alert_type)).length;
 
-        new Chart(ctx, {
+        this.calibrationChartInstance?.destroy();
+        this.calibrationChartInstance = new Chart(ctx, {
             type: 'doughnut',
             data: {
                 labels: ['Disponible', 'En Calibración', 'Vencida', 'Por Vencer'],
@@ -354,37 +347,34 @@ export class DashboardComponent implements OnInit, AfterViewInit {
     }
 
     // ── Alertas de calibración al login ──────────────────────────────────────────
+    // Reutiliza this.calibAlerts (ya cargado en el forkJoin de ngOnInit) — sin
+    // segunda llamada a la API.
     private checkCalibrationAlerts(): void {
-        this.calibrationService.getCalibrationAlertsPxp({ limit: 100 }).subscribe({
-            next: (alerts: any) => {
-                const all: any[] = Array.isArray(alerts) ? alerts : (alerts?.data || []);
-                const critical = all.filter(a =>
-                    ['EXPIRED', 'CRITICAL_7D', 'URGENT_15D'].includes(a.alert_type)
-                );
-                if (critical.length === 0) return;
+        const all = this.calibAlerts;
+        const critical = all.filter(a =>
+            ['EXPIRED', 'CRITICAL_7D', 'URGENT_15D'].includes(a.alert_type)
+        );
+        if (critical.length === 0) return;
 
-                const data: CalibrationAlertDialogData = {
-                    alerts: critical.slice(0, 10).map(a => ({
-                        tool_code:          a.tool_code   || a.codigo  || '',
-                        tool_name:          a.tool_name   || a.nombre  || '',
-                        calibration_expiry: this.formatAlertDate(a.next_calibration_date || a.calibration_expiry),
-                        days_remaining:     a.days_until_calibration ?? a.days_remaining ?? 0,
-                        urgency:            a.alert_type || '',
-                        warehouse:          a.warehouse   || a.almacen || 'CBB'
-                    })),
-                    expiredCount:    all.filter(a => a.alert_type === 'EXPIRED').length,
-                    critical7dCount: all.filter(a => a.alert_type === 'CRITICAL_7D').length,
-                    urgent15dCount:  all.filter(a => a.alert_type === 'URGENT_15D').length
-                };
+        const data: CalibrationAlertDialogData = {
+            alerts: critical.slice(0, 10).map(a => ({
+                tool_code:          a.tool_code   || a.codigo  || '',
+                tool_name:          a.tool_name   || a.nombre  || '',
+                calibration_expiry: this.formatAlertDate(a.next_calibration_date || a.calibration_expiry),
+                days_remaining:     a.days_until_calibration ?? a.days_remaining ?? 0,
+                urgency:            a.alert_type || '',
+                warehouse:          a.warehouse   || a.almacen || 'CBB'
+            })),
+            expiredCount:    all.filter(a => a.alert_type === 'EXPIRED').length,
+            critical7dCount: all.filter(a => a.alert_type === 'CRITICAL_7D').length,
+            urgent15dCount:  all.filter(a => a.alert_type === 'URGENT_15D').length
+        };
 
-                this._dialog.open(CalibrationAlertDialogComponent, {
-                    data,
-                    panelClass: 'neo-dialog-calibration',
-                    maxWidth:   '580px',
-                    width:      '95vw'
-                });
-            },
-            error: () => { /* silent — no molesta si la API falla */ }
+        this._dialog.open(CalibrationAlertDialogComponent, {
+            data,
+            panelClass: 'neo-dialog-calibration',
+            maxWidth:   '580px',
+            width:      '95vw'
         });
     }
 

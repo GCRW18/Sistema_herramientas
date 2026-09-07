@@ -192,16 +192,16 @@ export class TranscripcionManualComponent implements OnInit, OnDestroy {
     getResultClass(estado: string): string {
         switch (estado.toLowerCase()) {
             case 'approved':
-            case 'aprobado':    return 'bg-green-600 text-white border-black';
+            case 'aprobado':    return 'bg-green-100 text-green-800 border-green-200';
             case 'conditional':
-            case 'condicional': return 'bg-amber-500 text-white border-black';
+            case 'condicional': return 'bg-amber-100 text-amber-800 border-amber-200';
             case 'sent':
-            case 'enviado':     return 'bg-blue-700 text-white border-black';
+            case 'enviado':     return 'bg-blue-100 text-blue-800 border-blue-200';
             case 'rejected':
             case 'rechazado':
             case 'cancelled':
-            case 'cancelado':   return 'bg-red-600 text-white border-black';
-            default:            return 'bg-gray-500 text-white border-black';
+            case 'cancelado':   return 'bg-red-100 text-red-800 border-red-200';
+            default:            return 'bg-gray-100 text-gray-700 border-gray-200';
         }
     }
 

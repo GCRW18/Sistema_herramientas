@@ -121,95 +121,98 @@
                 <div class="overflow-x-auto">
                 <table class="w-full min-w-[800px]">
                     <thead class="sticky top-0 z-10">
-                    <tr class="border-b-[3px] border-black bg-stone-200 dark:bg-[#020617]">
-                        <th class="text-left px-3 py-3 font-black text-[11px] uppercase text-black dark:text-amber-400 w-28 tracking-widest">CÓDIGO</th>
-                        <th class="text-left px-3 py-3 font-black text-[11px] uppercase text-black dark:text-amber-400 tracking-widest">HERRAMIENTA</th>
-                        <th class="text-left px-3 py-3 font-black text-[11px] uppercase text-black dark:text-amber-400 w-36 tracking-widest">EMPRESA</th>
-                        <th class="text-left px-3 py-3 font-black text-[11px] uppercase text-black dark:text-amber-400 w-32 tracking-widest">N° NOTA</th>
-                        <th class="text-left px-3 py-3 font-black text-[11px] uppercase text-black dark:text-amber-400 w-24 tracking-widest">ENVÍO</th>
-                        <th class="text-left px-3 py-3 font-black text-[11px] uppercase text-black dark:text-amber-400 w-24 tracking-widest">ESTIMADO</th>
-                        <th class="text-center px-3 py-3 font-black text-[11px] uppercase text-black dark:text-amber-400 w-24 tracking-widest">ESTADO</th>
-                        <th class="text-center px-3 py-3 font-black text-[11px] uppercase text-black dark:text-amber-400 w-44 tracking-widest">ACCIONES</th>
+                    <tr class="border-b-[2px] border-black bg-stone-200 dark:bg-[#020617]">
+                        <th class="text-left px-3 py-2 font-black text-xs uppercase text-black dark:text-amber-400 w-28">CÓDIGO</th>
+                        <th class="text-left px-3 py-2 font-black text-xs uppercase text-black dark:text-amber-400">HERRAMIENTA</th>
+                        <th class="text-left px-3 py-2 font-black text-xs uppercase text-black dark:text-amber-400 w-36">EMPRESA</th>
+                        <th class="text-left px-3 py-2 font-black text-xs uppercase text-black dark:text-amber-400 w-32">N° NOTA</th>
+                        <th class="text-left px-3 py-2 font-black text-xs uppercase text-black dark:text-amber-400 w-24">ENVÍO</th>
+                        <th class="text-left px-3 py-2 font-black text-xs uppercase text-black dark:text-amber-400 w-24">ESTIMADO</th>
+                        <th class="text-center px-3 py-2 font-black text-xs uppercase text-black dark:text-amber-400 w-24">ESTADO</th>
+                        <th class="text-center px-3 py-2 font-black text-xs uppercase text-black dark:text-amber-400 w-44">ACCIONES</th>
                     </tr>
                     </thead>
                     <tbody class="bg-white dark:bg-[#0F172AFF]">
 
                     <tr *ngFor="let cal of filteredCalibraciones; let last = last"
-                        [class.border-b-2]="!last"
-                        [class.border-black]="!last"
+                        [class.border-b]="!last"
                         [class.bg-red-50]="isRetrasado(cal)"
                         [class.dark:bg-red-900]="isRetrasado(cal)"
-                        [class.hover:bg-gray-100]="!isRetrasado(cal)"
-                        [class.dark:hover:bg-slate-800]="!isRetrasado(cal)"
+                        [class.hover:bg-gray-50]="!isRetrasado(cal)"
+                        [class.dark:hover:bg-slate-700]="!isRetrasado(cal)"
                         [class.hover:bg-red-100]="isRetrasado(cal)"
-                        class="transition-colors group">
+                        class="transition-colors group border-gray-200 dark:border-slate-600">
 
                         <!-- Codigo -->
-                        <td class="px-3 py-3">
+                        <td class="px-3 py-2">
                             <span class="font-black text-sm font-mono text-black dark:text-white">
                                 {{ cal.tool_code }}
                             </span>
                         </td>
 
                         <!-- Nombre -->
-                        <td class="px-3 py-3">
-                            <span class="font-bold text-gray-900 dark:text-white text-xs line-clamp-2">
+                        <td class="px-3 py-2">
+                            <span class="font-bold text-black dark:text-white text-sm line-clamp-2">
                                 {{ cal.tool_name }}
                             </span>
                         </td>
 
                         <!-- Empresa -->
-                        <td class="px-3 py-3">
-                            <span class="text-gray-700 dark:text-gray-300 font-bold text-xs">
+                        <td class="px-3 py-2">
+                            <span class="text-gray-700 dark:text-slate-200 font-semibold text-xs">
                                 {{ cal.supplier_name }}
                             </span>
                         </td>
 
                         <!-- Numero Nota -->
-                        <td class="px-3 py-3">
-                            <span class="font-mono font-black text-black text-[11px]
-                                         bg-[#FFC501FF] px-2 py-1 rounded-md border-2 border-black shadow-[2px_2px_0px_0px_#000]">
+                        <td class="px-3 py-2">
+                            <span class="font-mono font-bold text-gray-700 dark:text-white text-xs
+                                         bg-gray-100 dark:bg-slate-700 px-2 py-0.5 rounded-lg
+                                         border-[2px] border-gray-200 dark:border-slate-500">
                                 {{ cal.record_number }}
                             </span>
                         </td>
 
                         <!-- Fecha Envio -->
-                        <td class="px-3 py-3">
-                            <span class="font-mono font-bold text-black dark:text-white text-[11px] bg-white dark:bg-slate-700 border-2 border-black dark:border-slate-400 px-1.5 py-0.5 rounded">
+                        <td class="px-3 py-2">
+                            <span class="font-mono font-semibold text-gray-600 dark:text-slate-300 text-xs">
                                 {{ formatDateDisplay(cal.send_date) }}
                             </span>
                         </td>
 
                         <!-- Retorno Estimado -->
-                        <td class="px-3 py-3">
+                        <td class="px-3 py-2">
                             <div class="flex flex-col leading-tight items-start">
-                                <span class="font-mono font-black text-[11px] px-1.5 py-0.5 rounded border-2"
-                                      [ngClass]="isRetrasado(cal) ? 'bg-red-500 text-white border-black shadow-[2px_2px_0px_0px_#000]' : 'bg-gray-200 dark:bg-slate-600 text-black dark:text-white border-black dark:border-slate-400'">
+                                <span class="font-mono font-semibold text-xs"
+                                      [class.text-red-600]="isRetrasado(cal)"
+                                      [class.font-black]="isRetrasado(cal)"
+                                      [class.text-gray-600]="!isRetrasado(cal)"
+                                      [class.dark:text-slate-300]="!isRetrasado(cal)">
                                     {{ formatDateDisplay(cal.expected_return_date) }}
                                 </span>
                                 <span *ngIf="isRetrasado(cal)"
-                                      class="text-[9px] font-black text-red-600 flex items-center gap-0.5 mt-1">
-                                    <mat-icon class="!text-[10px] !w-[10px] !h-[10px] leading-none">warning</mat-icon>
+                                      class="text-[9px] font-black text-red-600 flex items-center gap-0.5 mt-0.5">
+                                    <mat-icon class="!text-xs">warning</mat-icon>
                                     +{{ getDiasRetrasado(cal) }}d retrasado
                                 </span>
                             </div>
                         </td>
 
                         <!-- Estado -->
-                        <td class="px-3 py-3 text-center">
+                        <td class="px-3 py-2 text-center">
                             <span *ngIf="cal.status === 'sent' || cal.status === 'in_process'"
-                                  class="inline-block px-2 py-1 border-[2px] border-black bg-blue-800 dark:bg-blue-500 text-white rounded text-[10px] font-black uppercase shadow-[2px_2px_0px_0px_#000]">
+                                  class="inline-block px-2 py-0.5 border-[2px] border-blue-200 bg-blue-100 text-blue-800 rounded-lg text-[10px] font-black uppercase">
                                 EN LAB
                             </span>
                             <span *ngIf="cal.status === 'returned' || cal.status === 'completed'"
-                                  class="inline-block px-2 py-1 border-[2px] border-black bg-green-600 dark:bg-green-500 text-black dark:text-white rounded text-[10px] font-black uppercase shadow-[2px_2px_0px_0px_#000]">
+                                  class="inline-block px-2 py-0.5 border-[2px] border-green-200 bg-green-100 text-green-800 rounded-lg text-[10px] font-black uppercase">
                                 COMPLETADO
                             </span>
                         </td>
 
                         <!-- Acciones -->
-                        <td class="px-3 py-3">
-                            <div class="flex gap-2 justify-center items-center">
+                        <td class="px-3 py-2">
+                            <div class="flex gap-1.5 justify-center items-center">
 
                                 <!-- Confirmar Retorno (solo EN LAB) -->
                                 <ng-container *appHasPermission="'cal_retorno.registrar'">
@@ -218,11 +221,12 @@
                                             [matTooltip]="contarPendientesNota(cal) > 1
                                                 ? ('Retorno guiado de la nota ' + cal.record_number + ' (' + contarPendientesNota(cal) + ' herramientas)')
                                                 : 'Confirmar Retorno'"
-                                            class="h-7 px-2.5 flex items-center justify-center gap-1 border-2 border-black
-                                                   bg-green-600 hover:bg-green-400 rounded-lg shadow-[2px_2px_0px_0px_#000]
+                                            class="h-8 px-2.5 flex items-center justify-center gap-1 border-2 border-black
+                                                   bg-green-600 hover:bg-green-500
+                                                   rounded-lg shadow-[2px_2px_0px_0px_#000]
                                                    active:translate-y-[1px] active:shadow-none transition-all">
-                                        <mat-icon class=" text-black dark:text-black !text-sm">check_circle</mat-icon>
-                                        <span class="text-black font-black text-[10px] uppercase hidden sm:inline">Retorno</span>
+                                        <mat-icon class="text-white !text-sm">check_circle</mat-icon>
+                                        <span class="text-white font-black text-[10px] uppercase hidden sm:inline">Retorno</span>
                                         <span *ngIf="contarPendientesNota(cal) > 1"
                                               class="px-1 bg-black text-[#FFC501FF] rounded text-[9px] font-black leading-none">{{ contarPendientesNota(cal) }}</span>
                                     </button>
@@ -232,10 +236,10 @@
                                 <button (click)="printNota(cal)"
                                         matTooltip="Visualizar Nota de Envío"
                                         class="w-8 h-8 flex items-center justify-center border-2 border-black
-                                               bg-white dark:bg-slate-700 hover:bg-gray-100 dark:hover:bg-slate-600
+                                               bg-indigo-600 hover:bg-indigo-500
                                                rounded-lg shadow-[2px_2px_0px_0px_#000]
                                                active:translate-y-[1px] active:shadow-none transition-all">
-                                    <mat-icon class="text-indigo-600 dark:text-indigo-400 !text-base">description</mat-icon>
+                                    <mat-icon class="text-white !text-base">description</mat-icon>
                                 </button>
 
                                 <!-- Certificado de Retorno (solo si retornó) -->
@@ -243,7 +247,8 @@
                                         (click)="visualizarRetorno(cal)"
                                         matTooltip="Imprimir Certificado de Retorno"
                                         class="w-8 h-8 flex items-center justify-center border-2 border-black
-                                               bg-green-500 hover:bg-green-400 rounded-lg shadow-[2px_2px_0px_0px_#000]
+                                               bg-green-600 hover:bg-green-500
+                                               rounded-lg shadow-[2px_2px_0px_0px_#000]
                                                active:translate-y-[1px] active:shadow-none transition-all">
                                     <mat-icon class="text-white !text-base">workspace_premium</mat-icon>
                                 </button>
@@ -253,7 +258,8 @@
                                         (click)="verCertificadoAdjunto(cal)"
                                         matTooltip="Ver certificado PDF adjunto"
                                         class="w-8 h-8 flex items-center justify-center border-2 border-black
-                                               bg-red-500 hover:bg-red-400 rounded-lg shadow-[2px_2px_0px_0px_#000]
+                                               bg-indigo-600 hover:bg-indigo-500
+                                               rounded-lg shadow-[2px_2px_0px_0px_#000]
                                                active:translate-y-[1px] active:shadow-none transition-all">
                                     <mat-icon class="text-white !text-base">picture_as_pdf</mat-icon>
                                 </button>

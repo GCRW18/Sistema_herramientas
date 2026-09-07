@@ -53,7 +53,7 @@ type TabType = 'cuarentena' | 'baja' | 'historial';
         :host { display: flex; flex-direction: column; height: 100%; }
         .custom-scrollbar-cb::-webkit-scrollbar { width: 6px; height: 6px; }
         .custom-scrollbar-cb::-webkit-scrollbar-track { background: transparent; }
-        .custom-scrollbar-cb::-webkit-scrollbar-thumb { background: #FF1414; border-radius: 3px; }
+        .custom-scrollbar-cb::-webkit-scrollbar-thumb { background: #D97706; border-radius: 3px; }
         [hidden] { display: none !important; }
         .spinner-overlay {
             position: fixed; top: 0; left: 0; right: 0; bottom: 0;
@@ -61,8 +61,11 @@ type TabType = 'cuarentena' | 'baja' | 'historial';
             justify-content: center; z-index: 9999;
         }
         :host-context(.dark) .spinner-overlay { background: rgba(15,23,42,0.85); }
-        @keyframes fadeIn { from { opacity:0; transform:translateY(-8px); } to { opacity:1; transform:translateY(0); } }
+        @keyframes pulse-border { 0%,100% { border-color:#ef4444; } 50% { border-color:#f87171; } }
+        .animate-pulse-border { animation: pulse-border 2s cubic-bezier(.4,0,.6,1) infinite; }
+        @keyframes fadeIn { from { opacity:0; transform:translateY(-10px); } to { opacity:1; transform:translateY(0); } }
         .animate-fadeIn { animation: fadeIn 0.2s ease-out forwards; }
+        ::ng-deep .ubic-backdrop { background: rgba(0,0,0,0.25) !important; }
     `]
 })
 export class CuarentenaBajaHubComponent implements OnInit, OnDestroy {
@@ -98,7 +101,6 @@ export class CuarentenaBajaHubComponent implements OnInit, OnDestroy {
             }
         }
     }
-    private _logoBoaDataUri: Promise<string> | null = null;
 
     // ── Tab ────────────────────────────────────────────────────────────────────
     activeTab = signal<TabType>('cuarentena');
@@ -170,8 +172,6 @@ export class CuarentenaBajaHubComponent implements OnInit, OnDestroy {
     // ══════════════════════════════════════════════════════════════════════════
     //  BAJA
     // ══════════════════════════════════════════════════════════════════════════
-    bases: any[] = [];
-
     estados = [
         { value: 'requested', label: 'SOLICITADO', color: 'yellow', icon: 'pending'      },
         { value: 'approved',  label: 'APROBADO',   color: 'green',  icon: 'check_circle' },
@@ -292,7 +292,6 @@ export class CuarentenaBajaHubComponent implements OnInit, OnDestroy {
             v    => this.showResolverPersonaDropdown    = v
         );
         this._cargarWarehouses();
-        this._cargarBases();
         this._setupToolCSearch();
         this.historialSearch.valueChanges.pipe(
             debounceTime(200), takeUntil(this.destroy$)
@@ -323,7 +322,8 @@ export class CuarentenaBajaHubComponent implements OnInit, OnDestroy {
             fecha:          [today, Validators.required],
             motivo:         ['',    Validators.required],
             descripcion:    ['',    Validators.required],
-            nombreApellido: [''],
+            // "Funcionario" (quien reporta) y "Realizado Por" prellenados con el usuario logueado (editables).
+            nombreApellido: [auth?.nombre_usuario || ''],
             realizadoPor:   [auth?.nombre_usuario || ''],
             aprobadoPor:    ['']
         });
@@ -347,11 +347,6 @@ export class CuarentenaBajaHubComponent implements OnInit, OnDestroy {
     private _cargarWarehouses(): void {
         this.movementSvc.getWarehouses().pipe(takeUntil(this.destroy$))
             .subscribe({ next: (w: any[]) => { this.warehouses = w; } });
-    }
-
-    private _cargarBases(): void {
-        this.movementSvc.getBases().pipe(takeUntil(this.destroy$))
-            .subscribe({ next: (b: any[]) => { this.bases = b; } });
     }
 
     abrirModalReporte(): void {
@@ -425,7 +420,31 @@ export class CuarentenaBajaHubComponent implements OnInit, OnDestroy {
         this.toolNotesActual       = '';
     }
 
+    /** Motivo por el que una herramienta no puede entrar a cuarentena / baja
+     *  (refleja las guardas de he.ft_quarantines_ime / he.ft_decommissions_ime). */
+    private _motivoNoDisponible(status: string): string | null {
+        switch (String(status || '').toLowerCase()) {
+            case 'decommissioned':
+            case 'baja':           return 'ya está dada de baja';
+            case 'quarantine':
+            case 'cuarentena':     return 'ya está en cuarentena';
+            case 'lost':           return 'está registrada como perdida';
+            case 'in_use':
+            case 'loaned':         return 'está prestada — registre primero su devolución';
+            case 'in_calibration':
+            case 'calibracion':    return 'está en calibración — registre primero su retorno';
+            case 'in_maintenance': return 'está en mantenimiento — registre primero su retorno';
+            default:               return null;
+        }
+    }
+
     selectTool(tool: any): void {
+        const motivo = this._motivoNoDisponible(tool.status ?? tool.tool_status);
+        if (motivo) {
+            this._showMsg(`${tool.code || 'La herramienta'} ${motivo}.`, 'warning');
+            this.showToolDropdown = false;
+            return;
+        }
         this.toolIdActual = tool.id_tool ?? tool.id ?? 0;
         this.buscarValueC = `${tool.code ?? ''} · ${tool.name ?? ''}`;
         this.toolCuarentenaForm.patchValue({
@@ -535,6 +554,8 @@ export class CuarentenaBajaHubComponent implements OnInit, OnDestroy {
     submitQuarantine(): void {
         if (!this.isReporteValido() || this.cuarentenaList.length === 0) return;
         this.isSavingCuarentena = true;
+        // Pestaña reservada dentro del gesto (click) para el reporte MGH-101.
+        const notaWin = this.movementSvc.preAbrirVentanaPdf();
         const rep = this.reporteForm.getRawValue();
         const requests = this.cuarentenaList.map(tool => {
             const notesExtra = `${rep.descripcion ? 'Descripción: ' + rep.descripcion + '. ' : ''}` +
@@ -570,13 +591,19 @@ export class CuarentenaBajaHubComponent implements OnInit, OnDestroy {
                 const nro = results[0]?.record_number || '---';
                 this.reporteForm.patchValue({ nroReporteDiscrepancia: nro });
                 void this._persistirFotos(this.cuarentenaList.map((t: any) => ({ toolId: t.id_tool, file: t.fotoFile })));
-                this._abrirImpresionCuarentena({ ...rep, nroReporteDiscrepancia: nro }, this.cuarentenaList);
+                // Reporte Discrepancia MGH-101 — PDF real TCPDF backend.
+                const ids = results.map((r: any) => r?.id_quarantine).filter(Boolean);
+                if (ids.length) this.quarantineSvc.verNotaCuarentena(ids, notaWin);
+                else { try { notaWin?.close(); } catch { /* noop */ } }
                 this._showMsg(`Cuarentena ${nro} procesada correctamente.`, 'success');
                 this.cuarentenaList = [];
-                this.reporteForm.reset({ fecha: this._today(), nroReporteDiscrepancia: '' });
+                this.reporteForm.reset({
+                    fecha: this._today(), nroReporteDiscrepancia: '',
+                    nombreApellido: this._currentUserName(), realizadoPor: this._currentUserName()
+                });
                 this.historialItems = [];
             },
-            error: (err: any) => this._showMsg(err?.message || 'Error al procesar la cuarentena.', 'error')
+            error: (err: any) => { try { notaWin?.close(); } catch { /* noop */ } this._showMsg(err?.message || 'Error al procesar la cuarentena.', 'error'); }
         });
     }
 
@@ -635,15 +662,27 @@ export class CuarentenaBajaHubComponent implements OnInit, OnDestroy {
     // ══════════════════════════════════════════════════════════════════════════
     //  BAJA — lógica
     // ══════════════════════════════════════════════════════════════════════════
+    private _currentUserName(): string {
+        try {
+            const auth = JSON.parse(localStorage.getItem('aut') || '{}');
+            return auth?.nombre_usuario || '';
+        } catch { return ''; }
+    }
+
     private _initFormBaja(): void {
         const now = new Date();
         const today = this._today();
         const hh = now.getHours().toString().padStart(2, '0');
         const mm = now.getMinutes().toString().padStart(2, '0');
         this.bajaForm = this.fb.group({
-            procesadoPor:    ['', Validators.required],
+            // "Procesado Por" prellenado con el usuario logueado (editable).
+            procesadoPor:    [this._currentUserName(), Validators.required],
             nombre:          [''],
             cargo:           [''],
+            // Licencia / Departamento del solicitante — se autocompletan al elegirlo
+            // del buscador (snapshot de he.temployees), van a he.tdecommissions.applicant_*.
+            licencia:        [''],
+            departamento:    [''],
             fecha:           [today, Validators.required],
             hora:            [`${hh}:${mm}`, Validators.required],
             verificadoPor:   [''],
@@ -653,6 +692,7 @@ export class CuarentenaBajaHubComponent implements OnInit, OnDestroy {
             descripcionBaja: ['', Validators.required],
             unidad:          [null],
             autorizadoPor:   [''],
+            autorizadoCargo: [''],
             observaciones:   ['']
         });
     }
@@ -674,7 +714,13 @@ export class CuarentenaBajaHubComponent implements OnInit, OnDestroy {
                         .filter(f => [f.nombreCompleto, f.nombre, f.apellido_paterno, f.apellido_materno]
                             .filter(Boolean).join(' ').toLowerCase().includes(q))
                         .slice(0, 10)
-                        .map((f: any) => ({ id: f.id_employee || f.id, nombre: f.nombreCompleto || f.nombre, cargo: f.cargo || '' }))
+                        .map((f: any) => ({
+                            id: f.id_employee || f.id,
+                            nombre: f.nombreCompleto || f.nombre,
+                            cargo: f.cargo || '',
+                            licencia: f.licencia || f.nro_licencia || '',
+                            departamento: f.departamento || f.area || ''
+                        }))
                     ),
                     finalize(() => setLoading(false)),
                     catchError(() => of([]))
@@ -693,7 +739,10 @@ export class CuarentenaBajaHubComponent implements OnInit, OnDestroy {
         else this.showProcesadoPorDropdown = false;
     }
     selectProcesadoPor(p: any): void {
-        this.bajaForm.patchValue({ procesadoPor: p.nombre, nombre: p.nombre, cargo: p.cargo });
+        this.bajaForm.patchValue({
+            procesadoPor: p.nombre, nombre: p.nombre, cargo: p.cargo,
+            licencia: p.licencia || '', departamento: p.departamento || ''
+        });
         this.showProcesadoPorDropdown = false;
     }
     hideProcesadoPorDropdown(): void { setTimeout(() => this.showProcesadoPorDropdown = false, 200); }
@@ -715,7 +764,7 @@ export class CuarentenaBajaHubComponent implements OnInit, OnDestroy {
         else this.showAutorizadoPorDropdown = false;
     }
     selectAutorizadoPor(p: any): void {
-        this.bajaForm.patchValue({ autorizadoPor: p.nombre });
+        this.bajaForm.patchValue({ autorizadoPor: p.nombre, autorizadoCargo: p.cargo || '' });
         this.showAutorizadoPorDropdown = false;
     }
     hideAutorizadoPorDropdown(): void { setTimeout(() => this.showAutorizadoPorDropdown = false, 200); }
@@ -773,12 +822,31 @@ export class CuarentenaBajaHubComponent implements OnInit, OnDestroy {
             notesTool:    data.notesTool    || ''
         };
         this.bajaItems.update(items => [...items, item]);
+        this._sincronizarUnidadBaja();
     }
 
     removeItemBaja(index: number): void {
         const removed = this.bajaItems()[index];
         this.bajaItems.update(items => { const n = [...items]; n.splice(index, 1); return n; });
+        this._sincronizarUnidadBaja();
         this._showMsg(`${removed.codigo} removida de la lista.`, 'info');
+    }
+
+    /** Bases (almacén) reales de las herramientas ya agregadas a la lista de baja. */
+    basesEnLista(): string[] {
+        return [...new Set(this.bajaItems().map(i => (i.base || '').trim()).filter(Boolean))];
+    }
+
+    /** "Base / Unidad" del proceso = base de las herramientas de la lista. Si todas
+     *  comparten un almacén, lo autocompleta (el usuario igual puede cambiarlo). */
+    private _sincronizarUnidadBaja(): void {
+        const ids = [...new Set(this.bajaItems().map(i => i.warehouseId).filter((v): v is number => v != null))];
+        if (ids.length !== 1) return;
+        const w = this.warehouses.find(x => Number(x.id) === ids[0]);
+        const codigo = w?.codigo || null;
+        if (codigo && this.bajaForm.get('unidad')?.value !== codigo) {
+            this.bajaForm.patchValue({ unidad: codigo });
+        }
     }
 
     // Clic en un ítem ya agregado a la lista → abre el mismo form de detalle de herramienta
@@ -828,6 +896,8 @@ export class CuarentenaBajaHubComponent implements OnInit, OnDestroy {
             return;
         }
         this.isSavingBaja = true;
+        // Pestaña reservada dentro del gesto (click) para la nota MGH-119.
+        const notaWin = this.movementSvc.preAbrirVentanaPdf();
         const fv    = this.bajaForm.getRawValue();
         const items = this.bajaItems();
         const calls = items.map(item => {
@@ -838,11 +908,19 @@ export class CuarentenaBajaHubComponent implements OnInit, OnDestroy {
                 reason_description:   fv.descripcionBaja     || '',
                 disposal_method:      fv.disposalMethod      ?? 'other',
                 request_date:         fv.fecha,
+                request_time:         fv.hora                || '',
                 requested_by_name:    fv.procesadoPor        ?? '',
                 authorized_by_name:   fv.autorizadoPor       ?? '',
                 received_by_name:     fv.verificadoPor       ?? '',
                 notes:                fv.observaciones       ?? '',
-                condition_description: item.observacion      || item.estadoFisico || ''
+                condition_description: item.observacion      || item.estadoFisico || '',
+                // Datos del solicitante / autorizante para la nota MGH-119 (patch HE-81).
+                applicant_license:    fv.licencia            || '',
+                applicant_department: fv.departamento        || '',
+                applicant_position:   fv.cargo               || '',
+                applicant_unit:       fv.unidad              || '',
+                authorized_position:  fv.autorizadoCargo     || '',
+                quantity:             Number(item.cantidad)  || 1
             };
             return this.quarantineSvc.createDecommission(payload);
         });
@@ -854,21 +932,20 @@ export class CuarentenaBajaHubComponent implements OnInit, OnDestroy {
                 const nro = results[0]?.decommission_number || results[0]?.record_number || 'BJA';
                 this.nroNota.set(nro);
                 void this._persistirFotos(items.map(i => ({ toolId: i.toolId, file: i.imagenFile })));
-                this._abrirImpresionBaja({
-                    nroNota: nro, ...fv,
-                    herramientas: items,
-                    totalHerramientas: items.length,
-                    totalItems: this.getTotalCantidad()
-                });
+                // Nota de Baja MGH-119 — PDF real TCPDF backend.
+                const ids = results.map((r: any) => r?.id_decommission).filter(Boolean);
+                if (ids.length) this.quarantineSvc.verNotaBaja(ids, notaWin);
+                else { try { notaWin?.close(); } catch { /* noop */ } }
                 this._showMsg(`Baja ${nro} procesada exitosamente.`, 'success');
                 this.bajaItems.set([]);
                 this.bajaForm.reset({
                     estado: 'requested', motivo: 'beyond_repair',
-                    disposalMethod: 'other', fecha: this._today()
+                    disposalMethod: 'other', fecha: this._today(),
+                    procesadoPor: this._currentUserName()
                 });
                 this.historialItems = [];
             },
-            error: (err: any) => this._showMsg(err?.message || 'Error al registrar la baja.', 'error')
+            error: (err: any) => { try { notaWin?.close(); } catch { /* noop */ } this._showMsg(err?.message || 'Error al registrar la baja.', 'error'); }
         });
     }
 
@@ -920,107 +997,21 @@ export class CuarentenaBajaHubComponent implements OnInit, OnDestroy {
         return m._type === 'cuarentena' ? 'Cuarentena' : 'Baja';
     }
 
-    /** Reimpresión de un único registro desde la pestaña Historial (cuarentena o
-     *  baja ya resueltos individualmente) — mismo renderer visual que el resto,
-     *  con una sola fila de ítem ya que acá cada registro histórico es 1 herramienta. */
-    async pdfHistorialItem(m: any): Promise<void> {
-        const logoUri = await this._loadLogoBoaDataUri();
-        const isCuarentena = m._type === 'cuarentena';
-        const nro    = m.record_number || m.report_number || '---';
-        const fecha  = m.start_date || m.request_date || (m.fecha_reg ? String(m.fecha_reg).slice(0,10) : '') || '---';
-        const resp   = m.reported_by_name || m.requested_by_name || '---';
-        // Cuarentena guarda siempre reason='other' (motivo real es texto libre, no coincide
-        // con el enum del CHECK); el motivo real vive en reason_description, no en reason —
-        // buscar la label por m.reason siempre resolvía a "OTRO".
-        const motivo = isCuarentena
-            ? (m.reason_description || m.reason || '---')
-            : (m.reason || '---');
-        const desc   = m.reason_description || m.notes || '---';
-        const codigo = m.tool?.code || m.tool_code || m.code || '---';
-        const nombre = m.tool?.description || m.tool_name || m.description || (m.tool_id ? `ID: ${m.tool_id}` : '---');
-        const pn     = m.tool?.part_number || m.part_number || '---';
-        const sn     = m.tool?.serial_number || m.serial_number || '---';
-
-        const titulo = isCuarentena ? 'Reporte de Cuarentena' : 'Nota de Baja';
-
-        const filas = `<tr>
-            <td class="tc">1</td>
-            <td class="mono">${codigo}</td>
-            <td class="mono">${pn}</td>
-            <td class="mono">${sn}</td>
-            <td>${nombre}</td>
-            <td class="tc">${m.status || '---'}</td>
-            <td>${desc}</td>
-        </tr>`;
-
-        const html = `<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8">
-<title>${titulo} ${nro}</title>
-<style>
-  @page { size: A4; margin: 8mm 10mm; }
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: Arial, sans-serif; font-size: 10px; color: #000; }
-
-  table.head-table { width: 100%; border-collapse: collapse; border: 2px solid #000; margin-bottom: 6px; }
-  table.head-table td { border: 1px solid #000; padding: 6px 8px; vertical-align: middle; }
-  .logo-cell { width: 22%; text-align: center; }
-  .logo-cell img { max-width: 100%; max-height: 34px; }
-  .logo-cell .oam { font-size: 8px; font-weight: 900; margin-top: 2px; }
-  .title-cell { width: 58%; text-align: center; }
-  .title-cell h1 { font-size: 13px; font-weight: 900; text-transform: uppercase; }
-  .code-cell { width: 20%; text-align: center; }
-  .code-cell .nro { font-size: 13px; font-weight: 900; }
-
-  table.meta-table { width: 100%; border-collapse: collapse; border: 2px solid #000; border-top: none; margin-bottom: 0; }
-  table.meta-table td { border: 1px solid #000; padding: 3px 6px; font-size: 9.5px; height: 20px; }
-  table.meta-table td b { font-weight: 900; }
-
-  .detalle-bar { background: #fff; border: 2px solid #000; border-top: none; text-align: center; font-weight: 900; font-size: 11px; text-transform: uppercase; padding: 3px; }
-
-  table.items { width: 100%; border-collapse: collapse; border: 2px solid #000; border-top: none; }
-  table.items th { border: 1px solid #000; background: #e5e7eb; font-size: 7.7px; font-weight: 900; text-transform: uppercase; padding: 4px 2px; }
-  table.items td { border: 1px solid #000; padding: 4px 3px; font-size: 8.7px; }
-  .tc { text-align: center; }
-  .mono { font-family: monospace; }
-
-  @media print { body { padding: 0; } }
-</style>
-<script>window.onload = () => window.print();</script>
-</head><body>
-
-<table class="head-table">
-  <tr>
-    <td class="logo-cell" rowspan="2">
-      ${logoUri ? `<img src="${logoUri}" alt="BoA">` : '<div style="font-weight:900;font-size:16px">BoA</div>'}
-      <div class="oam">BoAMM &nbsp; OAM145# N-114</div>
-    </td>
-    <td class="title-cell" rowspan="2"><h1>${titulo}</h1></td>
-    <td class="code-cell"><div class="nro">N° ${nro}</div></td>
-  </tr>
-</table>
-
-<table class="meta-table">
-  <tr>
-    <td style="width:20%"><b>RESPONSABLE:</b></td><td style="width:30%">${resp}</td>
-    <td style="width:20%"><b>FECHA:</b></td><td style="width:30%">${fecha}</td>
-  </tr>
-  <tr>
-    <td><b>${isCuarentena ? 'MOTIVO:' : 'MÉTODO DISPOSICIÓN:'}</b></td><td>${isCuarentena ? motivo : (m.disposal_method || '---')}</td>
-    <td><b>ESTADO:</b></td><td>${m.status || '---'}</td>
-  </tr>
-  ${m.notes ? `<tr><td><b>NOTAS:</b></td><td colspan="3">${m.notes}</td></tr>` : ''}
-</table>
-
-<div class="detalle-bar">DETALLE</div>
-<table class="items">
-  <thead><tr>
-    <th style="width:5%">#</th><th style="width:13%">CÓDIGO</th><th style="width:13%">P/N</th><th style="width:13%">S/N</th>
-    <th style="width:21%">DESCRIPCIÓN</th><th style="width:10%">ESTADO</th><th style="width:25%">DESCRIPCIÓN / NOTAS</th>
-  </tr></thead>
-  <tbody>${filas}</tbody>
-</table>
-
-</body></html>`;
-        this._abrirVentana(html);
+    /** Reimpresión de un único registro desde la pestaña Historial — PDF real
+     *  TCPDF backend: cuarentena → Reporte Discrepancia MGH-101; baja → Nota de
+     *  Baja MGH-119. Mismo camino que las notas de préstamo / ingreso: pestaña
+     *  reservada dentro del click + un solo POST. */
+    pdfHistorialItem(m: any): void {
+        const ventana = this.movementSvc.preAbrirVentanaPdf();
+        if (m._type === 'cuarentena') {
+            const id = m.id_quarantine;
+            if (id) this.quarantineSvc.verNotaCuarentena([id], ventana);
+            else { try { ventana?.close(); } catch { /* noop */ } this._showMsg('No se pudo identificar la cuarentena', 'error'); }
+        } else {
+            const id = m.id_decommission;
+            if (id) this.quarantineSvc.verNotaBaja([id], ventana);
+            else { try { ventana?.close(); } catch { /* noop */ } this._showMsg('No se pudo identificar la baja', 'error'); }
+        }
     }
 
     // ══════════════════════════════════════════════════════════════════════════
@@ -1205,340 +1196,6 @@ export class CuarentenaBajaHubComponent implements OnInit, OnDestroy {
             },
             error: (err: any) => this._showMsg(err?.message || 'Error al anular la baja.', 'error')
         });
-    }
-
-    // ══════════════════════════════════════════════════════════════════════════
-    //  PDFs — Cuarentena
-    // ══════════════════════════════════════════════════════════════════════════
-    /**
-     * "Reporte Discrepancia de Herramienta" — la hoja real del Excel (MGH-101,
-     * REV.0, 2016-10-13) es de UNA sola herramienta por reporte (PART NUMBER/
-     * NOMBRE/SERIAL NUMBER/CÓDIGO como campos, no tabla), pero el sistema registra
-     * cuarentena por LOTE (varias herramientas bajo un mismo Nro. Reporte) —
-     * decisión del usuario: no forzar 1 PDF por herramienta, solo restylear al
-     * mismo patrón visual del resto, manteniendo la tabla de ítems.
-     */
-    private async _abrirImpresionCuarentena(rep: any, items: any[]): Promise<void> {
-        const logoUri = await this._loadLogoBoaDataUri();
-        const motivoLabel = rep.motivo || '---';
-
-        const filas = items.map((item: any, i: number) => `
-            <tr>
-                <td class="tc">${i + 1}</td>
-                <td class="mono">${item.codigo || '---'}</td>
-                <td class="mono">${item.partNumber || '---'}</td>
-                <td class="mono">${item.serialNumber || '---'}</td>
-                <td class="tc">${item.cantidad || 1}</td>
-                <td>${item.nombre || '---'}</td>
-                <td class="tc">${this.getEstadoFisicoLabel(item.estadoFisico)}</td>
-                <td class="tc">${item.base || '---'}</td>
-            </tr>`).join('');
-
-        const html = `<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8">
-<title>Reporte Discrepancia ${rep.nroReporteDiscrepancia}</title>
-<style>
-  @page { size: A4; margin: 8mm 10mm; }
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: Arial, sans-serif; font-size: 10px; color: #000; }
-
-  table.head-table { width: 100%; border-collapse: collapse; border: 2px solid #000; margin-bottom: 6px; }
-  table.head-table td { border: 1px solid #000; padding: 6px 8px; vertical-align: middle; }
-  .logo-cell { width: 22%; text-align: center; }
-  .logo-cell img { max-width: 100%; max-height: 34px; }
-  .logo-cell .oam { font-size: 8px; font-weight: 900; margin-top: 2px; }
-  .title-cell { width: 58%; text-align: center; }
-  .title-cell h1 { font-size: 12.5px; font-weight: 900; text-transform: uppercase; }
-  .code-cell { width: 20%; text-align: center; padding: 0; }
-  .code-cell .mgh { font-size: 15px; font-weight: 900; padding: 6px 0; border-bottom: 1px solid #000; }
-  .code-cell .rev-fecha { display: flex; font-size: 9px; font-weight: 700; }
-  .code-cell .rev-fecha > div { flex: 1; padding: 3px 0; }
-  .code-cell .rev-fecha > div:first-child { border-right: 1px solid #000; }
-
-  table.meta-table { width: 100%; border-collapse: collapse; border: 2px solid #000; border-top: none; margin-bottom: 0; }
-  table.meta-table td { border: 1px solid #000; padding: 3px 6px; font-size: 9.5px; height: 20px; }
-  table.meta-table td b { font-weight: 900; }
-  .nnota-cell { text-align: center; font-weight: 900; }
-
-  .detalle-bar { background: #fff; border: 2px solid #000; border-top: none; text-align: center; font-weight: 900; font-size: 11px; text-transform: uppercase; padding: 3px; }
-
-  table.items { width: 100%; border-collapse: collapse; border: 2px solid #000; border-top: none; margin-bottom: 0; }
-  table.items th { border: 1px solid #000; background: #e5e7eb; font-size: 7.7px; font-weight: 900; text-transform: uppercase; padding: 4px 2px; }
-  table.items td { border: 1px solid #000; padding: 4px 3px; font-size: 8.7px; }
-  table.items tbody tr { height: 20px; }
-  .tc { text-align: center; }
-  .mono { font-family: monospace; }
-
-  table.foot-table { width: 100%; border-collapse: collapse; border: 2px solid #000; border-top: none; }
-  table.foot-table td { border: 1px solid #000; padding: 6px 8px; vertical-align: top; font-size: 9.5px; width: 33.3%; }
-  .firma-lbl { font-weight: 900; }
-  .firma-line { border-bottom: 1px solid #000; height: 26px; margin-top: 12px; }
-  .firma-sub { text-align: center; font-size: 8.5px; font-weight: 700; margin-top: 2px; }
-
-  @media print { body { padding: 0; } }
-</style>
-<script>window.onload = () => window.print();</script>
-</head><body>
-
-<table class="head-table">
-  <tr>
-    <td class="logo-cell" rowspan="2">
-      ${logoUri ? `<img src="${logoUri}" alt="BoA">` : '<div style="font-weight:900;font-size:16px">BoA</div>'}
-      <div class="oam">BoAMM &nbsp; OAM145# N-114</div>
-    </td>
-    <td class="title-cell" rowspan="2">
-      <h1>Reporte Discrepancia de Herramienta</h1>
-    </td>
-    <td class="code-cell">
-      <div class="mgh">MGH-101</div>
-      <div class="rev-fecha"><div>REV. 0</div><div>2016-10-13</div></div>
-    </td>
-  </tr>
-</table>
-
-<table class="meta-table">
-  <tr>
-    <td style="width:16%"><b>NRO. REPORTE:</b></td><td style="width:26%">${rep.nroReporteDiscrepancia}</td>
-    <td style="width:16%"><b>MOTIVO:</b></td><td style="width:22%">${motivoLabel}</td>
-    <td rowspan="3" class="nnota-cell" style="width:20%"><div style="font-size:8px;font-weight:400">NRO. REPORTE</div><div style="font-size:12px">${rep.nroReporteDiscrepancia}</div></td>
-  </tr>
-  <tr>
-    <td><b>REPORTADO POR:</b></td><td>${rep.nombreApellido || rep.realizadoPor || '---'}</td>
-    <td><b>FECHA:</b></td><td>${rep.fecha || '---'}</td>
-  </tr>
-  <tr>
-    <td><b>DESCRIPCIÓN:</b></td><td colspan="3">${rep.descripcion || '---'}</td>
-  </tr>
-</table>
-
-<div class="detalle-bar">DETALLE DE HERRAMIENTAS EN CUARENTENA</div>
-<table class="items">
-  <thead><tr>
-    <th style="width:4%">#</th><th style="width:12%">CÓDIGO BOA</th><th style="width:12%">P/N</th><th style="width:12%">S/N</th>
-    <th style="width:7%">CANT.</th><th style="width:25%">DESCRIPCIÓN</th><th style="width:14%">ESTADO FÍSICO</th><th style="width:14%">BASE</th>
-  </tr></thead>
-  <tbody>${filas || '<tr><td colspan="8" class="tc">Sin ítems</td></tr>'}</tbody>
-</table>
-
-<table class="foot-table">
-  <tr>
-    <td>
-      <div class="firma-lbl">REPORTADO POR</div>
-      <div class="firma-line"></div>
-      <div class="firma-sub">${rep.nombreApellido || rep.realizadoPor || ''}</div>
-    </td>
-    <td>
-      <div class="firma-lbl">JEFE DE ALMACÉN</div>
-      <div class="firma-line"></div>
-      <div class="firma-sub">${rep.aprobadoPor || '&nbsp;'}</div>
-    </td>
-    <td>
-      <div class="firma-lbl">CONTROL DE CALIDAD</div>
-      <div class="firma-line"></div>
-      <div class="firma-sub">&nbsp;</div>
-    </td>
-  </tr>
-</table>
-
-</body></html>`;
-        this._abrirVentana(html);
-    }
-
-    private _loadLogoBoaDataUri(): Promise<string> {
-        if (!this._logoBoaDataUri) {
-            this._logoBoaDataUri = fetch('/images/logo-boa.png')
-                .then(r => r.blob())
-                .then(blob => new Promise<string>((resolve, reject) => {
-                    const reader = new FileReader();
-                    reader.onload  = () => resolve(reader.result as string);
-                    reader.onerror = reject;
-                    reader.readAsDataURL(blob);
-                }))
-                .catch(() => '');
-        }
-        return this._logoBoaDataUri;
-    }
-
-    // ══════════════════════════════════════════════════════════════════════════
-    //  PDFs — Baja
-    // ══════════════════════════════════════════════════════════════════════════
-    /**
-     * "Nota de Baja — Herramientas, Bancos de Prueba y Equipos de Apoyo" (MGH-119),
-     * calcada de "Sistema Herramientas con Macros/Formularios.xlsx", hoja "BAJAR"
-     * (REV. 0, 2020-06-03) — misma fuente ya confirmada vigente para este documento.
-     * Esta es la ÚNICA ruta real de impresión de Baja: `baja/baja.component.ts` es
-     * código huérfano (nunca importado en ningún módulo/ruta) y fue eliminado.
-     */
-    private async _abrirImpresionBaja(d: any): Promise<void> {
-        const logoUri = await this._loadLogoBoaDataUri();
-
-        let licencia = '---';
-        let departamento = '---';
-        try {
-            const personal = await lastValueFrom(this.movementSvc.getPersonal());
-            const q = (d.procesadoPor || '').trim().toLowerCase();
-            const match = q ? (personal || []).find((f: any) => (f.nombreCompleto || '').trim().toLowerCase() === q) : null;
-            if (match) { licencia = match.licencia || '---'; departamento = match.departamento || '---'; }
-        } catch { /* enriquecimiento opcional, no bloquea la impresión */ }
-
-        const fechaHora = `${d.fecha || '---'} ${d.hora || ''}`.trim();
-        const estadoLabel = this.getEstadoLabel(d.estado);
-
-        const filas = (d.herramientas || []).map((item: BajaItem, i: number) => `
-            <tr>
-                <td class="tc">${i + 1}</td>
-                <td class="mono">${item.codigo || '---'}</td>
-                <td class="mono">${item.pn || '---'}</td>
-                <td class="mono">${item.sn || '---'}</td>
-                <td>${item.nombre || '---'}</td>
-                <td class="tc">${item.cantidad || 1}</td>
-                <td>${item.marca || '---'}</td>
-                <td>${item.contenido || '---'}</td>
-                <td class="tc">${item.base || '---'}</td>
-                <td>${item.estadoFisico && item.estadoFisico !== 'INSERVIBLE' ? item.estadoFisico : '---'}</td>
-            </tr>`).join('');
-
-        const html = `<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8">
-<title>Nota de Baja ${d.nroNota}</title>
-<style>
-  @page { size: A4; margin: 8mm 10mm; }
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: Arial, sans-serif; font-size: 10px; color: #000; }
-
-  table.head-table { width: 100%; border-collapse: collapse; border: 2px solid #000; margin-bottom: 6px; }
-  table.head-table td { border: 1px solid #000; padding: 4px 8px; vertical-align: middle; }
-  .logo-cell { width: 22%; text-align: center; padding: 6px 8px; }
-  .logo-cell img { max-width: 100%; max-height: 34px; }
-  .logo-cell .oam { font-size: 8px; font-weight: 900; margin-top: 2px; }
-  .title-cell { width: 58%; text-align: center; }
-  .title-cell h1 { font-size: 12.5px; font-weight: 900; text-transform: uppercase; }
-  .title-cell h2 { font-size: 9px; font-weight: 900; text-transform: uppercase; margin-top: 2px; }
-  .code-cell { width: 20%; text-align: center; padding: 0; }
-  .code-cell .mgh { font-size: 15px; font-weight: 900; padding: 6px 0; border-bottom: 1px solid #000; }
-  .code-cell .rev-fecha { display: flex; font-size: 9px; font-weight: 700; }
-  .code-cell .rev-fecha > div { flex: 1; padding: 3px 0; }
-  .code-cell .rev-fecha > div:first-child { border-right: 1px solid #000; }
-
-  table.meta-table { width: 100%; border-collapse: collapse; border: 2px solid #000; border-top: none; margin-bottom: 0; }
-  table.meta-table td { border: 1px solid #000; padding: 3px 6px; font-size: 9.5px; height: 20px; }
-  table.meta-table td b { font-weight: 900; }
-  .nnota-cell { text-align: center; font-weight: 900; }
-
-  .detalle-bar { background: #fff; border: 2px solid #000; border-top: none; text-align: center; font-weight: 900; font-size: 11px; text-transform: uppercase; padding: 3px; }
-
-  table.items { width: 100%; border-collapse: collapse; border: 2px solid #000; border-top: none; margin-bottom: 0; }
-  table.items th { border: 1px solid #000; background: #e5e7eb; font-size: 7.7px; font-weight: 900; text-transform: uppercase; padding: 4px 2px; }
-  table.items td { border: 1px solid #000; padding: 4px 3px; font-size: 8.7px; }
-  table.items tbody tr { height: 20px; }
-  .tc { text-align: center; }
-  .mono { font-family: monospace; }
-
-  table.foot-table { width: 100%; border-collapse: collapse; border: 2px solid #000; border-top: none; margin-bottom: 0; }
-  table.foot-table td { border: 1px solid #000; padding: 6px 8px; vertical-align: top; font-size: 9.5px; }
-  .firma-lbl { font-weight: 900; }
-  .firma-line { border-bottom: 1px solid #000; height: 26px; margin-top: 12px; }
-  .firma-sub { text-align: center; font-size: 8.5px; font-weight: 700; margin-top: 2px; }
-  .nota-importante { font-size: 8.5px; }
-  .nota-importante ul { margin: 4px 0 0 12px; }
-  .nota-importante li { margin-bottom: 4px; }
-
-  table.autoriza-table { width: 100%; border-collapse: collapse; border: 2px solid #000; border-top: none; }
-  table.autoriza-table td { border: 1px solid #000; padding: 6px 8px; font-size: 9.5px; }
-
-  @media print { body { padding: 0; } }
-</style>
-<script>window.onload = () => window.print();</script>
-</head><body>
-
-<table class="head-table">
-  <tr>
-    <td class="logo-cell" rowspan="2">
-      ${logoUri ? `<img src="${logoUri}" alt="BoA">` : '<div style="font-weight:900;font-size:16px">BoA</div>'}
-      <div class="oam">BoAMM &nbsp; OAM145# N-114</div>
-    </td>
-    <td class="title-cell" rowspan="2">
-      <h1>Nota de Baja</h1>
-      <h2>Herramientas, Bancos de Prueba y Equipos de Apoyo</h2>
-    </td>
-    <td class="code-cell">
-      <div class="mgh">MGH-119</div>
-      <div class="rev-fecha"><div>REV. 0</div><div>2020-06-03</div></div>
-    </td>
-  </tr>
-</table>
-
-<table class="meta-table">
-  <tr>
-    <td style="width:16%"><b>NOMBRE SOLICITANTE:</b></td><td style="width:26%">${d.nombre || d.procesadoPor || '---'}</td>
-    <td style="width:16%"><b>VERIFICADO POR:</b></td><td style="width:22%">${d.verificadoPor || '---'}</td>
-    <td rowspan="4" class="nnota-cell" style="width:20%"><div style="font-size:8px;font-weight:400">N° NOTA</div><div style="font-size:12px">${d.nroNota}</div></td>
-  </tr>
-  <tr>
-    <td><b>LICENCIA:</b></td><td>${licencia}</td>
-    <td><b>DEPARTAMENTO:</b></td><td>${departamento}</td>
-  </tr>
-  <tr>
-    <td><b>CARGO:</b></td><td>${d.cargo || '---'}</td>
-    <td><b>UNIDAD:</b></td><td>${d.unidad || '---'}</td>
-  </tr>
-  <tr>
-    <td><b>FECHA Y HORA:</b></td><td>${fechaHora || '---'}</td>
-    <td><b>MOVIMIENTO:</b></td><td>---</td>
-  </tr>
-  <tr>
-    <td><b>ESTADO:</b></td><td colspan="3">${estadoLabel}</td>
-  </tr>
-  ${d.observaciones ? `<tr><td><b>OBSERVACIÓN:</b></td><td colspan="3">${d.observaciones}</td></tr>` : ''}
-</table>
-
-<div class="detalle-bar">DETALLE</div>
-<table class="items">
-  <thead><tr>
-    <th style="width:4%">#</th><th style="width:10%">CÓDIGO</th><th style="width:10%">P/N ó MODELO</th><th style="width:9%">S/N</th>
-    <th style="width:18%">NOMBRE</th><th style="width:5%">CANT.</th><th style="width:9%">MARCA</th>
-    <th style="width:14%">LISTA DE CONTENIDO</th><th style="width:6%">BASE</th><th style="width:15%">OBSERVACIÓN</th>
-  </tr></thead>
-  <tbody>${filas || '<tr><td colspan="10" class="tc">Sin ítems</td></tr>'}</tbody>
-</table>
-
-<table class="foot-table">
-  <tr>
-    <td style="width:33%">
-      <div class="firma-lbl">PROCESADO POR:</div>
-      <div class="firma-line"></div>
-      <div class="firma-sub">Firma Almacén Herramientas — ${d.nombre || d.procesadoPor || ''}</div>
-    </td>
-    <td style="width:33%">
-      <div class="firma-lbl">VERIFICADO POR:</div>
-      <div class="firma-line"></div>
-      <div class="firma-sub">Firma recepción — ${d.verificadoPor || ''}</div>
-    </td>
-    <td style="width:34%" class="nota-importante">
-      <b>NOTA IMPORTANTE:</b>
-      <ul>
-        <li>Las herramientas descritas en la presente nota se encuentran en condición INOPERATIVAS, a menos que se indique lo contrario en la casilla de OBSERVACIONES.</li>
-      </ul>
-      La firma de la presente nota implica que se está en conformidad con toda la información detallada.
-    </td>
-  </tr>
-</table>
-<table class="autoriza-table">
-  <tr>
-    <td style="width:50%"><b>AUTORIZADO POR:</b> ${d.autorizadoPor || '&nbsp;'}</td>
-    <td style="width:50%"><b>Firma:</b> _____________________________</td>
-  </tr>
-</table>
-
-</body></html>`;
-        this._abrirVentana(html);
-    }
-
-    private _abrirVentana(html: string): void {
-        const blob = new Blob([html], { type: 'text/html' });
-        const url  = URL.createObjectURL(blob);
-        const a    = document.createElement('a');
-        a.href = url; a.target = '_blank'; a.rel = 'noopener';
-        document.body.appendChild(a); a.click(); document.body.removeChild(a);
-        setTimeout(() => URL.revokeObjectURL(url), 60000);
     }
 
     // ══════════════════════════════════════════════════════════════════════════

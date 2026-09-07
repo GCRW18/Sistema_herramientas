@@ -167,6 +167,11 @@ export class GestionarKitComponent implements OnInit, OnDestroy {
         } else {
             // Modo crear: el código se genera al guardar, no al abrir
             this.kitForm.get('codigo')?.setValue('Auto-generado al guardar');
+            // Prellena "Funcionario" con el usuario logueado (editable).
+            try {
+                const auth = JSON.parse(localStorage.getItem('aut') || '{}');
+                if (auth.nombre_usuario) this.kitForm.get('funcionario')?.setValue(auth.nombre_usuario);
+            } catch { /* ignore */ }
         }
 
         // Búsqueda de funcionarios

@@ -33,6 +33,8 @@ export interface PrestamoPdfData {
     devuelto: boolean;
     fechaHoraDevolucion?: string;
     recibioAlmacen?: string;
+    /** Técnico que físicamente devolvió la herramienta (puede diferir del solicitante). */
+    devueltoPor?: string;
 }
 
 /**
@@ -96,7 +98,7 @@ export class PrestamoPdfService {
         const filasDevolucion = data.items.map(it => data.devuelto ? `
             <tr>
                 <td class="tc" style="font-size:8.5px">${data.fechaHoraDevolucion || '---'}</td>
-                <td colspan="2">${data.solicitante || '---'}</td>
+                <td colspan="2">${data.devueltoPor || data.solicitante || '---'}</td>
                 <td colspan="2">${data.recibioAlmacen || '---'}</td>
                 <td class="tc" style="font-weight:700">${it.condicionDevolucion || '---'}</td>
                 <td class="tc">---</td>

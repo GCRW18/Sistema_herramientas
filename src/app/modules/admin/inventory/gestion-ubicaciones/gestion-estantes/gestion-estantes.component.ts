@@ -243,7 +243,7 @@ export class GestionEstantesComponent implements OnInit, OnChanges, OnDestroy {
             highlightToolId,
         };
         this.dialog.open(NivelHerramientasDialogComponent, {
-            width: '640px', maxWidth: '95vw', panelClass: 'no-padding-dialog', data,
+            width: '820px', maxWidth: '95vw', panelClass: 'no-padding-dialog', data,
         }).afterClosed().subscribe(() => {
             // Siempre recargar, sin depender de `changed`: si el diálogo se cierra por click
             // en el backdrop o con Escape (en vez del botón "X" -> cerrar()), Material devuelve

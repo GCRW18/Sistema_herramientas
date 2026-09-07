@@ -9,7 +9,6 @@ import { Subject, forkJoin, of } from 'rxjs';
 import { debounceTime, startWith, takeUntil, finalize, catchError } from 'rxjs/operators';
 import { MovementService } from '../../../../core/services/movement.service';
 import { HasPermissionDirective } from '../../../../core/directives/has-permission.directive';
-import { PrestamoExternoPdfService, PrestamoExternoPdfData } from './prestamo-externo-pdf.service';
 
 interface ExternalLoanDisplay {
     id_loan:                 number;
@@ -61,7 +60,6 @@ export class PrestamoExternoHubComponent implements OnInit, OnDestroy {
     private movementSvc = inject(MovementService);
     private dialog      = inject(MatDialog);
     private snackBar    = inject(MatSnackBar);
-    private pdfSvc       = inject(PrestamoExternoPdfService);
     private destroy$    = new Subject<void>();
 
     isLoading  = signal(false);
@@ -209,7 +207,7 @@ export class PrestamoExternoHubComponent implements OnInit, OnDestroy {
     async abrirFormPrestamo(): Promise<void> {
         const { FormPrestamoExternoDialogComponent } = await import('./prestamo/form-prestamo-externo-dialog.component');
         this.dialog.open(FormPrestamoExternoDialogComponent, {
-            width: 'min(820px, 100vw)', maxWidth: '100vw', maxHeight: '100dvh',
+            width: 'min(1240px, 96vw)', maxWidth: '100vw', maxHeight: '100dvh',
             panelClass: 'neo-dialog-transparent', disableClose: false, autoFocus: false
         }).afterClosed().subscribe(r => {
             if (r?.success) { this.showMsg('Préstamo externo registrado', 'success'); this.loadData(); }
@@ -219,55 +217,31 @@ export class PrestamoExternoHubComponent implements OnInit, OnDestroy {
     async abrirFormDevolucion(): Promise<void> {
         const { FormDevolucionExternoDialogComponent } = await import('./devolucion/form-devolucion-externo-dialog.component');
         this.dialog.open(FormDevolucionExternoDialogComponent, {
-            width: 'min(820px, 100vw)', maxWidth: '100vw', maxHeight: '100dvh',
+            width: 'min(1240px, 96vw)', maxWidth: '100vw', maxHeight: '100dvh',
             panelClass: 'neo-dialog-transparent', disableClose: false, autoFocus: false
         }).afterClosed().subscribe(r => {
             if (r?.success) { this.showMsg('Devolución registrada', 'success'); this.loadData(); }
         });
     }
 
-    pdfPrestamo(loan: ExternalLoanDisplay): void {
-        const items = this.loanItems.filter((i: any) => String(i.loan_id) === String(loan.id_loan));
-        const data: PrestamoExternoPdfData = {
-            nroPrestamo: loan.loan_number,
-            solicitante: loan.delivered_by_name,
-            empresa: loan.borrower_name,
-            fechaHoraPrestamo: this.formatFecha(loan.loan_date, loan.loan_time),
-            observaciones: loan.notes,
-            entregadoPor: loan.delivered_by_name,
-            devuelto: false,
-            items: items.map((it: any) => ({
-                codigo: it.code || '', pn: it.part_number || '', sn: it.serial_number || '',
-                cantidad: Number(it.quantity) || 1, descripcion: it.description || it.name || '',
-                listaContenido: it.content_list || '', obs: it.notes || '',
-            })),
-        };
-        this.pdfSvc.generarPdf(data);
+    /** Nota MGH-100 (nota de préstamo - devolución terceros) — PDF real TCPDF backend. */
+    verNotaTerceros(loan: ExternalLoanDisplay): void {
+        if (!loan?.id_loan) { this.showMsg('No se pudo identificar el préstamo', 'error'); return; }
+        const win = this.movementSvc.preAbrirVentanaPdf();
+        this.movementSvc.generarPdfNotaPrestamo(loan.id_loan, 'mgh100', true).pipe(takeUntil(this.destroy$)).subscribe({
+            next: (r) => this.movementSvc.abrirPdfNota(r.pdf_base64, r.nombre_archivo, win),
+            error: (e) => { try { win?.close(); } catch { /* noop */ } this.showMsg('Error al generar la nota MGH-100: ' + (e?.message || ''), 'error'); }
+        });
     }
 
-    pdfDevolucion(loan: ExternalLoanDisplay): void {
-        const items = this.loanItems.filter((i: any) => String(i.loan_id) === String(loan.id_loan));
-        const condLabel: Record<string,string> = { BUENO:'Bueno', REPARADO:'Reparado', CALIBRADO:'Calibrado', PARCIAL:'Parcial', NO_REPARABLE:'No Reparable' };
-        const data: PrestamoExternoPdfData = {
-            nroPrestamo: loan.loan_number,
-            nroDevolucion: loan.loan_number,
-            solicitante: loan.delivered_by_name,
-            empresa: loan.borrower_name,
-            fechaHoraPrestamo: this.formatFecha(loan.loan_date, loan.loan_time),
-            observaciones: loan.notes,
-            entregadoPor: loan.delivered_by_name,
-            devuelto: true,
-            fechaHoraDevolucion: loan.actual_return_date ? new Date(loan.actual_return_date).toLocaleString('es-BO') : '---',
-            recibioAlmacen: loan.received_return_by_name || '---',
-            items: items.map((it: any) => ({
-                codigo: it.code || '', pn: it.part_number || '', sn: it.serial_number || '',
-                cantidad: Number(it.quantity) || 1, descripcion: it.description || it.name || '',
-                listaContenido: it.content_list || '', obs: it.notes || '',
-                condicionDevolucion: condLabel[it.condition_on_return] || it.condition_on_return || '',
-                obsDevolucion: it.notes || loan.return_notes || '',
-            })),
-        };
-        this.pdfSvc.generarPdf(data);
+    /** Control MGH-100-1 (hoja de control) de un préstamo externo — PDF real TCPDF backend. */
+    verControlTerceros(loan: ExternalLoanDisplay): void {
+        if (!loan?.id_loan) { this.showMsg('No se pudo identificar el préstamo', 'error'); return; }
+        const win = this.movementSvc.preAbrirVentanaPdf();
+        this.movementSvc.generarPdfNotaPrestamo(loan.id_loan, 'mgh100_1', true).pipe(takeUntil(this.destroy$)).subscribe({
+            next: (r) => this.movementSvc.abrirPdfNota(r.pdf_base64, r.nombre_archivo, win),
+            error: (e) => { try { win?.close(); } catch { /* noop */ } this.showMsg('Error al generar el control MGH-100-1: ' + (e?.message || ''), 'error'); }
+        });
     }
 
     private showMsg(message: string, type: 'success'|'error'|'warning'|'info'): void {

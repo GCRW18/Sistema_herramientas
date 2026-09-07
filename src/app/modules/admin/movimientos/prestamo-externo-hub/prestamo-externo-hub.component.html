@@ -99,8 +99,8 @@
             <ng-container *appHasPermission="'prestamo_terceros.prestar'">
               <button *ngIf="activeTab === 'prestamo'" (click)="abrirFormPrestamo()"
                       class="h-7 px-2.5 flex items-center gap-1.5 rounded-lg bg-[#FFC501FF] border border-black text-black font-black text-[10px] uppercase shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all shrink-0">
-                <mat-icon class="!text-xs !w-3.5 !h-3.5">add_circle</mat-icon>
-                <span class="hidden sm:inline">Nuevo PE</span>
+                <mat-icon class="!text-xs !w-3.5 !h-3.5 !text-black">add_circle</mat-icon>
+                <span class="hidden sm:inline">Préstamo</span>
               </button>
             </ng-container>
 
@@ -140,8 +140,8 @@
           </p>
           <ng-container *appHasPermission="'prestamo_terceros.prestar'">
             <button *ngIf="filterStatus.value !== 'returned'" (click)="abrirFormPrestamo()"
-                    class="h-8 px-4 rounded-xl border-[2px] border-black bg-[#7113CF] text-white font-black text-xs uppercase shadow-[2px_2px_0_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all mt-1 flex items-center gap-1.5">
-              <mat-icon class="!text-sm">add_circle</mat-icon>Nuevo Préstamo PE
+                    class="h-8 px-4 rounded-xl border-[2px] border-black bg-[#FFC501FF] text-black font-black text-xs uppercase shadow-[2px_2px_0_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all mt-1 flex items-center gap-1.5">
+              <mat-icon class="!text-sm !text-black">add_circle</mat-icon>Préstamo
             </button>
           </ng-container>
         </div>
@@ -157,7 +157,7 @@
                 <th class="px-3 py-2.5">Fecha Préstamo</th>
                 <th class="px-3 py-2.5 text-center">Días</th>
                 <th class="px-3 py-2.5 text-center">Estado</th>
-                <th class="px-3 py-2.5 text-center w-20">Acciones</th>
+                <th class="px-3 py-2.5 text-center w-28">Acciones</th>
               </tr>
             </thead>
             <tbody>
@@ -200,16 +200,16 @@
                 </td>
 
                 <td class="px-3 py-2.5 text-center">
-                  <div class="flex items-center justify-center">
-                    <button *ngIf="mov.status === 'active'" (click)="pdfPrestamo(mov)"
-                            matTooltip="Imprimir nota de préstamo PE"
-                            class="w-7 h-7 flex items-center justify-center bg-[#7113CF] border-2 border-black rounded-lg shadow-[2px_2px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all">
-                      <mat-icon class="!text-sm text-white">print</mat-icon>
+                  <div class="flex items-center justify-center gap-1.5">
+                    <button (click)="verNotaTerceros(mov)"
+                            matTooltip="Nota MGH-100 (nota de préstamo - devolución terceros)"
+                            class="w-7 h-7 flex items-center justify-center bg-[#1A3EDC] border-2 border-black rounded-lg shadow-[2px_2px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all">
+                      <mat-icon class="!text-sm text-white">description</mat-icon>
                     </button>
-                    <button *ngIf="mov.status === 'returned'" (click)="pdfDevolucion(mov)"
-                            matTooltip="Imprimir nota unificada MGH-100"
-                            class="w-7 h-7 flex items-center justify-center bg-blue-700 border-2 border-black rounded-lg shadow-[2px_2px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all">
-                      <mat-icon class="!text-sm text-white">assignment_return</mat-icon>
+                    <button (click)="verControlTerceros(mov)"
+                            matTooltip="Control MGH-100-1 (hoja de control)"
+                            class="w-7 h-7 flex items-center justify-center bg-stone-700 border-2 border-black rounded-lg shadow-[2px_2px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all">
+                      <mat-icon class="!text-sm text-white">fact_check</mat-icon>
                     </button>
                   </div>
                 </td>

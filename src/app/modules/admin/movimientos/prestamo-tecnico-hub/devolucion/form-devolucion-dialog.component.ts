@@ -1,33 +1,51 @@
-import { Component, OnInit, OnDestroy, inject, ViewChild, TemplateRef } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, OnInit, OnDestroy, inject, ViewChild, TemplateRef, ElementRef } from '@angular/core';
+import { CommonModule, DatePipe } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, FormsModule, Validators } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
-import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatDialogRef, MatDialogModule, MatDialog } from '@angular/material/dialog';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { Subject, forkJoin, of } from 'rxjs';
+import { Subject, of } from 'rxjs';
 import { takeUntil, finalize, switchMap, map, catchError, debounceTime, distinctUntilChanged } from 'rxjs/operators';
 import { MovementService } from '../../../../../core/services/movement.service';
-import { PrestamoPdfService, PrestamoPdfData } from '../prestamo-pdf.service';
 
 type CondicionDevolucion = 'BUENO' | 'DAÑADO' | 'IRREPARABLE' | 'REQUIERE_CALIBRACION' | 'FALTANTE';
 
+/** Ítem del carrito de devolución: cada fila sale de escanear una herramienta y
+ *  resolver su préstamo abierto (he.tloan_items.returned = false). */
 interface DevolucionItem {
-    toolId?: string; loanItemId?: number; imagen?: string; codigo: string; descripcion: string; pn: string; sn: string;
-    und: string; marca?: string; listaContenido: string; fechaCalibracion: string;
-    estadoAlPrestar: string; fechaPrestamo: string; cantidadPrestada: number;
-    cantidadDevolver: number; aeronave: string; ordenTrabajo?: string;
-    diasFuera: number; condicionDevolucion: CondicionDevolucion;
-    observacionItem: string; selected: boolean;
+    idLoanItem: number;
+    idLoan: number;
+    loanNumber: string;
+    borrowerName: string;       // "Prestado a" — el prestatario original
+    borrowerLicense: string;
+    loanDate: string;
+    diasFuera: number;
+    aircraft: string;
+    workOrder: string;
+    loanNotes: string;
+    toolId: number;
+    codigo: string;
+    descripcion: string;
+    pn: string;
+    sn: string;
+    und: string;
+    marca: string;
+    listaContenido: string;
+    fechaCalibracion: string;
+    estadoAlPrestar: string;
+    cantidadPrestada: number;
+    cantidadDevolver: number;
+    condicionDevolucion: CondicionDevolucion;
+    observacionItem: string;
 }
 
 @Component({
     selector: 'app-form-devolucion-dialog',
     standalone: true,
     imports: [
-        CommonModule, ReactiveFormsModule, FormsModule,
-        MatIconModule, MatCheckboxModule, MatDialogModule,
+        CommonModule, DatePipe, ReactiveFormsModule, FormsModule,
+        MatIconModule, MatDialogModule,
         MatSnackBarModule, MatProgressSpinnerModule
     ],
     templateUrl: './form-devolucion-dialog.component.html',
@@ -49,6 +67,7 @@ interface DevolucionItem {
 export class FormDevolucionDialogComponent implements OnInit, OnDestroy {
 
     @ViewChild('confirmDevolucionModal') confirmDevolucionModal!: TemplateRef<any>;
+    @ViewChild('scanInput') scanInputRef!: ElementRef<HTMLInputElement>;
 
     dialogRef         = inject(MatDialogRef<FormDevolucionDialogComponent>);
     private _confirmDialogRef: any = null;
@@ -57,42 +76,38 @@ export class FormDevolucionDialogComponent implements OnInit, OnDestroy {
     private fb            = inject(FormBuilder);
     private snackBar      = inject(MatSnackBar);
     private movementSvc   = inject(MovementService);
-    private prestamoPdfSvc = inject(PrestamoPdfService);
     private destroy$      = new Subject<void>();
 
     isSaving      = false;
-    isSearching   = false;
-    sinResultados = false;
-    loanNotes     = '';
-
-    private _loanNumber   = '';
-    private _loanDate     = '';
-    private _aircraft     = '';
-    private _department   = '';
-    private _deliveredBy  = '';
-    private _specialWork  = false;
+    loadingIndex  = false;
+    indexReady    = false;
 
     devolucionForm!: FormGroup;
-    dataSourceDevolucion: DevolucionItem[] = [];
 
-    private _funcionarioSearch$ = new Subject<string>();
-    funcionariosFiltrados:  any[] = [];
-    funcionarioLoading      = false;
-    showFuncionarioDropdown = false;
-    _funcionarioNombre   = '';
-    _funcionarioLicencia = '';
+    /** Carrito: herramientas escaneadas listas para devolver. */
+    cart: DevolucionItem[] = [];
 
+    // ── Índice de préstamos abiertos: code (mayúsculas) → ítems resueltos ──
+    private _openLoanIndex = new Map<string, DevolucionItem[]>();
+
+    // ── Escaneo ──
+    scanValue = '';
+    scanSuggestions: DevolucionItem[] = [];
+    showScanDropdown = false;
+
+    // ── "Devuelto por" (técnico que físicamente trae la herramienta) ──
+    private _returnedBySearch$ = new Subject<string>();
+    returnedByName        = '';
+    returnedByFuncionarios: any[] = [];
+    returnedByLoading      = false;
+    showReturnedByDropdown = false;
+
+    // ── "Recibido por (Almacén)" ──
     private _responsableSearch$ = new Subject<string>();
     responsablesFiltrados:  any[] = [];
     responsableLoading      = false;
     showResponsableDropdown = false;
-    _responsableNombre = '';
     private _personalCache: any[] = [];
-
-    private todasLasHerramientas: any[] = [];
-    herramientasFiltradas: any[] = [];
-    showHerramientaDropdown    = false;
-    _herramientaSeleccionada: { codigo: string; nombre: string } | null = null;
 
     condiciones: { value: CondicionDevolucion; label: string; bgColor: string; icon: string }[] = [
         { value: 'BUENO',                label: 'Bueno',       bgColor: 'bg-green-500',  icon: 'check_circle'   },
@@ -104,12 +119,24 @@ export class FormDevolucionDialogComponent implements OnInit, OnDestroy {
 
     ngOnInit(): void {
         this.initDevolucionForm();
-        this._setupFuncionarioSearch();
         this._setupResponsableSearch();
-        this._cargarHerramientas();
+        this._setupReturnedBySearch();
+
+        // Prellena "Recibido por (Almacén)" con el usuario logueado (editable).
+        const currentUser = this._currentUserName();
+        if (currentUser) this.devolucionForm.patchValue({ responsableRecibe: currentUser });
+
+        this._buildOpenLoanIndex();
     }
 
     ngOnDestroy(): void { this.destroy$.next(); this.destroy$.complete(); }
+
+    private _currentUserName(): string {
+        try {
+            const auth = JSON.parse(localStorage.getItem('aut') || '{}');
+            return auth.nombre_usuario || '';
+        } catch { return ''; }
+    }
 
     private _localDateStr(d = new Date()): string {
         return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
@@ -119,64 +146,221 @@ export class FormDevolucionDialogComponent implements OnInit, OnDestroy {
         const now = new Date();
         const hora = `${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}`;
         this.devolucionForm = this.fb.group({
-            funcionario:       [''],
-            codigoHerramienta: [''],
-            unidadDestino:     [''],
-            ordenTrabajo:      [''],
             fechaDevolucion:   [this._localDateStr(), Validators.required],
             horaDevolucion:    [hora, Validators.required],
-            responsableRecibe: [''],
+            responsableRecibe: ['', Validators.required],
             observaciones:     ['']
         });
     }
 
-    private _setupFuncionarioSearch(): void {
-        this._funcionarioSearch$.pipe(
+    // ── Índice de préstamos abiertos ───────────────────────────────────────
+    private _buildOpenLoanIndex(): void {
+        this.loadingIndex = true;
+        // 1º los ítems sin devolver (filtro sin comillas → confiable, y el set es
+        //    chico: sólo lo que está prestado). 2º los préstamos de ESOS ítems por
+        //    id (filtro numérico, exacto, sin límite de antigüedad).
+        this.movementSvc.getActiveLoanItems({ filtro_adicional: 'returned = false' })
+            .pipe(
+                catchError(() => of([] as any[])),
+                switchMap((items: any[]) => {
+                    const abiertos = (items || []).filter(it =>
+                        !(it.returned === true || it.returned === 'true' || it.returned === 't'));
+                    const loanIds = [...new Set(abiertos.map(it => Number(it.loan_id)).filter(Boolean))];
+                    if (!loanIds.length) return of({ items: abiertos, loans: [] as any[] });
+                    return this.movementSvc.getActiveLoans({ filtro_adicional: `loa.id_loan IN (${loanIds.join(',')})` })
+                        .pipe(catchError(() => of([] as any[])), map((loans: any[]) => ({ items: abiertos, loans })));
+                }),
+                takeUntil(this.destroy$),
+                finalize(() => { this.loadingIndex = false; this.indexReady = true; setTimeout(() => this._focusScan(), 100); })
+            )
+            .subscribe(({ items, loans }) => {
+                // Sólo préstamos activos e internos (por si el filtro numérico trajo alguno cerrado).
+                const loanById = new Map<string, any>();
+                (loans || [])
+                    .filter((l: any) => l.status === 'active' && (l.loan_type || 'internal') !== 'external')
+                    .forEach((l: any) => loanById.set(String(l.id_loan), l));
+
+                this._openLoanIndex.clear();
+                (items || []).forEach((it: any) => {
+                    const loan = loanById.get(String(it.loan_id));
+                    if (!loan) return;
+                    const codigo = (it.code || '').trim();
+                    if (!codigo) return;
+                    const di = this._toDevolucionItem(loan, it);
+                    const key = codigo.toUpperCase();
+                    const arr = this._openLoanIndex.get(key) || [];
+                    arr.push(di);
+                    this._openLoanIndex.set(key, arr);
+                });
+            });
+    }
+
+    private _toDevolucionItem(loan: any, it: any): DevolucionItem {
+        const loanDate = loan.loan_date || '';
+        const diasFuera = loanDate
+            ? Math.ceil(Math.abs(Date.now() - new Date(loanDate).getTime()) / 86400000)
+            : 0;
+        const qty = Number(it.quantity) || 1;
+        return {
+            idLoanItem:       Number(it.id_loan_item),
+            idLoan:           Number(it.loan_id),
+            loanNumber:       loan.loan_number || `PT-${loan.id_loan}`,
+            borrowerName:     loan.borrower_name || '—',
+            borrowerLicense:  loan.borrower_license || '',
+            loanDate,
+            diasFuera,
+            aircraft:         loan.aircraft || '',
+            workOrder:        loan.work_order_number || '',
+            loanNotes:        (loan.loan_notes || '').trim(),
+            toolId:           Number(it.tool_id) || 0,
+            codigo:           it.code || '',
+            descripcion:      it.description || it.name || '',
+            pn:               it.part_number || '',
+            sn:               it.serial_number || '',
+            und:              it.unit_of_measure || 'UND',
+            marca:            it.brand || '',
+            listaContenido:   it.content_list || '',
+            fechaCalibracion: it.next_calibration_date || '',
+            estadoAlPrestar:  it.condition_on_loan || 'good',
+            cantidadPrestada: qty,
+            cantidadDevolver: qty,
+            condicionDevolucion: 'BUENO',
+            observacionItem:  ''
+        };
+    }
+
+    // ── Escaneo ────────────────────────────────────────────────────────────
+    private _focusScan(): void {
+        try { this.scanInputRef?.nativeElement.focus(); } catch { /* view not ready */ }
+    }
+
+    onScanInput(v: string): void {
+        this.scanValue = v;
+        const q = v.trim().toLowerCase();
+        if (!q) { this.scanSuggestions = []; this.showScanDropdown = false; return; }
+        const vistos = new Set<string>();
+        // rank: 0 = código exacto, 1 = código empieza con, 2 = código contiene, 3 = descripción/PN
+        const ranked: { di: DevolucionItem; rank: number }[] = [];
+        this._openLoanIndex.forEach(arr => arr.forEach(di => {
+            if (this.cart.some(c => c.idLoanItem === di.idLoanItem)) return;
+            if (vistos.has(String(di.idLoanItem))) return;
+            const code = (di.codigo || '').toLowerCase();
+            let rank = -1;
+            if (code === q) rank = 0;
+            else if (code.startsWith(q)) rank = 1;
+            else if (code.includes(q)) rank = 2;
+            else if (`${di.descripcion} ${di.pn} ${di.sn} ${di.borrowerName} ${di.loanNumber}`.toLowerCase().includes(q)) rank = 3;
+            if (rank >= 0) { vistos.add(String(di.idLoanItem)); ranked.push({ di, rank }); }
+        }));
+        ranked.sort((a, b) => a.rank - b.rank || a.di.codigo.localeCompare(b.di.codigo));
+        this.scanSuggestions = ranked.slice(0, 12).map(r => r.di);
+        this.showScanDropdown = this.scanSuggestions.length > 0;
+    }
+
+    hideScanDropdown(): void { setTimeout(() => this.showScanDropdown = false, 150); }
+
+    /** Enter en el input / lector físico wedge: código exacto → agrega directo;
+     *  si no hay exacto pero la búsqueda dejó una sola coincidencia, agrega esa. */
+    scanAndAdd(): void {
+        const code = this.scanValue.trim();
+        if (!code) return;
+        if (!this.indexReady) { this.showMsg('warning', 'Cargando préstamos activos, espere un momento'); return; }
+        const exactas = this._openLoanIndex.get(code.toUpperCase());
+        if (exactas && exactas.length > 0) { this._agregarItem(exactas); return; }
+        if (this.scanSuggestions.length === 1) { this._agregarItem([this.scanSuggestions[0]]); return; }
+        if (this.scanSuggestions.length > 1) {
+            this.showScanDropdown = true;
+            this.showMsg('info', `${this.scanSuggestions.length} coincidencias — elija de la lista`);
+            return;
+        }
+        this.showMsg('warning', `"${code}" no tiene un préstamo abierto para devolver`);
+        this._clearScan();
+    }
+
+    pickScanSuggestion(di: DevolucionItem): void {
+        this.showScanDropdown = false;
+        this._agregarItem([di]);
+    }
+
+    private _agregarItem(candidatos: DevolucionItem[]): void {
+        const libre = candidatos.find(di => !this.cart.some(c => c.idLoanItem === di.idLoanItem));
+        if (!libre) {
+            this.showMsg('info', `"${candidatos[0].codigo}" ya está en la lista de devolución`);
+            this._clearScan();
+            return;
+        }
+        // Copia para no mutar el índice
+        this.cart = [...this.cart, { ...libre }];
+        this.showMsg('success', `"${libre.descripcion}" — prestada a ${libre.borrowerName}`);
+        this._clearScan();
+    }
+
+    private _clearScan(): void {
+        this.scanValue = '';
+        this.scanSuggestions = [];
+        this.showScanDropdown = false;
+        setTimeout(() => this._focusScan(), 50);
+    }
+
+    removeItem(idx: number): void {
+        const it = this.cart[idx];
+        this.cart = this.cart.filter((_, i) => i !== idx);
+        if (it) this.showMsg('info', `"${it.descripcion}" quitada`);
+    }
+
+    // ── "Devuelto por" ─────────────────────────────────────────────────────
+    private _setupReturnedBySearch(): void {
+        this._returnedBySearch$.pipe(
             debounceTime(200), distinctUntilChanged(),
             switchMap(t => {
-                if (t.length < 2) { this.showFuncionarioDropdown = false; return of([]); }
-                this.funcionarioLoading = true;
+                if (t.length < 2) { this.showReturnedByDropdown = false; return of([]); }
+                this.returnedByLoading = true;
                 const q = t.toLowerCase();
                 return this.movementSvc.getPersonal().pipe(
                     map((lista: any[]) => lista
                         .filter(f => [f.nombreCompleto, f.nombre, f.apellido_paterno, f.apellido_materno]
                             .filter(Boolean).join(' ').toLowerCase().includes(q))
                         .slice(0, 10)
-                        .map(f => ({ id: String(f.id_employee || f.id), nombre: f.nombreCompleto || `${f.nombre||''} ${f.apellido_paterno||''}`.trim(), cargo: f.cargo || '', licencia: f.licencia || f.nro_licencia || '' }))
+                        .map(f => ({ id: String(f.id_employee || f.id), nombre: f.nombreCompleto || `${f.nombre||''} ${f.apellido_paterno||''}`.trim(), cargo: f.cargo || '' }))
                     ),
-                    finalize(() => this.funcionarioLoading = false),
+                    finalize(() => this.returnedByLoading = false),
                     catchError(() => of([]))
                 );
             }),
             takeUntil(this.destroy$)
-        ).subscribe(res => { this.funcionariosFiltrados = res || []; this.showFuncionarioDropdown = this.funcionariosFiltrados.length > 0; });
+        ).subscribe(res => { this.returnedByFuncionarios = res || []; this.showReturnedByDropdown = this.returnedByFuncionarios.length > 0; });
     }
 
-    onFuncionarioInput(val: string): void {
-        this.devolucionForm.patchValue({ funcionario: val });
-        this._funcionarioNombre   = '';
-        this._funcionarioLicencia = '';
-        this._funcionarioSearch$.next(val);
+    onReturnedByInput(v: string): void {
+        this.returnedByName = v;
+        this._returnedBySearch$.next(v);
     }
-    selectFuncionario(f: any): void { this._funcionarioNombre = f.nombre; this._funcionarioLicencia = f.licencia; this.devolucionForm.patchValue({ funcionario: f.nombre }); this.showFuncionarioDropdown = false; }
-    hideFuncionarioDropdown(): void { setTimeout(() => this.showFuncionarioDropdown = false, 150); }
+    selectReturnedBy(f: any): void {
+        this.returnedByName = f.nombre;
+        this.showReturnedByDropdown = false;
+    }
+    hideReturnedByDropdown(): void { setTimeout(() => this.showReturnedByDropdown = false, 150); }
 
+    /** Atajo: usar el prestatario del primer ítem del carrito como "devuelto por". */
+    usarPrestatarioComoDevuelve(): void {
+        if (!this.cart.length) return;
+        this.returnedByName = this.cart[0].borrowerName;
+    }
+
+    // ── "Recibido por (Almacén)" ───────────────────────────────────────────
     private _setupResponsableSearch(): void {
-        // Carga personal una sola vez al iniciar
         this.movementSvc.getPersonal().pipe(
             takeUntil(this.destroy$), catchError(() => of([]))
         ).subscribe((lista: any[]) => {
             this._personalCache = (lista || []).map(f => ({
                 id:     String(f.id_employee || f.id),
                 nombre: f.nombreCompleto || `${f.nombre||''} ${f.apellido_paterno||''}`.trim(),
-                cargo:  f.cargo || '',
-                area:   f.area  || f.cargo || ''
+                cargo:  f.cargo || ''
             }));
         });
 
         this._responsableSearch$.pipe(
-            debounceTime(150), distinctUntilChanged(),
-            takeUntil(this.destroy$)
+            debounceTime(150), distinctUntilChanged(), takeUntil(this.destroy$)
         ).subscribe(t => {
             if (t.length < 2) { this.showResponsableDropdown = false; this.responsablesFiltrados = []; return; }
             const q = t.toLowerCase();
@@ -188,173 +372,20 @@ export class FormDevolucionDialogComponent implements OnInit, OnDestroy {
     }
 
     onResponsableInput(val: string): void {
-        this._responsableNombre = val;
         this.devolucionForm.patchValue({ responsableRecibe: val });
         this._responsableSearch$.next(val);
     }
     selectResponsable(r: any): void {
-        this._responsableNombre = r.nombre;
-        this.devolucionForm.patchValue({
-            responsableRecibe: r.nombre,
-            unidadDestino: r.area || r.cargo || this.devolucionForm.get('unidadDestino')?.value || ''
-        });
+        this.devolucionForm.patchValue({ responsableRecibe: r.nombre });
         this.showResponsableDropdown = false;
     }
     hideResponsableDropdown(): void { setTimeout(() => this.showResponsableDropdown = false, 150); }
 
-    // Autocomplete del código de herramienta a devolver. Sin filtro de disponibilidad:
-    // una herramienta en devolución está por definición prestada (stock 0 / status 'in_use',
-    // ver he.ft_prestamo_multiple.sql), así que filtrar por "disponible" la ocultaba siempre
-    // del buscador — el mismo problema que en el buscador de Préstamo Técnico (form-prestamo-
-    // dialog.component.ts). La búsqueda real (realizarConsulta) no depende de esta lista: solo
-    // filtra los ítems de los préstamos activos ya consultados, así que esto es puramente el
-    // helper de sugerencias mientras se escribe.
-    private _cargarHerramientas(): void {
-        this.movementSvc.getHerramientasDisponibles({}).pipe(
-            takeUntil(this.destroy$), catchError(() => of([]))
-        ).subscribe((tools: any[]) => {
-            this.todasLasHerramientas = (tools || [])
-                .map((t: any) => ({
-                    id: t.id_tool ?? t.id, codigo: t.code ?? t.codigo ?? '',
-                    nombre: t.name ?? t.nombre ?? '', pn: t.part_number ?? t.pn ?? ''
-                }));
-        });
+    // ── Ítems del carrito ──────────────────────────────────────────────────
+    hasError(field: string, error: string): boolean {
+        const c = this.devolucionForm.get(field);
+        return c ? c.hasError(error) && c.touched : false;
     }
-
-    onHerramientaInput(val: string): void {
-        this.devolucionForm.patchValue({ codigoHerramienta: val });
-        this._herramientaSeleccionada = null;
-        const term = val.trim().toLowerCase();
-        if (term.length < 2) { this.herramientasFiltradas = []; this.showHerramientaDropdown = false; return; }
-        this.herramientasFiltradas = this.todasLasHerramientas
-            .filter(h => h.codigo.toLowerCase().includes(term) || h.nombre.toLowerCase().includes(term) || h.pn.toLowerCase().includes(term))
-            .slice(0, 12);
-        this.showHerramientaDropdown = this.herramientasFiltradas.length > 0;
-    }
-    selectHerramienta(h: any): void { this._herramientaSeleccionada = { codigo: h.codigo, nombre: h.nombre }; this.devolucionForm.patchValue({ codigoHerramienta: h.codigo }); this.herramientasFiltradas = []; this.showHerramientaDropdown = false; }
-    clearHerramienta(): void { this._herramientaSeleccionada = null; this.devolucionForm.patchValue({ codigoHerramienta: '' }); this.herramientasFiltradas = []; this.showHerramientaDropdown = false; }
-    hideHerramientaDropdown(): void { setTimeout(() => this.showHerramientaDropdown = false, 150); }
-
-    hasError(field: string, error: string): boolean { const c = this.devolucionForm.get(field); return c ? c.hasError(error) && c.touched : false; }
-    isBusquedaValida(): boolean { const f = this.devolucionForm.value; return !!(f.funcionario?.trim() || f.codigoHerramienta?.trim()); }
-
-    realizarConsulta(): void {
-        const nombre       = (this._funcionarioNombre || this.devolucionForm.get('funcionario')?.value || '').trim();
-        const codigoFiltro = (this.devolucionForm.get('codigoHerramienta')?.value || '').trim();
-
-        if (!nombre && !codigoFiltro) { this.showMsg('warning', 'Ingrese técnico o herramienta para buscar'); return; }
-
-        this.isSearching   = true;
-        this.sinResultados = false;
-        this.dataSourceDevolucion = [];
-        this.loanNotes    = '';
-        this._loanNumber  = '';
-        this._loanDate    = '';
-        this._aircraft    = '';
-        this._department  = '';
-        this._deliveredBy = '';
-        this._specialWork = false;
-
-        // Columnas calificadas con loa.* : he.ft_loans_sel hace JOIN a he.tmovements (que
-        // también tiene 'status') → sin el prefijo, "status = ..." es ambiguo en el WHERE.
-        let filtro = `loa.status = 'active' AND loa.loan_type = 'internal'`;
-        if (nombre) {
-            const nombreSafe = nombre.replace(/'/g, "''");
-            // Usar licencia solo si el nombre del form coincide con el seleccionado del dropdown
-            const licSafe = (nombre === this._funcionarioNombre) ? this._funcionarioLicencia.replace(/'/g, "''") : '';
-            filtro += ` AND (loa.borrower_name ILIKE '%${nombreSafe}%'` + (licSafe ? ` OR loa.borrower_license = '${licSafe}'` : '') + `)`;
-        }
-
-        // 1. Primero obtener los préstamos filtrados por técnico
-        // 2. Luego obtener SOLO los ítems de esos préstamos (returned = false)
-        this.movementSvc.getActiveLoans({ filtro_adicional: filtro }).pipe(
-            takeUntil(this.destroy$),
-            switchMap((loans: any[]) => {
-                // Filtro client-side por nombre: garantiza que aunque el backend devuelva
-                // préstamos de más (ej: filtro ILIKE no aplicado), solo se muestran
-                // los del técnico buscado.
-                let loansMatch = loans || [];
-                // Filtro client-side: nombre + solo préstamos aún activos.
-                // Compensa que el backend a veces ignora el filtro ILIKE o status.
-                loansMatch = loansMatch.filter((l: any) => l.status === 'active');
-                if (nombre) {
-                    const q = nombre.toLowerCase();
-                    const lic = (nombre === this._funcionarioNombre) ? this._funcionarioLicencia : '';
-                    loansMatch = loansMatch.filter((l: any) =>
-                        (l.borrower_name || '').toLowerCase().includes(q) ||
-                        (lic && l.borrower_license === lic)
-                    );
-                }
-                if (!loansMatch.length) {
-                    this.sinResultados = true;
-                    return of({ loans: [] as any[], items: [] as any[] });
-                }
-                const loanIds = loansMatch.map((l: any) => l.id_loan).filter(Boolean);
-                const itemsFiltro = `returned = false AND loan_id IN (${loanIds.join(',')})`;
-                return forkJoin({
-                    loans: of(loansMatch),
-                    items: this.movementSvc.getActiveLoanItems({ filtro_adicional: itemsFiltro })
-                });
-            }),
-            finalize(() => this.isSearching = false),
-            takeUntil(this.destroy$)
-        ).subscribe({
-            next: ({ loans, items }: any) => {
-                if (!loans?.length) { this.sinResultados = true; return; }
-                const loan0 = loans[0] || {};
-                this.loanNotes    = (loan0.loan_notes  || loan0.notes || '').trim();
-                this._loanNumber  = (loans as any[]).map((l: any) => l.loan_number).filter(Boolean).join(' / ');
-                this._loanDate    = loan0.loan_date    || '';
-                this._aircraft    = [...new Set((loans as any[]).map((l: any) => l.aircraft).filter(Boolean))].join(' / ');
-                this._department  = [...new Set((loans as any[]).map((l: any) => l.department).filter(Boolean))].join(' / ');
-                this._deliveredBy = loan0.delivered_by_name || '';
-                this._specialWork = (loans as any[]).some((l: any) => !!l.special_work);
-                let resultado: DevolucionItem[] = loans.flatMap((loan: any) => {
-                    const loanItems = (items || []).filter((i: any) => String(i.loan_id) === String(loan.id_loan));
-                    return loanItems.map((item: any) => ({
-                        toolId: String(item.tool_id || ''),
-                        loanItemId: Number(item.id_loan_item) || undefined,
-                        codigo: item.code || '',
-                        imagen: item.image_url || null, descripcion: item.description || item.name || '',
-                        pn: item.part_number || '', sn: item.serial_number || '',
-                        und: item.unit_of_measure || 'UND', marca: item.brand || '',
-                        listaContenido: item.content_list || item.lista_contenido || '',
-                        fechaCalibracion: item.next_calibration_date || item.calibration_date || '',
-                        estadoAlPrestar: item.condition_on_loan || 'BUENO',
-                        fechaPrestamo: loan.loan_date || '', cantidadPrestada: Number(item.quantity) || 1,
-                        cantidadDevolver: Number(item.quantity) || 1, aeronave: loan.aircraft || '',
-                        ordenTrabajo: loan.work_order_number || '',
-                        diasFuera: loan.loan_date ? Math.ceil(Math.abs(new Date().getTime() - new Date(loan.loan_date).getTime()) / 86400000) : 0,
-                        condicionDevolucion: 'BUENO' as CondicionDevolucion, observacionItem: '', selected: false
-                    }));
-                });
-                if (codigoFiltro) {
-                    const q = codigoFiltro.toLowerCase();
-                    resultado = resultado.filter(i =>
-                        i.codigo.toLowerCase().includes(q) ||
-                        i.pn.toLowerCase().includes(q) ||
-                        i.descripcion.toLowerCase().includes(q)
-                    );
-                }
-                if (!resultado.length) { this.sinResultados = true; this.showMsg('info', 'Este técnico no tiene herramientas prestadas'); return; }
-                this.sinResultados = false;
-                this.dataSourceDevolucion = resultado;
-                const ots = [...new Set((loans || []).map((l: any) => l.work_order_number).filter(Boolean))];
-                if (ots.length === 1 && !this.devolucionForm.get('ordenTrabajo')?.value) {
-                    this.devolucionForm.patchValue({ ordenTrabajo: ots[0] });
-                }
-                this.showMsg('success', `${resultado.length} herramienta(s) prestadas encontradas`);
-            },
-            error: (err: any) => this.showMsg('error', 'Error al consultar: ' + (err?.message || ''))
-        });
-    }
-
-    toggleSelDevolucion(item: DevolucionItem): void { item.selected = !item.selected; }
-    toggleAllDevolucion(e: any): void { this.dataSourceDevolucion.forEach(i => i.selected = e.checked); }
-    isAllSelDevolucion(): boolean { return this.dataSourceDevolucion.length > 0 && this.dataSourceDevolucion.every(i => i.selected); }
-    isSomeSelDevolucion(): boolean { return this.dataSourceDevolucion.some(i => i.selected) && !this.isAllSelDevolucion(); }
-    getSelCountDevolucion(): number { return this.dataSourceDevolucion.filter(i => i.selected).length; }
-    getSelDevolucionItems(): DevolucionItem[] { return this.dataSourceDevolucion.filter(i => i.selected); }
 
     private readonly _condicionLabelMap: Record<string, string> = {
         'good': 'ACTIVO', 'new': 'NUEVO', 'excellent': 'EXCELENTE',
@@ -363,124 +394,96 @@ export class FormDevolucionDialogComponent implements OnInit, OnDestroy {
         'bueno': 'ACTIVO', 'nuevo': 'NUEVO', 'en_calibracion': 'EN CALIBRACIÓN',
         'unserviceable': 'NO SERVICEABLE',
     };
-
     getEstadoPrestarLabel(est: string): string {
         return this._condicionLabelMap[(est || '').toLowerCase()] || (est || '—').toUpperCase();
     }
 
     onCondicionChange(item: DevolucionItem): void { if (item.condicionDevolucion === 'BUENO') item.observacionItem = ''; }
     getCondicionIcon(cond: CondicionDevolucion): string { return this.condiciones.find(c => c.value === cond)?.icon || 'help_outline'; }
-    validateCantidad(item: DevolucionItem): void { if (item.cantidadDevolver < 1) item.cantidadDevolver = 1; if (item.cantidadDevolver > item.cantidadPrestada) item.cantidadDevolver = item.cantidadPrestada; }
+    validateCantidad(item: DevolucionItem): void {
+        if (item.cantidadDevolver < 1) item.cantidadDevolver = 1;
+        if (item.cantidadDevolver > item.cantidadPrestada) item.cantidadDevolver = item.cantidadPrestada;
+    }
 
-    private _validateDevolucion(): { valid: boolean; errors: string[] } {
+    private _validate(): { valid: boolean; errors: string[] } {
         const errors: string[] = [];
-        const sel = this.getSelDevolucionItems();
-        if (!sel.length) { errors.push('Seleccione al menos una herramienta'); return { valid: false, errors }; }
-        sel.forEach(i => {
-            if (i.cantidadDevolver <= 0 || i.cantidadDevolver > i.cantidadPrestada) errors.push(`${i.codigo}: Cantidad inválida`);
-            if ((i.condicionDevolucion === 'DAÑADO' || i.condicionDevolucion === 'FALTANTE') && !i.observacionItem.trim()) errors.push(`${i.codigo}: Falta observación`);
+        if (!this.cart.length) { errors.push('Escanee al menos una herramienta'); return { valid: false, errors }; }
+        if (!this.returnedByName.trim()) errors.push('Indique quién devuelve la herramienta');
+        if (!this.devolucionForm.get('responsableRecibe')?.value?.trim()) errors.push('Indique quién recibe en el almacén');
+        this.cart.forEach(i => {
+            if (i.cantidadDevolver <= 0 || i.cantidadDevolver > i.cantidadPrestada) errors.push(`${i.codigo}: cantidad inválida`);
+            if ((i.condicionDevolucion === 'DAÑADO' || i.condicionDevolucion === 'FALTANTE') && !i.observacionItem.trim()) errors.push(`${i.codigo}: falta observación`);
         });
         return { valid: errors.length === 0, errors };
     }
 
     getResumenCondicion(): { condicion: string; cantidad: number; color: string }[] {
         const mapa: Record<string, number> = {};
-        this.getSelDevolucionItems().forEach(i => { mapa[i.condicionDevolucion] = (mapa[i.condicionDevolucion] || 0) + 1; });
+        this.cart.forEach(i => { mapa[i.condicionDevolucion] = (mapa[i.condicionDevolucion] || 0) + 1; });
         return Object.entries(mapa).map(([k, v]) => {
             const cfg = this.condiciones.find(c => c.value === k);
             return { condicion: cfg?.label || k, cantidad: v, color: cfg?.bgColor || '' };
         });
     }
-
-    /* trackBy — getResumenCondicion() arma objetos nuevos en cada llamada;
-       sin esto el *ngFor los recrearía en cada CD (mismo origen del
-       congelamiento de Misceláneos). */
     trackByCondicion = (_: number, r: { condicion: string }): string => r.condicion;
 
+    /** Prestatarios distintos representados en el carrito. */
+    get prestatariosCarrito(): string[] {
+        return [...new Set(this.cart.map(i => i.borrowerName).filter(Boolean))];
+    }
+
     abrirConfirmDevolucion(): void {
-        const val = this._validateDevolucion();
+        const val = this._validate();
         if (!val.valid) { val.errors.forEach(e => this.showMsg('error', e)); return; }
-        if (!this.devolucionForm.get('responsableRecibe')?.value?.trim()) {
-            this.showMsg('error', 'Ingrese quien recibe la herramienta');
-            return;
-        }
         this._confirmDialogRef = this.dialog.open(this.confirmDevolucionModal, {
-            width: '700px', maxWidth: '95vw', panelClass: 'no-padding-dialog', disableClose: true
+            width: 'min(920px, 95vw)', maxWidth: '95vw', panelClass: 'no-padding-dialog', disableClose: true
         });
     }
     cerrarConfirmDevolucion(): void { this._confirmDialogRef?.close(); }
 
     finalizarDevolucion(): void {
-        const val = this._validateDevolucion();
+        const val = this._validate();
         if (!val.valid) { val.errors.forEach(e => this.showMsg('error', e)); return; }
         this.cerrarConfirmDevolucion();
         this.isSaving = true;
-        const sel = this.getSelDevolucionItems();
-        const itemsJson = JSON.stringify(sel.map(i => ({
-            tool_id: Number(i.toolId), id_loan_item: i.loanItemId ?? '',
+        // Pestaña reservada en el gesto (click "Registrar devolución") para la nota MGH-100.
+        const notaWin = this.movementSvc.preAbrirVentanaPdf();
+        const fv = this.devolucionForm.value;
+        const itemsJson = JSON.stringify(this.cart.map(i => ({
+            tool_id: i.toolId, id_loan_item: i.idLoanItem,
             quantity: i.cantidadDevolver, condicion: i.condicionDevolucion,
             unit_of_measure: i.und || '', content_list: i.listaContenido || '',
             estado_al_prestar: i.estadoAlPrestar || '', notes: i.observacionItem || ''
         })));
         this.movementSvc.registrarDevolucionPrestamo({
-            type: 'DEVOLUCION_PRESTAMO_INTERNO', date: this.devolucionForm.value.fechaDevolucion,
-            time: this.devolucionForm.value.horaDevolucion || new Date().toTimeString().slice(0, 5),
-            requested_by_name: this.devolucionForm.value.funcionario,
-            responsible_person: this.devolucionForm.value.responsableRecibe,
-            recipient: this.devolucionForm.value.funcionario,
-            destination_unit: this.devolucionForm.value.unidadDestino || '',
-            work_order_number: this.devolucionForm.value.ordenTrabajo || '',
-            notes: this.devolucionForm.value.observaciones || '', items_json: itemsJson
+            type: 'DEVOLUCION_PRESTAMO_INTERNO',
+            date: fv.fechaDevolucion,
+            time: fv.horaDevolucion || new Date().toTimeString().slice(0, 5),
+            requested_by_name:  this.returnedByName.trim(),
+            responsible_person: fv.responsableRecibe,
+            returned_by_name:   this.returnedByName.trim(),
+            recipient:          this.returnedByName.trim(),
+            work_order_number:  this.cart[0]?.workOrder || '',
+            notes:              fv.observaciones || '',
+            items_json:         itemsJson
         }).pipe(finalize(() => this.isSaving = false), takeUntil(this.destroy$)).subscribe({
             next: (result: any) => {
                 const nro = result?.movement_number || '---';
                 this.showMsg('success', `Devolución registrada: ${nro}`);
-                this._pdfDevolucion(nro, sel, this.devolucionForm.value);
-                this.dataSourceDevolucion = this.dataSourceDevolucion.filter(i => !i.selected || i.cantidadDevolver < i.cantidadPrestada);
+                // Nota PDF real MGH-100 (REV. 2, TCPDF backend): una por cada préstamo tocado.
+                const loanIds = [...new Set(this.cart.map(i => i.idLoan).filter(Boolean))];
+                loanIds.forEach((id, i) => this.movementSvc.verNotaPrestamo(id, 'mgh100', false, i === 0 ? notaWin : null));
+                if (!loanIds.length) { try { notaWin?.close(); } catch { /* noop */ } }
                 this.dialogRef.close({ success: true, movement_number: nro });
             },
-            error: (err: any) => this.showMsg('error', 'Error al registrar: ' + (err?.message || ''))
+            error: (err: any) => { try { notaWin?.close(); } catch { /* noop */ } this.showMsg('error', 'Error al registrar: ' + (err?.message || '')); }
         });
     }
 
-    cerrar(): void { this.dialogRef.close(); }
-
-    private _pdfDevolucion(nro: string, items: DevolucionItem[], fv: any): void {
-        const tecnico      = this._funcionarioNombre  || fv.funcionario    || '---';
-        const licencia     = this._funcionarioLicencia || '---';
-        const responsable  = fv.responsableRecibe     || '---';
-        const fechaPrest   = this._loanDate ? new Date(this._loanDate).toLocaleString('es-BO') : '---';
-        const fechaDev     = (fv.fechaDevolucion ? new Date(fv.fechaDevolucion).toLocaleDateString('es-BO', { day:'2-digit', month:'2-digit', year:'numeric' }) : new Date().toLocaleDateString('es-BO')) + (fv.horaDevolucion ? ' ' + fv.horaDevolucion : '');
-        const nroPrest     = this._loanNumber  || '---';
-        const condLabel: Record<string, string> = { BUENO:'Bueno', DAÑADO:'Dañado', REQUIERE_CALIBRACION:'Req. Calib.', IRREPARABLE:'Irreparable', FALTANTE:'Faltante' };
-        const estadoLabel: Record<string, string> = { good:'SERVICEABLE', new:'NUEVO', excellent:'EXCELENTE', fair:'REGULAR', poor:'MALO', damaged:'DAÑADO' };
-
-        const data: PrestamoPdfData = {
-            nroPrestamo: nroPrest,
-            nroDevolucion: nro,
-            solicitante: tecnico,
-            licencia,
-            matriculaAeronave: this._aircraft || '',
-            fechaHoraPrestamo: fechaPrest,
-            unidadDestino: this._department || fv.unidadDestino || '',
-            ordenTrabajo: fv.ordenTrabajo || '',
-            trabajoEspecial: this._specialWork,
-            observaciones: this.loanNotes || '',
-            entregadoPor: this._deliveredBy || '',
-            devuelto: true,
-            fechaHoraDevolucion: fechaDev,
-            recibioAlmacen: responsable,
-            items: items.map(it => ({
-                codigo: it.codigo, pn: it.pn, sn: it.sn, cantidad: it.cantidadPrestada,
-                unidad: it.und || 'UND', descripcion: it.descripcion,
-                listaContenido: it.listaContenido, fechaCalibracion: it.fechaCalibracion,
-                estado: estadoLabel[(it.estadoAlPrestar || '').toLowerCase()] || it.estadoAlPrestar || '',
-                obs: this.loanNotes || '',
-                condicionDevolucion: condLabel[it.condicionDevolucion] || it.condicionDevolucion,
-                obsDevolucion: it.observacionItem || fv.observaciones || '',
-            })),
-        };
-        this.prestamoPdfSvc.generarPdf(data);
+    cerrar(): void {
+        if (this.cart.length > 0 &&
+            !confirm(`¿Cancelar la devolución? Se perderán los ${this.cart.length} ítem(s) escaneado(s).`)) return;
+        this.dialogRef.close();
     }
 
     private showMsg(type: 'success' | 'error' | 'info' | 'warning', text: string): void {

@@ -1,330 +1,371 @@
-﻿<!-- FORM DIALOG: DEVOLUCIÓN PRÉSTAMO EXTERNO / TERCEROS -->
+<!-- ══════════════════════════════════════════════════════════════════
+     FORM DIALOG: DEVOLUCIÓN PRÉSTAMO EXTERNO / TERCEROS — DPE
+     Flujo tipo "supermercado": se escanea la herramienta, se resuelve su
+     préstamo externo abierto (a qué empresa se prestó) y cae al carrito.
+══════════════════════════════════════════════════════════════════ -->
 <div class="bg-stone-100 dark:bg-[#0F172A] sm:border-2 border-black rounded-2xl flex flex-col overflow-hidden relative w-full"
-     style="box-shadow:6px 6px 0 #000; height:min(560px,90vh)">
+     style="box-shadow:6px 6px 0 #000; height:min(820px,92vh)">
 
-  <!-- Saving overlay -->
-  <div *ngIf="isSaving" class="absolute inset-0 bg-black/60 flex items-center justify-center z-50">
-    <div class="bg-stone-100 dark:bg-slate-800 border-2 border-black rounded-xl shadow-[4px_4px_0_#000] px-8 py-6 flex flex-col items-center gap-4">
-      <div class="w-10 h-10 border-4 border-[#7113CF] border-t-transparent rounded-full animate-spin"></div>
-      <span class="font-black text-black dark:text-white uppercase tracking-widest text-sm animate-pulse">Registrando…</span>
-    </div>
-  </div>
-
-  <!-- Header -->
-  <div class="bg-[#0F172A] px-4 py-3 flex items-center gap-3 shrink-0">
-    <div class="w-8 h-8 rounded bg-[#7113CF] border-2 border-black flex items-center justify-center shadow-[2px_2px_0_#000] shrink-0">
-      <mat-icon class="!text-base text-white">assignment_return</mat-icon>
-    </div>
-    <div>
-      <p class="text-[9px] text-slate-400 font-bold uppercase tracking-[0.15em] leading-none mb-1">Devolución Terceros / Externo</p>
-      <h2 class="text-sm text-white font-black uppercase tracking-tight leading-none">Registrar Devolución · MGH-100</h2>
-    </div>
-    <div class="ml-auto flex items-center gap-2 shrink-0">
-      <span *ngIf="getSelCount() > 0"
-            class="px-2 py-1 bg-[#7113CF] text-white font-black text-[10px] border border-black rounded leading-none">
-        {{ getSelCount() }} seleccionada(s)
-      </span>
-    </div>
-  </div>
-
-  <!-- Body: LEFT search / RIGHT results -->
-  <div class="flex flex-col sm:flex-row flex-1 overflow-hidden min-h-0">
-
-    <!-- LEFT: búsqueda y datos -->
-    <div class="sm:basis-[30%] shrink-0 overflow-y-auto custom-scrollbar border-b-2 sm:border-b-0 sm:border-r-2 border-black/20 dark:border-slate-500">
-      <form [formGroup]="busquedaForm" class="px-4 py-3 flex flex-col gap-3">
-
-        <!-- ── Buscar Empresa ── -->
-        <div class="flex items-center gap-1.5">
-          <mat-icon class="!text-xs text-[#7113CF] shrink-0">search</mat-icon>
-          <span class="text-[9px] font-black uppercase text-stone-400 dark:text-slate-500 tracking-wider whitespace-nowrap">Buscar Empresa</span>
-          <div class="flex-1 h-px bg-stone-200 dark:bg-slate-600 ml-1"></div>
+    <div *ngIf="isSaving" class="absolute inset-0 bg-black/60 flex items-center justify-center z-50">
+        <div class="bg-stone-100 dark:bg-slate-800 border-2 border-black rounded-xl shadow-[4px_4px_0_#000] px-8 py-6 flex flex-col items-center gap-4">
+            <div class="w-10 h-10 border-4 border-[#7113CF] border-t-transparent rounded-full animate-spin"></div>
+            <span class="font-black text-black dark:text-white uppercase tracking-widest text-sm animate-pulse">Registrando…</span>
         </div>
+    </div>
 
-        <!-- Autocomplete empresa -->
-        <div class="relative">
-          <label class="text-[9px] font-black uppercase tracking-tight text-stone-500 dark:text-slate-400 mb-1 block">
-            Empresa / Tercero <span class="text-red-500">*</span>
-          </label>
-          <div class="relative">
-            <input type="text" [value]="busquedaForm.get('empresa')?.value"
-                   (input)="onTerceroInput($any($event.target).value)"
-                   (blur)="hideTercerosDropdown()"
-                   placeholder="Razón social o NIT..."
-                   autocomplete="off"
-                   [ngClass]="hasError('empresa','required') ? 'border-red-500' : 'border-stone-300 dark:border-slate-500 hover:border-stone-400 focus:border-black focus:shadow-[2px_2px_0_#000]'"
-                   class="w-full h-8 pl-8 pr-3 text-xs font-bold bg-white dark:bg-slate-800 dark:text-white border-2 rounded-lg outline-none transition-all placeholder:text-stone-300 dark:placeholder:text-slate-500">
-            <mat-icon class="absolute left-2.5 top-1/2 -translate-y-1/2 text-stone-400 !text-sm !w-[14px] !h-[14px] !leading-[14px] pointer-events-none">storefront</mat-icon>
-            <div *ngIf="isSearching" class="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 border-2 border-[#7113CF] border-t-transparent rounded-full animate-spin"></div>
-          </div>
-          <p *ngIf="hasError('empresa','required')" class="text-[9px] text-red-500 font-black mt-1">Requerido</p>
-          <div *ngIf="showTercerosDropdown && tercerosFiltrados.length > 0"
-               class="absolute left-0 right-0 top-full mt-1 z-50 bg-white dark:bg-slate-800 border-2 border-black rounded-xl shadow-[3px_3px_0_#000] overflow-hidden max-h-40 overflow-y-auto custom-scrollbar divide-y divide-stone-100 dark:divide-slate-700">
-            <button *ngFor="let t of tercerosFiltrados" type="button" (mousedown)="selectTercero(t)"
-                    class="w-full px-3 py-2 text-left hover:bg-purple-50 dark:hover:bg-slate-700 transition-colors">
-              <div class="text-xs font-black text-black dark:text-white uppercase">{{ t.razonSocial }}</div>
-              <div class="text-[10px] font-bold text-stone-400">
-                NIT: {{ t.nit || '—' }}
-                <span *ngIf="t.nombreContacto"> · {{ t.nombreContacto }}</span>
-              </div>
-            </button>
-          </div>
+    <!-- Header -->
+    <div class="bg-[#0F172A] px-4 py-3 flex items-center gap-3 shrink-0">
+        <div class="w-8 h-8 rounded bg-[#7113CF] border-2 border-black flex items-center justify-center shadow-[2px_2px_0_#000] shrink-0">
+            <mat-icon class="!text-base text-white">assignment_return</mat-icon>
         </div>
-
-        <!-- Filtro código -->
         <div>
-          <label class="text-[9px] font-black uppercase tracking-tight text-stone-500 dark:text-slate-400 mb-1 block">Filtrar por Código / P/N (opcional)</label>
-          <div class="relative">
-            <input formControlName="codigoFiltro" type="text" placeholder="Código o P/N..."
-                   class="w-full h-8 pl-8 pr-3 text-xs font-bold bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-500 rounded-lg outline-none transition-all placeholder:text-stone-300 hover:border-stone-400 focus:border-black focus:shadow-[2px_2px_0_#000]">
-            <mat-icon class="absolute left-2.5 top-1/2 -translate-y-1/2 text-stone-400 !text-sm !w-[14px] !h-[14px] !leading-[14px] pointer-events-none">hardware</mat-icon>
-          </div>
+            <p class="text-[9px] text-slate-400 font-bold uppercase tracking-[0.15em] leading-none mb-1">Préstamo Externo / Terceros · MGH-100</p>
+            <h2 class="text-sm text-white font-black uppercase tracking-tight leading-none">Registrar Devolución</h2>
         </div>
-
-        <button type="button" (click)="consultar()" [disabled]="!_terceroSeleccionado || isSearching"
-                class="h-8 flex items-center justify-center gap-2 bg-[#7113CF] text-white font-black text-[10px] border-2 border-black rounded-lg shadow-[2px_2px_0_#000] hover:shadow-none hover:translate-x-[1px] hover:translate-y-[1px] transition-all uppercase disabled:opacity-40 disabled:cursor-not-allowed disabled:translate-x-0 disabled:translate-y-0">
-          <mat-icon class="!text-sm" [class.animate-spin]="isSearching">{{ isSearching ? 'refresh' : 'search' }}</mat-icon>
-          {{ isSearching ? 'Buscando...' : 'Consultar Préstamos' }}
-        </button>
-
-        <!-- ── Datos de la Devolución ── -->
-        <div class="flex items-center gap-1.5 mt-1">
-          <mat-icon class="!text-xs text-[#7113CF] shrink-0">store</mat-icon>
-          <span class="text-[9px] font-black uppercase text-stone-400 dark:text-slate-500 tracking-wider whitespace-nowrap">Datos de la Devolución</span>
-          <div class="flex-1 h-px bg-stone-200 dark:bg-slate-600 ml-1"></div>
-        </div>
-
-        <!-- Recibido por -->
-        <div class="relative">
-          <label class="text-[9px] font-black uppercase tracking-tight text-stone-500 dark:text-slate-400 mb-1 flex justify-between items-center">
-            <span>Recibido por (Almacén) <span class="text-red-500">*</span></span>
-            <div *ngIf="responsableLoading" class="w-3 h-3 border-2 border-[#7113CF] border-t-transparent rounded-full animate-spin"></div>
-          </label>
-          <div class="relative">
-            <input type="text"
-                   [value]="busquedaForm.get('responsableRecibe')?.value"
-                   (input)="onResponsableInput($any($event.target).value)"
-                   (blur)="hideResponsableDropdown()"
-                   placeholder="Buscar funcionario..."
-                   autocomplete="off"
-                   [ngClass]="hasError('responsableRecibe','required') ? 'border-red-500' : 'border-stone-300 dark:border-slate-500 hover:border-stone-400 focus:border-black focus:shadow-[2px_2px_0_#000]'"
-                   class="w-full h-8 pl-8 pr-3 text-xs font-bold bg-white dark:bg-slate-800 dark:text-white border-2 rounded-lg outline-none transition-all placeholder:text-stone-300 dark:placeholder:text-slate-500">
-            <mat-icon class="absolute left-2.5 top-1/2 -translate-y-1/2 text-stone-400 !text-sm !w-[14px] !h-[14px] !leading-[14px] pointer-events-none">person_pin</mat-icon>
-          </div>
-          <p *ngIf="hasError('responsableRecibe','required')" class="text-[9px] text-red-500 font-black mt-1">Requerido</p>
-          <div *ngIf="showResponsableDropdown && responsablesFiltrados.length > 0"
-               class="absolute left-0 right-0 top-full mt-1 z-50 bg-white dark:bg-slate-800 border-2 border-black rounded-xl shadow-[3px_3px_0_#000] overflow-hidden max-h-40 overflow-y-auto custom-scrollbar divide-y divide-stone-100 dark:divide-slate-700">
-            <button *ngFor="let r of responsablesFiltrados" type="button" (mousedown)="selectResponsable(r)"
-                    class="w-full px-3 py-2 text-left hover:bg-purple-50 dark:hover:bg-slate-700 transition-colors">
-              <div class="text-xs font-black text-black dark:text-white uppercase">{{ r.nombre }}</div>
-              <div class="text-[10px] font-bold text-stone-400 uppercase tracking-tight">{{ r.cargo }}</div>
-            </button>
-          </div>
-        </div>
-
-        <!-- Fecha + Hora -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
-          <div>
-            <label class="text-[9px] font-black uppercase tracking-tight text-stone-500 dark:text-slate-400 mb-1 block">Fecha Dev. <span class="text-red-500">*</span></label>
-            <input formControlName="fechaDevolucion" type="date"
-                   class="w-full h-8 text-xs font-bold bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-500 rounded-lg px-2.5 outline-none transition-all focus:border-black focus:shadow-[2px_2px_0_#000]">
-          </div>
-          <div>
-            <label class="text-[9px] font-black uppercase tracking-tight text-stone-500 dark:text-slate-400 mb-1 block">Hora <span class="text-red-500">*</span></label>
-            <input formControlName="horaDevolucion" type="time"
-                   class="w-full h-8 text-xs font-bold bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-500 rounded-lg px-2.5 outline-none transition-all focus:border-black focus:shadow-[2px_2px_0_#000]">
-          </div>
-        </div>
-
-        <!-- Observaciones -->
-        <div>
-          <label class="text-[9px] font-black uppercase tracking-tight text-stone-500 dark:text-slate-400 mb-1 block">Observaciones</label>
-          <textarea formControlName="observaciones" rows="2" placeholder="Notas generales…"
-                    class="w-full text-xs font-bold bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-500 rounded-lg px-3 py-2 outline-none transition-all placeholder:text-stone-300 hover:border-stone-400 focus:border-black focus:shadow-[2px_2px_0_#000] resize-none"></textarea>
-        </div>
-
-      </form>
-    </div>
-
-    <!-- RIGHT: items -->
-    <div class="flex-1 min-h-0 flex flex-col overflow-hidden">
-
-      <!-- Select all bar -->
-      <div *ngIf="dataSource.length > 0"
-           class="border-b-2 border-black/20 dark:border-slate-500 px-4 py-2 flex items-center gap-3 shrink-0">
-        <mat-checkbox (change)="toggleAll($event)" [checked]="isAllSel()" [indeterminate]="isSomeSel()"></mat-checkbox>
-        <span class="text-[9px] font-black uppercase text-stone-500 dark:text-slate-300">
-          {{ dataSource.length }} herramienta(s) · {{ getSelCount() }} seleccionada(s)
+        <span *ngIf="cart.length > 0" class="ml-auto px-2 py-1 bg-[#7113CF] text-white font-black text-[10px] border border-black rounded leading-none shrink-0">
+            {{ cart.length }} ítem{{ cart.length !== 1 ? 's' : '' }}
         </span>
-      </div>
+    </div>
 
-      <!-- Items table -->
-      <div class="flex-1 overflow-y-auto custom-scrollbar">
+    <!-- Body: LEFT (Datos) / RIGHT (Herramientas) -->
+    <div class="flex flex-col sm:flex-row flex-1 overflow-hidden min-h-0">
 
-        <div *ngIf="dataSource.length === 0"
-             class="flex flex-col items-center justify-center gap-3 h-full py-10 text-center px-4">
-          <mat-icon class="!text-5xl text-stone-300 dark:text-slate-600">assignment_return</mat-icon>
-          <p class="text-sm font-black uppercase text-stone-400 dark:text-slate-500">
-            {{ _terceroSeleccionado ? 'Haz clic en "Consultar Préstamos"' : 'Selecciona una empresa y consulta' }}
-          </p>
+        <!-- ═══════════ LEFT: DATOS ═══════════ -->
+        <div class="sm:basis-[340px] sm:max-w-[380px] shrink-0 overflow-y-auto custom-scrollbar border-b-2 sm:border-b-0 sm:border-r-2 border-black/20 dark:border-slate-500">
+            <form [formGroup]="devForm" class="px-4 py-3 flex flex-col gap-3">
+
+                <div class="flex items-center gap-1.5">
+                    <mat-icon class="!text-xs text-[#7113CF] shrink-0">badge</mat-icon>
+                    <span class="text-[9px] font-black uppercase text-stone-400 dark:text-slate-500 tracking-wider whitespace-nowrap">Datos de la Devolución</span>
+                    <div class="flex-1 h-px bg-stone-200 dark:bg-slate-600 ml-1"></div>
+                </div>
+
+                <!-- Devuelto por -->
+                <div class="relative">
+                    <label class="text-[9px] font-black uppercase tracking-tight text-stone-500 dark:text-slate-400 mb-1 flex justify-between items-center">
+                        <span>Devuelto por <span class="text-red-500">*</span></span>
+                        <div *ngIf="returnedByLoading" class="w-3 h-3 border-2 border-[#7113CF] border-t-transparent rounded-full animate-spin"></div>
+                    </label>
+                    <div class="relative">
+                        <input type="text" [value]="returnedByName"
+                               (input)="onReturnedByInput($any($event.target).value)"
+                               (focus)="onReturnedByInput(returnedByName)"
+                               (blur)="hideReturnedByDropdown()"
+                               placeholder="Empresa / cliente que devuelve..."
+                               class="w-full h-8 pl-8 pr-3 text-xs font-bold bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-500 rounded-lg outline-none transition-all placeholder:text-stone-300 hover:border-stone-400 focus:border-black focus:shadow-[2px_2px_0_#000]">
+                        <mat-icon class="absolute left-2.5 top-1/2 -translate-y-1/2 text-stone-400 !text-sm !w-[14px] !h-[14px] !leading-[14px] pointer-events-none">domain</mat-icon>
+                    </div>
+                    <p class="text-[9px] text-stone-400 mt-1 leading-snug">
+                        Se busca en el catálogo de Clientes / Terceros. Puede escribir un representante a mano.
+                        <button type="button" *ngIf="cart.length > 0" (click)="usarEmpresaComoDevuelve()"
+                                class="text-[#7113CF] dark:text-purple-400 font-bold underline">usar empresa del préstamo</button>
+                    </p>
+                    <div *ngIf="showReturnedByDropdown && returnedByFuncionarios.length > 0"
+                         class="absolute left-0 right-0 top-full mt-1 z-50 bg-white dark:bg-slate-800 border-2 border-black rounded-xl overflow-hidden max-h-40 overflow-y-auto divide-y divide-stone-100 dark:divide-slate-700"
+                         style="box-shadow: 4px 4px 0 #000">
+                        <button *ngFor="let f of returnedByFuncionarios" type="button" (mousedown)="selectReturnedBy(f)"
+                                class="w-full px-3 py-2 text-left hover:bg-purple-50 dark:hover:bg-slate-700 transition-colors">
+                            <div class="font-black text-xs text-black dark:text-white uppercase">{{ f.nombre }}</div>
+                            <div class="text-[10px] text-stone-400 dark:text-slate-400">{{ f.cargo }}</div>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Recibido por (Almacén) -->
+                <div class="relative">
+                    <label class="text-[9px] font-black uppercase tracking-tight text-stone-500 dark:text-slate-400 mb-1 flex justify-between items-center">
+                        <span>Recibido por (Almacén) <span class="text-red-500">*</span></span>
+                        <div *ngIf="responsableLoading" class="w-3 h-3 border-2 border-[#7113CF] border-t-transparent rounded-full animate-spin"></div>
+                    </label>
+                    <div class="relative">
+                        <input type="text" [value]="devForm.get('responsableRecibe')?.value"
+                               (input)="onResponsableInput($any($event.target).value)"
+                               (blur)="hideResponsableDropdown()"
+                               placeholder="Nombre del almacenero..."
+                               class="w-full h-8 pl-8 pr-3 text-xs font-bold bg-white dark:bg-slate-800 dark:text-white border-2 rounded-lg outline-none transition-all placeholder:text-stone-300"
+                               [ngClass]="hasError('responsableRecibe','required') ? 'border-red-400' : 'border-stone-300 dark:border-slate-500 hover:border-stone-400 focus:border-black focus:shadow-[2px_2px_0_#000]'">
+                        <mat-icon class="absolute left-2.5 top-1/2 -translate-y-1/2 text-stone-400 !text-sm !w-[14px] !h-[14px] !leading-[14px] pointer-events-none">manage_accounts</mat-icon>
+                    </div>
+                    <div *ngIf="showResponsableDropdown && responsablesFiltrados.length > 0"
+                         class="absolute left-0 right-0 top-full mt-1 z-50 bg-white dark:bg-slate-800 border-2 border-black rounded-xl overflow-hidden max-h-40 overflow-y-auto divide-y divide-stone-100 dark:divide-slate-700"
+                         style="box-shadow: 4px 4px 0 #000">
+                        <button *ngFor="let r of responsablesFiltrados" type="button" (mousedown)="selectResponsable(r)"
+                                class="w-full px-3 py-2 text-left hover:bg-green-50 dark:hover:bg-slate-700 transition-colors">
+                            <div class="font-black text-xs text-black dark:text-white uppercase">{{ r.nombre }}</div>
+                            <div class="text-[10px] text-stone-400 dark:text-slate-400">{{ r.cargo }}</div>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Fecha + Hora -->
+                <div class="grid grid-cols-2 gap-2">
+                    <div>
+                        <label class="text-[9px] font-black uppercase tracking-tight text-stone-500 dark:text-slate-400 mb-1 block">Fecha <span class="text-red-500">*</span></label>
+                        <input formControlName="fechaDevolucion" type="date"
+                               class="w-full h-8 text-xs font-bold bg-white dark:bg-slate-800 dark:text-white border-2 rounded-lg px-2.5 outline-none transition-all"
+                               [ngClass]="hasError('fechaDevolucion','required') ? 'border-red-400' : 'border-stone-300 dark:border-slate-500 hover:border-stone-400 focus:border-black focus:shadow-[2px_2px_0_#000]'">
+                    </div>
+                    <div>
+                        <label class="text-[9px] font-black uppercase tracking-tight text-stone-500 dark:text-slate-400 mb-1 block">Hora <span class="text-red-500">*</span></label>
+                        <input formControlName="horaDevolucion" type="time"
+                               class="w-full h-8 text-xs font-bold bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-500 rounded-lg px-2.5 outline-none transition-all hover:border-stone-400 focus:border-black focus:shadow-[2px_2px_0_#000]">
+                    </div>
+                </div>
+
+                <!-- Empresas del carrito -->
+                <div *ngIf="empresasCarrito.length > 0" class="bg-purple-50 dark:bg-purple-900/20 border-2 border-purple-300 dark:border-purple-700 rounded-lg px-3 py-2">
+                    <label class="text-[9px] font-black uppercase tracking-tight text-purple-700 dark:text-purple-300 mb-1 flex items-center gap-1">
+                        <mat-icon class="!text-xs">business</mat-icon> Prestado a
+                    </label>
+                    <div class="flex flex-wrap gap-1">
+                        <span *ngFor="let p of empresasCarrito"
+                              class="text-[10px] font-black text-purple-900 dark:text-purple-100 bg-purple-100 dark:bg-purple-900/40 px-2 py-0.5 rounded border border-purple-300 dark:border-purple-700 uppercase">{{ p }}</span>
+                    </div>
+                </div>
+
+                <!-- Notas de Devolución -->
+                <div>
+                    <label class="text-[9px] font-black uppercase tracking-tight text-stone-500 dark:text-slate-400 mb-1 block">Notas de Devolución</label>
+                    <textarea formControlName="observaciones" rows="2"
+                              class="w-full text-xs font-bold bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-500 rounded-lg px-3 py-2 outline-none transition-all resize-none hover:border-stone-400 focus:border-black focus:shadow-[2px_2px_0_#000]"></textarea>
+                </div>
+            </form>
         </div>
 
-        <table *ngIf="dataSource.length > 0" class="w-full min-w-[640px]">
-          <thead class="bg-stone-100 dark:bg-slate-700 border-b-2 border-black/20 sticky top-0">
-            <tr class="text-left text-[10px] font-black uppercase tracking-wider text-stone-500 dark:text-slate-300">
-              <th class="px-3 py-2 w-8"></th>
-              <th class="px-3 py-2">Código</th>
-              <th class="px-3 py-2 min-w-[110px]">Descripción</th>
-              <th class="px-3 py-2">N° Nota</th>
-              <th class="px-3 py-2 text-center">Días</th>
-              <th class="px-3 py-2 text-center w-12">Cant.</th>
-              <th class="px-3 py-2 min-w-[220px]">Condición</th>
-              <th class="px-3 py-2 min-w-[100px]">Obs. Ítem</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr *ngFor="let item of dataSource"
-                class="border-b border-stone-100 dark:border-slate-700 transition-colors"
-                [ngClass]="item.selected ? 'bg-purple-50 dark:bg-purple-900/20' : 'hover:bg-stone-50 dark:hover:bg-slate-700/50'">
+        <!-- ═══════════ RIGHT: HERRAMIENTAS ═══════════ -->
+        <div class="flex-1 min-h-0 flex flex-col overflow-hidden">
 
-              <td class="px-3 py-2.5" (click)="$event.stopPropagation()">
-                <mat-checkbox [checked]="item.selected" (change)="toggleSel(item)"></mat-checkbox>
-              </td>
-
-              <td class="px-3 py-2.5">
-                <span class="font-mono text-[11px] font-black text-black dark:text-white">{{ item.codigo }}</span>
-                <p class="font-mono text-[10px] text-stone-400 mt-0.5">{{ item.pn || '—' }}</p>
-              </td>
-
-              <td class="px-3 py-2.5 text-xs font-bold text-black dark:text-white max-w-[130px] truncate" [title]="item.descripcion">{{ item.descripcion }}</td>
-
-              <td class="px-3 py-2.5">
-                <span class="font-mono text-[10px] font-black text-stone-600 dark:text-slate-300">{{ item.nroNotaSalida }}</span>
-                <p class="text-[10px] text-stone-400">{{ item.fechaSalida | date:'dd/MM/yy' }}</p>
-              </td>
-
-              <td class="px-3 py-2.5 text-center">
-                <span class="text-xs font-black text-black dark:text-white">{{ item.diasFuera }}d</span>
-              </td>
-
-              <td class="px-3 py-2.5 text-center">
-                <span class="text-sm font-black text-black dark:text-white">{{ item.cantidad }}</span>
-              </td>
-
-              <td class="px-3 py-2.5" (click)="$event.stopPropagation()">
-                <div class="flex flex-wrap gap-0.5">
-                  <button *ngFor="let c of condiciones"
-                          (click)="updateCondicion(item, c.value)"
-                          class="px-1.5 py-px text-[8px] font-black uppercase border-2 rounded transition-all"
-                          [ngClass]="item.condicionDevolucion === c.value
-                              ? 'border-black bg-white dark:bg-slate-700 shadow-[1px_1px_0_#000] text-black dark:text-white'
-                              : 'border-stone-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-stone-400 dark:text-slate-500 hover:border-stone-400'">
-                    {{ c.label }}
-                  </button>
+            <div class="px-4 py-3 bg-stone-200/60 dark:bg-slate-800/60 border-b-2 border-black/20 dark:border-slate-500 shrink-0">
+                <label class="text-[9px] font-black uppercase tracking-tight text-stone-500 dark:text-slate-400 mb-1 flex items-center gap-1.5">
+                    <mat-icon class="!text-sm text-[#7113CF]">qr_code_scanner</mat-icon>
+                    Escanear QR o buscar por código
+                    <span *ngIf="loadingIndex" class="text-stone-400 font-normal normal-case ml-1">— cargando préstamos…</span>
+                </label>
+                <div class="relative">
+                    <input #scanInput type="text" [value]="scanValue"
+                           (input)="onScanInput($any($event.target).value)"
+                           (keydown.enter)="scanAndAdd()"
+                           (blur)="hideScanDropdown()"
+                           [disabled]="loadingIndex"
+                           placeholder="Escanee, o escriba código / descripción / empresa"
+                           autocomplete="off"
+                           class="w-full h-9 pl-9 pr-3 text-sm font-bold bg-white dark:bg-slate-800 dark:text-white border-2 border-black rounded-lg outline-none transition-all placeholder:text-stone-300 focus:shadow-[2px_2px_0_#000] disabled:opacity-50">
+                    <mat-icon class="absolute left-2.5 top-1/2 -translate-y-1/2 text-stone-400 !text-base pointer-events-none">hardware</mat-icon>
+                    <div *ngIf="showScanDropdown && scanSuggestions.length > 0"
+                         class="absolute left-0 right-0 top-full mt-1 z-50 bg-white dark:bg-slate-800 border-2 border-black rounded-xl overflow-hidden max-h-52 overflow-y-auto divide-y divide-stone-100 dark:divide-slate-700"
+                         style="box-shadow: 4px 4px 0 #000">
+                        <button *ngFor="let s of scanSuggestions" type="button" (mousedown)="pickScanSuggestion(s)"
+                                class="w-full px-3 py-2 text-left hover:bg-purple-50 dark:hover:bg-slate-700 transition-colors">
+                            <div class="font-mono font-black text-xs text-[#7113CF] dark:text-purple-400 uppercase">{{ s.codigo }}</div>
+                            <div class="text-[10px] text-stone-500 dark:text-slate-300 truncate">{{ s.descripcion }}</div>
+                            <div class="text-[10px] text-purple-700 dark:text-purple-400 font-bold">Prestado a: {{ s.empresa }} · {{ s.loanNumber }}</div>
+                        </button>
+                    </div>
                 </div>
-              </td>
+            </div>
 
-              <td class="px-3 py-2.5" (click)="$event.stopPropagation()">
-                <input type="text" [(ngModel)]="item.observaciones" placeholder="Opcional"
-                       class="w-full h-8 px-2.5 text-[10px] font-bold border-2 border-stone-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 dark:text-white focus:outline-none focus:border-black transition-all placeholder:text-stone-300">
-              </td>
+            <!-- Carrito vacío -->
+            <div *ngIf="cart.length === 0" class="flex-1 flex flex-col items-center justify-center gap-3 px-6 text-center">
+                <div class="w-16 h-16 rounded-2xl bg-stone-100 dark:bg-slate-800 border-2 border-black flex items-center justify-center shadow-[3px_3px_0_#000]">
+                    <mat-icon class="!text-3xl text-stone-400 dark:text-slate-500">qr_code_scanner</mat-icon>
+                </div>
+                <div>
+                    <p class="text-sm font-black text-black dark:text-white uppercase tracking-tight">Escanee para empezar</p>
+                    <p class="text-xs text-stone-400 dark:text-slate-500 mt-1.5">Cada herramienta escaneada muestra a qué empresa se le prestó y su nota.</p>
+                </div>
+            </div>
 
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-  </div>
+            <!-- Tabla del carrito -->
+            <div *ngIf="cart.length > 0" class="flex-1 overflow-auto custom-scrollbar bg-gray-50 dark:bg-[#0F172AFF]">
+                <table class="w-full min-w-[640px]">
+                    <thead class="bg-gray-100 dark:bg-slate-800 border-b-2 border-black sticky top-0 z-10">
+                    <tr class="text-left text-[10px] font-black uppercase tracking-wider text-black dark:text-white">
+                        <th class="px-3 py-2 w-8"></th>
+                        <th class="px-3 py-2 min-w-[230px]">Herramienta</th>
+                        <th class="px-3 py-2 min-w-[150px]">Prestado a</th>
+                        <th class="px-3 py-2 text-center w-20">Cant.</th>
+                        <th class="px-3 py-2 min-w-[170px]">Condición Devolución</th>
+                        <th class="px-3 py-2 min-w-[130px]">Observación</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr *ngFor="let item of cart; let idx = index"
+                        class="border-b border-gray-200 dark:border-slate-700 transition-all animate-fadeIn align-top"
+                        [ngClass]="idx%2===0 ? 'bg-white dark:bg-slate-800/60' : 'bg-gray-50 dark:bg-slate-800/40'">
 
-  <!-- Footer -->
-  <div class="border-t-2 border-black bg-stone-200 dark:bg-slate-800 px-4 py-2 flex items-center justify-between shrink-0">
-    <div class="flex items-center gap-2 shrink-0">
-      <button type="button" (click)="cerrar()"
-              class="flex items-center gap-1 px-3 py-1.5 bg-[#FF1414] text-white font-black text-[10px] uppercase border-2 border-black rounded-lg shadow-[2px_2px_0_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all">
-        <mat-icon class="!text-xs">close</mat-icon>
-        Cancelar
-      </button>
+                        <td class="px-3 py-3">
+                            <button type="button" (click)="removeItem(idx)" class="text-stone-400 hover:text-red-600 transition-colors">
+                                <mat-icon class="!text-base">delete</mat-icon>
+                            </button>
+                        </td>
+
+                        <td class="px-3 py-3">
+                            <div class="flex items-center gap-2 flex-wrap">
+                                <span class="font-mono font-black text-xs text-black dark:text-white">{{ item.codigo }}</span>
+                                <span class="text-[9px] font-black uppercase text-stone-600 dark:text-slate-300 bg-stone-100 dark:bg-slate-700 border border-stone-300 dark:border-slate-600 px-1.5 py-0.5 rounded">{{ getEstadoPrestarLabel(item.estadoAlPrestar) }}</span>
+                            </div>
+                            <div class="text-xs font-bold text-black dark:text-white mt-0.5">{{ item.descripcion }}</div>
+                            <div class="text-[10px] text-stone-400 font-mono mt-0.5">P/N: {{ item.pn || '—' }} · S/N: {{ item.sn || '—' }}<span *ngIf="item.marca"> · {{ item.marca }}</span></div>
+                            <div class="text-[10px] text-stone-400 mt-0.5">
+                                <span *ngIf="item.fechaCalibracion">Calib: {{ item.fechaCalibracion }}</span>
+                                <span *ngIf="item.listaContenido" [title]="item.listaContenido"> · Lista: {{ item.listaContenido }}</span>
+                            </div>
+                        </td>
+
+                        <td class="px-3 py-3">
+                            <div class="text-xs font-black text-purple-800 dark:text-purple-300 uppercase">{{ item.empresa }}</div>
+                            <div class="text-[10px] text-stone-400 font-mono">{{ item.loanNumber }}</div>
+                            <div class="text-[10px] text-stone-400">{{ item.loanDate | date:'dd/MM/yy' }} · {{ item.diasFuera }}d fuera</div>
+                        </td>
+
+                        <td class="px-3 py-3 text-center">
+                            <span class="text-[10px] text-stone-400 font-bold block mb-1">Prest: {{ item.cantidadPrestada }}</span>
+                            <input type="number" [(ngModel)]="item.cantidadDevolver" (change)="validateCantidad(item)"
+                                   [min]="1" [max]="item.cantidadPrestada"
+                                   class="w-16 h-8 px-1 text-sm font-black text-center border-2 border-black rounded-lg bg-white dark:bg-slate-700 dark:text-white focus:outline-none focus:bg-purple-50 transition-all">
+                        </td>
+
+                        <td class="px-3 py-3">
+                            <div class="flex flex-wrap gap-1">
+                                <button *ngFor="let c of condiciones" type="button" (click)="item.condicionDevolucion = c.value"
+                                        class="px-2 py-1 text-[9px] font-black uppercase border-2 rounded transition-all"
+                                        [ngClass]="item.condicionDevolucion === c.value ? 'border-black bg-white dark:bg-slate-700 shadow-[1px_1px_0_#000] text-black dark:text-white' : 'border-stone-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-stone-400 dark:text-slate-500 hover:border-stone-400'">
+                                    {{ c.label }}
+                                </button>
+                            </div>
+                        </td>
+
+                        <td class="px-3 py-3">
+                            <input type="text" [(ngModel)]="item.observacionItem"
+                                   [placeholder]="(item.condicionDevolucion === 'PARCIAL' || item.condicionDevolucion === 'NO_REPARABLE') ? 'Requerido *' : 'Opcional'"
+                                   class="w-full h-8 px-2.5 text-[10px] font-bold border-2 rounded-lg bg-white dark:bg-slate-700 dark:text-white focus:outline-none focus:bg-purple-50 transition-all"
+                                   [ngClass]="(item.condicionDevolucion === 'PARCIAL' || item.condicionDevolucion === 'NO_REPARABLE') && !item.observacionItem ? 'border-red-500 animate-pulse-border' : 'border-black'">
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
     </div>
-    <div class="flex items-center gap-2 shrink-0">
-      <span class="text-[10px] font-black text-black dark:text-white shrink-0">{{ getSelCount() }} herramienta(s) seleccionada(s)</span>
-      <span *ngIf="_terceroSeleccionado" class="text-[9px] text-stone-500 dark:text-slate-400 font-bold truncate hidden sm:block max-w-[120px]">
-        → {{ _terceroSeleccionado?.razonSocial }}
-      </span>
-      <button type="button" (click)="abrirConfirm()" [disabled]="getSelCount() === 0"
-              class="flex items-center gap-1 px-3 py-1.5 bg-black text-white font-black text-[10px] uppercase border-2 border-black rounded-lg shadow-[2px_2px_0_#7113CF] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all disabled:opacity-40 disabled:cursor-not-allowed disabled:translate-x-0 disabled:translate-y-0 disabled:shadow-none">
-        <mat-icon class="!text-xs">assignment_return</mat-icon>
-        Registrar Devolución
-      </button>
+
+    <!-- Footer -->
+    <div class="border-t-2 border-black bg-stone-200 dark:bg-slate-800 px-4 py-2 flex items-center justify-between shrink-0">
+        <div class="flex items-center gap-2 min-w-0 overflow-hidden shrink-0">
+            <span class="text-[10px] font-black text-black dark:text-white shrink-0">{{ cart.length }} ítem(s)</span>
+            <span *ngIf="returnedByName" class="text-[9px] text-stone-500 dark:text-slate-400 font-bold truncate hidden sm:block max-w-[140px]">
+                Devuelve: {{ returnedByName }}
+            </span>
+        </div>
+        <div class="flex items-center gap-2 shrink-0">
+            <button type="button" (click)="cerrar()"
+                    class="flex items-center gap-1 px-3 py-1.5 bg-[#FF1414] text-white font-black text-[10px] uppercase border-2 border-black rounded-lg shadow-[2px_2px_0_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all">
+                <mat-icon class="!text-xs">close</mat-icon>Cancelar
+            </button>
+            <button type="button" (click)="abrirConfirm()" [disabled]="cart.length === 0"
+                    class="flex items-center gap-1 px-3 py-1.5 bg-[#7113CF] text-white font-black text-[10px] uppercase border-2 border-black rounded-lg shadow-[2px_2px_0_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all disabled:opacity-40 disabled:cursor-not-allowed disabled:translate-x-0 disabled:shadow-none">
+                <mat-icon class="!text-xs">assignment_return</mat-icon>
+                Registrar devolución
+            </button>
+        </div>
     </div>
-  </div>
 </div>
 
-<!-- MODAL: CONFIRMAR DEVOLUCIÓN -->
+<!-- MODAL: CONFIRMAR DEVOLUCIÓN EXTERNA -->
 <ng-template #confirmDevModal>
-  <div class="bg-stone-100 dark:bg-[#0F172A] border-2 border-black overflow-hidden flex flex-col"
-       style="width:650px; max-width:95vw; max-height:90vh">
+    <div class="bg-stone-100 dark:bg-[#0F172A] border-2 border-black overflow-hidden flex flex-col"
+         style="width:min(920px,95vw); height:min(600px,88vh)">
 
-    <div class="bg-[#0F172A] px-4 py-3 flex items-center gap-3 shrink-0">
-      <div class="w-8 h-8 rounded bg-[#7113CF] border-2 border-black flex items-center justify-center shadow-[2px_2px_0_#000] shrink-0">
-        <mat-icon class="!text-base text-white">assignment_return</mat-icon>
-      </div>
-      <div>
-        <p class="text-[9px] text-slate-400 font-bold uppercase tracking-[0.15em] leading-none mb-1">Terceros</p>
-        <h2 class="text-sm text-white font-black uppercase tracking-tight leading-none">Confirmar Devolución</h2>
-      </div>
+        <div class="bg-[#0F172A] px-4 py-3 flex items-center gap-3 shrink-0">
+            <div class="w-8 h-8 rounded bg-[#7113CF] border-2 border-black flex items-center justify-center shadow-[2px_2px_0_#000] shrink-0">
+                <mat-icon class="!text-base text-white">assignment_return</mat-icon>
+            </div>
+            <div>
+                <p class="text-[9px] text-slate-400 font-bold uppercase tracking-[0.15em] leading-none mb-1">Devolución Terceros · MGH-100</p>
+                <h2 class="text-sm text-white font-black uppercase tracking-tight leading-none">Confirmar Devolución</h2>
+            </div>
+            <span class="ml-auto px-2 py-1 bg-[#7113CF] text-white font-black text-[10px] border border-black rounded leading-none shrink-0">
+                {{ cart.length }} ítem{{ cart.length !== 1 ? 's' : '' }}
+            </span>
+        </div>
+
+        <div class="flex flex-col sm:flex-row flex-1 overflow-hidden min-h-0">
+
+            <div class="sm:basis-[320px] sm:max-w-[360px] shrink-0 overflow-y-auto custom-scrollbar border-b-2 sm:border-b-0 sm:border-r-2 border-black/20 dark:border-slate-600 px-4 py-4 flex flex-col gap-3">
+                <div class="bg-purple-50 dark:bg-purple-900/20 border-2 border-purple-300 dark:border-purple-700 rounded-xl p-3">
+                    <p class="text-[9px] font-black uppercase tracking-[0.15em] text-purple-500 dark:text-purple-400 mb-1">Devuelto por</p>
+                    <div class="font-black text-sm text-black dark:text-white">{{ returnedByName }}</div>
+                    <div class="flex flex-col gap-0.5 text-xs font-bold text-stone-500 dark:text-slate-300 mt-1">
+                        <span>Fecha: {{ devForm.get('fechaDevolucion')?.value }} {{ devForm.get('horaDevolucion')?.value }}</span>
+                        <span>Recibe: {{ devForm.get('responsableRecibe')?.value }}</span>
+                        <span>Prestado a: {{ empresasCarrito.join(', ') }}</span>
+                        <span *ngIf="devForm.get('observaciones')?.value">Obs: {{ devForm.get('observaciones')?.value }}</span>
+                    </div>
+                </div>
+                <div>
+                    <p class="text-[9px] font-black uppercase tracking-[0.15em] text-stone-500 dark:text-slate-300 mb-2">Resumen por condición</p>
+                    <div class="flex flex-wrap gap-2">
+                        <div *ngFor="let r of getResumen(); trackBy: trackByCondicion" class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border-2 border-black bg-white dark:bg-slate-800">
+                            <span class="text-sm font-black text-black dark:text-white">{{ r.cantidad }}</span>
+                            <span class="text-[10px] font-black text-black dark:text-white uppercase">{{ r.condicion }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex-1 min-h-0 flex flex-col overflow-hidden">
+                <div class="px-4 pt-3 pb-2 shrink-0">
+                    <p class="text-[9px] font-black uppercase tracking-[0.15em] text-stone-500 dark:text-slate-300">Herramientas ({{ cart.length }})</p>
+                </div>
+                <div class="flex-1 overflow-y-auto custom-scrollbar">
+                    <table class="w-full">
+                        <thead class="bg-stone-100 dark:bg-slate-700 border-b-2 border-black/20 sticky top-0 z-10">
+                        <tr class="text-left text-[10px] font-black uppercase tracking-wider text-stone-500 dark:text-slate-300">
+                            <th class="px-3 py-2 w-8">#</th>
+                            <th class="px-3 py-2">Herramienta</th>
+                            <th class="px-3 py-2 min-w-[110px]">Prestado a</th>
+                            <th class="px-3 py-2 w-16 text-center">Cant.</th>
+                            <th class="px-3 py-2 w-24">Condición</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr *ngFor="let item of cart; let i = index" class="border-b border-stone-100 dark:border-slate-700 align-top">
+                            <td class="px-3 py-2.5 text-xs font-black text-stone-400 text-center">{{ i + 1 }}</td>
+                            <td class="px-3 py-2.5">
+                                <span class="font-mono text-xs font-black text-black dark:text-white">{{ item.codigo }}</span>
+                                <div class="text-xs font-bold text-black dark:text-white mt-0.5">{{ item.descripcion }}</div>
+                                <div *ngIf="item.pn || item.sn" class="text-[10px] text-stone-400 font-mono mt-0.5">P/N: {{ item.pn || '—' }} · S/N: {{ item.sn || '—' }}</div>
+                            </td>
+                            <td class="px-3 py-2.5">
+                                <div class="text-xs font-black text-purple-800 dark:text-purple-300 uppercase">{{ item.empresa }}</div>
+                                <div class="text-[10px] text-stone-400 font-mono">{{ item.loanNumber }}</div>
+                            </td>
+                            <td class="px-3 py-2.5 text-center">
+                                <span class="text-base font-black text-black dark:text-white">{{ item.cantidadDevolver }}</span>
+                                <span class="text-[10px] text-stone-400">/{{ item.cantidadPrestada }}</span>
+                            </td>
+                            <td class="px-3 py-2.5">
+                                <span class="inline-flex items-center gap-1 text-[10px] font-black uppercase text-black dark:text-white">
+                                    <mat-icon class="!text-sm">{{ getCondicionIcon(item.condicionDevolucion) }}</mat-icon>
+                                    {{ item.condicionDevolucion }}
+                                </span>
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="border-t-2 border-black bg-stone-200 dark:bg-slate-800 px-4 py-3 flex justify-between items-center shrink-0">
+            <button (click)="cerrarConfirm()"
+                    class="flex items-center gap-1 px-3 py-1.5 bg-[#FF1414] text-white font-black text-[10px] border-2 border-black rounded-lg shadow-[2px_2px_0_#000] hover:shadow-none hover:translate-x-[1px] hover:translate-y-[1px] transition-all uppercase">
+                <mat-icon class="!text-xs">close</mat-icon>Cancelar
+            </button>
+            <button (click)="finalizar()"
+                    class="flex items-center gap-1.5 px-3 py-1.5 bg-[#7113CF] text-white font-black text-[10px] border-2 border-black rounded-lg shadow-[2px_2px_0_#000] hover:shadow-none hover:translate-x-[1px] hover:translate-y-[1px] transition-all uppercase">
+                <mat-icon class="!text-sm">check_circle</mat-icon>
+                Confirmar Devolución
+            </button>
+        </div>
     </div>
-
-    <div class="flex-1 overflow-y-auto px-4 py-4 flex flex-col gap-3 custom-scrollbar">
-
-      <div class="bg-purple-50 dark:bg-purple-900/20 border-2 border-purple-300 dark:border-purple-700 rounded-xl p-3">
-        <p class="text-[9px] font-black uppercase tracking-[0.15em] text-purple-500 mb-0.5">Empresa que devuelve</p>
-        <div class="font-black text-sm text-black dark:text-white">{{ _terceroSeleccionado?.razonSocial }}</div>
-        <div class="text-xs font-bold text-stone-500 dark:text-slate-300 mt-0.5">
-          Recibe en almacén: <span class="font-black text-black dark:text-white">{{ busquedaForm.get('responsableRecibe')?.value }}</span>
-        </div>
-        <div class="text-xs font-bold text-stone-500 dark:text-slate-300">
-          Fecha: {{ busquedaForm.get('fechaDevolucion')?.value }} {{ busquedaForm.get('horaDevolucion')?.value }}
-        </div>
-      </div>
-
-      <div>
-        <p class="text-[9px] font-black uppercase tracking-[0.15em] text-stone-400 dark:text-slate-400 mb-2">Resumen por condición</p>
-        <div class="flex flex-wrap gap-2">
-          <div *ngFor="let r of getResumen(); trackBy: trackByCondicion"
-               class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border-2 border-black bg-white dark:bg-slate-800">
-            <span class="text-xs font-black text-black dark:text-white">{{ r.cantidad }}</span>
-            <span class="text-[10px] font-black text-black dark:text-white uppercase">{{ r.condicion }}</span>
-          </div>
-        </div>
-      </div>
-
-      <div class="max-h-48 overflow-y-auto flex flex-col gap-1.5 custom-scrollbar">
-        <p class="text-[9px] font-black uppercase tracking-[0.15em] text-stone-400 dark:text-slate-400 mb-0.5">Herramientas ({{ getSelCount() }})</p>
-        <div *ngFor="let item of getSelItems()"
-             class="flex items-center gap-2 px-3 py-2 border-2 border-black rounded-xl bg-purple-50 dark:bg-purple-900/20">
-          <mat-icon class="!text-base text-black dark:text-white">
-            {{ getCondicionIcon(item.condicionDevolucion) }}
-          </mat-icon>
-          <div class="flex-1 min-w-0">
-            <span class="font-mono text-xs font-black text-black dark:text-white">{{ item.codigo }}</span>
-            <span class="text-xs text-stone-500 dark:text-slate-300 ml-1 truncate">{{ item.descripcion }}</span>
-          </div>
-          <span class="text-[9px] font-black text-black dark:text-white shrink-0 bg-white dark:bg-slate-700 border border-black rounded px-1">{{ item.condicionDevolucion }}</span>
-          <span class="text-xs font-black text-black dark:text-white shrink-0">{{ item.cantidad }} u.</span>
-        </div>
-      </div>
-    </div>
-
-    <div class="border-t-2 border-black bg-stone-200 dark:bg-slate-800 px-4 py-3 flex justify-between items-center shrink-0">
-      <button (click)="cerrarConfirm()"
-              class="flex items-center gap-1 px-3 py-1.5 bg-[#FF1414] text-white font-black text-[10px] border-2 border-black rounded-lg shadow-[2px_2px_0_#000] hover:shadow-none hover:translate-x-[1px] hover:translate-y-[1px] transition-all uppercase">
-        <mat-icon class="!text-xs">close</mat-icon>Cancelar
-      </button>
-      <button (click)="finalizar()"
-              class="flex items-center gap-2 px-3 py-1.5 bg-[#7113CF] text-white font-black text-[10px] border-2 border-black rounded-lg shadow-[2px_2px_0_#000] hover:shadow-none hover:translate-x-[1px] hover:translate-y-[1px] transition-all uppercase">
-        <mat-icon class="!text-sm">print</mat-icon>
-        Confirmar y Imprimir
-      </button>
-    </div>
-  </div>
 </ng-template>

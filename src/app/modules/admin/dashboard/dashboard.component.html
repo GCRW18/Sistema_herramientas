@@ -24,45 +24,14 @@
                 </div>
             </div>
 
-            <!-- ── Carousel navigation bar ─────────────────────────────────────── -->
-            <div class="flex items-center justify-between mb-6">
+            <!-- ── Vista única: todas las secciones apiladas ───────────────────── -->
+            <div class="flex flex-col gap-10">
 
-                <!-- Panel indicator tabs -->
-                <div class="flex gap-2">
-                    <button *ngFor="let label of panelLabels; let i = index"
-                            (click)="goToPanel(i)"
-                            class="px-4 py-2 text-xs font-black uppercase border-2 border-black rounded-lg transition-all duration-200"
-                            [ngClass]="currentPanel() === i
-                                ? 'bg-[#111A43] text-white shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] translate-x-[-1px] translate-y-[-1px]'
-                                : 'bg-white dark:bg-slate-800 text-black dark:text-white hover:bg-gray-100 dark:hover:bg-slate-700 shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]'">
-                        {{ label }}
-                    </button>
-                </div>
-
-                <!-- Arrow buttons -->
-                <div class="flex gap-3 items-center">
-                    <span class="text-xs font-black uppercase text-black dark:text-white">
-                        {{ currentPanel() + 1 }} / {{ TOTAL_PANELS }}
-                    </span>
-                    <button (click)="prevPanel()"
-                            class="flex items-center justify-center w-10 h-10 border-2 border-black bg-white dark:bg-slate-800 rounded-lg shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:shadow-[5px_5px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-1px] hover:translate-y-[-1px] active:shadow-none active:translate-x-[1px] active:translate-y-[1px] transition-all duration-150">
-                        <mat-icon class="text-black dark:text-white !text-xl">chevron_left</mat-icon>
-                    </button>
-                    <button (click)="nextPanel()"
-                            class="flex items-center justify-center w-10 h-10 border-2 border-black bg-[#111A43] rounded-lg shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:shadow-[5px_5px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-1px] hover:translate-y-[-1px] active:shadow-none active:translate-x-[1px] active:translate-y-[1px] transition-all duration-150">
-                        <mat-icon class="text-white !text-xl">chevron_right</mat-icon>
-                    </button>
-                </div>
-            </div>
-
-            <!-- ── Carousel container ──────────────────────────────────────────── -->
-            <div class="overflow-hidden">
-                <div class="flex transition-transform duration-500 ease-in-out"
-                     [style.transform]="'translateX(-' + (currentPanel() * 33.3333) + '%)'
-                     " style="width: 300%">
-
-                    <!-- ── Panel 0: KPI Cards ──────────────────────────────────── -->
-                    <div class="px-1 pb-8" style="width: 33.3333%">
+                    <!-- ── Sección: Indicadores ───────────────────────────────── -->
+                    <div class="w-full">
+                        <h2 class="text-sm font-black uppercase tracking-widest text-black dark:text-white mb-4 flex items-center gap-2 border-b-2 border-black dark:border-white/30 pb-2">
+                            <mat-icon class="!text-lg" svgIcon="heroicons_outline:squares-2x2"></mat-icon> Indicadores
+                        </h2>
                         <div class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
                             <div *ngFor="let kpi of kpiCardsData()"
                                  class="neo-card-base dark:bg-slate-800 dark:border-black dark:shadow-[6px_6px_0px_0px_rgba(71,85,105,1)] p-6 cursor-pointer group">
@@ -87,8 +56,11 @@
                         </div>
                     </div>
 
-                    <!-- ── Panel 1: Gráficas grandes ──────────────────────────── -->
-                    <div class="px-1 pb-8" style="width: 33.3333%">
+                    <!-- ── Sección: Gráficas ──────────────────────────────────── -->
+                    <div class="w-full">
+                        <h2 class="text-sm font-black uppercase tracking-widest text-black dark:text-white mb-4 flex items-center gap-2 border-b-2 border-black dark:border-white/30 pb-2">
+                            <mat-icon class="!text-lg" svgIcon="heroicons_outline:chart-bar"></mat-icon> Gráficas
+                        </h2>
                         <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
                             <div class="neo-card-base dark:bg-slate-800 dark:border-black dark:shadow-[6px_6px_0px_0px_rgba(71,85,105,1)] p-6">
                                 <div class="flex justify-between items-start mb-6 border-b-2 border-black dark:border-black pb-2">
@@ -116,8 +88,11 @@
                         </div>
                     </div>
 
-                    <!-- ── Panel 2: Actividad (3 columnas) ────────────────────── -->
-                    <div class="px-1 pb-8" style="width: 33.3333%">
+                    <!-- ── Sección: Actividad (3 columnas) ────────────────────── -->
+                    <div class="w-full">
+                        <h2 class="text-sm font-black uppercase tracking-widest text-black dark:text-white mb-4 flex items-center gap-2 border-b-2 border-black dark:border-white/30 pb-2">
+                            <mat-icon class="!text-lg" svgIcon="heroicons_outline:bell-alert"></mat-icon> Actividad y Alertas
+                        </h2>
                         <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
 
                             <div class="neo-card-base dark:bg-slate-800 dark:border-black dark:shadow-[6px_6px_0px_0px_rgba(71,85,105,1)] p-0 flex flex-col h-full">
@@ -195,7 +170,6 @@
                         </div>
                     </div>
 
-                </div>
             </div>
 
             <div *ngIf="isLoading()"

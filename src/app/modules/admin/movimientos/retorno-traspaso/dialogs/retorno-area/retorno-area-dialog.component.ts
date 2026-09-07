@@ -14,7 +14,6 @@ import {
     MovimientoActivo, TraspasoItem, Funcionario, CondRetorno,
     CONDICIONES_RETORNO, isItemValid, getItemErrors
 } from '../../retorno-traspaso.types';
-import { RetornoPdfService } from '../../retorno-pdf.service';
 
 export interface RetornoAreaDialogData {
     movTraspasosActivos: MovimientoActivo[];
@@ -29,9 +28,11 @@ export interface RetornoAreaDialogData {
     ],
     templateUrl: './retorno-area-dialog.component.html',
     styles: [`
-        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        :host { display: flex; flex-direction: column; height: 100%; }
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #000; border-radius: 3px; }
+        :host-context(.dark) .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; }
         @keyframes fadeIn { from { opacity:0; transform:translateY(-4px); } to { opacity:1; transform:translateY(0); } }
         .animate-fadeIn { animation: fadeIn 0.2s ease-out; }
     `]
@@ -43,7 +44,6 @@ export class RetornoAreaDialogComponent implements OnInit, OnDestroy {
     private fb        = inject(FormBuilder);
     private snackBar  = inject(MatSnackBar);
     private movSvc    = inject(MovementService);
-    private pdfSvc    = inject(RetornoPdfService);
     private _unsub$   = new Subject<void>();
 
     // Movement lists
@@ -105,9 +105,21 @@ export class RetornoAreaDialogComponent implements OnInit, OnDestroy {
             }),
             takeUntil(this._unsub$)
         ).subscribe({ next: (r: any[]) => { this.funcRetornoAreaRecibe = r; this.showFuncRetornoAreaRecibeDropdown = r.length > 0; }});
+
+        // Prellena "Recibe en Almacén" con el usuario logueado (editable). emitEvent:false
+        // para no disparar el autocompletado de funcionarios al abrir el formulario.
+        const currentUser = this._currentUserName();
+        if (currentUser) this.retornoAreaForm.patchValue({ recibeAlmacen: currentUser }, { emitEvent: false });
     }
 
     ngOnDestroy(): void { this._unsub$.next(); this._unsub$.complete(); }
+
+    private _currentUserName(): string {
+        try {
+            const auth = JSON.parse(localStorage.getItem('aut') || '{}');
+            return auth.nombre_usuario || '';
+        } catch { return ''; }
+    }
 
     hideTraspasoDropdown(): void { setTimeout(() => this.showTraspasoDropdown = false, 150); }
 
@@ -206,13 +218,18 @@ export class RetornoAreaDialogComponent implements OnInit, OnDestroy {
             type:                     'RETORNO_TRASPASO',
             date:                     form.fechaRetorno,
             time:                     new Date().toTimeString().slice(0, 8),
-            requested_by_name:        form.recibeAlmacen || '',
+            // "Devuelto por" de la acta = el área/almacén que devuelve (no hay una
+            // persona individual clara acá, a diferencia del retorno de base) —
+            // así la nota compartida (RReporteRetornoNota) no repite el mismo
+            // nombre en DEVUELTO POR y RECIBIDO POR.
+            requested_by_name:        mov.destination_warehouse_name || form.recibeAlmacen || '',
             responsible_person:       form.recibeAlmacen || '',
             document_number:          form.nroDocumento  || '',
             destination_warehouse_id: mov.source_warehouse_id,
             source_warehouse_id:      mov.destination_warehouse_id,
             notes:                    form.observaciones || '',
-            specific_observations:    `Retorno de traspaso ${mov.movement_number}`,
+            // NO mandar "Cierra: X" acá — he.ft_retorno_base ya lo arma solo a partir de
+            // source_movement_ids_json; si se manda también acá queda duplicado en la nota.
             items_json:               itemsJson,
             source_movement_ids_json: JSON.stringify([Number(mov.id_movement)])
         }).pipe(
@@ -222,11 +239,11 @@ export class RetornoAreaDialogComponent implements OnInit, OnDestroy {
             next: (res: any) => {
                 const nro = res?.movement_number || '---';
                 this._showMsg(`Retorno registrado: ${nro}`, 'success');
-                this.pdfSvc.generarPdfRetornoArea(nro, sel, {
-                    fechaRetorno: form.fechaRetorno,
-                    recibeAlmacen: form.recibeAlmacen,
-                    observaciones: form.observaciones
-                }, mov, pdfWin);
+                // Acta de Retorno MGH — mismo reporte TCPDF compartido con Retorno
+                // de Base/Traspaso (RReporteRetornoNota ya soporta RETORNO_TRASPASO).
+                const idMov = Number(res?.id_movement);
+                if (idMov) this.movSvc.verNotaRetorno(idMov, pdfWin);
+                else { try { pdfWin?.close(); } catch { /* noop */ } }
                 this.dialogRef.close({ refreshActivos: true });
             },
             error: (e: any) => { pdfWin?.close(); this._showMsg('Error: ' + (e?.message || ''), 'error'); }

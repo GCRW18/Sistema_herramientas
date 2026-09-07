@@ -179,11 +179,11 @@
                     <tbody>
                     <tr *ngFor="let el of paginatedAlerts; let last = last"
                         [class.border-b]="!last"
-                        class="border-gray-200 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors h-[52px]">
+                        class="border-gray-200 dark:border-slate-600 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors h-[52px]">
 
                         <!-- Urgencia -->
                         <td class="px-3 py-2 text-center">
-                            <span class="inline-block px-2 py-0.5 border-[2px] border-black rounded-lg text-[10px] font-black uppercase shadow-[1px_1px_0px_0px_#000]"
+                            <span class="inline-block px-2 py-0.5 border-[2px] rounded-lg text-[10px] font-black uppercase"
                                   [ngClass]="getUrgencyClass(el.urgency)">
                                 {{ getUrgencyLabel(el.urgency) }}
                             </span>
@@ -200,7 +200,7 @@
 
                         <!-- Herramienta -->
                         <td class="px-3 py-2">
-                            <span class="font-bold text-sm text-gray-900 dark:text-white line-clamp-2 max-w-[420px] block">{{ el.tool_name }}</span>
+                            <span class="font-bold text-sm text-black dark:text-white line-clamp-2 max-w-[420px] block">{{ el.tool_name }}</span>
                         </td>
 
                         <!-- S/N -->
@@ -227,9 +227,8 @@
 
                         <!-- Días -->
                         <td class="px-3 py-2 text-center">
-                            <span class="font-black text-xs uppercase flex items-center justify-center gap-1"
+                            <span class="inline-block px-2 py-0.5 border-[2px] rounded-lg text-[10px] font-black uppercase"
                                   [ngClass]="getDaysColor(el.days_remaining)">
-                                <mat-icon *ngIf="el.days_remaining <= 0" class="!text-[14px]">warning</mat-icon>
                                 {{ el.days_remaining <= 0 ? 'VENCIDO' : el.days_remaining + 'd' }}
                             </span>
                         </td>

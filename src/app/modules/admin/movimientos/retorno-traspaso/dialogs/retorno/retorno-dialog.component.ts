@@ -1,20 +1,16 @@
-import { Component, OnInit, OnDestroy, inject } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { ReactiveFormsModule, FormsModule, FormBuilder, FormGroup, Validators, FormControl } from '@angular/forms';
-import { MatDialogRef, MAT_DIALOG_DATA, MatDialogModule } from '@angular/material/dialog';
+import { Component, OnInit, OnDestroy, inject, ViewChild, TemplateRef, ElementRef } from '@angular/core';
+import { CommonModule, DatePipe } from '@angular/common';
+import { ReactiveFormsModule, FormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { MatDialogRef, MAT_DIALOG_DATA, MatDialogModule, MatDialog } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
-import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { Subject, forkJoin, of } from 'rxjs';
-import { debounceTime, distinctUntilChanged, switchMap, takeUntil, finalize, map } from 'rxjs/operators';
+import { debounceTime, distinctUntilChanged, switchMap, takeUntil, finalize, map, catchError } from 'rxjs/operators';
 
 import { MovementService } from '../../../../../../core/services/movement.service';
 import { localDateStr } from '../../../../../../core/utils/date.utils';
-import {
-    Ubicacion, TraspasoItem, Funcionario, CondRetorno,
-    CONDICIONES_RETORNO, ResumenCondicion, isItemValid, getItemErrors
-} from '../../retorno-traspaso.types';
-import { RetornoPdfService } from '../../retorno-pdf.service';
+import { Ubicacion, CondRetorno, CONDICIONES_RETORNO } from '../../retorno-traspaso.types';
 
 export interface RetornoDialogData {
     almacenes: Ubicacion[];
@@ -23,350 +19,471 @@ export interface RetornoDialogData {
     tipoOrigen?: 'BASE' | 'TRASPASO';
 }
 
+/** Ítem del carrito de retorno: sale de escanear una herramienta y resolver la
+ *  nota de salida (envío a base / traspaso a área) abierta que la tiene fuera. */
+interface RetornoScanItem {
+    srcMovementId: number;
+    srcMovementNumber: string;
+    exitReason: string;            // 'base_send' | 'area_transfer'
+    tipoOrigen: 'BASE' | 'TRASPASO';
+    destWarehouseId: number | null;
+    destWarehouseName: string;
+    fechaEnvio: string;
+    diasFuera: number;
+    toolId: number;
+    codigo: string;
+    descripcion: string;
+    pn: string;
+    sn: string;
+    marca: string;
+    und: string;
+    fechaCalibracion: string;
+    cantidadEnviada: number;
+    // editable
+    cantidadRetorna: number;
+    condicion: CondRetorno;
+    observacionItem: string;
+}
+
 @Component({
     selector: 'app-retorno-dialog',
     standalone: true,
     imports: [
-        CommonModule, ReactiveFormsModule, FormsModule,
-        MatIconModule, MatDialogModule, MatSnackBarModule, MatCheckboxModule
+        CommonModule, DatePipe, ReactiveFormsModule, FormsModule,
+        MatIconModule, MatDialogModule, MatSnackBarModule, MatProgressSpinnerModule
     ],
     templateUrl: './retorno-dialog.component.html',
     styles: [`
-        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        :host { display: flex; flex-direction: column; height: 100%; }
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #000; border-radius: 3px; }
-        @keyframes fadeIn { from { opacity:0; transform:translateY(-4px); } to { opacity:1; transform:translateY(0); } }
+        :host-context(.dark) .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; }
+        @keyframes pulse-border {
+            0%,100% { border-color:#ef4444; box-shadow:0 0 0 0 rgba(239,68,68,.4); }
+            50% { border-color:#f87171; box-shadow:0 0 0 4px rgba(239,68,68,0); }
+        }
+        .animate-pulse-border { animation: pulse-border 2s cubic-bezier(.4,0,.6,1) infinite; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }
         .animate-fadeIn { animation: fadeIn 0.2s ease-out; }
     `]
 })
 export class RetornoDialogComponent implements OnInit, OnDestroy {
 
+    @ViewChild('confirmRetornoModal') confirmRetornoModal!: TemplateRef<any>;
+    @ViewChild('scanInput') scanInputRef!: ElementRef<HTMLInputElement>;
+
     private dialogRef = inject(MatDialogRef<RetornoDialogComponent>);
     data              = inject<RetornoDialogData>(MAT_DIALOG_DATA);
+    private dialog     = inject(MatDialog);
     private fb        = inject(FormBuilder);
     private snackBar  = inject(MatSnackBar);
     private movSvc    = inject(MovementService);
-    private pdfSvc    = inject(RetornoPdfService);
-    private _unsub$   = new Subject<void>();
-    private _srchFunc$ = new Subject<string>();
+    private destroy$  = new Subject<void>();
+    private _confirmDialogRef: any = null;
 
-    // Form
+    isSaving      = false;
+    loadingIndex  = false;
+    indexReady    = false;
+
     retornoForm!: FormGroup;
-    isSavingRetorno  = false;
-    isSearching      = false;
-    showConfirmModal = false;
-
-    // Items
-    allData: TraspasoItem[]    = [];
-    dataSource: TraspasoItem[] = [];
-
-    // Funcionario autocomplete
-    funcionarios: Funcionario[]  = [];
-    funcionariosLoading          = false;
-    showFuncDropdown             = false;
-
-    // State
-    tipoOrigenActivo: 'BASE' | 'TRASPASO' = 'BASE';
-
     condiciones = CONDICIONES_RETORNO;
 
-    // Ubicación Origen autocomplete
-    ubicacionesFiltradas: Ubicacion[] = [];
-    showUbicacionDropdown = false;
+    /** Carrito: herramientas escaneadas listas para retornar. */
+    cart: RetornoScanItem[] = [];
+
+    // ── Índice de notas de salida abiertas: code (mayúsculas) → ítems ──
+    private _openSendIndex = new Map<string, RetornoScanItem[]>();
+
+    // ── Escaneo ──
+    scanValue = '';
+    scanSuggestions: RetornoScanItem[] = [];
+    showScanDropdown = false;
+
+    // ── "Devuelto por" (quien físicamente trae las herramientas de la base) ──
+    private _returnedBySearch$ = new Subject<string>();
+    returnedByName        = '';
+    returnedByFuncionarios: any[] = [];
+    returnedByLoading      = false;
+    showReturnedByDropdown = false;
+
+    // ── "Recibido por (Almacén)" ──
+    private _responsableSearch$ = new Subject<string>();
+    responsablesFiltrados:  any[] = [];
+    responsableLoading      = false;
+    showResponsableDropdown = false;
+    private _personalCache: any[] = [];
 
     ngOnInit(): void {
-        const today = localDateStr();
+        const now = new Date();
+        const hora = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
         this.retornoForm = this.fb.group({
-            ubicacionOrigen:      [null, Validators.required],
-            ubicacionOrigenTexto: [''],
-            nroDocumento:         ['', Validators.required],
-            fechaRetorno:         [today, Validators.required],
-            responsableRecibe:    ['', Validators.required],
-            observaciones:        [''],
-            searchText:           new FormControl('')
-        });
-        this.tipoOrigenActivo = this.data.tipoOrigen || 'BASE';
-
-        // Filter dataSource on searchText changes
-        this.retornoForm.get('searchText')!.valueChanges.pipe(
-            debounceTime(200), takeUntil(this._unsub$)
-        ).subscribe(q => this._filterItems(q));
-
-        // Ubicación Origen autocomplete (lista ya cargada en memoria, filtro sincrónico)
-        this.retornoForm.get('ubicacionOrigenTexto')!.valueChanges.pipe(
-            debounceTime(100), takeUntil(this._unsub$)
-        ).subscribe(term => {
-            const seleccionActual = this.retornoForm.get('ubicacionOrigen')?.value as Ubicacion | null;
-            if (seleccionActual && seleccionActual.nombre !== term) {
-                this.retornoForm.patchValue({ ubicacionOrigen: null }, { emitEvent: false });
-            }
-            const q = (term || '').trim().toLowerCase();
-            this.ubicacionesFiltradas = q
-                ? this.getAllUbicaciones().filter(u => u.nombre.toLowerCase().includes(q))
-                : this.getAllUbicaciones();
-            this.showUbicacionDropdown = this.ubicacionesFiltradas.length > 0;
+            fechaRetorno:      [localDateStr(), Validators.required],
+            horaRetorno:       [hora, Validators.required],
+            nroDocumento:      [''],
+            responsableRecibe: ['', Validators.required],
+            observaciones:     ['']
         });
 
-        // Funcionario autocomplete
-        this.retornoForm.get('responsableRecibe')!.valueChanges.pipe(
-            debounceTime(300), distinctUntilChanged(),
-            switchMap(term => {
-                const q = (term || '').trim();
-                if (q.length < 2) { this.funcionarios = []; this.showFuncDropdown = false; return of([]); }
-                this.funcionariosLoading = true;
-                const ql = q.toLowerCase();
-                return this.movSvc.getPersonal().pipe(
-                    map((lista: any[]) => lista
-                        .filter(f => [f.nombreCompleto, f.nombre, f.apellido_paterno, f.apellido_materno].filter(Boolean).join(' ').toLowerCase().includes(ql))
-                        .slice(0, 10).map(f => ({ id: String(f.id_employee || f.id || ''), nombre: f.nombreCompleto || f.nombre || '', cargo: f.cargo || '' }))),
-                    finalize(() => this.funcionariosLoading = false));
-            }),
-            takeUntil(this._unsub$)
-        ).subscribe({ next: (r: any[]) => { this.funcionarios = r; this.showFuncDropdown = r.length > 0; }});
+        const currentUser = this._currentUserName();
+        if (currentUser) this.retornoForm.patchValue({ responsableRecibe: currentUser });
 
-        // Pre-select movement + auto-query if passed from activos table
-        if (this.data.movimiento) {
-            this.movSeleccionadoParaRetorno = this.data.movimiento;
-            const mov = this.data.movimiento;
-            const ubicacion = this.getAllUbicaciones().find(u =>
-                u.nombre === mov.destination_warehouse_name ||
-                String(u.id) === String(mov.destination_warehouse_id)
-            ) || null;
-            if (ubicacion) {
-                this.retornoForm.patchValue({ ubicacionOrigen: ubicacion, ubicacionOrigenTexto: ubicacion.nombre }, { emitEvent: false });
-                setTimeout(() => this._cargarItemsMovimiento(mov), 300);
-            }
-        }
+        this._setupResponsableSearch();
+        this._setupReturnedBySearch();
+        this._buildOpenSendIndex();
     }
 
-    movSeleccionadoParaRetorno: any = null;
+    ngOnDestroy(): void { this.destroy$.next(); this.destroy$.complete(); }
 
-    ngOnDestroy(): void { this._unsub$.next(); this._unsub$.complete(); }
-
-    private _filterItems(q: string): void {
-        if (!q) { this.dataSource = [...this.allData]; return; }
-        const lq = q.toLowerCase();
-        this.dataSource = this.allData.filter(i =>
-            i.codigo.toLowerCase().includes(lq) ||
-            i.descripcion.toLowerCase().includes(lq) ||
-            (i.sn || '').toLowerCase().includes(lq) ||
-            (i.pn || '').toLowerCase().includes(lq)
-        );
+    private _currentUserName(): string {
+        try {
+            const auth = JSON.parse(localStorage.getItem('aut') || '{}');
+            return auth.nombre_usuario || '';
+        } catch { return ''; }
     }
 
-    // Solo almacenes (he.twarehouses): "bases" viene de param.tlugar (id_lugar), un
-    // espacio de IDs distinto. ubicacionOrigen.id se manda como destination_warehouse_id,
-    // cuya FK apunta a he.twarehouses — mezclar "bases" aquí causa
-    // "violates foreign key constraint tmovements_dest_warehouse_fkey".
-    getAllUbicaciones(): Ubicacion[] { return this.data.almacenes || []; }
-    getUbicacionesFiltradas(): Ubicacion[] { return this.getAllUbicaciones(); }
-
-    getTipoOrigenLabel(): string { return this.tipoOrigenActivo === 'BASE' ? 'Base' : 'Almacén'; }
-    getDocumentoLabel(): string  { return 'Nro. Nota Salida'; }
-
-    hideFuncDropdown(): void { setTimeout(() => this.showFuncDropdown = false, 150); }
-    selectFuncionario(f: Funcionario): void { this.retornoForm.patchValue({ responsableRecibe: f.nombre }, { emitEvent: false }); this.showFuncDropdown = false; }
-
-    onUbicacionOrigenFocus(): void {
-        this.ubicacionesFiltradas = this.getAllUbicaciones().filter(u =>
-            u.nombre.toLowerCase().includes((this.retornoForm.get('ubicacionOrigenTexto')?.value || '').trim().toLowerCase())
-        );
-        this.showUbicacionDropdown = this.ubicacionesFiltradas.length > 0;
-    }
-    hideUbicacionDropdown(): void { setTimeout(() => this.showUbicacionDropdown = false, 150); }
-    selectUbicacionOrigen(u: Ubicacion): void {
-        this.retornoForm.patchValue({ ubicacionOrigen: u, ubicacionOrigenTexto: u.nombre }, { emitEvent: false });
-        this.showUbicacionDropdown = false;
-    }
-
-    consultarRetorno(): void {
-        const origen = this.retornoForm.get('ubicacionOrigen')?.value;
-        if (!origen?.id) { this._showMsg('Seleccione una ubicación de origen', 'warning'); return; }
-        this.isSearching = true;
-        this.allData = []; this.dataSource = [];
-        const exitReason = this.tipoOrigenActivo === 'BASE' ? 'base_send' : 'area_transfer';
-        const destId = Number(origen.id);
-        // Misma fuente que la tabla Activos (listarEnviosActivos) — evita depender de
-        // filtro_adicional/getMovements, cuyo filtro con literales entre comillas simples
-        // se rompe al pasar por el doble-escape de comillas del framework pXP.
-        this.movSvc.listarEnviosActivos({ limit: 200 }).pipe(
-            takeUntil(this._unsub$), finalize(() => this.isSearching = false)
-        ).subscribe({
-            next: (movs: any[]) => {
-                const filtered = (movs || []).filter((m: any) =>
-                    m.exit_reason === exitReason && Number(m.destination_warehouse_id) === destId
-                );
-                if (!filtered.length) { this._showMsg(`Sin movimientos activos para ${origen.nombre}`, 'warning'); return; }
-                forkJoin(filtered.map((mov: any) =>
+    // ── Índice de notas de salida abiertas ─────────────────────────────────
+    private _buildOpenSendIndex(): void {
+        this.loadingIndex = true;
+        this.movSvc.listarEnviosActivos({ limit: 500 }).pipe(
+            catchError(() => of([] as any[])),
+            switchMap((movs: any[]) => {
+                const abiertos = (movs || []).filter((m: any) =>
+                    (m.exit_reason === 'base_send' || m.exit_reason === 'area_transfer') &&
+                    (m.status || 'active') !== 'returned');
+                if (!abiertos.length) return of([] as { mov: any; items: any[] }[]);
+                return forkJoin(abiertos.map((mov: any) =>
                     this.movSvc.getMovementItems(Number(mov.id_movement)).pipe(
+                        catchError(() => of([] as any[])),
                         map((items: any[]) => ({ mov, items }))
                     )
-                )).pipe(takeUntil(this._unsub$)).subscribe({
-                    next: (results: any[]) => {
-                        const expanded: TraspasoItem[] = [];
-                        results.forEach(({ mov, items }) => {
-                            (items || []).forEach((item: any) => expanded.push(this._mapItem(mov, item)));
-                        });
-                        this.allData = expanded; this.dataSource = [...this.allData];
-                        if (!this.allData.length) this._showMsg(`Sin herramientas en ${origen.nombre}`, 'warning');
-                        else this._showMsg(`Cargadas: ${this.dataSource.length} herramienta(s)`, 'success');
-                    }
+                ));
+            }),
+            takeUntil(this.destroy$),
+            finalize(() => { this.loadingIndex = false; this.indexReady = true; setTimeout(() => this._focusScan(), 100); })
+        ).subscribe((results: { mov: any; items: any[] }[]) => {
+            this._openSendIndex.clear();
+            (results || []).forEach(({ mov, items }) => {
+                (items || []).forEach((it: any) => {
+                    const si = this._toScanItem(mov, it);
+                    if (!si.codigo) return;
+                    const key = si.codigo.toUpperCase();
+                    const arr = this._openSendIndex.get(key) || [];
+                    arr.push(si);
+                    this._openSendIndex.set(key, arr);
                 });
-            },
-            error: (e: any) => this._showMsg('Error al consultar: ' + (e?.message || ''), 'error')
+            });
+            // Abierto desde la tabla Activos: precarga los ítems de ese movimiento.
+            if (this.data.movimiento) this._precargarMovimiento(this.data.movimiento);
         });
     }
 
-    /** Carga solo los ítems del movimiento específico pasado desde la tabla Activos
-     *  (a diferencia de consultarRetorno(), que trae TODOS los envíos activos hacia
-     *  el mismo almacén destino — correcto para la búsqueda manual, incorrecto acá). */
-    private _cargarItemsMovimiento(mov: any): void {
-        this.isSearching = true;
-        this.allData = []; this.dataSource = [];
-        this.movSvc.getMovementItems(Number(mov.id_movement)).pipe(
-            takeUntil(this._unsub$), finalize(() => this.isSearching = false)
-        ).subscribe({
-            next: (items: any[]) => {
-                this.allData = (items || []).map((item: any) => this._mapItem(mov, item));
-                this.dataSource = [...this.allData];
-                if (!this.allData.length) this._showMsg(`Sin herramientas en ${mov.movement_number}`, 'warning');
-                else this._showMsg(`Cargadas: ${this.dataSource.length} herramienta(s) de ${mov.movement_number}`, 'success');
-            },
-            error: (e: any) => this._showMsg('Error al cargar ítems: ' + (e?.message || ''), 'error')
-        });
-    }
-
-    private _mapItem(mov: any, item: any): TraspasoItem {
-        const envio = new Date(mov.date || '');
-        const diasFuera = mov.date ? Math.ceil(Math.abs(Date.now() - envio.getTime()) / 86400000) : 0;
+    private _toScanItem(mov: any, it: any): RetornoScanItem {
+        const fechaEnvio = mov.date || mov.send_date || '';
+        const diasFuera  = fechaEnvio
+            ? Math.ceil(Math.abs(Date.now() - new Date(fechaEnvio).getTime()) / 86400000) : 0;
+        const qty = Number(it?.quantity) || 1;
         return {
-            id: String(mov.id_movement || ''),
-            filaObs: 0,
-            toolId: String(item?.tool_id || item?.tool?.id || ''),
-            codigo: item?.tool?.code || item?.code || item?.codigo || '',
-            descripcion: item?.tool?.description || item?.description || item?.descripcion || '',
-            pn: item?.tool?.part_number || item?.part_number || '',
-            sn: item?.tool?.serial_number || item?.serial_number || '',
-            marca: item?.tool?.brand || item?.brand || '',
-            cantidadEnviada: Number(item?.quantity) || 1,
-            cantidadRetorna: Number(item?.quantity) || 1,
-            fechaEnvio: mov.date || '', nroNotaSalida: mov.movement_number || '',
-            ubicacionOrigen: mov.destination_warehouse_name || '',
+            srcMovementId:     Number(mov.id_movement) || 0,
+            srcMovementNumber: mov.movement_number || '',
+            exitReason:        mov.exit_reason || 'base_send',
+            tipoOrigen:        mov.exit_reason === 'area_transfer' ? 'TRASPASO' : 'BASE',
+            destWarehouseId:   mov.destination_warehouse_id != null ? Number(mov.destination_warehouse_id) : null,
+            destWarehouseName: mov.destination_warehouse_name || '',
+            fechaEnvio,
             diasFuera,
-            selected: false, expanded: false, condicion: '', observacionItem: ''
+            toolId:            Number(it?.tool_id ?? it?.tool?.id) || 0,
+            codigo:            it?.tool?.code || it?.code || it?.codigo || '',
+            descripcion:       it?.tool?.description || it?.description || it?.descripcion || it?.name || '',
+            pn:                it?.tool?.part_number || it?.part_number || '',
+            sn:                it?.tool?.serial_number || it?.serial_number || '',
+            marca:             it?.tool?.brand || it?.brand || '',
+            und:               it?.unit_of_measure || 'UND',
+            fechaCalibracion:  it?.next_calibration_date || it?.tool?.next_calibration_date || '',
+            cantidadEnviada:   qty,
+            cantidadRetorna:   qty,
+            condicion:         'BUENO' as CondRetorno,
+            observacionItem:   ''
         };
     }
 
-    // Selection helpers
-    toggleSelection(item: TraspasoItem): void {
-        item.selected = !item.selected;
-        if (item.selected && !item.condicion) item.condicion = 'BUENO' as CondRetorno;
-        if (!item.selected) { item.expanded = false; item.condicion = ''; }
+    private _precargarMovimiento(mov: any): void {
+        const id = Number(mov.id_movement);
+        const yaEn = this.cart.some(c => c.srcMovementId === id);
+        if (yaEn) return;
+        // Toma los ítems de ese movimiento del índice ya construido.
+        const items: RetornoScanItem[] = [];
+        this._openSendIndex.forEach(arr => arr.forEach(si => { if (si.srcMovementId === id) items.push(si); }));
+        if (!items.length) { this.showMsg('warning', `Sin herramientas pendientes en ${mov.movement_number || id}`); return; }
+        this.cart = [...this.cart, ...items.map(si => ({ ...si }))];
+        this.showMsg('success', `${items.length} herramienta(s) de ${mov.movement_number} cargada(s)`);
     }
-    toggleExpand(item: TraspasoItem): void { item.expanded = !item.expanded; }
-    isAllSelected(): boolean { return this.dataSource.length > 0 && this.dataSource.every(i => i.selected); }
-    isSomeSelected(): boolean { return this.dataSource.some(i => i.selected) && !this.isAllSelected(); }
-    toggleAllSelection(e: any): void { this.dataSource.forEach(i => { i.selected = e.checked; if (e.checked && !i.condicion) i.condicion = 'BUENO' as CondRetorno; }); }
-    getSelectedCount(): number { return this.dataSource.filter(i => i.selected).length; }
-    onCondicionChange(item: TraspasoItem, val: CondRetorno): void { item.condicion = val; item.expanded = true; }
-    validateCantidadRetorna(item: TraspasoItem): void {
-        if (item.cantidadRetorna < 0) item.cantidadRetorna = 0;
+
+    // ── Escaneo ────────────────────────────────────────────────────────────
+    private _focusScan(): void {
+        try { this.scanInputRef?.nativeElement.focus(); } catch { /* view not ready */ }
+    }
+
+    onScanInput(v: string): void {
+        this.scanValue = v;
+        const q = v.trim().toLowerCase();
+        if (!q) { this.scanSuggestions = []; this.showScanDropdown = false; return; }
+        const vistos = new Set<string>();
+        const ranked: { si: RetornoScanItem; rank: number }[] = [];
+        this._openSendIndex.forEach(arr => arr.forEach(si => {
+            if (this._enCarrito(si)) return;
+            const dedupe = `${si.srcMovementId}:${si.toolId}`;
+            if (vistos.has(dedupe)) return;
+            const code = (si.codigo || '').toLowerCase();
+            let rank = -1;
+            if (code === q) rank = 0;
+            else if (code.startsWith(q)) rank = 1;
+            else if (code.includes(q)) rank = 2;
+            else if (`${si.descripcion} ${si.pn} ${si.sn} ${si.srcMovementNumber} ${si.destWarehouseName}`.toLowerCase().includes(q)) rank = 3;
+            if (rank >= 0) { vistos.add(dedupe); ranked.push({ si, rank }); }
+        }));
+        ranked.sort((a, b) => a.rank - b.rank || a.si.codigo.localeCompare(b.si.codigo));
+        this.scanSuggestions = ranked.slice(0, 12).map(r => r.si);
+        this.showScanDropdown = this.scanSuggestions.length > 0;
+    }
+
+    hideScanDropdown(): void { setTimeout(() => this.showScanDropdown = false, 150); }
+
+    scanAndAdd(): void {
+        const code = this.scanValue.trim();
+        if (!code) return;
+        if (!this.indexReady) { this.showMsg('warning', 'Cargando notas de salida activas, espere un momento'); return; }
+        const exactas = this._openSendIndex.get(code.toUpperCase());
+        if (exactas && exactas.length > 0) { this._agregarItem(exactas); return; }
+        if (this.scanSuggestions.length === 1) { this._agregarItem([this.scanSuggestions[0]]); return; }
+        if (this.scanSuggestions.length > 1) {
+            this.showScanDropdown = true;
+            this.showMsg('info', `${this.scanSuggestions.length} coincidencias — elija de la lista`);
+            return;
+        }
+        this.showMsg('warning', `"${code}" no tiene una nota de salida abierta para retornar`);
+        this._clearScan();
+    }
+
+    pickScanSuggestion(si: RetornoScanItem): void {
+        this.showScanDropdown = false;
+        this._agregarItem([si]);
+    }
+
+    private _enCarrito(si: RetornoScanItem): boolean {
+        return this.cart.some(c => c.srcMovementId === si.srcMovementId && c.toolId === si.toolId);
+    }
+
+    private _agregarItem(candidatos: RetornoScanItem[]): void {
+        const libre = candidatos.find(si => !this._enCarrito(si));
+        if (!libre) {
+            this.showMsg('info', `"${candidatos[0].codigo}" ya está en la lista de retorno`);
+            this._clearScan();
+            return;
+        }
+        this.cart = [...this.cart, { ...libre }];
+        this.showMsg('success', `"${libre.descripcion}" — de ${libre.srcMovementNumber} (${libre.destWarehouseName})`);
+        this._clearScan();
+    }
+
+    private _clearScan(): void {
+        this.scanValue = '';
+        this.scanSuggestions = [];
+        this.showScanDropdown = false;
+        setTimeout(() => this._focusScan(), 50);
+    }
+
+    removeItem(idx: number): void {
+        const it = this.cart[idx];
+        this.cart = this.cart.filter((_, i) => i !== idx);
+        if (it) this.showMsg('info', `"${it.descripcion}" quitada`);
+    }
+
+    // ── "Devuelto por" ─────────────────────────────────────────────────────
+    private _setupReturnedBySearch(): void {
+        this._returnedBySearch$.pipe(
+            debounceTime(200), distinctUntilChanged(),
+            switchMap(t => {
+                if (t.length < 2) { this.showReturnedByDropdown = false; return of([]); }
+                this.returnedByLoading = true;
+                const q = t.toLowerCase();
+                return this.movSvc.getPersonal().pipe(
+                    map((lista: any[]) => lista
+                        .filter(f => [f.nombreCompleto, f.nombre, f.apellido_paterno, f.apellido_materno]
+                            .filter(Boolean).join(' ').toLowerCase().includes(q))
+                        .slice(0, 10)
+                        .map(f => ({ id: String(f.id_employee || f.id), nombre: f.nombreCompleto || `${f.nombre || ''} ${f.apellido_paterno || ''}`.trim(), cargo: f.cargo || '' }))
+                    ),
+                    finalize(() => this.returnedByLoading = false),
+                    catchError(() => of([]))
+                );
+            }),
+            takeUntil(this.destroy$)
+        ).subscribe(res => { this.returnedByFuncionarios = res || []; this.showReturnedByDropdown = this.returnedByFuncionarios.length > 0; });
+    }
+
+    onReturnedByInput(v: string): void { this.returnedByName = v; this._returnedBySearch$.next(v); }
+    selectReturnedBy(f: any): void { this.returnedByName = f.nombre; this.showReturnedByDropdown = false; }
+    hideReturnedByDropdown(): void { setTimeout(() => this.showReturnedByDropdown = false, 150); }
+
+    // ── "Recibido por (Almacén)" ───────────────────────────────────────────
+    private _setupResponsableSearch(): void {
+        this.movSvc.getPersonal().pipe(takeUntil(this.destroy$), catchError(() => of([])))
+            .subscribe((lista: any[]) => {
+                this._personalCache = (lista || []).map(f => ({
+                    id: String(f.id_employee || f.id),
+                    nombre: f.nombreCompleto || `${f.nombre || ''} ${f.apellido_paterno || ''}`.trim(),
+                    cargo: f.cargo || ''
+                }));
+            });
+
+        this._responsableSearch$.pipe(
+            debounceTime(150), distinctUntilChanged(), takeUntil(this.destroy$)
+        ).subscribe(t => {
+            if (t.length < 2) { this.showResponsableDropdown = false; this.responsablesFiltrados = []; return; }
+            const q = t.toLowerCase();
+            this.responsablesFiltrados = this._personalCache
+                .filter(f => f.nombre.toLowerCase().includes(q) || f.cargo.toLowerCase().includes(q))
+                .slice(0, 10);
+            this.showResponsableDropdown = this.responsablesFiltrados.length > 0;
+        });
+    }
+
+    onResponsableInput(val: string): void {
+        this.retornoForm.patchValue({ responsableRecibe: val });
+        this._responsableSearch$.next(val);
+    }
+    selectResponsable(r: any): void {
+        this.retornoForm.patchValue({ responsableRecibe: r.nombre });
+        this.showResponsableDropdown = false;
+    }
+    hideResponsableDropdown(): void { setTimeout(() => this.showResponsableDropdown = false, 150); }
+
+    // ── Ítems del carrito ──────────────────────────────────────────────────
+    hasError(field: string, error: string): boolean {
+        const c = this.retornoForm.get(field);
+        return c ? c.hasError(error) && c.touched : false;
+    }
+
+    onCondicionChange(item: RetornoScanItem): void { if (item.condicion === 'BUENO') item.observacionItem = ''; }
+    getCondicionIcon(cond: CondRetorno): string { return this.condiciones.find(c => c.value === cond)?.icon || 'help_outline'; }
+    validateCantidad(item: RetornoScanItem): void {
+        if (item.condicion === 'FALTANTE') return;
+        if (item.cantidadRetorna < 1) item.cantidadRetorna = 1;
         if (item.cantidadRetorna > item.cantidadEnviada) item.cantidadRetorna = item.cantidadEnviada;
     }
 
-    getResumenCondicion(): ResumenCondicion {
-        const sel = this.dataSource.filter(i => i.selected);
-        return {
-            buenos:     sel.filter(i => i.condicion === 'BUENO').length,
-            danados:    sel.filter(i => i.condicion === 'DAÑADO').length,
-            calibracion:sel.filter(i => i.condicion === 'REQUIERE_CALIBRACION').length,
-            faltantes:  sel.filter(i => i.condicion === 'FALTANTE').length,
-            pendientes: sel.filter(i => !i.condicion).length
-        };
-    }
-    getTotalRetornado(): number { return this.dataSource.filter(i => i.selected && i.condicion !== 'FALTANTE').reduce((a, i) => a + (i.cantidadRetorna || 0), 0); }
-    getTotalEnviado(): number   { return this.dataSource.filter(i => i.selected).reduce((a, i) => a + i.cantidadEnviada, 0); }
-
-    getItemErrors(item: TraspasoItem): string[] { return getItemErrors(item); }
-
-    getRowClass(item: TraspasoItem): string {
-        if (!item.selected) return '';
-        return 'bg-stone-50 dark:bg-slate-800/40';
+    /** Orígenes (notas de salida) representados en el carrito. */
+    get origenesCarrito(): string[] {
+        return [...new Set(this.cart.map(i => `${i.srcMovementNumber} · ${i.destWarehouseName}`).filter(Boolean))];
     }
 
-    canProceedRetorno(): boolean {
-        const sel = this.dataSource.filter(i => i.selected);
-        if (!sel.length) return false;
-        if (!this.retornoForm.valid) return false;
-        return sel.every(i => isItemValid(i));
+    getResumenCondicion(): { condicion: string; cantidad: number; color: string }[] {
+        const mapa: Record<string, number> = {};
+        this.cart.forEach(i => { mapa[i.condicion] = (mapa[i.condicion] || 0) + 1; });
+        return Object.entries(mapa).map(([k, v]) => {
+            const cfg = this.condiciones.find(c => c.value === k);
+            return { condicion: cfg?.label || k, cantidad: v, color: cfg?.bgColor || '' };
+        });
+    }
+    trackByCondicion = (_: number, r: { condicion: string }): string => r.condicion;
+
+    private _validate(): { valid: boolean; errors: string[] } {
+        const errors: string[] = [];
+        if (!this.cart.length) { errors.push('Escanee al menos una herramienta'); return { valid: false, errors }; }
+        if (!this.returnedByName.trim()) errors.push('Indique quién devuelve las herramientas');
+        if (!this.retornoForm.get('responsableRecibe')?.value?.trim()) errors.push('Indique quién recibe en el almacén');
+        if (!this.retornoForm.get('fechaRetorno')?.value) errors.push('Falta la fecha de retorno');
+        this.cart.forEach(i => {
+            if (i.condicion !== 'FALTANTE' && (i.cantidadRetorna <= 0 || i.cantidadRetorna > i.cantidadEnviada))
+                errors.push(`${i.codigo}: cantidad inválida`);
+            if ((i.condicion === 'DAÑADO' || i.condicion === 'FALTANTE') && !i.observacionItem.trim())
+                errors.push(`${i.codigo}: falta observación`);
+        });
+        return { valid: errors.length === 0, errors };
     }
 
-    openConfirmModal(): void { if (this.canProceedRetorno()) this.showConfirmModal = true; }
-    closeConfirmModal(): void { this.showConfirmModal = false; }
+    abrirConfirmRetorno(): void {
+        const v = this._validate();
+        if (!v.valid) { v.errors.forEach(e => this.showMsg('error', e)); return; }
+        this._confirmDialogRef = this.dialog.open(this.confirmRetornoModal, {
+            width: 'min(920px, 95vw)', maxWidth: '95vw', panelClass: 'no-padding-dialog', disableClose: true
+        });
+    }
+    cerrarConfirmRetorno(): void { this._confirmDialogRef?.close(); }
 
     finalizarRetorno(): void {
-        if (!this.canProceedRetorno() || this.isSavingRetorno) return;
-        this.isSavingRetorno = true;
-        this.showConfirmModal = false;
-        const form = this.retornoForm.value;
-        const sel  = this.dataSource.filter(i => i.selected);
-        const itemsConNovedad = sel.filter(it => it.condicion === 'DAÑADO' || it.condicion === 'FALTANTE');
-        // Se abren en el mismo tick del clic (gesto de usuario) para que el navegador no
-        // bloquee la pestaña nueva cuando el PDF se genera después de que responda el guardado.
-        const pdfWin = window.open('', '_blank');
-        const discrepanciaWin = itemsConNovedad.length > 0 ? window.open('', '_blank') : null;
-        const itemsJson = JSON.stringify(sel.map(i => ({
-            tool_id:       Number(i.toolId),
-            quantity:      i.condicion === 'FALTANTE' ? 0 : i.cantidadRetorna,
-            condicion:     i.condicion,
-            notes:         i.observacionItem || '',
-            serial_number: i.sn || '',
-            part_number:   i.pn || ''
-        })));
-        const type = this.tipoOrigenActivo === 'BASE' ? 'RETORNO_BASE' : 'RETORNO_TRASPASO';
-        const sourceMovementIds = [...new Set(sel.map(i => Number(i.id)).filter(id => !!id))];
-        this.movSvc.registrarRetornoBase({
-            type,
-            date:               form.fechaRetorno,
-            time:               new Date().toTimeString().slice(0, 8),
-            requested_by_name:  form.responsableRecibe || '',
-            responsible_person: form.responsableRecibe || '',
-            document_number:    form.nroDocumento || '',
-            destination_warehouse_id: form.ubicacionOrigen?.id ? Number(form.ubicacionOrigen.id) : undefined,
-            notes:              form.observaciones || '',
-            items_json:         itemsJson,
-            source_movement_ids_json: JSON.stringify(sourceMovementIds)
-        }).pipe(
-            finalize(() => this.isSavingRetorno = false),
-            takeUntil(this._unsub$)
+        const v = this._validate();
+        if (!v.valid) { v.errors.forEach(e => this.showMsg('error', e)); return; }
+        this.cerrarConfirmRetorno();
+        this.isSaving = true;
+        // Pestaña reservada en el gesto (click) para la Acta de Retorno.
+        const notaWin = this.movSvc.preAbrirVentanaPdf();
+        const fv = this.retornoForm.value;
+
+        // Un retorno por origen distinto (mismo exit_reason + mismo almacén de origen).
+        const grupos = new Map<string, RetornoScanItem[]>();
+        this.cart.forEach(i => {
+            const k = `${i.exitReason}|${i.destWarehouseId ?? 0}`;
+            const arr = grupos.get(k) || [];
+            arr.push(i);
+            grupos.set(k, arr);
+        });
+
+        const calls = [...grupos.values()].map(items => {
+            const g0 = items[0];
+            const itemsJson = JSON.stringify(items.map(i => ({
+                tool_id:       i.toolId,
+                quantity:      i.condicion === 'FALTANTE' ? 0 : i.cantidadRetorna,
+                condicion:     i.condicion,
+                notes:         i.observacionItem || '',
+                serial_number: i.sn || '',
+                part_number:   i.pn || ''
+            })));
+            const srcIds = [...new Set(items.map(i => i.srcMovementId).filter(Boolean))];
+            return this.movSvc.registrarRetornoBase({
+                type:               g0.tipoOrigen === 'TRASPASO' ? 'RETORNO_TRASPASO' : 'RETORNO_BASE',
+                date:               fv.fechaRetorno,
+                time:               (fv.horaRetorno || new Date().toTimeString().slice(0, 5)) + ':00',
+                requested_by_name:  this.returnedByName.trim(),
+                responsible_person: fv.responsableRecibe || '',
+                document_number:    fv.nroDocumento || '',
+                destination_warehouse_id: g0.destWarehouseId ?? undefined,
+                notes:              fv.observaciones || '',
+                items_json:         itemsJson,
+                source_movement_ids_json: JSON.stringify(srcIds)
+            });
+        });
+
+        forkJoin(calls).pipe(
+            finalize(() => this.isSaving = false),
+            takeUntil(this.destroy$)
         ).subscribe({
-            next: (res: any) => {
-                const nro = res?.movement_number || '---';
-                this._showMsg(`Retorno registrado: ${nro}`, 'success');
-                const pdfForm = {
-                    fechaRetorno: form.fechaRetorno,
-                    nroDocumento: form.nroDocumento,
-                    origenNombre: form.ubicacionOrigen?.nombre || '',
-                    responsableRecibe: form.responsableRecibe || '',
-                    observaciones: form.observaciones || ''
-                };
-                this.pdfSvc.generarPdfRetorno(nro, this.tipoOrigenActivo, sel, pdfForm, pdfWin);
-                if (itemsConNovedad.length > 0) {
-                    this.pdfSvc.generarPdfDiscrepancia(nro, itemsConNovedad, pdfForm, discrepanciaWin);
-                }
+            next: (results: any[]) => {
+                const nros = results.map(r => r?.movement_number || '---').join(', ');
+                this.showMsg('success', `Retorno registrado: ${nros}`);
+                results.forEach((r, idx) => {
+                    const id = Number(r?.id_movement);
+                    if (id) this.movSvc.verNotaRetorno(id, idx === 0 ? notaWin : null);
+                });
+                if (!results.some(r => Number(r?.id_movement))) { try { notaWin?.close(); } catch { /* noop */ } }
                 this.dialogRef.close({ refreshActivos: true });
             },
             error: (e: any) => {
-                pdfWin?.close(); discrepanciaWin?.close();
-                this._showMsg('Error al registrar retorno: ' + (e?.message || ''), 'error');
+                try { notaWin?.close(); } catch { /* noop */ }
+                this.showMsg('error', 'Error al registrar retorno: ' + (e?.message || ''));
             }
         });
     }
 
-    cerrarFormRetorno(): void { this.dialogRef.close(); }
+    cerrar(): void {
+        if (this.cart.length > 0 &&
+            !confirm(`¿Cancelar el retorno? Se perderán los ${this.cart.length} ítem(s) escaneado(s).`)) return;
+        this.dialogRef.close();
+    }
+    cerrarFormRetorno(): void { this.cerrar(); }
 
-    private _showMsg(msg: string, type: 'success' | 'error' | 'warning'): void {
-        const panelClass = type === 'success' ? 'snack-success' : type === 'error' ? 'snack-error' : 'snack-warning';
-        this.snackBar.open(msg, '✕', { duration: 4000, panelClass: [panelClass] });
+    private showMsg(type: 'success' | 'error' | 'info' | 'warning', text: string): void {
+        this.snackBar.open(text, 'OK', { duration: 4000, horizontalPosition: 'end', verticalPosition: 'top', panelClass: [`snackbar-${type}`] });
     }
 }

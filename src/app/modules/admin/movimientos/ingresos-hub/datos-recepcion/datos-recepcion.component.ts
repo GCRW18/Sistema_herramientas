@@ -30,7 +30,7 @@ export interface DatosRecepcionData {
     ],
     templateUrl: './datos-recepcion.component.html',
     styles: [`
-        :host { display: block; width: 100%; height: 100%; }
+        :host { display: block; width: 100%; height: auto; max-height: 94vh; }
         .custom-scrollbar-ing::-webkit-scrollbar { width: 6px; height: 6px; }
         .custom-scrollbar-ing::-webkit-scrollbar-track { background: transparent; }
         .custom-scrollbar-ing::-webkit-scrollbar-thumb { background: #D97706; border-radius: 3px; }
@@ -105,6 +105,19 @@ export class DatosRecepcionComponent implements OnInit, OnDestroy {
         if (!this.recepcionForm.get('nroCmr')?.value) {
             this.generarNroCmr();
         }
+
+        // Prellena "Funcionario que recibe" con el usuario logueado (editable) si viene vacío.
+        if (this.recepcionForm.get('funcionarioRecibe') && !this.recepcionForm.get('funcionarioRecibe')?.value) {
+            const currentUser = this._currentUserName();
+            if (currentUser) this.recepcionForm.patchValue({ funcionarioRecibe: currentUser });
+        }
+    }
+
+    private _currentUserName(): string {
+        try {
+            const auth = JSON.parse(localStorage.getItem('aut') || '{}');
+            return auth.nombre_usuario || '';
+        } catch { return ''; }
     }
 
     ngOnDestroy(): void {

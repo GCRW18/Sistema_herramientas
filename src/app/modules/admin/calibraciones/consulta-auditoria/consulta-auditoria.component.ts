@@ -275,15 +275,15 @@ export class ConsultaAuditoriaComponent implements OnInit, OnDestroy {
 
     getStatusClass(status: string): string {
         const map: Record<string, string> = {
-            'completed':  'bg-green-600 text-black border-black',
-            'returned':   'bg-green-600 text-black border-black',
-            'sent':       'bg-blue-700 text-gray-100 border-black',
-            'in_process': 'bg-amber-500 text-black border-black',
-            'in_progress':'bg-amber-500 text-black border-black',
-            'rejected':   'bg-red-600 text-gray-100 border-black',
-            'cancelled':  'bg-red-600 text-gray-100 border-black',
+            'completed':  'bg-green-100 text-green-800 border-green-200',
+            'returned':   'bg-green-100 text-green-800 border-green-200',
+            'sent':       'bg-blue-100 text-blue-800 border-blue-200',
+            'in_process': 'bg-amber-100 text-amber-800 border-amber-200',
+            'in_progress':'bg-amber-100 text-amber-800 border-amber-200',
+            'rejected':   'bg-red-100 text-red-800 border-red-200',
+            'cancelled':  'bg-red-100 text-red-800 border-red-200',
         };
-        return map[status] || 'bg-gray-100 text-gray-700 border-gray-500';
+        return map[status] || 'bg-gray-100 text-gray-700 border-gray-200';
     }
 
     getStatusLabel = (s: string) => ({
@@ -294,7 +294,7 @@ export class ConsultaAuditoriaComponent implements OnInit, OnDestroy {
     getTipoLabel = (t: string) => t === 'calibracion' ? 'CAL' : 'MNT';
 
     getTipoClass(t: string): string {
-        return t === 'calibracion' ? 'bg-indigo-200 text-indigo-900 border-indigo-400' : 'bg-orange-200 text-orange-900 border-orange-400';
+        return t === 'calibracion' ? 'bg-indigo-100 text-indigo-800 border-indigo-200' : 'bg-orange-100 text-orange-800 border-orange-200';
     }
 
     formatDate(d: string): string {

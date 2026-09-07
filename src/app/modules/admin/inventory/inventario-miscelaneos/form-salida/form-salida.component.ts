@@ -131,6 +131,10 @@ export class FormSalidaComponent implements OnInit, OnDestroy {
             this.autorizadoValue    = s.buscadorAutorizado ?? '';
             this.observaciones      = s.observaciones      ?? '';
             this.editCantidad       = s.cantidad           ?? 1;
+        } else if (this.mode === 'new') {
+            // Prellena "Despachado Por" con el usuario logueado (editable).
+            const u = this._currentUserName();
+            if (u) { this.despachadoPorName = u; this.despachadoPorValue = u; }
         }
         if (!this.readOnly) {
             this._setupFuncionarioSearch();
@@ -140,6 +144,13 @@ export class FormSalidaComponent implements OnInit, OnDestroy {
     }
 
     ngOnDestroy(): void { this._destroy$.next(); this._destroy$.complete(); }
+
+    private _currentUserName(): string {
+        try {
+            const auth = JSON.parse(localStorage.getItem('aut') || '{}');
+            return auth.nombre_usuario || '';
+        } catch { return ''; }
+    }
 
     get readOnly(): boolean { return this.mode === 'view'; }
     get isEdit():   boolean { return this.mode === 'edit'; }

@@ -1,0 +1,415 @@
+<title>Blob Storage</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+
+  :root {
+    --bg: #f4f5f8;
+    --surface: #ffffff;
+    --surface-2: #eceef3;
+    --border: #d9dce4;
+    --text: #1a2130;
+    --text-muted: #5c6577;
+    --accent: #0d7c86;
+    --accent-ink: #ffffff;
+    --accent-soft: #e1f3f3;
+    --code-bg: #10192b;
+    --code-text: #dbe6f3;
+    --code-key: #6fd3da;
+    --shadow: 0 1px 2px rgba(20, 24, 35, 0.04), 0 8px 24px rgba(20, 24, 35, 0.05);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0b1220;
+      --surface: #121b2c;
+      --surface-2: #172236;
+      --border: #29354c;
+      --text: #e8edf5;
+      --text-muted: #93a1b6;
+      --accent: #3fcdd6;
+      --accent-ink: #06181a;
+      --accent-soft: rgba(63, 205, 214, 0.12);
+      --code-bg: #0a1120;
+      --code-text: #d8e3f0;
+      --code-key: #79dee4;
+      --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 12px 30px rgba(0, 0, 0, 0.35);
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0b1220;
+    --surface: #121b2c;
+    --surface-2: #172236;
+    --border: #29354c;
+    --text: #e8edf5;
+    --text-muted: #93a1b6;
+    --accent: #3fcdd6;
+    --accent-ink: #06181a;
+    --accent-soft: rgba(63, 205, 214, 0.12);
+    --code-bg: #0a1120;
+    --code-text: #d8e3f0;
+    --code-key: #79dee4;
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 12px 30px rgba(0, 0, 0, 0.35);
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'IBM Plex Sans', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  .page {
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 56px 24px 96px;
+  }
+
+  code, .mono { font-family: 'IBM Plex Mono', ui-monospace, monospace; }
+
+  /* ---------- Header ---------- */
+  .eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 14px;
+  }
+  .eyebrow::before {
+    content: "";
+    width: 7px;
+    height: 7px;
+    border-radius: 2px;
+    background: var(--accent);
+    display: inline-block;
+  }
+  h1 {
+    font-size: 34px;
+    line-height: 1.15;
+    letter-spacing: -0.01em;
+    margin: 0 0 12px;
+    text-wrap: balance;
+    font-weight: 700;
+  }
+  .dek {
+    font-size: 16px;
+    line-height: 1.6;
+    color: var(--text-muted);
+    max-width: 62ch;
+    margin: 0 0 40px;
+  }
+  .dek strong { color: var(--text); font-weight: 600; }
+
+  h2 {
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin: 0 0 18px;
+    padding-top: 40px;
+    border-top: 1px solid var(--border);
+  }
+  section:first-of-type h2 { border-top: none; padding-top: 0; }
+
+  p { line-height: 1.65; font-size: 15px; }
+
+  /* ---------- Pipeline ---------- */
+  .pipeline {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+  .stage {
+    position: relative;
+    display: flex;
+    gap: 16px;
+    padding: 20px 0;
+  }
+  .stage:not(:last-child) {
+    border-bottom: 1px dashed var(--border);
+  }
+  .stage-num {
+    flex-shrink: 0;
+    width: 34px;
+    height: 34px;
+    border-radius: 10px;
+    background: var(--accent-soft);
+    color: var(--accent);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'IBM Plex Mono', monospace;
+    font-weight: 600;
+    font-size: 14px;
+  }
+  .stage-body { flex: 1; min-width: 0; }
+  .stage-title {
+    font-weight: 600;
+    font-size: 15.5px;
+    margin: 4px 0 6px;
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .stage-title .tag {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--text-muted);
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    padding: 2px 7px;
+  }
+  .stage p { margin: 0 0 8px; color: var(--text-muted); font-size: 14.5px; }
+  .stage p:last-child { margin-bottom: 0; }
+  .stage code.inline {
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    padding: 1px 6px;
+    font-size: 13px;
+    color: var(--text);
+  }
+
+  /* ---------- Table ---------- */
+  .table-wrap { overflow-x: auto; border-radius: 12px; border: 1px solid var(--border); }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; background: var(--surface); }
+  th, td { text-align: left; padding: 12px 14px; vertical-align: top; }
+  thead th {
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    background: var(--surface-2);
+    font-weight: 600;
+    border-bottom: 1px solid var(--border);
+  }
+  tbody tr:not(:last-child) td { border-bottom: 1px solid var(--border); }
+  tbody td.mono { font-size: 13px; color: var(--text); }
+  tbody td.muted { color: var(--text-muted); }
+
+  /* ---------- Code panel ---------- */
+  .code-panel {
+    background: var(--code-bg);
+    color: var(--code-text);
+    border-radius: 12px;
+    padding: 18px 20px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 13px;
+    line-height: 1.7;
+    overflow-x: auto;
+    box-shadow: var(--shadow);
+  }
+  .code-panel .k { color: var(--code-key); }
+  .code-panel .c { color: #8291a8; }
+
+  /* ---------- Callout ---------- */
+  .callout {
+    display: flex;
+    gap: 14px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    border-radius: 10px;
+    padding: 16px 18px;
+    box-shadow: var(--shadow);
+  }
+  .callout .glyph {
+    font-family: 'IBM Plex Mono', monospace;
+    font-weight: 700;
+    color: var(--accent);
+    font-size: 16px;
+    flex-shrink: 0;
+  }
+  .callout p { margin: 0; font-size: 14px; color: var(--text-muted); }
+  .callout strong { color: var(--text); }
+
+  /* ---------- Env table ---------- */
+  .env-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+  .env-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 16px;
+    box-shadow: var(--shadow);
+  }
+  .env-card .env-label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 8px;
+  }
+  .env-card code { font-size: 12.5px; word-break: break-all; color: var(--text); }
+  @media (max-width: 520px) { .env-grid { grid-template-columns: 1fr; } }
+
+  /* ---------- Chips ---------- */
+  .chip-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .chip {
+    font-size: 12.5px;
+    font-family: 'IBM Plex Mono', monospace;
+    color: var(--text);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    padding: 6px 10px;
+  }
+
+  footer {
+    margin-top: 56px;
+    padding-top: 20px;
+    border-top: 1px solid var(--border);
+    font-size: 12.5px;
+    color: var(--text-muted);
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+  footer code { font-size: 12px; }
+</style>
+
+<div class="page">
+
+  <div class="eyebrow">Sistema Herramientas &middot; referencia interna</div>
+  <h1>Cómo guardamos y mostramos archivos en Blob Storage</h1>
+  <p class="dek">
+    Fotos de herramientas y certificados de calibración ya <strong>no se guardan en la base de datos</strong>
+    (antes iban como base64, inflando las tablas). Ahora el archivo vive en Blob Storage y en la BD solo
+    queda una ruta corta. Todo el manejo de esa ruta pasa por un único servicio de Angular.
+  </p>
+
+  <section>
+    <h2>El recorrido de un archivo</h2>
+    <div class="pipeline">
+
+      <div class="stage">
+        <div class="stage-num">1</div>
+        <div class="stage-body">
+          <div class="stage-title">Subir <span class="tag">upload()</span></div>
+          <p>
+            El usuario adjunta una foto o un PDF. El frontend lo manda por multipart al endpoint de subida.
+            El backend guarda el archivo un instante en disco local, lo reenvía al servicio real de Blob
+            Storage (fuera de este repo) y borra la copia local. La ruta corta es lo único que vuelve.
+          </p>
+          <p>Endpoint: <code class="inline">herramientas/SubirArchivosBs/uploadFileBlobStorage</code></p>
+          <p>Backend: <code class="inline">ACTSubirArchivosBs</code> &rarr; <code class="inline">MODSubirArchivosBs</code></p>
+          <p>Respuesta: <code class="inline">ruta_bs = containerName + '/' + name</code> — ambos los devuelve el servicio externo de Blob Storage</p>
+        </div>
+      </div>
+
+      <div class="stage">
+        <div class="stage-num">2</div>
+        <div class="stage-body">
+          <div class="stage-title">Guardar la ruta</div>
+          <p>Esa ruta corta es lo único que se persiste en la base — nunca el contenido del archivo.</p>
+          <div class="table-wrap" style="margin-top:10px">
+            <table>
+              <thead>
+                <tr><th>Qué es</th><th>Dónde se guarda</th></tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Foto de una herramienta</td>
+                  <td class="mono">he.ttool_files.path <span class="muted">(purpose = 'location_photo')</span></td>
+                </tr>
+                <tr>
+                  <td>Certificado PDF de calibración</td>
+                  <td class="mono">he.tmovement_items.certificate_file_url</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="stage">
+        <div class="stage-num">3</div>
+        <div class="stage-body">
+          <div class="stage-title">Mostrarlo <span class="tag">resolveImageSrc() / open()</span></div>
+          <p>Al pintar la pantalla, el servicio arma la URL pública a partir de esa ruta guardada.</p>
+          <div class="code-panel" style="margin-top:10px">
+<span class="c">// Descarga / vista de un archivo guardado</span>
+<span class="k">GET</span> {environment.filesUrl}<span class="k">sis_workflow/control/DescargarArchivoBlobStorage.php</span>
+    ?url_blob_storage=encodeURIComponent(rutaBs)
+          </div>
+          <p style="margin-top:10px"><code class="inline">resolveImageSrc(v)</code> se usa en <code class="inline">&lt;img [src]&gt;</code>, y <code class="inline">open(rutaBs)</code> abre PDFs en pestaña nueva.</p>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <section>
+    <h2>Compatibilidad con lo viejo</h2>
+    <div class="callout">
+      <div class="glyph">!</div>
+      <p>
+        Algunos registros antiguos todavía tienen el archivo como <strong>base64</strong> en esa misma columna.
+        <code class="inline">isRutaBs(v)</code> distingue una ruta nueva (corta, con <code class="inline">/</code> o extensión
+        de archivo) de ese base64 heredado, así que <strong>no hace falta migrar los datos viejos</strong> —
+        el mismo componente muestra ambos casos correctamente.
+      </p>
+    </div>
+  </section>
+
+  <section>
+    <h2>Base según el ambiente</h2>
+    <div class="env-grid">
+      <div class="env-card">
+        <div class="env-label">Desarrollo</div>
+        <code>http://10.150.0.91/kerp/</code>
+      </div>
+      <div class="env-card">
+        <div class="env-label">Producción</div>
+        <code>https://erp.boa.bo/</code>
+      </div>
+    </div>
+    <p style="margin-top:12px; color:var(--text-muted); font-size:13.5px;">
+      Definido en <code class="inline">environment.filesUrl</code> — es el prefijo que se le pega a la ruta de descarga.
+    </p>
+  </section>
+
+  <section>
+    <h2>Dónde se usa hoy</h2>
+    <div class="chip-grid">
+      <span class="chip">detalle-herramienta</span>
+      <span class="chip">form-herramienta-nivel</span>
+      <span class="chip">ingresos-hub</span>
+      <span class="chip">recepcion-herramienta</span>
+      <span class="chip">herramienta-a-baja</span>
+      <span class="chip">cuarentena-baja-hub</span>
+      <span class="chip">consultar-inventario</span>
+      <span class="chip">gestion-ubicaciones</span>
+      <span class="chip">envio-calibracion</span>
+      <span class="chip">form-retorno</span>
+      <span class="chip">retorno-calibracion</span>
+      <span class="chip">transcripcion-manual</span>
+    </div>
+  </section>
+
+  <footer>
+    <span>
+      Frontend: <code>core/services/blob-storage.service.ts</code><br>
+      Backend: <code>control/ACTSubirArchivosBs.php</code> &middot; <code>modelo/MODSubirArchivosBs.php</code>
+    </span>
+    <span>Sistema Herramientas &middot; BoA</span>
+  </footer>
+
+</div>

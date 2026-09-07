@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, inject } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject, ViewChild, ElementRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { MatDialog, MatDialogRef, MAT_DIALOG_DATA, MatDialogModule } from '@angular/material/dialog';
@@ -13,7 +13,6 @@ import { localDateStr } from '../../../../../../core/utils/date.utils';
 import {
     Ubicacion, ToolEnvioItem, Funcionario, CONDICIONES_ENVIO, TIPOS_TRASPASO, motivoBloqueoSalida
 } from '../../retorno-traspaso.types';
-import { TraspasoOficialPdfService } from '../../traspaso-oficial-pdf.service';
 
 export interface TraspasoDialogData {
     almacenes: Ubicacion[];
@@ -31,12 +30,16 @@ export interface TraspasoDialogData {
     ],
     templateUrl: './traspaso-dialog.component.html',
     styles: [`
-        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        :host { display: flex; flex-direction: column; height: 100%; }
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #000; border-radius: 3px; }
+        :host-context(.dark) .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; }
     `]
 })
 export class TraspasoDialogComponent implements OnInit, OnDestroy {
+
+    @ViewChild('scanInputTrp') scanInputRef!: ElementRef<HTMLInputElement>;
 
     private dialogRef = inject(MatDialogRef<TraspasoDialogComponent>);
     data              = inject<TraspasoDialogData>(MAT_DIALOG_DATA);
@@ -45,8 +48,10 @@ export class TraspasoDialogComponent implements OnInit, OnDestroy {
     private snackBar  = inject(MatSnackBar);
     private movSvc    = inject(MovementService);
     private toolSvc   = inject(ToolService);
-    private pdfSvc    = inject(TraspasoOficialPdfService);
     private _unsub$   = new Subject<void>();
+
+    // ── Escaneo QR / wedge + búsqueda, campo único (mismo patrón que Préstamo Técnico) ──
+    scanningTrp = false;
     private _srchTraspaso$        = new Subject<string>();
     private _srchTraspasoResp$    = new Subject<string>();
     private _srchTraspasoAut$     = new Subject<string>();
@@ -102,7 +107,11 @@ export class TraspasoDialogComponent implements OnInit, OnDestroy {
             fechaTraspaso:        [today, Validators.required],
             horaTraspaso:         [hora],
             responsableTraspaso:  ['', Validators.required],
+            licenciaSolicitante:  [''],
+            cargoSolicitante:     [''],
+            unidadSolicitante:    [''],
             autorizadoPor:        ['', Validators.required],
+            cargoAutorizado:      [''],
             recibeEnDestino:      ['', Validators.required],
             tipoTraspaso:         ['TEMPORAL', Validators.required],
             fechaRetornoEsperada: [''],
@@ -111,9 +120,57 @@ export class TraspasoDialogComponent implements OnInit, OnDestroy {
         });
         this._setupSearches();
         this._loadCorrelativo();
+
+        // Prellena "Responsable (traspasa)" con el usuario logueado (editable). emitEvent:false
+        // para no disparar el autocompletado de funcionarios al abrir el formulario.
+        const currentUser = this._currentUserName();
+        if (currentUser) this.traspasoForm.patchValue({ responsableTraspaso: currentUser }, { emitEvent: false });
+
+        this._focusScanTrp(150);
+    }
+
+    private _focusScanTrp(delay = 50): void { setTimeout(() => { try { this.scanInputRef?.nativeElement.focus(); } catch { /* view not ready */ } }, delay); }
+
+    /** Click en "AGREGAR": usa la coincidencia exacta de código de las sugerencias
+     *  ya cargadas por la búsqueda en vivo (o la única sugerencia si solo hay una). */
+    addToolTraspasoFromInput(): void {
+        const code = this.toolSearchTraspaso.trim();
+        if (!code) return;
+        const tool = this.toolResultsTraspaso.find((t: any) => String(t.code ?? t.codigo ?? '').toLowerCase() === code.toLowerCase())
+            || (this.toolResultsTraspaso.length === 1 ? this.toolResultsTraspaso[0] : null);
+        if (!tool) { this._showMsg('Seleccione la herramienta de la lista de sugerencias', 'warning'); return; }
+        this.addToolTraspaso(tool);
+    }
+
+    /** Enter en el input / lector físico wedge: usa la coincidencia exacta de las
+     *  sugerencias si ya llegó; si no, resuelve el código directo contra el backend
+     *  (más rápido que esperar el debounce de la búsqueda en vivo). */
+    scanTrpEnter(): void {
+        const code = this.toolSearchTraspaso.trim();
+        if (!code) return;
+        const exact = this.toolResultsTraspaso.find((t: any) => String(t.code ?? t.codigo ?? '').toLowerCase() === code.toLowerCase());
+        if (exact) { this.addToolTraspaso(exact); return; }
+        this.scanningTrp = true;
+        this.toolSvc.getToolByCode(code).pipe(
+            finalize(() => this.scanningTrp = false),
+            takeUntil(this._unsub$)
+        ).subscribe({
+            next: (raw: any) => {
+                if (!raw) { this._showMsg(`No se encontró la herramienta "${code}"`, 'warning'); return; }
+                this.addToolTraspaso(raw);
+            },
+            error: () => this._showMsg('Error al buscar la herramienta', 'error')
+        });
     }
 
     ngOnDestroy(): void { this._unsub$.next(); this._unsub$.complete(); }
+
+    private _currentUserName(): string {
+        try {
+            const auth = JSON.parse(localStorage.getItem('aut') || '{}');
+            return auth.nombre_usuario || '';
+        } catch { return ''; }
+    }
 
     private _loadCorrelativo(): void {
         this.loadingCorrelativoTrp = true;
@@ -155,7 +212,7 @@ export class TraspasoDialogComponent implements OnInit, OnDestroy {
                 return this.movSvc.getPersonal().pipe(
                     map((lista: any[]) => lista
                         .filter(f => [f.nombreCompleto, f.nombre, f.apellido_paterno, f.apellido_materno].filter(Boolean).join(' ').toLowerCase().includes(ql))
-                        .slice(0, 10).map(f => ({ id: String(f.id_employee || f.id || ''), nombre: f.nombreCompleto || f.nombre || '', cargo: f.cargo || '' }))),
+                        .slice(0, 10).map(f => ({ id: String(f.id_employee || f.id || ''), nombre: f.nombreCompleto || f.nombre || '', cargo: f.cargo || '', licencia: f.licencia || f.nro_licencia || '', unidad: f.departamento || f.area || '' }))),
                     finalize(() => this.funcTraspasoRespLoading = false));
             }),
             takeUntil(this._unsub$)
@@ -209,6 +266,7 @@ export class TraspasoDialogComponent implements OnInit, OnDestroy {
             unidad: tool.unit_of_measure ?? '', listaContenido: tool.content_list ?? ''
         });
         this.toolSearchTraspaso = ''; this.toolResultsTraspaso = []; this.showToolDropTraspaso = false;
+        this._focusScanTrp();
     }
 
     removeToolTraspaso(i: number): void { this.itemsTraspaso.splice(i, 1); }
@@ -242,11 +300,22 @@ export class TraspasoDialogComponent implements OnInit, OnDestroy {
     // — Funcionario methods —
     onResponsableTraspasoInput(val: string): void { this.traspasoForm.patchValue({ responsableTraspaso: val }, { emitEvent: false }); this._srchTraspasoResp$.next(val); }
     hideFuncTraspasoRespDropdown(): void { setTimeout(() => this.showFuncTraspasoRespDropdown = false, 150); }
-    selectFuncionarioTraspasoResp(f: Funcionario): void { this.traspasoForm.patchValue({ responsableTraspaso: f.nombre }); this.showFuncTraspasoRespDropdown = false; }
+    selectFuncionarioTraspasoResp(f: any): void {
+        this.traspasoForm.patchValue({
+            responsableTraspaso: f.nombre,
+            cargoSolicitante: f.cargo || '',
+            licenciaSolicitante: f.licencia || '',
+            unidadSolicitante: f.unidad || ''
+        });
+        this.showFuncTraspasoRespDropdown = false;
+    }
 
     onAutorizadoTraspasoInput(val: string): void { this.traspasoForm.patchValue({ autorizadoPor: val }, { emitEvent: false }); this._srchTraspasoAut$.next(val); }
     hideFuncTraspasoAutDropdown(): void { setTimeout(() => this.showFuncTraspasoAutDropdown = false, 150); }
-    selectFuncionarioTraspasoAut(f: Funcionario): void { this.traspasoForm.patchValue({ autorizadoPor: f.nombre }); this.showFuncTraspasoAutDropdown = false; }
+    selectFuncionarioTraspasoAut(f: any): void {
+        this.traspasoForm.patchValue({ autorizadoPor: f.nombre, cargoAutorizado: f.cargo || '' });
+        this.showFuncTraspasoAutDropdown = false;
+    }
 
     onRecibeTraspasoInput(val: string): void { this.traspasoForm.patchValue({ recibeEnDestino: val }, { emitEvent: false }); this._srchTraspasoRecibe$.next(val); }
     hideFuncTraspasoRecibeDropdown(): void { setTimeout(() => this.showFuncTraspasoRecibeDropdown = false, 150); }
@@ -274,9 +343,8 @@ export class TraspasoDialogComponent implements OnInit, OnDestroy {
             serial_number: it.sn || '', part_number: it.pn || '', notes: it.notas || '',
             unit_of_measure: it.unidad || '', content_list: it.listaContenido || ''
         })));
-        // Se abre en el mismo tick del clic (gesto de usuario) para que el navegador no
-        // bloquee la pestaña nueva cuando el PDF se genera después de que responda el guardado.
-        const pdfWin = window.open('', '_blank');
+        // Pestaña reservada en el gesto (click) para la Nota de Traspaso MGH-109.
+        const pdfWin = this.movSvc.preAbrirVentanaPdf();
         this.isSavingTraspaso = true;
         const payload: any = {
             date: form.fechaTraspaso, time: (form.horaTraspaso || '00:00') + ':00',
@@ -290,6 +358,11 @@ export class TraspasoDialogComponent implements OnInit, OnDestroy {
             authorized_by:       form.autorizadoPor       || '',
             transfer_type:       form.tipoTraspaso        || 'TEMPORAL',
             notes:               form.notas               || '',
+            // Datos del solicitante / autorizante para la Nota de Traspaso MGH-109 (patch HE-82).
+            applicant_license:   form.licenciaSolicitante || '',
+            applicant_position:  form.cargoSolicitante    || '',
+            applicant_unit:      form.unidadSolicitante   || '',
+            authorized_position: form.cargoAutorizado     || '',
             items_json:          itemsJson
         };
         if (form.fechaRetornoEsperada && this.requiereFechaRetornoTrp()) {
@@ -302,19 +375,13 @@ export class TraspasoDialogComponent implements OnInit, OnDestroy {
             next: (result: any) => {
                 const nro = result?.movement_number || '---';
                 this._showMsg(`Traspaso registrado: ${nro}`, 'success');
-                this.pdfSvc.generarPdf(nro, this.itemsTraspaso, {
-                    responsableTraspaso: form.responsableTraspaso,
-                    fechaTraspaso: form.fechaTraspaso,
-                    horaTraspaso: form.horaTraspaso,
-                    baseDestino: form.areaDepartamento,
-                    recibeEnDestino: form.recibeEnDestino,
-                    autorizadoPor: form.autorizadoPor,
-                    tipoTraspasoLabel: form.tipoTraspaso,
-                    notas: form.notas
-                }, pdfWin);
+                // Nota de Traspaso MGH-109 — PDF real TCPDF backend.
+                const idMov = Number(result?.id_movement);
+                if (idMov) this.movSvc.verNotaTraspaso(idMov, pdfWin);
+                else { try { pdfWin?.close(); } catch { /* noop */ } }
                 this.dialogRef.close({ refreshActivos: true, movementNumber: nro });
             },
-            error: (err: any) => { pdfWin?.close(); this._showMsg('Error al registrar traspaso: ' + (err?.message || ''), 'error'); }
+            error: (err: any) => { try { pdfWin?.close(); } catch { /* noop */ } this._showMsg('Error al registrar traspaso: ' + (err?.message || ''), 'error'); }
         });
     }
 
@@ -322,7 +389,8 @@ export class TraspasoDialogComponent implements OnInit, OnDestroy {
         this.traspasoForm.reset({
             fechaTraspaso: localDateStr(),
             horaTraspaso:  new Date().toTimeString().slice(0, 5),
-            baseOrigen: this.data.defaultAlmacen ?? null
+            baseOrigen: this.data.defaultAlmacen ?? null,
+            responsableTraspaso: this._currentUserName()
         });
         this.itemsTraspaso = [];
         this.funcionariosTraspasoResp   = []; this.showFuncTraspasoRespDropdown   = false;

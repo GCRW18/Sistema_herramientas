@@ -2,7 +2,7 @@
      FORM DIALOG: NUEVO PRÉSTAMO TÉCNICO — PT
 ══════════════════════════════════════════════════════════════════ -->
 <div class="bg-stone-100 dark:bg-[#0F172A] sm:border-2 border-black rounded-2xl flex flex-col overflow-hidden relative w-full"
-     style="box-shadow:6px 6px 0 #000; height:min(560px,90vh)">
+     style="box-shadow:6px 6px 0 #000; height:min(820px,92vh)">
 
     <!-- Saving overlay -->
     <div *ngIf="isSaving" class="absolute inset-0 bg-black/60 flex items-center justify-center z-50">
@@ -38,7 +38,7 @@
     <div class="flex flex-col sm:flex-row flex-1 overflow-hidden min-h-0">
 
         <!-- LEFT: form técnico -->
-        <div class="sm:basis-[42%] shrink-0 overflow-y-auto custom-scrollbar border-b-2 sm:border-b-0 sm:border-r-2 border-black/20 dark:border-slate-600">
+        <div class="sm:basis-[340px] sm:max-w-[380px] shrink-0 overflow-y-auto custom-scrollbar border-b-2 sm:border-b-0 sm:border-r-2 border-black/20 dark:border-slate-600">
             <form [formGroup]="internalForm" class="px-4 py-3 flex flex-col gap-3">
 
                 <!-- ── Datos del Técnico ── -->
@@ -165,14 +165,16 @@
                     </div>
                     <div>
                         <label class="text-[9px] font-black uppercase tracking-wider text-stone-400 dark:text-slate-400 mb-1 flex items-center gap-1">
-                            Destino
+                            Destino <span class="text-red-500">*</span>
                             <span *ngIf="loadingDestinos" class="w-3 h-3 border-2 border-amber-400 border-t-transparent rounded-full animate-spin inline-block"></span>
                         </label>
                         <select formControlName="destino"
-                                class="w-full h-8 px-2.5 bg-white dark:bg-slate-800 text-black dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-lg text-xs font-bold outline-none transition-all cursor-pointer hover:border-stone-400 focus:border-black appearance-none disabled:opacity-50">
+                                class="w-full h-8 px-2.5 bg-white dark:bg-slate-800 text-black dark:text-white border-2 rounded-lg text-xs font-bold outline-none transition-all cursor-pointer hover:border-stone-400 focus:border-black appearance-none disabled:opacity-50"
+                                [ngClass]="hasErrorInternal('destino','required') ? 'border-red-500' : 'border-stone-300 dark:border-slate-600'">
                             <option value="">— Seleccionar —</option>
                             <option *ngFor="let d of destinos" [value]="d">{{ d }}</option>
                         </select>
+                        <p *ngIf="hasErrorInternal('destino','required')" class="text-[9px] text-red-500 font-black mt-1">Requerido</p>
                     </div>
                 </div>
 
@@ -205,20 +207,21 @@
             <div class="border-b-2 border-black/20 dark:border-slate-600 px-4 pt-3 pb-2.5 flex flex-col gap-2 shrink-0">
 
                 <div class="flex items-center gap-1.5">
-                    <mat-icon class="!text-xs text-amber-500">search</mat-icon>
-                    <span class="text-[9px] font-black uppercase text-stone-400 dark:text-slate-500 tracking-wider">Añadir Herramienta al Préstamo</span>
+                    <mat-icon class="!text-sm text-amber-500">qr_code_scanner</mat-icon>
+                    <span class="text-[9px] font-black uppercase text-stone-400 dark:text-slate-500 tracking-wider">Escanear / Añadir Herramienta</span>
                 </div>
 
                 <!-- Search input row -->
                 <div class="relative flex gap-2">
                     <div class="relative flex-1 min-w-0">
-                        <input type="text" [value]="toolSearchPt"
+                        <input #scanInput type="text" [value]="toolSearchPt"
                                (input)="onToolInputPt($any($event.target).value)"
                                (blur)="hideToolDropPt()"
-                               (keydown.enter)="addToolPtFromInput()"
-                               placeholder="Código, nombre o P/N..."
+                               (keydown.enter)="scanAndAddPt()"
+                               placeholder="Escanee el QR o escriba código / nombre / P/N + Enter"
                                autocomplete="off"
-                               class="w-full h-8 text-xs font-bold bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-lg px-2.5 outline-none transition-all placeholder:text-stone-300 dark:placeholder:text-slate-500 hover:border-stone-400 focus:border-black focus:shadow-[2px_2px_0_#000]">
+                               class="w-full h-8 pl-8 text-xs font-bold bg-white dark:bg-slate-800 dark:text-white border-2 border-black rounded-lg px-2.5 outline-none transition-all placeholder:text-stone-300 dark:placeholder:text-slate-500 hover:border-stone-400 focus:shadow-[2px_2px_0_#000]">
+                        <mat-icon class="absolute left-2 top-1/2 -translate-y-1/2 text-stone-400 !text-sm !w-[14px] !h-[14px] !leading-[14px] pointer-events-none">hardware</mat-icon>
                         <div *ngIf="toolSearchLoadingPt" class="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 border-2 border-[#FFC501FF] border-t-transparent rounded-full animate-spin"></div>
                         <div *ngIf="showToolDropPt && toolSuggestionsPt.length"
                              class="absolute z-50 w-full mt-1 top-full left-0 border-2 border-black dark:border-slate-600 rounded-xl bg-white dark:bg-slate-800 overflow-hidden shadow-[3px_3px_0_#000] divide-y divide-stone-100 dark:divide-slate-700 max-h-40 overflow-y-auto custom-scrollbar">
@@ -232,7 +235,7 @@
                             </div>
                         </div>
                     </div>
-                    <button type="button" (click)="addToolPtFromInput()" [disabled]="!toolSearchPt.trim()"
+                    <button type="button" (click)="scanAndAddPt()" [disabled]="!toolSearchPt.trim()"
                             class="h-8 px-3 bg-amber-400 text-black font-black text-[10px] border-2 border-black rounded-lg shadow-[2px_2px_0_#000] hover:shadow-none hover:translate-x-[1px] hover:translate-y-[1px] transition-all flex items-center gap-1.5 shrink-0 disabled:opacity-50">
                         <mat-icon class="!text-sm">add_circle</mat-icon>
                         <span class="hidden sm:inline">AGREGAR</span>
@@ -262,21 +265,16 @@
             <div class="flex-1 overflow-y-auto custom-scrollbar">
                 <div *ngIf="internalDataSource().length === 0"
                      class="flex flex-col items-center justify-center gap-3 h-full py-10 text-center px-4">
-                    <mat-icon class="!text-5xl text-stone-300 dark:text-slate-600">inbox</mat-icon>
-                    <p class="text-sm font-black uppercase text-stone-400 dark:text-slate-500">Busca herramientas o agrega un kit</p>
+                    <mat-icon class="!text-5xl text-stone-300 dark:text-slate-600">qr_code_scanner</mat-icon>
+                    <p class="text-sm font-black uppercase text-stone-400 dark:text-slate-500">Escanee una herramienta o agregue un kit</p>
                 </div>
-                <table *ngIf="internalDataSource().length > 0" class="w-full min-w-[860px]">
-                    <thead class="bg-stone-100 dark:bg-slate-700 border-b-2 border-black/20 sticky top-0">
+                <table *ngIf="internalDataSource().length > 0" class="w-full min-w-[560px]">
+                    <thead class="bg-stone-100 dark:bg-slate-700 border-b-2 border-black/20 sticky top-0 z-10">
                     <tr class="text-left text-[10px] font-black uppercase tracking-wider text-stone-500 dark:text-slate-300">
                         <th class="px-3 py-2 w-8">#</th>
-                        <th class="px-3 py-2">Código</th>
-                        <th class="px-3 py-2 min-w-[130px]">Descripción</th>
-                        <th class="px-3 py-2 min-w-[90px]">P/N · N/S</th>
-                        <th class="px-3 py-2 min-w-[95px]">F. Calibración</th>
-                        <th class="px-3 py-2 w-16 text-center">Cant.</th>
-                        <th class="px-3 py-2 w-28">Condición</th>
-                        <th class="px-3 py-2 min-w-[110px]">Lista Contenido</th>
-                        <th class="px-3 py-2 min-w-[120px]">Obs. Ítem</th>
+                        <th class="px-3 py-2 min-w-[240px]">Herramienta</th>
+                        <th class="px-3 py-2 w-20 text-center">Cant.</th>
+                        <th class="px-3 py-2 min-w-[150px]">Obs. Ítem</th>
                         <th class="px-3 py-2 w-8"></th>
                     </tr>
                     </thead>
@@ -284,39 +282,31 @@
                     <tr *ngFor="let item of internalDataSource(); let i = index"
                         (click)="abrirDetalleHerramientaItem(item)"
                         title="Clic para ver detalle de la herramienta"
-                        class="border-b border-stone-100 dark:border-slate-700 hover:bg-gray-100 dark:hover:bg-slate-700/50 transition-colors cursor-pointer">
-                        <td class="px-3 py-2.5 text-xs font-black text-stone-400 text-center">{{ i + 1 }}</td>
-                        <td class="px-3 py-2.5">
-                            <span class="font-mono text-[11px] font-black text-black dark:text-white">{{ item.codigo }}</span>
+                        class="border-b border-stone-100 dark:border-slate-700 hover:bg-gray-100 dark:hover:bg-slate-700/50 transition-colors cursor-pointer align-top">
+                        <td class="px-3 py-3 text-xs font-black text-stone-400 text-center">{{ i + 1 }}</td>
+                        <td class="px-3 py-3">
+                            <div class="flex items-center gap-2 flex-wrap">
+                                <span class="font-mono text-xs font-black text-black dark:text-white">{{ item.codigo }}</span>
+                                <span class="text-[9px] font-black uppercase text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-300 dark:border-emerald-700 px-1.5 py-0.5 rounded">{{ item.estado || 'SERVICEABLE' }}</span>
+                            </div>
+                            <div class="text-xs font-bold text-black dark:text-white mt-0.5">{{ item.descripcion }}</div>
+                            <div class="text-[10px] text-stone-400 font-mono mt-0.5">P/N: {{ item.pn || '—' }} · S/N: {{ item.sn || '—' }}<span *ngIf="item.marca"> · {{ item.marca }}</span></div>
+                            <div class="text-[10px] text-stone-400 mt-0.5">
+                                <span *ngIf="item.fechaCalibracion">Calib: {{ item.fechaCalibracion }}</span>
+                                <span *ngIf="item.listaContenido" [title]="item.listaContenido"> · Lista: {{ item.listaContenido }}</span>
+                                <span *ngIf="!item.fechaCalibracion && !item.listaContenido">Sin calibración / lista</span>
+                            </div>
                         </td>
-                        <td class="px-3 py-2.5 text-xs font-bold text-black dark:text-white max-w-[150px] truncate" [title]="item.descripcion">{{ item.descripcion }}</td>
-                        <td class="px-3 py-2.5">
-                            <p class="font-mono text-[10px] text-stone-400 leading-snug">{{ item.pn || '—' }}</p>
-                            <p class="font-mono text-[10px] text-stone-400 leading-snug">{{ item.sn || '—' }}</p>
-                        </td>
-                        <td class="px-3 py-2.5">
-                <span class="text-[10px] font-bold font-mono text-black dark:text-white">
-                  {{ item.fechaCalibracion || '—' }}
-                </span>
-                        </td>
-                        <td class="px-3 py-2.5 text-center">
+                        <td class="px-3 py-3 text-center">
                             <span class="text-base font-black text-black dark:text-white">{{ item.cantidad }}</span>
                             <span class="text-[10px] text-stone-400 ml-1">{{ item.unidad }}</span>
                         </td>
-                        <td class="px-3 py-2.5">
-                <span class="text-[10px] font-black uppercase text-black dark:text-white inline-block">{{ item.estado || 'N/A' }}</span>
-                        </td>
-                        <td class="px-3 py-2.5" style="max-width:120px">
-                <span class="text-[10px] text-stone-400 dark:text-slate-400 font-mono truncate block" [title]="item.listaContenido">
-                  {{ item.listaContenido || '—' }}
-                </span>
-                        </td>
-                        <td class="px-3 py-2.5" (click)="$event.stopPropagation()">
+                        <td class="px-3 py-3" (click)="$event.stopPropagation()">
                             <input type="text" [(ngModel)]="item.contenido" [ngModelOptions]="{standalone:true}"
                                    placeholder="Observación…"
                                    class="w-full h-8 px-2.5 text-[10px] font-bold border-2 border-stone-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 dark:text-white focus:outline-none focus:border-black transition-all placeholder:text-stone-300">
                         </td>
-                        <td class="px-3 py-2.5 text-center" (click)="$event.stopPropagation()">
+                        <td class="px-3 py-3 text-center" (click)="$event.stopPropagation()">
                             <button type="button" (click)="eliminarItemInterno(i)"
                                     class="w-7 h-7 flex items-center justify-center bg-red-50 hover:bg-red-500 text-red-500 hover:text-white border-2 border-red-200 hover:border-red-600 rounded-lg transition-all">
                                 <mat-icon class="!text-sm">close</mat-icon>
@@ -357,59 +347,91 @@
     </div>
 </div>
 
-<!-- MODAL: CONFIRMAR PRÉSTAMO -->
+<!-- MODAL: CONFIRMAR PRÉSTAMO (panel doble: Datos / Herramientas) -->
 <ng-template #confirmInternoModal>
     <div class="bg-stone-100 dark:bg-[#0F172A] border-2 border-black overflow-hidden flex flex-col"
-         style="width:600px; max-width:95vw; max-height:90vh">
+         style="width:min(920px,95vw); height:min(600px,88vh)">
 
         <div class="bg-[#0F172A] px-4 py-3 flex items-center gap-3 shrink-0">
             <div class="w-8 h-8 rounded bg-amber-400 border-2 border-black flex items-center justify-center shadow-[2px_2px_0_#fbbf24] shrink-0">
                 <mat-icon class="!text-base text-black">send</mat-icon>
             </div>
             <div>
-                <p class="text-[9px] text-slate-400 font-bold uppercase tracking-[0.15em] leading-none mb-1">Préstamo Técnico</p>
+                <p class="text-[9px] text-slate-400 font-bold uppercase tracking-[0.15em] leading-none mb-1">Préstamo Técnico · MGH-100</p>
                 <h2 class="text-sm text-white font-black uppercase tracking-tight leading-none">Confirmar Préstamo</h2>
             </div>
+            <span class="ml-auto px-2 py-1 bg-amber-500 text-black font-black text-[10px] border border-black rounded leading-none shrink-0">
+                {{ internalDataSource().length }} ítem{{ internalDataSource().length !== 1 ? 's' : '' }}
+            </span>
         </div>
 
-        <div class="flex-1 overflow-y-auto px-4 py-4 flex flex-col gap-3 custom-scrollbar">
+        <!-- Body: LEFT (Datos) / RIGHT (Herramientas) -->
+        <div class="flex flex-col sm:flex-row flex-1 overflow-hidden min-h-0">
 
-            <div class="bg-white dark:bg-slate-800 border-2 border-black rounded-xl p-3 flex flex-col gap-1.5">
-                <p class="text-[9px] font-black uppercase tracking-[0.15em] text-stone-500 dark:text-slate-300 mb-0.5">Técnico</p>
-                <div class="font-black text-sm text-black dark:text-white">{{ internalForm.get('nombreCompleto')?.value }}</div>
-                <div class="flex items-center gap-3 text-xs font-bold text-stone-500 dark:text-slate-300">
-                    <span>Lic: {{ internalForm.get('nroLicencia')?.value }}</span>
-                    <span>·</span>
-                    <span>{{ internalForm.get('fecha')?.value }} {{ internalForm.get('hora')?.value }}</span>
-                </div>
-                <div class="flex items-center gap-2 flex-wrap mt-0.5 text-xs font-bold text-stone-500 dark:text-slate-300">
-                    <span *ngIf="internalForm.get('matriculaAeronave')?.value">Aeronave: {{ internalForm.get('matriculaAeronave')?.value }}</span>
-                    <span *ngIf="internalForm.get('destino')?.value">· Destino: {{ internalForm.get('destino')?.value }}</span>
-                    <span *ngIf="internalForm.get('ordenTrabajo')?.value">· OT: {{ internalForm.get('ordenTrabajo')?.value }}</span>
-                </div>
-                <div *ngIf="internalForm.get('nombreEntregador')?.value"
-                     class="flex items-center gap-1.5 mt-1 text-xs font-bold text-stone-500 dark:text-slate-300">
-                    <mat-icon class="!text-sm text-amber-500">store</mat-icon>
-                    Entregado por: <span class="font-black text-black dark:text-white">{{ internalForm.get('nombreEntregador')?.value }}</span>
-                </div>
-            </div>
+            <!-- LEFT: Datos -->
+            <div class="sm:basis-[320px] sm:max-w-[360px] shrink-0 overflow-y-auto custom-scrollbar border-b-2 sm:border-b-0 sm:border-r-2 border-black/20 dark:border-slate-600 px-4 py-4 flex flex-col gap-3">
 
-            <div class="flex flex-col gap-1.5 max-h-48 overflow-y-auto custom-scrollbar">
-                <p class="text-[9px] font-black uppercase tracking-[0.15em] text-stone-500 dark:text-slate-300 mb-0.5">Herramientas ({{ internalDataSource().length }})</p>
-                <div *ngFor="let item of internalDataSource()"
-                     class="flex items-center gap-2 px-3 py-2 bg-amber-50 dark:bg-slate-800 border-2 border-black rounded-xl">
-                    <mat-icon class="!text-base text-amber-600">build</mat-icon>
-                    <div class="flex-1 min-w-0">
-                        <span class="font-mono text-xs font-black text-amber-700 dark:text-amber-400">{{ item.codigo }}</span>
-                        <span class="text-xs text-stone-500 dark:text-slate-300 ml-2 truncate">{{ item.descripcion }}</span>
+                <div class="bg-white dark:bg-slate-800 border-2 border-black rounded-xl p-3 flex flex-col gap-1.5">
+                    <p class="text-[9px] font-black uppercase tracking-[0.15em] text-stone-500 dark:text-slate-300 mb-0.5">Técnico</p>
+                    <div class="font-black text-sm text-black dark:text-white">{{ internalForm.get('nombreCompleto')?.value }}</div>
+                    <div class="flex items-center gap-3 text-xs font-bold text-stone-500 dark:text-slate-300 flex-wrap">
+                        <span>Lic: {{ internalForm.get('nroLicencia')?.value }}</span>
+                        <span>·</span>
+                        <span>{{ internalForm.get('fecha')?.value }} {{ internalForm.get('hora')?.value }}</span>
                     </div>
-                    <span class="text-sm font-black text-black dark:text-white shrink-0">{{ item.cantidad }} {{ item.unidad }}</span>
+                    <div class="flex flex-col gap-0.5 mt-0.5 text-xs font-bold text-stone-500 dark:text-slate-300">
+                        <span *ngIf="internalForm.get('matriculaAeronave')?.value">Aeronave: {{ internalForm.get('matriculaAeronave')?.value }}</span>
+                        <span *ngIf="internalForm.get('destino')?.value">Destino: {{ internalForm.get('destino')?.value }}</span>
+                        <span *ngIf="internalForm.get('ordenTrabajo')?.value">OT: {{ internalForm.get('ordenTrabajo')?.value }}</span>
+                        <span *ngIf="internalForm.get('trabajoEspecial')?.value" class="text-amber-600 dark:text-amber-400">Trabajo especial</span>
+                    </div>
+                    <div *ngIf="internalForm.get('nombreEntregador')?.value"
+                         class="flex items-center gap-1.5 mt-1 text-xs font-bold text-stone-500 dark:text-slate-300">
+                        <mat-icon class="!text-sm text-amber-500">store</mat-icon>
+                        Entregado por: <span class="font-black text-black dark:text-white">{{ internalForm.get('nombreEntregador')?.value }}</span>
+                    </div>
+                    <div *ngIf="internalForm.get('observaciones')?.value" class="mt-1 text-xs text-stone-500 dark:text-slate-300">
+                        <span class="font-black uppercase text-[9px] tracking-wider">Obs:</span> {{ internalForm.get('observaciones')?.value }}
+                    </div>
                 </div>
+
+                <p class="text-xs font-bold text-stone-500 dark:text-slate-400 bg-blue-50 dark:bg-blue-900/20 border-2 border-blue-300 dark:border-blue-700 rounded-xl px-3 py-2.5">
+                    Se generará la nota <strong>MGH-100</strong> y se registrará el préstamo. El correlativo <strong>{{ ptCorrelativoPreview || 'PT-?' }}</strong> quedará asignado.
+                </p>
             </div>
 
-            <p class="text-xs font-bold text-stone-500 dark:text-slate-400 bg-blue-50 dark:bg-blue-900/20 border-2 border-blue-300 dark:border-blue-700 rounded-xl px-3 py-2.5">
-                Se generará la nota <strong>MGH-100</strong> y se registrará el préstamo. El correlativo <strong>{{ ptCorrelativoPreview || 'PT-?' }}</strong> quedará asignado.
-            </p>
+            <!-- RIGHT: Herramientas -->
+            <div class="flex-1 min-h-0 flex flex-col overflow-hidden">
+                <div class="px-4 pt-3 pb-2 shrink-0">
+                    <p class="text-[9px] font-black uppercase tracking-[0.15em] text-stone-500 dark:text-slate-300">Herramientas ({{ internalDataSource().length }})</p>
+                </div>
+                <div class="flex-1 overflow-y-auto custom-scrollbar">
+                    <table class="w-full">
+                        <thead class="bg-stone-100 dark:bg-slate-700 border-b-2 border-black/20 sticky top-0 z-10">
+                        <tr class="text-left text-[10px] font-black uppercase tracking-wider text-stone-500 dark:text-slate-300">
+                            <th class="px-3 py-2 w-8">#</th>
+                            <th class="px-3 py-2">Herramienta</th>
+                            <th class="px-3 py-2 w-20 text-center">Cant.</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr *ngFor="let item of internalDataSource(); let i = index"
+                            class="border-b border-stone-100 dark:border-slate-700 align-top">
+                            <td class="px-3 py-2.5 text-xs font-black text-stone-400 text-center">{{ i + 1 }}</td>
+                            <td class="px-3 py-2.5">
+                                <span class="font-mono text-xs font-black text-black dark:text-white">{{ item.codigo }}</span>
+                                <div class="text-xs font-bold text-black dark:text-white mt-0.5">{{ item.descripcion }}</div>
+                                <div *ngIf="item.pn || item.sn" class="text-[10px] text-stone-400 font-mono mt-0.5">P/N: {{ item.pn || '—' }} · S/N: {{ item.sn || '—' }}</div>
+                            </td>
+                            <td class="px-3 py-2.5 text-center">
+                                <span class="text-base font-black text-black dark:text-white">{{ item.cantidad }}</span>
+                                <span class="text-[10px] text-stone-400 ml-1">{{ item.unidad }}</span>
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
         </div>
 
         <div class="border-t-2 border-black bg-stone-200 dark:bg-slate-800 px-4 py-3 flex justify-between items-center shrink-0">

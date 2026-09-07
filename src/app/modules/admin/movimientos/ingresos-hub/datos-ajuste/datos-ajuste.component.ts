@@ -74,6 +74,19 @@ export class DatosAjusteComponent implements OnInit, OnDestroy {
         if (!this.ajusteForm.get('documento')?.value) {
             this.generarDocumento();
         }
+
+        // Prellena "Realizado Por" con el usuario logueado (editable) si viene vacío.
+        if (!this.ajusteForm.get('realizadoPor')?.value) {
+            const currentUser = this._currentUserName();
+            if (currentUser) this.ajusteForm.patchValue({ realizadoPor: currentUser, realizadoPorInput: currentUser });
+        }
+    }
+
+    private _currentUserName(): string {
+        try {
+            const auth = JSON.parse(localStorage.getItem('aut') || '{}');
+            return auth.nombre_usuario || '';
+        } catch { return ''; }
     }
 
     ngOnDestroy(): void {

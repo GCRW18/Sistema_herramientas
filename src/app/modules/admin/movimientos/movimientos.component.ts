@@ -92,10 +92,23 @@ export class MovimientosComponent implements OnInit, OnDestroy {
     private tabCounter = 0;
 
     // ── Registros recientes ───────────────────────────────────────────────────
-    recentMovements: any[] = [];
+    recentMovements: any[] = [];       // vista ordenada que pinta la tabla
+    private _recentRaw: any[] = [];     // el lote recibido (ya filtrado + recortado)
     isLoadingRecents = false;
     pageIndexMov = 0;
     readonly pageSizeMov = 15;
+
+    /** Columna/dirección de orden del diálogo. 'reciente' = como vienen (id desc). */
+    recentSort: { field: 'reciente' | 'comprobante' | 'fecha' | 'tipo' | 'responsable'; dir: 'asc' | 'desc' } =
+        { field: 'reciente', dir: 'desc' };
+
+    /** Tipos de movimiento que NO pertenecen al módulo Movimientos (tienen su
+     *  propio módulo: Calibraciones, Servicios de Mantenimiento) — se filtran de
+     *  "Registros Recientes". Comparado en MAYÚSCULAS. */
+    private readonly NO_MOV_MODULE_TYPES = new Set<string>([
+        'MAINTENANCE', 'ENVIO_CALIBRACION', 'RETORNO_CALIBRACION', 'CALIBRACION',
+        'SEND_CALIBRATION', 'CALIBRATION',
+    ]);
 
     private readonly MOV_TYPE_LABELS: Record<string, string> = {
         // valores reales de la BD (uppercase)
@@ -165,13 +178,14 @@ export class MovimientosComponent implements OnInit, OnDestroy {
 
     openMovRecientes(): void {
         this.pageIndexMov = 0;
+        this.recentSort = { field: 'reciente', dir: 'desc' };
         this.loadRecentMovements();
         this.dialog.open(this.movRecientesDialog, {
             width: '700px',
             maxWidth: '95vw',
             height: 'auto',
             maxHeight: '80vh',
-            panelClass: 'neo-dialog',
+            panelClass: 'neo-dialog-entradas',
             hasBackdrop: true,
             disableClose: false,
             autoFocus: false
@@ -181,26 +195,72 @@ export class MovimientosComponent implements OnInit, OnDestroy {
     loadRecentMovements(): void {
         this.isLoadingRecents = true;
         this.cdr.detectChanges();
+        // Se pide un lote más grande porque después se filtran los tipos que no
+        // son del módulo Movimientos (calibración, mantenimiento) y recién se
+        // recorta a pageSizeMov.
         this.movService.getMovements({
-            start: this.pageIndexMov * this.pageSizeMov,
-            limit: this.pageSizeMov,
-            ordenacion: 'date', dir_ordenacion: 'desc'
+            start: 0,
+            limit: this.pageSizeMov * 5,
+            sort: 'id_movement', dir: 'desc'
         }).pipe(
             takeUntil(this._unsub$),
             finalize(() => { this.isLoadingRecents = false; this.cdr.detectChanges(); })
         ).subscribe({
             next: (items: any[]) => {
-                this.recentMovements = (items || []).map((m: any) => ({
-                    fecha:         this.formatMovDate(m.date || m.fecha_reg),
-                    tipo:          this.MOV_TYPE_LABELS[m.type || m.movement_type || ''] ?? (m.type || m.movement_type || '-'),
-                    tipoRaw:       m.type || m.movement_type || '',
-                    comprobante:   m.movement_number || m.loan_number || '-',
-                    responsable:   m.requested_by_name || m.responsible_person || m.technician || m.usr_reg || '-',
-                }));
+                this._recentRaw = (items || [])
+                    .filter((m: any) => !this.NO_MOV_MODULE_TYPES.has(
+                        String(m.type || m.movement_type || '').trim().toUpperCase()
+                    ))
+                    .slice(0, this.pageSizeMov)
+                    .map((m: any, i: number) => ({
+                        _idx:          i,   // orden "reciente" original (id desc)
+                        fecha:         this.formatMovDate(m.date || m.fecha_reg),
+                        fechaSort:     m.date || m.fecha_reg || '',
+                        tipo:          this.MOV_TYPE_LABELS[m.type || m.movement_type || ''] ?? (m.type || m.movement_type || '-'),
+                        tipoRaw:       m.type || m.movement_type || '',
+                        comprobante:   m.movement_number || m.loan_number || '-',
+                        responsable:   m.requested_by_name || m.responsible_person || m.technician || m.usr_reg || '-',
+                    }));
+                this._applyRecentSort();
                 this.cdr.detectChanges();
             },
-            error: () => { this.recentMovements = []; this.cdr.detectChanges(); }
+            error: () => { this._recentRaw = []; this.recentMovements = []; this.cdr.detectChanges(); }
         });
+    }
+
+    /** Click en un encabezado de la tabla de Registros Recientes. */
+    sortRecentBy(field: 'reciente' | 'comprobante' | 'fecha' | 'tipo' | 'responsable'): void {
+        if (this.recentSort.field === field) {
+            this.recentSort.dir = this.recentSort.dir === 'asc' ? 'desc' : 'asc';
+        } else {
+            this.recentSort = { field, dir: field === 'reciente' ? 'desc' : 'asc' };
+        }
+        this._applyRecentSort();
+    }
+
+    /** Clave ordenable de un N° de comprobante "PREFIJO-N/AAAA" → "AAAA|PREFIJO|000N". */
+    private _compKey(v: string): string {
+        const m = /^([A-Za-z]+)-(\d+)\/(\d+)$/.exec((v || '').trim());
+        if (!m) return (v || '').toLowerCase();
+        return `${m[3]}|${m[1].toUpperCase()}|${m[2].padStart(8, '0')}`;
+    }
+
+    private _applyRecentSort(): void {
+        const { field, dir } = this.recentSort;
+        const mult = dir === 'asc' ? 1 : -1;
+        const rows = [...this._recentRaw];
+        rows.sort((a, b) => {
+            let c = 0;
+            switch (field) {
+                case 'reciente':    c = a._idx - b._idx; break;
+                case 'comprobante': c = this._compKey(a.comprobante).localeCompare(this._compKey(b.comprobante)); break;
+                case 'fecha':       c = String(a.fechaSort).localeCompare(String(b.fechaSort)); break;
+                case 'tipo':        c = String(a.tipo).localeCompare(String(b.tipo)); break;
+                case 'responsable': c = String(a.responsable).localeCompare(String(b.responsable)); break;
+            }
+            return c !== 0 ? c * mult : a._idx - b._idx;
+        });
+        this.recentMovements = rows;
     }
 
     private formatMovDate(date: string): string {
@@ -209,8 +269,8 @@ export class MovimientosComponent implements OnInit, OnDestroy {
         catch { return date; }
     }
 
-    irAReportes(): void {
-        this.router.navigate(['/inventario'], { queryParams: { tab: 'reportes' } });
+    irACalibraciones(): void {
+        this.router.navigate(['/calibraciones']);
     }
 
     // ── Bandeja ───────────────────────────────────────────────────────────────

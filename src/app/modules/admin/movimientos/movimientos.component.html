@@ -16,11 +16,11 @@
 
         <div class="flex-1"></div>
 
-        <!-- Botón REPORTES -->
-        <button (click)="irAReportes()"
-                class="header-btn flex items-center gap-2 px-5 py-2 bg-[#FFC501FF] border-[2px] border-black font-black text-xs uppercase rounded-xl shadow-[3px_3px_0px_0px_#000] hover:shadow-[1px_1px_0px_0px_#000] hover:translate-x-[2px] hover:translate-y-[2px] transition-all text-black">
-            <mat-icon class="header-btn-icon !text-base !text-black">bar_chart</mat-icon>
-            <span class="hidden sm:inline">Reportes</span>
+        <!-- Botón CALIBRACIONES -->
+        <button (click)="irACalibraciones()"
+                class="header-btn flex items-center gap-2 px-5 py-2 bg-[#FF1414FF] border-[2px] border-black font-black text-xs uppercase rounded-xl shadow-[3px_3px_0px_0px_#000] hover:shadow-[1px_1px_0px_0px_#000] hover:translate-x-[2px] hover:translate-y-[2px] transition-all text-white">
+            <mat-icon class="header-btn-icon !text-base !text-white">science</mat-icon>
+            <span class="hidden sm:inline">Calibraciones</span>
         </button>
 
         <div class="w-px h-8 bg-black/20 dark:bg-white/20 mx-1"></div>
@@ -177,48 +177,58 @@
         </div>
 
         <!-- Table -->
-        <div class="flex flex-col overflow-hidden p-2 bg-[#f8f9fc] dark:bg-[#0F172A]">
-            <div class="border-[2px] border-black rounded-xl overflow-hidden flex flex-col bg-white dark:bg-slate-800 shadow-[4px_4px_0px_0px_#000]">
+        <div class="flex flex-col overflow-hidden bg-white dark:bg-slate-800">
 
-                <div class="overflow-auto custom-scrollbar" style="max-height:52vh">
-                    <table class="w-full">
-                        <thead class="bg-stone-200 dark:bg-[#020617] sticky top-0 z-10 border-b-[2px] border-black text-[10px] font-black uppercase">
-                        <tr>
-                            <th class="py-2 px-3 text-left text-black dark:text-amber-400 w-24">Fecha</th>
-                            <th class="py-2 px-3 text-left text-black dark:text-amber-400 w-28">Tipo</th>
-                            <th class="py-2 px-3 text-left text-black dark:text-amber-400">N° Comprobante</th>
-                            <th class="py-2 px-3 text-left text-black dark:text-amber-400">Responsable</th>
-                        </tr>
-                        </thead>
-                        <tbody>
-                        <tr *ngFor="let m of recentMovements"
-                            class="border-b border-gray-200 dark:border-slate-700 hover:bg-stone-50 dark:hover:bg-slate-700/50 transition-colors">
-                            <td class="py-2 px-3 font-mono text-[10px] font-bold text-gray-900 dark:text-white whitespace-nowrap">{{ m.fecha }}</td>
-                            <td class="py-2 px-3">
+            <div class="overflow-auto custom-scrollbar" style="max-height:52vh">
+                <table class="w-full">
+                    <thead class="bg-stone-200 dark:bg-[#020617] sticky top-0 z-10 border-b-[2px] border-black text-[10px] font-black uppercase">
+                    <tr>
+                        <th (click)="sortRecentBy('fecha')" class="py-2 px-3 text-left text-black dark:text-amber-400 w-24 cursor-pointer select-none hover:underline">
+                            Fecha <span *ngIf="recentSort.field === 'fecha'">{{ recentSort.dir === 'asc' ? '▲' : '▼' }}</span>
+                        </th>
+                        <th (click)="sortRecentBy('tipo')" class="py-2 px-3 text-left text-black dark:text-amber-400 w-28 cursor-pointer select-none hover:underline">
+                            Tipo <span *ngIf="recentSort.field === 'tipo'">{{ recentSort.dir === 'asc' ? '▲' : '▼' }}</span>
+                        </th>
+                        <th (click)="sortRecentBy('comprobante')" class="py-2 px-3 text-left text-black dark:text-amber-400 cursor-pointer select-none hover:underline">
+                            N° Comprobante <span *ngIf="recentSort.field === 'comprobante'">{{ recentSort.dir === 'asc' ? '▲' : '▼' }}</span>
+                        </th>
+                        <th (click)="sortRecentBy('responsable')" class="py-2 px-3 text-left text-black dark:text-amber-400 cursor-pointer select-none hover:underline">
+                            Responsable <span *ngIf="recentSort.field === 'responsable'">{{ recentSort.dir === 'asc' ? '▲' : '▼' }}</span>
+                        </th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr *ngFor="let m of recentMovements"
+                        class="border-b border-gray-200 dark:border-slate-700 hover:bg-stone-50 dark:hover:bg-slate-700/50 transition-colors">
+                        <td class="py-2 px-3 font-mono text-[10px] font-bold text-gray-900 dark:text-white whitespace-nowrap">{{ m.fecha }}</td>
+                        <td class="py-2 px-3">
                                 <span class="text-[9px] font-black uppercase text-black dark:text-white">
                                     {{ m.tipo }}
                                 </span>
-                            </td>
-                            <td class="py-2 px-3 font-mono text-[10px] font-bold text-black dark:text-white">{{ m.comprobante }}</td>
-                            <td class="py-2 px-3 text-[10px] font-bold text-gray-700 dark:text-gray-300">{{ m.responsable }}</td>
-                        </tr>
-                        <tr *ngIf="recentMovements.length === 0 && !isLoadingRecents">
-                            <td colspan="4" class="py-10 text-center text-gray-400 dark:text-slate-500 font-black uppercase tracking-wider text-xs">
-                                <div class="flex flex-col items-center mx-auto">
-                                    <mat-icon class="!text-4xl mb-1.5 text-gray-300 dark:text-slate-600">swap_horiz</mat-icon>
-                                    Sin registros de movimientos
-                                </div>
-                            </td>
-                        </tr>
-                        </tbody>
-                    </table>
-                </div>
+                        </td>
+                        <td class="py-2 px-3 font-mono text-[10px] font-bold text-black dark:text-white">{{ m.comprobante }}</td>
+                        <td class="py-2 px-3 text-[10px] font-bold text-gray-700 dark:text-gray-300">{{ m.responsable }}</td>
+                    </tr>
+                    <tr *ngIf="recentMovements.length === 0 && !isLoadingRecents">
+                        <td colspan="4" class="py-10 text-center text-gray-400 dark:text-slate-500 font-black uppercase tracking-wider text-xs">
+                            <div class="flex flex-col items-center mx-auto">
+                                <mat-icon class="!text-4xl mb-1.5 text-gray-300 dark:text-slate-600">swap_horiz</mat-icon>
+                                Sin registros de movimientos
+                            </div>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
 
-                <!-- Footer -->
-                <div class="flex items-center justify-between px-3 py-1.5 border-t-[2px] border-black bg-stone-200 dark:bg-[#020617] shrink-0">
-                    <span class="text-[10px] font-black text-black dark:text-slate-300 uppercase">{{ recentMovements.length }} registros</span>
-                    <span class="text-[9px] font-black text-gray-500 uppercase tracking-wider">Últimos movimientos</span>
-                </div>
+            <!-- Footer -->
+            <div class="flex items-center justify-between px-3 py-1.5 border-t-[2px] border-black bg-stone-200 dark:bg-[#020617] shrink-0">
+                <span class="text-[10px] font-black text-black dark:text-slate-300 uppercase">{{ recentMovements.length }} registros</span>
+                <button *ngIf="recentSort.field !== 'reciente'" (click)="sortRecentBy('reciente')"
+                        class="text-[9px] font-black text-amber-600 dark:text-amber-400 uppercase tracking-wider hover:underline">
+                    Orden: {{ recentSort.field }} — volver a recientes
+                </button>
+                <span *ngIf="recentSort.field === 'reciente'" class="text-[9px] font-black text-gray-500 uppercase tracking-wider">Últimos movimientos</span>
             </div>
         </div>
 

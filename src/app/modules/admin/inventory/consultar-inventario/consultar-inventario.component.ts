@@ -907,7 +907,7 @@ export class ConsultarInventarioComponent implements OnInit {
 
     getStatusBadgeClass(estado: string): string {
         const m: Record<string, string> = {
-            'DISPONIBLE':       'bg-green-700   text-white        border-green-900',
+            'DISPONIBLE':       'bg-green-500   text-white        border-green-700',
             'BAJO STOCK':       'bg-yellow-100  text-yellow-800   border-yellow-300',
             'SIN STOCK':        'bg-red-100     text-red-800      border-red-300',
             'EN CALIBRACION':   'bg-purple-100  text-purple-800   border-purple-300',
@@ -915,7 +915,7 @@ export class ConsultarInventarioComponent implements OnInit {
             'EN USO':           'bg-cyan-100    text-cyan-800     border-cyan-300',
             'EN MANTENIMIENTO': 'bg-amber-100   text-amber-800    border-amber-400',
             'CUARENTENA':       'bg-orange-100  text-orange-800   border-orange-300',
-            'COMPLETO':         'bg-green-700   text-white        border-green-900',
+            'COMPLETO':         'bg-green-500   text-white        border-green-700',
             'INCOMPLETO':       'bg-yellow-100  text-yellow-800   border-yellow-300',
             'BAJA':             'bg-stone-200   text-stone-600    border-stone-400',
         };

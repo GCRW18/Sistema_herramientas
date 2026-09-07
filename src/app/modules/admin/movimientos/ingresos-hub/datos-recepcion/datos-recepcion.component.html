@@ -1,4 +1,4 @@
-<div class="bg-stone-100 dark:bg-slate-900 border-2 border-black overflow-hidden flex flex-col h-full">
+<div class="bg-stone-100 dark:bg-slate-900 border-2 border-black rounded-2xl overflow-hidden flex flex-col max-h-[94vh]">
 
     <!-- Header -->
     <div class="bg-[#0F172A] px-4 sm:px-5 py-3 flex items-center gap-3 shrink-0 select-none"
@@ -19,11 +19,11 @@
     </div>
 
     <!-- Body -->
-    <div class="flex-1 overflow-y-auto px-4 py-4 flex flex-col gap-3 custom-scrollbar-ing">
-        <form [formGroup]="recepcionForm" class="flex flex-col gap-4">
+    <div class="flex-1 min-h-0 overflow-y-auto px-4 sm:px-5 py-4 custom-scrollbar-ing">
+        <form [formGroup]="recepcionForm" class="grid grid-cols-1 lg:grid-cols-2 gap-x-5 gap-y-4 items-start">
 
             <!-- ── 1. TIPO DE INGRESO ── -->
-            <div>
+            <div class="lg:col-span-2">
                 <h3 class="text-[9px] font-black uppercase text-stone-400 dark:text-slate-300 mb-2 flex items-center gap-1.5">
                     <mat-icon class="!text-sm text-amber-500">category</mat-icon> Tipo de Ingreso <span class="text-red-500 ml-0.5">*</span>
                 </h3>
@@ -217,7 +217,7 @@
             </div>
 
             <!-- ── 4. RECEPCIÓN EN ALMACÉN ── -->
-            <div>
+            <div class="lg:col-span-2">
                 <h3 class="text-[9px] font-black uppercase text-stone-400 dark:text-slate-300 mb-2 flex items-center gap-1.5">
                     <mat-icon class="!text-sm text-amber-500">store</mat-icon> Recepción en Almacén
                 </h3>

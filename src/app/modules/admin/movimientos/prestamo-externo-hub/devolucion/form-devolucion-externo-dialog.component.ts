@@ -1,30 +1,50 @@
-import { Component, OnInit, OnDestroy, inject, ViewChild, TemplateRef } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, OnInit, OnDestroy, inject, ViewChild, TemplateRef, ElementRef } from '@angular/core';
+import { CommonModule, DatePipe } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, FormsModule, Validators } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
-import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatDialogRef, MatDialogModule, MatDialog } from '@angular/material/dialog';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { Subject, forkJoin, of } from 'rxjs';
-import { takeUntil, finalize, catchError, debounceTime, distinctUntilChanged, switchMap, map } from 'rxjs/operators';
+import { takeUntil, finalize, switchMap, map, catchError, debounceTime, distinctUntilChanged } from 'rxjs/operators';
 import { MovementService } from '../../../../../core/services/movement.service';
-import { CalibrationService } from '../../../../../core/services/calibration.service';
+import { CustomerService } from '../../../../../core/services/customer.service';
 
 type CondicionExt = 'BUENO' | 'REPARADO' | 'CALIBRADO' | 'PARCIAL' | 'NO_REPARABLE';
 
+/** Ítem del carrito de devolución externa: sale de escanear una herramienta y
+ *  resolver su préstamo externo abierto (he.tloan_items.returned = false). */
 interface DevolucionExternoItem {
-    toolId: string; codigo: string; pn: string; sn: string; descripcion: string;
-    nroNotaSalida: string; id_loan: number; fechaSalida: string; diasFuera: number;
-    cantidad: number; und: string; estadoAlPrestar: string;
-    condicionDevolucion: CondicionExt | ''; observaciones: string; selected: boolean;
+    idLoanItem: number;
+    idLoan: number;
+    loanNumber: string;
+    empresa: string;          // "Prestado a" — la empresa/tercero
+    borrowerLicense: string;
+    loanDate: string;
+    diasFuera: number;
+    loanNotes: string;
+    toolId: number;
+    codigo: string;
+    descripcion: string;
+    pn: string;
+    sn: string;
+    und: string;
+    marca: string;
+    listaContenido: string;
+    fechaCalibracion: string;
+    estadoAlPrestar: string;
+    cantidadPrestada: number;
+    cantidadDevolver: number;
+    condicionDevolucion: CondicionExt;
+    observacionItem: string;
 }
 
 @Component({
     selector: 'app-form-devolucion-externo-dialog',
     standalone: true,
     imports: [
-        CommonModule, ReactiveFormsModule, FormsModule,
-        MatIconModule, MatCheckboxModule, MatDialogModule, MatSnackBarModule
+        CommonModule, DatePipe, ReactiveFormsModule, FormsModule,
+        MatIconModule, MatDialogModule, MatSnackBarModule, MatProgressSpinnerModule
     ],
     templateUrl: './form-devolucion-externo-dialog.component.html',
     styles: [`
@@ -33,33 +53,55 @@ interface DevolucionExternoItem {
         .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #000; border-radius: 3px; }
         :host-context(.dark) .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; }
+        @keyframes pulse-border {
+            0%,100% { border-color:#ef4444; box-shadow:0 0 0 0 rgba(239,68,68,.4); }
+            50% { border-color:#f87171; box-shadow:0 0 0 4px rgba(239,68,68,0); }
+        }
+        .animate-pulse-border { animation: pulse-border 2s cubic-bezier(.4,0,.6,1) infinite; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }
+        .animate-fadeIn { animation: fadeIn 0.2s ease-out; }
     `]
 })
 export class FormDevolucionExternoDialogComponent implements OnInit, OnDestroy {
 
     @ViewChild('confirmDevModal') confirmDevModal!: TemplateRef<any>;
+    @ViewChild('scanInput') scanInputRef!: ElementRef<HTMLInputElement>;
 
-    dialogRef         = inject(MatDialogRef<FormDevolucionExternoDialogComponent>);
+    dialogRef       = inject(MatDialogRef<FormDevolucionExternoDialogComponent>);
     private _confirmRef: any = null;
 
-    private dialog      = inject(MatDialog);
-    private fb          = inject(FormBuilder);
-    private snackBar    = inject(MatSnackBar);
-    private movementSvc    = inject(MovementService);
-    private calibrationSvc = inject(CalibrationService);
-    private destroy$    = new Subject<void>();
+    private dialog     = inject(MatDialog);
+    private fb         = inject(FormBuilder);
+    private snackBar   = inject(MatSnackBar);
+    private movementSvc = inject(MovementService);
+    private customerSvc = inject(CustomerService);
+    private destroy$   = new Subject<void>();
 
-    isSaving    = false;
-    isSearching = false;
+    isSaving     = false;
+    loadingIndex = false;
+    indexReady   = false;
 
-    busquedaForm!: FormGroup;
-    dataSource: DevolucionExternoItem[] = [];
+    devForm!: FormGroup;
 
-    private _tercerosList: any[] = [];
-    tercerosFiltrados:   any[] = [];
-    showTercerosDropdown = false;
-    _terceroSeleccionado: any = null;
+    /** Carrito: herramientas escaneadas listas para devolver. */
+    cart: DevolucionExternoItem[] = [];
 
+    private _openLoanIndex = new Map<string, DevolucionExternoItem[]>();
+
+    // ── Escaneo ──
+    scanValue = '';
+    scanSuggestions: DevolucionExternoItem[] = [];
+    showScanDropdown = false;
+
+    // ── "Devuelto por" — conectado a la empresa / cliente (he.tcustomers) ──
+    private _returnedBySearch$ = new Subject<string>();
+    returnedByName        = '';
+    returnedByFuncionarios: any[] = [];   // ahora: clientes/empresas { nombre, cargo }
+    returnedByLoading      = false;
+    showReturnedByDropdown = false;
+    private _clientesCache: any[] = [];
+
+    // ── "Recibido por (Almacén)" ──
     private _responsableSearch$ = new Subject<string>();
     responsablesFiltrados:  any[] = [];
     responsableLoading      = false;
@@ -67,280 +109,380 @@ export class FormDevolucionExternoDialogComponent implements OnInit, OnDestroy {
     private _personalCache: any[] = [];
 
     condiciones: { value: CondicionExt; label: string; bgColor: string; icon: string }[] = [
-        { value: 'BUENO',       label: 'Bueno',       bgColor: 'bg-green-500', icon: 'check_circle'   },
-        { value: 'REPARADO',    label: 'Reparado',    bgColor: 'bg-blue-500',  icon: 'build'          },
-        { value: 'CALIBRADO',   label: 'Calibrado',   bgColor: 'bg-cyan-500',  icon: 'tune'           },
-        { value: 'PARCIAL',     label: 'Parcial',     bgColor: 'bg-yellow-500',icon: 'construction'   },
-        { value: 'NO_REPARABLE',label: 'No Reparable',bgColor: 'bg-red-700',   icon: 'dangerous'      },
+        { value: 'BUENO',        label: 'Bueno',        bgColor: 'bg-green-500', icon: 'check_circle'  },
+        { value: 'REPARADO',     label: 'Reparado',     bgColor: 'bg-blue-500',  icon: 'build'         },
+        { value: 'CALIBRADO',    label: 'Calibrado',    bgColor: 'bg-cyan-500',  icon: 'tune'          },
+        { value: 'PARCIAL',      label: 'Parcial',      bgColor: 'bg-yellow-500',icon: 'construction'  },
+        { value: 'NO_REPARABLE', label: 'No Reparable', bgColor: 'bg-red-700',   icon: 'dangerous'     },
     ];
 
     ngOnInit(): void {
         this.initForm();
-        this._cargarTerceros();
         this._setupResponsableSearch();
+        this._setupReturnedBySearch();
+
+        const currentUser = this._currentUserName();
+        if (currentUser) this.devForm.patchValue({ responsableRecibe: currentUser });
+
+        this._buildOpenLoanIndex();
     }
 
     ngOnDestroy(): void { this.destroy$.next(); this.destroy$.complete(); }
 
+    private _currentUserName(): string {
+        try {
+            const auth = JSON.parse(localStorage.getItem('aut') || '{}');
+            return auth.nombre_usuario || '';
+        } catch { return ''; }
+    }
+
     private _localDateStr(d = new Date()): string {
-        return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
     }
 
     private initForm(): void {
         const now = new Date();
-        this.busquedaForm = this.fb.group({
-            empresa:          ['', Validators.required],
-            codigoFiltro:     [''],
-            fechaDevolucion:  [this._localDateStr(), Validators.required],
-            horaDevolucion:   [`${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}`, Validators.required],
-            responsableRecibe:['', Validators.required],
-            observaciones:    [''],
+        const hora = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+        this.devForm = this.fb.group({
+            fechaDevolucion:   [this._localDateStr(), Validators.required],
+            horaDevolucion:    [hora, Validators.required],
+            responsableRecibe: ['', Validators.required],
+            observaciones:     ['']
         });
     }
 
-    private _cargarTerceros(): void {
-        this.calibrationSvc.getLaboratories().pipe(
-            takeUntil(this.destroy$), catchError(() => of([]))
-        ).subscribe((labs: any[]) => {
-            this._tercerosList = (labs || []).map((l: any) => ({
-                razonSocial:    l.name                               || '',
-                nit:            l.rut_nit    || l.code               || '',
-                nombreContacto: l.contact_person || l.contactPerson  || '',
-                tipoEmpresa:    l.tipo_servicio                      || '',
-            }));
+    // ── Índice de préstamos externos abiertos ──────────────────────────────
+    private _buildOpenLoanIndex(): void {
+        this.loadingIndex = true;
+        // 1º ítems sin devolver (filtro sin comillas, set chico), 2º sus préstamos
+        //    por id (filtro numérico exacto, sin tope de antigüedad).
+        this.movementSvc.getActiveLoanItems({ filtro_adicional: 'returned = false' })
+            .pipe(
+                catchError(() => of([] as any[])),
+                switchMap((items: any[]) => {
+                    const abiertos = (items || []).filter(it =>
+                        !(it.returned === true || it.returned === 'true' || it.returned === 't'));
+                    const loanIds = [...new Set(abiertos.map(it => Number(it.loan_id)).filter(Boolean))];
+                    if (!loanIds.length) return of({ items: abiertos, loans: [] as any[] });
+                    return this.movementSvc.getActiveLoans({ filtro_adicional: `loa.id_loan IN (${loanIds.join(',')})` })
+                        .pipe(catchError(() => of([] as any[])), map((loans: any[]) => ({ items: abiertos, loans })));
+                }),
+                takeUntil(this.destroy$),
+                finalize(() => { this.loadingIndex = false; this.indexReady = true; setTimeout(() => this._focusScan(), 100); })
+            )
+            .subscribe(({ items, loans }) => {
+                const loanById = new Map<string, any>();
+                (loans || [])
+                    .filter((l: any) => l.status === 'active' && (l.loan_type || '') === 'external')
+                    .forEach((l: any) => loanById.set(String(l.id_loan), l));
+
+                this._openLoanIndex.clear();
+                (items || []).forEach((it: any) => {
+                    const loan = loanById.get(String(it.loan_id));
+                    if (!loan) return;
+                    const codigo = (it.code || '').trim();
+                    if (!codigo) return;
+                    const di = this._toItem(loan, it);
+                    const key = codigo.toUpperCase();
+                    const arr = this._openLoanIndex.get(key) || [];
+                    arr.push(di);
+                    this._openLoanIndex.set(key, arr);
+                });
+            });
+    }
+
+    private _toItem(loan: any, it: any): DevolucionExternoItem {
+        const loanDate = loan.loan_date || '';
+        const diasFuera = loanDate
+            ? Math.ceil(Math.abs(Date.now() - new Date(loanDate).getTime()) / 86400000)
+            : 0;
+        const qty = Number(it.quantity) || 1;
+        return {
+            idLoanItem:      Number(it.id_loan_item),
+            idLoan:          Number(it.loan_id),
+            loanNumber:      loan.loan_number || `PTT-${loan.id_loan}`,
+            empresa:         loan.borrower_name || '—',
+            borrowerLicense: loan.borrower_license || '',
+            loanDate,
+            diasFuera,
+            loanNotes:       (loan.loan_notes || '').trim(),
+            toolId:          Number(it.tool_id) || 0,
+            codigo:          it.code || '',
+            descripcion:     it.description || it.name || '',
+            pn:              it.part_number || '',
+            sn:              it.serial_number || '',
+            und:             it.unit_of_measure || 'UND',
+            marca:           it.brand || '',
+            listaContenido:  it.content_list || '',
+            fechaCalibracion: it.next_calibration_date || '',
+            estadoAlPrestar: it.condition_on_loan || 'good',
+            cantidadPrestada: qty,
+            cantidadDevolver: qty,
+            condicionDevolucion: 'BUENO',
+            observacionItem: ''
+        };
+    }
+
+    // ── Escaneo ────────────────────────────────────────────────────────────
+    private _focusScan(): void {
+        try { this.scanInputRef?.nativeElement.focus(); } catch { /* vista no lista */ }
+    }
+
+    onScanInput(v: string): void {
+        this.scanValue = v;
+        const q = v.trim().toLowerCase();
+        if (!q) { this.scanSuggestions = []; this.showScanDropdown = false; return; }
+        const vistos = new Set<string>();
+        const ranked: { di: DevolucionExternoItem; rank: number }[] = [];
+        this._openLoanIndex.forEach(arr => arr.forEach(di => {
+            if (this.cart.some(c => c.idLoanItem === di.idLoanItem)) return;
+            if (vistos.has(String(di.idLoanItem))) return;
+            const code = (di.codigo || '').toLowerCase();
+            let rank = -1;
+            if (code === q) rank = 0;
+            else if (code.startsWith(q)) rank = 1;
+            else if (code.includes(q)) rank = 2;
+            else if (`${di.descripcion} ${di.pn} ${di.sn} ${di.empresa} ${di.loanNumber}`.toLowerCase().includes(q)) rank = 3;
+            if (rank >= 0) { vistos.add(String(di.idLoanItem)); ranked.push({ di, rank }); }
+        }));
+        ranked.sort((a, b) => a.rank - b.rank || a.di.codigo.localeCompare(b.di.codigo));
+        this.scanSuggestions = ranked.slice(0, 12).map(r => r.di);
+        this.showScanDropdown = this.scanSuggestions.length > 0;
+    }
+
+    hideScanDropdown(): void { setTimeout(() => this.showScanDropdown = false, 150); }
+
+    scanAndAdd(): void {
+        const code = this.scanValue.trim();
+        if (!code) return;
+        if (!this.indexReady) { this.showMsg('warning', 'Cargando préstamos activos, espere un momento'); return; }
+        const exactas = this._openLoanIndex.get(code.toUpperCase());
+        if (exactas && exactas.length > 0) { this._agregarItem(exactas); return; }
+        if (this.scanSuggestions.length === 1) { this._agregarItem([this.scanSuggestions[0]]); return; }
+        if (this.scanSuggestions.length > 1) {
+            this.showScanDropdown = true;
+            this.showMsg('info', `${this.scanSuggestions.length} coincidencias — elija de la lista`);
+            return;
+        }
+        this.showMsg('warning', `"${code}" no tiene un préstamo externo abierto para devolver`);
+        this._clearScan();
+    }
+
+    pickScanSuggestion(di: DevolucionExternoItem): void {
+        this.showScanDropdown = false;
+        this._agregarItem([di]);
+    }
+
+    private _agregarItem(candidatos: DevolucionExternoItem[]): void {
+        const libre = candidatos.find(di => !this.cart.some(c => c.idLoanItem === di.idLoanItem));
+        if (!libre) {
+            this.showMsg('info', `"${candidatos[0].codigo}" ya está en la lista de devolución`);
+            this._clearScan();
+            return;
+        }
+        this.cart = [...this.cart, { ...libre }];
+        // "Devuelto por" arranca con la empresa/cliente del préstamo (editable).
+        if (!this.returnedByName.trim() && libre.empresa && libre.empresa !== '—') {
+            this.returnedByName = libre.empresa;
+        }
+        this.showMsg('success', `"${libre.descripcion}" — prestada a ${libre.empresa}`);
+        this._clearScan();
+    }
+
+    private _clearScan(): void {
+        this.scanValue = '';
+        this.scanSuggestions = [];
+        this.showScanDropdown = false;
+        setTimeout(() => this._focusScan(), 50);
+    }
+
+    removeItem(idx: number): void {
+        const it = this.cart[idx];
+        this.cart = this.cart.filter((_, i) => i !== idx);
+        if (it) this.showMsg('info', `"${it.descripcion}" quitada`);
+    }
+
+    // ── "Devuelto por" — autocompletado desde el catálogo de clientes/empresas ──
+    private _setupReturnedBySearch(): void {
+        // Cache local de clientes (he.tcustomers) — el mismo catálogo del módulo
+        // "Clientes / Terceros" y del form de préstamo externo.
+        this.returnedByLoading = true;
+        this.customerSvc.getCustomers({ limit: 1000 }).pipe(
+            takeUntil(this.destroy$),
+            finalize(() => this.returnedByLoading = false),
+            catchError(() => of([]))
+        ).subscribe((cs: any[]) => {
+            this._clientesCache = (cs || [])
+                .filter(c => c.active !== false && c.active !== 'f' && c.active !== 'false')
+                .map(c => ({
+                    nombre: c.name || c.company_name || '',
+                    cargo:  [c.tax_id ? 'NIT ' + c.tax_id : '', c.contact_person].filter(Boolean).join(' · ')
+                }))
+                .filter(c => c.nombre);
+        });
+
+        this._returnedBySearch$.pipe(
+            debounceTime(150), distinctUntilChanged(), takeUntil(this.destroy$)
+        ).subscribe(t => {
+            const q = (t || '').trim().toLowerCase();
+            if (q.length < 1) { this.returnedByFuncionarios = []; this.showReturnedByDropdown = false; return; }
+            this.returnedByFuncionarios = this._clientesCache
+                .filter(c => `${c.nombre} ${c.cargo}`.toLowerCase().includes(q))
+                .slice(0, 10);
+            this.showReturnedByDropdown = this.returnedByFuncionarios.length > 0;
         });
     }
 
-    onTerceroInput(val: string): void {
-        this.busquedaForm.patchValue({ empresa: val }, { emitEvent: false });
-        this._terceroSeleccionado = null;
-        const q = val.trim().toLowerCase();
-        this.tercerosFiltrados = q.length < 2 ? [] :
-            this._tercerosList.filter(t => t.razonSocial.toLowerCase().includes(q) || t.nit.toLowerCase().includes(q)).slice(0,10);
-        this.showTercerosDropdown = this.tercerosFiltrados.length > 0;
+    onReturnedByInput(v: string): void {
+        this.returnedByName = v;
+        this._returnedBySearch$.next(v);
     }
-    selectTercero(t: any): void {
-        this._terceroSeleccionado = t;
-        this.busquedaForm.patchValue({ empresa: t.razonSocial });
-        this.showTercerosDropdown = false;
+    selectReturnedBy(f: any): void {
+        this.returnedByName = f.nombre;
+        this.showReturnedByDropdown = false;
     }
-    hideTercerosDropdown(): void { setTimeout(() => this.showTercerosDropdown = false, 150); }
+    hideReturnedByDropdown(): void { setTimeout(() => this.showReturnedByDropdown = false, 150); }
 
+    /** Atajo: usar la empresa del préstamo escaneado como "devuelto por". */
+    usarEmpresaComoDevuelve(): void {
+        if (!this.cart.length) return;
+        this.returnedByName = this.cart[0].empresa;
+    }
+
+    // ── "Recibido por (Almacén)" ───────────────────────────────────────────
     private _setupResponsableSearch(): void {
         this.movementSvc.getPersonal().pipe(
             takeUntil(this.destroy$), catchError(() => of([]))
         ).subscribe((lista: any[]) => {
-            this._personalCache = (lista||[]).map(f => ({
+            this._personalCache = (lista || []).map(f => ({
                 nombre: f.nombreCompleto || `${f.nombre||''} ${f.apellido_paterno||''}`.trim(),
-                cargo: f.cargo || '',
+                cargo:  f.cargo || ''
             }));
         });
+
         this._responsableSearch$.pipe(
             debounceTime(150), distinctUntilChanged(), takeUntil(this.destroy$)
         ).subscribe(t => {
             if (t.length < 2) { this.showResponsableDropdown = false; this.responsablesFiltrados = []; return; }
             const q = t.toLowerCase();
-            this.responsablesFiltrados = this._personalCache.filter(f => f.nombre.toLowerCase().includes(q)).slice(0,10);
+            this.responsablesFiltrados = this._personalCache
+                .filter(f => f.nombre.toLowerCase().includes(q) || f.cargo.toLowerCase().includes(q))
+                .slice(0, 10);
             this.showResponsableDropdown = this.responsablesFiltrados.length > 0;
         });
     }
 
     onResponsableInput(val: string): void {
-        this.busquedaForm.patchValue({ responsableRecibe: val }, { emitEvent: false });
+        this.devForm.patchValue({ responsableRecibe: val });
         this._responsableSearch$.next(val);
     }
     selectResponsable(r: any): void {
-        this.busquedaForm.patchValue({ responsableRecibe: r.nombre });
+        this.devForm.patchValue({ responsableRecibe: r.nombre });
         this.showResponsableDropdown = false;
     }
     hideResponsableDropdown(): void { setTimeout(() => this.showResponsableDropdown = false, 150); }
 
-    consultar(): void {
-        if (!this._terceroSeleccionado) { this.showMsg('warning', 'Seleccione una empresa válida de la lista'); return; }
-        this.isSearching = true;
-        this.dataSource = [];
-        const razon  = (this._terceroSeleccionado.razonSocial||'').replace(/'/g,"''");
-        // loa.* : he.ft_loans_sel hace JOIN a he.tmovements (que también tiene 'status').
-        const filtro = `loa.status = 'active' AND loa.loan_type = 'external' AND loa.borrower_name ILIKE '%${razon}%'`;
-
-        this.movementSvc.getActiveLoans({ filtro_adicional: filtro }).pipe(
-            switchMap((loans: any[]) => {
-                if (!loans?.length) return of({ loans: [] as any[], items: [] as any[] });
-                const loanIds = (loans as any[]).map((l: any) => l.id_loan).filter(Boolean);
-                const itemsFiltro = `returned = false AND loan_id IN (${loanIds.join(',')})`;
-                return forkJoin({
-                    loans: of(loans),
-                    items: this.movementSvc.getActiveLoanItems({ filtro_adicional: itemsFiltro })
-                });
-            }),
-            takeUntil(this.destroy$), finalize(() => this.isSearching = false)
-        ).subscribe({
-            next: ({ loans, items }: any) => {
-                if (!loans?.length) { this.showMsg('info', `Sin préstamos activos para ${this._terceroSeleccionado.razonSocial}`); return; }
-                const loanMap: Record<string,any> = {};
-                (loans as any[]).forEach(l => loanMap[String(l.id_loan)] = l);
-                const loanIds = new Set(Object.keys(loanMap));
-
-                let resultado: DevolucionExternoItem[] = (items as any[])
-                    .filter(it => loanIds.has(String(it.loan_id)) && !this._isReturned(it.returned))
-                    .map(it => {
-                        const loan = loanMap[String(it.loan_id)];
-                        return {
-                            toolId: String(it.tool_id||''), codigo: it.code||'',
-                            pn: it.part_number||'', sn: it.serial_number||'',
-                            descripcion: it.description||it.name||'',
-                            nroNotaSalida: loan?.loan_number||'', id_loan: Number(loan?.id_loan||0),
-                            fechaSalida: loan?.loan_date||'',
-                            diasFuera: loan?.loan_date ? this._calcDias(loan.loan_date) : 0,
-                            cantidad: Number(it.quantity)||1, und: it.unit_of_measure||'UND',
-                            estadoAlPrestar: it.condition_on_loan||'',
-                            condicionDevolucion: '' as CondicionExt|'', observaciones: '', selected: false,
-                        };
-                    });
-
-                const cod = (this.busquedaForm.get('codigoFiltro')?.value||'').trim().toLowerCase();
-                if (cod) resultado = resultado.filter(i => i.codigo.toLowerCase().includes(cod) || i.pn.toLowerCase().includes(cod));
-
-                if (!resultado.length) { this.showMsg('info', 'Sin herramientas con ese criterio'); return; }
-                this.dataSource = resultado;
-                this.showMsg('success', `${resultado.length} herramienta(s) cargadas`);
-            },
-            error: (err: any) => this.showMsg('error', 'Error al consultar: ' + (err?.message||''))
-        });
-    }
-
-    private _isReturned(val: any): boolean { return val === true || val === 'true' || val === 't'; }
-    private _calcDias(fecha: string): number {
-        return Math.ceil(Math.abs(new Date().getTime() - new Date(fecha).getTime()) / 86400000);
-    }
-
-    toggleSel(item: DevolucionExternoItem): void { item.selected = !item.selected; }
-    toggleAll(e: any): void { this.dataSource.forEach(i => i.selected = e.checked); }
-    isAllSel(): boolean { return this.dataSource.length > 0 && this.dataSource.every(i => i.selected); }
-    isSomeSel(): boolean { return this.dataSource.some(i => i.selected) && !this.isAllSel(); }
-    getSelCount(): number { return this.dataSource.filter(i => i.selected).length; }
-    getSelItems(): DevolucionExternoItem[] { return this.dataSource.filter(i => i.selected); }
-
-    updateCondicion(item: DevolucionExternoItem, c: CondicionExt): void { item.condicionDevolucion = c; item.selected = true; }
-    getCondicionIcon(c: string): string { return this.condiciones.find(x => x.value === c)?.icon || 'help_outline'; }
+    // ── Ítems del carrito ──────────────────────────────────────────────────
     hasError(field: string, error: string): boolean {
-        const c = this.busquedaForm.get(field);
+        const c = this.devForm.get(field);
         return c ? c.hasError(error) && c.touched : false;
     }
 
+    private readonly _condicionLabelMap: Record<string, string> = {
+        'good': 'ACTIVO', 'new': 'NUEVO', 'excellent': 'EXCELENTE',
+        'fair': 'REGULAR', 'poor': 'MALO', 'damaged': 'DAÑADO',
+        'serviceable': 'ACTIVO', 'bueno': 'ACTIVO',
+    };
+    getEstadoPrestarLabel(est: string): string {
+        return this._condicionLabelMap[(est || '').toLowerCase()] || (est || '—').toUpperCase();
+    }
+
+    getCondicionIcon(c: string): string { return this.condiciones.find(x => x.value === c)?.icon || 'help_outline'; }
+    validateCantidad(item: DevolucionExternoItem): void {
+        if (item.cantidadDevolver < 1) item.cantidadDevolver = 1;
+        if (item.cantidadDevolver > item.cantidadPrestada) item.cantidadDevolver = item.cantidadPrestada;
+    }
+
+    private _validate(): { valid: boolean; errors: string[] } {
+        const errors: string[] = [];
+        if (!this.cart.length) { errors.push('Escanee al menos una herramienta'); return { valid: false, errors }; }
+        if (!this.returnedByName.trim()) errors.push('Indique quién devuelve la herramienta');
+        if (!this.devForm.get('responsableRecibe')?.value?.trim()) errors.push('Indique quién recibe en el almacén');
+        this.cart.forEach(i => {
+            if (i.cantidadDevolver <= 0 || i.cantidadDevolver > i.cantidadPrestada) errors.push(`${i.codigo}: cantidad inválida`);
+            if ((i.condicionDevolucion === 'PARCIAL' || i.condicionDevolucion === 'NO_REPARABLE') && !i.observacionItem.trim()) errors.push(`${i.codigo}: falta observación`);
+        });
+        return { valid: errors.length === 0, errors };
+    }
+
+    getResumen(): { condicion: string; cantidad: number; bgColor: string }[] {
+        const mapa: Record<string, number> = {};
+        this.cart.forEach(i => { mapa[i.condicionDevolucion] = (mapa[i.condicionDevolucion] || 0) + 1; });
+        return Object.entries(mapa).map(([k, v]) => {
+            const cfg = this.condiciones.find(c => c.value === k);
+            return { condicion: cfg?.label || k, cantidad: v, bgColor: cfg?.bgColor || 'bg-gray-500' };
+        });
+    }
+    trackByCondicion = (_: number, r: { condicion: string }): string => r.condicion;
+
+    get empresasCarrito(): string[] {
+        return [...new Set(this.cart.map(i => i.empresa).filter(Boolean))];
+    }
+
     abrirConfirm(): void {
-        const sel = this.getSelItems();
-        if (!sel.length) { this.showMsg('warning', 'Seleccione al menos una herramienta'); return; }
-        const sinCondicion = sel.filter(i => !i.condicionDevolucion);
-        if (sinCondicion.length) { this.showMsg('warning', 'Asigne condición a todos los ítems seleccionados'); return; }
-        this.busquedaForm.markAllAsTouched();
-        if (this.busquedaForm.invalid) { this.showMsg('error', 'Complete los campos requeridos'); return; }
+        const val = this._validate();
+        if (!val.valid) { val.errors.forEach(e => this.showMsg('error', e)); return; }
         this._confirmRef = this.dialog.open(this.confirmDevModal, {
-            width: '650px', maxWidth: '95vw', panelClass: 'no-padding-dialog', disableClose: true
+            width: 'min(920px, 95vw)', maxWidth: '95vw', panelClass: 'no-padding-dialog', disableClose: true
         });
     }
     cerrarConfirm(): void { this._confirmRef?.close(); }
 
-    getResumen(): { condicion: string; cantidad: number; bgColor: string }[] {
-        const mapa: Record<string,number> = {};
-        this.getSelItems().forEach(i => { mapa[i.condicionDevolucion] = (mapa[i.condicionDevolucion]||0)+1; });
-        return Object.entries(mapa).map(([k,v]) => {
-            const cfg = this.condiciones.find(c => c.value === k);
-            return { condicion: cfg?.label||k, cantidad: v, bgColor: cfg?.bgColor||'bg-gray-500' };
-        });
-    }
-
-    /* trackBy — getResumen() arma objetos nuevos en cada llamada; sin esto
-       el *ngFor los recrearía en cada CD (mismo origen del congelamiento
-       de Misceláneos). */
-    trackByCondicion = (_: number, r: { condicion: string }): string => r.condicion;
-
     finalizar(): void {
-        const sel = this.getSelItems();
+        const val = this._validate();
+        if (!val.valid) { val.errors.forEach(e => this.showMsg('error', e)); return; }
         this.cerrarConfirm();
         this.isSaving = true;
-        const fv = this.busquedaForm.getRawValue();
-        const itemsJson = JSON.stringify(sel.map(i => ({
-            tool_id: Number(i.toolId), quantity: i.cantidad,
-            condicion: i.condicionDevolucion, notes: i.observaciones||'',
+        const notaWin = this.movementSvc.preAbrirVentanaPdf();
+        const fv = this.devForm.value;
+        const empresa = this.empresasCarrito[0] || '';
+        const itemsJson = JSON.stringify(this.cart.map(i => ({
+            tool_id: i.toolId, id_loan_item: i.idLoanItem,
+            quantity: i.cantidadDevolver, condicion: i.condicionDevolucion,
+            unit_of_measure: i.und || '', content_list: i.listaContenido || '',
+            estado_al_prestar: i.estadoAlPrestar || '', notes: i.observacionItem || ''
         })));
         this.movementSvc.registrarDevolucionPrestamo({
             type: 'DEVOLUCION_PRESTAMO_EXTERNO',
             date: fv.fechaDevolucion,
-            time: fv.horaDevolucion || new Date().toTimeString().slice(0,5),
-            requested_by_name: this._terceroSeleccionado?.razonSocial||'',
+            time: fv.horaDevolucion || new Date().toTimeString().slice(0, 5),
+            requested_by_name:  this.returnedByName.trim(),
             responsible_person: fv.responsableRecibe,
-            recipient: this._terceroSeleccionado?.razonSocial||'',
-            customer: this._terceroSeleccionado?.razonSocial||'',
-            notes: fv.observaciones||'', items_json: itemsJson,
+            returned_by_name:   this.returnedByName.trim(),
+            recipient:          empresa,
+            customer:           empresa,
+            notes:              fv.observaciones || '',
+            items_json:         itemsJson
         }).pipe(finalize(() => this.isSaving = false), takeUntil(this.destroy$)).subscribe({
             next: (result: any) => {
                 const nro = result?.movement_number || '---';
-                this._imprimir(nro, sel, fv).catch(() => {});
                 this.showMsg('success', `Devolución registrada: ${nro}`);
-                this.dataSource = this.dataSource.filter(i => !i.selected);
+                const loanIds = [...new Set(this.cart.map(i => i.idLoan).filter(Boolean))];
+                loanIds.forEach((id, i) => this.movementSvc.verNotaPrestamo(id, 'mgh100', true, i === 0 ? notaWin : null));
+                if (!loanIds.length) { try { notaWin?.close(); } catch { /* noop */ } }
                 this.dialogRef.close({ success: true, movement_number: nro });
             },
-            error: (err: any) => this.showMsg('error', 'Error al registrar: ' + (err?.message||''))
+            error: (err: any) => { try { notaWin?.close(); } catch { /* noop */ } this.showMsg('error', 'Error al registrar: ' + (err?.message || '')); }
         });
     }
 
-    cerrar(): void { this.dialogRef.close(); }
-
-    private _logoBoaDataUri: Promise<string> | null = null;
-    private _loadLogoBoaDataUri(): Promise<string> {
-        if (!this._logoBoaDataUri) {
-            this._logoBoaDataUri = fetch('/images/logo-boa.png')
-                .then(r => r.blob())
-                .then(blob => new Promise<string>((resolve, reject) => {
-                    const reader = new FileReader();
-                    reader.onload  = () => resolve(reader.result as string);
-                    reader.onerror = reject;
-                    reader.readAsDataURL(blob);
-                }))
-                .catch(() => '');
-        }
-        return this._logoBoaDataUri;
+    cerrar(): void {
+        if (this.cart.length > 0 &&
+            !confirm(`¿Cancelar la devolución? Se perderán los ${this.cart.length} ítem(s) escaneado(s).`)) return;
+        this.dialogRef.close();
     }
 
-    /**
-     * Recibo interno de devolución en lote — puede juntar ítems de varias notas de
-     * préstamo distintas (columna NOTA SALIDA por fila), no tiene equivalente en el
-     * Excel oficial (ver PrestamoExternoPdfService para la Nota de Préstamo-Devolución
-     * de una sola nota, que sí está calcada de la hoja "PRESTAMO A TERCEROS 2"). Solo
-     * se restyleó el logo/paleta para que se vea consistente con el resto de PDFs.
-     */
-    private async _imprimir(nro: string, items: DevolucionExternoItem[], fv: any): Promise<void> {
-        const logoUri = await this._loadLogoBoaDataUri();
-        const condLabel: Record<string,string> = { BUENO:'Bueno', REPARADO:'Reparado', CALIBRADO:'Calibrado', PARCIAL:'Parcial', NO_REPARABLE:'No Reparable' };
-        const rows = items.map(it => {
-            const color = ['NO_REPARABLE','PARCIAL'].includes(it.condicionDevolucion) ? '#dc2626' : '#166534';
-            return `<tr><td><span style="font-family:monospace;font-weight:700">${it.codigo||'-'}</span></td><td style="font-family:monospace;font-size:9px">${it.pn||'-'}</td><td style="font-family:monospace;font-size:9px">${it.sn||'-'}</td><td style="text-align:center;font-weight:700">${it.cantidad}</td><td>${it.descripcion||'-'}</td><td>${it.nroNotaSalida||'-'}</td><td>${it.fechaSalida||'-'}</td><td style="text-align:center">${it.diasFuera}d</td><td style="font-weight:700;color:${color}">${condLabel[it.condicionDevolucion]||it.condicionDevolucion}</td><td>${it.observaciones||''}</td></tr>`;
-        }).join('');
-        const css = `<style>@page{size:A4 landscape;margin:12mm 10mm}*{box-sizing:border-box}body{font-family:Arial,sans-serif;font-size:10px;color:#000;margin:0}.top{display:flex;align-items:center;gap:10px;margin-bottom:5px}.top img{max-height:30px}h1{text-align:center;font-size:12px;font-weight:900;text-transform:uppercase;background:#111A43;color:white;padding:7px 10px;margin:0 0 7px;border:1px solid #000}.info-tbl{width:100%;border-collapse:collapse;border:1px solid #000;margin-bottom:7px}.info-tbl td{border:1px solid #ddd;padding:3px 6px}.lbl{background:#f0f0f0;font-weight:700;font-size:9px;width:120px}.nro-cell{background:#f0f0f0;text-align:center;font-weight:900;font-size:15px;vertical-align:middle;width:120px}.sec{background:#111A43;color:white;padding:3px 8px;font-weight:900;font-size:10px;text-transform:uppercase;border:1px solid #000}table.det{width:100%;border-collapse:collapse;border:1px solid #000}table.det th{background:#111A43;color:white;padding:4px 3px;font-size:8px;font-weight:900;text-transform:uppercase;border:1px solid #000;text-align:center}table.det td{padding:3px 4px;border:1px solid #ddd;font-size:9px}table.det tr:nth-child(even) td{background:#f9f9f9}.sigs{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:16px}.sig{border:1px solid #000;padding:6px 8px;text-align:center}.sig-ttl{font-weight:900;font-size:9px;text-transform:uppercase;margin-bottom:26px}.sig-line{border-top:1px solid #000;padding-top:3px;font-size:8.5px}.footer{text-align:center;margin-top:10px;font-size:7.5px;color:#888;border-top:1px dotted #ccc;padding-top:4px}@media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact}}</style>`;
-        const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Devolución Terceros ${nro}</title>${css}</head><body>
-<div class="top">${logoUri ? `<img src="${logoUri}" alt="BoA">` : '<div style="font-weight:900;font-size:16px">BoA</div>'}<div style="font-weight:900;font-size:11px">BoAMM &nbsp; OAM145# N-114</div></div>
-<h1>NOTA DE DEVOLUCIÓN A TERCEROS</h1>
-<table class="info-tbl">
-<tr><td class="lbl">EMPRESA / ENTIDAD:</td><td style="font-weight:700">${this._terceroSeleccionado?.razonSocial||''}</td><td class="lbl">NIT:</td><td>${this._terceroSeleccionado?.nit||''}</td><td class="nro-cell" rowspan="3"><div style="font-size:8px;font-weight:400">N° NOTA</div>${nro}</td></tr>
-<tr><td class="lbl">RECIBIDO EN ALMACÉN:</td><td style="font-weight:700">${fv.responsableRecibe||''}</td><td class="lbl">FECHA DEVOLUCIÓN:</td><td>${fv.fechaDevolucion||''} ${fv.horaDevolucion||''}</td></tr>
-<tr><td class="lbl">OBSERVACIONES:</td><td colspan="3">${fv.observaciones||''}</td></tr>
-</table>
-<div class="sec">DETALLE DE HERRAMIENTAS RECIBIDAS</div>
-<table class="det"><thead><tr><th>CÓDIGO</th><th>P/N</th><th>S/N</th><th>CANT.</th><th>DESCRIPCIÓN</th><th>NOTA SALIDA</th><th>F. SALIDA</th><th>DÍAS FUERA</th><th>CONDICIÓN</th><th>OBS</th></tr></thead><tbody>${rows}</tbody></table>
-<div class="sigs"><div class="sig"><div class="sig-ttl">DEVUELTO POR</div><div style="font-size:9px;margin-bottom:16px">${this._terceroSeleccionado?.razonSocial||'_____'}</div><div class="sig-line">Firma Representante Tercero</div></div><div class="sig"><div class="sig-ttl">RECIBIDO EN ALMACÉN</div><div style="font-size:9px;margin-bottom:16px">${fv.responsableRecibe||''}</div><div class="sig-line">Firma Almacén Herramientas BOA</div></div><div class="sig"><div class="sig-ttl">AUTORIZADO POR</div><div class="sig-line">Firma Autorizada BOA</div></div></div>
-<div class="footer">Sistema de Gestión de Herramientas - BOA &nbsp;|&nbsp; ${new Date().toLocaleString('es-BO')}</div>
-<script>window.onload=function(){setTimeout(function(){window.print();},500);};<\/script>
-</body></html>`;
-        const blob = new Blob([html], { type: 'text/html' });
-        const url  = URL.createObjectURL(blob);
-        const a    = document.createElement('a');
-        a.href = url; a.target = '_blank'; a.rel = 'noopener';
-        document.body.appendChild(a); a.click(); document.body.removeChild(a);
-        setTimeout(() => URL.revokeObjectURL(url), 60000);
-    }
-
-    private showMsg(type: 'success'|'error'|'info'|'warning', text: string): void {
+    private showMsg(type: 'success' | 'error' | 'info' | 'warning', text: string): void {
         this.snackBar.open(text, 'OK', { duration: 4000, horizontalPosition: 'end', verticalPosition: 'top', panelClass: [`snackbar-${type}`] });
     }
 }

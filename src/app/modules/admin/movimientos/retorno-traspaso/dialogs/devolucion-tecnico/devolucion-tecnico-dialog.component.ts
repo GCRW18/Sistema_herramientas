@@ -14,7 +14,6 @@ import {
     MovimientoActivo, TraspasoItem, Funcionario, CondRetorno,
     CONDICIONES_RETORNO, isItemValid, getItemErrors
 } from '../../retorno-traspaso.types';
-import { RetornoPdfService } from '../../retorno-pdf.service';
 
 export interface DevolucionTecnicoDialogData {
     movTecnicosActivos: MovimientoActivo[];
@@ -29,9 +28,11 @@ export interface DevolucionTecnicoDialogData {
     ],
     templateUrl: './devolucion-tecnico-dialog.component.html',
     styles: [`
-        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        :host { display: flex; flex-direction: column; height: 100%; }
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #000; border-radius: 3px; }
+        :host-context(.dark) .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; }
         @keyframes fadeIn { from { opacity:0; transform:translateY(-4px); } to { opacity:1; transform:translateY(0); } }
         .animate-fadeIn { animation: fadeIn 0.2s ease-out; }
         ::ng-deep .white-checkbox .mdc-checkbox__background { border-color: white !important; }
@@ -46,7 +47,6 @@ export class DevolucionTecnicoDialogComponent implements OnInit, OnDestroy {
     private fb        = inject(FormBuilder);
     private snackBar  = inject(MatSnackBar);
     private movSvc    = inject(MovementService);
-    private pdfSvc    = inject(RetornoPdfService);
     private _unsub$   = new Subject<void>();
 
     // Movement list
@@ -101,9 +101,21 @@ export class DevolucionTecnicoDialogComponent implements OnInit, OnDestroy {
             }),
             takeUntil(this._unsub$)
         ).subscribe({ next: (r: any[]) => { this.funcDevolucionRecibe = r; this.showFuncDevolucionRecibeDropdown = r.length > 0; }});
+
+        // Prellena "Recibe en Almacén" con el usuario logueado (editable). emitEvent:false
+        // para no disparar el autocompletado de funcionarios al abrir el formulario.
+        const currentUser = this._currentUserName();
+        if (currentUser) this.devolucionTecnicoForm.patchValue({ recibeAlmacen: currentUser }, { emitEvent: false });
     }
 
     ngOnDestroy(): void { this._unsub$.next(); this._unsub$.complete(); }
+
+    private _currentUserName(): string {
+        try {
+            const auth = JSON.parse(localStorage.getItem('aut') || '{}');
+            return auth.nombre_usuario || '';
+        } catch { return ''; }
+    }
 
     // Filter getter (used by template via searchTecnicoNombre)
     get movTecnicosFiltrados(): MovimientoActivo[] {
@@ -224,12 +236,18 @@ export class DevolucionTecnicoDialogComponent implements OnInit, OnDestroy {
             type:                   'RETORNO_TRASPASO',
             date:                   form.fechaDevolucion,
             time:                   new Date().toTimeString().slice(0, 8),
-            requested_by_name:      form.recibeAlmacen || '',
+            // "Devuelto por" de la acta = el técnico al que se le había hecho el
+            // traspaso (mov.received_by_name), no quien recibe en almacén — así
+            // la nota compartida (RReporteRetornoNota) no repite el mismo nombre
+            // en DEVUELTO POR y RECIBIDO POR.
+            requested_by_name:      mov.received_by_name || form.recibeAlmacen || '',
             responsible_person:     form.recibeAlmacen || '',
             document_number:        form.nroDocumento  || '',
             source_warehouse_id:    mov.source_warehouse_id || undefined,
             notes:                  form.observaciones || '',
-            specific_observations:  `Retorno de técnico: ${mov.received_by_name || '-'} | Traspaso original: ${mov.movement_number}`,
+            // El "Cierra: X" lo agrega solo he.ft_retorno_base a partir de
+            // source_movement_ids_json — acá solo va la info adicional (sin duplicarlo).
+            specific_observations:  `Retorno de técnico: ${mov.received_by_name || '-'}`,
             items_json:             itemsJson,
             source_movement_ids_json: JSON.stringify([Number(mov.id_movement)])
         }).pipe(
@@ -239,12 +257,11 @@ export class DevolucionTecnicoDialogComponent implements OnInit, OnDestroy {
             next: (res: any) => {
                 const nro = res?.movement_number || '---';
                 this._showMsg(`Devolución registrada: ${nro}`, 'success');
-                this.pdfSvc.generarPdfDevolucionTecnico(nro, sel, {
-                    fechaDevolucion: form.fechaDevolucion,
-                    recibeAlmacen: form.recibeAlmacen,
-                    nroDocumento: form.nroDocumento,
-                    observaciones: form.observaciones
-                }, mov, pdfWin);
+                // Acta de Retorno MGH — mismo reporte TCPDF compartido con Retorno
+                // de Base/Traspaso (RReporteRetornoNota ya soporta RETORNO_TRASPASO).
+                const idMov = Number(res?.id_movement);
+                if (idMov) this.movSvc.verNotaRetorno(idMov, pdfWin);
+                else { try { pdfWin?.close(); } catch { /* noop */ } }
                 this.dialogRef.close({ refreshActivos: true });
             },
             error: (e: any) => { pdfWin?.close(); this._showMsg('Error: ' + (e?.message || ''), 'error'); }

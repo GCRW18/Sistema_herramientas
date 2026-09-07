@@ -106,11 +106,22 @@ export class FormEntradaComponent implements OnInit, OnDestroy {
             this.factura          = this.data.entrada.factura  ?? '';
             this.observacion      = this.data.entrada.observacion ?? '';
             this.editCantidad     = this.data.entrada.cantidad ?? 1;
+        } else if (this.mode === 'new') {
+            // Prellena "Recibido Por" con el usuario logueado (editable).
+            const u = this._currentUserName();
+            if (u) { this.recibidoPorName = u; this.recibidoPorValue = u; }
         }
         if (!this.readOnly) this._setupRecibidoSearch();
     }
 
     ngOnDestroy(): void { this._destroy$.next(); this._destroy$.complete(); }
+
+    private _currentUserName(): string {
+        try {
+            const auth = JSON.parse(localStorage.getItem('aut') || '{}');
+            return auth.nombre_usuario || '';
+        } catch { return ''; }
+    }
 
     get readOnly(): boolean { return this.mode === 'view'; }
     get isEdit():   boolean { return this.mode === 'edit'; }

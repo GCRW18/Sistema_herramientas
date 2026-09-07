@@ -256,18 +256,18 @@ export class ServiciosMantenimientoComponent implements OnInit, OnDestroy {
 
     getStatusChipClass(s: string): string {
         const classes: Record<string, string> = {
-            'sent':     'bg-amber-500 text-black border-black',
-            'returned': 'bg-green-600 text-black border-black',
+            'sent':     'bg-amber-100 text-amber-800 border-amber-200',
+            'returned': 'bg-green-100 text-green-800 border-green-200',
         };
-        return classes[s] ?? 'bg-gray-100 text-gray-700 border-gray-500';
+        return classes[s] ?? 'bg-gray-100 text-gray-700 border-gray-200';
     }
 
     getTypeChipClass(type: string): string {
         const classes: Record<string, string> = {
-            'preventive': 'bg-blue-700 text-gray-100 border-black',
-            'corrective': 'bg-red-600 text-gray-100 border-black',
+            'preventive': 'bg-blue-100 text-blue-800 border-blue-200',
+            'corrective': 'bg-red-100 text-red-800 border-red-200',
         };
-        return classes[type] ?? 'bg-gray-100 text-gray-700 border-gray-500';
+        return classes[type] ?? 'bg-gray-100 text-gray-700 border-gray-200';
     }
 
     getTypeLabel(type: string): string {
