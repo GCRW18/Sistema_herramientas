@@ -8,6 +8,7 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { Subject, of } from 'rxjs';
 import { takeUntil, finalize, switchMap, map, catchError, debounceTime, distinctUntilChanged } from 'rxjs/operators';
 import { MovementService } from '../../../../../core/services/movement.service';
+import { QrScanService } from '../../../../../core/services/qr-scan.service';
 
 type CondicionDevolucion = 'BUENO' | 'DAÑADO' | 'IRREPARABLE' | 'REQUIERE_CALIBRACION' | 'FALTANTE';
 
@@ -76,6 +77,7 @@ export class FormDevolucionDialogComponent implements OnInit, OnDestroy {
     private fb            = inject(FormBuilder);
     private snackBar      = inject(MatSnackBar);
     private movementSvc   = inject(MovementService);
+    private qrScan        = inject(QrScanService);
     private destroy$      = new Subject<void>();
 
     isSaving      = false;
@@ -156,9 +158,8 @@ export class FormDevolucionDialogComponent implements OnInit, OnDestroy {
     // ── Índice de préstamos abiertos ───────────────────────────────────────
     private _buildOpenLoanIndex(): void {
         this.loadingIndex = true;
-        // 1º los ítems sin devolver (filtro sin comillas → confiable, y el set es
-        //    chico: sólo lo que está prestado). 2º los préstamos de ESOS ítems por
-        //    id (filtro numérico, exacto, sin límite de antigüedad).
+        // 1º los ítems sin devolver (set chico); 2º los préstamos de ESOS ítems por id
+        //    (filtro numérico exacto, sin límite de antigüedad).
         this.movementSvc.getActiveLoanItems({ filtro_adicional: 'returned = false' })
             .pipe(
                 catchError(() => of([] as any[])),
@@ -264,6 +265,17 @@ export class FormDevolucionDialogComponent implements OnInit, OnDestroy {
     scanAndAdd(): void {
         const code = this.scanValue.trim();
         if (!code) return;
+        // Etiqueta QR (URL `.../qr-code/<token>`): descifra a código plano y reintenta.
+        if (this.qrScan.isQrLabel(code)) {
+            this.loadingIndex = true;
+            this.qrScan.toToolCode(code).pipe(takeUntil(this.destroy$)).subscribe(real => {
+                this.loadingIndex = false;
+                if (!real) { this.showMsg('warning', 'Etiqueta QR no reconocida'); this._clearScan(); return; }
+                this.scanValue = real;
+                this.scanAndAdd();
+            });
+            return;
+        }
         if (!this.indexReady) { this.showMsg('warning', 'Cargando préstamos activos, espere un momento'); return; }
         const exactas = this._openLoanIndex.get(code.toUpperCase());
         if (exactas && exactas.length > 0) { this._agregarItem(exactas); return; }

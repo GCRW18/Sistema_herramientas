@@ -66,12 +66,8 @@ export class FormAlmacenComponent implements OnInit {
         );
     });
 
-    // id_oficina y ciudad solo son obligatorios al crear: el picker Base›Oficina
-    // fuerza a elegirlos ahí. En 'edit'/'view' se dejan opcionales porque el
-    // catálogo real sembrado por DAT-12 (15 almacenes) nunca completó la columna
-    // 'city' (las 15 filas) ni 'id_oficina' (13 de 15) — exigirlos dejaba el botón
-    // Guardar deshabilitado para esos almacenes sin ninguna forma de corregirlo
-    // desde la UI (ciudad ni siquiera es un input editable, es solo un badge).
+    // id_oficina y ciudad solo son obligatorios al crear (el picker Base›Oficina los fuerza).
+    // En edit/view son opcionales: el catálogo DAT-12 nunca completó 'city' ni parte de 'id_oficina'.
     form: FormGroup = this.fb.group({
         id_lugar:    [null, Validators.required],
         codigo:      ['',   Validators.maxLength(40)],
@@ -276,9 +272,8 @@ export class FormAlmacenComponent implements OnInit {
 
         this.saving.set(true);
 
-        // El código correlativo (ALM-<BASE>-NNNN) se genera recién al guardar, no al
-        // elegir la base, para no "quemar" números del contador si el usuario cambia
-        // de opinión o cancela el formulario (mismo criterio que KitsService.getNextKitCode()).
+        // El correlativo (ALM-<BASE>-NNNN) se genera al guardar, no al elegir la base, para no
+        // "quemar" números si el usuario cancela (igual que KitsService.getNextKitCode()).
         const req$ = this.mode === 'new'
             ? this.svc.getNextWarehouseCode(this.selectedBaseCode).pipe(
                   switchMap(codigo => this.svc.insertWarehouse(buildPayload(codigo)))

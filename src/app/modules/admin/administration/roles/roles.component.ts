@@ -156,10 +156,8 @@ export class RolesComponent implements OnInit {
             this.roleSvc.updateRole(r.id, payload).subscribe({
                 next: () => {
                     this.snackBar.open('Rol actualizado', 'Cerrar', { duration: 2500 });
-                    // Actualiza la fila localmente con lo que se acaba de guardar en vez de
-                    // volver a pedir la lista: el backend tarda un instante en reflejar el
-                    // commit en listarRoles, y un refetch inmediato aquí devolvía el dato
-                    // viejo (se veía "no se actualiza" hasta un refresh manual).
+                    // Actualiza la fila localmente en vez de refetchear: el backend tarda un
+                    // instante en reflejar el commit y un refetch inmediato traía el dato viejo.
                     this.applyOptimisticUpdate(r.id, {
                         nombre:      payload.name,
                         descripcion: payload.description,

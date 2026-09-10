@@ -1,6 +1,6 @@
-import { Component, inject, OnInit, OnDestroy, TemplateRef, ViewChild } from '@angular/core';
+import { Component, inject, OnInit, OnDestroy, TemplateRef, ViewChild, ElementRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormBuilder, FormGroup, FormArray, Validators, ReactiveFormsModule } from '@angular/forms';
+import { FormBuilder, FormGroup, FormArray, Validators, ReactiveFormsModule, FormsModule } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
 import { MatDialog, MatDialogRef, MatDialogModule, MAT_DIALOG_DATA } from '@angular/material/dialog';
 import { DragDropModule } from '@angular/cdk/drag-drop';
@@ -18,13 +18,14 @@ import { KitsService }              from '../../../../core/services/kits.service
     imports: [
         CommonModule,
         ReactiveFormsModule,
+        FormsModule,
         MatIconModule,
         DragDropModule,
         MatDialogModule
     ],
     templateUrl: './gestionar-kit.component.html',
     styles: [`
-        :host { display: flex; flex-direction: column; }
+        :host { display: flex; flex-direction: column; height: 100%; }
 
         .neo-scrollbar::-webkit-scrollbar { width: 8px; }
         .neo-scrollbar::-webkit-scrollbar-track { background: transparent; }
@@ -64,8 +65,10 @@ export class GestionarKitComponent implements OnInit, OnDestroy {
     showFuncionarioSuggestions = false;
     private _reqSearch$ = new Subject<string>();
 
-    // ── Autocomplete herramientas ──────────────────────────────────────
-    toolSearchValue   = '';
+    // ── Escaneo QR + autocomplete herramientas ─────────────────────────
+    @ViewChild('scanInput') scanInputRef?: ElementRef<HTMLInputElement>;
+    barcodeValue      = '';
+    isScanning        = false;
     toolSuggestions:  any[] = [];
     toolSearchLoading = false;
     showToolDropdown  = false;
@@ -158,7 +161,13 @@ export class GestionarKitComponent implements OnInit, OnDestroy {
                             this.items.push(this._buildItemGroup(
                                 c.tool_name ?? c.name ?? '',
                                 c.tool_code ?? c.code ?? '',
-                                c.tool_id ?? null
+                                c.tool_id ?? null,
+                                {
+                                    pn:     c.part_number ?? c.pn ?? '',
+                                    sn:     c.serial_number ?? c.sn ?? '',
+                                    marca:  c.brand ?? c.marca ?? '',
+                                    estado: String(c.tool_status ?? c.status ?? '').toUpperCase()
+                                }
                             ));
                         });
                     })
@@ -233,11 +242,18 @@ export class GestionarKitComponent implements OnInit, OnDestroy {
     // ── FormArray ──────────────────────────────────────────────────────
     get items(): FormArray { return this.kitForm.get('items') as FormArray; }
 
-    private _buildItemGroup(descripcion = '', codigo = '', tool_id: number | null = null): FormGroup {
+    private _buildItemGroup(
+        descripcion = '', codigo = '', tool_id: number | null = null,
+        extra: { pn?: string; sn?: string; marca?: string; estado?: string } = {}
+    ): FormGroup {
         return this.fb.group({
             descripcion: [descripcion],
             codigo:      [codigo],
-            tool_id:     [tool_id]
+            tool_id:     [tool_id],
+            pn:          [extra.pn ?? ''],
+            sn:          [extra.sn ?? ''],
+            marca:       [extra.marca ?? ''],
+            estado:      [extra.estado ?? '']
         });
     }
 
@@ -259,9 +275,32 @@ export class GestionarKitComponent implements OnInit, OnDestroy {
     }
 
     // ── Herramientas ───────────────────────────────────────────────────
-    onToolInput(event: Event): void {
-        this.toolSearchValue = (event.target as HTMLInputElement).value;
-        this._toolSearch$.next(this.toolSearchValue.trim());
+    onScanInput(v: string): void {
+        this.barcodeValue = v;
+        this._toolSearch$.next(v.trim());
+    }
+
+    /** Wedge scanner / Enter: resuelve QR si aplica, busca y agrega la coincidencia. */
+    scanAndAdd(): void {
+        const term = this.barcodeValue.trim();
+        if (!term || this.isScanning) return;
+        this.isScanning = true;
+        this.calibrationService.searchToolsAutocomplete(term).pipe(
+            finalize(() => this.isScanning = false),
+            catchError(() => of([] as any[]))
+        ).subscribe((tools: any[]) => {
+            if (!tools?.length) {
+                this.errorMsg = `Sin resultados para "${term}"`;
+                setTimeout(() => this.errorMsg = '', 2500);
+                return;
+            }
+            const exact = tools.find(t =>
+                String(t.code ?? t.tool_code ?? '').toLowerCase() === term.toLowerCase());
+            this.seleccionarHerramienta(exact ?? tools[0]);
+            this.showToolDropdown = false;
+            this.toolSuggestions  = [];
+            setTimeout(() => this.scanInputRef?.nativeElement.focus(), 50);
+        });
     }
 
     seleccionarHerramienta(tool: any): void {
@@ -274,10 +313,16 @@ export class GestionarKitComponent implements OnInit, OnDestroy {
             this.items.push(this._buildItemGroup(
                 tool.name ?? tool.tool_name ?? '',
                 tool.code ?? tool.tool_code ?? '',
-                toolId
+                toolId,
+                {
+                    pn:     tool.part_number ?? tool.pn ?? '',
+                    sn:     tool.serial_number ?? tool.sn ?? '',
+                    marca:  tool.brand ?? tool.marca ?? '',
+                    estado: String(tool.status ?? tool.tool_status ?? '').toUpperCase()
+                }
             ));
         }
-        this.toolSearchValue  = '';
+        this.barcodeValue     = '';
         this.toolSuggestions  = [];
         this.showToolDropdown = false;
     }
@@ -339,21 +384,14 @@ export class GestionarKitComponent implements OnInit, OnDestroy {
         );
     }
 
-    // Únicos almacenes reales de Cochabamba con estantes/niveles cargados (catálogo DAT-12,
-    // data000001.sql): Almacén Central Hangar CBB y Depósito Externo CBB (zona Hazmat).
-    // El resto de bases del catálogo están vacías (sin estantes todavía).
-    // startsWith en vez de code exacto: DAT-12 los creó como 'ALM-CBB'/'ALM-CBB-EXT', y DAT-14
-    // los renombra a 'ALM-CBB-0001'/'ALM-CBB-0002' (formato oficial) — a la fecha no está
-    // confirmado si DAT-14 ya corrió en el servidor que se esté usando, así que se cubren
-    // ambos estados. Mismo patrón de fallback que ya usa form-envio.component.ts para esto.
+    // Únicos almacenes con estantes/niveles cargados: Almacén Central Hangar CBB y Depósito
+    // Externo CBB (DAT-12). startsWith cubre 'ALM-CBB*' antes y después del renombrado DAT-14.
     private _soloCbba(ws: Warehouse[]): Warehouse[] {
         return ws.filter(w => w.codigo?.startsWith('ALM-CBB'));
     }
 
     /**
-     * 2 requests fijos (racks + niveles de TODO el almacén) en vez de 1+N (un getLevels
-     * por rack) — ALM-CBB tiene 33 estantes, eso eran hasta 34 llamadas HTTP paralelas
-     * cada vez que se abría el picker. Mismo fix ya aplicado en gestion-estantes.component.ts.
+     * 2 requests fijos (racks + niveles del almacén) en vez de 1+N — ALM-CBB tiene 33 estantes.
      */
     private _cargarRacksDeAlmacen(w: Warehouse): Observable<Rack[]> {
         return forkJoin([
@@ -372,9 +410,8 @@ export class GestionarKitComponent implements OnInit, OnDestroy {
     }
 
     /**
-     * En modo edicion, precarga almacen/estante/nivel actuales del kit (rack_id/level_id
-     * reales) para que el picker muestre la ubicacion vigente y para poder detectar si el
-     * usuario la cambia al guardar (ver onSubmit).
+     * En edición, precarga almacén/estante/nivel actuales del kit para mostrar la ubicación
+     * vigente y detectar si el usuario la cambia al guardar (ver onSubmit).
      */
     private prefillUbicacion(kit: any): void {
         const warehouseId = kit.warehouse_id != null ? Number(kit.warehouse_id) : null;
@@ -389,9 +426,8 @@ export class GestionarKitComponent implements OnInit, OnDestroy {
                 finalize(() => this.loadingWarehouses = false)
             ).subscribe(ws => {
                 const activos = ws.filter(w => w.estado === 'ACTIVO');
-                // El picker solo ofrece almacenes de Cbb, pero la busqueda del almacen
-                // actual del kit usa la lista completa (por si viniera de datos legado
-                // con otra base) para no perder el dato al editar.
+                // El picker solo ofrece almacenes de Cbb, pero el almacén actual del kit se busca
+                // en la lista completa (por si viniera de datos legado con otra base).
                 this.warehouses = this._soloCbba(activos);
                 const wh = activos.find(w => w.id === warehouseId);
                 if (!wh) return;
@@ -435,7 +471,11 @@ export class GestionarKitComponent implements OnInit, OnDestroy {
     }
 
     // ── Submit ─────────────────────────────────────────────────────────
-    cerrar(): void { this.dialogRef.close(); }
+    cerrar(): void {
+        if (this.kitForm?.dirty &&
+            !confirm('¿Cerrar sin guardar? Se perderán los cambios del kit.')) return;
+        this.dialogRef.close();
+    }
 
     onSubmit(): void {
         if (!this.kitForm.valid || this.saving) return;
@@ -450,9 +490,8 @@ export class GestionarKitComponent implements OnInit, OnDestroy {
             name:               raw.nombreKit,
             category:           raw.categoria,
             status:             raw.estado,
-            // '' en vez de null: updateKit() descarta del payload cualquier valor null (pensado
-            // para campos numéricos/fecha), así que al vaciar estos campos de texto y guardar,
-            // la clave nunca llegaba al backend y el cambio se perdía en silencio.
+            // '' en vez de null: updateKit() descarta los null del payload, así que al vaciar
+            // estos campos de texto la clave nunca llegaba al backend.
             funcionario_nombre: raw.funcionario || '',
             location_name:      raw.ubicacion   || '',
             notes:              raw.descripcionKit || '',
@@ -481,10 +520,8 @@ export class GestionarKitComponent implements OnInit, OnDestroy {
                 })
             );
         } else {
-            // createKit no filtra nulls como updateKit (ver kits.service.ts) — pxp-client
-            // serializa JS null como el string 'null', que Postgres rechaza al castear a
-            // integer. Por eso estos campos solo se agregan al payload si hay ubicacion
-            // elegida; si no, se omiten y quedan NULL reales del lado de la BD.
+            // createKit no filtra nulls (pxp-client serializa null como 'null' y Postgres lo
+            // rechaza al castear a integer). Solo se agregan estos campos si hay ubicación elegida.
             if (this.selRack?.id && this.selectedLevelId) {
                 payload.warehouse_id = this.selWarehouse?.id ?? null;
                 payload.rack_id      = this.selRack.id;
@@ -528,18 +565,4 @@ export class GestionarKitComponent implements OnInit, OnDestroy {
         return of(null);
     }
 
-    // ── Helpers ────────────────────────────────────────────────────────
-    getEstadoLabel(value: string): string {
-        return this.estados.find(e => e.value === value)?.label ?? value;
-    }
-
-    getEstadoClass(value: string): string {
-        const m: Record<string, string> = {
-            'complete':       'bg-green-100 text-green-800 border-green-800',
-            'incomplete':     'bg-yellow-100 text-yellow-800 border-yellow-800',
-            'in_use':         'bg-blue-100 text-blue-800 border-blue-800',
-            'in_calibration': 'bg-purple-100 text-purple-800 border-purple-800'
-        };
-        return m[value] ?? 'bg-stone-200 text-black border-black';
-    }
 }

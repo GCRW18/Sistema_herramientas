@@ -208,7 +208,7 @@ export class PrestamoExternoHubComponent implements OnInit, OnDestroy {
         const { FormPrestamoExternoDialogComponent } = await import('./prestamo/form-prestamo-externo-dialog.component');
         this.dialog.open(FormPrestamoExternoDialogComponent, {
             width: 'min(1240px, 96vw)', maxWidth: '100vw', maxHeight: '100dvh',
-            panelClass: 'neo-dialog-transparent', disableClose: false, autoFocus: false
+            panelClass: 'neo-dialog-transparent', disableClose: true, autoFocus: false
         }).afterClosed().subscribe(r => {
             if (r?.success) { this.showMsg('Préstamo externo registrado', 'success'); this.loadData(); }
         });
@@ -218,7 +218,7 @@ export class PrestamoExternoHubComponent implements OnInit, OnDestroy {
         const { FormDevolucionExternoDialogComponent } = await import('./devolucion/form-devolucion-externo-dialog.component');
         this.dialog.open(FormDevolucionExternoDialogComponent, {
             width: 'min(1240px, 96vw)', maxWidth: '100vw', maxHeight: '100dvh',
-            panelClass: 'neo-dialog-transparent', disableClose: false, autoFocus: false
+            panelClass: 'neo-dialog-transparent', disableClose: true, autoFocus: false
         }).afterClosed().subscribe(r => {
             if (r?.success) { this.showMsg('Devolución registrada', 'success'); this.loadData(); }
         });

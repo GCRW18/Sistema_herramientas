@@ -116,10 +116,8 @@ export class TranscripcionManualComponent implements OnInit, OnDestroy {
     // ── Métodos de Tabla y Filtros ────────────────────────────────────────────
     loadTranscriptions(): void {
         this.isLoading = true;
-        // Transcripciones históricas = flag is_historical o cualquiera de los dos
-        // marcadores de internal_notes (form manual y baseline DAT-10/MGH-102).
-        // El filtro anterior (igualdad exacta con el marcador acentuado) dejaba
-        // fuera las 487 transcripciones del baseline.
+        // Transcripciones históricas = flag is_historical o cualquiera de los dos marcadores
+        // de internal_notes (form manual y baseline DAT-10/MGH-102).
         this.calibrationService.getCalibrations({
             limit: 1000,
             ordenacion: 'id_calibration', dir_ordenacion: 'desc',
@@ -256,15 +254,6 @@ export class TranscripcionManualComponent implements OnInit, OnDestroy {
 
     onLabChange(): void { if (this.labId) this.labNameOverride = ''; }
 
-    selectedLabName(): string {
-        if (this.labNameOverride) return this.labNameOverride;
-        if (this.labId) {
-            const l = this.laboratories.find(x => x.id_laboratory === this.labId);
-            return l ? l.name : '';
-        }
-        return '';
-    }
-
     private setupToolSearch(): void {
         this._toolSearch$.pipe(
             debounceTime(350), distinctUntilChanged(),
@@ -296,12 +285,6 @@ export class TranscripcionManualComponent implements OnInit, OnDestroy {
     }
 
     hideToolDropdown(): void { setTimeout(() => this.showToolDropdown = false, 200); }
-
-    clearTool(): void {
-        this.selectedTool = null;
-        this.toolSearch = 'BOA-H-';
-        this.showToolDropdown = false;
-    }
 
     isFechaFutura(): boolean {
         if (!this.calibrationDateStr) return false;

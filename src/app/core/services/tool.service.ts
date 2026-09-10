@@ -2,12 +2,19 @@ import { Injectable, inject } from '@angular/core';
 import { from, Observable, of, ReplaySubject, switchMap, tap, throwError } from 'rxjs';
 import { Tool, ToolFilters } from '../models';
 import { ErpApiService } from '../api/api.service';
+import { QrScanService } from './qr-scan.service';
 
 @Injectable({ providedIn: 'root' })
 export class ToolService {
     private _api = inject(ErpApiService);
+    private _qrScan = inject(QrScanService);
     private _tools: ReplaySubject<Tool[]> = new ReplaySubject<Tool[]>(1);
     private _tool: ReplaySubject<Tool> = new ReplaySubject<Tool>(1);
+
+    // Cache corto del listado completo sin filtros (Dashboard / Consultar Inventario):
+    // evita re-traer hasta 5000 herramientas cada vez que se vuelve a esas pantallas.
+    private _allToolsCache: { data: Tool[]; ts: number } | null = null;
+    private readonly ALL_TOOLS_CACHE_TTL_MS = 30000;
 
     // -----------------------------------------------------------------------------------------------------
     // @ Accessors
@@ -38,15 +45,19 @@ export class ToolService {
      * f_get_record no mapea esa clave, retornando todos los tools sin filtrar.
      */
     getTools(filters?: ToolFilters): Observable<Tool[]> {
-        if (filters?.query && filters.query.trim().length >= 2) {
-            return from(this._api.post('herramientas/tools/searchToolsAutocomplete', {
-                search_term: filters.query.trim(),
-                start: 0,
-                limit: 20
-            })).pipe(
-                switchMap((response: any) => {
-                    const tools = response?.datos || response?.data || [];
-                    return of(tools);
+        const q = (filters?.query ?? '').trim();
+        if (q.length >= 2 || this._qrScan.isQrLabel(q)) {
+            // URL de etiqueta QR pegada/escaneada → se traduce a código plano antes de buscar.
+            const term$ = this._qrScan.isQrLabel(q) ? this._qrScan.toToolCode(q) : of(q);
+            return term$.pipe(
+                switchMap((resolved) => {
+                    const term = (resolved || '').trim();
+                    if (term.length < 2) return of([] as Tool[]);
+                    return from(this._api.post('herramientas/tools/searchToolsAutocomplete', {
+                        search_term: term, start: 0, limit: 20,
+                    })).pipe(
+                        switchMap((response: any) => of(response?.datos || response?.data || [])),
+                    );
                 })
             );
         }
@@ -59,10 +70,19 @@ export class ToolService {
         if (filters?.warehouseId) params.warehouse_id = filters.warehouseId;
         if (filters?.status)      params.status = filters.status;
 
+        // El listado sin ningún filtro (Dashboard, Consultar Inventario) se cachea unos
+        // segundos: son las dos pantallas que más se revisitan en la sesión y no vale la
+        // pena re-traer las ~2000+ herramientas activas en cada navegación de vuelta.
+        const isPlainListing = !filters?.categoryId && !filters?.warehouseId && !filters?.status;
+        if (isPlainListing && this._allToolsCache && (Date.now() - this._allToolsCache.ts) < this.ALL_TOOLS_CACHE_TTL_MS) {
+            return of(this._allToolsCache.data);
+        }
+
         return from(this._api.post('herramientas/tools/listTools', params)).pipe(
             switchMap((response: any) => {
                 const tools = response?.datos || response?.data || [];
                 this._tools.next(tools);
+                if (isPlainListing) this._allToolsCache = { data: tools, ts: Date.now() };
                 return of(tools);
             })
         );
@@ -88,12 +108,18 @@ export class ToolService {
     }
 
     /**
-     * Get tool by code
+     * Get tool by code.
+     * Acepta también el contenido de una etiqueta QR (URL `.../qr-code/<token>`):
+     * QrScanService la traduce al código plano antes de consultar el backend.
      */
     getToolByCode(code: string): Observable<Tool> {
-        return from(this._api.post('herramientas/tools/getToolByCode', {
-            code: code
-        })).pipe(
+        return this._qrScan.toToolCode(code).pipe(
+            switchMap((realCode) => {
+                if (!realCode) return of(null);
+                return from(this._api.post('herramientas/tools/getToolByCode', {
+                    code: realCode
+                }));
+            }),
             switchMap((response: any) => {
                 return of(response?.data?.[0] || null);
             })

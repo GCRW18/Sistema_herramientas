@@ -46,6 +46,7 @@
                             "includePaths": ["src/@erp/styles"]
                         },
                         "styles": [
+                            "public/styles/splash-screen.css",
                             "src/@erp/styles/tailwind.scss",
                             "src/@erp/styles/themes.scss",
                             "src/styles/vendors.scss",

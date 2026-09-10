@@ -5,7 +5,7 @@
 
     <div class="flex-1 flex flex-col p-4 gap-3 overflow-hidden relative z-10">
 
-        <!-- ══ HEADER ══ -->
+        <!-- ══ CABECERA ══ -->
         <div class="flex flex-col gap-3 shrink-0">
 
             <!-- Título principal -->
@@ -87,35 +87,37 @@
                     <option value="ELECTRICO">Eléctrico</option>
                 </select>
 
-                <!-- Botón de acción (cambia por tab) -->
-                <button [hidden]="activeTab() !== 'catalogo'" (click)="nuevoCatalogo()"
-                        class="px-5 py-2 bg-amber-400 text-black font-black text-xs border-[2px] border-black rounded-xl
-                               shadow-[3px_3px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none
-                               transition-all uppercase flex items-center gap-2">
-                    <mat-icon class="!text-s !text-black">add_circle</mat-icon>
-                    <span class="hidden sm:inline">Nuevo Ítem</span>
-                </button>
+                <!-- Botón de acción (cambia por tab) — alineado a la derecha -->
+                <div class="ml-auto flex items-center gap-3">
+                    <button [hidden]="activeTab() !== 'catalogo'" (click)="nuevoCatalogo()"
+                            class="px-5 py-2 bg-amber-400 text-black font-black text-xs border-[2px] border-black rounded-xl
+                                   shadow-[3px_3px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none
+                                   transition-all uppercase flex items-center gap-2">
+                        <mat-icon class="!text-s !text-black">add_circle</mat-icon>
+                        <span class="hidden sm:inline">Nuevo Ítem</span>
+                    </button>
 
-                <button *appHasPermission="'miscelaneos.entry'" [hidden]="activeTab() !== 'entradas'" (click)="nuevaEntrada()"
-                        class="px-5 py-2 bg-amber-400 text-black font-black text-xs border-[2px] border-black rounded-xl
-                               shadow-[3px_3px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none
-                               transition-all uppercase flex items-center gap-2">
-                    <mat-icon class="!text-sm !text-black">arrow_downward</mat-icon>
-                    <span class="hidden sm:inline">Nueva Entrada</span>
-                </button>
+                    <button *appHasPermission="'miscelaneos.entry'" [hidden]="activeTab() !== 'entradas'" (click)="nuevaEntrada()"
+                            class="px-5 py-2 bg-amber-400 text-black font-black text-xs border-[2px] border-black rounded-xl
+                                   shadow-[3px_3px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none
+                                   transition-all uppercase flex items-center gap-2">
+                        <mat-icon class="!text-sm !text-black">arrow_downward</mat-icon>
+                        <span class="hidden sm:inline">Nueva Entrada</span>
+                    </button>
 
-                <button *appHasPermission="'miscelaneos.exit'" [hidden]="activeTab() !== 'salidas'" (click)="nuevaSalida()"
-                        class="px-5 py-2 bg-amber-400 text-black font-black text-xs border-[2px] border-black rounded-xl
-                               shadow-[3px_3px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none
-                               transition-all uppercase flex items-center gap-2">
-                    <mat-icon class="!text-sm !text-black">arrow_upward</mat-icon>
-                    <span class="hidden sm:inline">Nueva Salida</span>
-                </button>
+                    <button *appHasPermission="'miscelaneos.exit'" [hidden]="activeTab() !== 'salidas'" (click)="nuevaSalida()"
+                            class="px-5 py-2 bg-amber-400 text-black font-black text-xs border-[2px] border-black rounded-xl
+                                   shadow-[3px_3px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none
+                                   transition-all uppercase flex items-center gap-2">
+                        <mat-icon class="!text-sm !text-black">arrow_upward</mat-icon>
+                        <span class="hidden sm:inline">Nueva Salida</span>
+                    </button>
+                </div>
 
             </div>
         </div>
 
-        <!-- ══ CARD PRINCIPAL ══ -->
+        <!-- ══ TARJETA PRINCIPAL ══ -->
         <div class="flex-1 flex flex-col overflow-hidden border-[3px] border-black bg-white dark:bg-[#0F172AFF] rounded-2xl shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
 
             <!-- Cabecera oscura: stats -->
@@ -485,7 +487,7 @@
                     <div *ngFor="let grupo of stockPorUbicacion(); trackBy: trackByUbicacion"
                          class="flex flex-col border-[3px] border-black rounded-xl overflow-hidden bg-white dark:bg-slate-900 shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-all hover:-translate-y-[2px] hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
 
-                        <!-- Card header -->
+                        <!-- Cabecera de la tarjeta -->
                         <div class="px-3 py-2.5 border-b-[2px] border-black flex items-center justify-between shrink-0"
                              [ngClass]="grupo.ubicacion === 'Sin ubicación'
                                  ? 'bg-gray-100 dark:bg-slate-800'

@@ -7,12 +7,11 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { DragDropModule } from '@angular/cdk/drag-drop';
 import { Subject, of, forkJoin } from 'rxjs';
-import { debounceTime, distinctUntilChanged, switchMap, catchError, finalize, map, takeUntil } from 'rxjs/operators';
+import { catchError, finalize, map, takeUntil } from 'rxjs/operators';
 
 import { Material, DialogMode } from '../interfaces';
 import { GestionUbicacionesService } from '../../gestion-ubicaciones/gestion-ubicaciones.service';
 import { Warehouse, Rack, Level } from '../../gestion-ubicaciones/interfaces';
-import { MovementService } from '../../../../../core/services/movement.service';
 import { localDateStr } from '../../../../../core/utils/date.utils';
 
 @Component({
@@ -60,13 +59,11 @@ export class FormMaterialComponent implements OnInit, OnDestroy {
     private snackBar       = inject(MatSnackBar);
     private data           = inject<{ mode: DialogMode; material?: Material }>(MAT_DIALOG_DATA);
     private ubicSvc        = inject(GestionUbicacionesService);
-    private movementService= inject(MovementService);
     private dialog          = inject(MatDialog);
 
     mode: DialogMode = this.data?.mode ?? 'new';
 
     private _destroy$   = new Subject<void>();
-    private _reqSearch$ = new Subject<string>();
 
     tiposItem   = ['CONSUMIBLE', 'MATERIAL', 'REPUESTO', 'QUIMICO', 'ELECTRICO'];
     tiposCompra = ['COMPRA DIRECTA', 'LICITACIÓN', 'DONACIÓN', 'TRANSFERENCIA'];
@@ -84,16 +81,9 @@ export class FormMaterialComponent implements OnInit, OnDestroy {
     selWarehouse: Warehouse | null = null;
     selRack:      Rack | null      = null;
     selectedLevelId: number | null = null;
-    /** Ubicación real al abrir el form (edit) — para saber si el usuario la cambió al guardar */
-    private originalLocation: { rackId: number | null; levelId: number | null } | null = null;
 
     get racks():  Rack[]  { return this.racksFull; }
     get levels(): Level[] { return (this.selRack as any)?.niveles ?? []; }
-
-    // ── Funcionario autocomplete ───────────────────────────────
-    funcionarioSuggestions: any[] = [];
-    funcionarioLoading            = false;
-    showFuncionarioSuggestions    = false;
 
     form: FormGroup = this.fb.group({
         codigoBoaM: ['', [Validators.maxLength(40)]],
@@ -118,9 +108,8 @@ export class FormMaterialComponent implements OnInit, OnDestroy {
     ngOnInit(): void {
         if (this.data?.material) {
             const mat = this.data.material;
-            // Asegurar que el valor actual de la BD esté en la lista de opciones
-            // Esto previene que el native <select> resetee al primer valor si el valor guardado
-            // no está en la lista predefinida (ej: valor con espacios, nuevo tipo, etc.)
+            // Asegura que el valor guardado en BD esté en la lista de opciones (evita que el
+            // <select> nativo se resetee al primer valor si el guardado no está predefinido).
             if (mat.unidad    && !this.unidades.includes(mat.unidad))       this.unidades    = [mat.unidad,    ...this.unidades];
             if (mat.tipoItem  && !this.tiposItem.includes(mat.tipoItem))    this.tiposItem   = [mat.tipoItem,  ...this.tiposItem];
             if (mat.tipoCompra && !this.tiposCompra.includes(mat.tipoCompra)) this.tiposCompra = [mat.tipoCompra, ...this.tiposCompra];
@@ -137,7 +126,6 @@ export class FormMaterialComponent implements OnInit, OnDestroy {
         if (this.readOnly) {
             this.form.disable();
         }
-        this._setupFuncionarioSearch();
     }
 
     ngOnDestroy(): void {
@@ -145,64 +133,14 @@ export class FormMaterialComponent implements OnInit, OnDestroy {
         this._destroy$.complete();
     }
 
-    // ── Funcionarios ───────────────────────────────────────────
-    private _setupFuncionarioSearch(): void {
-        this._reqSearch$.pipe(
-            debounceTime(200),
-            distinctUntilChanged(),
-            switchMap(term => {
-                if (term.length < 2) {
-                    this.funcionarioSuggestions     = [];
-                    this.showFuncionarioSuggestions = false;
-                    return of([]);
-                }
-                this.funcionarioLoading = true;
-                const q = term.toLowerCase();
-                return this.movementService.getPersonal().pipe(
-                    map(lista => lista.filter(f => {
-                        const texto = [
-                            f.nombreCompleto,
-                            f.nombre,
-                            f.apellido_paterno,
-                            f.apellido_materno,
-                        ].filter(Boolean).join(' ').toLowerCase();
-                        return texto.includes(q);
-                    }).slice(0, 10)),
-                    finalize(() => this.funcionarioLoading = false),
-                    catchError(() => of([]))
-                );
-            }),
-            takeUntil(this._destroy$)
-        ).subscribe(lista => {
-            this.funcionarioSuggestions     = lista;
-            this.showFuncionarioSuggestions = lista.length > 0;
-        });
-    }
-
-    onFuncionarioInput(event: Event): void {
-        this._reqSearch$.next((event.target as HTMLInputElement).value);
-    }
-
-    seleccionarFuncionario(f: any): void {
-        this.form.get('recibidoPor')?.setValue(f.nombreCompleto ?? f.nombre ?? f.full_name ?? '');
-        this.showFuncionarioSuggestions = false;
-        this.funcionarioSuggestions    = [];
-    }
-
-    ocultarFuncionarios(): void {
-        setTimeout(() => this.showFuncionarioSuggestions = false, 150);
-    }
-
     /**
-     * En modo edicion, precarga almacen/estante/nivel actuales del material (rack_id/level_id
-     * reales) para que el picker muestre la ubicacion vigente y para poder detectar si el
-     * usuario la cambia al guardar (ver save()). Mismo patrón que gestionar-kit.component.ts.
+     * En edición, precarga almacén/estante/nivel actuales del material para mostrar la ubicación
+     * vigente y detectar si el usuario la cambia al guardar (ver save()).
      */
     private prefillUbicacion(mat: Material): void {
         const warehouseId = mat.warehouseId ?? null;
         const rackId      = mat.rackId      ?? null;
         const levelId     = mat.levelId     ?? null;
-        this.originalLocation = { rackId, levelId };
         if (!warehouseId || !rackId || !levelId) return;
 
         this.loadingWarehouses = true;
@@ -211,9 +149,8 @@ export class FormMaterialComponent implements OnInit, OnDestroy {
             takeUntil(this._destroy$)
         ).subscribe(ws => {
             const activos = ws.filter(w => w.estado === 'ACTIVO');
-            // El picker solo ofrece almacenes de Cbb, pero la busqueda del almacen actual del
-            // item usa la lista completa (por si viniera de datos legado con otra base) para
-            // no perder el dato al editar. Mismo criterio que gestionar-kit.component.ts.
+            // El picker solo ofrece almacenes de Cbb, pero el almacén actual del ítem se busca
+            // en la lista completa (por si viniera de datos legado con otra base).
             this.warehouses = this._soloCbba(activos);
             const wh = activos.find(w => w.id === warehouseId);
             if (!wh) return;
@@ -284,8 +221,7 @@ export class FormMaterialComponent implements OnInit, OnDestroy {
         ).subscribe(rs => { this.racksFull = rs; });
     }
 
-    // Únicos almacenes reales de Cochabamba con estantes/niveles cargados (catálogo DAT-12,
-    // data000001.sql). El resto de bases del catálogo están vacías (sin estantes todavía).
+    // Únicos almacenes con estantes/niveles cargados: los de Cochabamba (DAT-12).
     // Mismo criterio que gestionar-kit.component.ts.
     private _soloCbba(ws: Warehouse[]): Warehouse[] {
         return ws.filter(w => w.codigo?.startsWith('ALM-CBB'));

@@ -1,6 +1,6 @@
 <div class="bg-stone-100 dark:bg-slate-900 border-2 border-black rounded-2xl overflow-hidden flex flex-col h-full">
 
-    <!-- Header -->
+    <!-- Cabecera -->
     <div class="bg-[#0F172A] px-5 py-3 flex items-center gap-3 shrink-0 select-none"
          cdkDrag cdkDragRootElement=".cdk-overlay-pane" cdkDragHandle style="cursor:grab">
         <div class="w-9 h-9 rounded bg-amber-400 border-2 border-black flex items-center justify-center shadow-[2px_2px_0_#fbbf24] shrink-0">
@@ -10,14 +10,14 @@
             <p class="text-[9px] text-slate-400 font-bold uppercase tracking-[0.18em] leading-none mb-0.5">Ajuste Ingreso · Datos Generales</p>
             <h2 class="text-sm text-white font-black uppercase tracking-tight leading-none">Configurar Ajuste de Inventario</h2>
         </div>
-        <!-- Tipo badge -->
+        <!-- Insignia de tipo -->
         <span *ngIf="ajusteForm.value.tipoAjuste"
               class="px-2 py-1 border-2 border-white/20 rounded-lg text-[9px] font-black uppercase text-amber-300 shrink-0">
             {{ getTipoAjusteLabel(ajusteForm.value.tipoAjuste) }}
         </span>
     </div>
 
-    <!-- Body: 2 columnas -->
+    <!-- Cuerpo: 2 columnas -->
     <form [formGroup]="ajusteForm" class="flex-1 flex flex-col sm:flex-row overflow-hidden min-h-0">
 
         <!-- COLUMNA IZQUIERDA: Datos + Responsables + Descripción -->
@@ -151,7 +151,7 @@
 
     </form>
 
-    <!-- Footer -->
+    <!-- Pie -->
     <div class="border-t-2 border-black bg-stone-200 dark:bg-slate-800 px-5 py-3 flex justify-between items-center shrink-0">
         <button type="button" (click)="cerrarModalDatosAjuste()"
                 class="px-4 py-2 bg-[#FF1414] text-white font-black text-[10px] border-2 border-black rounded-xl shadow-[2px_2px_0_#000] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all uppercase">

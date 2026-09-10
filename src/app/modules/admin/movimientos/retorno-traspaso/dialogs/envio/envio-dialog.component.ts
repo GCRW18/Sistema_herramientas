@@ -10,6 +10,8 @@ import { Subject, takeUntil, finalize, debounceTime, distinctUntilChanged, switc
 
 import { MovementService } from '../../../../../../core/services/movement.service';
 import { ToolService } from '../../../../../../core/services/tool.service';
+import { QrScanService } from '../../../../../../core/services/qr-scan.service';
+import { FleetService } from '../../../../../../core/services/fleet.service';
 import { localDateStr } from '../../../../../../core/utils/date.utils';
 import {
     Ubicacion, ToolEnvioItem, Funcionario,
@@ -48,9 +50,14 @@ export class EnvioDialogComponent implements OnInit, OnDestroy {
     private snackBar  = inject(MatSnackBar);
     private movSvc    = inject(MovementService);
     private toolSvc   = inject(ToolService);
+    private qrScan    = inject(QrScanService);
+    private fleetSvc  = inject(FleetService);
     private _unsub$   = new Subject<void>();
     private _srchEnvio$ = new Subject<string>();
     private _logoBoaDataUri: Promise<string> | null = null;
+
+    // Catálogo de aeronaves (he.taircraft) — mismo origen que Préstamo Técnico.
+    aeronaves: { matricula: string; tipo: string }[] = [];
 
     // ── Escaneo QR / wedge ──
     scanValueEnv = '';
@@ -61,7 +68,7 @@ export class EnvioDialogComponent implements OnInit, OnDestroy {
     envioForm!: FormGroup;
     itemsEnvio: ToolEnvioItem[] = [];
 
-    // Tool search (mismo input que el escaneo — ver scanValueEnv/onScanEnvInput)
+    // Búsqueda de herramienta (mismo input que el escaneo — ver scanValueEnv/onScanEnvInput)
     toolResultsEnvio: any[] = [];
     showToolDropEnvio   = false;
     searchingToolsEnvio = false;
@@ -79,7 +86,7 @@ export class EnvioDialogComponent implements OnInit, OnDestroy {
     funcRecibeLoading                 = false;
     showFuncRecibeDropdown            = false;
 
-    // Dept autocomplete
+    // Dept (autocompletado)
     deptUbicacionesEnvio: Ubicacion[] = [];
     showDeptDropEnvio                  = false;
 
@@ -96,10 +103,23 @@ export class EnvioDialogComponent implements OnInit, OnDestroy {
         this._setDefaultAlmacen();
         this._setDefaultResponsable();
         this._fetchCorrelativoPreview();
+        this._cargarAeronaves();
         setTimeout(() => { try { this.scanInputRef?.nativeElement.focus(); } catch { /* view not ready */ } }, 150);
     }
 
     ngOnDestroy(): void { this._unsub$.next(); this._unsub$.complete(); }
+
+    private _cargarAeronaves(): void {
+        this.fleetSvc.getAircraft({ limit: 100 } as any).pipe(
+            catchError(() => of([] as any[])),
+            takeUntil(this._unsub$)
+        ).subscribe((data: any[]) => {
+            this.aeronaves = [
+                ...data.map((a: any) => ({ matricula: a.registration || a.matricula || '', tipo: a.manufacturer || '' })),
+                { matricula: 'N/A', tipo: 'No Aplica' }
+            ];
+        });
+    }
 
     // ── Escaneo: código → busca la herramienta y la agrega (mismo chequeo que la búsqueda) ──
     private _setupScanEnv(): void {
@@ -130,10 +150,21 @@ export class EnvioDialogComponent implements OnInit, OnDestroy {
      *  (dropdown de sugerencias mientras se escribe), igual que Préstamo Técnico. */
     onScanEnvInput(v: string): void { this.scanValueEnv = v; this._srchEnvio$.next(v); }
     scanEnvEnter(): void {
-        const code = this.scanValueEnv.trim();
-        if (!code) return;
-        this._pendingScanEnv = code;
-        this._scanEnv$.next(code);
+        const raw = this.scanValueEnv.trim();
+        if (!raw) return;
+        // Etiqueta QR (URL `.../qr-code/<token>`): descifra a código plano y reintenta.
+        if (this.qrScan.isQrLabel(raw)) {
+            this.scanningEnv = true;
+            this.qrScan.toToolCode(raw).pipe(takeUntil(this._unsub$)).subscribe(code => {
+                this.scanningEnv = false;
+                if (!code) { this._showMsg('Etiqueta QR no reconocida', 'warning'); this.scanValueEnv = ''; this._focusScanEnv(); return; }
+                this.scanValueEnv = code;
+                this.scanEnvEnter();
+            });
+            return;
+        }
+        this._pendingScanEnv = raw;
+        this._scanEnv$.next(raw);
     }
 
     getAllUbicaciones(): Ubicacion[] { return [...this.bases, ...this.almacenes]; }
@@ -253,7 +284,7 @@ export class EnvioDialogComponent implements OnInit, OnDestroy {
             }});
     }
 
-    // ── Tool search ────────────────────────────────────────────────────────────
+    // ── Búsqueda de herramienta ──
 
     hideToolDropEnvio(): void { setTimeout(() => this.showToolDropEnvio = false, 150); }
 
@@ -312,7 +343,7 @@ export class EnvioDialogComponent implements OnInit, OnDestroy {
     hideFuncEnviaDropdown(): void  { setTimeout(() => this.showFuncEnviaDropdown  = false, 150); }
     hideFuncRecibeDropdown(): void { setTimeout(() => this.showFuncRecibeDropdown = false, 150); }
 
-    // ── Dept autocomplete ──────────────────────────────────────────────────────
+    // ── Autocompletado de departamento ──
 
     onDeptChangeEnvio(term: string): void {
         const q = (term || '').toLowerCase().trim();
@@ -407,21 +438,17 @@ export class EnvioDialogComponent implements OnInit, OnDestroy {
         this._pdfCoMat(this.envCorrelativoPreview || 'ENV-?/?', this.itemsEnvio, form);
     }
 
-    cerrarFormEnvio(): void { this.dialogRef.close(); }
+    cerrarFormEnvio(): void {
+        if (this.itemsEnvio.length > 0 &&
+            !confirm(`¿Cancelar el envío? Se perderán las ${this.itemsEnvio.length} herramienta(s) agregada(s).`)) return;
+        this.dialogRef.close();
+    }
 
     // ── PDF ────────────────────────────────────────────────────────────────────
 
     /**
-     * "Solicitud de Envío — CO-MAT", calcado de "Sistema Herramientas con Macros/Formularios.xlsx",
-     * hoja "CO-MAT". A diferencia de los demás formularios calcados, esta hoja no tiene logo con
-     * código de documento (ni MGH-xxx ni MOM-) — es solo texto: "DEPARTAMENTO DE MANTENIMIENTO" /
-     * "UNIDAD DE ALMACÉN DE HERRAMIENTAS" / "SOLICITUD DE ENVÍO" / "CO-MAT". La implementación
-     * previa mostraba "OAM145# N-014" en el header, pero ese código pertenece a la hoja "SALIDA
-     * CONSUMIBLES" del mismo Excel, no a CO-MAT — se retiró por infidelidad a la fuente. El número
-     * de documento interno (correlativo ENV-N/YYYY) se imprime en la celda "SERIAL NUMBER:" que la
-     * hoja sí reserva junto a ORIGEN, en vez de inventar una caja de código aparte. La tabla también
-     * pierde la columna "Código BOA" (no existe en el Excel, solo ITEM/CANT./DESCRIPCIÓN/PART
-     * NUMBER/SERIAL NUMBER).
+     * "Solicitud de Envío — CO-MAT" (hoja CO-MAT del Excel de formularios). Sin código de documento
+     * (solo texto); el correlativo ENV-N/YYYY va en la celda "SERIAL NUMBER:". Sin columna "Código BOA".
      */
     private async _pdfCoMat(nro: string, items: ToolEnvioItem[], form: any): Promise<void> {
         const logoUri = await this._loadLogoBoaDataUri();

@@ -124,7 +124,7 @@ export class FormProveedorComponent implements OnInit {
         this.proveedorForm.patchValue(proveedor);
     }
 
-    // Helper para las estrellas de calificación
+    // Estrellas de calificación
     setRating(rating: number): void {
         this.proveedorForm.patchValue({ calificacion: rating });
         this.proveedorForm.markAsDirty();
@@ -139,10 +139,6 @@ export class FormProveedorComponent implements OnInit {
     }
 
     onCancel(): void {
-        this.closeOrNavigate();
-    }
-
-    goBack(): void {
         this.closeOrNavigate();
     }
 

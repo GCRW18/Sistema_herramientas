@@ -8,11 +8,13 @@ import {
 } from '../models';
 import { ErpApiService } from '../api/api.service';
 import { BlobStorageService } from './blob-storage.service';
+import { QrScanService } from './qr-scan.service';
 
 @Injectable({ providedIn: 'root' })
 export class CalibrationService {
     private _api = inject(ErpApiService);
     private _blob = inject(BlobStorageService);
+    private _qrScan = inject(QrScanService);
     private _calibrations: ReplaySubject<CalibrationRecord[]> = new ReplaySubject<CalibrationRecord[]>(1);
     private _laboratories: ReplaySubject<CalibrationLaboratory[]> = new ReplaySubject<CalibrationLaboratory[]>(1);
 
@@ -248,8 +250,16 @@ export class CalibrationService {
     }
 
     searchToolsAutocomplete(term: string): Observable<any[]> {
-        return from(this._api.post('herramientas/tools/searchToolsAutocomplete', { search_term: term, start: 0, limit: 10 })).pipe(
-            map((resp: any) => this._normalizeResponse(resp)),
+        // Si pegan/escanean la URL de una etiqueta QR, se traduce a código plano antes de buscar.
+        const term$ = this._qrScan.isQrLabel(term) ? this._qrScan.toToolCode(term) : of(term);
+        return term$.pipe(
+            switchMap(t => {
+                const search = (t || '').trim();
+                if (!search) return of([] as any[]);
+                return from(this._api.post('herramientas/tools/searchToolsAutocomplete', { search_term: search, start: 0, limit: 10 })).pipe(
+                    map((resp: any) => this._normalizeResponse(resp)),
+                );
+            }),
             catchError(() => of([]))
         );
     }
@@ -275,8 +285,13 @@ export class CalibrationService {
     }
 
     scanToolForCalibration(barcode: string): Observable<ScanToolResult> {
-        return from(this._api.post('herramientas/calibrations/scanToolForCalibration', { code: barcode })).pipe(
+        return this._qrScan.toToolCode(barcode).pipe(
+            switchMap((code) => {
+                if (!code) return of(null as any);
+                return from(this._api.post('herramientas/calibrations/scanToolForCalibration', { code }));
+            }),
             switchMap((response: any) => {
+                if (!response) return of(null as any);
                 const raw = this._normalizeResponse(response)?.[0] ?? null;
                 if (!raw) return of(null as any);
                 return of({ ...raw, code: raw.tool_code || raw.code, name: raw.tool_name || raw.name } as ScanToolResult);
@@ -570,6 +585,19 @@ export class CalibrationService {
     // MGH-123 — Reporte mensual de próximas a vencer, por período en días (Centro de Control).
     generarPdfVencerMensual(periodoDias = 30): Observable<{ pdf_base64: string; nombre_archivo: string }> {
         return this._pdfReporte('herramientas/reportes/generarPDFVencerMensual', 'vencer_mensual.pdf', { periodo_dias: periodoDias });
+    }
+
+    // R-AUD-01 — Registro Histórico de Auditoría Técnica (Consulta y Auditoría / Servicios de
+    // Mantenimiento). Combina calibraciones + mantenimientos. params: tipo, record_number,
+    // tool_search, filter_status, id_laboratory, date_from, date_to, subtitulo.
+    generarPdfAuditoriaTecnica(params: any = {}): Observable<{ pdf_base64: string; nombre_archivo: string }> {
+        return this._pdfReporte('herramientas/reportes/generarPDFAuditoriaTecnica', 'auditoria_tecnica.pdf', params);
+    }
+
+    // MGH-102 — Listado de herramientas sujetas a calibración / alertas de vencimiento
+    // (Centro de Control, botón Imprimir). range: all|expired|4d|7d|15d|30d|90d|in_lab.
+    generarPdfAlertasCalibracion(range = 'all'): Observable<{ pdf_base64: string; nombre_archivo: string }> {
+        return this._pdfReporte('herramientas/reportes/generarPDFAlertasCalibracion', 'alertas_calibracion.pdf', { range });
     }
 
     abrirPdf(pdfBase64: string, filename: string = 'documento.pdf'): void {

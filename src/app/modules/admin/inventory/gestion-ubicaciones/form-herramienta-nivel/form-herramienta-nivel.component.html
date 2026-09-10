@@ -1,7 +1,7 @@
 <div class="bg-stone-100 dark:bg-slate-900 border-2 border-black rounded-2xl overflow-hidden flex flex-col"
      style="width:100%; max-height:90vh">
 
-    <!-- HEADER -->
+    <!-- CABECERA -->
     <div class="bg-[#0F172A] px-3 sm:px-5 py-3 sm:py-3.5 flex items-center gap-2 sm:gap-3 shrink-0 select-none flex-wrap sm:flex-nowrap"
          cdkDrag cdkDragRootElement=".cdk-overlay-pane" cdkDragHandle style="cursor:grab">
         <div class="w-8 h-8 sm:w-9 sm:h-9 rounded-lg bg-amber-400 border-2 border-black flex items-center justify-center shadow-[2px_2px_0_#fbbf24] shrink-0">
@@ -54,13 +54,13 @@
         </span>
     </div>
 
-    <!-- BODY -->
+    <!-- CUERPO -->
     <div class="flex-1 overflow-y-auto sm:overflow-hidden">
 
         <!-- Grid principal -->
         <form [formGroup]="form" class="flex flex-col sm:flex-row sm:h-full overflow-visible sm:overflow-hidden min-h-0">
 
-            <!-- LEFT: Foto -->
+            <!-- IZQUIERDA: Foto -->
             <div class="w-full sm:w-1/2 shrink-0 flex flex-col items-center justify-center px-2 py-3 sm:py-2">
                 <div class="w-40 h-40 sm:w-60 sm:h-60 border-2 border-dashed border-stone-300 dark:border-slate-600 rounded-xl bg-stone-50 dark:bg-slate-900 flex flex-col items-center justify-center relative overflow-hidden cursor-pointer hover:border-amber-400 transition-colors group"
                      (click)="fileInput.click()">
@@ -78,7 +78,7 @@
                 </div>
             </div>
 
-            <!-- RIGHT: Campos -->
+            <!-- DERECHA: Campos -->
             <div class="w-full sm:w-1/2 sm:overflow-y-auto custom-scrollbar px-2 py-2 flex flex-col gap-1">
 
                 <!-- Fila 1: Código · P/N · S/N -->
@@ -217,7 +217,7 @@
         </form>
     </div>
 
-    <!-- FOOTER -->
+    <!-- PIE -->
     <div class="border-t-2 border-black bg-stone-200 dark:bg-slate-800 px-3 py-1.5 flex justify-between items-center shrink-0">
         <button type="button" (click)="cerrar()"
                 class="px-3 py-1 bg-[#FF1414] text-white font-black text-[9px] border-2 border-black rounded-lg shadow-[2px_2px_0_#000] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all uppercase">

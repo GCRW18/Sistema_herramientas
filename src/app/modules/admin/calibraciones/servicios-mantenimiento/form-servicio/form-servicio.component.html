@@ -1,7 +1,7 @@
 <div class="bg-stone-100 dark:bg-[#0F172A] border-2 border-black overflow-hidden flex flex-col w-full h-full"
 >
 
-    <!-- HEADER -->
+    <!-- CABECERA -->
     <div class="bg-[#0F172A] px-4 py-2.5 flex items-center gap-2.5 shrink-0 select-none"
          cdkDrag cdkDragRootElement=".cdk-overlay-pane" cdkDragHandle style="cursor:grab">
         <div class="w-7 h-7 rounded bg-amber-400 border-2 border-black flex items-center justify-center shrink-0">
@@ -17,7 +17,7 @@
         </span>
     </div>
 
-    <!-- SPINNER OVERLAY -->
+    <!-- OVERLAY SPINNER -->
     <div *ngIf="isSaving()" class="absolute inset-0 bg-black/60 flex items-center justify-center z-50">
         <div class="bg-stone-100 border-2 border-black rounded-xl shadow-[4px_4px_0_#000] p-4 flex flex-col items-center gap-2">
             <mat-spinner diameter="28"></mat-spinner>
@@ -183,9 +183,9 @@
         </div>
     </div>
 
-    <!-- FOOTER -->
+    <!-- PIE -->
     <div class="border-t-2 border-black bg-stone-200 dark:bg-slate-900 px-4 py-2.5 flex justify-between items-center shrink-0">
-        <button type="button" (click)="dialogRef.close(false)"
+        <button type="button" (click)="cerrar()"
                 class="px-3 py-1.5 bg-[#FF1414] text-white font-black text-[9px] border-2 border-black rounded-lg shadow-[2px_2px_0_#000] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all uppercase">
             Cancelar
         </button>

@@ -9,6 +9,7 @@ import { debounceTime, distinctUntilChanged, switchMap, takeUntil, finalize, map
 
 import { MovementService } from '../../../../../../core/services/movement.service';
 import { ToolService } from '../../../../../../core/services/tool.service';
+import { QrScanService } from '../../../../../../core/services/qr-scan.service';
 import { localDateStr } from '../../../../../../core/utils/date.utils';
 import {
     Ubicacion, ToolEnvioItem, Funcionario, CONDICIONES_ENVIO, TIPOS_TRASPASO, motivoBloqueoSalida
@@ -48,6 +49,7 @@ export class TraspasoDialogComponent implements OnInit, OnDestroy {
     private snackBar  = inject(MatSnackBar);
     private movSvc    = inject(MovementService);
     private toolSvc   = inject(ToolService);
+    private qrScan    = inject(QrScanService);
     private _unsub$   = new Subject<void>();
 
     // ── Escaneo QR / wedge + búsqueda, campo único (mismo patrón que Préstamo Técnico) ──
@@ -57,7 +59,7 @@ export class TraspasoDialogComponent implements OnInit, OnDestroy {
     private _srchTraspasoAut$     = new Subject<string>();
     private _srchTraspasoRecibe$  = new Subject<string>();
 
-    // Form + items
+    // Formulario + ítems
     traspasoForm!: FormGroup;
     itemsTraspaso: ToolEnvioItem[] = [];
     isSavingTraspaso = false;
@@ -66,17 +68,18 @@ export class TraspasoDialogComponent implements OnInit, OnDestroy {
     trpCorrelativoPreview = '';
     loadingCorrelativoTrp = false;
 
-    // Locations
+    // Ubicaciones
     get almacenes(): Ubicacion[] { return this.data.almacenes || []; }
     get bases(): Ubicacion[] { return this.data.bases || []; }
 
-    // Tool search
+    // Búsqueda de herramienta
+
     toolSearchTraspaso    = '';
     toolResultsTraspaso: any[] = [];
     showToolDropTraspaso  = false;
     searchingToolsTraspaso = false;
 
-    // Dept autocomplete
+    // Dept (autocompletado)
     deptUbicacionesTraspaso: Ubicacion[] = [];
     showDeptDropTraspaso = false;
 
@@ -142,12 +145,22 @@ export class TraspasoDialogComponent implements OnInit, OnDestroy {
         this.addToolTraspaso(tool);
     }
 
-    /** Enter en el input / lector físico wedge: usa la coincidencia exacta de las
-     *  sugerencias si ya llegó; si no, resuelve el código directo contra el backend
-     *  (más rápido que esperar el debounce de la búsqueda en vivo). */
+    /** Enter / lector wedge: usa la coincidencia exacta de las sugerencias si ya llegó;
+     *  si no, resuelve el código directo contra el backend. */
     scanTrpEnter(): void {
         const code = this.toolSearchTraspaso.trim();
         if (!code) return;
+        // Etiqueta QR (URL `.../qr-code/<token>`): descifra a código plano y reintenta.
+        if (this.qrScan.isQrLabel(code)) {
+            this.scanningTrp = true;
+            this.qrScan.toToolCode(code).pipe(takeUntil(this._unsub$)).subscribe(real => {
+                this.scanningTrp = false;
+                if (!real) { this._showMsg('Etiqueta QR no reconocida', 'warning'); this.toolSearchTraspaso = ''; return; }
+                this.toolSearchTraspaso = real;
+                this.scanTrpEnter();
+            });
+            return;
+        }
         const exact = this.toolResultsTraspaso.find((t: any) => String(t.code ?? t.codigo ?? '').toLowerCase() === code.toLowerCase());
         if (exact) { this.addToolTraspaso(exact); return; }
         this.scanningTrp = true;
@@ -187,7 +200,8 @@ export class TraspasoDialogComponent implements OnInit, OnDestroy {
     }
 
     private _setupSearches(): void {
-        // Tool search
+        // Búsqueda de herramienta
+
         this._srchTraspaso$.pipe(
             debounceTime(300), distinctUntilChanged(),
             switchMap(term => {
@@ -203,7 +217,7 @@ export class TraspasoDialogComponent implements OnInit, OnDestroy {
             this.showToolDropTraspaso = this.toolResultsTraspaso.length > 0;
         }});
 
-        // Funcionario searches
+        // Búsqueda de funcionarioes
         this._srchTraspasoResp$.pipe(debounceTime(300), distinctUntilChanged(),
             switchMap(q => {
                 if (!q || q.length < 2) { this.funcionariosTraspasoResp = []; this.showFuncTraspasoRespDropdown = false; return of([]); }
@@ -247,7 +261,7 @@ export class TraspasoDialogComponent implements OnInit, OnDestroy {
         ).subscribe({ next: (r: any[]) => { this.funcionariosTraspasoRecibe = r; this.showFuncTraspasoRecibeDropdown = r.length > 0; }});
     }
 
-    // — Tool search methods —
+    // ── Búsqueda de herramienta ──
     onToolSearchTraspaso(term: string): void { this.toolSearchTraspaso = term; this._srchTraspaso$.next(term); }
     hideToolDropTraspaso(): void { setTimeout(() => this.showToolDropTraspaso = false, 150); }
 
@@ -287,7 +301,7 @@ export class TraspasoDialogComponent implements OnInit, OnDestroy {
         });
     }
 
-    // — Dept autocomplete —
+    // ── Autocompletado de departamento ──
     onDeptChangeTraspaso(val: string): void {
         if (!val || val.trim().length < 2) { this.deptUbicacionesTraspaso = []; this.showDeptDropTraspaso = false; return; }
         const q = val.toLowerCase();
@@ -398,7 +412,11 @@ export class TraspasoDialogComponent implements OnInit, OnDestroy {
         this.funcionariosTraspasoRecibe = []; this.showFuncTraspasoRecibeDropdown = false;
     }
 
-    cerrarFormTraspaso(): void { this.dialogRef.close(); }
+    cerrarFormTraspaso(): void {
+        if (this.itemsTraspaso.length > 0 &&
+            !confirm(`¿Cancelar el traspaso? Se perderán las ${this.itemsTraspaso.length} herramienta(s) agregada(s).`)) return;
+        this.dialogRef.close();
+    }
 
     private _showMsg(msg: string, type: 'success' | 'error' | 'warning'): void {
         const panelClass = type === 'success' ? 'snack-success' : type === 'error' ? 'snack-error' : 'snack-warning';

@@ -42,12 +42,8 @@ export class InventarioMiscelaneosComponent implements OnInit, OnDestroy {
     searchControl  = new FormControl('');
     filterTipoCtrl = new FormControl('');
 
-    // Datos crudos como signals: solo se recomputan valores derivados cuando
-    // estas señales realmente cambian, nunca en cada ciclo de detección de
-    // cambios (antes eran getters/arrays planos leídos por *ngFor y devolvían
-    // una referencia nueva en cada CD → recreación completa del DOM en cada
-    // tick, que junto a BrowserAnimationsModule producía un loop de animación
-    // infinito y congelaba la pestaña al entrar al módulo).
+    // Datos crudos como signals: los valores derivados se recomputan solo cuando cambian estas
+    // señales, no en cada CD (antes eran getters que devolvían refs nuevas → recreación del DOM).
     private _materiales = signal<Material[]>([]);
     private _entradas   = signal<Entrada[]>([]);
     private _salidas    = signal<Salida[]>([]);
@@ -160,16 +156,6 @@ export class InventarioMiscelaneosComponent implements OnInit, OnDestroy {
         });
     }
 
-    private loadMovimientos(): void {
-        forkJoin({ e: this.svc.getEntradas(), s: this.svc.getSalidas() })
-            .pipe(takeUntil(this._destroy$))
-            .subscribe(({ e, s }) => {
-                this._entradas.set(e);
-                this._salidas.set(s);
-                this.pagina.set(1);
-            });
-    }
-
     setTab(tab: TabMisc): void {
         this.activeTab.set(tab);
         this.filterTipoCtrl.setValue('', { emitEvent: false });
@@ -236,7 +222,6 @@ export class InventarioMiscelaneosComponent implements OnInit, OnDestroy {
     trackByPagina = (_: number, p: number): number => p;
 
     // ── Stats ──────────────────────────────────────────────
-    countActivos()   { return this.materiales.filter(m => m.activo).length; }
     countBajoStock() { return this.materiales.filter(m => m.stockMin > 0 && m.stock <= m.stockMin).length; }
 
     // ── Helpers visuales ───────────────────────────────────
@@ -276,7 +261,7 @@ export class InventarioMiscelaneosComponent implements OnInit, OnDestroy {
             this.svc.createMiscelaneo(r)
                 .pipe(finalize(() => this.isLoading.set(false)))
                 .subscribe({
-                    next: ({ id }) => {
+                    next: () => {
                         this.snackBar.open('Ítem registrado', 'Cerrar', { duration: 2500 });
                         this.loadMateriales();
                     },

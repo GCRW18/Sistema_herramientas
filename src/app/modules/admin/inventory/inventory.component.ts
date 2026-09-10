@@ -1,14 +1,14 @@
-import { Component, OnInit, OnDestroy, inject, ViewChild, TemplateRef, Type, Injector, TrackByFunction } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject, ViewChild, ViewChildren, QueryList, TemplateRef, Type, Injector, TrackByFunction } from '@angular/core';
 import { CommonModule, NgComponentOutlet } from '@angular/common';
+import { outletsTienenCambios } from '../../../core/guards/pending-changes.guard';
 import { ActivatedRoute } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDialogModule, MatDialogRef } from '@angular/material/dialog';
-import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatTableModule } from '@angular/material/table';
-import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
+import { MatPaginatorModule } from '@angular/material/paginator';
 import { Subject, of } from 'rxjs';
 import { takeUntil } from 'rxjs';
 
@@ -43,7 +43,6 @@ interface ModuleDef {
         MatIconModule,
         MatButtonModule,
         MatDialogModule,
-        MatSnackBarModule,
         MatProgressSpinnerModule,
         MatTooltipModule,
         MatTableModule,
@@ -125,13 +124,24 @@ interface ModuleDef {
     `]
 })
 export class InventoryComponent implements OnInit, OnDestroy {
-    private snackBar = inject(MatSnackBar);
     private injector = inject(Injector);
     private route    = inject(ActivatedRoute);
 
     private _unsubscribeAll = new Subject<void>();
 
     @ViewChild('consultarInventarioDialog') consultarInventarioDialog!: TemplateRef<any>;
+
+    /** Instancias vivas de los submódulos abiertos — para el pendingChangesGuard. */
+    @ViewChildren(NgComponentOutlet) private _outlets!: QueryList<NgComponentOutlet>;
+
+    /** pendingChangesGuard: ¿algún submódulo abierto tiene un formulario/lista en curso? */
+    tieneCambiosPendientes(): boolean {
+        return outletsTienenCambios(this._outlets);
+    }
+
+    mensajeSalida(): string {
+        return 'Hay datos sin guardar en Inventario. Si sales del módulo se perderán. ¿Salir de todas formas?';
+    }
 
     // ── Tab system ───────────────────────────────────────────────────────────
     openTabs: OpenTab[] = [];

@@ -1,7 +1,7 @@
 import {
     Component, OnInit, OnDestroy, inject,
     Type, Injector, TrackByFunction, ChangeDetectorRef,
-    ViewChild, TemplateRef
+    ViewChild, ViewChildren, QueryList, TemplateRef
 } from '@angular/core';
 import { CommonModule, NgComponentOutlet } from '@angular/common';
 import { Router } from '@angular/router';
@@ -15,6 +15,7 @@ import { takeUntil, finalize } from 'rxjs/operators';
 import { DomSanitizer } from '@angular/platform-browser';
 import { DragDropModule } from '@angular/cdk/drag-drop';
 import { MovementService } from '../../../core/services/movement.service';
+import { outletsTienenCambios } from '../../../core/guards/pending-changes.guard';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -85,6 +86,10 @@ export class MovimientosComponent implements OnInit, OnDestroy {
 
     @ViewChild('movRecientesDialog') movRecientesDialog!: TemplateRef<any>;
 
+    /** Instancias vivas de los submódulos abiertos (NgComponentOutlet) — para preguntarles
+     *  si tienen un formulario en curso antes de salir del módulo (pendingChangesGuard). */
+    @ViewChildren(NgComponentOutlet) private _outlets!: QueryList<NgComponentOutlet>;
+
     // ── Tab system ────────────────────────────────────────────────────────────
     openTabs:    OpenTab[] = [];
     activeTabId: number | null = null;
@@ -102,9 +107,8 @@ export class MovimientosComponent implements OnInit, OnDestroy {
     recentSort: { field: 'reciente' | 'comprobante' | 'fecha' | 'tipo' | 'responsable'; dir: 'asc' | 'desc' } =
         { field: 'reciente', dir: 'desc' };
 
-    /** Tipos de movimiento que NO pertenecen al módulo Movimientos (tienen su
-     *  propio módulo: Calibraciones, Servicios de Mantenimiento) — se filtran de
-     *  "Registros Recientes". Comparado en MAYÚSCULAS. */
+    /** Tipos de movimiento con su propio módulo (Calibraciones, Mantenimiento) — se filtran
+     *  de "Registros Recientes". Comparado en MAYÚSCULAS. */
     private readonly NO_MOV_MODULE_TYPES = new Set<string>([
         'MAINTENANCE', 'ENVIO_CALIBRACION', 'RETORNO_CALIBRACION', 'CALIBRACION',
         'SEND_CALIBRATION', 'CALIBRATION',
@@ -172,9 +176,18 @@ export class MovimientosComponent implements OnInit, OnDestroy {
         this.registerIcons();
     }
 
-    // ── Lifecycle ─────────────────────────────────────────────────────────────
+    // ── Ciclo de vida ──
     ngOnInit(): void {}
     ngOnDestroy(): void { this._unsub$.next(); this._unsub$.complete(); }
+
+    /** pendingChangesGuard: ¿algún submódulo abierto tiene un formulario/lista en curso? */
+    tieneCambiosPendientes(): boolean {
+        return outletsTienenCambios(this._outlets);
+    }
+
+    mensajeSalida(): string {
+        return 'Hay movimientos sin finalizar. Si sales del módulo se perderán los datos cargados. ¿Salir de todas formas?';
+    }
 
     openMovRecientes(): void {
         this.pageIndexMov = 0;
@@ -195,9 +208,8 @@ export class MovimientosComponent implements OnInit, OnDestroy {
     loadRecentMovements(): void {
         this.isLoadingRecents = true;
         this.cdr.detectChanges();
-        // Se pide un lote más grande porque después se filtran los tipos que no
-        // son del módulo Movimientos (calibración, mantenimiento) y recién se
-        // recorta a pageSizeMov.
+        // Se pide un lote grande porque después se filtran los tipos ajenos al módulo
+        // (calibración, mantenimiento) y recién se recorta a pageSizeMov.
         this.movService.getMovements({
             start: 0,
             limit: this.pageSizeMov * 5,
@@ -284,7 +296,7 @@ export class MovimientosComponent implements OnInit, OnDestroy {
         this.cdr.detectChanges();
     }
 
-    // ── Tab helpers ───────────────────────────────────────────────────────────
+    // ── Auxiliares de pestañas ──
     isTabOpen(type: number): boolean { return this.openTabs.some(t => t.type === type); }
 
     async openModule(type: number): Promise<void> {

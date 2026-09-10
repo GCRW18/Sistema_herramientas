@@ -6,7 +6,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
-import { Chart, ChartConfiguration, registerables } from 'chart.js';
+import { Chart, registerables } from 'chart.js';
 import { forkJoin, of } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 import { ToolService } from 'app/core/services/tool.service';
@@ -140,6 +140,7 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewInit {
     private allTools: any[]     = [];
     private recentMovements: any[] = [];
     private calibAlerts: any[]  = [];
+    private loanItems: any[]    = [];
 
     kpiCardsData    = signal<KPI[]>([]);
     alertsData      = signal<Alert[]>([]);
@@ -156,14 +157,19 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewInit {
 
         forkJoin({
             tools:      this.toolService.getTools().pipe(catchError(() => of([] as any[]))),
-            movements:  this.movService.getMovements({ limit: 500 }).pipe(catchError(() => of([] as any[]))),
-            calibAlerts: this.calibrationService.getCalibrationAlertsPxp({ limit: 100 }).pipe(catchError(() => of([] as any[])))
+            // 2000 en vez de 500: con 500 el grafico de Entradas/Salidas de los ultimos 6
+            // meses se quedaba corto en operaciones con volumen alto, subrrepresentando
+            // los meses mas viejos de la ventana.
+            movements:  this.movService.getMovements({ limit: 2000 }).pipe(catchError(() => of([] as any[]))),
+            calibAlerts: this.calibrationService.getCalibrationAlertsPxp({ limit: 100 }).pipe(catchError(() => of([] as any[]))),
+            loanItems:  this.movService.getActiveLoanItems().pipe(catchError(() => of([] as any[])))
         }).subscribe({
-            next: ({ tools, movements, calibAlerts }) => {
+            next: ({ tools, movements, calibAlerts, loanItems }) => {
                 const alertsArr: any[] = Array.isArray(calibAlerts) ? calibAlerts : (calibAlerts as any)?.data || [];
                 this.allTools        = tools;
                 this.recentMovements = movements;
                 this.calibAlerts     = alertsArr;
+                this.loanItems       = Array.isArray(loanItems) ? loanItems : [];
                 this.buildKPIs(alertsArr);
                 this.buildActivities(alertsArr);
                 this.isLoading.set(false);
@@ -213,17 +219,27 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewInit {
 
     // ── Actividades recientes + Alertas panel ────────────────────────────────────
     private buildActivities(calibAlerts: any[] = []): void {
+        // Valores reales de he.tmovements.type (chk_tmovements_type) — mayusculas salvo
+        // 'adjustment'/'purchase', legacy. Antes este mapa comparaba en minuscula y nunca
+        // matcheaba nada, asi que el titulo siempre caia al tipo crudo sin traducir.
         const TYPE_LABELS: Record<string, string> = {
-            entry: 'Entrada', exit: 'Salida', loan: 'Préstamo',
-            return: 'Devolución', transfer: 'Traspaso', adjustment: 'Ajuste'
+            ENTRADA: 'Entrada', SALIDA: 'Salida',
+            PRESTAMO: 'Préstamo', PRESTAMO_INTERNO: 'Préstamo', PRESTAMO_EXTERNO: 'Préstamo Externo', PRESTAMO_TERCERO: 'Préstamo a Tercero',
+            DEVOLUCION: 'Devolución', DEVOLUCION_PRESTAMO_INTERNO: 'Devolución', DEVOLUCION_PRESTAMO_EXTERNO: 'Devolución Externa', DEVOLUCION_TERCERO: 'Devolución de Tercero',
+            TRASPASO: 'Traspaso', RETORNO_TRASPASO: 'Retorno de Traspaso',
+            ENVIO_BASE: 'Envío a Base', RETORNO_BASE: 'Retorno de Base',
+            ENVIO_CALIBRACION: 'Envío a Calibración', RETORNO_CALIBRACION: 'Retorno de Calibración',
+            BAJA: 'Baja', CUARENTENA: 'Cuarentena', MAINTENANCE: 'Mantenimiento',
+            AJUSTE_INGRESO: 'Ajuste', ADJUSTMENT: 'Ajuste', PURCHASE: 'Compra', COMPRA: 'Compra',
+            COMAT: 'COMAT', ENTRADA_MISC: 'Entrada Misceláneo', MANUAL: 'Ajuste Manual'
         };
         const items = this.recentMovements.slice(0, 8).map((m: any, i: number) => {
             const rawType = m.type || m.movement_type || '';
             return {
                 id:          String(m.id_movement || i),
                 type:        rawType,
-                title:       TYPE_LABELS[rawType] || rawType || 'Movimiento',
-                description: m.notes || m.tool_name || m.movement_number || '',
+                title:       TYPE_LABELS[rawType.toUpperCase()] || rawType || 'Movimiento',
+                description: m.notes || m.movement_number || '',
                 user:        m.requested_by_name || m.created_by || 'Sistema',
                 time:        m.date ? new Date(m.date).toLocaleDateString('es-BO') : (m.fecha_reg ? new Date(m.fecha_reg).toLocaleDateString('es-BO') : '')
             };
@@ -276,8 +292,12 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewInit {
                 const md = new Date(m.date || m.fecha || m.fecha_reg || '');
                 return md.getMonth() === mes && md.getFullYear() === anio;
             });
-            const isEntrada = (m: any) => m.entry_reason != null || ['entry', 'return', 'adjustment'].includes(m.type || m.movement_type || '');
-            const isSalida  = (m: any) => m.exit_reason  != null || ['exit', 'loan', 'transfer'].includes(m.type || m.movement_type || '');
+            // entry_reason/exit_reason son mutuamente excluyentes por diseño (chk_tmovements_*):
+            // un movimiento con entry_reason es entrada, con exit_reason es salida. El tipo
+            // (ENTRADA/SALIDA en mayúsculas) queda solo como respaldo si algún registro viejo
+            // no tuviera el reason poblado.
+            const isEntrada = (m: any) => m.entry_reason != null || (m.type || m.movement_type || '').toUpperCase() === 'ENTRADA';
+            const isSalida  = (m: any) => m.exit_reason  != null || (m.type || m.movement_type || '').toUpperCase() === 'SALIDA';
             entradas.push(movMes.filter(isEntrada).length);
             salidas.push(movMes.filter(isSalida).length);
         }
@@ -300,18 +320,21 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewInit {
         const ctx = this.topToolsCanvas?.nativeElement?.getContext('2d');
         if (!ctx) return;
 
-        // Contar préstamos por herramienta desde movimientos reales
-        const counts: Record<string, number> = {};
-        this.recentMovements
-            .filter((m: any) => m.type === 'loan' || m.movement_type === 'loan' || m.exit_reason === 'loan')
-            .forEach((m: any) => {
-                const name = m.tool_name || m.tool_code || String(m.tool_id || 'Sin nombre');
-                counts[name] = (counts[name] || 0) + 1;
-            });
+        // Contar préstamos por herramienta desde he.tloan_items (getActiveLoanItems sin
+        // filtro trae todo el historial). Se agrupa por tool_id, no por nombre: dos
+        // herramientas distintas pueden compartir el mismo nombre genérico (ej. "Llave 10mm").
+        const counts: Record<string, { label: string; count: number }> = {};
+        this.loanItems.forEach((li: any) => {
+            const id = String(li.tool_id ?? '');
+            if (!id) return;
+            const label = li.code || li.name || `#${id}`;
+            if (!counts[id]) counts[id] = { label, count: 0 };
+            counts[id].count++;
+        });
 
-        const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, 8);
-        const labels = sorted.map(([n]) => n);
-        const data   = sorted.map(([, v]) => v);
+        const sorted = Object.values(counts).sort((a, b) => b.count - a.count).slice(0, 8);
+        const labels = sorted.map(s => s.label);
+        const data   = sorted.map(s => s.count);
         const colors = ['#111A43','#fbae05','#fd0f02','#27C93F','#3B82F6','#8b5cf6','#ec4899','#06b6d4'];
 
         this.topToolsChartInstance?.destroy();
@@ -329,8 +352,17 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewInit {
         const ctx = this.calibrationCanvas?.nativeElement?.getContext('2d');
         if (!ctx) return;
 
-        const tools     = this.allTools;
-        const vigente   = tools.filter(t => t.status === 'available').length;
+        // he.ft_calibrations_sel (HE_CLS_ALERTS_SEL) solo mira herramientas con
+        // requires_calibration = true — "Disponible"/"En Calibración" deben quedar acotados
+        // igual, si no se mezclan herramientas que ni siquiera entran al programa de
+        // calibración. "Disponible" además excluye a las que ya están en alertas (vencida/por
+        // vencer), porque el status no cambia solo por vencer la fecha: sin este filtro una
+        // misma herramienta podía contarse dos veces (disponible Y vencida a la vez).
+        const isCalibratable = (t: any) => t.requires_calibration === true || t.requires_calibration === 't';
+        const alertedIds = new Set(this.calibAlerts.map(a => String(a.tool_id ?? '')));
+
+        const tools     = this.allTools.filter(isCalibratable);
+        const vigente   = tools.filter(t => t.status === 'available' && !alertedIds.has(String(t.id_tool ?? t.id ?? ''))).length;
         const enCalib   = tools.filter(t => t.status === 'in_calibration').length;
         const vencida   = this.calibAlerts.filter(a => a.alert_type === 'EXPIRED').length;
         const porVencer = this.calibAlerts.filter(a => ['CRITICAL_7D', 'URGENT_15D'].includes(a.alert_type)).length;
@@ -346,9 +378,8 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewInit {
         });
     }
 
-    // ── Alertas de calibración al login ──────────────────────────────────────────
-    // Reutiliza this.calibAlerts (ya cargado en el forkJoin de ngOnInit) — sin
-    // segunda llamada a la API.
+    // ── Alertas de calibración al login ─────────────────────────────────────────
+    // Reutiliza this.calibAlerts (ya cargado en el forkJoin de ngOnInit), sin segunda llamada a la API.
     private checkCalibrationAlerts(): void {
         const all = this.calibAlerts;
         const critical = all.filter(a =>

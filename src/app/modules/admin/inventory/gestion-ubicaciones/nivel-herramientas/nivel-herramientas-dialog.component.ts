@@ -38,7 +38,7 @@ export interface NivelHerramientasData {
     template: `
     <div class="flex flex-col w-full max-h-[88vh] bg-[#f8f9fc] dark:bg-slate-900 border-[3px] border-black rounded-2xl overflow-hidden font-sans shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]">
 
-        <!-- Header -->
+        <!-- Cabecera -->
         <div class="bg-[#0F172AFF] text-white px-3.5 sm:px-5 py-3 flex items-center gap-3 border-b-2 border-black shrink-0">
             <div class="w-10 h-10 sm:w-12 sm:h-12 shrink-0 bg-amber-400 text-black border-2 border-black rounded-lg flex items-center justify-center font-black text-sm sm:text-base shadow-[2px_2px_0px_0px_#000]">
                 <ng-container *ngIf="!level.isFloor; else floorIcon">N{{ level.numero }}</ng-container>
@@ -306,7 +306,7 @@ export class NivelHerramientasDialogComponent implements AfterViewInit {
     async agregarHerramienta() {
         const { FormHerramientaNivelComponent } = await import('../form-herramienta-nivel/form-herramienta-nivel.component');
         const ref = this.dialog.open(FormHerramientaNivelComponent, {
-            width: '720px', maxWidth: '95vw', panelClass: 'no-padding-dialog',
+            width: '720px', maxWidth: '95vw', panelClass: 'no-padding-dialog', disableClose: true,
             data: { mode: 'new', rack: this.rack, level: this.level }
         });
         ref.afterClosed().subscribe((tool: LevelTool | null) => {
@@ -360,7 +360,7 @@ export class NivelHerramientasDialogComponent implements AfterViewInit {
     async editarHerramienta(tool: LevelTool) {
         const { FormHerramientaNivelComponent } = await import('../form-herramienta-nivel/form-herramienta-nivel.component');
         const ref = this.dialog.open(FormHerramientaNivelComponent, {
-            width: '720px', maxWidth: '95vw', panelClass: 'no-padding-dialog',
+            width: '720px', maxWidth: '95vw', panelClass: 'no-padding-dialog', disableClose: true,
             data: { mode: 'edit', rack: this.rack, level: this.level, tool }
         });
         ref.afterClosed().subscribe((updated: LevelTool | null) => {

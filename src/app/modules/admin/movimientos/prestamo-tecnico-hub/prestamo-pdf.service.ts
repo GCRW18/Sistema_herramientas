@@ -38,11 +38,8 @@ export interface PrestamoPdfData {
 }
 
 /**
- * PDF de "Nota de Préstamo - Devolución" (MGH-100) — formato oficial calcado de
- * "Sistema Herramientas con Macros/Formularios.xlsx", hoja "PRESTAMO - DEVOLUCION".
- * Punto único que reemplaza las 4 implementaciones casi duplicadas que existían en
- * form-prestamo-dialog, form-devolucion-dialog y prestamo-tecnico-hub (préstamo +
- * devolución), mismo criterio que _pdfTraspasoOficial() en retorno-traspaso.component.ts.
+ * PDF de "Nota de Préstamo - Devolución" (MGH-100). Punto único que reemplaza las 4
+ * implementaciones casi duplicadas en los forms de préstamo/devolución técnico.
  */
 @Injectable({ providedIn: 'root' })
 export class PrestamoPdfService {

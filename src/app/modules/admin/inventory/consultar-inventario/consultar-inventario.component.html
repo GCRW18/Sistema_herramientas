@@ -6,7 +6,7 @@
 
   <div class="flex-1 flex flex-col p-3 sm:p-4 gap-3 overflow-hidden relative z-10">
 
-    <!-- ═══════════════════════════════ HEADER ═══════════════════════════════ -->
+    <!-- ═══════════════════════════════ CABECERA ═══════════════════════════════ -->
 
     <!-- Título -->
     <div class="flex items-center gap-3 shrink-0">
@@ -26,16 +26,18 @@
     <!-- Filtros de búsqueda — una sola línea, scroll horizontal si no entra -->
     <div class="flex items-center gap-2 flex-nowrap overflow-x-auto scrollbar-none shrink-0 pb-0.5">
 
-      <!-- Búsqueda libre -->
+      <!-- Búsqueda libre (acepta escaneo de etiqueta QR) -->
       <div class="relative flex-1 min-w-[150px]">
         <input type="text"
-               [ngModel]="searchTerm()" (ngModelChange)="searchTerm.set($event)"
-               placeholder="Código, nombre, P/N..."
-               class="h-9 pl-9 pr-3 w-full bg-white dark:bg-[#0F172AFF] text-black dark:text-white
+               [ngModel]="searchTerm()" (ngModelChange)="onSearchInput($event)"
+               placeholder="Código, nombre, P/N o escanee QR..."
+               class="h-9 pl-9 pr-8 w-full bg-white dark:bg-[#0F172AFF] text-black dark:text-white
                       border-[2px] border-black rounded-lg font-bold text-xs
                       focus:outline-none focus:shadow-[3px_3px_0px_0px_#000] focus:-translate-y-[1px] transition-all
                       placeholder:font-normal placeholder:normal-case placeholder:text-gray-400" />
         <mat-icon class="absolute left-2.5 top-2 text-black dark:text-white !text-sm">search</mat-icon>
+        <span *ngIf="resolviendoQr()"
+              class="absolute right-2.5 top-2.5 w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin"></span>
       </div>
 
       <!-- Tipo -->
@@ -84,7 +86,7 @@
                 class="absolute right-1.5 top-2 text-gray-400 hover:text-black dark:hover:text-white transition-colors">
           <mat-icon class="!text-sm">close</mat-icon>
         </button>
-        <!-- Dropdown sugerencias -->
+        <!-- Desplegable de sugerencias -->
         <div *ngIf="showUbicacionDrop() && filteredUbicList().length > 0"
              class="absolute top-full left-0 mt-1 w-full min-w-[160px] z-50
                     bg-white dark:bg-slate-800 border-2 border-black rounded-xl
@@ -125,7 +127,7 @@
       </span>
     </div>
 
-    <!-- Pestañas de navegación — fuera del card, encima de él -->
+    <!-- Pestañas de navegación — fuera de la tarjeta, encima de ella -->
     <div class="flex items-center gap-1.5 overflow-x-auto scrollbar-none flex-nowrap shrink-0">
       <ng-container *ngFor="let tab of TABS">
         <button (click)="setActiveTab(tab.id)"
@@ -147,10 +149,10 @@
       </ng-container>
     </div>
 
-    <!-- ═══════════════════════════════ CARD PRINCIPAL ═══════════════════════════════ -->
+    <!-- ═══════════════════════════════ TARJETA PRINCIPAL ═══════════════════════════════ -->
     <div class="flex-1 flex flex-col overflow-hidden border-[3px] border-black bg-gray-50 dark:bg-[#0F172AFF] rounded-2xl shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
 
-      <!-- Header oscuro de la card: KPIs + Actualizar + Imprimir -->
+      <!-- Cabecera oscura de la tarjeta: KPIs + Actualizar + Imprimir -->
       <div class="px-3 sm:px-4 py-2 bg-[#0F172AFF] border-b-[3px] border-black shrink-0 rounded-t-2xl">
 
         <!-- KPI chips + botones de acción — scroll horizontal en mobile -->
@@ -229,13 +231,13 @@
             Actualizar
           </button>
 
-          <!-- Imprimir / Guardar PDF -->
-          <button (click)="imprimirListado()" [disabled]="tabFilteredData().length === 0 || isLoading()"
-                  matTooltip="Imprimir / Guardar como PDF"
+          <!-- Generar reporte PDF (TCPDF backend) -->
+          <button (click)="imprimirListado()" [disabled]="tabFilteredData().length === 0 || isLoading() || generandoPdf()"
+                  matTooltip="Generar el PDF del listado"
                   class="flex items-center gap-1.5 h-7 px-2.5 rounded-lg border border-white/30 shrink-0
                          text-white hover:bg-white/20 transition-all disabled:opacity-40 font-black text-[10px] uppercase">
-            <mat-icon class="!text-sm !w-4 !h-4 text-[#FFC501FF]">print</mat-icon>
-            Imprimir
+            <mat-icon class="!text-sm !w-4 !h-4 text-[#FFC501FF]" [class.animate-spin]="generandoPdf()">{{ generandoPdf() ? 'progress_activity' : 'picture_as_pdf' }}</mat-icon>
+            {{ generandoPdf() ? 'Generando…' : 'Generar Reporte' }}
           </button>
 
           <!-- Imprimir códigos QR de herramientas seleccionadas -->
@@ -286,7 +288,7 @@
         <p class="text-sm font-black uppercase text-gray-500 dark:text-gray-400">Cargando inventario unificado…</p>
       </div>
 
-      <!-- ── Empty state ── -->
+      <!-- ── Estado vacÃ­o ── -->
       <div *ngIf="!isLoading() && pagedData().length === 0" class="flex-1 flex flex-col items-center justify-center gap-3 py-12 px-4 text-center">
         <mat-icon class="!text-5xl text-gray-300 dark:text-gray-600">inventory_2</mat-icon>
         <p class="text-xs font-bold uppercase text-gray-500 mt-2">Sin resultados</p>
@@ -477,7 +479,7 @@
         </div>
       </div>
 
-      <!-- Footer paginación -->
+      <!-- Pie de paginación -->
       <div *ngIf="!isLoading() && totalPages() > 1"
            class="px-3 sm:px-4 py-2 bg-gray-100 dark:bg-slate-800 border-t-[2px] border-black flex items-center justify-between shrink-0 rounded-b-2xl gap-2">
         <span class="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase hidden sm:inline">
@@ -502,7 +504,7 @@
         </div>
       </div>
 
-    </div><!-- /card principal -->
+    </div><!-- /tarjeta principal -->
   </div><!-- /p-4 container -->
 </div><!-- /host -->
 

@@ -86,26 +86,36 @@ export class FleetService {
     }
 
     /**
-     * Create aircraft
+     * Create aircraft. Nota: el payload va en snake_case (registration, base_location, ...),
+     * tal cual las columnas de he.taircraft — no en el camelCase de la interfaz Aircraft
+     * (esa interfaz no coincide con el contrato real del backend, ver he.ft_aircraft_ime).
      */
-    createAircraft(aircraft: Partial<Aircraft>): Observable<Aircraft> {
+    createAircraft(aircraft: Record<string, any>): Observable<any> {
         return from(this._api.post('herramientas/aircraft/insertAircraft', aircraft)).pipe(
             switchMap((response: any) => {
-                return of(response?.data || aircraft);
+                const root = response?.ROOT || response;
+                if (root?.error === true || root?.error === 'true') {
+                    throw new Error(root?.detalle?.mensaje || root?.mensaje || 'Error al registrar aeronave');
+                }
+                return of(root?.datos || aircraft);
             })
         );
     }
 
     /**
-     * Update aircraft
+     * Update aircraft (payload en snake_case, ver createAircraft).
      */
-    updateAircraft(id: string, aircraft: Partial<Aircraft>): Observable<Aircraft> {
+    updateAircraft(id: string, aircraft: Record<string, any>): Observable<any> {
         return from(this._api.post('herramientas/aircraft/updateAircraft', {
             ...aircraft,
             id_aircraft: id
         })).pipe(
             switchMap((response: any) => {
-                const updatedAircraft = response?.data || aircraft;
+                const root = response?.ROOT || response;
+                if (root?.error === true || root?.error === 'true') {
+                    throw new Error(root?.detalle?.mensaje || root?.mensaje || 'Error al actualizar aeronave');
+                }
+                const updatedAircraft = root?.datos || aircraft;
                 this._singleAircraft.next(updatedAircraft as Aircraft);
                 return of(updatedAircraft);
             })
@@ -119,7 +129,11 @@ export class FleetService {
         return from(this._api.post('herramientas/aircraft/deleteAircraft', {
             id_aircraft: id
         })).pipe(
-            switchMap(() => {
+            switchMap((response: any) => {
+                const root = response?.ROOT || response;
+                if (root?.error === true || root?.error === 'true') {
+                    throw new Error(root?.detalle?.mensaje || root?.mensaje || 'Error al eliminar aeronave');
+                }
                 return of(undefined);
             })
         );

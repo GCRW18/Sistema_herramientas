@@ -54,7 +54,7 @@ interface KitItem {
                 {{ prestamoMsg() }}
             </div>
 
-            <!-- ══════════ HEADER ══════════ -->
+            <!-- ══════════ CABECERA ══════════ -->
             <div class="flex flex-col gap-3 shrink-0">
 
                 <!-- Título principal -->
@@ -112,7 +112,7 @@ interface KitItem {
                     </button>
 
                     <button *appHasPermission="'kits.create'" (click)="crearNuevoKit()"
-                            class="px-5 py-2 bg-[#FFC501FF] text-black font-black text-xs
+                            class="ml-auto px-5 py-2 bg-[#FFC501FF] text-black font-black text-xs
                                    border-[2px] border-black rounded-xl
                                    shadow-[3px_3px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px]
                                    hover:shadow-none transition-all uppercase flex items-center gap-2">
@@ -123,7 +123,7 @@ interface KitItem {
             </div>
 
 
-            <!-- ══════════ CARD TABLA ══════════ -->
+            <!-- ══════════ TARJETA TABLA ══════════ -->
             <div class="flex-1 flex flex-col overflow-hidden border-[3px] border-black bg-white dark:bg-[#0F172AFF] rounded-2xl shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
 
                 <!-- Cabecera oscura con chips -->
@@ -502,21 +502,20 @@ export class ListaKitsComponent implements OnInit {
     async editarKit(kit: Kit): Promise<void> {
         const { GestionarKitComponent } = await import('./gestionar-kit.component');
         const ref = this.dialog.open(GestionarKitComponent, {
-            width: '840px', maxWidth: '95vw', height: '600px', maxHeight: '85vh',
-            panelClass: 'neo-dialog', data: { mode: 'edit', kit: kit._raw ?? kit }
+            width: 'min(1240px, 96vw)', maxWidth: '100vw', maxHeight: '100dvh',
+            panelClass: 'neo-dialog-transparent', disableClose: true, autoFocus: false,
+            data: { mode: 'edit', kit: kit._raw ?? kit }
         });
-        // Recarga siempre, sin depender de result?.saved: si el diálogo se cierra por backdrop
-        // o Escape en vez del flujo normal de guardado, Material no garantiza ese valor y la
-        // lista se quedaba con datos viejos aunque el kit sí se hubiera actualizado (mismo
-        // problema ya corregido en gestion-estantes.component.ts).
+        // Recarga siempre, sin depender de result?.saved: si el diálogo se cierra por
+        // backdrop/Escape, Material no garantiza ese valor y la lista se quedaba con datos viejos.
         ref.afterClosed().subscribe(() => this.cargarKits());
     }
 
     async crearNuevoKit(): Promise<void> {
         const { GestionarKitComponent } = await import('./gestionar-kit.component');
         const ref = this.dialog.open(GestionarKitComponent, {
-            width: '840px', maxWidth: '95vw', height: '600px', maxHeight: '85vh',
-            panelClass: 'neo-dialog'
+            width: 'min(1240px, 96vw)', maxWidth: '100vw', maxHeight: '100dvh',
+            panelClass: 'neo-dialog-transparent', disableClose: true, autoFocus: false
         });
         ref.afterClosed().subscribe(() => this.cargarKits());
     }

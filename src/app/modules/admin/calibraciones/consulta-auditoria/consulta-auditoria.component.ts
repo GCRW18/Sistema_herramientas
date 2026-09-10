@@ -7,7 +7,7 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { Subject } from 'rxjs';
-import { takeUntil } from 'rxjs/operators';
+import { takeUntil, finalize } from 'rxjs/operators';
 import { CalibrationService } from '../../../../core/services/calibration.service';
 import { MaintenanceService } from '../../../../core/services/maintenance.service';
 import { HasPermissionDirective } from '../../../../core/directives/has-permission.directive';
@@ -204,9 +204,8 @@ export class ConsultaAuditoriaComponent implements OnInit, OnDestroy {
             }
 
             if (includeMnt) {
-                // he.tmaintenances usa 'in_progress' (no 'in_process') y no tiene id_laboratory
-                // (solo 'provider' de texto libre, sin FK a he.tcalibration_laboratories) —
-                // ese filtro no se le puede aplicar sin romper la consulta en silencio.
+                // he.tmaintenances usa 'in_progress' (no 'in_process') y no tiene id_laboratory,
+                // así que el filtro por laboratorio no se le puede aplicar.
                 const mntParams: any = { ...baseParams };
                 if (this.filterStatus) {
                     mntParams.status = this.filterStatus === 'in_process' ? 'in_progress' : this.filterStatus;
@@ -251,10 +250,8 @@ export class ConsultaAuditoriaComponent implements OnInit, OnDestroy {
         const pendientes = ['sent', 'in_process', 'in_progress'];
         this.statCerrados = data.filter(r => ['completed', 'returned'].includes(r.status)).length;
         this.statFuera = data.filter(r => pendientes.includes(r.status)).length;
-        // "En mora" = pendientes cuya fecha estimada de retorno ya pasó. return_date (retorno
-        // REAL) siempre es null para estos, por eso se compara contra expected_return_date.
-        // Comparación de texto (YYYY-MM-DD), no new Date(): evita el corrimiento de día por
-        // interpretar una fecha "solo fecha" como medianoche UTC (ver envio-calibracion).
+        // "En mora" = pendientes con expected_return_date ya vencida. Comparación de texto
+        // YYYY-MM-DD, no new Date() (evita el corrimiento de día por medianoche UTC).
         const today = localDateStr();
         this.statMora = data.filter(r =>
             pendientes.includes(r.status) &&
@@ -342,48 +339,28 @@ export class ConsultaAuditoriaComponent implements OnInit, OnDestroy {
         });
     }
 
+    // R-AUD-01 — PDF real (TCPDF backend) con los mismos filtros de la pantalla.
     imprimirReporte(): void {
-        const win = window.open('', '_blank');
-        if (!win) return;
-        const titulo = this.is90DaysActive
-            ? `Histórico Últimos 90 Días — ${this.formatDate(this.filterDateFrom)} al ${this.formatDate(this.filterDateTo)}`
-            : 'Registro Histórico de Auditoría Técnica';
-        const rowsHtml = this.rows().map(r => `
-            <tr>
-                <td><strong>${r.record_number}</strong></td>
-                <td>${this.getTipoLabel(r.tipo_registro)}</td>
-                <td>${r.tool_name}<br><small style="color:#666">${r.tool_code}</small></td>
-                <td>${r.provider}</td>
-                <td>${this.formatDate(r.send_date)}</td>
-                <td>${r.return_date ? this.formatDate(r.return_date) : '—'}</td>
-                <td>${r.certificate_number || '—'}</td>
-                <td>${this.getStatusLabel(r.status)}</td>
-            </tr>
-        `).join('');
+        this.isLoading.set(true);
+        const params: any = { tipo: this.filterTipo || 'todos' };
+        if (this.filterCode)     params.record_number = this.filterCode;
+        if (this.filterTool)     params.tool_search   = this.filterTool;
+        if (this.filterStatus)   params.filter_status = this.filterStatus;
+        if (this.filterEmpresa)  params.id_laboratory = this.filterEmpresa;
+        if (this.filterDateFrom) params.date_from     = this.filterDateFrom;
+        if (this.filterDateTo)   params.date_to       = this.filterDateTo;
+        if (this.is90DaysActive) params.subtitulo     = 'Últimos 90 días';
 
-        win.document.write(`
-            <html><head><style>
-                body{font-family:sans-serif; padding:20px; color:#0F172AFF;}
-                table{width:100%; border-collapse:collapse; border: 3px solid #000;}
-                th,td{border: 2px solid #000; padding:8px; text-align:left; font-size:11px;}
-                th{background:#f87171; color:white; font-weight:900; text-transform:uppercase; font-size:10px;}
-                h2 { font-weight: 900; text-transform: uppercase; border-bottom: 4px solid #000; padding-bottom: 10px; display:inline-block; }
-                .badge { display:inline-block; background:#fbbf24; color:#000; font-weight:900; font-size:10px; padding:2px 8px; border:2px solid #000; text-transform:uppercase; margin-bottom:8px; }
-                .meta { font-size:9px; color:#888; margin-top:8px; }
-            </style></head>
-            <body>
-                ${this.is90DaysActive ? '<div class="badge">Últimos 90 días</div>' : ''}
-                <h2>${titulo}</h2>
-                <div class="meta">Total registros: ${this.rows().length} &nbsp;|&nbsp; Generado: ${new Date().toLocaleDateString('es-BO')}</div>
-                <table><thead><tr>
-                    <th>N° Registro</th><th>Tipo</th><th>Equipo / Herramienta</th>
-                    <th>Proveedor / Lab</th><th>Fecha Envío</th><th>Retorno</th>
-                    <th>N° Certificado</th><th>Estado</th>
-                </tr></thead>
-                <tbody>${rowsHtml}</tbody></table>
-                <script>window.print()</script>
-            </body></html>
-        `);
-        win.document.close();
+        this.calibrationService.generarPdfAuditoriaTecnica(params).pipe(
+            takeUntil(this._destroy$),
+            finalize(() => this.isLoading.set(false)),
+        ).subscribe({
+            next: (r) => this.calibrationService.abrirPdf(r.pdf_base64, r.nombre_archivo),
+            error: (e) => {
+                console.error('Error al generar el reporte de auditoría:', e);
+                this.snackBar.open(e?.message || 'Error al generar el reporte de auditoría', 'Cerrar',
+                    { duration: 4000, panelClass: ['snackbar-error'] });
+            },
+        });
     }
 }

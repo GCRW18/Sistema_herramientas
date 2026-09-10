@@ -1,6 +1,6 @@
 ﻿<div class="bg-stone-100 dark:bg-slate-900 border-2 border-black rounded-xl overflow-hidden flex flex-col w-full h-full">
 
-    <!-- Header -->
+    <!-- Cabecera -->
     <div class="bg-[#0F172A] px-4 sm:px-5 py-3 flex items-center gap-3 shrink-0 select-none flex-wrap sm:flex-nowrap"
          cdkDrag cdkDragRootElement=".cdk-overlay-pane" cdkDragHandle style="cursor:grab">
         <div class="w-8 h-8 rounded bg-amber-400 border-2 border-black flex items-center justify-center shadow-[2px_2px_0_#fbbf24] shrink-0">
@@ -11,7 +11,7 @@
             <h2 class="text-xs text-white font-black uppercase tracking-tight leading-none">Agregar Ítem a Baja</h2>
         </div>
 
-        <!-- Buscador en header -->
+        <!-- Buscador en la cabecera -->
         <div class="relative w-full sm:w-auto sm:shrink-0">
             <input type="text"
                    [value]="buscarTermino()"
@@ -26,7 +26,7 @@
                     class="absolute right-1.5 top-1 w-6 h-6 flex items-center justify-center rounded hover:bg-white/20 transition-colors">
                 <mat-icon class="!text-sm text-white/60">close</mat-icon>
             </button>
-            <!-- Dropdown -->
+            <!-- Desplegable -->
             <div *ngIf="showSuggestions && herramientasFiltradas().length > 0"
                  class="absolute z-[300] w-80 bg-white dark:bg-slate-800 border-2 border-black dark:border-slate-600 rounded-xl shadow-[4px_4px_0_#000] max-h-60 overflow-y-auto mt-1 top-full right-0 custom-scrollbar divide-y divide-stone-100 dark:divide-slate-700">
                 <div *ngFor="let t of herramientasFiltradas()"
@@ -46,7 +46,7 @@
         </div>
     </div>
 
-    <!-- Body -->
+    <!-- Cuerpo -->
     <div class="flex-1 overflow-hidden">
         <form [formGroup]="bajaForm" class="h-full flex flex-col sm:flex-row overflow-hidden min-h-0">
 
@@ -165,7 +165,7 @@
         </form>
     </div>
 
-    <!-- Footer -->
+    <!-- Pie -->
     <div class="border-t-2 border-black bg-stone-200 dark:bg-slate-800 px-4 py-2 flex justify-between items-center shrink-0">
         <button type="button" (click)="cerrar()"
                 class="flex items-center gap-1 px-3 py-1.5 bg-[#FF1414] text-white font-black text-[10px] border-2 border-black rounded-lg shadow-[2px_2px_0_#000] hover:shadow-none hover:translate-x-[1px] hover:translate-y-[1px] transition-all uppercase">

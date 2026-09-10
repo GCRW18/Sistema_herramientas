@@ -450,11 +450,8 @@ export class FormSalidaComponent implements OnInit, OnDestroy {
         return this._logoBoaDataUri;
     }
 
-    /** Nota de Salida de Materiales Consumibles y Misceláneos — formato oficial MGH-117,
-     *  calcado de "Sistema Herramientas con Macros/Formularios.xlsx" hoja "SALIDAS".
-     *  Cada nota (SLM-N/YYYY) corresponde a un solo material, por eso la tabla de ítems
-     *  siempre tiene una única fila IT=1 (el backend no agrupa varios materiales bajo
-     *  una misma nota aunque se despachen juntos desde el lote). */
+    /** Nota de Salida de Materiales Consumibles y Misceláneos MGH-117. Cada nota (SLM-N/YYYY) es
+     *  un solo material, por eso la tabla de ítems siempre tiene una única fila IT=1. */
     async imprimirPdf(): Promise<void> {
         if (!this.salidaView || this.generandoPdf) return;
         this.generandoPdf = true;

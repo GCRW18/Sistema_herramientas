@@ -24,11 +24,6 @@ interface BackendWarehouse {
     levels_count?:   number;
 }
 
-interface BackendOficina {
-    id_oficina:     number;
-    nombre_oficina: string;
-}
-
 interface BackendRack {
     id_rack:       number;
     warehouse_id:  number;
@@ -126,11 +121,8 @@ export class GestionUbicacionesService {
     private _api = inject(ErpApiService);
 
     /**
-     * Normaliza la respuesta de una operación de escritura y LANZA si el backend
-     * reportó un error. Necesario porque ErpApiService.post atrapa el rechazo de
-     * PxpClient y devuelve el objeto de error como si fuera un valor normal — sin
-     * esto, el callback `next` de cada subscribe corría igual y la UI mostraba
-     * "creado / actualizado" en falso (mismo patrón que miscelaneos/kits.service).
+     * Normaliza la respuesta de escritura y LANZA si el backend reportó error (ErpApiService.post
+     * atrapa el rechazo de PxpClient y lo devuelve como valor normal → "creado" en falso).
      */
     private _unwrap(r: any): any {
         if (r instanceof Error) throw r;
@@ -339,10 +331,8 @@ export class GestionUbicacionesService {
     }
 
     /**
-     * Mapa id_tool → ubicación real (rack/nivel) para TODAS las herramientas con
-     * rack/nivel asignado. Usado por consultar-inventario para mostrar la misma
-     * ubicación que gestion-ubicaciones (antes dependía de ttools.location_id,
-     * que mover-herramientas nunca actualiza — quedaba desincronizado).
+     * Mapa id_tool → ubicación real (rack/nivel) de todas las herramientas asignadas. Lo usa
+     * consultar-inventario (ttools.location_id no lo actualiza mover-herramientas).
      */
     getToolLocationsMap(): Observable<Map<number, { warehouseId: number; rackName: string; levelLabel: string }>> {
         const params = {
@@ -419,9 +409,8 @@ export class GestionUbicacionesService {
     /* ════════ Kits (ubicados en rack/nivel) ════════ */
 
     /**
-     * Kits del módulo Gestión de Kits que tienen rack/nivel real asignado
-     * (he.tkits.rack_id/level_id, ver he.ft_kits_ime HE_KIT_INS/HE_KIT_MOV). Se muestran
-     * junto a las herramientas en la grilla de estantes de este módulo.
+     * Kits con rack/nivel real asignado (he.tkits.rack_id/level_id). Se muestran junto a las
+     * herramientas en la grilla de estantes.
      */
     getKitsByWarehouse(warehouseId: number): Observable<LevelKit[]> {
         const params = {
@@ -447,9 +436,8 @@ export class GestionUbicacionesService {
     /* ════════ Misceláneos (ubicados en rack/nivel) ════════ */
 
     /**
-     * Ítems del catálogo de Misceláneos con rack/nivel real asignado (he.tmiscelaneos.rack_id/
-     * level_id, ver he.ft_miscelaneos_ime HE_MIS_INS/HE_MIS_MOV). Se muestran junto a herramientas
-     * y kits en la grilla de estantes de este módulo.
+     * Ítems de Misceláneos con rack/nivel real asignado (he.tmiscelaneos.rack_id/level_id). Se
+     * muestran junto a herramientas y kits en la grilla de estantes.
      */
     getMiscelaneosByWarehouse(warehouseId: number): Observable<LevelMiscelaneo[]> {
         const params = {
@@ -503,9 +491,8 @@ export class GestionUbicacionesService {
             city:           w.ciudad ?? '',
             warehouse_type: w.tipo,
         };
-        // id_lugar es obligatorio en el form; id_oficina es opcional (13/15 almacenes
-        // sembrados no la tienen). Se omiten si vienen nulos — pxp-client serializa
-        // null como el string "null" y revienta un parámetro int4.
+        // id_lugar es obligatorio; id_oficina opcional. Se omiten si son null (pxp-client
+        // serializa null como "null" y revienta un int4).
         if (w.id_lugar != null)   payload.id_lugar   = w.id_lugar;
         if (w.id_oficina != null) payload.id_oficina = w.id_oficina;
         return payload;

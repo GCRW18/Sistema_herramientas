@@ -1,6 +1,5 @@
 import { Component, OnInit, OnDestroy, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
@@ -51,15 +50,13 @@ export interface Laboratory {
 })
 export class LaboratoriosComponent implements OnInit, OnDestroy {
 
-    private router = inject(Router);
     private dialog = inject(MatDialog);
     private snackBar = inject(MatSnackBar);
     private calibrationService = inject(CalibrationService);
     private _destroy$ = new Subject<void>();
 
-    // Form Controls para búsqueda y filtros. Tipo de servicio y estado
-    // (activo/inactivo) se combinan en un solo <select> con optgroups:
-    // ''  → todas | 'tipo:<x>' → por tipo de servicio | 'estado:true|false' → por estado
+    // Form controls de búsqueda/filtro. Tipo de servicio y estado se combinan en un
+    // <select> con optgroups: '' | 'tipo:<x>' | 'estado:true|false'.
     searchControl = new FormControl('');
     filterPrincipal = new FormControl('');
 
@@ -154,25 +151,12 @@ export class LaboratoriosComponent implements OnInit, OnDestroy {
         this.filteredLaboratorios = list;
     }
 
-    limpiarFiltros(): void {
-        this.searchControl.setValue('');
-        this.filterPrincipal.setValue('');
-    }
-
     getActivosCount(): number {
         return this.laboratorios.filter(lab => lab.active).length;
     }
 
     getInactivosCount(): number {
         return this.laboratorios.filter(lab => !lab.active).length;
-    }
-
-    getCalibracionCount(): number {
-        return this.laboratorios.filter(lab => lab.tipo_servicio === 'calibracion' || lab.tipo_servicio === 'ambos').length;
-    }
-
-    getMantenimientoCount(): number {
-        return this.laboratorios.filter(lab => lab.tipo_servicio === 'mantenimiento' || lab.tipo_servicio === 'ambos').length;
     }
 
     getTipoServicioLabel(tipo: string): string {
@@ -202,7 +186,7 @@ export class LaboratoriosComponent implements OnInit, OnDestroy {
                 height: 'auto',
                 maxHeight: '85vh',
                 panelClass: 'no-padding-dialog',
-                disableClose: false,
+                disableClose: true,
                 data: { mode: 'new' }
             });
             ref.afterClosed().subscribe(ok => {
@@ -226,7 +210,7 @@ export class LaboratoriosComponent implements OnInit, OnDestroy {
                 height: 'auto',
                 maxHeight: '85vh',
                 panelClass: 'no-padding-dialog',
-                disableClose: false,
+                disableClose: true,
                 data: { mode: 'edit', laboratory: lab }
             });
             ref.afterClosed().subscribe(ok => {

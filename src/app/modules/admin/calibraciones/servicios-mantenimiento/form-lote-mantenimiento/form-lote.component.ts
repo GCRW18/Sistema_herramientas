@@ -24,6 +24,10 @@ interface MaintToolItem {
     toolCode:             string;
     toolName:             string;
     toolSerial:           string;
+    toolPn:               string;
+    toolBrand:            string;
+    toolStatus:           string;
+    toolCalibration:      string;
     maintenanceType:      'preventive' | 'corrective';
     preventiveSubtype:    'semiannual' | 'annual';
     expectedReturnDate:   string;
@@ -32,6 +36,7 @@ interface MaintToolItem {
     status:               'pending' | 'sending' | 'done' | 'error';
     error?:               string;
     recordNumber?:        string;
+    idMaintenance?:       number;
 }
 
 @Component({
@@ -210,11 +215,16 @@ export class FormLoteMantenimientoComponent implements OnInit, OnDestroy {
                     return;
                 }
                 const last = this.items[this.items.length - 1];
+                const r: any = result;
                 const newItem: MaintToolItem = {
                     toolId:               result.id_tool,
                     toolCode:             result.code,
                     toolName:             result.name,
-                    toolSerial:           result.serial_number ?? '',
+                    toolSerial:           result.serial_number ?? r.sn ?? '',
+                    toolPn:               r.part_number ?? r.pn ?? '',
+                    toolBrand:            r.brand ?? r.marca ?? '',
+                    toolStatus:           String(r.status ?? r.tool_status ?? '').toUpperCase(),
+                    toolCalibration:      r.next_calibration_date ?? r.calibration_due_date ?? '',
                     maintenanceType:      last?.maintenanceType   ?? 'preventive',
                     preventiveSubtype:    last?.preventiveSubtype ?? 'semiannual',
                     expectedReturnDate:   last?.expectedReturnDate ?? this._calcReturn('preventive', 'semiannual'),
@@ -255,6 +265,8 @@ export class FormLoteMantenimientoComponent implements OnInit, OnDestroy {
 
     async submitLote(): Promise<void> {
         if (!this.canSubmit() || this.isProcessing()) return;
+        // Reservar la pestaña de la nota dentro del gesto (el PDF llega tras el envío).
+        const winNota = this.maintenanceService.preAbrirVentanaPdf();
         this.isProcessing.set(true);
         this.processedCount = 0;
 
@@ -279,8 +291,9 @@ export class FormLoteMantenimientoComponent implements OnInit, OnDestroy {
                 const result = await lastValueFrom(
                     this.maintenanceService.sendMaintenancePxp(params)
                 );
-                item.status       = 'done';
-                item.recordNumber = result?.record_number ?? '—';
+                item.status        = 'done';
+                item.recordNumber  = result?.record_number ?? '—';
+                item.idMaintenance = Number(result?.id_maintenance) || undefined;
             } catch (e: any) {
                 item.status = 'error';
                 item.error  = e?.message || 'Error de conexión';
@@ -293,115 +306,49 @@ export class FormLoteMantenimientoComponent implements OnInit, OnDestroy {
         this.cdr.detectChanges();
 
         if (this.items.every(i => i.status === 'done')) {
-            this._abrirNotaLote();
+            this._abrirNotaLote(winNota);
             this.showMsg(`${this.items.length} herramienta(s) enviada(s) a mantenimiento`, 'success');
             setTimeout(() => this.dialogRef.close(true), 1800);
-        } else if (this.getErrorCount() > 0) {
-            this.showMsg(`${this.getErrorCount()} error(es) — revise y reintente`, 'error');
+        } else {
+            try { winNota?.close(); } catch { /* noop */ }
+            if (this.getErrorCount() > 0) {
+                this.showMsg(`${this.getErrorCount()} error(es) — revise y reintente`, 'error');
+            }
         }
     }
 
-    abrirNotaLoteManual(): void { this._abrirNotaLote(); }
-
-    private _abrirNotaLote(): void {
-        const w = window.open('', '_blank');
-        if (!w) { this.showMsg('Permita las ventanas emergentes para ver la nota', 'warning'); return; }
-        w.document.write(this._buildNotaHtml());
-        w.document.close();
+    abrirNotaLoteManual(): void {
+        this._abrirNotaLote(this.maintenanceService.preAbrirVentanaPdf());
     }
 
-    private _buildNotaHtml(): string {
-        const fecha   = this.fmtDate(this.sendDateStr);
-        const empresa = this.selectedProviderName || '—';
-        const usuario = this.requestedByName || this._currentUser();
-        const hoy     = this.fmtDate(localDateStr());
-        const doneItems = this.items.filter(i => i.status === 'done');
+    /** Cierre con confirmación si hay herramientas cargadas en el lote. */
+    cerrar(): void {
+        const pend = this.items.filter(i => i.status !== 'done').length;
+        if (pend > 0 &&
+            !confirm(`¿Cancelar el lote? Se perderán las ${pend} herramienta(s) sin enviar.`)) return;
+        this.dialogRef.close(false);
+    }
 
-        const filas = doneItems.map((item, idx) => `
-            <tr>
-                <td style="text-align:center">${idx + 1}</td>
-                <td><strong>${item.toolCode}</strong></td>
-                <td>${item.toolName}</td>
-                <td style="text-align:center">${item.toolSerial || '—'}</td>
-                <td style="text-align:center">${item.maintenanceType === 'preventive' ? 'PREVENTIVO' : 'CORRECTIVO'}</td>
-                <td style="text-align:center">${item.maintenanceType === 'preventive'
-                    ? (item.preventiveSubtype === 'annual' ? '12 meses' : '6 meses')
-                    : '—'}</td>
-                <td style="text-align:center;font-weight:bold">${item.recordNumber || '—'}</td>
-                <td style="text-align:center">${this.fmtDate(item.expectedReturnDate)}</td>
-                <td>${item.notes || ''}</td>
-            </tr>`).join('');
+    /**
+     * Nota de envío del lote: PDF real vía backend (RReporteMantenimientoLote),
+     * una fila por herramienta enviada. Reemplazó a la nota HTML client-side.
+     */
+    private _abrirNotaLote(ventana?: Window | null): void {
+        const ids = this.items
+            .filter(i => i.status === 'done' && i.idMaintenance)
+            .map(i => i.idMaintenance as number);
+        if (ids.length === 0) {
+            try { ventana?.close(); } catch { /* noop */ }
+            this.showMsg('No hay herramientas enviadas para generar la nota', 'warning');
+            return;
+        }
 
-        return `<!DOCTYPE html>
-<html lang="es"><head>
-<meta charset="UTF-8">
-<title>Nota de Envío a Mantenimiento — Lote</title>
-<style>
-  *{margin:0;padding:0;box-sizing:border-box}
-  body{font-family:Arial,sans-serif;font-size:10px;color:#111;padding:18px 24px}
-  .hdr{display:flex;align-items:flex-start;justify-content:space-between;border-bottom:3px solid #0f172a;padding-bottom:10px;margin-bottom:12px}
-  .hdr-left h1{font-size:15px;font-weight:900;text-transform:uppercase;letter-spacing:.04em}
-  .hdr-left p{font-size:9px;color:#555;margin-top:2px}
-  .badge{background:#f59e0b;color:#000;font-weight:900;font-size:11px;padding:4px 12px;border:2px solid #000;border-radius:4px;white-space:nowrap}
-  .info-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px}
-  .info-box{border:1px solid #cbd5e1;border-radius:4px;padding:6px 10px}
-  .info-box .lbl{font-size:7px;text-transform:uppercase;letter-spacing:.1em;color:#64748b;font-weight:700;margin-bottom:2px}
-  .info-box .val{font-size:11px;font-weight:700;color:#0f172a}
-  table{width:100%;border-collapse:collapse;margin-bottom:20px}
-  thead tr{background:#0f172a;color:#fff}
-  thead th{padding:6px 8px;font-size:8px;text-transform:uppercase;letter-spacing:.08em;text-align:left;font-weight:700}
-  tbody tr:nth-child(even){background:#f8fafc}
-  tbody td{padding:5px 8px;border-bottom:1px solid #e2e8f0;font-size:9px;vertical-align:middle}
-  .footer{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;margin-top:20px;border-top:2px solid #0f172a;padding-top:12px}
-  .sign-box{text-align:center}
-  .sign-box .line{border-bottom:1px solid #0f172a;height:36px;margin-bottom:4px}
-  .sign-box .cap{font-size:8px;text-transform:uppercase;letter-spacing:.08em;color:#555;font-weight:700}
-  .note{font-size:8px;color:#64748b;margin-top:8px}
-  @media print{body{padding:10px 16px}}
-</style></head>
-<body>
-<div class="hdr">
-  <div class="hdr-left">
-    <h1>Nota de Envío a Mantenimiento</h1>
-    <p>BOA — Gestión Técnica de Herramientas &nbsp;|&nbsp; LOTE</p>
-  </div>
-  <div class="badge">LOTE</div>
-</div>
-
-<div class="info-grid">
-  <div class="info-box"><div class="lbl">Fecha de Envío</div><div class="val">${fecha}</div></div>
-  <div class="info-box"><div class="lbl">Empresa / Taller</div><div class="val">${empresa}</div></div>
-  <div class="info-box"><div class="lbl">Solicitado por</div><div class="val">${usuario}</div></div>
-  <div class="info-box"><div class="lbl">Total de Herramientas</div><div class="val">${doneItems.length}</div></div>
-  <div class="info-box"><div class="lbl">Generado</div><div class="val">${hoy}</div></div>
-</div>
-
-<table>
-  <thead>
-    <tr>
-      <th style="width:28px">#</th>
-      <th>Código BOA</th>
-      <th>Herramienta</th>
-      <th style="width:72px">N° Serie</th>
-      <th style="width:80px">Tipo</th>
-      <th style="width:64px">Período</th>
-      <th style="width:90px">N° Nota</th>
-      <th style="width:76px">Ret. Estimado</th>
-      <th>Observaciones</th>
-    </tr>
-  </thead>
-  <tbody>${filas}</tbody>
-</table>
-
-<div class="footer">
-  <div class="sign-box"><div class="line"></div><div class="cap">Entregado por</div></div>
-  <div class="sign-box"><div class="line"></div><div class="cap">Recibido por (Taller)</div></div>
-  <div class="sign-box"><div class="line"></div><div class="cap">Jefe de Sección</div></div>
-</div>
-<p class="note">Documento generado automáticamente por el Sistema de Gestión Técnica BOA. Conserve este documento como respaldo del envío.</p>
-
-<script>window.onload=function(){window.print()}</script>
-</body></html>`;
+        this.maintenanceService.generarPdfEnvioMantenimientoLote(ids).pipe(
+            takeUntil(this._destroy$),
+        ).subscribe({
+            next: (r) => this.maintenanceService.abrirNota(r, ventana),
+            error: (e) => { try { ventana?.close(); } catch { /* noop */ } this.showMsg(e?.message || 'Error al generar la nota del lote', 'error'); },
+        });
     }
 
     fmtDate(d: string | null | undefined): string {

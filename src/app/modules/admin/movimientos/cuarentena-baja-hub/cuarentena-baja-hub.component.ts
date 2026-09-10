@@ -109,9 +109,16 @@ export class CuarentenaBajaHubComponent implements OnInit, OnDestroy {
         if (tab === 'historial' && this.historialItems.length === 0) this.loadHistorial();
     }
 
-    // ══════════════════════════════════════════════════════════════════════════
-    //  CUARENTENA
-    // ══════════════════════════════════════════════════════════════════════════
+    /** pendingChangesGuard (vía MovimientosComponent): ¿hay una cuarentena o baja a medio cargar? */
+    tieneCambiosPendientes(): boolean {
+        return (this.cuarentenaList?.length ?? 0) > 0
+            || this.bajaItems().length > 0
+            || !!this.toolCuarentenaForm?.dirty
+            || !!this.bajaForm?.dirty
+            || !!this.reporteForm?.dirty;
+    }
+
+    // ── Cuarentena ──
     estadosFisicos = [
         { value: 'BUENO',      label: 'BUENO'      },
         { value: 'REGULAR',    label: 'REGULAR'     },
@@ -138,15 +145,13 @@ export class CuarentenaBajaHubComponent implements OnInit, OnDestroy {
     toolCSearchLoading          = false;
     private _toolCSearch$       = new Subject<string>();
     private toolIdActual        = 0;
-    // Ubicación real de la herramienta seleccionada (almacén/estante/nivel donde ya está
-    // guardada según Consultar Inventario) — distinta de "Base", que es a dónde se manda
-    // administrativamente en cuarentena. searchToolsAutocomplete ya trae estos 3 ids.
+    // Ubicación real de la herramienta (almacén/estante/nivel según Consultar Inventario), distinta
+    // de "Base" (a dónde se manda administrativamente). searchToolsAutocomplete ya trae estos ids.
     private toolWarehouseIdActual: number | null = null;
     private toolRackIdActual:      number | null = null;
     private toolLevelIdActual:     number | null = null;
-    // Marca/Observaciones REALES de la herramienta (ttools.brand / ttools.notes), para el
-    // detalle de solo-lectura — no confundir con el campo "Observaciones" opcional del form
-    // de cuarentena (motivo/notas de ESTA cuarentena, dato distinto).
+    // Marca/Observaciones reales de la herramienta (ttools.brand/notes) para el detalle solo-lectura,
+    // distinto del campo "Observaciones" del form de cuarentena.
     private toolMarcaActual:  string = '';
     private toolNotesActual:  string = '';
 
@@ -155,9 +160,8 @@ export class CuarentenaBajaHubComponent implements OnInit, OnDestroy {
     showPersonaDropdown         = false;
     personaLoading              = false;
 
-    // Aprobado Por / Jefe de Almacén — mismo dato que "aprobadoPor" en Ajuste (ingresos-hub) y
-    // "autorizadoPor" en Baja; en Cuarentena faltaba, aunque el PDF impreso ya tiene el casillero
-    // de firma "JEFE DE ALMACÉN" esperando este nombre.
+    // Aprobado Por / Jefe de Almacén — mismo dato que en Ajuste/Baja; en Cuarentena faltaba aunque
+    // el PDF ya tiene el casillero de firma esperándolo.
     private _aprobadoPorCSearch$ = new Subject<string>();
     aprobadoPorCFuncionarios: any[]  = [];
     showAprobadoPorCDropdown        = false;
@@ -169,9 +173,7 @@ export class CuarentenaBajaHubComponent implements OnInit, OnDestroy {
     selectedToolImage    = signal<string | null>(null);
     isSavingCuarentena   = false;
 
-    // ══════════════════════════════════════════════════════════════════════════
-    //  BAJA
-    // ══════════════════════════════════════════════════════════════════════════
+    // ── Baja ──
     estados = [
         { value: 'requested', label: 'SOLICITADO', color: 'yellow', icon: 'pending'      },
         { value: 'approved',  label: 'APROBADO',   color: 'green',  icon: 'check_circle' },
@@ -219,9 +221,7 @@ export class CuarentenaBajaHubComponent implements OnInit, OnDestroy {
     autorizadoPorLoading              = false;
     showAutorizadoPorDropdown         = false;
 
-    // ══════════════════════════════════════════════════════════════════════════
-    //  HISTORIAL
-    // ══════════════════════════════════════════════════════════════════════════
+    // ── Historial ──
     historialItems:     any[] = [];
     filteredHistorial:  any[] = [];
     isLoadingHistorial        = false;
@@ -229,9 +229,8 @@ export class CuarentenaBajaHubComponent implements OnInit, OnDestroy {
     historialSearch           = new FormControl('');
 
     // ── Resolver cuarentena ────────────────────────────────────────────────
-    // he.tquarantines.resolution es varchar(30) con CHECK a estos 5 valores — no admite
-    // texto libre. El resultado/diagnóstico en prosa que escribe el usuario va a la
-    // columna "diagnosis" (text, sin restricción), no a "resolution".
+    // he.tquarantines.resolution es varchar(30) con CHECK a estos 5 valores; el diagnóstico
+    // en prosa del usuario va a la columna "diagnosis" (text), no a "resolution".
     resolucionesCuarentena = [
         { value: 'released',         label: 'LIBERADA — VUELVE A SERVICIO' },
         { value: 'repaired',         label: 'REPARADA' },
@@ -252,9 +251,7 @@ export class CuarentenaBajaHubComponent implements OnInit, OnDestroy {
     bajaSeleccionada:              any    = null;
     isAnulando                           = false;
 
-    // ══════════════════════════════════════════════════════════════════════════
-    //  LIFECYCLE
-    // ══════════════════════════════════════════════════════════════════════════
+    // ── Ciclo de vida ──
     ngOnInit(): void {
         this._initFormsCuarentena();
         this._initFormBaja();
@@ -303,9 +300,7 @@ export class CuarentenaBajaHubComponent implements OnInit, OnDestroy {
         this.destroy$.complete();
     }
 
-    // ══════════════════════════════════════════════════════════════════════════
-    //  CUARENTENA — lógica
-    // ══════════════════════════════════════════════════════════════════════════
+    // ── Cuarentena - Lógica ──
     private _today(): string {
         const d = new Date();
         return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
@@ -315,9 +310,8 @@ export class CuarentenaBajaHubComponent implements OnInit, OnDestroy {
         const today = this._today();
         const auth  = JSON.parse(localStorage.getItem('aut') || '{}');
         this.reporteForm = this.fb.group({
-            // El N° de Reporte (RDC) lo genera el backend al finalizar (correlativo 'RDC' en
-            // he.tcorrelativos, igual que 'BJA' para Baja) — no es editable ni requerido aquí,
-            // se completa recién al terminar submitQuarantine().
+            // El N° de Reporte (RDC) lo genera el backend al finalizar (correlativo 'RDC');
+            // no es editable ni requerido aquí.
             nroReporteDiscrepancia: [''],
             fecha:          [today, Validators.required],
             motivo:         ['',    Validators.required],
@@ -378,9 +372,8 @@ export class CuarentenaBajaHubComponent implements OnInit, OnDestroy {
 
     isReporteValido(): boolean { return this.reporteForm.valid; }
 
-    // Búsqueda en vivo contra el backend (ToolService.getTools con query → searchToolsAutocomplete),
-    // el mismo mecanismo que usa el buscador de detalle-herramienta.component.ts (Ajuste de
-    // Herramienta), en vez de precargar todas las herramientas y filtrar en el cliente.
+    // Búsqueda en vivo contra el backend (ToolService.getTools → searchToolsAutocomplete), igual
+    // que el buscador de detalle-herramienta.component.ts.
     private _setupToolCSearch(): void {
         this._toolCSearch$.pipe(
             debounceTime(300), distinctUntilChanged(),
@@ -465,9 +458,8 @@ export class CuarentenaBajaHubComponent implements OnInit, OnDestroy {
         this.toolWarehouseIdActual = tool.warehouse_id != null ? Number(tool.warehouse_id) : null;
         this.toolRackIdActual      = tool.rack_id      != null ? Number(tool.rack_id)      : null;
         this.toolLevelIdActual     = tool.level_id     != null ? Number(tool.level_id)     : null;
-        // Marca/Observaciones reales de la herramienta (catálogo), para el detalle de
-        // solo-lectura — no confundir con el motivo/notas que se llenan más abajo para ESTA
-        // cuarentena en particular.
+        // Marca/Observaciones reales de la herramienta (catálogo) para el detalle solo-lectura,
+        // distinto del motivo/notas de ESTA cuarentena.
         this.toolMarcaActual = tool.brand ?? tool.marca ?? '';
         this.toolNotesActual = tool.notes ?? '';
         this.showToolDropdown = false;
@@ -575,9 +567,8 @@ export class CuarentenaBajaHubComponent implements OnInit, OnDestroy {
                 notes:              notesExtra,
                 evaluator_name:     rep.aprobadoPor || ''   // Aprobado Por / Jefe de Almacén
             };
-            // reported_by_id / evaluator_id no se envían: getPersonal() devuelve id_usuario
-            // (segu.tusuario) pero tquarantines.reported_by_id/evaluator_id referencian
-            // he.temployees — IDs distintos. El _name es suficiente para identificar al responsable.
+            // reported_by_id / evaluator_id no se envían: getPersonal() da id_usuario (segu) pero
+            // tquarantines referencia he.temployees. El _name basta.
             return this.quarantineSvc.createQuarantine(payload);
         });
         forkJoin(requests).pipe(
@@ -585,9 +576,8 @@ export class CuarentenaBajaHubComponent implements OnInit, OnDestroy {
             takeUntil(this.destroy$)
         ).subscribe({
             next: (results: any[]) => {
-                // Cada herramienta genera su propio record_number único (RDC-N/YYYY); el N°
-                // mostrado/impreso en el reporte es el de la primera fila del lote, igual que
-                // "N° Nota" en Baja usa el record_number del primer resultado.
+                // Cada herramienta genera su record_number único (RDC-N/YYYY); el impreso es el
+                // de la primera fila del lote (igual que "N° Nota" en Baja).
                 const nro = results[0]?.record_number || '---';
                 this.reporteForm.patchValue({ nroReporteDiscrepancia: nro });
                 void this._persistirFotos(this.cuarentenaList.map((t: any) => ({ toolId: t.id_tool, file: t.fotoFile })));
@@ -659,9 +649,7 @@ export class CuarentenaBajaHubComponent implements OnInit, OnDestroy {
 
     hideAprobadoPorCDropdown(): void { setTimeout(() => this.showAprobadoPorCDropdown = false, 200); }
 
-    // ══════════════════════════════════════════════════════════════════════════
-    //  BAJA — lógica
-    // ══════════════════════════════════════════════════════════════════════════
+    // ── Baja - Lógica ──
     private _currentUserName(): string {
         try {
             const auth = JSON.parse(localStorage.getItem('aut') || '{}');
@@ -866,14 +854,6 @@ export class CuarentenaBajaHubComponent implements OnInit, OnDestroy {
         });
     }
 
-    getTotalCantidad(): number {
-        return this.bajaItems().reduce((t, i) => t + (Number(i.cantidad) || 1), 0);
-    }
-
-    getEstadoLabel(val: string): string {
-        return this.estados.find(e => e.value === val)?.label || 'No definido';
-    }
-
     isProcessValid(): boolean {
         if (!this.bajaForm || this.bajaForm.invalid) return false;
         const fv = this.bajaForm.value;
@@ -949,9 +929,7 @@ export class CuarentenaBajaHubComponent implements OnInit, OnDestroy {
         });
     }
 
-    // ══════════════════════════════════════════════════════════════════════════
-    //  HISTORIAL
-    // ══════════════════════════════════════════════════════════════════════════
+    // ── Historial ──
     loadHistorial(): void {
         this.isLoadingHistorial = true;
         forkJoin([
@@ -997,10 +975,8 @@ export class CuarentenaBajaHubComponent implements OnInit, OnDestroy {
         return m._type === 'cuarentena' ? 'Cuarentena' : 'Baja';
     }
 
-    /** Reimpresión de un único registro desde la pestaña Historial — PDF real
-     *  TCPDF backend: cuarentena → Reporte Discrepancia MGH-101; baja → Nota de
-     *  Baja MGH-119. Mismo camino que las notas de préstamo / ingreso: pestaña
-     *  reservada dentro del click + un solo POST. */
+    /** Reimpresión de un registro desde Historial — PDF real TCPDF: cuarentena → MGH-101,
+     *  baja → MGH-119. Ventana reservada dentro del click + un solo POST. */
     pdfHistorialItem(m: any): void {
         const ventana = this.movementSvc.preAbrirVentanaPdf();
         if (m._type === 'cuarentena') {
@@ -1014,9 +990,7 @@ export class CuarentenaBajaHubComponent implements OnInit, OnDestroy {
         }
     }
 
-    // ══════════════════════════════════════════════════════════════════════════
-    //  RESOLVER CUARENTENA
-    // ══════════════════════════════════════════════════════════════════════════
+    // ── Resolver Cuarentena ──
     private _initResolverForm(): void {
         this.resolverForm = this.fb.group({
             resolved_by_name: ['', Validators.required],
@@ -1115,9 +1089,7 @@ export class CuarentenaBajaHubComponent implements OnInit, OnDestroy {
         });
     }
 
-    // ══════════════════════════════════════════════════════════════════════════
-    //  ANULAR BAJA
-    // ══════════════════════════════════════════════════════════════════════════
+    // ── Anular Baja ──
     private _initAnularBajaForm(): void {
         this.anularBajaForm = this.fb.group({
             motivoAnulacion: ['', Validators.required]
@@ -1198,9 +1170,7 @@ export class CuarentenaBajaHubComponent implements OnInit, OnDestroy {
         });
     }
 
-    // ══════════════════════════════════════════════════════════════════════════
-    //  SHARED
-    // ══════════════════════════════════════════════════════════════════════════
+    // ── Común ──
     private _showMsg(msg: string, type: 'success' | 'error' | 'warning' | 'info'): void {
         this.snackBar.open(msg, 'OK', {
             duration: 4000, horizontalPosition: 'end', verticalPosition: 'top',

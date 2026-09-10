@@ -244,7 +244,7 @@ export class PrestamoTecnicoHubComponent implements OnInit, OnDestroy {
         const { FormPrestamoDialogComponent } = await import('./prestamo/form-prestamo-dialog.component');
         this.dialog.open(FormPrestamoDialogComponent, {
             width: 'min(1240px, 96vw)', maxWidth: '100vw', maxHeight: '100dvh',
-            panelClass: 'neo-dialog-transparent', disableClose: false, autoFocus: false
+            panelClass: 'neo-dialog-transparent', disableClose: true, autoFocus: false
         }).afterClosed().subscribe(r => { if (r?.success) { this.showMsg('Préstamo registrado', 'success'); this.loadData(); } });
     }
 
@@ -252,7 +252,7 @@ export class PrestamoTecnicoHubComponent implements OnInit, OnDestroy {
         const { FormDevolucionDialogComponent } = await import('./devolucion/form-devolucion-dialog.component');
         this.dialog.open(FormDevolucionDialogComponent, {
             width: 'min(1240px, 96vw)', maxWidth: '100vw', maxHeight: '100dvh',
-            panelClass: 'neo-dialog-transparent', disableClose: false, autoFocus: false
+            panelClass: 'neo-dialog-transparent', disableClose: true, autoFocus: false
         }).afterClosed().subscribe(r => { if (r?.success) { this.showMsg('Devolución registrada', 'success'); this.loadData(); } });
     }
 

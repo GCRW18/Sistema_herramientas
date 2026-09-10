@@ -2,7 +2,7 @@
      [ngClass]="esDialog ? 'border-2 border-black rounded-2xl shadow-[6px_6px_0_#000] p-4 max-h-[85vh]' : 'p-6'">
     <div class="flex flex-col gap-6 flex-1 min-h-0">
 
-        <!-- Header de página / miniventana (arrastrable en modo dialog) -->
+        <!-- Cabecera de página / miniventana (arrastrable en modo diálogo) -->
         <div class="flex items-center justify-between flex-wrap gap-3"
              cdkDrag cdkDragRootElement=".cdk-overlay-pane" [cdkDragDisabled]="!esDialog"
              [style.cursor]="esDialog ? 'grab' : 'default'">

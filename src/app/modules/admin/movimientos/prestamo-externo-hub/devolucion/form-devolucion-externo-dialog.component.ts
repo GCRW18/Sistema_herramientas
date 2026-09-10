@@ -5,10 +5,11 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatDialogRef, MatDialogModule, MatDialog } from '@angular/material/dialog';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { Subject, forkJoin, of } from 'rxjs';
+import { Subject, of } from 'rxjs';
 import { takeUntil, finalize, switchMap, map, catchError, debounceTime, distinctUntilChanged } from 'rxjs/operators';
 import { MovementService } from '../../../../../core/services/movement.service';
 import { CustomerService } from '../../../../../core/services/customer.service';
+import { QrScanService } from '../../../../../core/services/qr-scan.service';
 
 type CondicionExt = 'BUENO' | 'REPARADO' | 'CALIBRADO' | 'PARCIAL' | 'NO_REPARABLE';
 
@@ -75,6 +76,7 @@ export class FormDevolucionExternoDialogComponent implements OnInit, OnDestroy {
     private snackBar   = inject(MatSnackBar);
     private movementSvc = inject(MovementService);
     private customerSvc = inject(CustomerService);
+    private qrScan      = inject(QrScanService);
     private destroy$   = new Subject<void>();
 
     isSaving     = false;
@@ -255,6 +257,17 @@ export class FormDevolucionExternoDialogComponent implements OnInit, OnDestroy {
     scanAndAdd(): void {
         const code = this.scanValue.trim();
         if (!code) return;
+        // Etiqueta QR (URL `.../qr-code/<token>`): descifra a código plano y reintenta.
+        if (this.qrScan.isQrLabel(code)) {
+            this.loadingIndex = true;
+            this.qrScan.toToolCode(code).pipe(takeUntil(this.destroy$)).subscribe(real => {
+                this.loadingIndex = false;
+                if (!real) { this.showMsg('warning', 'Etiqueta QR no reconocida'); this._clearScan(); return; }
+                this.scanValue = real;
+                this.scanAndAdd();
+            });
+            return;
+        }
         if (!this.indexReady) { this.showMsg('warning', 'Cargando préstamos activos, espere un momento'); return; }
         const exactas = this._openLoanIndex.get(code.toUpperCase());
         if (exactas && exactas.length > 0) { this._agregarItem(exactas); return; }

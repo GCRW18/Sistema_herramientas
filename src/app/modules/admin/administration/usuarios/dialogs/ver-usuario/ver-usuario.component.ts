@@ -4,7 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
-import { MAT_DIALOG_DATA, MatDialogRef, MatDialogModule } from '@angular/material/dialog';
+import { MAT_DIALOG_DATA, MatDialogRef, MatDialogModule, MatDialog } from '@angular/material/dialog';
 import { DragDropModule } from '@angular/cdk/drag-drop';
 import { Subject, of } from 'rxjs';
 import { debounceTime, distinctUntilChanged, switchMap, catchError, finalize, takeUntil } from 'rxjs/operators';
@@ -13,10 +13,10 @@ import { EmployeeService } from '../../../../../../core/services/employee.servic
 import { HasPermissionDirective } from '../../../../../../core/directives/has-permission.directive';
 
 /**
- * Ficha de usuario/funcionario — solo lectura para los datos personales/técnicos
- * (patrón módulo Funcionarios: la cuenta de login vive en segu, no se edita aquí).
- * Única acción de escritura: asignar/cambiar el rol del módulo (he.roles), que se
- * guarda como fila espejo en he.tusuarios vinculada por id_usuario.
+ * Ficha de usuario/funcionario. La cuenta de login vive en segu (solo lectura aquí);
+ * los datos propios de Herramientas (licencia, cargo, área — tabla he.temployees) se
+ * pueden dar de alta/editar con el botón "Editar" (abre EditarFuncionarioDialogComponent).
+ * Además: asignar/cambiar el rol (he.roles), guardado como fila espejo en he.tusuarios.
  */
 @Component({
     selector: 'app-ver-usuario',
@@ -32,7 +32,7 @@ import { HasPermissionDirective } from '../../../../../../core/directives/has-pe
     <div class="bg-stone-100 dark:bg-slate-900 border-2 border-black overflow-hidden flex flex-col w-full"
          style="max-height:90vh">
 
-        <!-- HEADER -->
+        <!-- CABECERA -->
         <div class="bg-[#0F172A] px-4 sm:px-5 py-3 flex items-center gap-3 shrink-0 select-none flex-wrap sm:flex-nowrap"
              cdkDrag cdkDragRootElement=".cdk-overlay-pane" cdkDragHandle style="cursor:grab">
             <div class="w-8 h-8 rounded bg-amber-400 border-2 border-black flex items-center justify-center shadow-[2px_2px_0_#fbbf24] shrink-0">
@@ -75,7 +75,7 @@ import { HasPermissionDirective } from '../../../../../../core/directives/has-pe
             </button>
         </div>
 
-        <!-- BODY: foto + campos, mismo layout que detalle-herramienta -->
+        <!-- CUERPO: foto + campos, mismo layout que detalle-herramienta -->
         <div class="flex-1 overflow-hidden">
             <div class="h-full flex flex-col sm:flex-row overflow-hidden min-h-0">
 
@@ -192,8 +192,12 @@ import { HasPermissionDirective } from '../../../../../../core/directives/has-pe
             </div>
         </div>
 
-        <!-- Footer -->
-        <div class="border-t-2 border-black bg-stone-200 dark:bg-slate-800 px-4 py-2 flex justify-end shrink-0">
+        <!-- Pie -->
+        <div class="border-t-2 border-black bg-stone-200 dark:bg-slate-800 px-4 py-2 flex justify-between items-center shrink-0">
+            <button *appHasPermission="'admin_usuarios.assign_role'" type="button" (click)="editarFuncionario()"
+                    class="flex items-center gap-1 px-3 py-1.5 bg-amber-400 text-black font-black text-[10px] border-2 border-black rounded-lg shadow-[2px_2px_0_#000] hover:shadow-none hover:translate-x-[1px] hover:translate-y-[1px] transition-all uppercase">
+                <mat-icon class="!text-xs">edit</mat-icon>{{ f.id_employee ? 'Editar Datos Herramientas' : 'Dar de Alta en Herramientas' }}
+            </button>
             <button type="button" (click)="cerrar()"
                     class="flex items-center gap-1 px-3 py-1.5 bg-[#0F172A] text-white font-black text-[10px] border-2 border-black rounded-lg shadow-[2px_2px_0_#000] hover:shadow-none hover:translate-x-[1px] hover:translate-y-[1px] transition-all uppercase">
                 <mat-icon class="!text-xs">close</mat-icon>Cerrar
@@ -208,17 +212,15 @@ export class VerUsuarioComponent implements OnInit, OnDestroy {
     private roleSvc     = inject(RoleService);
     private employeeSvc = inject(EmployeeService);
     private snackBar    = inject(MatSnackBar);
+    private dialog      = inject(MatDialog);
     private _destroy$   = new Subject<void>();
 
-    // Filas crudas de herramientas/roles/listarRoles (id_role, name, ...) — no coinciden
-    // con el shape del interface Role (id/name), por eso van sin tipar como RolesComponent
-    // hace también con su propio mapeo local.
+    // Filas crudas de listarRoles (id_role, name, ...); no coinciden con el interface Role, van sin tipar.
     roles: any[] = [];
     loadingRoles  = false;
     guardandoRol  = false;
-    // string, no number: así vienen los id_role del backend (PHP serializa enteros de
-    // Postgres como string) y así quedan las [ngValue] de las <option> — si no coinciden
-    // los tipos, Angular nunca marca ninguna opción como seleccionada.
+    // string, no number: los id_role llegan como string del backend y así quedan los [ngValue]
+    // de las <option>; si los tipos no coinciden Angular nunca marca la opción seleccionada.
     selectedRoleId: string | null = null;
 
     // ── Buscador de técnicos (header) — permite cambiar de ficha sin cerrar el diálogo ──
@@ -329,6 +331,37 @@ export class VerUsuarioComponent implements OnInit, OnDestroy {
             error: (err: any) => {
                 this.guardandoRol = false;
                 this.snackBar.open(err?.message || 'Error al asignar el rol', 'Cerrar', { duration: 4000 });
+            }
+        });
+    }
+
+    /** Abre el alta/edición de los datos propios de Herramientas (he.temployees) para
+     *  la ficha actual (this.f); al guardar, refresca los campos mostrados sin recargar. */
+    async editarFuncionario(): Promise<void> {
+        if (!this.f.id_usuario) {
+            this.snackBar.open('No se pudo identificar al usuario', 'Cerrar', { duration: 3500 });
+            return;
+        }
+        const { EditarFuncionarioDialogComponent } = await import('../editar-funcionario/editar-funcionario-dialog.component');
+        this.dialog.open(EditarFuncionarioDialogComponent, {
+            width: 'min(640px, 95vw)', maxWidth: '95vw', panelClass: 'no-padding-dialog',
+            disableClose: true, autoFocus: false,
+            data: { funcionario: this.f }
+        }).afterClosed().subscribe((result: any) => {
+            if (!result?.success) return;
+            // Re-consulta en vez de fusionar el payload a mano: distintos nombres de campo
+            // (email vs email_personal, id_lugar vs base_name/base_code) y para traer ya
+            // resuelto el id_employee si esta ficha era un alta nueva.
+            this._recargarFicha();
+        });
+    }
+
+    private _recargarFicha(): void {
+        if (!this.f.cuenta) return;
+        this.employeeSvc.getFuncionarios({ search: this.f.cuenta }).pipe(takeUntil(this._destroy$)).subscribe({
+            next: (rows: any[]) => {
+                const actualizado = (rows || []).find(r => r.id_usuario === this.f.id_usuario);
+                if (actualizado) this.f = actualizado;
             }
         });
     }

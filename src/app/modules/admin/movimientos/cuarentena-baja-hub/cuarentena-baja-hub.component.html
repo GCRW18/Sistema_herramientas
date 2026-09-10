@@ -16,7 +16,7 @@
 
   <div class="flex-1 flex flex-col p-3 sm:p-4 gap-3 overflow-hidden relative z-10">
 
-    <!-- ── HEADER ──────────────────────────────────────────── -->
+    <!-- ── CABECERA ──────────────────────────────────────────── -->
     <div class="flex items-center justify-between gap-3 shrink-0 flex-wrap">
 
       <div class="flex items-center gap-4">
@@ -79,10 +79,10 @@
       </div>
     </div>
 
-    <!-- ── CARD PRINCIPAL ──────────────────────────────────────────── -->
+    <!-- ── TARJETA PRINCIPAL ──────────────────────────────────────────── -->
     <div class="flex-1 flex flex-col overflow-hidden border-[3px] border-black bg-gray-50 dark:bg-[#0F172AFF] rounded-2xl shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
 
-      <!-- KPI dark header -->
+      <!-- Cabecera oscura con KPIs -->
       <div class="px-3 sm:px-4 py-2 bg-[#0F172AFF] border-b-[3px] border-black shrink-0 rounded-t-2xl">
         <div class="flex items-center gap-2 overflow-x-auto scrollbar-none flex-nowrap">
 
@@ -260,7 +260,7 @@
             </tbody>
           </table>
 
-          <!-- Empty state -->
+          <!-- Estado vacÃ­o -->
           <div *ngIf="cuarentenaList.length === 0" class="flex flex-col items-center justify-center py-16 gap-3">
             <div class="w-16 h-16 bg-stone-100 dark:bg-slate-800 border-2 border-black rounded-2xl shadow-[3px_3px_0_#000] flex items-center justify-center">
               <mat-icon class="!text-3xl text-stone-300 dark:text-slate-600">assignment_late</mat-icon>
@@ -332,7 +332,7 @@
             </tbody>
           </table>
 
-          <!-- Empty state -->
+          <!-- Estado vacÃ­o -->
           <div *ngIf="bajaItems().length === 0" class="flex flex-col items-center justify-center py-16 gap-3">
             <div class="w-16 h-16 bg-stone-100 dark:bg-slate-800 border-2 border-black rounded-2xl shadow-[3px_3px_0_#000] flex items-center justify-center">
               <mat-icon class="!text-3xl text-stone-300 dark:text-slate-600">delete_sweep</mat-icon>
@@ -349,13 +349,13 @@
       <!-- ════════════ TAB HISTORIAL ════════════ -->
       <div [hidden]="activeTab() !== 'historial'" class="h-full flex flex-col overflow-hidden">
 
-        <!-- Loading historial -->
+        <!-- Cargando historial -->
         <div *ngIf="isLoadingHistorial" class="flex-1 flex flex-col items-center justify-center gap-4">
           <div class="w-12 h-12 border-4 border-[#FFC501FF] border-t-transparent rounded-full animate-spin"></div>
           <p class="text-sm font-black uppercase text-gray-500 dark:text-gray-400">Cargando historial…</p>
         </div>
 
-        <!-- Empty state -->
+        <!-- Estado vacÃ­o -->
         <div *ngIf="!isLoadingHistorial && filteredHistorial.length === 0"
              class="flex-1 flex flex-col items-center justify-center gap-3 py-12 px-4 text-center">
           <div class="w-16 h-16 bg-stone-100 dark:bg-slate-800 border-2 border-black rounded-2xl shadow-[3px_3px_0_#000] flex items-center justify-center">
@@ -434,20 +434,18 @@
 
       </div><!-- /tabs wrapper -->
 
-    </div><!-- /card -->
+    </div><!-- /tarjeta -->
   </div><!-- /p-3 sm:p-4 -->
 </div>
 
-<!-- ═══════════════════════════════════════════════════════════════════════ -->
-<!-- MODALES -->
-<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<!-- ── MODALES ── -->
 
 <!-- MODAL: REPORTE DE DISCREPANCIA -->
 <ng-template #reporteModal>
   <div class="bg-stone-100 dark:bg-slate-900 border-2 border-black overflow-hidden flex flex-col"
 >
 
-    <!-- Header -->
+    <!-- Cabecera -->
     <div class="bg-[#0F172A] px-5 py-3.5 flex items-center gap-3 shrink-0 select-none"
          cdkDrag cdkDragRootElement=".cdk-overlay-pane" cdkDragHandle style="cursor:grab">
       <div class="w-9 h-9 rounded-lg bg-amber-400 border-2 border-black shadow-[2px_2px_0_rgba(0,0,0,0.35)] flex items-center justify-center shrink-0">
@@ -459,10 +457,10 @@
       </div>
     </div>
 
-    <!-- Body -->
+    <!-- Cuerpo -->
     <div class="px-4 sm:px-5 py-4 flex flex-col custom-scrollbar-cb">
 
-      <!-- Card único sin header -->
+      <!-- Tarjeta único sin header -->
       <div class="animate-fadeIn border-2 border-black rounded-xl overflow-hidden shadow-[3px_3px_0_#000]">
         <div class="bg-white dark:bg-slate-800 p-4 flex flex-col sm:flex-row gap-3 sm:gap-4">
 
@@ -562,7 +560,7 @@
       </div>
     </div>
 
-    <!-- Footer -->
+    <!-- Pie -->
     <div class="border-t-2 border-black bg-stone-200 dark:bg-slate-800 px-5 py-3 flex justify-between items-center shrink-0">
       <button type="button" (click)="dialogRefActual?.close()"
               class="px-4 py-2 bg-[#FF1414] text-white font-black text-[10px] border-2 border-black rounded-xl shadow-[2px_2px_0_#000] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all uppercase">
@@ -581,7 +579,7 @@
 <ng-template #herramientaCModal>
     <div class="bg-stone-100 dark:bg-slate-900 border-2 border-black rounded-xl overflow-hidden flex flex-col w-full h-full">
 
-        <!-- Header -->
+        <!-- Cabecera -->
         <div class="bg-[#0F172A] px-4 sm:px-5 py-3 flex items-center gap-3 shrink-0 select-none flex-wrap sm:flex-nowrap"
              cdkDrag cdkDragRootElement=".cdk-overlay-pane" cdkDragHandle style="cursor:grab">
             <div class="w-8 h-8 rounded-lg bg-amber-400 border-2 border-black shadow-[2px_2px_0_rgba(0,0,0,0.35)] flex items-center justify-center shrink-0">
@@ -592,7 +590,7 @@
                 <h2 class="text-xs text-white font-black uppercase tracking-tight leading-none">Agregar Herramienta a Cuarentena</h2>
             </div>
 
-            <!-- Buscador en header -->
+            <!-- Buscador en la cabecera -->
             <div class="relative w-full sm:w-auto sm:shrink-0">
                 <input type="text"
                        [value]="buscarValueC"
@@ -609,7 +607,7 @@
                         class="absolute right-1.5 top-1 w-6 h-6 flex items-center justify-center rounded hover:bg-white/20 transition-colors">
                     <mat-icon class="!text-sm text-white/60">close</mat-icon>
                 </button>
-                <!-- Dropdown -->
+                <!-- Desplegable -->
                 <div *ngIf="showToolDropdown"
                      class="absolute z-[300] w-80 bg-white dark:bg-slate-800 border-2 border-black dark:border-slate-600 rounded-xl shadow-[4px_4px_0_#000] max-h-60 overflow-y-auto mt-1 top-full right-0 custom-scrollbar-cb divide-y divide-stone-100 dark:divide-slate-700">
                     <div *ngFor="let t of toolsFiltradas"
@@ -629,7 +627,7 @@
             </div>
         </div>
 
-        <!-- Body -->
+        <!-- Cuerpo -->
         <div class="animate-fadeIn flex-1 overflow-hidden">
             <form [formGroup]="toolCuarentenaForm" class="h-full flex flex-col sm:flex-row overflow-hidden min-h-0">
 
@@ -763,7 +761,7 @@
             </form>
         </div>
 
-        <!-- Footer -->
+        <!-- Pie -->
         <div class="border-t-2 border-black bg-stone-200 dark:bg-slate-800 px-4 py-2 flex justify-between items-center shrink-0">
             <button type="button" (click)="dialogRefActual?.close()"
                     class="flex items-center gap-1 px-3 py-1.5 bg-[#FF1414] text-white font-black text-[10px] border-2 border-black rounded-lg shadow-[2px_2px_0_#000] hover:shadow-none hover:translate-x-[1px] hover:translate-y-[1px] transition-all uppercase">
@@ -781,7 +779,7 @@
 <ng-template #resolverModal>
   <div class="bg-stone-100 dark:bg-slate-900 border-2 border-black overflow-hidden flex flex-col">
 
-    <!-- Header -->
+    <!-- Cabecera -->
     <div class="bg-[#0F172A] px-5 py-3.5 flex items-center gap-3 shrink-0 select-none"
          cdkDrag cdkDragRootElement=".cdk-overlay-pane" cdkDragHandle style="cursor:grab">
       <div class="w-9 h-9 rounded-lg bg-green-500 border-2 border-black shadow-[2px_2px_0_rgba(0,0,0,0.35)] flex items-center justify-center shrink-0">
@@ -805,7 +803,7 @@
       </div>
     </div>
 
-    <!-- Body -->
+    <!-- Cuerpo -->
     <div class="px-5 py-4 flex flex-col gap-3">
       <form [formGroup]="resolverForm" class="flex flex-col gap-3">
 
@@ -896,7 +894,7 @@
       </form>
     </div>
 
-    <!-- Footer -->
+    <!-- Pie -->
     <div class="border-t-2 border-black bg-stone-200 dark:bg-slate-800 px-5 py-3 flex justify-between items-center shrink-0">
       <button type="button" (click)="dialogRefActual?.close()" [disabled]="isResolviendo"
               class="px-4 py-2 bg-[#FF1414] text-white font-black text-[10px] border-2 border-black rounded-xl shadow-[2px_2px_0_#000] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all uppercase disabled:opacity-40">
@@ -916,7 +914,7 @@
 <ng-template #datosBajaModal>
     <div class="bg-stone-100 dark:bg-slate-900 border-2 border-black overflow-hidden flex flex-col">
 
-        <!-- Header -->
+        <!-- Cabecera -->
         <div class="bg-[#0F172A] px-4 py-2.5 flex items-center gap-2.5 shrink-0 select-none"
              cdkDrag cdkDragRootElement=".cdk-overlay-pane" cdkDragHandle style="cursor:grab">
             <div class="w-8 h-8 rounded-lg bg-amber-400 border-2 border-black shadow-[2px_2px_0_rgba(0,0,0,0.35)] flex items-center justify-center shrink-0">
@@ -928,7 +926,7 @@
             </div>
         </div>
 
-        <!-- Body -->
+        <!-- Cuerpo -->
         <div class="px-3 sm:px-4 py-3 flex flex-col gap-2 custom-scrollbar-cb overflow-y-auto max-h-[78vh]">
             <form [formGroup]="bajaForm" class="flex flex-col gap-2">
 
@@ -1107,7 +1105,7 @@
             </form>
         </div>
 
-        <!-- Footer -->
+        <!-- Pie -->
         <div class="border-t-2 border-black bg-stone-200 dark:bg-slate-800 px-4 py-2 flex justify-between items-center shrink-0">
             <button type="button" (click)="cancelarModalDatos()"
                     class="px-3.5 py-1.5 bg-[#FF1414] text-white font-black text-[10px] border-2 border-black rounded-lg shadow-[2px_2px_0_#000] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all uppercase">
@@ -1126,7 +1124,7 @@
 <ng-template #anularBajaModal>
   <div class="bg-stone-100 dark:bg-slate-900 border-2 border-black overflow-hidden flex flex-col">
 
-    <!-- Header -->
+    <!-- Cabecera -->
     <div class="bg-[#0F172A] px-5 py-3.5 flex items-center gap-3 shrink-0 select-none"
          cdkDrag cdkDragRootElement=".cdk-overlay-pane" cdkDragHandle style="cursor:grab">
       <div class="w-9 h-9 rounded-lg bg-orange-500 border-2 border-black shadow-[2px_2px_0_rgba(0,0,0,0.35)] flex items-center justify-center shrink-0">
@@ -1164,7 +1162,7 @@
       </p>
     </div>
 
-    <!-- Body -->
+    <!-- Cuerpo -->
     <div class="px-5 py-4 flex flex-col gap-3">
       <form [formGroup]="anularBajaForm" class="flex flex-col gap-3">
 
@@ -1191,7 +1189,7 @@
       </form>
     </div>
 
-    <!-- Footer -->
+    <!-- Pie -->
     <div class="border-t-2 border-black bg-stone-200 dark:bg-slate-800 px-5 py-3 flex justify-between items-center shrink-0">
       <button type="button" (click)="dialogRefActual?.close()" [disabled]="isAnulando"
               class="px-4 py-2 bg-[#FF1414] text-white font-black text-[10px] border-2 border-black rounded-xl shadow-[2px_2px_0_#000] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all uppercase disabled:opacity-40">

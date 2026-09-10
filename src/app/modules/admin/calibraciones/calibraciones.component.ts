@@ -1,5 +1,6 @@
-import { Component, OnInit, OnDestroy, inject, ViewChild, TemplateRef, Type, Injector, TrackByFunction, ChangeDetectorRef, AfterViewInit } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject, ViewChild, ViewChildren, QueryList, TemplateRef, Type, Injector, TrackByFunction, ChangeDetectorRef, AfterViewInit } from '@angular/core';
 import { CommonModule, NgComponentOutlet } from '@angular/common';
+import { outletsTienenCambios } from '../../../core/guards/pending-changes.guard';
 import { FormsModule } from '@angular/forms';
 import { MatIconModule, MatIconRegistry } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
@@ -12,7 +13,6 @@ import { DragDropModule } from '@angular/cdk/drag-drop';
 import { takeUntil, finalize } from 'rxjs/operators';
 import { Subject, of, forkJoin } from 'rxjs';
 import { CalibrationService } from '../../../core/services/calibration.service';
-import { MovementService } from '../../../core/services/movement.service';
 import { MaintenanceService } from '../../../core/services/maintenance.service';
 
 interface OpenTab {
@@ -96,7 +96,6 @@ interface CalibrationRecord {
 export class CalibracionesComponent implements OnInit, OnDestroy, AfterViewInit {
     private dialog             = inject(MatDialog);
     private calibrationService = inject(CalibrationService);
-    private movementService    = inject(MovementService);
     private maintenanceService = inject(MaintenanceService);
     private injector           = inject(Injector);
     private iconRegistry       = inject(MatIconRegistry);
@@ -107,7 +106,19 @@ export class CalibracionesComponent implements OnInit, OnDestroy, AfterViewInit 
 
     @ViewChild('calibracionesRecientesDialog') calibracionesRecientesDialog!: TemplateRef<any>;
 
-    // ── Tab system ───────────────────────────────────────────────────────────
+    /** Instancias vivas de los submódulos abiertos — para el pendingChangesGuard. */
+    @ViewChildren(NgComponentOutlet) private _outlets!: QueryList<NgComponentOutlet>;
+
+    /** pendingChangesGuard: ¿algún submódulo abierto tiene un formulario/lista en curso? */
+    tieneCambiosPendientes(): boolean {
+        return outletsTienenCambios(this._outlets);
+    }
+
+    mensajeSalida(): string {
+        return 'Hay datos de calibración sin guardar. Si sales del módulo se perderán. ¿Salir de todas formas?';
+    }
+
+    // ── Sistema de pestañas ──────────────────────────────────────────────────
     openTabs: OpenTab[] = [];
     activeTabId: number | null = null;
     showBandeja = false;
@@ -163,11 +174,8 @@ export class CalibracionesComponent implements OnInit, OnDestroy, AfterViewInit 
 
     selectedEntry: CalibrationRecord | null = null;
 
-    // ── Paginación ────────────────────────────────────────────────────────────
-    // Cliente-side: se cargan de una las últimas N de ambas fuentes (calibraciones +
-    // mantenimientos), se combinan y ordenan por fecha, y se pagina el array ya en
-    // memoria — evita el problema de paginar dos fuentes independientes en el server
-    // y tener que intercalarlas por página.
+    // ── Paginación (client-side) ─────────────────────────────────────────────
+    // Combina las últimas N de calibraciones + mantenimientos, ordena por fecha y pagina en memoria.
     pageSize            = 10;
     pageIndex           = 0;
     private _allRecent: CalibrationRecord[] = [];
@@ -208,7 +216,7 @@ export class CalibracionesComponent implements OnInit, OnDestroy, AfterViewInit 
         this._unsubscribeAll.complete();
     }
 
-    // ── Tab system methods ───────────────────────────────────────────────────
+    // ── Métodos del sistema de pestañas ──────────────────────────────────────
     toggleBandeja(): void {
         this.showBandeja = !this.showBandeja;
         this.cdr.detectChanges();

@@ -19,6 +19,7 @@ export * from './supplier.service';
 export * from './movement-validation.service';
 export * from './minimized-dialogs.service';
 export * from './barcode-scanner.service';
+export * from './qr-scan.service';
 
 // Re-export UserService from core/user
 export { UserService } from '../user/user.service';

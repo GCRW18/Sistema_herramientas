@@ -31,7 +31,7 @@ export interface CalibrationAlertDialogData {
 
     <div class="flex flex-col overflow-hidden">
 
-        <!-- ── HEADER ─────────────────────────────────────────────────────── -->
+        <!-- ── CABECERA ─────────────────────────────────────────────────── -->
         <div class="bg-[#0F172A] px-5 py-3.5 flex items-center justify-between gap-3 shrink-0">
             <div class="flex items-center gap-3">
                 <div class="w-9 h-9 rounded bg-[#FF1414] flex items-center justify-center shrink-0">
@@ -48,7 +48,7 @@ export interface CalibrationAlertDialogData {
             </button>
         </div>
 
-        <!-- ── KPI CHIPS ───────────────────────────────────────────────────── -->
+        <!-- ── CHIPS KPI ──────────────────────────────────────────────────── -->
         <div class="bg-stone-100 px-4 py-3 border-b border-stone-300 shrink-0">
             <div class="grid grid-cols-3 gap-2">
 
@@ -77,7 +77,7 @@ export interface CalibrationAlertDialogData {
                 <div *ngFor="let alert of data.alerts"
                      class="flex items-center gap-3 bg-white rounded-lg px-3 py-2.5 border border-stone-200 hover:border-stone-300 transition-colors">
 
-                    <!-- Dot urgencia -->
+                    <!-- Punto urgencia -->
                     <div class="w-2 h-2 rounded-full shrink-0"
                          [ngClass]="alert.days_remaining <= 0 ? 'bg-[#FF1414]' : alert.days_remaining <= 7 ? 'bg-orange-500' : 'bg-amber-400'">
                     </div>
@@ -88,7 +88,7 @@ export interface CalibrationAlertDialogData {
                         <div class="text-[10px] text-stone-400 font-mono mt-0.5">{{ alert.tool_code }} · {{ alert.warehouse }}</div>
                     </div>
 
-                    <!-- Badge urgencia + días -->
+                    <!-- Insignia urgencia + días -->
                     <div class="flex items-center gap-2 shrink-0">
                         <span class="text-[10px] font-bold px-2 py-0.5 rounded"
                               [ngClass]="getUrgencyClass(alert.urgency)">
@@ -105,7 +105,7 @@ export interface CalibrationAlertDialogData {
 
                 </div>
 
-                <!-- Empty state -->
+                <!-- Estado vacío -->
                 <div *ngIf="data.alerts.length === 0" class="py-10 flex flex-col items-center gap-2">
                     <mat-icon class="!text-4xl text-stone-300">check_circle</mat-icon>
                     <p class="text-sm font-bold text-stone-400">Sin alertas críticas</p>
@@ -114,7 +114,7 @@ export interface CalibrationAlertDialogData {
             </div>
         </div>
 
-        <!-- ── FOOTER ──────────────────────────────────────────────────────── -->
+        <!-- ── PIE ─────────────────────────────────────────────────────── -->
         <div class="border-t border-stone-300 bg-stone-100 px-4 py-3 flex items-center justify-between gap-3 shrink-0">
 
             <button (click)="close()"

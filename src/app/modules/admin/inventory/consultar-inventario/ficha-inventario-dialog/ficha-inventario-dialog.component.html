@@ -4,7 +4,7 @@
                                                 : 'min(460px, 94vw)'"
      style="max-height:90vh; box-shadow:6px 6px 0 #000">
 
-  <!-- ══ HEADER ══ -->
+  <!-- ══ CABECERA ══ -->
   <div class="bg-[#0F172A] px-4 sm:px-5 py-3 flex items-center gap-3.5 shrink-0 select-none"
        cdkDrag cdkDragRootElement=".cdk-overlay-pane" cdkDragHandle style="cursor:grab">
     <div class="w-10 h-10 rounded-lg bg-amber-400 border-2 border-black flex items-center justify-center shadow-[2px_2px_0_#fbbf24] shrink-0">
@@ -50,7 +50,7 @@
     </div>
   </div>
 
-  <!-- ══ BODY ══ -->
+  <!-- ══ CUERPO ══ -->
   <div class="flex-1 overflow-y-auto neo-scroll px-4 sm:px-5 py-4 min-h-0 bg-stone-100 dark:bg-slate-900">
 
     <!-- ─────────────────────────── TAB: FICHA ─────────────────────────── -->
@@ -308,7 +308,7 @@
         </ng-container>
 
       </div><!-- /campos -->
-    </div><!-- /tab ficha -->
+    </div><!-- /pestaña ficha -->
 
     <!-- ─────────────────────── TAB: COMPONENTES (Kit) ─────────────────────── -->
     <div *ngIf="activeTab() === 'componentes'" class="df-card !p-0 overflow-hidden">
@@ -363,9 +363,9 @@
       </div>
     </div>
 
-  </div><!-- /body -->
+  </div><!-- /cuerpo -->
 
-  <!-- ══ FOOTER ══ -->
+  <!-- ══ PIE ══ -->
   <div class="border-t-2 border-black bg-stone-200 dark:bg-slate-800 px-4 sm:px-5 py-2.5 flex justify-between items-center shrink-0 flex-wrap gap-2">
     <div class="flex items-center gap-1.5">
       <mat-icon class="!text-sm text-stone-400 dark:text-slate-500">schedule</mat-icon>
@@ -382,10 +382,10 @@
         <mat-icon class="!text-sm" [class.spin]="isGeneratingQR()">{{ isGeneratingQR() ? 'progress_activity' : 'qr_code_2' }}</mat-icon>
         QR
       </button>
-      <button type="button" (click)="exportarPDF()" matTooltip="Exportar / imprimir ficha en PDF"
-              class="px-3.5 py-2 bg-white dark:bg-slate-700 text-black dark:text-white font-black text-[11px] border-2 border-black rounded-xl shadow-[2px_2px_0_#000] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all uppercase flex items-center gap-1.5">
-        <mat-icon class="!text-sm">picture_as_pdf</mat-icon>
-        PDF
+      <button type="button" (click)="exportarPDF()" [disabled]="isExporting()" matTooltip="Generar la ficha en PDF"
+              class="px-3.5 py-2 bg-white dark:bg-slate-700 text-black dark:text-white font-black text-[11px] border-2 border-black rounded-xl shadow-[2px_2px_0_#000] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all uppercase flex items-center gap-1.5 disabled:opacity-50">
+        <mat-icon class="!text-sm" [class.animate-spin]="isExporting()">{{ isExporting() ? 'progress_activity' : 'picture_as_pdf' }}</mat-icon>
+        {{ isExporting() ? 'Generando…' : 'PDF' }}
       </button>
       <span [matTooltip]="item.tipo === 'HERRAMIENTA' ? 'La edición de herramientas se hace desde el módulo de Ingresos'
                         : item.tipo === 'KIT'         ? 'La edición de kits se hace desde el módulo Gestión de Kits'

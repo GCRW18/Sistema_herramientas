@@ -11,7 +11,6 @@ import { takeUntil, finalize, catchError, debounceTime, map, mergeMap } from 'rx
 import { MovementService }    from '../../../../core/services/movement.service';
 import { BlobStorageService } from '../../../../core/services/blob-storage.service';
 import { ToolService }        from '../../../../core/services/tool.service';
-import { CalibrationService }   from '../../../../core/services/calibration.service';
 import { GestionUbicacionesService } from '../../inventory/gestion-ubicaciones/gestion-ubicaciones.service';
 import { HasPermissionDirective } from '../../../../core/directives/has-permission.directive';
 import { localDateStr, formatDateDMY } from '../../../../core/utils/date.utils';
@@ -110,11 +109,10 @@ export class IngresosHubComponent implements OnInit, OnDestroy {
     private movementSvc    = inject(MovementService);
     private blobStorage    = inject(BlobStorageService);
     private toolSvc        = inject(ToolService);
-    private calibrationSvc = inject(CalibrationService);
     private ubicSvc        = inject(GestionUbicacionesService);
     private destroy$       = new Subject<void>();
 
-    // ── Tab state ──────────────────────────────────────────────────────────────
+    // ── Estado de pestañas ──
     activeTab = signal<TabType>('nueva');
     setTab(tab: TabType): void {
         this.activeTab.set(tab);
@@ -123,13 +121,19 @@ export class IngresosHubComponent implements OnInit, OnDestroy {
         }
     }
 
-    // ── Inline delete confirmation ─────────────────────────────────────────────
+    /** pendingChangesGuard (vía MovimientosComponent): ¿hay una recepción o ajuste a medio cargar? */
+    tieneCambiosPendientes(): boolean {
+        return (this.dataSource?.length ?? 0) > 0
+            || (this.dataSourceAjuste?.length ?? 0) > 0
+            || !!this.recepcionForm?.dirty
+            || !!this.ajusteForm?.dirty;
+    }
+
+    // ── Confirmación de borrado inline ──
     confirmingDeleteNueva:  number | null = null;
     confirmingDeleteAjuste: number | null = null;
 
-    // ══════════════════════════════════════════════════════════════════════════
-    //  NUEVA HERRAMIENTA
-    // ══════════════════════════════════════════════════════════════════════════
+    // ── Nueva Herramienta ──
     recepcionForm!: FormGroup;
     dataSource: HerramientaItem[] = [];
     isSaving      = false;
@@ -175,9 +179,7 @@ export class IngresosHubComponent implements OnInit, OnDestroy {
         });
     }
 
-    // ══════════════════════════════════════════════════════════════════════════
-    //  AJUSTE INGRESO
-    // ══════════════════════════════════════════════════════════════════════════
+    // ── Ajuste Ingreso ──
     ajusteForm!: FormGroup;
     dataSourceAjuste: AjusteItem[] = [];
     isSavingAjuste = false;
@@ -200,9 +202,7 @@ export class IngresosHubComponent implements OnInit, OnDestroy {
         { value: 'NUEVO',          label: 'Nuevo',          color: 'bg-blue-100 text-blue-800 border-blue-400'      }
     ];
 
-    // ══════════════════════════════════════════════════════════════════════════
-    //  LIFECYCLE
-    // ══════════════════════════════════════════════════════════════════════════
+    // ── Ciclo de vida ──
     ngOnInit(): void {
         this._initFormsNueva();
         this._initFormAjuste();
@@ -220,9 +220,7 @@ export class IngresosHubComponent implements OnInit, OnDestroy {
         this.destroy$.complete();
     }
 
-    // ══════════════════════════════════════════════════════════════════════════
-    //  NUEVA HERRAMIENTA — FORMS
-    // ══════════════════════════════════════════════════════════════════════════
+    // ── Nueva Herramienta - Forms ──
     private _initFormsNueva(): void {
         this.recepcionForm = this.fb.group({
             tipoDe:           ['COMPRA', Validators.required],
@@ -265,9 +263,8 @@ export class IngresosHubComponent implements OnInit, OnDestroy {
             this._showMsg('Ya existe una herramienta con este código BOA', 'warning');
             return;
         }
-        // Guarda contra la BD: el código no puede pertenecer a una herramienta ya
-        // registrada — he.ft_nueva_compra rechaza el lote completo si choca. Se
-        // valida al agregar el ítem (no al confirmar todo el lote) para avisar antes.
+        // Guarda contra la BD: el código no puede ser de una herramienta ya registrada
+        // (he.ft_nueva_compra rechaza el lote); se valida al agregar el ítem para avisar antes.
         const yaRegistrado = await this._codigosRegistradosEnBD([item.codigoBoa]);
         if (yaRegistrado.length > 0) {
             this._showMsg(`El código ${yaRegistrado[0]} ya está registrado en otra herramienta del sistema`, 'warning');
@@ -294,9 +291,8 @@ export class IngresosHubComponent implements OnInit, OnDestroy {
             this._showMsg('Agregue al menos una herramienta a la lista', 'warning');
             return;
         }
-        // Guarda de código duplicado ANTES del diálogo de confirmación: así el
-        // camino "confirmar → guardar → nota" queda tan corto como el de préstamos
-        // (sin este chequeo entre la pestaña reservada y el PDF).
+        // Guarda de código duplicado ANTES del diálogo de confirmación, así el camino
+        // confirmar→guardar→nota queda tan corto como en préstamos.
         this.isSaving = true;
         const codigosDuplicados = await this._codigosRegistradosEnBD(this.dataSource.map(h => h.codigoBoa));
         this.isSaving = false;
@@ -353,9 +349,8 @@ export class IngresosHubComponent implements OnInit, OnDestroy {
     }
 
     /**
-     * Sube al Blob Storage la foto nueva de cada ítem (si la hay) y devuelve, en el
-     * mismo orden, el valor a poner en `image_base64` del items_json:
-     * ruta_bs de la subida · ruta_bs ya guardada que se reenvía · '' (sin foto nueva).
+     * Sube al Blob Storage la foto nueva de cada ítem y devuelve, en orden, el valor de
+     * `image_base64` para el items_json (ruta_bs nueva · ruta_bs reenviada · '' sin foto).
      */
     private async _subirFotosItems<T extends { imagen?: string | null; imagenFile?: File | null }>(
         items: T[], seedFn: (it: T) => string | number,
@@ -374,10 +369,8 @@ export class IngresosHubComponent implements OnInit, OnDestroy {
     }
 
     /**
-     * De la lista de códigos dada, devuelve los que YA existen en una herramienta
-     * activa de la BD (mismo criterio que la guarda de he.ft_nueva_compra:
-     * code + estado_reg='activo'). Ante un fallo de red devuelve [] — no bloquea,
-     * el backend sigue siendo la guarda real.
+     * De los códigos dados, devuelve los que ya existen en una herramienta activa de la BD.
+     * Ante fallo de red devuelve [] (no bloquea; el backend es la guarda real).
      */
     private async _codigosRegistradosEnBD(codes: string[]): Promise<string[]> {
         const unicos = [...new Set(
@@ -403,9 +396,8 @@ export class IngresosHubComponent implements OnInit, OnDestroy {
         const provNombre = typeof prov === 'object' ? prov?.nombre : prov || '';
         const itemsSnapshot = [...this.dataSource];
 
-        // La guarda de código duplicado ya corrió en abrirModalConfirmacionNueva()
-        // (antes de reservar la pestaña del PDF). El backend igual la revalida de
-        // forma transaccional, así que aquí no se repite.
+        // La guarda de código duplicado ya corrió en abrirModalConfirmacionNueva(); el backend
+        // la revalida transaccionalmente, así que aquí no se repite.
 
         // Sube las fotos al Blob Storage ANTES de armar el items_json.
         // La herramienta aún no existe → se usa el código BOA como semilla del nombre.
@@ -469,36 +461,7 @@ export class IngresosHubComponent implements OnInit, OnDestroy {
             });
     }
 
-    async openCatalogo(): Promise<void> {
-        const { CatalogoHerramientasComponent } = await import('./catalogo-herramientas/catalogo-herramientas.component');
-        const ref = this.dialog.open(CatalogoHerramientasComponent, {
-            width: '760px', maxWidth: '95vw', height: '80vh', panelClass: 'no-padding-dialog', disableClose: false
-        });
-        ref.afterClosed().subscribe((result: any) => {
-            if (result?.action === 'select') this.selectFromCatalog(result.tool);
-            else if (result?.action === 'new') this.abrirModalHerramienta();
-        });
-    }
-
-    async selectFromCatalog(tool: any): Promise<void> {
-        const { RecepcionHerramientaComponent } = await import('./recepcion-herramienta/recepcion-herramienta.component');
-        const item: any = {
-            pn:          tool.part_number  || tool.pn          || '',
-            sn:          tool.serial_number || tool.sn          || '',
-            descripcion: tool.name         || tool.description  || tool.descripcion || '',
-            marca:       tool.brand        || tool.marca        || '',
-            tipo:        tool.tool_type    || 'HERRAMIENTA',
-            unidadMedida: tool.unit_of_measure || 'UNIDAD',
-            estado:      'NUEVO',
-        };
-        const ref = this.dialog.open(RecepcionHerramientaComponent, {
-            width: '800px', maxWidth: '96vw', height: '560px', panelClass: 'no-padding-dialog', disableClose: true,
-            data: { item, mode: 'nuevo', autoGenerarCodigo: true }
-        });
-        ref.afterClosed().subscribe((result: any) => this._procesarResultadoHerramienta(result));
-    }
-
-    // ── Nueva: utilities ──────────────────────────────────────────────────────
+    // ── Nueva: auxiliares ─────────────────────────────────────────────────────
     isRecepcionValida(): boolean { return this.recepcionForm.valid; }
 
     validateRecepcion(): { valid: boolean; errors: string[] } {
@@ -510,7 +473,6 @@ export class IngresosHubComponent implements OnInit, OnDestroy {
         return { valid: errors.length === 0, errors };
     }
 
-    getTotalItems(): number { return this.dataSource.reduce((sum, i) => sum + i.cantidad, 0); }
 
     // ── Categorías dinámicas ──────────────────────────────────────────────────
     async abrirCategorias(): Promise<void> {
@@ -520,9 +482,7 @@ export class IngresosHubComponent implements OnInit, OnDestroy {
         });
     }
 
-    // ══════════════════════════════════════════════════════════════════════════
-    //  AJUSTE INGRESO — FORMS
-    // ══════════════════════════════════════════════════════════════════════════
+    // ── Ajuste Ingreso - Forms ──
     private _initFormAjuste(): void {
         this.ajusteForm = this.fb.group({
             realizadoPor:      ['', Validators.required],
@@ -678,12 +638,8 @@ export class IngresosHubComponent implements OnInit, OnDestroy {
     }
 
     /**
-     * De los ítems de ajuste dados, devuelve los que `he.ft_ajuste_ingreso`
-     * rechazaría por estado de la herramienta (in_use / in_calibration), lo que
-     * hace rollback del lote completo. Se usa como guarda previa a la subida de
-     * fotos para no dejarlas huérfanas en el Blob Storage. Solo bloquea sobre un
-     * estado confirmado: si el buscador no devuelve la herramienta, no bloquea
-     * (deja que el backend decida). Ante fallo de red devuelve [].
+     * De los ítems de ajuste, devuelve los que he.ft_ajuste_ingreso rechazaría por estado
+     * (in_use / in_calibration). Guarda previa a subir fotos; ante fallo de red devuelve [].
      */
     private async _itemsAjusteNoValidos(items: AjusteItem[]): Promise<{ codigo: string; motivo: string }[]> {
         const conCodigo = items.filter(i => (i.codigoBoa || '').trim().length >= 2);
@@ -722,9 +678,8 @@ export class IngresosHubComponent implements OnInit, OnDestroy {
 
         const itemsAjuste = [...this.dataSourceAjuste];
 
-        // Guarda previa (misma idea que finalizarIngreso): si el backend va a
-        // rechazar algún ítem (herramienta en préstamo / calibración), abortamos
-        // ANTES de subir fotos al Blob Storage para no dejarlas huérfanas.
+        // Guarda previa (como finalizarIngreso): si el backend va a rechazar algún ítem,
+        // abortamos ANTES de subir fotos al Blob Storage para no dejarlas huérfanas.
         const noValidos = await this._itemsAjusteNoValidos(itemsAjuste);
         if (noValidos.length > 0) {
             this.isSavingAjuste = false;
@@ -755,12 +710,23 @@ export class IngresosHubComponent implements OnInit, OnDestroy {
                 i.tipoAjuste  ? '[' + i.tipoAjuste + ']'   : '',
                 i.obs || ''
             ].filter(Boolean).join(' | '),
-            image_path: fotos[idx] || ''
+            image_path: fotos[idx] || '',
+            // Datos maestros editados en el form de detalle: el backend los aplica a
+            // he.ttools con COALESCE(NULLIF(...)) → vacío = "no tocar", no borra.
+            code:               i.codigoBoa       || '',
+            name:               i.descripcion     || '',
+            brand:              i.marca           || '',
+            part_number:        i.pn              || '',
+            serial_number:      i.sn              || '',
+            tool_type:          i.tipo            || '',
+            unit_of_measure:    i.um              || '',
+            criticality_level:  i.nivelCriticidad || '',
+            manufacture_origin: i.fabricacion     || '',
+            tool_notes:         i.obs             || ''
         })));
         const tipoLabel = fv.tipoAjuste || 'INVENTARIO';
-        // Ubicación elegida en el picker (rack/nivel) de cada item: registrarAjusteIngreso
-        // solo actualiza cantidad/condición/notas, no toca ubicación (mismo criterio que
-        // HE_KIT_MOD/HE_MIS_MOD). Se aplica aparte con moveLevelTool (HE_LTL_MOV).
+        // registrarAjusteIngreso no toca ubicación (solo cantidad/condición/notas); la ubicación
+        // del picker se aplica aparte con moveLevelTool (HE_LTL_MOV).
         const itemsConUbicacion = this.dataSourceAjuste.filter(i => i.rackId && i.levelId);
         this.movementSvc.registrarAjusteIngreso({
             date:               fv.fecha,
@@ -795,7 +761,7 @@ export class IngresosHubComponent implements OnInit, OnDestroy {
         });
     }
 
-    // ── Ajuste: utilities ─────────────────────────────────────────────────────
+    // ── Ajuste: auxiliares ─────────────────────────────────────────────────────
     getRealizadoPorNombre(): string { return this.ajusteForm.value.realizadoPorInput || 'No seleccionado'; }
     getAprobadoPorNombre():  string { return this.ajusteForm.value.aprobadoPorInput  || 'No seleccionado'; }
     getDocumentoText():      string { return this.ajusteForm.value.documento || 'S/D'; }
@@ -808,9 +774,7 @@ export class IngresosHubComponent implements OnInit, OnDestroy {
         return this.estadosAjuste.find(e => e.value === estado)?.label || estado;
     }
 
-    // ══════════════════════════════════════════════════════════════════════════
-    //  HISTORIAL
-    // ══════════════════════════════════════════════════════════════════════════
+    // ── Historial ──
     loadHistorial(): void {
         this.isLoadingHistorial = true;
         this.movementSvc.getHistorialMovimientos({ limit: 200, movement_type: 'entry' })
@@ -845,10 +809,8 @@ export class IngresosHubComponent implements OnInit, OnDestroy {
         return (m.movement_number || '').toUpperCase().startsWith('AI-');
     }
 
-    /** Reimpresión desde el historial. COMPRA → Nota de Ingreso MGH-116;
-     *  AJUSTE INGRESO → Comprobante de Ajuste por Ingreso. Ambas son PDF real
-     *  TCPDF de backend, mismo camino que las notas de préstamo: pestaña
-     *  reservada dentro del click + un solo POST. */
+    /** Reimpresión desde el historial: COMPRA → Nota de Ingreso MGH-116; AJUSTE INGRESO →
+     *  Comprobante de Ajuste. PDF real TCPDF; ventana reservada dentro del click + un solo POST. */
     pdfHistorialItem(m: any): void {
         const ventana = this.movementSvc.preAbrirVentanaPdf();
         if (!m?.id_movement) {
@@ -860,9 +822,7 @@ export class IngresosHubComponent implements OnInit, OnDestroy {
         else                        this.movementSvc.verNotaIngreso(Number(m.id_movement), ventana);
     }
 
-    // ══════════════════════════════════════════════════════════════════════════
-    //  SHARED UTILITIES
-    // ══════════════════════════════════════════════════════════════════════════
+    // ── Auxiliares comunes ──
     private _localDateStr(): string {
         const d = new Date();
         return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;

@@ -2,9 +2,8 @@ import {
     Component, OnInit, inject, signal, computed, ViewEncapsulation, effect
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterModule, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
-import { MatDialog, MatDialogRef } from '@angular/material/dialog';
+import { MatDialog } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
@@ -12,12 +11,14 @@ import { forkJoin, of } from 'rxjs';
 import { catchError, finalize } from 'rxjs/operators';
 
 import { ToolService }        from 'app/core/services/tool.service';
+import { QrScanService }      from 'app/core/services/qr-scan.service';
 import { KitsService }        from 'app/core/services/kits.service';
 import { MiscelaneosService } from 'app/core/services/miscelaneos.service';
 import { WarehouseService }   from 'app/core/services/warehouse.service';
 import { MovementService }    from 'app/core/services/movement.service';
 import { BlobStorageService } from 'app/core/services/blob-storage.service';
 import { GestionUbicacionesService } from '../gestion-ubicaciones/gestion-ubicaciones.service';
+import { ReportesService } from '../reportes/reportes.service';
 import { FichaInventarioDialogComponent } from './ficha-inventario-dialog/ficha-inventario-dialog.component';
 
 // ─── Tipos ────────────────────────────────────────────────────────────────────
@@ -82,7 +83,7 @@ export interface UnifiedItem {
     selector:      'app-consultar-inventario',
     standalone:    true,
     imports: [
-        CommonModule, RouterModule, FormsModule,
+        CommonModule, FormsModule,
         MatIconModule, MatTooltipModule, MatSnackBarModule
     ],
     encapsulation: ViewEncapsulation.None,
@@ -103,21 +104,23 @@ export interface UnifiedItem {
 export class ConsultarInventarioComponent implements OnInit {
 
     // ── Servicios ─────────────────────────────────────────────────────────────
-    private router            = inject(Router);
     private dialog            = inject(MatDialog);
     private snackBar          = inject(MatSnackBar);
     private toolService       = inject(ToolService);
+    private _qrScan           = inject(QrScanService);
     private kitsService       = inject(KitsService);
     private miscelaneosService = inject(MiscelaneosService);
     private warehouseService  = inject(WarehouseService);
     private movementService   = inject(MovementService);
     private _blobStorage      = inject(BlobStorageService);
     private ubicacionesService = inject(GestionUbicacionesService);
-    public  dialogRef         = inject(MatDialogRef<ConsultarInventarioComponent>, { optional: true });
+    private reportesSvc       = inject(ReportesService);
 
     // ── Estado principal ──────────────────────────────────────────────────────
     inventoryData = signal<UnifiedItem[]>([]);
     isLoading     = signal(false);
+    generandoPdf  = signal(false);
+    resolviendoQr = signal(false);
 
     // ── Vista: tabla o tarjetas ────────────────────────────────────────────────
     viewMode = signal<'tabla' | 'tarjetas'>('tabla');
@@ -312,6 +315,29 @@ export class ConsultarInventarioComponent implements OnInit {
         this.loadInventory();
     }
 
+    // ── Búsqueda libre (acepta etiqueta QR) ──────────────────────────────────
+    // El buscador filtra en el cliente; si lo escaneado es la URL de una etiqueta QR
+    // (`.../qr-code/<token>`) se descifra a código plano con QrScanService antes de filtrar.
+    onSearchInput(v: string): void {
+        const raw = (v ?? '').trim();
+        if (!this._qrScan.isQrLabel(raw)) { this.searchTerm.set(v); return; }
+
+        this.resolviendoQr.set(true);
+        this._qrScan.toToolCode(raw).pipe(
+            finalize(() => this.resolviendoQr.set(false))
+        ).subscribe(code => {
+            if (code) {
+                if (this.activeTab() === 'kits' || this.activeTab() === 'miscelaneos') {
+                    this.activeTab.set('herramientas');
+                }
+                this.searchTerm.set(code);
+            } else {
+                this.snackBar.open('Etiqueta QR no reconocida', 'OK', { duration: 3000 });
+                this.searchTerm.set('');
+            }
+        });
+    }
+
     // ── Carga de datos ────────────────────────────────────────────────────────
 
     loadInventory(): void {
@@ -374,10 +400,8 @@ export class ConsultarInventarioComponent implements OnInit {
         catMap: Record<number, string> = {},
         toolLocMap: Map<number, { warehouseId: number; rackName: string; levelLabel: string }> = new Map()
     ): UnifiedItem {
-        // Ubicación real (rack/nivel), la misma que gestion-ubicaciones — tiene
-        // prioridad porque es lo que mover-herramientas efectivamente actualiza.
-        // ttools.location_id (lMap) es un esquema paralelo que nunca se sincroniza
-        // con los movimientos de estante/nivel, así que solo se usa como fallback.
+        // Ubicación real (rack/nivel), la que actualiza mover-herramientas; ttools.location_id
+        // (lMap) es un esquema paralelo que no se sincroniza, solo se usa como fallback.
         const realLoc = toolLocMap.get(Number(t.id_tool));
         const wName = (realLoc ? wMap[realLoc.warehouseId] : undefined) ?? (t.warehouse_id ? wMap[t.warehouse_id] : undefined);
         const lName  = realLoc
@@ -437,9 +461,8 @@ export class ConsultarInventarioComponent implements OnInit {
             almacen:             wName,
             estante:             t.estante || undefined,
             stockActual:         t.quantity_in_stock ?? 0,
-            // he.ttools no tiene columna de stock mínimo — se deja undefined (no 0) para
-            // que "Bajo stock" no aplique a herramientas; solo cuentan como críticas con
-            // stockActual === 0 (ver tabFilteredData / kpiStats / tabCounts).
+            // he.ttools no tiene stock mínimo → undefined (no 0), para que "Bajo stock" no
+            // aplique a herramientas (solo son críticas con stockActual === 0).
             stockMinimo:         undefined,
             stockMaximo:         undefined,
             estado,
@@ -482,9 +505,8 @@ export class ConsultarInventarioComponent implements OnInit {
             unidad:           'Kit',
             ubicacion,
             almacen:          k.location_name || undefined,
-            // Un kit es una unidad física: 1 si está en almacén, 0 si está prestado
-            // (current_loan_id lo setea he.ft_kit_loans_ime al prestar y lo limpia al
-            // devolver). stockMinimo undefined — no participa de "Bajo stock".
+            // Un kit es una unidad física: 1 en almacén, 0 si está prestado (current_loan_id).
+            // stockMinimo undefined — no participa de "Bajo stock".
             stockActual:      k.current_loan_id ? 0 : 1,
             stockMinimo:      undefined,
             totalComponentes: k.total_components   ?? 0,
@@ -504,11 +526,8 @@ export class ConsultarInventarioComponent implements OnInit {
     }
 
     private mapMisc(m: any): UnifiedItem {
-        // getMiscelaneos() retorna objetos Material ya mapeados:
-        //   m.id, m.codigoBoaM, m.producto, m.pn, m.marca,
-        //   m.tipoItem, m.stock, m.stockMin, m.stockMax, m.ubicacion, m.activo,
-        //   m.fecha (alta del catálogo), m.lastMovementDate (última entrada/salida real).
-        // Se soportan también los campos raw por compatibilidad.
+        // getMiscelaneos() retorna objetos Material ya mapeados (id, codigoBoaM, producto, pn,
+        // stock, stockMin/Max, ubicacion, lastMovementDate...); también se soportan los raw.
         const stock    = Number(m.stock    ?? m.quantity_in_stock ?? 0);
         const stockMin = Number(m.stockMin ?? m.stock_min         ?? 0);
         let estado: UnifiedStatus = 'DISPONIBLE';
@@ -536,10 +555,8 @@ export class ConsultarInventarioComponent implements OnInit {
             stockMinimo:  stockMin || undefined,
             stockMaximo:  Number(m.stockMax ?? m.stock_max ?? 0) || undefined,
             estado,
-            // "Últ. mov." real = fecha de la última entrada/salida (he.tmiscelaneo_movimientos),
-            // no la fecha de alta del catálogo (m.fecha) — esa iba en fechaRegistro.
-            // 'T00:00:00' fuerza interpretación en hora local (sin él, 'YYYY-MM-DD' se
-            // parsea como medianoche UTC y en UTC-4 corre un día atrás).
+            // "Últ. mov." real = última entrada/salida (he.tmiscelaneo_movimientos), no el alta
+            // del catálogo. 'T00:00:00' fuerza hora local (evita el corrimiento de día por UTC).
             ultimoMovimiento: m.lastMovementDate
                 ? new Date(`${m.lastMovementDate}T00:00:00`)
                 : m.fecha_mod ? new Date(m.fecha_mod) : undefined,
@@ -616,9 +633,8 @@ export class ConsultarInventarioComponent implements OnInit {
         });
     }
 
-    // ── Selección múltiple para impresión de códigos QR ───────────────────────
-    // Solo las HERRAMIENTA son seleccionables porque el reporte RCodigoQRTools
-    // trabaja sobre id_tool; kits y misceláneos no tienen etiqueta QR propia.
+    // ── Selección múltiple para impresión de códigos QR ──────────────────────
+    // Solo HERRAMIENTA es seleccionable (RCodigoQRTools trabaja sobre id_tool).
 
     isSelectable(item: UnifiedItem): boolean {
         return item.tipo === 'HERRAMIENTA';
@@ -674,221 +690,75 @@ export class ConsultarInventarioComponent implements OnInit {
     // ── Imprimir / Guardar como PDF ───────────────────────────────────────────
 
     imprimirListado(): void {
-        const data  = this.tabFilteredData();
-        const fecha = new Date().toLocaleDateString('es-BO', { day: '2-digit', month: '2-digit', year: 'numeric' });
-        const hora  = new Date().toLocaleTimeString('es-BO', { hour: '2-digit', minute: '2-digit' });
-
-        // Escapa texto libre (nombre/código/P·N/marca/…) antes de inyectarlo en el HTML
-        // del reporte: un valor con < > & " rompía el layout de la ventana de impresión.
-        const esc = (v: unknown): string =>
-            String(v ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c] as string));
+        const data = this.tabFilteredData();
+        if (!data.length) { this.snackBar.open('Sin ítems para el reporte', 'OK', { duration: 3000 }); return; }
+        if (this.generandoPdf()) return;
 
         const tabLabels: Record<string, string> = {
-            todos: 'Todos los ítems', herramientas: 'Herramientas',
-            kits: 'Kits', miscelaneos: 'Misceláneos',
-            critico: 'Stock Crítico', prestados: 'En uso / Prestados',
+            todos: 'Todos los ítems', herramientas: 'Herramientas', kits: 'Kits',
+            miscelaneos: 'Misceláneos', critico: 'Stock Crítico', prestados: 'En uso / Prestados',
         };
         const tabLabel = tabLabels[this.activeTab()] ?? 'Inventario';
+        const tipoAbbr: Record<string, string> = { HERRAMIENTA: 'HERR.', MISCELANEO: 'MISC.', KIT: 'KIT' };
 
-        const tipoColors: Record<string, string> = {
-            HERRAMIENTA: '#92400e',   // amber-800
-            KIT:         '#1e3a8a',   // blue-900
-            MISCELANEO:  '#c2410c',   // orange-700
-        };
-        const estadoColors: Record<string, string> = {
-            'DISPONIBLE':       '#065f46',
-            'BAJO STOCK':       '#854d0e',
-            'SIN STOCK':        '#991b1b',
-            'EN CALIBRACION':   '#581c87',
-            'EN PRESTAMO':      '#1e40af',
-            'EN USO':           '#0e7490',
-            'EN MANTENIMIENTO': '#92400e',
-            'CUARENTENA':       '#9a3412',
-            'COMPLETO':         '#065f46',
-            'INCOMPLETO':       '#854d0e',
-            'BAJA':             '#44403c',
-        };
+        const columnas = [
+            { header: 'Tipo',       key: 'tipo',      tipo: 'text', align: 'center' },
+            { header: 'Código',     key: 'codigo',    tipo: 'text' },
+            { header: 'P/N',        key: 'pn',        tipo: 'text' },
+            { header: 'S/N',        key: 'sn',        tipo: 'text' },
+            { header: 'Nombre',     key: 'nombre',    tipo: 'text' },
+            { header: 'Marca',      key: 'marca',     tipo: 'text' },
+            { header: 'Categoría',  key: 'categoria', tipo: 'text' },
+            { header: 'Ubicación',  key: 'ubicacion', tipo: 'text' },
+            { header: 'Stock',      key: 'stock',     tipo: 'text', align: 'center' },
+            { header: 'Estado',     key: 'estado',    tipo: 'text', align: 'center' },
+            { header: 'Últ. Mov.',  key: 'ultmov',    tipo: 'text', align: 'center' },
+        ];
+        const filas = data.map(i => ({
+            tipo:      tipoAbbr[i.tipo] ?? i.tipo,
+            codigo:    i.codigo,
+            pn:        i.partNumber ?? '',
+            sn:        i.serialNumber ?? '',
+            nombre:    i.nombre,
+            marca:     i.marca ?? '',
+            categoria: i.categoria ?? '',
+            ubicacion: i.ubicacion,
+            stock:     `${i.stockActual}${(i.stockMinimo ?? 0) > 0 ? ' (min ' + i.stockMinimo + ')' : ''} ${i.unidad ?? ''}`.trim(),
+            estado:    i.estado,
+            ultmov:    i.ultimoMovimiento ? i.ultimoMovimiento.toLocaleDateString('es-BO') : '',
+        }));
 
-        const rows = data.map((i, idx) => {
-            const tipoC   = tipoColors[i.tipo]      ?? '#374151';
-            const estadoC = estadoColors[i.estado]  ?? '#374151';
-            const stockColor =
-                i.stockActual === 0                                                  ? '#991b1b' :
-                (i.stockMinimo != null && i.stockActual <= i.stockMinimo)             ? '#854d0e' :
-                                                                                       '#111827';
-            const bg = idx % 2 === 0 ? '#fff' : '#f9fafb';
-            return `
-            <tr style="background:${bg}; page-break-inside: avoid;">
-                <td style="padding:6px 10px; border-bottom:1px solid #e5e7eb; vertical-align:middle;">
-                    <span style="display:inline-block; padding:2px 6px; background:${tipoC}; color:#fff; font-size:9px; font-weight:900; border-radius:3px; text-transform:uppercase; letter-spacing:.5px;">
-                        ${i.tipo === 'HERRAMIENTA' ? 'HERR.' : i.tipo === 'MISCELANEO' ? 'MISC.' : i.tipo}
-                    </span>
-                </td>
-                <td style="padding:6px 10px; border-bottom:1px solid #e5e7eb; font-family:monospace; font-size:10px; font-weight:700;">
-                    ${esc(i.codigo)}
-                    ${i.partNumber   ? `<br><span style="color:#6b7280; font-size:9px;">P/N ${esc(i.partNumber)}</span>`   : ''}
-                    ${i.serialNumber ? `<br><span style="color:#6b7280; font-size:9px;">S/N ${esc(i.serialNumber)}</span>` : ''}
-                </td>
-                <td style="padding:6px 10px; border-bottom:1px solid #e5e7eb; max-width:200px;">
-                    <div style="font-size:11px; font-weight:700;">${esc(i.nombre)}</div>
-                    ${i.marca ? `<div style="font-size:9px; color:#6b7280;">${esc(i.marca)}</div>` : ''}
-                </td>
-                <td style="padding:6px 10px; border-bottom:1px solid #e5e7eb; font-size:10px; color:#374151;">${esc(i.categoria || '—')}</td>
-                <td style="padding:6px 10px; border-bottom:1px solid #e5e7eb; font-size:10px; max-width:140px;">${esc(i.ubicacion)}</td>
-                <td style="padding:6px 10px; border-bottom:1px solid #e5e7eb; text-align:center; font-weight:900; font-size:14px; color:${stockColor};">
-                    ${i.stockActual}
-                    ${(i.stockMinimo ?? 0) > 0 ? `<br><span style="font-size:8px; color:#9ca3af; font-weight:400;">mín ${i.stockMinimo}</span>` : ''}
-                    <br><span style="font-size:8px; color:#9ca3af; font-weight:400;">${esc(i.unidad ?? '')}</span>
-                </td>
-                <td style="padding:6px 10px; border-bottom:1px solid #e5e7eb; text-align:center;">
-                    <span style="display:inline-block; padding:2px 6px; background:${estadoC}20; color:${estadoC}; border:1px solid ${estadoC}60; font-size:8px; font-weight:900; border-radius:3px; text-transform:uppercase; white-space:nowrap;">
-                        ${esc(i.estado)}
-                    </span>
-                </td>
-                <td style="padding:6px 10px; border-bottom:1px solid #e5e7eb; font-size:9px; color:#6b7280; text-align:center;">
-                    ${i.ultimoMovimiento ? i.ultimoMovimiento.toLocaleDateString('es-BO') : '—'}
-                </td>
-            </tr>`;
-        }).join('');
+        const win = window.open('', '_blank');
+        this.generandoPdf.set(true);
+        this.reportesSvc.exportarPdfTabular(`Inventario Unificado - ${tabLabel}`, 'R-INV-UNIF', columnas, filas).subscribe({
+            next: (r) => { this.generandoPdf.set(false); this._abrirPdf(win, r); },
+            error: (e) => {
+                this.generandoPdf.set(false);
+                try { win?.close(); } catch { /* noop */ }
+                this.snackBar.open(e?.message || 'Error al generar el reporte', 'OK', { duration: 5000 });
+            },
+        });
+    }
 
-        const html = `<!DOCTYPE html>
-<html lang="es">
-<head>
-<meta charset="UTF-8"/>
-<title>Inventario Unificado — ${tabLabel} — ${fecha}</title>
-<style>
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: 'Segoe UI', Arial, sans-serif; font-size: 11px; color: #111827; background: #fff; }
-
-  /* ── Encabezado ── */
-  .page-header { background: #0F172A; color: #fff; padding: 16px 24px; display: flex; align-items: flex-start; justify-content: space-between; }
-  .page-header-title { font-size: 18px; font-weight: 900; text-transform: uppercase; letter-spacing: -0.5px; }
-  .page-header-sub   { font-size: 10px; font-weight: 700; background: #FFC501; color: #000; display: inline-block; padding: 2px 8px; border-radius: 4px; margin-top: 4px; text-transform: uppercase; letter-spacing: .5px; }
-  .page-header-meta  { text-align: right; font-size: 10px; color: #94a3b8; line-height: 1.6; }
-  .page-header-meta strong { color: #FFC501; }
-
-  /* ── Resumen KPIs ── */
-  .kpi-row { display: flex; gap: 12px; padding: 12px 24px; background: #f8f9fc; border-bottom: 2px solid #e5e7eb; }
-  .kpi-chip { display: flex; flex-direction: column; align-items: center; padding: 8px 16px; border: 2px solid #000; border-radius: 8px; background: #fff; min-width: 80px; }
-  .kpi-chip .kpi-val { font-size: 20px; font-weight: 900; line-height: 1; }
-  .kpi-chip .kpi-lbl { font-size: 8px; font-weight: 700; text-transform: uppercase; color: #6b7280; margin-top: 2px; letter-spacing: .5px; }
-  .kpi-chip.critico .kpi-val { color: #991b1b; }
-  .kpi-chip.prestado .kpi-val { color: #1e40af; }
-
-  /* ── Tabla ── */
-  .table-wrap { padding: 16px 24px; }
-  .section-title { font-size: 11px; font-weight: 900; text-transform: uppercase; letter-spacing: .8px; color: #374151; margin-bottom: 10px; display: flex; align-items: center; gap: 8px; }
-  .section-title::after { content: ''; flex: 1; height: 2px; background: #e5e7eb; }
-  table { width: 100%; border-collapse: collapse; }
-  thead th { background: #0F172A; color: #fff; padding: 8px 10px; text-align: left; font-size: 9px; font-weight: 900; text-transform: uppercase; letter-spacing: .6px; }
-  thead th:nth-child(6), thead th:nth-child(7), thead th:nth-child(8) { text-align: center; }
-  tbody tr:hover { background: #f0fdf4; }
-
-  /* ── Pie de página ── */
-  .page-footer { margin: 0 24px; padding: 10px 0; border-top: 2px solid #e5e7eb; display: flex; justify-content: space-between; align-items: center; }
-  .page-footer p { font-size: 9px; color: #9ca3af; }
-
-  /* ── Print ── */
-  @media print {
-    @page { margin: 12mm 10mm; size: A4 landscape; }
-    .no-print { display: none !important; }
-    body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-    .page-header { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-    thead { display: table-header-group; }
-    tbody tr { page-break-inside: avoid; }
-  }
-</style>
-</head>
-<body>
-
-  <!-- Encabezado -->
-  <div class="page-header">
-    <div>
-      <div class="page-header-title">INVENTARIO UNIFICADO</div>
-      <span class="page-header-sub">${tabLabel}</span>
-    </div>
-    <div class="page-header-meta">
-      <strong>Fecha:</strong> ${fecha} ${hora}<br>
-      <strong>Total de ítems:</strong> ${data.length}<br>
-      <strong>Sistema de Herramientas — BOA</strong>
-    </div>
-  </div>
-
-  <!-- KPIs -->
-  <div class="kpi-row">
-    <div class="kpi-chip">
-      <span class="kpi-val">${data.length}</span>
-      <span class="kpi-lbl">Total</span>
-    </div>
-    <div class="kpi-chip">
-      <span class="kpi-val">${data.filter(i => i.tipo === 'HERRAMIENTA').length}</span>
-      <span class="kpi-lbl">Herramientas</span>
-    </div>
-    <div class="kpi-chip">
-      <span class="kpi-val">${data.filter(i => i.tipo === 'KIT').length}</span>
-      <span class="kpi-lbl">Kits</span>
-    </div>
-    <div class="kpi-chip">
-      <span class="kpi-val">${data.filter(i => i.tipo === 'MISCELANEO').length}</span>
-      <span class="kpi-lbl">Misceláneos</span>
-    </div>
-    <div class="kpi-chip critico">
-      <span class="kpi-val">${data.filter(i => i.stockActual === 0 || ((i.stockMinimo ?? 0) > 0 && i.stockActual <= (i.stockMinimo ?? 0))).length}</span>
-      <span class="kpi-lbl">Stock crítico</span>
-    </div>
-    <div class="kpi-chip prestado">
-      <span class="kpi-val">${data.filter(i => i.estado === 'EN PRESTAMO' || i.estado === 'EN USO').length}</span>
-      <span class="kpi-lbl">Prestados</span>
-    </div>
-  </div>
-
-  <!-- Tabla -->
-  <div class="table-wrap">
-    <div class="section-title">Listado de inventario — ${tabLabel}</div>
-    <table>
-      <thead>
-        <tr>
-          <th style="width:60px">Tipo</th>
-          <th style="width:110px">Código / P·N</th>
-          <th>Nombre · Marca</th>
-          <th style="width:90px">Categoría</th>
-          <th style="width:130px">Ubicación</th>
-          <th style="width:65px; text-align:center">Stock</th>
-          <th style="width:100px; text-align:center">Estado</th>
-          <th style="width:80px; text-align:center">Últ. mov.</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${rows}
-      </tbody>
-    </table>
-  </div>
-
-  <!-- Pie -->
-  <div class="page-footer">
-    <p>Sistema de Gestión de Herramientas · BOA</p>
-    <p>Generado el ${fecha} a las ${hora} · ${data.length} ítems</p>
-  </div>
-
-  <script>
-    window.onload = function() { window.print(); };
-  </script>
-</body>
-</html>`;
-
-        const win = window.open('', '_blank', 'width=1200,height=800');
-        if (win) {
-            win.document.write(html);
-            win.document.close();
+    /** Vuelca el PDF (base64) a la pestaña reservada; descarga si estaba bloqueada. */
+    private _abrirPdf(win: Window | null, r: { pdf_base64: string; nombre_archivo: string }): void {
+        try {
+            const bytes = Uint8Array.from(atob(r.pdf_base64), c => c.charCodeAt(0));
+            const url = URL.createObjectURL(new Blob([bytes], { type: 'application/pdf' }));
+            if (win) {
+                win.location.href = url;
+            } else {
+                const a = document.createElement('a');
+                a.href = url; a.download = r.nombre_archivo;
+                document.body.appendChild(a); a.click(); document.body.removeChild(a);
+            }
+            setTimeout(() => URL.revokeObjectURL(url), 30000);
+        } catch {
+            try { win?.close(); } catch { /* noop */ }
+            this.snackBar.open('No se pudo abrir el PDF generado', 'OK', { duration: 4000 });
         }
     }
 
-    // ── Helpers de navegación ─────────────────────────────────────────────────
-
-    cerrar(): void {
-        if (this.dialogRef) this.dialogRef.close();
-        else                this.router.navigate(['/dashboard']);
-    }
 
     // ── Helpers de estilo ─────────────────────────────────────────────────────
 

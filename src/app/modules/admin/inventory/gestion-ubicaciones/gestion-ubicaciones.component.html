@@ -15,7 +15,7 @@
     <!-- ════════════════════ VISTA DE ALMACENES ════════════════════ -->
     <div *ngIf="!almacenActivo()" class="flex-1 flex flex-col p-3 sm:p-4 gap-3 overflow-hidden relative z-10">
 
-        <!-- HEADER -->
+        <!-- CABECERA -->
         <div class="flex flex-col gap-2 sm:gap-3 shrink-0">
 
             <!-- Título principal -->
@@ -72,7 +72,7 @@
                             <mat-icon class="!text-[13px] text-gray-500 hover:text-red-500">close</mat-icon>
                         </button>
 
-                        <!-- Dropdown -->
+                        <!-- Desplegable -->
                         <div *ngIf="ciudadDropdownOpen()"
                              class="absolute top-full mt-1 left-0 min-w-full bg-white dark:bg-slate-800 border-2 border-black rounded-lg shadow-[3px_3px_0px_0px_#000] z-50 max-h-52 overflow-y-auto">
                             <ng-container *ngIf="ciudadesFiltradas.length; else sinCiudades">
@@ -115,10 +115,10 @@
             </div>
         </div>
 
-        <!-- CARD -->
+        <!-- TARJETA -->
         <div class="flex-1 flex flex-col overflow-hidden border-[3px] border-black bg-white dark:bg-[#0F172AFF] rounded-2xl shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
 
-            <!-- Dark header stats -->
+            <!-- Cabecera oscura con stats -->
             <div class="px-3 sm:px-4 py-2 sm:py-2.5 bg-[#0F172AFF] border-b-[3px] border-black
                         flex flex-col sm:flex-row sm:items-center sm:justify-between shrink-0 gap-2">
                 <h2 class="text-xs sm:text-sm font-black text-white uppercase tracking-wider flex items-center gap-2">

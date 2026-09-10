@@ -13,7 +13,7 @@
         </div>
     </div>
 
-    <!-- Header -->
+    <!-- Cabecera -->
     <div class="bg-[#0F172A] px-4 py-3 flex items-center gap-3 shrink-0">
         <div class="w-8 h-8 rounded bg-[#7113CF] border-2 border-black flex items-center justify-center shadow-[2px_2px_0_#000] shrink-0">
             <mat-icon class="!text-base text-white">assignment_return</mat-icon>
@@ -27,10 +27,10 @@
         </span>
     </div>
 
-    <!-- Body: LEFT (Datos) / RIGHT (Herramientas) -->
+    <!-- Cuerpo: IZQUIERDA (Datos) / DERECHA (Herramientas) -->
     <div class="flex flex-col sm:flex-row flex-1 overflow-hidden min-h-0">
 
-        <!-- ═══════════ LEFT: DATOS ═══════════ -->
+        <!-- ═══════════ IZQUIERDA: DATOS ═══════════ -->
         <div class="sm:basis-[340px] sm:max-w-[380px] shrink-0 overflow-y-auto custom-scrollbar border-b-2 sm:border-b-0 sm:border-r-2 border-black/20 dark:border-slate-500">
             <form [formGroup]="devForm" class="px-4 py-3 flex flex-col gap-3">
 
@@ -132,7 +132,7 @@
             </form>
         </div>
 
-        <!-- ═══════════ RIGHT: HERRAMIENTAS ═══════════ -->
+        <!-- ═══════════ DERECHA: HERRAMIENTAS ═══════════ -->
         <div class="flex-1 min-h-0 flex flex-col overflow-hidden">
 
             <div class="px-4 py-3 bg-stone-200/60 dark:bg-slate-800/60 border-b-2 border-black/20 dark:border-slate-500 shrink-0">
@@ -248,7 +248,7 @@
         </div>
     </div>
 
-    <!-- Footer -->
+    <!-- Pie -->
     <div class="border-t-2 border-black bg-stone-200 dark:bg-slate-800 px-4 py-2 flex items-center justify-between shrink-0">
         <div class="flex items-center gap-2 min-w-0 overflow-hidden shrink-0">
             <span class="text-[10px] font-black text-black dark:text-white shrink-0">{{ cart.length }} ítem(s)</span>

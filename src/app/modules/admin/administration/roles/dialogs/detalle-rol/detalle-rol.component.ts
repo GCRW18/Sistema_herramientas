@@ -2,7 +2,7 @@ import { Component, Inject, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
-import { MAT_DIALOG_DATA, MatDialogRef, MatDialogModule, MatDialog } from '@angular/material/dialog';
+import { MAT_DIALOG_DATA, MatDialogRef, MatDialogModule } from '@angular/material/dialog';
 import { DragDropModule } from '@angular/cdk/drag-drop';
 import { AVAILABLE_PERMISSIONS, Permission } from '../../../../../../core/models/role.types';
 
@@ -26,7 +26,6 @@ import { AVAILABLE_PERMISSIONS, Permission } from '../../../../../../core/models
 })
 export class DetalleRolComponent {
     private dialogRef = inject(MatDialogRef<DetalleRolComponent>);
-    private dialog = inject(MatDialog);
     groupedPermissions: Map<string, Permission[]> = new Map();
 
     constructor(@Inject(MAT_DIALOG_DATA) public data: { rol: any, permissions: Permission[] }) {

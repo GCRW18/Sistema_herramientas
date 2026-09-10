@@ -37,9 +37,8 @@ export class FormEstanteComponent {
 
     constructor() {
         if (this.mode === 'new') {
-            // Siguiente número libre a partir de los códigos existentes (no del conteo:
-            // el catálogo migrado tiene numeración física con huecos, ej. CBB llega a
-            // EST-39 con 34 estantes — count+1 sugeriría EST-35, que ya existe).
+            // Siguiente número libre según los códigos existentes (no count+1: el catálogo
+            // migrado tiene numeración física con huecos, ej. CBB llega a EST-39 con 34 estantes).
             const usados = (this.data.racksExistentes ?? [])
                 .map(r => { const m = /(\d+)\s*$/.exec(r.codigo ?? ''); return m ? parseInt(m[1], 10) : 0; });
             const next = Math.max(this.warehouse?.estantesCount ?? 0, 0, ...usados) + 1;

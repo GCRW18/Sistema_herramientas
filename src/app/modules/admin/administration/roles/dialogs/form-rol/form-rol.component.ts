@@ -78,9 +78,8 @@ export class FormRolComponent implements OnInit {
         });
     }
 
-    /* trackBy — getSelectedModulesSummary() arma objetos nuevos en cada
-       llamada; sin esto el *ngFor los recrearía en cada CD (mismo origen
-       del congelamiento de Misceláneos). */
+    /* trackBy: getSelectedModulesSummary() arma objetos nuevos en cada llamada;
+       sin esto el *ngFor los recrearía en cada detección de cambios. */
     trackByModName = (_: number, mod: { name: string }): string => mod.name;
 
     getSelectedModulesSummary(): { name: string; count: number }[] {

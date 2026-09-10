@@ -305,5 +305,9 @@ export class FormHerramientaNivelComponent implements OnInit, OnDestroy {
         this.dialogRef.close(out);
     }
 
-    cerrar(): void { this.dialogRef.close(); }
+    cerrar(): void {
+        if ((this.form?.dirty || this.selectedImageFile) &&
+            !confirm('¿Cerrar sin guardar? Se perderán los cambios de esta herramienta.')) return;
+        this.dialogRef.close();
+    }
 }

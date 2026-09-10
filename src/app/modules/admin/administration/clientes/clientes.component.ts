@@ -10,9 +10,8 @@ import { debounceTime, startWith } from 'rxjs/operators';
 import { CustomerService } from '../../../../core/services/customer.service';
 
 /**
- * Módulo Clientes / Empresas de Terceros — CRUD contra he.tcustomers
- * (herramientas/customers/*). Alimenta el autocompletado de "empresa" en el
- * módulo Préstamo a Terceros (prestamo-externo-hub).
+ * Módulo Clientes / Empresas de Terceros — CRUD contra he.tcustomers; alimenta el
+ * autocompletado de "empresa" en Préstamo a Terceros (prestamo-externo-hub).
  */
 interface ClienteDisplay {
     id: string;

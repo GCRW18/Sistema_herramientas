@@ -120,18 +120,21 @@ export const REPORTE_CONFIGS: Record<string, ReporteConfig> = {
     },
 
     'inv-4': {
+        // MGH-112: Listado de herramientas, bancos de prueba y equipos de apoyo en cuarentena.
         mghCode: 'MGH-112',
         columnas: [
-            { key: 'code',       header: 'Código',    width: '110px' },
-            { key: 'name',       header: 'Nombre' },
-            { key: 'part_number',header: 'P/N',       width: '110px' },
-            { key: 'serial_number', header: 'S/N',    width: '110px' },
-            { key: 'brand',      header: 'Marca',     width: '100px' },
-            { key: 'status',     header: 'Estado',    tipo: 'badge',
-                badge: { QUARANTINE:'bg-red-100 text-red-800 border-red-700', DECOMMISSIONED:'bg-gray-200 text-gray-700 border-gray-500' } },
-            { key: 'notes',      header: 'Observaciones' },
+            { key: 'code',            header: 'Código',      width: '110px' },
+            { key: 'name',            header: 'Nombre' },
+            { key: 'model',           header: 'Modelo o P/N', width: '120px' },
+            { key: 'serial_number',   header: 'S/N',         width: '110px' },
+            { key: 'brand',           header: 'Marca',       width: '100px' },
+            { key: 'content_list',    header: 'Lista de contenido' },
+            { key: 'estante',         header: 'Ubicación',   width: '100px' },
+            { key: 'unit_of_measure', header: 'Unidad',      width: '80px', align: 'center' },
+            { key: 'quantity_in_stock', header: 'Cantidad',  tipo: 'number', width: '80px', align: 'center' },
+            { key: 'notes',           header: 'Observaciones' },
         ],
-        loader: (svc, f) => svc.getReporteHerramientas({ ...f, status: 'QUARANTINE' })
+        loader: (svc, f) => svc.getReporteHerramientas({ ...f, status: 'quarantine' })
     },
 
     'inv-5': {
@@ -227,7 +230,7 @@ export const REPORTE_CONFIGS: Record<string, ReporteConfig> = {
             { key: 'fechaDesde', label: 'Desde', type: 'date' },
             { key: 'fechaHasta', label: 'Hasta', type: 'date' },
         ],
-        loader: (svc, f) => svc.getReportePrestamos({ ...f, status: 'ACTIVE' })
+        loader: (svc, f) => svc.getReportePrestamos({ ...f, status: 'active' })
     },
 
     'pre-2': {

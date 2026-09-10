@@ -2,7 +2,7 @@
      [class.readonly-detail]="readOnly"
      style="width:860px; max-width:95vw; max-height:88vh">
 
-    <!-- HEADER -->
+    <!-- CABECERA -->
     <div class="bg-[#0F172A] px-4 py-2.5 flex items-center gap-3 shrink-0 select-none"
          cdkDrag cdkDragRootElement=".cdk-overlay-pane" cdkDragHandle style="cursor:grab">
         <div class="w-8 h-8 rounded bg-amber-400 border-2 border-black flex items-center justify-center shadow-[2px_2px_0_#fbbf24] shrink-0">
@@ -25,11 +25,11 @@
         </div>
     </div>
 
-    <!-- BODY -->
+    <!-- CUERPO -->
     <div class="flex-1 overflow-y-auto px-4 py-4 custom-scrollbar">
         <form [formGroup]="form" class="grid grid-cols-1 lg:grid-cols-12 gap-4">
 
-            <!-- LEFT: Preview + Stock levels + Estado + Observación -->
+            <!-- IZQUIERDA: Preview + Stock levels + Estado + Observación -->
             <div class="lg:col-span-4 flex flex-col gap-4">
 
                 <!-- Vista previa -->
@@ -72,7 +72,7 @@
                         </div>
                     </div>
 
-                    <!-- Niveles de stock (dentro del mismo card) -->
+                    <!-- Niveles de stock (dentro de la misma tarjeta) -->
                     <div class="mt-3 pt-3 border-t-2 border-black/10">
                         <p class="text-[8px] font-black text-stone-400 dark:text-slate-400 uppercase tracking-[0.18em] mb-2">Niveles de Stock</p>
                         <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
@@ -157,7 +157,7 @@
                 </div>
             </div>
 
-            <!-- RIGHT: Ubicación y Registro -->
+            <!-- DERECHA: Ubicación y Registro -->
             <div class="lg:col-span-4 flex flex-col">
                 <div class="flex-1 bg-white dark:bg-slate-800 border-2 border-black rounded-xl p-3 shadow-[3px_3px_0_#000]">
                     <span class="text-[8px] font-black text-stone-400 dark:text-slate-400 uppercase tracking-[0.18em] mb-3 border-b-2 border-black/10 pb-1.5 w-full block">

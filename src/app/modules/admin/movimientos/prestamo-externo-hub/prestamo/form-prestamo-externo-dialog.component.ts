@@ -10,6 +10,7 @@ import { takeUntil, finalize, catchError, debounceTime, distinctUntilChanged, sw
 import { MovementService } from '../../../../../core/services/movement.service';
 import { CustomerService } from '../../../../../core/services/customer.service';
 import { ToolService } from '../../../../../core/services/tool.service';
+import { QrScanService } from '../../../../../core/services/qr-scan.service';
 import { motivoBloqueoSalida } from '../../retorno-traspaso/retorno-traspaso.types';
 
 interface ExternalLoanItem {
@@ -55,6 +56,7 @@ export class FormPrestamoExternoDialogComponent implements OnInit, OnDestroy {
     private movementSvc     = inject(MovementService);
     private customerSvc     = inject(CustomerService);
     private toolSvc         = inject(ToolService);
+    private qrScan          = inject(QrScanService);
     private destroy$        = new Subject<void>();
 
     isSaving = false;
@@ -228,13 +230,22 @@ export class FormPrestamoExternoDialogComponent implements OnInit, OnDestroy {
     hideToolDropPe(): void { setTimeout(() => this.showToolDropPe = false, 150); }
     selectToolSuggestionPe(tool: any): void { this.toolSearchPe = tool.codigo; this.showToolDropPe = false; this._agregarToolPe(tool); }
 
-    addToolPeFromInput(): void { this.scanAndAddPe(); }
-
     /** Enter / lector físico: coincidencia exacta en sugerencias, si no resuelve
      *  el código directo contra el backend (getToolByCode). */
     scanAndAddPe(): void {
         const code = this.toolSearchPe.trim();
         if (!code) return;
+        // Etiqueta QR (URL `.../qr-code/<token>`): descifra a código plano y reintenta.
+        if (this.qrScan.isQrLabel(code)) {
+            this.toolSearchLoadingPe = true;
+            this.qrScan.toToolCode(code).pipe(takeUntil(this.destroy$)).subscribe(real => {
+                this.toolSearchLoadingPe = false;
+                if (!real) { this.showMsg('warning', 'Etiqueta QR no reconocida'); this.toolSearchPe = ''; return; }
+                this.toolSearchPe = real;
+                this.scanAndAddPe();
+            });
+            return;
+        }
         const exact = this.toolSuggestionsPe.find(h => h.codigo.toLowerCase() === code.toLowerCase());
         if (exact) { this._agregarToolPe(exact); return; }
         this.toolSearchLoadingPe = true;

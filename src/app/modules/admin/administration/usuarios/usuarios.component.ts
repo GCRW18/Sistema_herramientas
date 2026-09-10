@@ -10,11 +10,8 @@ import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { EmployeeService } from '../../../../core/services/employee.service';
 
 /**
- * Módulo Usuarios — patrón "Funcionarios" (solo consulta):
- * herramientas/employees/listarFuncionarios (he.ft_funcionarios_segu_sel,
- * une segu.tusuario + he.temployees → cargo/área/base/licencia y ficha completa).
- * SOLO LECTURA: las cuentas de login pertenecen al framework (schema segu).
- * Click en fila → ficha VerUsuarioComponent.
+ * Módulo Usuarios (solo consulta): herramientas/employees/listarFuncionarios une
+ * segu.tusuario + he.temployees. Las cuentas de login pertenecen al framework (schema segu).
  */
 interface UsuarioTabla {
     id: number;

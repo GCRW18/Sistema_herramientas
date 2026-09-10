@@ -9,6 +9,7 @@ import { Subject, forkJoin, of } from 'rxjs';
 import { debounceTime, distinctUntilChanged, switchMap, takeUntil, finalize, map, catchError } from 'rxjs/operators';
 
 import { MovementService } from '../../../../../../core/services/movement.service';
+import { QrScanService } from '../../../../../../core/services/qr-scan.service';
 import { localDateStr } from '../../../../../../core/utils/date.utils';
 import { Ubicacion, CondRetorno, CONDICIONES_RETORNO } from '../../retorno-traspaso.types';
 
@@ -79,6 +80,7 @@ export class RetornoDialogComponent implements OnInit, OnDestroy {
     private fb        = inject(FormBuilder);
     private snackBar  = inject(MatSnackBar);
     private movSvc    = inject(MovementService);
+    private qrScan    = inject(QrScanService);
     private destroy$  = new Subject<void>();
     private _confirmDialogRef: any = null;
 
@@ -252,6 +254,17 @@ export class RetornoDialogComponent implements OnInit, OnDestroy {
     scanAndAdd(): void {
         const code = this.scanValue.trim();
         if (!code) return;
+        // Etiqueta QR (URL `.../qr-code/<token>`): descifra a código plano y reintenta.
+        if (this.qrScan.isQrLabel(code)) {
+            this.loadingIndex = true;
+            this.qrScan.toToolCode(code).pipe(takeUntil(this.destroy$)).subscribe(real => {
+                this.loadingIndex = false;
+                if (!real) { this.showMsg('warning', 'Etiqueta QR no reconocida'); this._clearScan(); return; }
+                this.scanValue = real;
+                this.scanAndAdd();
+            });
+            return;
+        }
         if (!this.indexReady) { this.showMsg('warning', 'Cargando notas de salida activas, espere un momento'); return; }
         const exactas = this._openSendIndex.get(code.toUpperCase());
         if (exactas && exactas.length > 0) { this._agregarItem(exactas); return; }
@@ -481,7 +494,6 @@ export class RetornoDialogComponent implements OnInit, OnDestroy {
             !confirm(`¿Cancelar el retorno? Se perderán los ${this.cart.length} ítem(s) escaneado(s).`)) return;
         this.dialogRef.close();
     }
-    cerrarFormRetorno(): void { this.cerrar(); }
 
     private showMsg(type: 'success' | 'error' | 'info' | 'warning', text: string): void {
         this.snackBar.open(text, 'OK', { duration: 4000, horizontalPosition: 'end', verticalPosition: 'top', panelClass: [`snackbar-${type}`] });

@@ -21,7 +21,7 @@ interface Categoria {
 <div class="bg-stone-100 dark:bg-slate-900 border-2 border-black rounded-2xl overflow-hidden flex flex-col"
      style="width: 640px; max-width: 95vw;">
 
-    <!-- HEADER -->
+    <!-- CABECERA -->
     <div class="bg-[#0F172A] px-4 py-3 flex items-center gap-3 shrink-0">
         <div class="w-8 h-8 rounded-lg bg-amber-400 border-2 border-black flex items-center justify-center shadow-[2px_2px_0_#000] shrink-0">
             <mat-icon class="!text-sm text-black">category</mat-icon>
@@ -36,7 +36,7 @@ interface Categoria {
         </button>
     </div>
 
-    <!-- BODY -->
+    <!-- CUERPO -->
     <div class="p-4 flex flex-col gap-4">
 
         <!-- Lista de categorías -->
@@ -121,7 +121,7 @@ interface Categoria {
         </div>
     </div>
 
-    <!-- FOOTER -->
+    <!-- PIE -->
     <div class="border-t-2 border-black bg-stone-200 dark:bg-slate-800 px-4 py-2.5 flex justify-end shrink-0">
         <button (click)="cerrar()"
                 class="px-5 py-1.5 bg-[#0F172A] text-white font-black text-[10px] border-2 border-black rounded-xl

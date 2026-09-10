@@ -95,11 +95,6 @@ export class FormServicioComponent implements OnInit, OnDestroy {
         );
     }
 
-    getTypeLabel(type: string): string {
-        const labels: Record<string, string> = { 'preventive': 'PREVENTIVO', 'corrective': 'CORRECTIVO' };
-        return labels[type] ?? type?.toUpperCase() ?? '—';
-    }
-
     fmtDate(d: string | null | undefined): string {
         if (!d || d === '—') return '—';
         const p = d.split('-');
@@ -198,6 +193,8 @@ export class FormServicioComponent implements OnInit, OnDestroy {
             return;
         }
         this.isSaving.set(true);
+        // Reservar la pestaña de la nota dentro del gesto (el PDF llega tras 2 POST encadenados).
+        const winNota = this.maintenanceService.preAbrirVentanaPdf();
 
         const params: any = {
             id_maintenance:     this.maintenance!.id_maintenance,
@@ -222,10 +219,35 @@ export class FormServicioComponent implements OnInit, OnDestroy {
         ).subscribe({
             next: () => {
                 this.showMessage('Retorno de mantenimiento procesado exitosamente', 'success');
-                setTimeout(() => this.dialogRef.close(true), 500);
+                this._abrirNotaRetorno(winNota);
+                setTimeout(() => this.dialogRef.close(true), 800);
             },
-            error: (err) => this.showMessage(err?.message || 'Error al procesar el retorno', 'error')
+            error: (err) => {
+                try { winNota?.close(); } catch { /* noop */ }
+                this.showMessage(err?.message || 'Error al procesar el retorno', 'error');
+            }
         });
+    }
+
+    /** Abre la Nota de Retorno de Mantenimiento (PDF real vía backend). */
+    private _abrirNotaRetorno(ventana?: Window | null): void {
+        const id = this.maintenance?.id_maintenance;
+        if (!id) { try { ventana?.close(); } catch { /* noop */ } return; }
+        this.maintenanceService.generarPdfRetornoMantenimiento(id).pipe(
+            takeUntil(this._destroy$),
+        ).subscribe({
+            next: (r) => this.maintenanceService.abrirNota(r, ventana),
+            error: (e) => { try { ventana?.close(); } catch { /* noop */ } this.showMessage(e?.message || 'No se pudo generar la nota de retorno', 'warning'); },
+        });
+    }
+
+    /** Cierre con confirmación si ya se cargó información del retorno. */
+    cerrar(): void {
+        const conDatos = !!this.descripcionTrabajo.trim()
+            || !!this.receivedByName.trim()
+            || !!this.nextMaintenanceDateStr;
+        if (conDatos && !confirm('¿Cancelar el retorno? Se perderán los datos cargados.')) return;
+        this.dialogRef.close(false);
     }
 
     private showMessage(message: string, type: 'success' | 'error' | 'warning'): void {

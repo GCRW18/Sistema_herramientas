@@ -6,7 +6,7 @@
 
   <div class="flex-1 flex flex-col p-3 sm:p-4 gap-3 overflow-hidden relative z-10">
 
-    <!-- ══════════════════════════ HEADER ══════════════════════════ -->
+    <!-- ══════════════════════════ CABECERA ══════════════════════════ -->
     <div class="flex items-center gap-3 shrink-0">
       <div class="flex items-center justify-center w-10 h-10 bg-white dark:bg-[#0F172AFF] border-[3px] border-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] rounded-xl shrink-0">
         <mat-icon class="text-black dark:text-[#FFC501FF] !text-base">bar_chart</mat-icon>
@@ -21,7 +21,7 @@
       </div>
     </div>
 
-    <!-- ══════════════════════════ CARD PRINCIPAL ══════════════════════════ -->
+    <!-- ══════════════════════════ TARJETA PRINCIPAL ══════════════════════════ -->
     <div class="flex-1 flex flex-col overflow-hidden border-[3px] border-black bg-gray-50 dark:bg-[#0F172AFF] rounded-2xl shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
 
       <!-- ── TABS PRINCIPALES ── -->
@@ -39,44 +39,8 @@
         </ng-container>
       </div>
 
-      <!-- ══════════════ TAB: KPI (todos) ══════════════ -->
-      <ng-container *ngIf="activeTab() === 'todos'">
-        <div class="flex-1 overflow-y-auto custom-scrollbar p-4 sm:p-6">
-
-          <ng-container *ngIf="loadingStats()">
-            <div class="flex items-center justify-center py-20">
-              <mat-spinner diameter="40"></mat-spinner>
-            </div>
-          </ng-container>
-
-          <ng-container *ngIf="!loadingStats()">
-            <p class="text-[10px] font-black uppercase text-gray-400 dark:text-slate-500 mb-3 tracking-widest">
-              Resumen global del sistema
-            </p>
-            <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
-              <div *ngFor="let card of kpiCards()"
-                   class="flex items-center gap-3 p-3 rounded-xl border-[2px] border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"
-                   [ngClass]="card.bg">
-                <div class="shrink-0 w-10 h-10 flex items-center justify-center rounded-lg border-2 border-black bg-white/80">
-                  <mat-icon class="!text-lg" [ngClass]="card.color">{{ card.icon }}</mat-icon>
-                </div>
-                <div class="min-w-0">
-                  <div class="text-[9px] font-black uppercase tracking-wider leading-none text-black/60 truncate">
-                    {{ card.label }}
-                  </div>
-                  <div class="text-2xl font-black leading-tight mt-0.5" [ngClass]="card.color">
-                    {{ card.value }}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </ng-container>
-
-        </div>
-      </ng-container>
-
       <!-- ══════════════ TABS DE MÓDULOS (data viewer) ══════════════ -->
-      <ng-container *ngIf="activeTab() !== 'todos'">
+      <ng-container>
 
         <!-- Sub-reporte selector chips -->
         <div class="flex items-center gap-1.5 overflow-x-auto scrollbar-none flex-nowrap shrink-0
@@ -118,10 +82,10 @@
             {{ filteredRows().length }} reg.
           </span>
 
-          <!-- Botón Imprimir -->
-          <button *appHasPermission="'inv_reportes.generate'" (click)="imprimirReporte()"
-                  [disabled]="loading() || rows().length === 0"
-                  matTooltip="Imprimir reporte completo (todas las páginas)"
+          <!-- Botón Generar Reporte (PDF real, TCPDF backend) -->
+          <button *appHasPermission="'inv_reportes.generate'" (click)="generarReporte()"
+                  [disabled]="loading() || generando() || rows().length === 0"
+                  matTooltip="Generar el PDF del reporte (se abre en el visor: imprimir o guardar)"
                   class="flex items-center gap-1.5 h-8 px-3
                          bg-[#0F172AFF] text-[#FFC501FF]
                          font-black text-[10px] uppercase
@@ -132,26 +96,8 @@
                          disabled:opacity-50 disabled:cursor-not-allowed
                          disabled:translate-x-0 disabled:translate-y-0 disabled:shadow-none
                          transition-all shrink-0">
-            <mat-icon class="!text-sm !w-4 !h-4">print</mat-icon>
-            <span class="hidden sm:inline">Imprimir</span>
-          </button>
-
-          <!-- Botón Guardar PDF -->
-          <button *appHasPermission="'inv_reportes.generate'" (click)="guardarPdf()"
-                  [disabled]="loading() || rows().length === 0"
-                  matTooltip="Guardar reporte como archivo HTML (abre en navegador → Guardar como PDF)"
-                  class="flex items-center gap-1.5 h-8 px-3
-                         bg-[#FFC501FF] text-black
-                         font-black text-[10px] uppercase
-                         border-[2px] border-black rounded-lg
-                         shadow-[2px_2px_0px_0px_#000]
-                         hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none
-                         active:translate-x-[2px] active:translate-y-[2px] active:shadow-none
-                         disabled:opacity-50 disabled:cursor-not-allowed
-                         disabled:translate-x-0 disabled:translate-y-0 disabled:shadow-none
-                         transition-all shrink-0">
-            <mat-icon class="!text-sm !w-4 !h-4">download</mat-icon>
-            <span class="hidden sm:inline">Guardar PDF</span>
+            <mat-icon class="!text-sm !w-4 !h-4" [class.spin]="generando()">{{ generando() ? 'progress_activity' : 'picture_as_pdf' }}</mat-icon>
+            <span class="hidden sm:inline">{{ generando() ? 'Generando…' : 'Generar Reporte' }}</span>
           </button>
 
           <!-- Botón Refresh datos -->
@@ -168,9 +114,9 @@
             <mat-icon class="!text-sm !w-4 !h-4" [class.spin]="loading()">refresh</mat-icon>
           </button>
 
-        </div><!-- /toolbar -->
+        </div><!-- /barra de herramientas -->
 
-        <!-- ── LOADING ── -->
+        <!-- ── CARGANDO ── -->
         <ng-container *ngIf="loading()">
           <div class="flex-1 flex flex-col items-center justify-center gap-3 py-16">
             <mat-spinner diameter="36"></mat-spinner>
@@ -178,7 +124,7 @@
           </div>
         </ng-container>
 
-        <!-- ── EMPTY (sin datos del API) ── -->
+        <!-- ── VACÃO (sin datos del API) ── -->
         <ng-container *ngIf="!loading() && rows().length === 0">
           <div class="flex-1 flex flex-col items-center justify-center gap-3 py-16 px-4 text-center">
             <mat-icon class="!text-5xl text-gray-300 dark:text-gray-600">table_rows</mat-icon>
@@ -192,7 +138,7 @@
           </div>
         </ng-container>
 
-        <!-- ── EMPTY (sin resultados de búsqueda) ── -->
+        <!-- ── VACÃO (sin resultados de búsqueda) ── -->
         <ng-container *ngIf="!loading() && rows().length > 0 && filteredRows().length === 0">
           <div class="flex-1 flex flex-col items-center justify-center gap-3 py-16 px-4 text-center">
             <mat-icon class="!text-5xl text-gray-300 dark:text-gray-600">search_off</mat-icon>
@@ -234,17 +180,16 @@
           </div>
 
           <!-- Tabla con scroll -->
-          <div class="flex-1 overflow-auto custom-scrollbar">
-            <table class="w-full min-w-[600px] text-xs border-collapse">
+          <div class="flex-1 overflow-auto custom-scrollbar bg-gray-50 dark:bg-[#0F172AFF]">
+            <table class="w-full min-w-[600px]">
 
-              <thead class="bg-[#0F172AFF] sticky top-0 z-10">
-                <tr>
-                  <th class="px-3 py-2.5 text-center text-[9px] font-black uppercase text-white/50 w-8 border-r border-white/10">#</th>
+              <thead class="bg-gray-100 dark:bg-slate-800 border-b-[2px] border-black sticky top-0 z-10">
+                <tr class="text-left text-[10px] font-black uppercase tracking-wider text-black dark:text-white">
+                  <th class="px-3 py-2.5 text-center w-8 text-gray-400 dark:text-slate-500">#</th>
                   <th *ngFor="let col of currentCols()"
-                      class="px-3 py-2.5 text-[9px] font-black uppercase text-[#FFC501FF] whitespace-nowrap border-r border-white/10 last:border-r-0"
+                      class="px-3 py-2.5 whitespace-nowrap"
                       [class.text-center]="col.align === 'center'"
                       [class.text-right]="col.align === 'right'"
-                      [class.text-left]="col.align !== 'center' && col.align !== 'right'"
                       [style.width]="col.width || 'auto'">
                     {{ col.header }}
                   </th>
@@ -253,49 +198,47 @@
 
               <tbody>
                 <tr *ngFor="let row of pagedRows(); let i = index"
-                    class="border-b border-gray-100 dark:border-slate-700 transition-colors hover:bg-amber-50/60 dark:hover:bg-slate-700/40"
-                    [ngClass]="i % 2 === 0 ? 'bg-white dark:bg-slate-800/40' : 'bg-gray-50 dark:bg-slate-800/20'">
+                    class="border-b border-gray-200 dark:border-slate-700 transition-all hover:bg-gray-100 dark:hover:bg-slate-700/60"
+                    [ngClass]="i % 2 === 0 ? 'bg-white dark:bg-slate-800/60' : 'bg-gray-50 dark:bg-slate-800/40'">
 
                   <!-- Número de fila -->
-                  <td class="px-3 py-2.5 text-center border-r border-gray-100 dark:border-slate-700">
-                    <span class="text-[9px] font-black text-gray-300 dark:text-slate-600">
+                  <td class="px-3 py-2.5 text-center">
+                    <span class="text-[9px] font-black text-gray-400 dark:text-slate-500">
                       {{ pageIndex() * pageSize + i + 1 }}
                     </span>
                   </td>
 
                   <!-- Columnas dinámicas -->
                   <td *ngFor="let col of currentCols()"
-                      class="px-3 py-2.5 border-r border-gray-100 dark:border-slate-700 last:border-r-0"
+                      class="px-3 py-2.5"
                       [class.text-center]="col.align === 'center'"
                       [class.text-right]="col.align === 'right'">
 
                     <ng-container [ngSwitch]="col.tipo">
 
-                      <!-- BADGE (estado, condicion, etc.) -->
+                      <!-- INSIGNIA (estado, condición, etc.) -->
                       <ng-container *ngSwitchCase="'badge'">
                         <span *ngIf="row[col.key] != null && row[col.key] !== ''"
-                              class="inline-block px-1.5 py-0.5 text-[9px] font-black uppercase border rounded-sm leading-none"
-                              [ngClass]="getBadgeClass(row, col)">
-                          {{ row[col.key] }}
+                              class="px-1.5 py-0.5 text-[9px] font-black uppercase border-2 border-black rounded inline-flex items-center gap-1 text-black dark:text-white">
+                          {{ badgeLabel(row[col.key]) }}
                         </span>
                         <span *ngIf="row[col.key] == null || row[col.key] === ''"
-                              class="text-gray-300 dark:text-slate-600">—</span>
+                              class="text-[10px] text-gray-400">—</span>
                       </ng-container>
 
                       <!-- DAYS (días restantes de calibración, mora, etc.) -->
                       <ng-container *ngSwitchCase="'days'">
                         <span *ngIf="row[col.key] != null"
-                              class="inline-block px-1.5 py-0.5 text-[9px] font-black border rounded-sm leading-none"
-                              [ngClass]="getDaysClass(row[col.key])">
+                              class="text-xs font-black text-black dark:text-white">
                           {{ row[col.key] }}d
                         </span>
                         <span *ngIf="row[col.key] == null"
-                              class="text-gray-300 dark:text-slate-600">—</span>
+                              class="text-[10px] text-gray-400">—</span>
                       </ng-container>
 
                       <!-- DATE -->
                       <ng-container *ngSwitchCase="'date'">
-                        <span class="text-gray-600 dark:text-gray-400 font-mono text-[11px]">
+                        <span class="text-xs font-bold text-black dark:text-white whitespace-nowrap">
                           {{ getCellText(row, col) }}
                         </span>
                       </ng-container>
@@ -303,21 +246,21 @@
                       <!-- BOOL -->
                       <ng-container *ngSwitchCase="'bool'">
                         <mat-icon *ngIf="row[col.key] === true"
-                                  class="!text-base text-green-600 dark:text-green-400">check_circle</mat-icon>
+                                  class="!text-base text-black dark:text-white">check</mat-icon>
                         <span *ngIf="row[col.key] !== true"
-                              class="text-gray-300 dark:text-slate-600">—</span>
+                              class="text-[10px] text-gray-400">—</span>
                       </ng-container>
 
                       <!-- NUMBER -->
                       <ng-container *ngSwitchCase="'number'">
-                        <span class="font-black text-black dark:text-white text-[11px]">
+                        <span class="text-xs font-black text-black dark:text-white">
                           {{ row[col.key] ?? '—' }}
                         </span>
                       </ng-container>
 
                       <!-- TEXT (default) -->
                       <ng-container *ngSwitchDefault>
-                        <span class="text-gray-700 dark:text-gray-300 text-[11px] leading-tight"
+                        <span class="text-xs font-bold text-black dark:text-white"
                               [title]="row[col.key]">
                           {{ row[col.key] ?? '—' }}
                         </span>
@@ -330,9 +273,9 @@
               </tbody>
 
             </table>
-          </div><!-- /table scroll -->
+          </div><!-- /scroll de tabla -->
 
-          <!-- Footer paginación -->
+          <!-- Pie de paginación -->
           <div *ngIf="totalPages() > 1"
                class="px-3 sm:px-4 py-2 bg-gray-100 dark:bg-slate-800 border-t-[2px] border-black
                       flex items-center justify-between shrink-0 rounded-b-2xl gap-2">
@@ -358,6 +301,6 @@
 
       </ng-container><!-- /data viewer -->
 
-    </div><!-- /card principal -->
+    </div><!-- /tarjeta principal -->
   </div><!-- /container -->
 </div><!-- /host -->

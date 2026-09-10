@@ -1,6 +1,6 @@
 <div class="bg-stone-100 dark:bg-slate-900 border-2 border-black flex flex-col rounded-2xl overflow-hidden">
 
-    <!-- HEADER -->
+    <!-- CABECERA -->
     <div class="bg-[#0F172A] px-5 py-3 flex items-center gap-3 shrink-0 select-none"
          cdkDrag cdkDragRootElement=".cdk-overlay-pane" cdkDragHandle style="cursor:grab">
         <div class="w-9 h-9 rounded bg-amber-500 border-2 border-black flex items-center justify-center shadow-[2px_2px_0_#000] shrink-0">
@@ -19,7 +19,7 @@
         </button>
     </div>
 
-    <!-- TOOLBAR -->
+    <!-- BARRA DE HERRAMIENTAS -->
     <div class="px-4 py-2.5 bg-white dark:bg-slate-800 border-b-2 border-stone-200 dark:border-slate-700 flex items-center gap-2 shrink-0">
         <div class="relative flex-1">
             <mat-icon class="absolute left-2.5 top-[7px] text-stone-400 !text-sm pointer-events-none">search</mat-icon>
@@ -36,7 +36,7 @@
         </button>
     </div>
 
-    <!-- BODY -->
+    <!-- CUERPO -->
     <div class="p-4 overflow-y-auto" style="scrollbar-width:thin; max-height:60vh">
 
         <!-- ══ BÚSQUEDA activa ══ -->
@@ -73,7 +73,7 @@
         <!-- ══ GRID DE MÓDULOS ══ -->
         <ng-container *ngIf="!isSearching">
 
-            <!-- Hint -->
+            <!-- Ayuda -->
             <p class="text-[9px] font-bold text-stone-400 dark:text-slate-500 uppercase tracking-wide text-center mb-3">
                 Presiona un módulo para gestionar sus permisos
             </p>
@@ -102,7 +102,7 @@
                     <!-- Nombre -->
                     <span class="text-[8px] font-black uppercase text-center leading-tight">{{ mod.name }}</span>
 
-                    <!-- Badge -->
+                    <!-- Insignia -->
                     <span class="text-[7px] font-black px-1.5 py-0.5 rounded-full border transition-all"
                           [ngClass]="getModuleSelectedCount(mod.name) > 0
                               ? 'bg-amber-200 dark:bg-amber-800 border-amber-400 text-amber-900 dark:text-amber-100'
@@ -117,7 +117,7 @@
 
     </div>
 
-    <!-- FOOTER -->
+    <!-- PIE -->
     <div class="border-t-2 border-black bg-stone-200 dark:bg-slate-800 px-4 py-2.5 flex justify-between items-center gap-2 shrink-0">
         <button type="button" (click)="cancel()"
                 class="px-4 py-2 bg-[#FF1414] text-white font-black text-[10px] border-2 border-black rounded-xl shadow-[2px_2px_0_#000] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all uppercase">

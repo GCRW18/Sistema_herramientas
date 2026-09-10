@@ -1,7 +1,24 @@
 import { Injectable, inject } from '@angular/core';
 import { from, Observable, of, switchMap } from 'rxjs';
-import { Employee } from '../models/employee.types';
 import { ErpApiService } from '../api/api.service';
+
+/** Payload real de he.ft_employees_ime (HE_EMP_INS/HE_EMP_MOD) — nombres tal cual los lee
+ *  MODEmployees.php, no confundir con la interfaz Employee (camelCase) de employee.types,
+ *  que no coincide con este contrato y no debe usarse para altas/ediciones. */
+export interface EmployeeUpsertData {
+    employee_id: number;   // id_usuario (segu.tusuario) del funcionario a dar de alta/editar
+    id_lugar?: number | null;
+    license_number: string;
+    seal_number?: string;
+    ci?: string;
+    cargo?: string;
+    role?: string;
+    employee_type?: string;
+    area?: string;
+    email?: string;
+    phone?: string;
+    active?: boolean;
+}
 
 @Injectable({ providedIn: 'root' })
 export class EmployeeService {
@@ -61,7 +78,7 @@ export class EmployeeService {
         );
     }
 
-    createEmployee(data: Partial<Employee>): Observable<any> {
+    createEmployee(data: EmployeeUpsertData): Observable<any> {
         return from(this._api.post('herramientas/employees/insertarEmployees', data)).pipe(
             switchMap((response: any) => {
                 const root = response?.ROOT || response;
@@ -73,7 +90,7 @@ export class EmployeeService {
         );
     }
 
-    updateEmployee(id: string, data: Partial<Employee>): Observable<any> {
+    updateEmployee(id: string | number, data: EmployeeUpsertData): Observable<any> {
         // ACTEmployees no tiene un método "modificarEmployees" propio: insertarEmployees()
         // decide internamente si inserta o modifica según venga o no id_employee (patrón pxp).
         return from(this._api.post('herramientas/employees/insertarEmployees', { ...data, id_employee: id })).pipe(

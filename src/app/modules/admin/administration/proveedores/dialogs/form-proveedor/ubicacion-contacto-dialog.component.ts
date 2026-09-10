@@ -23,7 +23,7 @@ export interface UbicacionContactoData {
     <div class="bg-stone-100 dark:bg-slate-900 border-2 border-black rounded-2xl overflow-hidden flex flex-col"
          style="width: 420px;">
 
-        <!-- Header -->
+        <!-- Cabecera -->
         <div class="bg-[#0F172A] px-4 py-2.5 flex items-center gap-2.5 shrink-0 select-none"
              cdkDrag cdkDragRootElement=".cdk-overlay-pane" cdkDragHandle style="cursor:grab">
             <div class="w-7 h-7 rounded-lg bg-amber-500 border-2 border-black flex items-center justify-center shadow-[2px_2px_0_#000] shrink-0">
@@ -39,7 +39,7 @@ export interface UbicacionContactoData {
             </button>
         </div>
 
-        <!-- Form -->
+        <!-- Formulario -->
         <form [formGroup]="form" class="px-4 py-3 flex flex-col gap-2.5">
 
             <!-- Sección ubicación -->
@@ -120,7 +120,7 @@ export interface UbicacionContactoData {
 
         </form>
 
-        <!-- Footer -->
+        <!-- Pie -->
         <div class="border-t-2 border-black bg-stone-200 dark:bg-slate-800 px-4 py-2 flex justify-between items-center gap-2 shrink-0">
             <button type="button" (click)="cerrar()"
                     class="px-3 py-1.5 bg-stone-300 dark:bg-slate-700 text-black dark:text-white font-black text-[10px] border-2 border-black rounded-xl shadow-[2px_2px_0_#000] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all uppercase">

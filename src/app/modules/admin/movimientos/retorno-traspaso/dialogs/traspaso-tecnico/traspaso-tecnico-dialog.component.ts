@@ -9,6 +9,7 @@ import { debounceTime, distinctUntilChanged, switchMap, takeUntil, finalize, map
 
 import { MovementService } from '../../../../../../core/services/movement.service';
 import { ToolService } from '../../../../../../core/services/tool.service';
+import { QrScanService } from '../../../../../../core/services/qr-scan.service';
 import { localDateStr } from '../../../../../../core/utils/date.utils';
 import {
     Ubicacion, ToolEnvioItem, Funcionario, PersonaTecnico, TIPOS_TRASPASO, CONDICIONES_ENVIO, motivoBloqueoSalida
@@ -45,6 +46,7 @@ export class TraspasoTecnicoDialogComponent implements OnInit, OnDestroy {
     private snackBar  = inject(MatSnackBar);
     private movSvc    = inject(MovementService);
     private toolSvc   = inject(ToolService);
+    private qrScan    = inject(QrScanService);
     private _unsub$   = new Subject<void>();
     private _srchTecnico$       = new Subject<string>();
     private _srchPersona$       = new Subject<string>();
@@ -64,21 +66,21 @@ export class TraspasoTecnicoDialogComponent implements OnInit, OnDestroy {
     trptCorrelativoPreview = '';
     loadingCorrelativoTrpt = false;
 
-    // Locations
+    // Ubicaciones
     get almacenes(): Ubicacion[] { return this.data.almacenes || []; }
     get bases(): Ubicacion[]     { return this.data.bases     || []; }
 
-    // Tool search (mismo input que el escaneo — ver scanValueTecnico/onScanTecnicoInput)
+    // Búsqueda de herramienta (mismo input que el escaneo — ver scanValueTecnico/onScanTecnicoInput)
     toolResultsTecnico: any[] = [];
     showToolDropTecnico  = false;
     searchingToolsTecnico = false;
 
-    // Persona técnico autocomplete
+    // Persona técnico (autocompletado)
     personasTecnico: PersonaTecnico[]  = [];
     personaTecnicoLoading              = false;
     showPersonaTecnicoDropdown         = false;
 
-    // Funcionario entrega autocomplete
+    // Funcionario entrega (autocompletado)
     funcEntregaTecnico: Funcionario[]  = [];
     funcEntregaTecnicoLoading          = false;
     showFuncEntregaTecnicoDropdown     = false;
@@ -86,7 +88,7 @@ export class TraspasoTecnicoDialogComponent implements OnInit, OnDestroy {
     tiposTraspasoTecnico = TIPOS_TRASPASO;
     condicionesEnvio     = CONDICIONES_ENVIO;
 
-    // Base destino autocomplete
+    // Base destino (autocompletado)
     basesFiltradas: Ubicacion[] = [];
     showBaseDropdown = false;
 
@@ -112,10 +114,8 @@ export class TraspasoTecnicoDialogComponent implements OnInit, OnDestroy {
         const currentUser = this._currentUserName();
         if (currentUser) this.traspasoTecnicoForm.patchValue({ responsableEntrega: currentUser }, { emitEvent: false });
 
-        // Almacén destino autocomplete (lista ya cargada en memoria, filtro sincrónico).
-        // OJO: usa this.almacenes (he.twarehouses), NO this.bases (param.tlugar) — el
-        // campo se guarda en destination_warehouse_id, cuya FK apunta a he.twarehouses.
-        // Enviar un id_lugar ahí viola la FK (tmovements_dest_warehouse_fkey).
+        // Almacén destino autocomplete: usa this.almacenes (he.twarehouses), NO this.bases —
+        // destination_warehouse_id tiene FK a he.twarehouses (un id_lugar viola la FK).
         this.traspasoTecnicoForm.get('baseTexto')!.valueChanges.pipe(
             debounceTime(100), takeUntil(this._unsub$)
         ).subscribe(term => {
@@ -169,10 +169,21 @@ export class TraspasoTecnicoDialogComponent implements OnInit, OnDestroy {
      *  (dropdown de sugerencias mientras se escribe), igual que Préstamo Técnico. */
     onScanTecnicoInput(v: string): void { this.scanValueTecnico = v; this._srchTecnico$.next(v); }
     scanTecnicoEnter(): void {
-        const code = this.scanValueTecnico.trim();
-        if (!code) return;
-        this._pendingScanTecnico = code;
-        this._scanTecnico$.next(code);
+        const raw = this.scanValueTecnico.trim();
+        if (!raw) return;
+        // Etiqueta QR (URL `.../qr-code/<token>`): descifra a código plano y reintenta.
+        if (this.qrScan.isQrLabel(raw)) {
+            this.scanningTecnico = true;
+            this.qrScan.toToolCode(raw).pipe(takeUntil(this._unsub$)).subscribe(code => {
+                this.scanningTecnico = false;
+                if (!code) { this._showMsg('Etiqueta QR no reconocida', 'warning'); this.scanValueTecnico = ''; this._focusScanTecnico(); return; }
+                this.scanValueTecnico = code;
+                this.scanTecnicoEnter();
+            });
+            return;
+        }
+        this._pendingScanTecnico = raw;
+        this._scanTecnico$.next(raw);
     }
 
     onBaseFocus(): void {
@@ -196,7 +207,8 @@ export class TraspasoTecnicoDialogComponent implements OnInit, OnDestroy {
     }
 
     private _setupSearches(): void {
-        // Tool search
+        // Búsqueda de herramienta
+
         this._srchTecnico$.pipe(
             debounceTime(300), distinctUntilChanged(),
             switchMap(term => {
@@ -231,7 +243,7 @@ export class TraspasoTecnicoDialogComponent implements OnInit, OnDestroy {
             this.showPersonaTecnicoDropdown = this.personasTecnico.length > 0;
         }});
 
-        // Entrega autocomplete
+        // Entrega (autocompletado)
         this._srchEntrega$.pipe(debounceTime(300), distinctUntilChanged(),
             switchMap(q => {
                 if (!q || q.length < 2) { this.funcEntregaTecnico = []; this.showFuncEntregaTecnicoDropdown = false; return of([]); }
@@ -274,7 +286,7 @@ export class TraspasoTecnicoDialogComponent implements OnInit, OnDestroy {
     hideFuncEntregaTecnicoDropdown(): void { setTimeout(() => this.showFuncEntregaTecnicoDropdown = false, 150); }
     selectFuncEntregaTecnico(f: Funcionario): void { this.traspasoTecnicoForm.patchValue({ responsableEntrega: f.nombre }, { emitEvent: false }); this.showFuncEntregaTecnicoDropdown = false; }
 
-    // — Tool search —
+    // ── Búsqueda de herramienta ──
     hideToolDropTecnico(): void { setTimeout(() => this.showToolDropTecnico = false, 150); }
     addToolTecnico(tool: any): void {
         const id = tool.id_tool ?? tool.id;
@@ -328,9 +340,8 @@ export class TraspasoTecnicoDialogComponent implements OnInit, OnDestroy {
             tool_id: it.toolId, quantity: it.cantidad,
             condition_on_movement: it.condicion, serial_number: it.sn || '', part_number: it.pn || '', notes: it.notas || ''
         })));
-        // Pestaña reservada en el gesto de usuario (click) para la Nota de Traspaso
-        // Técnico MGH-109 — el navegador no la bloquea aunque el PDF real (TCPDF
-        // backend) se genere después de que responda el guardado.
+        // Ventana reservada en el gesto de usuario (click) para la nota MGH-109; el navegador
+        // no la bloquea aunque el PDF real se genere después del guardado.
         const pdfWin = this.movSvc.preAbrirVentanaPdf();
         this.isSavingTraspasoTecnico = true;
         const payload: any = {
@@ -340,19 +351,16 @@ export class TraspasoTecnicoDialogComponent implements OnInit, OnDestroy {
             department:         form.unidad              || '',
             requested_by_name:  form.responsableEntrega  || '',
             responsible_person: form.responsableEntrega  || '',
-            // El form no pide "Almacén Origen" explícito (es el almacén que entrega la
-            // herramienta) — se usa el almacén por defecto del hub para que "Origen" no
-            // quede vacío en la tabla de Activos.
+            // El form no pide "Almacén Origen": se usa el almacén por defecto del hub para que
+            // "Origen" no quede vacío en la tabla de Activos.
             source_warehouse_id: this.data.defaultAlmacen?.id ? Number(this.data.defaultAlmacen.id) : undefined,
             destination_warehouse_id: form.base?.id ? Number(form.base.id) : undefined,
             exit_reason:        'area_transfer',
             transfer_type:      form.tipoTraspaso        || 'TEMPORAL',
             notes:              form.observaciones       || '',
             specific_observations:   'MGH109',
-            // Licencia/cargo/unidad del TÉCNICO que recibe (reutiliza las mismas columnas
-            // applicant_* de patch HE-82; para el traspaso de área describen al solicitante,
-            // aquí al técnico — ver HE_NOTA_TRASPASO_TEC_SEL). Ya no se manda general_observations
-            // con estos datos embebidos: la nota real (RReporteTraspasoTecnicoNota) los lee de columna.
+            // Licencia/cargo/unidad del TÉCNICO que recibe (reutiliza las columnas applicant_*
+            // de patch HE-82; la nota los lee de columna, ver HE_NOTA_TRP_TEC_SEL).
             applicant_license:  form.nroLicencia || '',
             applicant_position: form.cargo       || '',
             applicant_unit:     form.unidad      || '',
@@ -387,7 +395,11 @@ export class TraspasoTecnicoDialogComponent implements OnInit, OnDestroy {
         this._focusScanTecnico();
     }
 
-    cerrarFormTraspasoTecnico(): void { this.dialogRef.close(); }
+    cerrarFormTraspasoTecnico(): void {
+        if (this.itemsTraspasoTecnico.length > 0 &&
+            !confirm(`¿Cancelar el traspaso técnico? Se perderán las ${this.itemsTraspasoTecnico.length} herramienta(s) agregada(s).`)) return;
+        this.dialogRef.close();
+    }
 
     private _showMsg(msg: string, type: 'success' | 'error' | 'warning'): void {
         const panelClass = type === 'success' ? 'snack-success' : type === 'error' ? 'snack-error' : 'snack-warning';

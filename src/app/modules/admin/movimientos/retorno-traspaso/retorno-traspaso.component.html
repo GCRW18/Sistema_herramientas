@@ -10,7 +10,7 @@
 
   <div class="flex-1 flex flex-col p-3 sm:p-4 gap-3 overflow-hidden relative z-10">
 
-    <!-- ── HEADER ──────────────────────────────────────────────── -->
+    <!-- ── CABECERA ──────────────────────────────────────────────── -->
     <div class="flex flex-col gap-3 shrink-0">
 
       <!-- Título principal + tabs a la derecha -->
@@ -69,10 +69,10 @@
       </div>
     </div>
 
-    <!-- ── ACTIVOS CARD ──────────────────────────────────────────── -->
+    <!-- ── ACTIVOS TARJETA ──────────────────────────────────────────── -->
     <div class="flex-1 flex flex-col overflow-hidden border-[3px] border-black bg-gray-50 dark:bg-[#0F172AFF] rounded-2xl shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
 
-      <!-- Dark KPI header -->
+      <!-- Cabecera oscura con KPIs -->
       <div class="px-3 sm:px-4 py-2 bg-[#0F172AFF] border-b-[3px] border-black shrink-0 rounded-t-2xl">
         <div class="flex items-center gap-2 overflow-x-auto scrollbar-none flex-nowrap">
 
@@ -151,13 +151,13 @@
         </div>
       </div>
 
-      <!-- Loading -->
+      <!-- Cargando -->
       <div *ngIf="loadingActivos" class="flex-1 flex flex-col items-center justify-center gap-4">
         <div class="w-12 h-12 border-4 border-[#FFC501FF] border-t-transparent rounded-full animate-spin"></div>
         <p class="text-sm font-black uppercase text-gray-500 dark:text-gray-400">Cargando movimientos…</p>
       </div>
 
-      <!-- Empty -->
+      <!-- VacÃ­o -->
       <div *ngIf="!loadingActivos && movActivosFiltrados.length===0"
            class="flex-1 flex flex-col items-center justify-center gap-3 py-12 px-4 text-center">
         <mat-icon class="!text-5xl text-gray-300 dark:text-gray-600">
@@ -173,7 +173,7 @@
         </button>
       </div>
 
-      <!-- Table -->
+      <!-- Tabla -->
       <div *ngIf="!loadingActivos && movActivosFiltrados.length>0" class="flex-1 overflow-auto custom-scrollbar bg-gray-50 dark:bg-[#0F172AFF]">
         <table class="w-full min-w-[700px]">
           <thead class="bg-gray-100 dark:bg-slate-800 border-b-[2px] border-black sticky top-0 z-10">
@@ -305,117 +305,6 @@
         </mat-paginator>
       </div>
 
-    </div><!-- /activos card -->
+    </div><!-- /tarjeta de activos -->
   </div><!-- /p-4 -->
 </div><!-- /host -->
-
-
-
-
-
-<!-- ══════════════════════════════════════════════════════════════════
-     NG-TEMPLATE: HISTORIAL
-══════════════════════════════════════════════════════════════════ -->
-<ng-template #historialDialog>
-  <div class="bg-[#f8f9fc] dark:bg-[#0F172AFF] border-[3px] border-black rounded-2xl shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] flex flex-col overflow-hidden"
-       style="min-width:min(900px,95vw); max-height:85vh">
-
-    <!-- Header -->
-    <div class="bg-[#0F172AFF] px-5 py-4 flex items-center gap-3 shrink-0 rounded-t-2xl">
-      <div class="w-9 h-9 rounded-xl bg-[#FFC501FF] border-2 border-black flex items-center justify-center shadow-[2px_2px_0_#000] shrink-0">
-        <mat-icon class="!text-lg text-black">history</mat-icon>
-      </div>
-      <div>
-        <p class="text-[9px] text-white/60 font-bold uppercase tracking-widest leading-none mb-0.5">HISTORIAL</p>
-        <h3 class="text-sm text-white font-black uppercase leading-none">Retornos y Traspasos</h3>
-      </div>
-      <div class="flex-1"></div>
-      <button type="button" (click)="cerrarModalHistorial()"
-              class="h-8 px-3 bg-red-500 text-white font-black text-[10px] border-2 border-black rounded-lg shadow-[2px_2px_0_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all uppercase">
-        Cerrar
-      </button>
-    </div>
-
-    <!-- Body -->
-    <div class="flex-1 overflow-y-auto custom-scrollbar p-4">
-
-      <div *ngIf="isLoadingHistorial" class="flex flex-col items-center justify-center gap-4 py-12">
-        <div class="w-10 h-10 border-4 border-[#FFC501FF] border-t-transparent rounded-full animate-spin"></div>
-        <p class="text-sm font-black uppercase text-gray-500 dark:text-gray-400">Cargando historial…</p>
-      </div>
-
-      <!-- Detail view -->
-      <div *ngIf="selectedHistorialEntry && !isLoadingHistorial"
-           class="bg-white dark:bg-slate-800/60 border-[2px] border-black rounded-xl p-4 mb-3 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] animate-fadeIn">
-        <div class="flex items-center justify-between mb-3">
-          <p class="text-[9px] font-black uppercase tracking-widest text-gray-400">Detalle del Movimiento</p>
-          <button type="button" (click)="cerrarDetalleHistorial()" class="text-[10px] font-black text-gray-500 hover:text-red-500 transition-colors">← Volver</button>
-        </div>
-        <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
-          <div><p class="text-[8px] font-black uppercase text-gray-400">Fecha</p><p class="text-sm font-black text-black dark:text-white">{{selectedHistorialEntry.fecha}}</p></div>
-          <div><p class="text-[8px] font-black uppercase text-gray-400">Tipo</p>
-            <span class="text-[9px] font-black uppercase text-black dark:text-white">{{selectedHistorialEntry.tipo}}</span>
-          </div>
-          <div><p class="text-[8px] font-black uppercase text-gray-400">Documento</p><p class="font-mono text-sm font-black text-black dark:text-white">{{selectedHistorialEntry.documento}}</p></div>
-          <div><p class="text-[8px] font-black uppercase text-gray-400">Responsable</p><p class="text-sm font-bold text-black dark:text-white">{{selectedHistorialEntry.responsable}}</p></div>
-          <div><p class="text-[8px] font-black uppercase text-gray-400">Estado</p>
-            <span class="text-[9px] font-black uppercase text-black dark:text-white">{{selectedHistorialEntry.estado}}</span>
-          </div>
-        </div>
-      </div>
-
-      <!-- Table -->
-      <div *ngIf="!isLoadingHistorial && historialRecords.length>0"
-           class="border-[2px] border-black rounded-xl overflow-hidden shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
-        <table class="w-full">
-          <thead class="bg-gray-100 dark:bg-slate-800 border-b-[2px] border-black">
-            <tr class="text-left text-[10px] font-black uppercase tracking-wider text-black dark:text-white">
-              <th class="px-3 py-2.5">Fecha</th>
-              <th class="px-3 py-2.5">Tipo</th>
-              <th class="px-3 py-2.5">Documento</th>
-              <th class="px-3 py-2.5 hidden sm:table-cell">Responsable</th>
-              <th class="px-3 py-2.5 text-center">Estado</th>
-              <th class="px-3 py-2.5 text-center">Ver</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr *ngFor="let entry of historialRecords; let i=index"
-                class="border-b border-gray-200 dark:border-slate-700 cursor-pointer transition-all"
-                [ngClass]="i%2===0 ? 'bg-white dark:bg-slate-800/60 hover:bg-gray-100 dark:hover:bg-slate-700' : 'bg-gray-50 dark:bg-slate-800/40 hover:bg-gray-100 dark:hover:bg-slate-700'"
-                (click)="verDetalleHistorial(entry)">
-              <td class="px-3 py-2.5 text-xs font-bold text-black dark:text-white">{{entry.fecha}}</td>
-              <td class="px-3 py-2.5">
-                <span class="text-[9px] font-black uppercase text-black dark:text-white">{{entry.tipo}}</span>
-              </td>
-              <td class="px-3 py-2.5 font-mono text-xs font-black text-black dark:text-white">{{entry.documento}}</td>
-              <td class="px-3 py-2.5 text-xs text-black dark:text-white hidden sm:table-cell">{{entry.responsable}}</td>
-              <td class="px-3 py-2.5 text-center">
-                <span class="text-[9px] font-black uppercase text-black dark:text-white">{{entry.estado}}</span>
-              </td>
-              <td class="px-3 py-2.5 text-center" (click)="$event.stopPropagation()">
-                <button (click)="verDetalleHistorial(entry)"
-                        class="w-7 h-7 flex items-center justify-center mx-auto bg-[#0F172AFF] border-2 border-black rounded-lg shadow-[2px_2px_0_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all">
-                  <mat-icon class="!text-xs text-[#FFC501FF]">open_in_new</mat-icon>
-                </button>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-
-      <div *ngIf="!isLoadingHistorial && historialRecords.length===0"
-           class="flex flex-col items-center justify-center gap-3 py-12 text-center">
-        <mat-icon class="!text-5xl text-gray-300 dark:text-gray-600">history_toggle_off</mat-icon>
-        <p class="text-xs font-bold uppercase text-gray-500 mt-2">Sin registros de historial</p>
-      </div>
-    </div>
-
-    <!-- Paginator -->
-    <div *ngIf="historialRecords.length>0"
-         class="shrink-0 border-t-[2px] border-black bg-gray-100 dark:bg-slate-800 px-4 py-1 rounded-b-2xl">
-      <mat-paginator [length]="totalHistorial" [pageSize]="pageSize" [pageIndex]="pageIndex"
-                     [pageSizeOptions]="pageSizeOptions" (page)="onPageChange($event)" showFirstLastButtons>
-      </mat-paginator>
-    </div>
-  </div>
-</ng-template>

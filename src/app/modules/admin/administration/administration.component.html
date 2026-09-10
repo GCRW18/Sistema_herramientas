@@ -1,6 +1,6 @@
 <div class="relative flex flex-col w-full h-full bg-white dark:bg-[#0F172AFF] transition-colors duration-300 font-sans overflow-hidden">
 
-    <!-- ===== HEADER ===== -->
+    <!-- ===== CABECERA ===== -->
     <div class="flex items-center gap-4 px-6 py-4 border-b-[3px] border-black shrink-0 bg-white dark:bg-slate-900 relative z-[110]">
 
         <div class="flex items-center gap-3">
@@ -74,6 +74,15 @@
                 <mat-icon svgIcon="heroicons_outline:identification" class="!w-8 !h-8 !text-3xl shrink-0 text-black"></mat-icon>
                 <p class="text-[10px] font-black uppercase leading-tight text-center w-full text-black">CLIENTES /</p>
                 <p class="text-[9px] font-bold uppercase leading-tight text-center w-full truncate" [class.text-black]="isTabOpen(4)" [class.text-gray-700]="!isTabOpen(4)">TERCEROS</p>
+            </button>
+
+            <button (click)="openModule(5)"
+                    class="group relative flex flex-col items-center gap-1.5 p-3 rounded-xl border-[2px] border-black transition-all hover:-translate-y-1 w-[120px] shrink-0"
+                    [style.background-color]="isTabOpen(5) ? '#FBBF24' : '#f8f9fc'"
+                    [style.box-shadow]="'3px 3px 0px 0px rgba(0,0,0,1)'">
+                <mat-icon svgIcon="heroicons_outline:paper-airplane" class="!w-8 !h-8 !text-3xl shrink-0 text-black"></mat-icon>
+                <p class="text-[10px] font-black uppercase leading-tight text-center w-full text-black">AERONAVES</p>
+                <p class="text-[9px] font-bold uppercase leading-tight text-center w-full truncate text-gray-700">&nbsp;</p>
             </button>
 
         </div>

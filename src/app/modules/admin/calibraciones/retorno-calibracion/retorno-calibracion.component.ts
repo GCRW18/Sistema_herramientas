@@ -83,9 +83,8 @@ export class RetornoCalibracionComponent implements OnInit, OnDestroy {
         this.loadCalibraciones();
         this.setupFilters();
 
-        // Ver nota en envio-calibracion.component.ts: las tabs quedan montadas en segundo
-        // plano al cambiar de tab, así que un envío/retorno hecho en otra tab no se
-        // reflejaba acá hasta cerrar y reabrir esta.
+        // Ver envio-calibracion.component.ts: las tabs quedan montadas en segundo plano;
+        // calibrationsChanged$ refleja un envío/retorno hecho en otra tab.
         this.calibrationService.calibrationsChanged$.pipe(
             takeUntil(this._destroy$),
         ).subscribe(() => {
@@ -100,8 +99,7 @@ export class RetornoCalibracionComponent implements OnInit, OnDestroy {
 
     loadCalibraciones(): void {
         this.isLoading.set(true);
-        // ordenacion por id_calibration (PK) en vez de send_date (sin índice, con
-        // NULLs de históricas primero) + excluye transcripciones históricas
+        // Ordena por id_calibration (PK) y excluye las transcripciones históricas
         // server-side (filtro_adicional, no 'filtro' que el ACT ignora).
         this.calibrationService.getCalibrations({
             limit: 500,
@@ -187,10 +185,6 @@ export class RetornoCalibracionComponent implements OnInit, OnDestroy {
 
     getRetrasadasCount(): number {
         return this.calibraciones.filter(c => this.isRetrasado(c)).length;
-    }
-
-    getATiempoCount(): number {
-        return Math.max(0, this.getEnLabCount() - this.getRetrasadasCount());
     }
 
     isRetrasado(cal: CalibrationDisplay): boolean {

@@ -56,12 +56,13 @@ export class RetornoAreaDialogComponent implements OnInit, OnDestroy {
     retornoAreaItems:      TraspasoItem[] = [];
     loadingRetornoAreaItems = false;
 
-    // Form
+    // Formulario
+
     retornoAreaForm!: FormGroup;
     isSavingRetornoArea     = false;
     showRetornoAreaConfirm  = false;
 
-    // Funcionario autocomplete
+    // Funcionario (autocompletado)
     funcRetornoAreaRecibe: Funcionario[]  = [];
     funcRetornoAreaRecibeLoading          = false;
     showFuncRetornoAreaRecibeDropdown     = false;
@@ -89,7 +90,7 @@ export class RetornoAreaDialogComponent implements OnInit, OnDestroy {
             observaciones: ['']
         });
 
-        // Funcionario search
+        // Búsqueda de funcionario
         this.retornoAreaForm.get('recibeAlmacen')!.valueChanges.pipe(
             debounceTime(300), distinctUntilChanged(),
             switchMap(term => {
@@ -159,7 +160,7 @@ export class RetornoAreaDialogComponent implements OnInit, OnDestroy {
         });
     }
 
-    // Selection helpers
+    // Auxiliares de selección
     isAllSelectedArea(): boolean  { return this.retornoAreaItems.length > 0 && this.retornoAreaItems.every(i => i.selected); }
     isSomeSelectedArea(): boolean { return this.retornoAreaItems.some(i => i.selected) && !this.isAllSelectedArea(); }
     toggleAllArea(e: any): void { this.retornoAreaItems.forEach(i => { i.selected = e.checked; if (e.checked && !i.condicion) i.condicion = 'BUENO' as CondRetorno; }); }
@@ -178,9 +179,8 @@ export class RetornoAreaDialogComponent implements OnInit, OnDestroy {
         if (!item.selected) return '';
         return 'border-black bg-stone-50 dark:bg-slate-700/50';
     }
-    getAlertRowClass(status: string): boolean { return status !== 'SIN_FECHA'; }
 
-    // Count helpers
+    // Auxiliares de conteo
     getAreaBuenosCount():   number { return this.getSelectedArea().filter(i => i.condicion === 'BUENO').length; }
     getAreaCalibCount():    number { return this.getSelectedArea().filter(i => i.condicion === 'REQUIERE_CALIBRACION').length; }
     getAreaDanadosCount():  number { return this.getSelectedArea().filter(i => i.condicion === 'DAÑADO').length; }
@@ -218,10 +218,8 @@ export class RetornoAreaDialogComponent implements OnInit, OnDestroy {
             type:                     'RETORNO_TRASPASO',
             date:                     form.fechaRetorno,
             time:                     new Date().toTimeString().slice(0, 8),
-            // "Devuelto por" de la acta = el área/almacén que devuelve (no hay una
-            // persona individual clara acá, a diferencia del retorno de base) —
-            // así la nota compartida (RReporteRetornoNota) no repite el mismo
-            // nombre en DEVUELTO POR y RECIBIDO POR.
+            // "Devuelto por" del acta = el área/almacén que devuelve (no hay persona individual
+            // clara aquí), para que la nota no repita el mismo nombre en DEVUELTO POR y RECIBIDO POR.
             requested_by_name:        mov.destination_warehouse_name || form.recibeAlmacen || '',
             responsible_person:       form.recibeAlmacen || '',
             document_number:          form.nroDocumento  || '',
@@ -254,7 +252,12 @@ export class RetornoAreaDialogComponent implements OnInit, OnDestroy {
     hideFuncRetornoAreaRecibeDropdown(): void { setTimeout(() => this.showFuncRetornoAreaRecibeDropdown = false, 150); }
     selectFuncRetornoAreaRecibe(f: Funcionario): void { this.retornoAreaForm.patchValue({ recibeAlmacen: f.nombre }, { emitEvent: false }); this.showFuncRetornoAreaRecibeDropdown = false; }
 
-    cerrarFormRetornoArea(): void { this.dialogRef.close(); }
+    cerrarFormRetornoArea(): void {
+        const sel = this.getSelectedArea().length;
+        if (sel > 0 &&
+            !confirm(`¿Cancelar el retorno de área? Se perderá la selección de ${sel} herramienta(s).`)) return;
+        this.dialogRef.close();
+    }
 
     private _showMsg(msg: string, type: 'success' | 'error' | 'warning'): void {
         const panelClass = type === 'success' ? 'snack-success' : type === 'error' ? 'snack-error' : 'snack-warning';

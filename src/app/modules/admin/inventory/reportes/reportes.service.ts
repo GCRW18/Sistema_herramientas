@@ -148,21 +148,6 @@ export interface MovReporteRow {
     notes:             string;
 }
 
-export interface DashboardStats {
-    total_herramientas:        number;
-    herramientas_disponibles:  number;
-    herramientas_prestadas:    number;
-    herramientas_calibracion:  number;
-    herramientas_cuarentena:   number;
-    herramientas_vencen_30:    number;
-    kits_activos:              number;
-    misc_bajo_stock:           number;
-    deudores_activos:          number;
-    enviadas_calibracion:      number;
-    traspasos_mes:             number;
-    bajas_mes:                 number;
-}
-
 /* ─────────────────────────────────────────────────────────────────────── */
 
 @Injectable({ providedIn: 'root' })
@@ -255,23 +240,34 @@ export class ReportesService {
             { ...f, tipo_movimiento: tipo });
     }
 
-    /* ── Dashboard stats ──────────────────────────────────────────────── */
+    /* ── Exportación ──────────────────────────────────────────────────── */
 
-    getDashboardStats(): Observable<DashboardStats> {
-        return from(this._api.post('herramientas/reportes/getDashboardStats', { start: 0, limit: 1 })).pipe(
-            switchMap((r: any) => of((this._norm(r)?.[0] ?? {}) as DashboardStats)),
-            catchError(() => of({} as DashboardStats))
+    // Normaliza la respuesta pXP de los endpoints PDF (pdf_base64). El componente
+    // reserva la pestaña en el gesto del click y la vuelca al llegar (anti pop-up blocker).
+    private _pdfReq(endpoint: string, params: any, fallbackName: string): Observable<{ pdf_base64: string; nombre_archivo: string }> {
+        return from(this._api.post(endpoint, params)).pipe(
+            switchMap((r: any) => {
+                const root = r?.ROOT ?? r ?? {};
+                const mensaje = root?.detalle?.mensaje ?? root?.mensaje ?? r?.mensaje;
+                if (root?.error === true || r?.error === true) {
+                    throw new Error(mensaje || 'Error al generar el reporte');
+                }
+                const row: any = this._norm(r)?.[0];
+                if (!row?.pdf_base64) throw new Error(mensaje || 'El servidor no devolvió el PDF');
+                return of({
+                    pdf_base64: row.pdf_base64 as string,
+                    nombre_archivo: row.nombre_archivo || fallbackName,
+                });
+            }),
+            catchError(e => { console.error(endpoint, e); throw e; })
         );
     }
 
-    /* ── Exportación ──────────────────────────────────────────────────── */
-
-    exportarPDF(tipoReporte: string, filtros: FiltrosReporte = {}): void {
-        // Usa POST autenticado → recibe JSON con pdf_base64 (PDF real, TCPDF)
-        // o, para los tipos que aún no se convirtieron, html_content → abre como blob
+    // Centro de Reportes: TCPDF vía RReporteInventarioTabular. `titulo`/`mgh_code`/`columnas` (JSON).
+    exportarPDF(tipoReporte: string, filtros: FiltrosReporte = {}): Observable<{ pdf_base64: string; nombre_archivo: string }> {
         const params = {
             tipo_reporte: tipoReporte,
-            cantidad: '5000',
+            cantidad: '2000',
             puntero:  '0',
             ...Object.fromEntries(
                 Object.entries(filtros)
@@ -279,34 +275,27 @@ export class ReportesService {
                     .map(([k, v]) => [k, String(v)])
             )
         };
-        from(this._api.post('herramientas/reportes/exportarPDF', params)).pipe(
-            switchMap((r: any) => {
-                const row: any = this._norm(r)?.[0];
-                const pdfBase64: string = row?.pdf_base64 ?? '';
-                const html: string = row?.html_content ?? '';
+        return this._pdfReq('herramientas/reportes/exportarPDF', params, `${tipoReporte}.pdf`);
+    }
 
-                if (pdfBase64) {
-                    const byteChars = atob(pdfBase64);
-                    const byteNumbers = new Array(byteChars.length);
-                    for (let i = 0; i < byteChars.length; i++) byteNumbers[i] = byteChars.charCodeAt(i);
-                    const blob = new Blob([new Uint8Array(byteNumbers)], { type: 'application/pdf' });
-                    const url  = URL.createObjectURL(blob);
-                    const win  = window.open(url, '_blank');
-                    if (!win) console.warn('Permita ventanas emergentes para ver el reporte PDF');
-                    setTimeout(() => URL.revokeObjectURL(url), 10000);
-                } else if (html) {
-                    const blob = new Blob([html], { type: 'text/html; charset=utf-8' });
-                    const url  = URL.createObjectURL(blob);
-                    const win  = window.open(url, '_blank');
-                    if (!win) console.warn('Permita ventanas emergentes para ver el reporte PDF');
-                    setTimeout(() => URL.revokeObjectURL(url), 10000);
-                } else {
-                    console.error('exportarPDF: respuesta vacía del servidor', r);
-                }
-                return of(null);
-            }),
-            catchError(e => { console.error('exportarPDF', e); return of(null); })
-        ).subscribe();
+    // Inventario Unificado (Consultar Inventario): filas ya combinadas en el front.
+    exportarPdfTabular(titulo: string, mghCode: string, columnas: any[], filas: any[]):
+        Observable<{ pdf_base64: string; nombre_archivo: string }> {
+        return this._pdfReq('herramientas/reportes/generarPDFTabularCustom', {
+            titulo, mgh_code: mghCode,
+            columnas: JSON.stringify(columnas),
+            filas: JSON.stringify(filas),
+        }, 'inventario_unificado.pdf');
+    }
+
+    // Ficha de Inventario individual (herramienta / kit / misceláneo).
+    exportarPdfFicha(titulo: string, codigo: string, subtitulo: string, campos: [string, string][], tablas: any[]):
+        Observable<{ pdf_base64: string; nombre_archivo: string }> {
+        return this._pdfReq('herramientas/reportes/generarPDFFichaInventario', {
+            titulo, codigo, subtitulo,
+            campos: JSON.stringify(campos),
+            tablas: JSON.stringify(tablas),
+        }, `ficha_${codigo}.pdf`);
     }
 
     exportarExcel(data: any[], columnas: { key: string; header: string }[], archivo = 'reporte'): void {

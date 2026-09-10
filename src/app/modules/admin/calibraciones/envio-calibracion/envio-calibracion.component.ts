@@ -1,6 +1,5 @@
 import { Component, OnInit, OnDestroy, inject, signal, HostListener } from '@angular/core';
 import { CommonModule }                                  from '@angular/common';
-import { Router }                                        from '@angular/router';
 import { MatIconModule }                                 from '@angular/material/icon';
 import { MatDialog, MatDialogModule }                    from '@angular/material/dialog';
 import { MatSnackBar, MatSnackBarModule }                from '@angular/material/snack-bar';
@@ -78,7 +77,6 @@ interface CalibrationDisplay {
 })
 export class EnvioCalibracionComponent implements OnInit, OnDestroy {
 
-    private router             = inject(Router);
     private dialog             = inject(MatDialog);
     private snackBar           = inject(MatSnackBar);
     private calibrationService = inject(CalibrationService);
@@ -128,10 +126,8 @@ export class EnvioCalibracionComponent implements OnInit, OnDestroy {
         this.loadCalibraciones();
         this.loadDraftCount();
 
-        // Las tabs de Calibraciones quedan montadas en segundo plano (display:none) al
-        // cambiar de tab, así que un envío/retorno hecho en la tab RETORNO no se reflejaba
-        // acá hasta cerrar y reabrir esta tab. calibrationsChanged$ avisa a esta tabla
-        // aunque no esté visible en ese momento.
+        // Las tabs quedan montadas en segundo plano (display:none); calibrationsChanged$ avisa a
+        // esta tabla de un envío/retorno hecho en otra tab aunque no esté visible.
         this.calibrationService.calibrationsChanged$.pipe(
             takeUntil(this._destroy$),
         ).subscribe(() => {
@@ -188,14 +184,8 @@ export class EnvioCalibracionComponent implements OnInit, OnDestroy {
         this.isLoading.set(true);
         this.pageIndex = 0;
 
-        // Una sola carga con TODOS los estados; el filtro de estado es client-side
-        // (applyFilters) para no pegar al servidor en cada cambio de combo.
-        // - ordenacion por id_calibration (PK): scan hacia atrás del índice + LIMIT,
-        //   instantáneo. Antes ordenaba por send_date (sin índice y con NULLs de las
-        //   transcripciones históricas primero) → sort de toda la tabla en cada carga.
-        // - filtro_adicional (no 'filtro', que ACTcalibrations ignora): excluye las
-        //   ~487 transcripciones históricas server-side (flag + marcadores de
-        //   internal_notes del form y del baseline DAT-10).
+        // Una sola carga con todos los estados (filtro de estado client-side); ordena por
+        // id_calibration (PK) y excluye las transcripciones históricas vía filtro_adicional.
         const params: any = {
             limit: 300,
             ordenacion: 'id_calibration',
@@ -303,9 +293,8 @@ export class EnvioCalibracionComponent implements OnInit, OnDestroy {
     // ── Row Helpers ───────────────────────────────
     isRetrasado(cal: CalibrationDisplay): boolean {
         if (!cal.expected_return_date || this.isCompleted(cal.status) || cal.status === 'cancelled') return false;
-        // Comparación de texto (YYYY-MM-DD), no new Date(): una fecha "solo fecha" se
-        // interpreta como medianoche UTC, que en Bolivia (UTC-4) cae en el día anterior
-        // y marcaba como retrasada una herramienta cuyo retorno estimado era hoy mismo.
+        // Comparación de texto YYYY-MM-DD, no new Date(): una fecha "solo fecha" se interpreta
+        // como medianoche UTC y en Bolivia (UTC-4) cae en el día anterior.
         const expectedStr = String(cal.expected_return_date).split('T')[0];
         return expectedStr < localDateStr();
     }
@@ -347,8 +336,7 @@ export class EnvioCalibracionComponent implements OnInit, OnDestroy {
     }
 
     // ── Imprimir herramientas no retornadas ───────
-    // PDF real (TCPDF vía ACTreportes/RReporteNoRetornadas), mismo diseño que la
-    // nota de envío. Antes se armaba un HTML client-side con window.open().
+    // PDF real (TCPDF vía ACTreportes/RReporteNoRetornadas), mismo diseño que la nota de envío.
     printNoRetornadas(): void {
         const pendientes = this.calibraciones.filter(c => c.status === 'sent' || c.status === 'in_process');
         if (!pendientes.length) {
@@ -373,8 +361,8 @@ export class EnvioCalibracionComponent implements OnInit, OnDestroy {
         try {
             const { FormEnvioComponent } = await import('./form-envio/form-envio.component');
             const ref = this.dialog.open(FormEnvioComponent, {
-                width: 'min(1080px, 100vw)', maxWidth: '100vw', maxHeight: '100dvh',
-                panelClass: 'neo-dialog-transparent', disableClose: false, autoFocus: false
+                width: 'min(1240px, 96vw)', maxWidth: '100vw', maxHeight: '100dvh',
+                panelClass: 'neo-dialog-transparent', disableClose: true, autoFocus: false
             });
             ref.afterClosed().subscribe(ok => {
                 this.loadDraftCount();
@@ -425,13 +413,6 @@ export class EnvioCalibracionComponent implements OnInit, OnDestroy {
         }
     }
 
-    printNota(cal: CalibrationDisplay): void {
-        if (!cal.id_calibration) { this.showMsg('ID de calibración no válido', 'error'); return; }
-        this.isLoading.set(true);
-        this.calibrationService.generarYVerPdfEnvio(cal.id_calibration);
-        setTimeout(() => this.isLoading.set(false), 1500);
-    }
-
     verEnvio(cal: CalibrationDisplay): void {
         if (!cal.id_calibration) { this.showMsg('ID de calibración no válido', 'error'); return; }
         this.isLoading.set(true);
@@ -466,54 +447,6 @@ export class EnvioCalibracionComponent implements OnInit, OnDestroy {
             error: () => { this.isLoading.set(false); this.showMsg('Error al obtener el certificado', 'error'); }
         });
     }
-
-    descargarNotaPdf(cal: CalibrationDisplay): void {
-        if (!cal.id_calibration) { this.showMsg('ID de calibración no válido', 'error'); return; }
-        this.isLoading.set(true);
-        this.calibrationService.generarPdfEnvioCalibracion(cal.id_calibration).subscribe({
-            next: (result) => {
-                this._downloadBlob(result.pdf_base64, result.nombre_archivo);
-                this.isLoading.set(false);
-                this.showMsg('Documento descargado correctamente', 'success');
-            },
-            error: (error) => {
-                console.error('Error al descargar documento:', error);
-                this.isLoading.set(false);
-                this.showMsg('Error al generar el documento', 'error');
-            }
-        });
-    }
-
-    descargarCertificadoPdf(cal: CalibrationDisplay): void {
-        if (!cal.id_calibration) { this.showMsg('ID de calibración no válido', 'error'); return; }
-        this.isLoading.set(true);
-        this.calibrationService.generarPdfRetornoCalibracion(cal.id_calibration).subscribe({
-            next: (result) => {
-                this._downloadBlob(result.pdf_base64, result.nombre_archivo);
-                this.isLoading.set(false);
-                this.showMsg('Documento descargado correctamente', 'success');
-            },
-            error: (error) => {
-                console.error('Error al descargar documento:', error);
-                this.isLoading.set(false);
-                this.showMsg('Error al generar el documento', 'error');
-            }
-        });
-    }
-
-    private _downloadBlob(base64: string, filename: string): void {
-        const bytes  = atob(base64);
-        const arr    = new Uint8Array(bytes.length);
-        for (let i = 0; i < bytes.length; i++) arr[i] = bytes.charCodeAt(i);
-        const isHtml = filename.toLowerCase().endsWith('.html');
-        const blob   = new Blob([arr], { type: isHtml ? 'text/html' : 'application/pdf' });
-        const url    = window.URL.createObjectURL(blob);
-        const a      = document.createElement('a');
-        a.href = url; a.download = filename.replace(/[/\\]/g, '-'); a.click();
-        window.URL.revokeObjectURL(url);
-    }
-
-    volver(): void { this.router.navigate(['/administration']); }
 
     private showMsg(message: string, type: 'success' | 'error' | 'warning' | 'info'): void {
         this.snackBar.open(message, 'Cerrar', {

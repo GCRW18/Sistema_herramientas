@@ -18,7 +18,7 @@ import { KitsService }     from '../../../../../core/services/kits.service';
 <div class="bg-stone-100 dark:bg-slate-900 border-2 border-black flex flex-col w-full max-h-[85vh] rounded-2xl overflow-hidden"
 >
 
-    <!-- HEADER -->
+    <!-- CABECERA -->
     <div class="bg-[#0F172A] px-5 py-2.5 shrink-0 select-none"
          cdkDrag cdkDragRootElement=".cdk-overlay-pane" cdkDragHandle style="cursor:grab">
         <p class="text-[9px] text-slate-400 font-bold uppercase tracking-[0.18em] leading-none mb-0.5">Gestión de Kits</p>
@@ -36,7 +36,7 @@ import { KitsService }     from '../../../../../core/services/kits.service';
               [ngClass]="categoriaClass">{{ kit.category }}</span>
     </div>
 
-    <!-- FORM -->
+    <!-- FORMULARIO -->
     <form [formGroup]="form" class="flex-1 overflow-y-auto px-5 py-4 flex flex-col gap-3 neo-scrollbar">
 
         <!-- ── Responsable / Prestatario ── -->
@@ -121,7 +121,7 @@ import { KitsService }     from '../../../../../core/services/kits.service';
 
     </form>
 
-    <!-- FOOTER -->
+    <!-- PIE -->
     <div class="border-t-2 border-black bg-stone-200 dark:bg-slate-800 px-4 py-2.5 flex flex-col gap-1.5 shrink-0">
         <p *ngIf="errorMsg" class="text-[9px] font-black text-red-600 text-center uppercase">{{ errorMsg }}</p>
         <div class="flex justify-between items-center gap-2">
@@ -160,7 +160,6 @@ export class PrestarKitDialogComponent implements OnInit, OnDestroy {
     private _deliver$     = new Subject<string>();
 
     private _subs           = new Subscription();
-    private fb              = inject(FormBuilder);
     public  dialogRef       = inject(MatDialogRef<PrestarKitDialogComponent>);
     public  kit             = inject<any>(MAT_DIALOG_DATA);
     private movementService = inject(MovementService);

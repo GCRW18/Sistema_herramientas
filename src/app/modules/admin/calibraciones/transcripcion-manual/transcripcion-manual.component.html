@@ -151,7 +151,7 @@
     <div class="bg-stone-100 dark:bg-slate-900 border-2 border-black overflow-hidden flex flex-col relative"
          style="width:600px; max-width:95vw; max-height:90vh">
 
-        <!-- Header -->
+        <!-- Cabecera -->
         <div class="bg-[#0F172A] px-4 py-2.5 flex items-center gap-2 shrink-0 select-none"
              cdkDrag cdkDragRootElement=".cdk-overlay-pane" cdkDragHandle style="cursor:grab">
             <div class="w-8 h-8 rounded bg-amber-400 border-2 border-black flex items-center justify-center shadow-[2px_2px_0_#fbbf24] shrink-0">
@@ -163,7 +163,7 @@
             </div>
         </div>
 
-        <!-- Context bar (visible al seleccionar herramienta) -->
+        <!-- Barra de contexto (visible al seleccionar herramienta) -->
         <div *ngIf="selectedTool" class="border-b-2 border-black bg-white dark:bg-slate-800 px-4 py-2 flex items-center gap-2 shrink-0">
             <div class="w-8 h-8 rounded-xl border-2 border-stone-200 dark:border-slate-700 bg-stone-50 dark:bg-slate-700 flex items-center justify-center shrink-0">
                 <mat-icon class="!text-sm text-stone-400 dark:text-slate-400">handyman</mat-icon>
@@ -177,7 +177,7 @@
             </span>
         </div>
 
-        <!-- Body -->
+        <!-- Cuerpo -->
         <div class="flex-1 overflow-y-auto px-4 py-3 flex flex-col gap-2 custom-scrollbar">
 
             <!-- Sección 1: Herramienta -->
@@ -321,7 +321,7 @@
 
         </div>
 
-        <!-- Footer -->
+        <!-- Pie -->
         <div class="border-t-2 border-black bg-stone-200 dark:bg-slate-800 px-4 py-2 flex justify-between items-center shrink-0">
             <button type="button" (click)="closeDialog()"
                     class="px-3 py-1.5 bg-[#FF1414] text-white font-black text-[10px] border-2 border-black rounded-xl shadow-[2px_2px_0_#000] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all uppercase">

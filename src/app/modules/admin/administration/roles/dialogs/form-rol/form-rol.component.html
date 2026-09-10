@@ -1,6 +1,6 @@
 <div class="bg-stone-100 dark:bg-slate-900 border-2 border-black flex flex-col w-full rounded-2xl overflow-hidden">
 
-    <!-- HEADER -->
+    <!-- CABECERA -->
     <div class="bg-[#0F172A] px-5 py-3 flex items-center gap-3 shrink-0 select-none"
          cdkDrag cdkDragRootElement=".cdk-overlay-pane" cdkDragHandle style="cursor:grab">
         <div class="w-9 h-9 rounded bg-amber-500 border-2 border-black flex items-center justify-center shadow-[2px_2px_0_#000] shrink-0">
@@ -18,7 +18,7 @@
         </button>
     </div>
 
-    <!-- FORM -->
+    <!-- FORMULARIO -->
     <form [formGroup]="rolForm" class="px-5 py-4 grid grid-cols-1 md:grid-cols-2 gap-x-5 gap-y-3">
 
         <!-- ═══ COLUMNA IZQUIERDA · Datos del Rol ═══ -->
@@ -71,7 +71,7 @@
                 <div class="flex-1 h-px bg-stone-200 dark:bg-slate-700"></div>
             </div>
 
-            <!-- Permissions summary card -->
+            <!-- Tarjeta resumen de permisos -->
             <div class="bg-white dark:bg-slate-800 border-2 rounded-xl p-3 flex items-center gap-3 transition-all"
                  [ngClass]="(rolForm.get('permissions')?.value?.length || 0) > 0
                      ? 'border-amber-400'
@@ -118,7 +118,7 @@
 
     </form>
 
-    <!-- FOOTER -->
+    <!-- PIE -->
     <div class="border-t-2 border-black bg-stone-200 dark:bg-slate-800 px-4 py-2.5 flex justify-between items-center gap-2 shrink-0">
         <button type="button" (click)="onCancel()"
                 class="px-4 py-2 bg-[#FF1414] text-white font-black text-[10px] border-2 border-black rounded-xl shadow-[2px_2px_0_#000] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all uppercase">

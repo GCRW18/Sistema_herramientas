@@ -59,12 +59,13 @@ export class DevolucionTecnicoDialogComponent implements OnInit, OnDestroy {
     devolucionTecnicoItems: TraspasoItem[] = [];
     loadingDevolucionItems = false;
 
-    // Form
+    // Formulario
+
     devolucionTecnicoForm!: FormGroup;
     isSavingDevolucionTecnico   = false;
     showDevolucionTecnicoConfirm = false;
 
-    // Funcionario autocomplete
+    // Funcionario (autocompletado)
     funcDevolucionRecibe: Funcionario[]  = [];
     funcDevolucionRecibeLoading          = false;
     showFuncDevolucionRecibeDropdown     = false;
@@ -82,10 +83,10 @@ export class DevolucionTecnicoDialogComponent implements OnInit, OnDestroy {
             observaciones:   ['']
         });
 
-        // Filter on search input
+        // Filtro sobre el input de búsqueda
         // (reactive, done in template with getter)
 
-        // Funcionario search
+        // Búsqueda de funcionario
         this.devolucionTecnicoForm.get('recibeAlmacen')!.valueChanges.pipe(
             debounceTime(300), distinctUntilChanged(),
             switchMap(term => {
@@ -160,7 +161,7 @@ export class DevolucionTecnicoDialogComponent implements OnInit, OnDestroy {
         });
     }
 
-    // Selection helpers
+    // Auxiliares de selección
     isAllSelectedDevolucion(): boolean  { return this.devolucionTecnicoItems.length > 0 && this.devolucionTecnicoItems.every(i => i.selected); }
     isSomeSelectedDevolucion(): boolean { return this.devolucionTecnicoItems.some(i => i.selected) && !this.isAllSelectedDevolucion(); }
     toggleAllDevolucion(e: any): void { this.devolucionTecnicoItems.forEach(i => { i.selected = e.checked; if (e.checked && !i.condicion) i.condicion = 'BUENO' as CondRetorno; }); }
@@ -182,20 +183,20 @@ export class DevolucionTecnicoDialogComponent implements OnInit, OnDestroy {
         return 'bg-stone-50 dark:bg-slate-700/50';
     }
 
-    // Count helpers
+    // Auxiliares de conteo
     getDevolucionBuenosCount():   number { return this.getSelectedDevolucion().filter(i => i.condicion === 'BUENO').length; }
     getDevolucionDanadosCount():  number { return this.getSelectedDevolucion().filter(i => i.condicion === 'DAÑADO').length; }
     getDevolucionFaltantesCount():number { return this.getSelectedDevolucion().filter(i => i.condicion === 'FALTANTE').length; }
 
-    // Transfer type helpers
-    getTransferTypeClass(tipo: string): string {
+    // Helpers de tipo de traspaso
+    getTransferTypeClass(_tipo: string): string {
         return 'bg-white dark:bg-slate-800 text-black dark:text-white border-stone-300 dark:border-slate-600';
     }
     getTransferTypeLabel(tipo: string): string {
         const map: Record<string, string> = { TEMPORAL: 'Temp.', PERMANENTE: 'Perm.', REASIGNACION: 'Reasig.', PRESTAMO: 'Prést.' };
         return map[tipo] || tipo;
     }
-    getAlertBadgeClass(status: string): string {
+    getAlertBadgeClass(_status: string): string {
         return 'bg-white dark:bg-slate-800 text-black dark:text-white border-stone-300 dark:border-slate-600';
     }
     getAlertLabel(status: string): string {
@@ -236,10 +237,8 @@ export class DevolucionTecnicoDialogComponent implements OnInit, OnDestroy {
             type:                   'RETORNO_TRASPASO',
             date:                   form.fechaDevolucion,
             time:                   new Date().toTimeString().slice(0, 8),
-            // "Devuelto por" de la acta = el técnico al que se le había hecho el
-            // traspaso (mov.received_by_name), no quien recibe en almacén — así
-            // la nota compartida (RReporteRetornoNota) no repite el mismo nombre
-            // en DEVUELTO POR y RECIBIDO POR.
+            // "Devuelto por" del acta = el técnico que tenía el traspaso (mov.received_by_name),
+            // no quien recibe en almacén, para que la nota no repita el mismo nombre.
             requested_by_name:      mov.received_by_name || form.recibeAlmacen || '',
             responsible_person:     form.recibeAlmacen || '',
             document_number:        form.nroDocumento  || '',
@@ -272,7 +271,12 @@ export class DevolucionTecnicoDialogComponent implements OnInit, OnDestroy {
     hideFuncDevolucionRecibeDropdown(): void { setTimeout(() => this.showFuncDevolucionRecibeDropdown = false, 150); }
     selectFuncDevolucionRecibe(f: Funcionario): void { this.devolucionTecnicoForm.patchValue({ recibeAlmacen: f.nombre }, { emitEvent: false }); this.showFuncDevolucionRecibeDropdown = false; }
 
-    cerrarFormDevolucionTecnico(): void { this.dialogRef.close(); }
+    cerrarFormDevolucionTecnico(): void {
+        const sel = this.getSelectedDevolucion().length;
+        if (sel > 0 &&
+            !confirm(`¿Cancelar la devolución técnica? Se perderá la selección de ${sel} herramienta(s).`)) return;
+        this.dialogRef.close();
+    }
 
     private _showMsg(msg: string, type: 'success' | 'error' | 'warning'): void {
         const panelClass = type === 'success' ? 'snack-success' : type === 'error' ? 'snack-error' : 'snack-warning';

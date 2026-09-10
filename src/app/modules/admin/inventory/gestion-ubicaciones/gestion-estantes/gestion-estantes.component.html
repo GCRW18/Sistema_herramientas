@@ -1,8 +1,6 @@
 <div class="bg-[#f8f9fc] dark:bg-slate-900 border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] overflow-hidden flex flex-col font-sans w-full h-full rounded-2xl">
 
-    <!-- ======================================================= -->
-    <!-- VISTA BUSCADOR GLOBAL DE HERRAMIENTAS -->
-    <!-- ======================================================= -->
+    <!-- ── Vista: buscador global de herramientas ── -->
     <ng-container *ngIf="buscarVisible()">
 
         <div class="bg-[#0F172AFF] text-white px-3 sm:px-5 py-2 sm:py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between shrink-0 gap-2 sm:gap-3 border-b-2 border-black">
@@ -27,7 +25,7 @@
             </div>
         </div>
 
-        <!-- Loading -->
+        <!-- Cargando -->
         <div *ngIf="loadingBusqueda()" class="flex-1 flex items-center justify-center">
             <div class="flex flex-col items-center gap-4">
                 <div class="w-12 h-12 border-4 border-amber-400 border-t-transparent rounded-full" style="animation: spin 0.8s linear infinite"></div>
@@ -118,9 +116,7 @@
         </div>
     </ng-container>
 
-    <!-- ======================================================= -->
-    <!-- VISTA 1: TABLA GENERAL DE ESTANTES (MAESTRO) -->
-    <!-- ======================================================= -->
+    <!-- ── Vista 1: tabla general de estantes (maestro) ── -->
     <ng-container *ngIf="!buscarVisible() && vistaActiva() === 'tabla'">
         <div class="bg-[#0F172AFF] text-white px-3 sm:px-5 py-2 sm:py-3 flex flex-col gap-2 shrink-0 border-b-2 border-black">
             <!-- Título / breadcrumb -->
@@ -272,10 +268,7 @@
         </div>
     </ng-container>
 
-    <!-- ======================================================= -->
-    <!-- VISTA 2: DETALLE DEL ESTANTE (a pantalla completa)      -->
-    <!-- Clic en un nivel → miniventana con sus herramientas     -->
-    <!-- ======================================================= -->
+    <!-- ── Vista 2: detalle del estante (pantalla completa; clic en nivel → miniventana) ── -->
     <ng-container *ngIf="!buscarVisible() && vistaActiva() === 'detalle' && estanteActivo as r">
 
         <div class="bg-[#0F172AFF] text-white px-3 sm:px-5 py-2 sm:py-3 flex items-center shrink-0 flex-wrap gap-2 sm:gap-3 border-b-2 border-black">
@@ -502,7 +495,7 @@
             </div>
         </div>
 
-        <!-- Hint inferior (en pantallas grandes lo muestra el panel lateral) -->
+        <!-- Ayuda inferior (en pantallas grandes lo muestra el panel lateral) -->
         <div class="lg:hidden shrink-0 px-3 sm:px-5 py-1.5 bg-white dark:bg-slate-800 border-t-2 border-black flex items-center justify-center gap-1.5">
             <mat-icon class="!text-[14px] !w-3.5 !h-3.5 text-amber-500">touch_app</mat-icon>
             <span class="text-[9px] sm:text-[10px] font-black uppercase text-gray-500">Haz clic en un nivel para ver y gestionar sus herramientas</span>

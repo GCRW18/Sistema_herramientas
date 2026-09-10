@@ -1,4 +1,4 @@
-// Shared types and interfaces for retorno-traspaso dialogs
+// Tipos e interfaces comunes de los diálogos de retorno-traspaso
 
 import { localDateStr } from '../../../../core/utils/date.utils';
 
@@ -108,16 +108,6 @@ export interface ResumenCondicion {
     pendientes: number;
 }
 
-export interface HistorialRecord {
-    id: string;
-    fecha: string;
-    tipo: string;
-    documento: string;
-    responsable: string;
-    estado: string;
-    raw?: any;
-}
-
 export const CONDICIONES_RETORNO = [
     { value: 'BUENO' as CondRetorno,                label: 'Bueno',            bgColor: 'bg-green-500',  icon: 'check_circle',   description: 'Perfecto estado' },
     { value: 'DAÑADO' as CondRetorno,               label: 'Dañado',           bgColor: 'bg-red-500',    icon: 'report_problem', description: 'Requiere reparación' },
@@ -139,7 +129,7 @@ export const TIPOS_TRASPASO = [
     { value: 'PRESTAMO',     label: 'Préstamo Interno' },
 ];
 
-// Shared item validation helpers
+// Auxiliares comunes de validación de ítems
 export function isItemValid(item: TraspasoItem): boolean {
     if (!item.selected) return true;
     if (!item.condicion) return false;
@@ -189,17 +179,8 @@ export function mapRawMovimientoActivo(m: any): MovimientoActivo {
 }
 
 /**
- * Motivo por el que una herramienta NO puede salir del almacen (traspaso a otra area,
- * envio a otra base, traspaso a tecnico). Devuelve null si puede salir.
- *
- * Refleja el candado del backend (he.fn_block_expired_calibration_movement): una herramienta
- * con calibracion vencida no puede salir, salvo que vaya a calibracion / cuarentena / baja.
- * Aca ademas se cubren los estados operativos (en calibracion, cuarentena, baja, mantenimiento)
- * para avisar al agregar la herramienta y no despues de llenar todo el formulario. Mismo
- * criterio que el form de Prestamo a Tecnico (_motivoBloqueoPrestamo).
- *
- * Acepta tanto el registro crudo del autocompletar (status / next_calibration_date) como el
- * item ya mapeado (fechaCalibracion / fechaVencCal).
+ * Motivo por el que una herramienta NO puede salir del almacen (o null si puede). Refleja el
+ * candado del backend (calibracion vencida) + estados operativos. Acepta registro crudo o mapeado.
  */
 export function motivoBloqueoSalida(tool: any): string | null {
     const status = String(tool?.status ?? tool?.tool_status ?? '').toLowerCase();

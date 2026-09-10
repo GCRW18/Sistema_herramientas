@@ -29,9 +29,8 @@ export class DetalleKitDialogComponent {
         @Inject(MAT_DIALOG_DATA) public kit: any
     ) {}
 
-    // Abre la ficha de la herramienta (solo-lectura), misma que usa Ajuste de Herramienta
-    // y el préstamo técnico. Los datos vienen de getKitComponents (HE_KCS_SEL) mapeados en
-    // lista-kits.component.ts#verDetalle.
+    // Abre la ficha de la herramienta (solo-lectura). Datos de getKitComponents (HE_KCS_SEL),
+    // mapeados en lista-kits.component.ts#verDetalle.
     async verHerramienta(item: any): Promise<void> {
         if (!item?.tool_id) return;
         const { DetalleHerramientaComponent } = await import(

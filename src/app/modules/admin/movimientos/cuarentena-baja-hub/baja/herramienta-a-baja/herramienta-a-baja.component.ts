@@ -99,11 +99,8 @@ export class HerramientaABajaComponent implements OnInit, OnDestroy {
             .subscribe({ next: (w: any[]) => { this.warehouses = w; } });
     }
 
-    // Búsqueda en vivo contra el backend (ToolService.getTools con query → searchToolsAutocomplete),
-    // el mismo mecanismo que usa el buscador de detalle-herramienta.component.ts (Ajuste de
-    // Herramienta), en vez de precargar todas las herramientas y filtrar en el cliente.
-    // "base" se resuelve en el cliente contra el listado de almacenes (getWarehouses) porque
-    // searchToolsAutocomplete solo devuelve warehouse_id, no el nombre/código del almacén.
+    // Búsqueda en vivo contra el backend (getTools → searchToolsAutocomplete). "base" se resuelve
+    // en el cliente contra getWarehouses (searchToolsAutocomplete solo da warehouse_id).
     private setupSearchListener(): void {
         this._search$.pipe(
             takeUntil(this._unsubscribeAll),

@@ -15,7 +15,8 @@ import { MiscelaneosService }  from 'app/core/services/miscelaneos.service';
 import { MovementService }          from 'app/core/services/movement.service';
 import { ToolService }              from 'app/core/services/tool.service';
 import { UnifiedItem }               from '../consultar-inventario.component';
-import { buildFichaPdfHtml }         from './ficha-pdf.util';
+import { buildFichaPdfPayload }      from './ficha-pdf.util';
+import { ReportesService }           from '../../reportes/reportes.service';
 
 // ─── Tipos ────────────────────────────────────────────────────────────────────
 
@@ -112,6 +113,7 @@ export class FichaInventarioDialogComponent implements OnInit {
     private movementService    = inject(MovementService);
     private toolService        = inject(ToolService);
     private snackBar           = inject(MatSnackBar);
+    private reportesSvc        = inject(ReportesService);
 
     item!: UnifiedItem;
 
@@ -120,6 +122,7 @@ export class FichaInventarioDialogComponent implements OnInit {
     tabs: TabDef[] = [];
 
     isGeneratingQR = signal(false);
+    isExporting    = signal(false);
 
     // ── Detalle (movimientos / componentes / préstamos) ───────────────────
     isLoadingDetail   = signal(false);
@@ -157,9 +160,8 @@ export class FichaInventarioDialogComponent implements OnInit {
         return (this.item.stockMinimo ?? 0) > 0 && this.item.stockActual <= (this.item.stockMinimo ?? 0);
     }
 
-    // ── Imagen ────────────────────────────────────────────────────────────
-    // item.imagen ya trae la foto real: mapTool la resuelve desde t.location_photo
-    // (he.ttool_files/'location_photo'), la misma que edita "Agregar Herramienta al Nivel".
+    // ── Imagen ───────────────────────────────────────────────────────────
+    // item.imagen ya trae la foto real (mapTool la resuelve desde t.location_photo).
     imagenSrc(): string | null {
         return this.item.imagen || null;
     }
@@ -198,9 +200,8 @@ export class FichaInventarioDialogComponent implements OnInit {
     // ── Formato de fecha ─────────────────────────────────────────────────
     formatDateShort(dateStr: string): string {
         if (!dateStr) return '—';
-        // El backend manda 'YYYY-MM-DD' o 'YYYY-MM-DD HH:mm:ss'. new Date('YYYY-MM-DD')
-        // lo interpreta como medianoche UTC → en UTC-4 (Bolivia) getDate() devuelve el
-        // día anterior. Se toma la parte de fecha del string directamente.
+        // El backend manda 'YYYY-MM-DD[ HH:mm:ss]'. new Date() lo lee como UTC → en UTC-4
+        // devuelve el día anterior; se toma la parte de fecha del string directamente.
         const m = String(dateStr).match(/^(\d{4})-(\d{2})-(\d{2})/);
         if (m) return `${m[3]}/${m[2]}/${m[1]}`;
         const d = new Date(dateStr);
@@ -262,18 +263,41 @@ export class FichaInventarioDialogComponent implements OnInit {
         }
     }
 
-    // ── Exportar / imprimir ficha individual ────────────────────────────────
+    // ── Exportar ficha individual (PDF real, TCPDF backend) ─────────────────
     exportarPDF(): void {
-        const html = buildFichaPdfHtml(this.item, {
+        if (this.isExporting()) return;
+        const p = buildFichaPdfPayload(this.item, {
             movements:  this.detailMovements(),
             components: this.detailComponents(),
             loans:      this.detailLoans(),
         });
-        const win = window.open('', '_blank', 'width=900,height=1000');
-        if (win) {
-            win.document.write(html);
-            win.document.close();
-        }
+
+        const win = window.open('', '_blank');
+        this.isExporting.set(true);
+        this.reportesSvc.exportarPdfFicha('Ficha de Inventario', this.item.codigo, p.subtitulo, p.campos, p.tablas)
+            .pipe(finalize(() => this.isExporting.set(false)))
+            .subscribe({
+                next: (r) => {
+                    try {
+                        const bytes = Uint8Array.from(atob(r.pdf_base64), c => c.charCodeAt(0));
+                        const url = URL.createObjectURL(new Blob([bytes], { type: 'application/pdf' }));
+                        if (win) { win.location.href = url; }
+                        else {
+                            const a = document.createElement('a');
+                            a.href = url; a.download = r.nombre_archivo;
+                            document.body.appendChild(a); a.click(); document.body.removeChild(a);
+                        }
+                        setTimeout(() => URL.revokeObjectURL(url), 30000);
+                    } catch {
+                        try { win?.close(); } catch { /* noop */ }
+                        this.snackBar.open('No se pudo abrir el PDF generado', 'OK', { duration: 4000 });
+                    }
+                },
+                error: (e) => {
+                    try { win?.close(); } catch { /* noop */ }
+                    this.snackBar.open(e?.message || 'Error al generar la ficha', 'OK', { duration: 5000 });
+                },
+            });
     }
 
     // ── Código QR (etiqueta para impresora Bixolon) ─────────────────────────

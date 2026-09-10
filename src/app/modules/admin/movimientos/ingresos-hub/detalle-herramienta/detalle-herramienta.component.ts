@@ -22,12 +22,12 @@ interface HerramientaOption {
     tipo:         string;
     sn:           string;
     estado:       string;
-    /** Estado traducido para mostrar en el buscador (estado viene crudo del backend
-     *  en inglés — "available", "in_use", etc. — y se usa tal cual para el match
-     *  contra `estados` al seleccionar, así que se traduce aparte solo para UI). */
+    /** Estado traducido para el buscador (el crudo del backend se usa tal cual para el match
+     *  contra `estados`, así que se traduce aparte solo para UI). */
     estadoLabel:  string;
     ubicacion:    string;
     um:           string;
+    quantity_in_stock: number;
     imagen?:      string;
     observaciones?: string;
     warehouse_id?: number;
@@ -110,7 +110,7 @@ export class DetalleHerramientaComponent implements OnInit, OnDestroy {
     imagenOriginal = signal<string | null>(null);
     imagenNueva    = signal<string | null>(null);
 
-    /* ════════ Buscador header ════════ */
+    /* ════════ Buscador (cabecera) ════════ */
     buscarValue       = '';
     toolSuggestions:  HerramientaOption[] = [];
     showToolDropdown  = false;
@@ -138,7 +138,7 @@ export class DetalleHerramientaComponent implements OnInit, OnDestroy {
     showUbAlmacenGrid  = true;
     ubStep = 1;
 
-    /* ════════ Lifecycle ════════ */
+    /* ════════ Ciclo de vida ════════ */
     ngOnInit(): void {
         this.detalleForm = this.fb.group({
             toolId:         [null],
@@ -197,8 +197,9 @@ export class DetalleHerramientaComponent implements OnInit, OnDestroy {
                         sn:           t.serial_number   || '',
                         estado:       t.status          || '',
                         estadoLabel:  this._statusLabel(t.status),
-                        ubicacion:    t.location        || '',
+                        ubicacion:    t.ubicacion       || '',
                         um:           t.unit_of_measure || 'UNIDAD',
+                        quantity_in_stock: t.quantity_in_stock != null ? Number(t.quantity_in_stock) : 1,
                         imagen:       t.location_photo  || null,
                         observaciones: t.notes          || '',
                         warehouse_id: t.warehouse_id    ? Number(t.warehouse_id)  : null,
@@ -240,16 +241,12 @@ export class DetalleHerramientaComponent implements OnInit, OnDestroy {
     }
 
     /** Clase de color del badge de estado en el buscador, en base al mismo status crudo. */
-    getEstadoBadgeClass(raw: string | null | undefined): string {
+    getEstadoBadgeClass(_raw: string | null | undefined): string {
         return 'bg-stone-100 dark:bg-slate-700 text-black dark:text-white';
     }
 
-    /** Traduce el status crudo de he.ttools (inglés/español mezclado: available, in_use,
-     *  in_calibration, quarantine, decommissioned, lost, DISPONIBLE, CUARENTENA, BAJA,
-     *  CALIBRACION) a una de las opciones de `estados` (condición del ajuste). Sin esto,
-     *  seleccionarHerramienta() comparaba el status crudo contra los values de `estados`
-     *  (SERVICEABLE/UNSERVICEABLE/...) que nunca matchean, y el campo caía siempre al
-     *  default 'SERVICEABLE' sin reflejar el estado real de la herramienta. */
+    /** Traduce el status crudo de he.ttools (available, in_use, DISPONIBLE, BAJA...) a una opción
+     *  de `estados` (condición del ajuste); sin esto el campo caía siempre al default. */
     private _estadoAjusteDesdeStatus(raw: string | null | undefined): string {
         const map: Record<string, string> = {
             available: 'SERVICEABLE', DISPONIBLE: 'SERVICEABLE',
@@ -277,12 +274,15 @@ export class DetalleHerramientaComponent implements OnInit, OnDestroy {
             estado: this._estadoAjusteDesdeStatus(tool.estado),
             um:     this.unidades.some(u => u.value === tool.um)    ? tool.um     : 'UNIDAD',
             observaciones: tool.observaciones || '',
+            // "Cantidad" en Ajuste es el total correcto que debe quedar en stock (no unidades
+            // a sumar) — se prellena con el stock actual para que si no se toca, el ajuste
+            // no cambie la cantidad; el usuario la corrige solo si el conteo físico difiere.
+            cantidad: tool.quantity_in_stock || 1,
         });
         if (tool.imagen) this.imagenOriginal.set(tool.imagen);
 
-        // Auto-seleccionar ubicación si el tool la trae (búsqueda contra la lista
-        // completa, no la filtrada a Cbba: la herramienta puede estar en otra base
-        // por datos legado y no queremos perder el dato al editar).
+        // Auto-selecciona la ubicación si el tool la trae, buscando en la lista completa de
+        // almacenes (la herramienta puede estar fuera de Cbba por datos legado).
         if (tool.warehouse_id && this._todosLosAlmacenes.length > 0) {
             const w = this._todosLosAlmacenes.find(a => a.id === tool.warehouse_id);
             if (w) {
@@ -318,9 +318,8 @@ export class DetalleHerramientaComponent implements OnInit, OnDestroy {
         ).subscribe({
             next: warehouses => {
                 this._todosLosAlmacenes = warehouses;
-                // Solo almacenes de Cochabamba en el picker (mismo criterio que
-                // Kits/Misceláneos); _todosLosAlmacenes conserva la lista completa
-                // para ubicar herramientas ya guardadas fuera de Cbba (datos legado).
+                // Solo almacenes de Cbba en el picker; _todosLosAlmacenes conserva la lista
+                // completa para ubicar herramientas guardadas fuera de Cbba (datos legado).
                 this.ubAlmacenes = warehouses.filter(w => w.codigo?.startsWith('ALM-CBB'));
                 if (this._pendingAutoSelect) {
                     const p = this._pendingAutoSelect;
@@ -440,8 +439,6 @@ export class DetalleHerramientaComponent implements OnInit, OnDestroy {
         this.detalleForm.patchValue({ warehouseId: null, rackId: null, levelId: null });
     }
 
-    volverAlmacen(): void  { this.ubSelectedRack = null; this.ubSelectedLevel = null; this.ubRacks = []; this.ubLevels = []; this.ubStep = 1; }
-    volverEstante(): void  { this.ubSelectedLevel = null; this.ubLevels = []; this.ubStep = 2; }
 
     getUbicacionLabel(): string {
         if (!this.ubSelectedWarehouse) return 'Sin asignar';
@@ -496,7 +493,7 @@ export class DetalleHerramientaComponent implements OnInit, OnDestroy {
         reader.readAsDataURL(file);
     }
 
-    /* ════════ Helpers ════════ */
+    /* ════════ Auxiliares ════════ */
     hasError(field: string, error: string): boolean {
         const c = this.detalleForm.get(field);
         return !!c && c.hasError(error) && c.touched;

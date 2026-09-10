@@ -1,5 +1,6 @@
-import { Component, OnDestroy, inject, Type, Injector, TrackByFunction } from '@angular/core';
+import { Component, OnDestroy, inject, Type, Injector, TrackByFunction, ViewChildren, QueryList } from '@angular/core';
 import { CommonModule, NgComponentOutlet } from '@angular/common';
+import { outletsTienenCambios } from '../../../core/guards/pending-changes.guard';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDialogModule, MatDialogRef } from '@angular/material/dialog';
@@ -110,7 +111,19 @@ export class AdministrationComponent implements OnDestroy {
 
     private _unsubscribeAll = new Subject<void>();
 
-    // ── Tab system ───────────────────────────────────────────────────────────
+    /** Instancias vivas de los submódulos abiertos — para el pendingChangesGuard. */
+    @ViewChildren(NgComponentOutlet) private _outlets!: QueryList<NgComponentOutlet>;
+
+    /** pendingChangesGuard: ¿algún submódulo abierto tiene un formulario/lista en curso? */
+    tieneCambiosPendientes(): boolean {
+        return outletsTienenCambios(this._outlets);
+    }
+
+    mensajeSalida(): string {
+        return 'Hay datos sin guardar en Administración. Si sales del módulo se perderán. ¿Salir de todas formas?';
+    }
+
+    // ── Sistema de pestañas ──────────────────────────────────────────────────
     openTabs: OpenTab[] = [];
     activeTabId: number | null = null;
     showBandeja = false;
@@ -141,9 +154,15 @@ export class AdministrationComponent implements OnDestroy {
             svgIcon: 'heroicons_outline:identification',
             loader: async () => (await import('./clientes/clientes.component')).ClientesComponent
         },
+        {
+            type: 5, label: 'AERONAVES', sublabel: '',
+            color: '#DC2626', textColor: '#fff',
+            svgIcon: 'heroicons_outline:paper-airplane',
+            loader: async () => (await import('./aeronaves/aeronaves.component')).AeronavesComponent
+        },
     ];
 
-    // ── Tab system methods ───────────────────────────────────────────────────
+    // ── Métodos del sistema de pestañas ──────────────────────────────────────
 
     toggleBandeja(): void {
         this.showBandeja = !this.showBandeja;

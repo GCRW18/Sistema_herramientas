@@ -1,6 +1,6 @@
 ﻿<div class="flex flex-col w-full h-full bg-[#f8f9fc] dark:bg-[#0F172AFF] transition-colors duration-300 font-sans overflow-hidden">
 
-    <!-- Loading overlay -->
+    <!-- Cargando overlay -->
     <div *ngIf="isSaving || isSavingAjuste" class="fixed inset-0 z-[120] bg-black/60 flex items-center justify-center">
         <div class="bg-white dark:bg-slate-800 border-[3px] border-black rounded-2xl shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] p-8 flex flex-col items-center gap-4">
             <mat-spinner diameter="40"></mat-spinner>
@@ -14,7 +14,7 @@
 
     <div class="flex-1 flex flex-col p-3 sm:p-4 gap-3 overflow-hidden relative z-10">
 
-        <!-- ── HEADER ──────────────────────────────────────────── -->
+        <!-- ── CABECERA ──────────────────────────────────────────── -->
         <div class="flex items-center justify-between gap-3 shrink-0 flex-wrap">
 
             <div class="flex items-center gap-4">
@@ -97,10 +97,10 @@
             </div>
         </div>
 
-        <!-- ── CARD PRINCIPAL ──────────────────────────────────────────── -->
+        <!-- ── TARJETA PRINCIPAL ──────────────────────────────────────────── -->
         <div class="flex-1 flex flex-col overflow-hidden border-[3px] border-black bg-gray-50 dark:bg-[#0F172AFF] rounded-2xl shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
 
-            <!-- KPI dark header -->
+            <!-- Cabecera oscura con KPIs -->
             <div class="px-3 sm:px-4 py-2 bg-[#0F172AFF] border-b-[3px] border-black shrink-0 rounded-t-2xl">
                 <div class="flex items-center gap-2 overflow-x-auto scrollbar-none flex-nowrap">
 
@@ -231,7 +231,7 @@
                 <div class="flex-1 overflow-auto custom-scrollbar-ing">
                     <table class="w-full min-w-[680px]">
 
-                        <!-- ── HEADER ── -->
+                        <!-- ── CABECERA ── -->
                         <thead class="bg-gray-100 dark:bg-slate-800 border-b-[2px] border-black sticky top-0 z-10">
                         <tr class="text-left text-[10px] font-black uppercase tracking-wider text-black dark:text-white">
                             <th class="px-3 py-2.5 text-center w-10">#</th>
@@ -242,7 +242,7 @@
                         </tr>
                         </thead>
 
-                        <!-- ── BODY ── -->
+                        <!-- ── CUERPO ── -->
                         <tbody>
                         <ng-container *ngFor="let item of dataSource; let i = index">
                         <tr class="border-b border-gray-200 dark:border-slate-700 transition-all cursor-pointer border-l-2"
@@ -339,7 +339,7 @@
                         </tbody>
                     </table>
 
-                    <!-- Empty state -->
+                    <!-- Estado vacÃ­o -->
                     <div *ngIf="dataSource.length === 0" class="flex flex-col items-center justify-center py-16 gap-3">
                         <div class="w-16 h-16 bg-stone-100 dark:bg-slate-800 border-2 border-black rounded-2xl shadow-[3px_3px_0_#000] flex items-center justify-center">
                             <mat-icon class="!text-3xl text-stone-300 dark:text-slate-600">inventory_2</mat-icon>
@@ -438,7 +438,7 @@
                         </tbody>
                     </table>
 
-                    <!-- Empty state ajuste -->
+                    <!-- Estado vacÃ­o ajuste -->
                     <div *ngIf="dataSourceAjuste.length === 0" class="flex flex-col items-center justify-center py-16 gap-3">
                         <div class="w-16 h-16 bg-gray-100 dark:bg-slate-800 border-[3px] border-black rounded-2xl shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] flex items-center justify-center">
                             <mat-icon class="!text-3xl text-gray-400 dark:text-gray-600">tune</mat-icon>
@@ -455,13 +455,13 @@
             <!-- Tab: Historial de Ingresos -->
             <div *ngIf="activeTab() === 'historial'" class="h-full flex flex-col overflow-hidden">
 
-                <!-- Loading -->
+                <!-- Cargando -->
                 <div *ngIf="isLoadingHistorial" class="flex-1 flex flex-col items-center justify-center gap-4">
                     <div class="w-12 h-12 border-4 border-[#FFC501FF] border-t-transparent rounded-full animate-spin"></div>
                     <p class="text-sm font-black uppercase text-gray-500 dark:text-gray-400">Cargando historial…</p>
                 </div>
 
-                <!-- Empty state -->
+                <!-- Estado vacÃ­o -->
                 <div *ngIf="!isLoadingHistorial && filteredHistorial.length === 0"
                      class="flex-1 flex flex-col items-center justify-center gap-3 py-12 px-4 text-center">
                     <mat-icon class="!text-5xl text-gray-300 dark:text-gray-600">history</mat-icon>
@@ -544,11 +544,11 @@
                     </table>
                 </div>
 
-            </div><!-- /tab historial -->
+            </div><!-- /pestaÃ±a historial -->
 
             </div><!-- /tabs wrapper -->
 
-        </div><!-- /card -->
+        </div><!-- /tarjeta -->
     </div><!-- /p-3 sm:p-4 -->
 </div>
 

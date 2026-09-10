@@ -25,7 +25,7 @@ interface CompState {
 <div class="bg-stone-100 dark:bg-slate-900 border-2 border-black flex flex-col w-full max-h-[85vh] rounded-2xl overflow-hidden"
 >
 
-    <!-- HEADER -->
+    <!-- CABECERA -->
     <div class="bg-[#0F172A] px-5 py-2.5 shrink-0 select-none"
          cdkDrag cdkDragRootElement=".cdk-overlay-pane" cdkDragHandle style="cursor:grab">
         <p class="text-[9px] text-slate-400 font-bold uppercase tracking-[0.18em] leading-none mb-0.5">Gestión de Kits</p>
@@ -49,7 +49,7 @@ interface CompState {
         </div>
     </div>
 
-    <!-- FORM + CHECKLIST -->
+    <!-- FORMULARIO + CHECKLIST -->
     <form [formGroup]="form" class="flex-1 overflow-y-auto px-5 py-4 flex flex-col gap-4 neo-scrollbar">
 
         <!-- Verificado por (autocomplete) -->
@@ -92,20 +92,20 @@ interface CompState {
                 </div>
             </div>
 
-            <!-- Loading spinner -->
+            <!-- Spinner de carga -->
             <div *ngIf="compLoading" class="flex items-center justify-center py-6">
                 <div class="w-6 h-6 border-2 border-black border-t-transparent rounded-full animate-spin"></div>
                 <span class="ml-2 text-[10px] font-bold text-stone-400 uppercase">Cargando componentes...</span>
             </div>
 
-            <!-- Empty state -->
+            <!-- Estado vacío -->
             <div *ngIf="!compLoading && compStates.length === 0"
                  class="border-2 border-dashed border-stone-300 dark:border-slate-600 rounded-xl py-6 text-center">
                 <mat-icon class="!text-3xl text-stone-300 dark:text-slate-600">build_circle</mat-icon>
                 <p class="text-[10px] font-bold text-stone-400 dark:text-slate-500 mt-1 uppercase">Sin componentes registrados</p>
             </div>
 
-            <!-- Component list -->
+            <!-- Lista de componentes -->
             <div *ngIf="!compLoading && compStates.length > 0"
                  class="border-2 border-black rounded-xl overflow-hidden shadow-[2px_2px_0_#000]">
                 <div *ngFor="let comp of compStates; let i = index"
@@ -149,7 +149,7 @@ interface CompState {
                 </div>
             </div>
 
-            <!-- Completeness badge -->
+            <!-- Insignia de completitud -->
             <div *ngIf="!compLoading && compStates.length > 0"
                  class="mt-2 flex items-center gap-2">
                 <span class="px-3 py-1 text-[9px] font-black uppercase border-2 border-black rounded"
@@ -185,7 +185,7 @@ interface CompState {
 
     </form>
 
-    <!-- FOOTER -->
+    <!-- PIE -->
     <div class="border-t-2 border-black bg-stone-200 dark:bg-slate-800 px-4 py-2.5 flex flex-col gap-1.5 shrink-0">
         <p *ngIf="errorMsg" class="text-[9px] font-black text-red-600 text-center uppercase">{{ errorMsg }}</p>
         <div class="flex justify-between items-center gap-2">
@@ -218,7 +218,6 @@ export class DevolverKitDialogComponent implements OnInit, OnDestroy {
     private _search$         = new Subject<string>();
     private _subs            = new Subscription();
 
-    private fb              = inject(FormBuilder);
     public  dialogRef       = inject(MatDialogRef<DevolverKitDialogComponent>);
     public  data            = inject<{ kit: any; id_kit_loan: number; loan_number?: string }>(MAT_DIALOG_DATA);
     private kitsService     = inject(KitsService);

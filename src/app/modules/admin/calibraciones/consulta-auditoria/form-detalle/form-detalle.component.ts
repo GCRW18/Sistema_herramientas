@@ -1,4 +1,4 @@
-import { Component, Inject, signal, inject } from '@angular/core';
+import { Component, signal, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatDialogModule, MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
 import { MatButtonModule } from '@angular/material/button';
@@ -86,9 +86,7 @@ export class FormDetalleComponent {
         try { const a = JSON.parse(localStorage.getItem('aut') || '{}'); return a.nombre_usuario || 'BOA'; } catch { return 'BOA'; }
     }
 
-    // ===================================================================
-    // MÉTODOS DE IMPRESIÓN CON PDF DEL BACKEND
-    // ===================================================================
+    // ── Impresión con PDF del backend ──
 
     /**
      * Imprime el detalle usando PDF del backend cuando sea posible

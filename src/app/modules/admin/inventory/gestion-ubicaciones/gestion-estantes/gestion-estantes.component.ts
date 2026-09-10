@@ -127,9 +127,8 @@ export class GestionEstantesComponent implements OnInit, OnChanges, OnDestroy {
     }
 
     cargarEstantes() {
-        // 3 requests fijos (estantes + niveles + herramientas del almacén completo)
-        // en lugar de 1 + 2 por estante: con los 34 estantes reales de CBB el patrón
-        // anterior disparaba ~69 llamadas al backend y tardaba varios segundos.
+        // 3 requests fijos (estantes + niveles + herramientas del almacén) en vez de 1 + 2 por
+        // estante — con los 34 estantes de CBB el patrón anterior disparaba ~69 llamadas.
         this.loadingEstantes.set(true);
         forkJoin({
             racks:  this.svc.getRacks(this.almacen.id),
@@ -245,10 +244,8 @@ export class GestionEstantesComponent implements OnInit, OnChanges, OnDestroy {
         this.dialog.open(NivelHerramientasDialogComponent, {
             width: '820px', maxWidth: '95vw', panelClass: 'no-padding-dialog', data,
         }).afterClosed().subscribe(() => {
-            // Siempre recargar, sin depender de `changed`: si el diálogo se cierra por click
-            // en el backdrop o con Escape (en vez del botón "X" -> cerrar()), Material devuelve
-            // undefined y el grid se quedaba con datos viejos aunque el movimiento sí se hubiera
-            // guardado en el backend (ej. un kit movido de nivel seguía apareciendo en el viejo).
+            // Siempre recargar, sin depender de `changed`: si el diálogo se cierra por
+            // backdrop/Escape, Material devuelve undefined y el grid se quedaba con datos viejos.
             this.cargarEstantes();
         });
     }

@@ -1,7 +1,7 @@
 <div class="bg-stone-100 dark:bg-slate-900 border-2 border-black rounded-2xl overflow-hidden flex flex-col"
      style="width:100%; max-height:90vh">
 
-    <!-- ══ HEADER ══ -->
+    <!-- ══ CABECERA ══ -->
     <div class="bg-[#0F172A] px-3 sm:px-5 py-3 sm:py-3.5 flex items-center justify-between flex-wrap gap-2 sm:gap-3 shrink-0 select-none"
          cdkDrag cdkDragRootElement=".cdk-overlay-pane" cdkDragHandle style="cursor:grab">
 
@@ -209,7 +209,7 @@
                             <p class="text-[9px] text-stone-400 dark:text-slate-500 font-bold uppercase tracking-widest">Elige un estante</p>
                         </div>
 
-                        <!-- Dropdown de niveles -->
+                        <!-- Desplegable de niveles -->
                         <div *ngIf="selectedRack()" class="relative">
                             <!-- Trigger -->
                             <button type="button"
@@ -275,7 +275,7 @@
         </form>
     </div>
 
-    <!-- ══ FOOTER ══ -->
+    <!-- ══ PIE ══ -->
     <div class="border-t-2 border-black bg-stone-200 dark:bg-slate-800 px-3 sm:px-5 py-3 flex justify-between items-center shrink-0">
         <button (click)="cerrar()" type="button"
                 class="px-4 py-2 bg-[#FF1414] text-white font-black text-[10px] border-2 border-black rounded-xl shadow-[2px_2px_0_#000] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all uppercase">

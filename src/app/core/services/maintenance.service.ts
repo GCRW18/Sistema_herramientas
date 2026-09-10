@@ -3,6 +3,12 @@ import { from, Observable, of, switchMap, catchError } from 'rxjs';
 import { Maintenance } from '../models/maintenance.types';
 import { ErpApiService } from '../api/api.service';
 
+/** Respuesta de los endpoints de nota PDF (se genera al vuelo, base64). */
+export interface NotaPdfResult {
+    pdf_base64?: string;
+    nombre_archivo: string;
+}
+
 @Injectable({
     providedIn: 'root'
 })
@@ -152,26 +158,114 @@ export class MaintenanceService {
     // GENERACIÓN DE PDFs para MANTENIMIENTO
     // ===================================================================
 
-    /**
-     * Genera PDF de Nota de Envío a Mantenimiento
-     * @param id_maintenance - ID del registro de mantenimiento
-     * @returns Observable con el PDF en base64
-     */
-    generarPdfEnvioMantenimiento(id_maintenance: number): Observable<{ pdf_base64: string; nombre_archivo: string }> {
+    /** Normaliza la respuesta pXP de un endpoint de nota PDF a NotaPdfResult. */
+    private _parseNotaResp(response: any, fallbackName: string): NotaPdfResult {
+        const root = response?.ROOT ?? response ?? {};
+        if (root?.error === true || root?.error === 'true' || response?.error === true) {
+            throw new Error(root?.detalle?.mensaje || root?.mensaje || response?.mensaje || 'Error al generar PDF');
+        }
+        const datos = root?.datos ?? response?.datos ?? response?.data ?? response;
+        const row = Array.isArray(datos) ? datos[0] : datos;
+        if (!row?.pdf_base64) {
+            throw new Error(root?.detalle?.mensaje || root?.mensaje || 'El servidor no devolvió el PDF');
+        }
+        return {
+            pdf_base64: row.pdf_base64 as string,
+            nombre_archivo: row.nombre_archivo || fallbackName,
+        };
+    }
+
+    /** Genera la Nota de Envío a Mantenimiento (una herramienta). */
+    generarPdfEnvioMantenimiento(id_maintenance: number): Observable<NotaPdfResult> {
         return from(this._api.post('herramientas/maintenances/generarPdfEnvioMantenimiento', {
             id_maintenance: id_maintenance
         })).pipe(
-            switchMap((response: any) => {
-                const hasError = response?.ROOT?.error === true || response?.error === true;
-                if (hasError) throw new Error(response?.ROOT?.detalle?.mensaje || response?.mensaje || 'Error al generar PDF');
-                const data = response?.ROOT?.datos ?? response?.datos ?? response;
-                return of({
-                    pdf_base64: data?.pdf_base64 as string,
-                    nombre_archivo: data?.nombre_archivo || `nota_mantenimiento_${id_maintenance}.html`
-                });
-            }),
+            switchMap((response: any) => of(this._parseNotaResp(response, `nota_mantenimiento_${id_maintenance}.pdf`))),
             catchError((error) => { throw error; })
         );
+    }
+
+    /** Genera la Nota de Retorno de Mantenimiento (herramienta ya devuelta del taller). */
+    generarPdfRetornoMantenimiento(id_maintenance: number): Observable<NotaPdfResult> {
+        return from(this._api.post('herramientas/maintenances/generarPdfRetornoMantenimiento', {
+            id_maintenance: id_maintenance
+        })).pipe(
+            switchMap((response: any) => of(this._parseNotaResp(response, `nota_retorno_mantenimiento_${id_maintenance}.pdf`))),
+            catchError((error) => { throw error; })
+        );
+    }
+
+    /**
+     * Genera PDF de Nota de Envío a Mantenimiento por LOTE (varias herramientas).
+     * @param ids - IDs de los registros de mantenimiento del despacho
+     */
+    generarPdfEnvioMantenimientoLote(ids: number[]): Observable<NotaPdfResult> {
+        return from(this._api.post('herramientas/maintenances/generarPdfEnvioMantenimientoLote', {
+            ids: (ids || []).filter(n => n > 0).join(',')
+        })).pipe(
+            switchMap((response: any) => of(this._parseNotaResp(response, 'nota_lote_mantenimiento.pdf'))),
+            catchError((error) => { throw error; })
+        );
+    }
+
+    /**
+     * Reserva una pestaña YA, sincrónicamente, DENTRO del gesto del usuario (click).
+     * El bloqueador de pop-ups sólo deja window.open si viene de un gesto; como el
+     * PDF llega tras un POST, hay que reservar la pestaña antes y navegarla luego
+     * con abrirNota(r, ventana). Devuelve null si el bloqueador igual lo impide
+     * (ahí abrirNota cae a descarga directa).
+     */
+    preAbrirVentanaPdf(): Window | null {
+        try {
+            const w = window.open('', '_blank');
+            if (w) {
+                w.document.open();
+                w.document.write('<!doctype html><meta charset="utf-8"><title>Generando documento…</title>' +
+                    '<body style="font:14px system-ui;margin:2rem;color:#334155">Generando el documento PDF… no cierre esta pestaña.</body>');
+                w.document.close();
+            }
+            return w;
+        } catch { return null; }
+    }
+
+    /**
+     * Abre la nota (PDF base64). Si se pasa `ventana` (reservada con
+     * preAbrirVentanaPdf dentro del gesto) se le inyecta el visor; si no, window.open,
+     * y si el bloqueador lo corta, fuerza la descarga del archivo.
+     */
+    abrirNota(r: NotaPdfResult, ventana?: Window | null): void {
+        if (!r?.pdf_base64) { try { ventana?.close(); } catch { /* noop */ } return; }
+        try {
+            const bin = atob(r.pdf_base64);
+            const bytes = new Uint8Array(bin.length);
+            for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+            const blob = new Blob([bytes], { type: 'application/pdf' });
+            const url = window.URL.createObjectURL(blob);
+            const name = (r.nombre_archivo || 'nota.pdf').replace(/["<>]/g, '');
+
+            if (ventana && !ventana.closed) {
+                // Inyectar un visor <iframe> en la pestaña ya reservada: navegar
+                // location tras un document.write no siempre prende en Chrome.
+                ventana.document.open();
+                ventana.document.write(
+                    '<!doctype html><html><head><meta charset="utf-8"><title>' + name + '</title>' +
+                    '<style>html,body{margin:0;height:100%;overflow:hidden}iframe{border:0;width:100%;height:100%}</style>' +
+                    '</head><body><iframe src="' + url + '" type="application/pdf"></iframe></body></html>'
+                );
+                ventana.document.close();
+            } else {
+                const w = window.open(url, '_blank');
+                if (!w) {
+                    const a = document.createElement('a');
+                    a.href = url; a.download = name; a.rel = 'noopener';
+                    document.body.appendChild(a); a.click(); a.remove();
+                }
+            }
+            setTimeout(() => window.URL.revokeObjectURL(url), 120000);
+        } catch (e) {
+            console.error('abrirNota:', e);
+            try { ventana?.close(); } catch { /* noop */ }
+        }
     }
 
     /**
@@ -180,9 +274,7 @@ export class MaintenanceService {
      */
     generarYVerPdfEnvioMantenimiento(id_maintenance: number): void {
         this.generarPdfEnvioMantenimiento(id_maintenance).subscribe({
-            next: (result) => {
-                this.abrirPdf(result.pdf_base64, result.nombre_archivo);
-            },
+            next: (result) => this.abrirNota(result),
             error: (error) => {
                 console.error('Error al generar PDF de envío de mantenimiento:', error);
             }

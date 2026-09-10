@@ -112,7 +112,7 @@ export class RecepcionHerramientaComponent implements OnInit, OnDestroy {
     showUbicacionPanel = false;
     showUbAlmacenGrid  = true;
 
-    /* ════════ Lifecycle ════════ */
+    /* ════════ Ciclo de vida ════════ */
     ngOnInit(): void {
         this.isEditMode = this.data?.mode === 'editar';
 
@@ -246,10 +246,8 @@ export class RecepcionHerramientaComponent implements OnInit, OnDestroy {
         });
         if (tool.location_photo) this.herramientaImagen.set(tool.location_photo);
 
-        // Ubicación actual de la herramienta (rack_id/level_id de he.ttools) —
-        // busca en la lista COMPLETA de almacenes (no la filtrada a ALM-CBB), igual
-        // que detalle-herramienta.component.ts: la herramienta puede estar en un
-        // almacén fuera de Cochabamba (datos legado) y no queremos perder el dato.
+        // Ubicación actual de la herramienta (rack_id/level_id): busca en la lista completa de
+        // almacenes (la herramienta puede estar fuera de Cbba por datos legado).
         const wId = tool.warehouse_id ? Number(tool.warehouse_id) : null;
         const rId = tool.rack_id      ? Number(tool.rack_id)      : null;
         const lId = tool.level_id     ? Number(tool.level_id)     : null;
@@ -303,10 +301,8 @@ export class RecepcionHerramientaComponent implements OnInit, OnDestroy {
                         const w = ws.find(a => a.id === p.wId);
                         if (w) this._autoSelectWarehouse(w, p.rId, p.lId);
                     }
-                    // Ya no se preselecciona ubAlmacenes[0] por defecto en ítems nuevos: pisaba
-                    // la ubicación real de la herramienta al seleccionarla desde el buscador
-                    // (seleccionarHerExistente), que llega en un request aparte y puede resolver
-                    // después de este. Ahora queda sin asignar hasta que el usuario la elija.
+                    // Ya no se preselecciona ubAlmacenes[0] en ítems nuevos: pisaba la ubicación
+                    // real de la herramienta (que llega en un request aparte). Queda sin asignar.
                 },
                 error: () => {},
                 complete: () => { this.loadingAlmacenes = false; }
@@ -408,7 +404,7 @@ export class RecepcionHerramientaComponent implements OnInit, OnDestroy {
         this.showUbicacionPanel = false;
     }
 
-    /* ════════ Helpers ════════ */
+    /* ════════ Auxiliares ════════ */
     hasHerramientaError(field: string, error: string): boolean {
         const c = this.herramientaForm.get(field);
         return !!(c?.hasError(error) && c?.touched);

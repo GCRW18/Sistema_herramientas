@@ -11,6 +11,7 @@ import { MovementService } from '../../../../../core/services/movement.service';
 import { FleetService } from '../../../../../core/services/fleet.service';
 import { KitsService } from '../../../../../core/services/kits.service';
 import { ToolService } from '../../../../../core/services/tool.service';
+import { QrScanService } from '../../../../../core/services/qr-scan.service';
 import { motivoBloqueoSalida } from '../../retorno-traspaso/retorno-traspaso.types';
 
 interface InternalLoanItem {
@@ -57,6 +58,7 @@ export class FormPrestamoDialogComponent implements OnInit, OnDestroy {
     private fleetSvc     = inject(FleetService);
     private kitsService  = inject(KitsService);
     private toolSvc      = inject(ToolService);
+    private qrScan       = inject(QrScanService);
     private destroy$    = new Subject<void>();
 
     isSaving    = false;
@@ -254,13 +256,8 @@ export class FormPrestamoDialogComponent implements OnInit, OnDestroy {
             });
     }
 
-    // Búsqueda en vivo contra el backend (ToolService.getTools con query → searchToolsAutocomplete),
-    // el mismo mecanismo y sin filtrar disponibilidad — igual que el buscador de
-    // detalle-herramienta.component.ts (Ajuste de Herramienta) — en vez de precargar todas las
-    // herramientas y filtrar en el cliente. La disponibilidad (estado bloqueado / calibración
-    // vencida) se valida recién al agregar (_agregarToolPt, con motivoBloqueoSalida), no aquí:
-    // filtrarla en la búsqueda hacía que herramientas reales (ej. recién migradas con
-    // calibración vencida) no aparecieran nunca, aunque el usuario supiera que existían.
+    // Búsqueda en vivo contra el backend (getTools → searchToolsAutocomplete), sin filtrar
+    // disponibilidad: eso se valida al agregar (filtrarlo escondía herramientas reales).
     private _setupToolSearchPt(): void {
         this._toolSearchPt$.pipe(
             debounceTime(300), distinctUntilChanged(),
@@ -298,20 +295,22 @@ export class FormPrestamoDialogComponent implements OnInit, OnDestroy {
     hideToolDropPt(): void { setTimeout(() => this.showToolDropPt = false, 150); }
     selectToolSuggestionPt(tool: any): void { this.toolSearchPt = tool.codigo; this.showToolDropPt = false; this._agregarToolPt(tool); }
 
-    addToolPtFromInput(): void {
-        const code = this.toolSearchPt.trim();
-        if (!code) return;
-        const tool = this.toolSuggestionsPt.find(h => h.codigo.toLowerCase() === code.toLowerCase())
-            || (this.toolSuggestionsPt.length === 1 ? this.toolSuggestionsPt[0] : null);
-        if (!tool) { this.showMsg('warning', `Seleccione la herramienta de la lista de sugerencias`); return; }
-        this._agregarToolPt(tool);
-    }
-
     /** Enter en el input / lector físico wedge: usa la coincidencia exacta de las
      *  sugerencias si ya llegó, si no resuelve el código directo contra el backend. */
     scanAndAddPt(): void {
         const code = this.toolSearchPt.trim();
         if (!code) return;
+        // Etiqueta QR (URL `.../qr-code/<token>`): descifra a código plano y reintenta.
+        if (this.qrScan.isQrLabel(code)) {
+            this.toolSearchLoadingPt = true;
+            this.qrScan.toToolCode(code).pipe(takeUntil(this.destroy$)).subscribe(real => {
+                this.toolSearchLoadingPt = false;
+                if (!real) { this.showMsg('warning', 'Etiqueta QR no reconocida'); this.toolSearchPt = ''; return; }
+                this.toolSearchPt = real;
+                this.scanAndAddPt();
+            });
+            return;
+        }
         const exact = this.toolSuggestionsPt.find(h => h.codigo.toLowerCase() === code.toLowerCase());
         if (exact) { this._agregarToolPt(exact); return; }
         this.toolSearchLoadingPt = true;
@@ -440,10 +439,8 @@ export class FormPrestamoDialogComponent implements OnInit, OnDestroy {
             });
     }
 
-    // Clic en un ítem ya agregado al préstamo → abre el mismo form de detalle de herramienta
-    // usado en ingresos-hub (Ajuste de Herramienta), en modo solo-vista: mismo aspecto, sin
-    // buscador ni acción de guardar. fechaCalibracion y listaContenido no se gestionan en ese
-    // form, así que no se muestran ahí (se conservan igual en el ítem del préstamo).
+    // Clic en un ítem del préstamo → abre el form de detalle de herramienta (el de ingresos-hub)
+    // en modo solo-vista, sin buscador ni guardar.
     async abrirDetalleHerramientaItem(item: InternalLoanItem): Promise<void> {
         const { DetalleHerramientaComponent } = await import('../../ingresos-hub/detalle-herramienta/detalle-herramienta.component');
         const editItem = {

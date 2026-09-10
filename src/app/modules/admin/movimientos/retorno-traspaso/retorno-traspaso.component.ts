@@ -1,19 +1,19 @@
 import {
-    Component, OnInit, OnDestroy, inject, ViewChild, TemplateRef
+    Component, OnInit, OnDestroy, inject
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
-import { MatPaginatorModule, MatPaginator, PageEvent } from '@angular/material/paginator';
+import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 import { MatDialogRef, MatDialogModule, MatDialog } from '@angular/material/dialog';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatTooltipModule } from '@angular/material/tooltip';
-import { Subject, takeUntil, finalize, forkJoin, of, map, catchError } from 'rxjs';
+import { Subject, takeUntil, finalize, forkJoin } from 'rxjs';
 
 import { MovementService } from '../../../../core/services/movement.service';
 import { HasPermissionDirective } from '../../../../core/directives/has-permission.directive';
 
-// Dialog components (standalone subfolders)
+// Componentes de diÃ¡logo (subcarpetas standalone)
 import { EnvioDialogComponent } from './dialogs/envio/envio-dialog.component';
 import { TraspasoDialogComponent } from './dialogs/traspaso/traspaso-dialog.component';
 import { RetornoDialogComponent } from './dialogs/retorno/retorno-dialog.component';
@@ -21,9 +21,9 @@ import { TraspasoTecnicoDialogComponent } from './dialogs/traspaso-tecnico/trasp
 import { DevolucionTecnicoDialogComponent } from './dialogs/devolucion-tecnico/devolucion-tecnico-dialog.component';
 import { RetornoAreaDialogComponent } from './dialogs/retorno-area/retorno-area-dialog.component';
 
-// ── Types ─────────────────────────────────────────────────────────────────────
+// ── Tipos ──
 // Compartidos con los diálogos (dialogs/*) — misma fuente que ellos ya usan.
-import { Ubicacion, MovimientoActivo, HistorialRecord } from './retorno-traspaso.types';
+import { Ubicacion, MovimientoActivo } from './retorno-traspaso.types';
 
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -54,9 +54,6 @@ import { Ubicacion, MovimientoActivo, HistorialRecord } from './retorno-traspaso
 })
 export class RetornoTraspasoComponent implements OnInit, OnDestroy {
 
-    @ViewChild('historialDialog') historialDialog!: TemplateRef<any>;
-    @ViewChild(MatPaginator) paginator!: MatPaginator;
-
     public dialogRef = inject(MatDialogRef<RetornoTraspasoComponent>, { optional: true });
     private dialog   = inject(MatDialog);
     private snackBar = inject(MatSnackBar);
@@ -69,31 +66,20 @@ export class RetornoTraspasoComponent implements OnInit, OnDestroy {
     private _devTecnicoDialogRef: any     = null;
     private _retornoAreaDialogRef: any    = null;
 
-    // ── Shared data ───────────────────────────────────────────────────────────
+    // ── Datos comunes ───────────────────────────────────────────────────────────
     bases: Ubicacion[]    = [];
     almacenes: Ubicacion[] = [];
     isLoading = false;
 
-    // Historial dialog
-    historialRecords: HistorialRecord[]     = [];
-    selectedHistorialEntry: HistorialRecord | null = null;
-    isLoadingHistorial = false;
-    totalHistorial     = 0;
-    pageSize           = 10;
-    pageIndex          = 0;
-    pageSizeOptions    = [5, 10, 25];
-
-    // ── ACTIVOS tab ───────────────────────────────────────────────────────────
+    // ── Tab ACTIVOS ──
     movActivos: MovimientoActivo[]      = [];
     movActivosFiltrados: MovimientoActivo[] = [];
     movCompletados: MovimientoActivo[]  = [];
     loadingActivos                      = false;
     activeTabView: 'envios' | 'traspasos' | 'tecnico' = 'envios';
 
-    // ── Filtro Activos/Devueltos/Todos (mismo patrón + mismo <select> que Préstamo
-    //    Técnico: estadosFiltro + filterStatus) — vive en la cabecera junto a las tabs.
-    //    El tipo (Envío/Traspaso/MGH-109) ya lo define la tab activa; este filtro solo
-    //    decide el estado dentro de ese tipo.
+    // ── Filtro Activos/Devueltos/Todos (mismo patrón que Préstamo Técnico), en la cabecera.
+    //    El tipo lo define la tab activa; este filtro solo decide el estado dentro de ese tipo.
     filterEstado: 'active' | 'returned' | '' = 'active';
     estadosFiltro: { value: 'active' | 'returned' | ''; label: string }[] = [
         { value: 'active',   label: 'Activos'   },
@@ -113,12 +99,12 @@ export class RetornoTraspasoComponent implements OnInit, OnDestroy {
 
     ngOnDestroy(): void { this._unsub$.next(); this._unsub$.complete(); }
 
-    // ── Open form dialogs ─────────────────────────────────────────────────────
+    // ── DiÃ¡logos de formulario ──
 
     abrirFormEnvio(): void {
         this._envioDialogRef = this.dialog.open(EnvioDialogComponent, {
             width: 'min(1240px, 96vw)', maxWidth: '100vw', maxHeight: '100dvh',
-            panelClass: 'neo-dialog-transparent', disableClose: false, autoFocus: false,
+            panelClass: 'neo-dialog-transparent', disableClose: true, autoFocus: false,
             data: { almacenes: this.almacenes, bases: this.bases }
         });
         this._envioDialogRef.afterClosed().subscribe((r: any) => {
@@ -130,7 +116,7 @@ export class RetornoTraspasoComponent implements OnInit, OnDestroy {
         const defaultAlmacen = this.almacenes.find(u => u.codigo?.toUpperCase() === 'ALM-CBB-0001') ?? this.almacenes[0] ?? null;
         this._traspasoDialogRef = this.dialog.open(TraspasoDialogComponent, {
             width: 'min(1240px, 96vw)', maxWidth: '100vw', maxHeight: '100dvh',
-            panelClass: 'neo-dialog-transparent', disableClose: false, autoFocus: false,
+            panelClass: 'neo-dialog-transparent', disableClose: true, autoFocus: false,
             data: { almacenes: this.almacenes, bases: this.bases, defaultAlmacen }
         });
         this._traspasoDialogRef.afterClosed().subscribe((r: any) => {
@@ -141,7 +127,7 @@ export class RetornoTraspasoComponent implements OnInit, OnDestroy {
     abrirFormRetorno(): void {
         this._retornoDialogRef = this.dialog.open(RetornoDialogComponent, {
             width: 'min(1240px, 96vw)', maxWidth: '100vw', maxHeight: '100dvh',
-            panelClass: 'neo-dialog-transparent', disableClose: false, autoFocus: false,
+            panelClass: 'neo-dialog-transparent', disableClose: true, autoFocus: false,
             data: { almacenes: this.almacenes, bases: this.bases }
         });
         this._retornoDialogRef.afterClosed().subscribe((r: any) => {
@@ -149,7 +135,7 @@ export class RetornoTraspasoComponent implements OnInit, OnDestroy {
         });
     }
 
-    // ── SHARED ────────────────────────────────────────────────────────────────
+    // ── ComÃºn ──
 
     private _loadUbicaciones(): void {
         this.isLoading = true;
@@ -180,7 +166,7 @@ export class RetornoTraspasoComponent implements OnInit, OnDestroy {
         });
     }
 
-    // ── ACTIVOS tab ───────────────────────────────────────────────────────────
+    // ── Tab ACTIVOS ──
 
     loadMovActivos(): void {
         this.loadingActivos = true;
@@ -310,7 +296,7 @@ export class RetornoTraspasoComponent implements OnInit, OnDestroy {
                'Sin movimientos activos';
     }
 
-    getAlertBadgeClass(s: string): string {
+    getAlertBadgeClass(_s: string): string {
         return 'bg-white dark:bg-slate-800 text-black dark:text-white border-black';
     }
 
@@ -350,20 +336,13 @@ export class RetornoTraspasoComponent implements OnInit, OnDestroy {
      * (destination_warehouse_id === 0 / "0" / nulo), no un almacén físico.
      */
     private _esTraspasoTecnico(m: MovimientoActivo): boolean {
-        // Marcado explícitamente con 'MGH109' en specific_observations al registrar
-        // (traspaso-tecnico-dialog SIEMPRE lo manda). NO usar heurística por
-        // destination_warehouse_id: traspaso-tecnico-dialog SÍ manda ese campo (la
-        // "Base destino"), y traspaso-dialog (TRP) NUNCA lo manda (usa "department"
-        // en su lugar) — así que "sin warehouse destino" identificaba TRP, no MGH-109,
-        // y enviaba los TRP por error a Devolución Técnica.
+        // Marcado con 'MGH109' en specific_observations al registrar. No usar heurística por
+        // destination_warehouse_id: ambos tipos lo manejan distinto y confundía TRP con MGH-109.
         return m.movement_type_label === 'MGH_109';
     }
 
-    /**
-     * Helper: un TRASPASO es "de área" (TRP) cuando NO es MGH-109 — independientemente
-     * de si tiene destination_warehouse_id, ya que TRP registra el destino como
-     * "department" (texto libre), no como almacén.
-     */
+    /** Un TRASPASO es "de área" (TRP) cuando NO es MGH-109 (TRP registra el destino como
+     *  "department" texto libre, no como almacén). */
     private _esTraspasoArea(m: MovimientoActivo): boolean {
         return m.movement_type_label === 'TRASPASO' && !this._esTraspasoTecnico(m);
     }
@@ -382,7 +361,7 @@ export class RetornoTraspasoComponent implements OnInit, OnDestroy {
         const defaultAlmacen = this.almacenes.find(u => u.codigo?.toUpperCase() === 'ALM-CBB-0001') ?? this.almacenes[0] ?? null;
         this._tecnicoDialogRef = this.dialog.open(TraspasoTecnicoDialogComponent, {
             width: 'min(1240px, 96vw)', maxWidth: '100vw', maxHeight: '100dvh',
-            panelClass: 'neo-dialog-transparent', disableClose: false, autoFocus: false,
+            panelClass: 'neo-dialog-transparent', disableClose: true, autoFocus: false,
             data: { almacenes: this.almacenes, bases: this.bases, defaultAlmacen }
         });
         this._tecnicoDialogRef.afterClosed().subscribe((r: any) => {
@@ -393,7 +372,7 @@ export class RetornoTraspasoComponent implements OnInit, OnDestroy {
     abrirFormDevolucionTecnico(): void {
         this._devTecnicoDialogRef = this.dialog.open(DevolucionTecnicoDialogComponent, {
             width: 'min(1240px, 96vw)', maxWidth: '100vw', maxHeight: '100dvh',
-            panelClass: 'neo-dialog-transparent', disableClose: false, autoFocus: false,
+            panelClass: 'neo-dialog-transparent', disableClose: true, autoFocus: false,
             data: { movTecnicosActivos: this.movTecnicosActivos }
         });
         this._devTecnicoDialogRef.afterClosed().subscribe((r: any) => {
@@ -404,7 +383,7 @@ export class RetornoTraspasoComponent implements OnInit, OnDestroy {
     abrirFormRetornoArea(): void {
         this._retornoAreaDialogRef = this.dialog.open(RetornoAreaDialogComponent, {
             width: 'min(1240px, 96vw)', maxWidth: '100vw', maxHeight: '100dvh',
-            panelClass: 'neo-dialog-transparent', disableClose: false, autoFocus: false,
+            panelClass: 'neo-dialog-transparent', disableClose: true, autoFocus: false,
             data: { movTraspasosActivos: this.movTraspasosActivos }
         });
         this._retornoAreaDialogRef.afterClosed().subscribe((r: any) => {
@@ -429,7 +408,7 @@ export class RetornoTraspasoComponent implements OnInit, OnDestroy {
         this._showMsg(`Registrando retorno de ${mov.movement_number}`, 'info');
         this._retornoDialogRef = this.dialog.open(RetornoDialogComponent, {
             width: 'min(1240px, 96vw)', maxWidth: '100vw', maxHeight: '100dvh',
-            panelClass: 'neo-dialog-transparent', disableClose: false, autoFocus: false,
+            panelClass: 'neo-dialog-transparent', disableClose: true, autoFocus: false,
             data: { almacenes: this.almacenes, bases: this.bases, movimiento: mov, tipoOrigen: 'BASE' as const }
         });
         this._retornoDialogRef.afterClosed().subscribe((r: any) => {
@@ -454,9 +433,8 @@ export class RetornoTraspasoComponent implements OnInit, OnDestroy {
         });
     }
 
-    /** Reimpresión de la Acta de Retorno desde "Movimientos Completados" — mismo
-     *  reporte TCPDF compartido (RReporteRetornoNota) que la impresión en vivo de
-     *  Retorno de Base/Traspaso, Retorno de Área y Devolución Técnica. */
+    /** Reimpresión de la Acta de Retorno desde "Movimientos Completados" — mismo reporte
+     *  TCPDF compartido (RReporteRetornoNota) que la impresión en vivo. */
     verPdfRetornoCompletado(mov: MovimientoActivo): void {
         if (!mov.return_id_movement) return;
         this.loadingPdfActivo = mov.id_movement;
@@ -470,53 +448,5 @@ export class RetornoTraspasoComponent implements OnInit, OnDestroy {
                 error: () => { try { pdfWin?.close(); } catch { /* noop */ } this._showMsg('Error al generar PDF de retorno', 'error'); },
             });
     }
-
-    // ── HISTORIAL ─────────────────────────────────────────────────────────────
-
-    abrirModalHistorial(): void {
-        this.selectedHistorialEntry = null;
-        this.loadHistorial();
-        this.dialog.open(this.historialDialog, {
-            width: '900px', maxWidth: '95vw', height: 'auto', maxHeight: '90vh',
-            panelClass: 'neo-dialog-transparent', hasBackdrop: true, disableClose: false, autoFocus: false
-        });
-    }
-
-    cerrarModalHistorial(): void { this.dialog.closeAll(); }
-
-    loadHistorial(): void {
-        this.isLoadingHistorial = true;
-        this.movSvc.getHistorialMovimientos({ movement_type: 'entry', page: this.pageIndex + 1, limit: this.pageSize }).pipe(
-            takeUntil(this._unsub$), finalize(() => this.isLoadingHistorial = false)
-        ).subscribe({
-            next: (response) => {
-                if (response?.data?.length) {
-                    const retornos = response.data.filter((item: any) =>
-                        item.entry_reason === 'base_return' || item.entry_reason === 'transfer_return' ||
-                        item.type === 'RETORNO_BASE' || item.type === 'RETORNO_TRASPASO'
-                    );
-                    this.historialRecords = retornos.map((item: any) => ({
-                        id: item.id_movement || item.id,
-                        fecha: new Date(item.date || item.fecha).toLocaleDateString('es-BO'),
-                        tipo: item.entry_reason === 'base_return' || item.type === 'RETORNO_BASE'
-                            ? 'RETORNO DE BASE' : 'RETORNO TRASPASO',
-                        documento:    item.document_number || item.movement_number || '-',
-                        responsable:  item.requested_by_name || '-',
-                        estado:       (item.status || 'N/A').toUpperCase(),
-                        raw: item
-                    }));
-                    this.totalHistorial = response.total || this.historialRecords.length;
-                } else { this.historialRecords = []; }
-            },
-            error: () => this._showMsg('Error al cargar historial', 'error')
-        });
-    }
-
-    onPageChange(event: PageEvent): void {
-        this.pageIndex = event.pageIndex; this.pageSize = event.pageSize; this.loadHistorial();
-    }
-
-    verDetalleHistorial(e: HistorialRecord): void { this.selectedHistorialEntry = e; }
-    cerrarDetalleHistorial(): void { this.selectedHistorialEntry = null; }
 
 }
