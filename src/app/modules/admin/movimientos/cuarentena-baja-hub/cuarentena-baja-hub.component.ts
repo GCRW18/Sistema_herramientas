@@ -15,6 +15,7 @@ import { BlobStorageService } from '../../../../core/services/blob-storage.servi
 import { GestionUbicacionesService } from '../../inventory/gestion-ubicaciones/gestion-ubicaciones.service';
 import { ToolService } from '../../../../core/services/tool.service';
 import { HasPermissionDirective } from '../../../../core/directives/has-permission.directive';
+import { formatDateDMY } from '../../../../core/utils/date.utils';
 
 interface BajaItem {
     id: string;
@@ -967,8 +968,13 @@ export class CuarentenaBajaHubComponent implements OnInit, OnDestroy {
     }
 
     getHistorialFecha(m: any): string {
-        return m.start_date || m.request_date ||
-            (m.fecha_reg ? String(m.fecha_reg).slice(0, 10) : '') || '---';
+        const raw = m.start_date || m.request_date ||
+            (m.fecha_reg ? String(m.fecha_reg).slice(0, 10) : '');
+        return raw ? formatDateDMY(raw) : '---';
+    }
+
+    formatDate(date: string | null | undefined): string {
+        return date ? formatDateDMY(date) : '';
     }
 
     getHistorialTypeLabel(m: any): string {

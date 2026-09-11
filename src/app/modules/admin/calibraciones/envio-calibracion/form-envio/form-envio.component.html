@@ -226,7 +226,7 @@
                                     <span class="text-stone-300 dark:text-slate-600">·</span>
                                     <span class="uppercase">{{ workTypeLabel(item.workType) }}</span>
                                     <span class="text-stone-300 dark:text-slate-600">·</span>
-                                    <span>Ret. {{ item.expectedReturnDate || '—' }}</span>
+                                    <span>Ret. {{ item.expectedReturnDate ? formatDate(item.expectedReturnDate) : '—' }}</span>
                                     <ng-container *ngIf="item.cost != null">
                                         <span class="text-stone-300 dark:text-slate-600">·</span>
                                         <span>Bs {{ item.cost }}</span>

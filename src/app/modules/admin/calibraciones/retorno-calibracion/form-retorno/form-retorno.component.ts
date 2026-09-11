@@ -231,7 +231,7 @@ export class FormRetornoComponent implements OnInit, OnDestroy {
             next_calibration_date: this.fechaVencimientoDisplay,
             observations:         this.observations || '',
             received_by_name:     this.receivedByName.trim(),
-            cost:                 this.costo ?? undefined,
+            cost:                 this.costo,
             currency:             'BOB',
         };
 

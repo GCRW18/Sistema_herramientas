@@ -13,7 +13,7 @@ import { CalibrationService }                            from '../../../../core/
 import { BlobStorageService }                            from '../../../../core/services/blob-storage.service';
 import { ErpApiService }                                 from 'app/core/api/api.service';
 import { HasPermissionDirective }                        from '../../../../core/directives/has-permission.directive';
-import { localDateStr }                                  from '../../../../core/utils/date.utils';
+import { localDateStr, formatDateDMY }                   from '../../../../core/utils/date.utils';
 
 interface CalibrationDisplay {
     id_calibration:       number;
@@ -307,6 +307,10 @@ export class EnvioCalibracionComponent implements OnInit, OnDestroy {
             const today    = new Date(localDateStr() + 'T00:00:00');
             return Math.max(0, Math.floor((today.getTime() - expected.getTime()) / 86_400_000));
         } catch { return 0; }
+    }
+
+    formatDate(date: string | null | undefined): string {
+        return date ? formatDateDMY(date) : '-';
     }
 
     getWorkTypeLabel(w: string): string {

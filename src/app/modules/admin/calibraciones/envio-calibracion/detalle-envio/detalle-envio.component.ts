@@ -4,6 +4,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MAT_DIALOG_DATA, MatDialogRef, MatDialogModule } from '@angular/material/dialog';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { DragDropModule } from '@angular/cdk/drag-drop';
+import { formatDateDMY } from '../../../../../core/utils/date.utils';
 
 @Component({
     selector: 'app-detalle-envio',
@@ -25,6 +26,10 @@ export class DetalleEnvioComponent {
         @Inject(MAT_DIALOG_DATA) public data: { calibracion: any }
     ) {
         this.calibracion = data.calibracion;
+    }
+
+    formatDate(date: string): string {
+        return date ? formatDateDMY(date) : '-';
     }
 
     getWorkTypeLabel(w: string): string {

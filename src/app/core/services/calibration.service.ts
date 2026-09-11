@@ -129,7 +129,7 @@ export class CalibrationService {
         actual_return_date?: string; calibration_date?: string; certificate_number?: string;
         certificate_date?: string; next_calibration_date?: string; physical_condition?: string;
         calibration_performed?: boolean; notes?: string; observations?: string;
-        received_by_name?: string; cost?: number; currency?: string;
+        received_by_name?: string; cost?: number | null; currency?: string;
         jack_semiannual_date?: string; jack_annual_date?: string;
         supplier_id?: number; certificate_file?: string;
     }): Observable<any> {

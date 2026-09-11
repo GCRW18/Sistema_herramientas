@@ -10,7 +10,7 @@ import { takeUntil, finalize, debounceTime, distinctUntilChanged, switchMap, map
 import { CalibrationService } from '../../../../../core/services/calibration.service';
 import { MovementService }    from '../../../../../core/services/movement.service';
 import { ScanToolResult }     from '../../../../../core/models';
-import { localDateStr }       from '../../../../../core/utils/date.utils';
+import { localDateStr, formatDateDMY } from '../../../../../core/utils/date.utils';
 
 interface Funcionario { id: number; nombre: string; cargo: string; area?: string; }
 interface Warehouse   { id: number; name: string; code: string; }
@@ -376,7 +376,7 @@ export class FormEnvioComponent implements OnInit, OnDestroy {
                 supplier_name:        last?.supplierName || undefined,
                 work_type:            last?.workType ?? 'calibration',
                 expected_return_date: last?.expectedReturnDate ?? this._defaultReturn(),
-                cost:                 last?.cost ?? undefined,
+                cost:                 last?.cost ?? null,
             }).pipe(
                 finalize(() => this.savingCount.update(n => n - 1)),
             ).subscribe({
@@ -418,7 +418,7 @@ export class FormEnvioComponent implements OnInit, OnDestroy {
             supplier_name:        item.supplierName || undefined,
             work_type:            item.workType,
             expected_return_date: item.expectedReturnDate || undefined,
-            cost:                 item.cost ?? undefined,
+            cost:                 item.cost ?? null,
             notes:                item.notes || undefined,
             repair_description:   item.repairDescription || undefined,
             discrepancy_report:   item.discrepancyReport || undefined,
@@ -473,6 +473,10 @@ export class FormEnvioComponent implements OnInit, OnDestroy {
     /** Etiqueta legible del tipo de trabajo. */
     workTypeLabel(v: string): string {
         return this.workTypeOptions.find(o => o.value === v)?.label ?? (v || '—');
+    }
+
+    formatDate(date: string | null | undefined): string {
+        return date ? formatDateDMY(date) : '-';
     }
 
     /** La herramienta del borrador tiene campos obligatorios sin completar. */
