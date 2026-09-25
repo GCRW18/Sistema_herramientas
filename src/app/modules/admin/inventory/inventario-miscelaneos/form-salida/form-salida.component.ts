@@ -37,8 +37,8 @@ interface LoteSalidaItem {
         :host { display: block; height: 100%; }
         .custom-scrollbar::-webkit-scrollbar { width: 6px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #ea580c; border-radius: 3px; }
-        :host-context(.dark) .custom-scrollbar::-webkit-scrollbar-thumb { background: #fb923c; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #f59e0b; border-radius: 3px; }
+        :host-context(.dark) .custom-scrollbar::-webkit-scrollbar-thumb { background: #fbbf24; }
         @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
         .animate-pulse { animation: pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
     `]

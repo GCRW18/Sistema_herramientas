@@ -5,6 +5,7 @@ import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { Chart, registerables } from 'chart.js';
 import { forkJoin, of } from 'rxjs';
@@ -36,6 +37,7 @@ interface Alert {
     time: string;
     icon: string;
     route?: string;
+    badge: string;
 }
 
 interface Activity {
@@ -45,6 +47,7 @@ interface Activity {
     description: string;
     user: string;
     time: string;
+    route?: string;
 }
 
 interface QuickAction {
@@ -66,6 +69,7 @@ interface QuickAction {
         MatIconModule,
         MatButtonModule,
         MatProgressSpinnerModule,
+        MatTooltipModule,
         MatDialogModule
     ],
     templateUrl: './dashboard.component.html',
@@ -109,6 +113,12 @@ interface QuickAction {
         .variant-danger  { background-color: #ff0000; color: #fbf7f7; }
         .variant-default { background-color: #0069ff; color: #f4efef; }
 
+        @keyframes cardIn {
+            from { opacity: 0; transform: translateY(14px) scale(0.98); }
+            to   { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        .animate-card-in { animation: cardIn 0.5s cubic-bezier(0.25, 0.8, 0.25, 1) both; }
+
         mat-icon { vertical-align: middle; }
 
         .overflow-y-auto::-webkit-scrollbar       { width: 8px; }
@@ -144,7 +154,16 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewInit {
 
     kpiCardsData    = signal<KPI[]>([]);
     alertsData      = signal<Alert[]>([]);
+    // Total real de alertas críticas de calibración (sin recortar): alertsData() se limita a
+    // las primeras 6 para no desbordar la card, pero el badge/footer deben reflejar el total.
+    alertsTotalCount = signal<number>(0);
     activitiesData  = signal<Activity[]>([]);
+    // Total real de movimientos recientes (sin recortar) — mismo criterio que alertsTotalCount.
+    recentMovementsTotalCount = signal<number>(0);
+    // Datos para la card ampliada de Estado Calibración (% central + leyenda con conteos).
+    calibTotalTools    = signal<number>(0);
+    calibAvailablePct  = signal<number>(0);
+    calibStats         = signal<{ label: string; value: number; color: string }[]>([]);
     quickActionsData = signal<QuickAction[]>([]);
 
     ngOnInit(): void {
@@ -233,7 +252,8 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewInit {
             AJUSTE_INGRESO: 'Ajuste', ADJUSTMENT: 'Ajuste', PURCHASE: 'Compra', COMPRA: 'Compra',
             COMAT: 'COMAT', ENTRADA_MISC: 'Entrada Misceláneo', MANUAL: 'Ajuste Manual'
         };
-        const items = this.recentMovements.slice(0, 8).map((m: any, i: number) => {
+        this.recentMovementsTotalCount.set(this.recentMovements.length);
+        const items: Activity[] = this.recentMovements.slice(0, 8).map((m: any, i: number) => {
             const rawType = m.type || m.movement_type || '';
             return {
                 id:          String(m.id_movement || i),
@@ -241,27 +261,33 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewInit {
                 title:       TYPE_LABELS[rawType.toUpperCase()] || rawType || 'Movimiento',
                 description: m.notes || m.movement_number || '',
                 user:        m.requested_by_name || m.created_by || 'Sistema',
-                time:        m.date ? new Date(m.date).toLocaleDateString('es-BO') : (m.fecha_reg ? new Date(m.fecha_reg).toLocaleDateString('es-BO') : '')
+                time:        m.date ? new Date(m.date).toLocaleDateString('es-BO') : (m.fecha_reg ? new Date(m.fecha_reg).toLocaleDateString('es-BO') : ''),
+                route:       '/movimientos'
             };
         });
         this.activitiesData.set(items);
 
-        // Poblar panel de alertas con calibraciones críticas
-        const alertItems: Alert[] = calibAlerts
-            .filter(a => ['EXPIRED', 'CRITICAL_7D', 'URGENT_15D'].includes(a.alert_type))
-            .slice(0, 6)
-            .map((a, i) => ({
+        // Poblar panel de alertas con calibraciones críticas. La lista visible se recorta a 6
+        // para no desbordar la card, pero el total real (para el badge y "ver todas") no.
+        const criticalAlerts = calibAlerts.filter(a => ['EXPIRED', 'CRITICAL_7D', 'URGENT_15D'].includes(a.alert_type));
+        this.alertsTotalCount.set(criticalAlerts.length);
+
+        const alertItems: Alert[] = criticalAlerts.slice(0, 6).map((a, i) => {
+            const isExpired = a.alert_type === 'EXPIRED';
+            const days = a.days_until_calibration ?? a.days_remaining ?? null;
+            return {
                 id:          String(a.id_calibration || i),
-                type:        a.alert_type === 'EXPIRED' ? 'error' : 'warning' as any,
+                // VENCIDA es el caso más grave: type 'critical' (rojo), no 'error' (naranja) —
+                // antes ambos niveles de alerta se veían con la misma intensidad visual.
+                type:        (isExpired ? 'critical' : 'warning') as Alert['type'],
                 title:       a.tool_name || a.tool_code || 'Herramienta',
-                description: a.alert_type === 'EXPIRED'
-                    ? 'Calibración VENCIDA'
-                    : `Vence en ${a.days_until_calibration ?? a.days_remaining ?? '?'} días`,
-                time:        a.next_calibration_date || a.calibration_expiry || '',
-                icon:        a.alert_type === 'EXPIRED'
-                    ? 'heroicons_outline:exclamation-circle'
-                    : 'heroicons_outline:clock'
-            }));
+                description: (a.tool_code && a.tool_name) ? a.tool_code : '',
+                time:        this.formatAlertDate(a.next_calibration_date || a.calibration_expiry),
+                icon:        isExpired ? 'heroicons_outline:exclamation-circle' : 'heroicons_outline:clock',
+                badge:       isExpired ? 'VENCIDA' : (days == null ? 'PRÓXIMA' : `${days} DÍA${days === 1 ? '' : 'S'}`),
+                route:       '/calibraciones'
+            };
+        });
         this.alertsData.set(alertItems);
     }
 
@@ -366,6 +392,18 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewInit {
         const enCalib   = tools.filter(t => t.status === 'in_calibration').length;
         const vencida   = this.calibAlerts.filter(a => a.alert_type === 'EXPIRED').length;
         const porVencer = this.calibAlerts.filter(a => ['CRITICAL_7D', 'URGENT_15D'].includes(a.alert_type)).length;
+        const total     = vigente + enCalib + vencida + porVencer;
+
+        // Para la card ampliada: % en el centro de la dona + leyenda propia con conteos
+        // reales (el legend nativo de Chart.js solo muestra colores, sin cifras).
+        this.calibTotalTools.set(total);
+        this.calibAvailablePct.set(total ? Math.round((vigente / total) * 100) : 0);
+        this.calibStats.set([
+            { label: 'Disponible',     value: vigente,   color: '#01f825' },
+            { label: 'En Calibración', value: enCalib,   color: '#111A43' },
+            { label: 'Vencida',        value: vencida,   color: '#f61206' },
+            { label: 'Por Vencer',     value: porVencer, color: '#f8ab04' },
+        ]);
 
         this.calibrationChartInstance?.destroy();
         this.calibrationChartInstance = new Chart(ctx, {
@@ -374,7 +412,13 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewInit {
                 labels: ['Disponible', 'En Calibración', 'Vencida', 'Por Vencer'],
                 datasets: [{ data: [vigente, enCalib, vencida, porVencer], backgroundColor: ['#01f825','#111A43','#f61206','#f8ab04'], borderColor: '#000', borderWidth: 2 }]
             },
-            options: { responsive: true, maintainAspectRatio: false }
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: '72%',
+                animation: { animateRotate: true, animateScale: true, duration: 900, easing: 'easeOutQuart' },
+                plugins: { legend: { display: false } }
+            }
         });
     }
 
@@ -428,5 +472,21 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewInit {
 
     navigateTo(action: QuickAction) {
         this.router.navigate([action.route], { queryParams: action.queryParams });
+    }
+
+    navigateToAlert(alert: Alert): void {
+        if (alert.route) this.router.navigate([alert.route]);
+    }
+
+    verTodasAlertas(): void {
+        this.router.navigate(['/calibraciones']);
+    }
+
+    navigateToActivity(activity: Activity): void {
+        if (activity.route) this.router.navigate([activity.route]);
+    }
+
+    verTodosMovimientos(): void {
+        this.router.navigate(['/movimientos']);
     }
 }

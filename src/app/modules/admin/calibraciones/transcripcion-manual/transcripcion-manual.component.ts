@@ -133,7 +133,7 @@ export class TranscripcionManualComponent implements OnInit, OnDestroy {
                 this.transcriptions = records.map(r => ({
                     id: r.id_calibration ?? r.id ?? 0,
                     tool_id: r.tool_id ?? r.id_tool ?? 0,
-                    fecha: r.calibration_date ?? r.date ?? '—',
+                    fecha: r.calibration_date ?? r.date ?? '',
                     codigo: r.tool_code ?? r.code ?? '—',
                     nombre: r.tool_name ?? r.name ?? '—',
                     certificado: r.certificate_number ?? r.record_number ?? '—',

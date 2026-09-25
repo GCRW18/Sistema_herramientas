@@ -188,7 +188,11 @@ export class RetornoCalibracionComponent implements OnInit, OnDestroy {
     }
 
     isRetrasado(cal: CalibrationDisplay): boolean {
-        if (!cal.expected_return_date || cal.status === 'returned' || cal.status === 'completed') return false;
+        // Solo cuenta como retrasado un envio realmente pendiente en el laboratorio
+        // (mismo criterio que getEnLabCount) — antes solo excluia returned/completed y
+        // contaba tambien los anulados (status 'cancelled'), inflando el contador con
+        // envios que ya no estan activos.
+        if (!cal.expected_return_date || (cal.status !== 'sent' && cal.status !== 'in_process')) return false;
         try {
             const dateStr = cal.expected_return_date.includes('T') ? cal.expected_return_date : cal.expected_return_date + 'T00:00:00';
             const expectedDate = new Date(dateStr);

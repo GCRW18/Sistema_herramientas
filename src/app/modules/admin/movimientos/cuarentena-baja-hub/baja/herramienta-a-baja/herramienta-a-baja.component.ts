@@ -10,10 +10,11 @@ import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } 
 import { DragDropModule } from '@angular/cdk/drag-drop';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { Subject, of, takeUntil, debounceTime, distinctUntilChanged, switchMap, catchError } from 'rxjs';
+import { Subject, of, takeUntil, debounceTime, distinctUntilChanged, switchMap, catchError, filter } from 'rxjs';
 import { ToolService } from '../../../../../../core/services/tool.service';
 import { MovementService } from '../../../../../../core/services/movement.service';
 import { BlobStorageService } from '../../../../../../core/services/blob-storage.service';
+import { QrScanService } from '../../../../../../core/services/qr-scan.service';
 
 interface HerramientaOption {
     id_tool?: number;
@@ -70,6 +71,7 @@ export class HerramientaABajaComponent implements OnInit, OnDestroy {
     private toolSvc = inject(ToolService);
     private movementSvc = inject(MovementService);
     private blobStorage = inject(BlobStorageService);
+    private qrScan = inject(QrScanService);
 
     private _unsubscribeAll = new Subject<void>();
     private _search$ = new Subject<string>();
@@ -99,6 +101,25 @@ export class HerramientaABajaComponent implements OnInit, OnDestroy {
             .subscribe({ next: (w: any[]) => { this.warehouses = w; } });
     }
 
+    private _toHerramientaOption(t: any): HerramientaOption {
+        return {
+            id_tool:    t.id_tool ?? t.id ?? 0,
+            codigo:     t.code          ?? t.codigo        ?? '',
+            nombre:     t.name          || t.description   || t.nombre || '',
+            pn:         t.part_number   ?? t.pn            ?? '',
+            sn:         t.serial_number ?? t.sn             ?? '',
+            base:       this._resolverBase(t.warehouse_id),
+            marca:      t.brand ?? t.marca ?? '',
+            existencia: t.quantity_in_stock ?? t.existencia ?? 0,
+            status:     String(t.status ?? '').toLowerCase(),
+            imagen:     t.location_photo ?? null,
+            warehouseId: t.warehouse_id != null ? Number(t.warehouse_id) : null,
+            rackId:      t.rack_id      != null ? Number(t.rack_id)      : null,
+            levelId:     t.level_id     != null ? Number(t.level_id)     : null,
+            notesTool:   t.notes ?? '',
+        };
+    }
+
     // Búsqueda en vivo contra el backend (getTools → searchToolsAutocomplete). "base" se resuelve
     // en el cliente contra getWarehouses (searchToolsAutocomplete solo da warehouse_id).
     private setupSearchListener(): void {
@@ -107,28 +128,29 @@ export class HerramientaABajaComponent implements OnInit, OnDestroy {
             debounceTime(300), distinctUntilChanged(),
             switchMap(term => {
                 const q = (term || '').trim();
-                if (q.length < 2) { return of([]); }
+                // Etiqueta QR (o su versión garbled): la resuelve sola el respaldo de abajo.
+                // Dejarla pasar también por acá duplicaba descencriptarIdQR+listTools en paralelo.
+                if (q.length < 2 || this.qrScan.isQrLabel(q)) { return of([]); }
                 return this.toolSvc.getTools({ query: q }).pipe(catchError(() => of([])));
             })
         ).subscribe((tools: any[]) => {
-            const mapped: HerramientaOption[] = (tools || []).map((t: any) => ({
-                id_tool:    t.id_tool ?? t.id ?? 0,
-                codigo:     t.code          ?? t.codigo        ?? '',
-                nombre:     t.name          || t.description   || t.nombre || '',
-                pn:         t.part_number   ?? t.pn            ?? '',
-                sn:         t.serial_number ?? t.sn             ?? '',
-                base:       this._resolverBase(t.warehouse_id),
-                marca:      t.brand ?? t.marca ?? '',
-                existencia: t.quantity_in_stock ?? t.existencia ?? 0,
-                status:     String(t.status ?? '').toLowerCase(),
-                imagen:     t.location_photo ?? null,
-                warehouseId: t.warehouse_id != null ? Number(t.warehouse_id) : null,
-                rackId:      t.rack_id      != null ? Number(t.rack_id)      : null,
-                levelId:     t.level_id     != null ? Number(t.level_id)     : null,
-                notesTool:   t.notes ?? '',
-            }));
+            const mapped = (tools || []).map((t: any) => this._toHerramientaOption(t));
             this.herramientasFiltradas.set(mapped);
             this.showSuggestions = mapped.length > 0;
+        });
+
+        // Respaldo por si el lector físico no entrega un Enter reconocible (idioma de teclado
+        // mal configurado, ver QrScanService): en cuanto el tecleo se detiene ~120ms y ya es
+        // (o parece) una etiqueta QR, la resuelve sola — mismo comportamiento que el buscador
+        // de Consultar Inventario, sin dejarla en el dropdown esperando un clic manual.
+        this._search$.pipe(
+            takeUntil(this._unsubscribeAll),
+            debounceTime(120),
+            filter(term => this.qrScan.isQrLabel((term || '').trim())),
+            switchMap(term => this.toolSvc.getTools({ query: term.trim() }).pipe(catchError(() => of([]))))
+        ).subscribe((tools: any[]) => {
+            const tool = (tools || [])[0];
+            if (tool) this.selectHerramienta(this._toHerramientaOption(tool));
         });
     }
 

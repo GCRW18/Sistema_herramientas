@@ -28,7 +28,7 @@ import { localDateStr } from '../../../../../core/utils/date.utils';
     ],
     templateUrl: './form-material.component.html',
     styles: [`
-        :host { display: block; }
+        :host { display: flex; flex-direction: column; height: 100%; }
         .custom-scrollbar::-webkit-scrollbar { width: 6px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #D97706; border-radius: 3px; }
@@ -68,6 +68,31 @@ export class FormMaterialComponent implements OnInit, OnDestroy {
     tiposItem   = ['CONSUMIBLE', 'MATERIAL', 'REPUESTO', 'QUIMICO', 'ELECTRICO'];
     tiposCompra = ['COMPRA DIRECTA', 'LICITACIÓN', 'DONACIÓN', 'TRANSFERENCIA'];
     unidades    = ['UND', 'LT', 'KG', 'MTS', 'GAL', 'CAJA', 'ROLLO', 'JUEGO'];
+
+    // ── Mini ventana de Vista Previa (MatDialog anidado, mismo patrón que el picker de ubicación) ──
+    @ViewChild('vistaPreviaTpl') vistaPreviaTpl!: TemplateRef<any>;
+    private vistaPreviaRef: MatDialogRef<any> | null = null;
+    vistaExpanded = false;
+
+    openVistaPreview(): void {
+        if (this.vistaPreviaRef) { this.closeVistaPreview(); return; }
+        this.vistaExpanded  = true;
+        this.vistaPreviaRef = this.dialog.open(this.vistaPreviaTpl, {
+            width: 'min(420px, 92vw)',
+            maxHeight: '70vh',
+            panelClass: 'no-padding-dialog',
+            hasBackdrop: true,
+            autoFocus: false,
+        });
+        this.vistaPreviaRef.afterClosed().subscribe(() => {
+            this.vistaPreviaRef = null;
+            this.vistaExpanded  = false;
+        });
+    }
+
+    closeVistaPreview(): void {
+        this.vistaPreviaRef?.close();
+    }
 
     // ── Picker de ubicación (mini ventana / MatDialog anidado) ──
     @ViewChild('ubicacionPickerTpl') ubicacionPickerTpl!: TemplateRef<any>;

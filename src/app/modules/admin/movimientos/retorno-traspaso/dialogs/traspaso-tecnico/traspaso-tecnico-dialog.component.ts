@@ -5,7 +5,7 @@ import { MatDialog, MatDialogRef, MAT_DIALOG_DATA, MatDialogModule } from '@angu
 import { MatIconModule } from '@angular/material/icon';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { Subject, of } from 'rxjs';
-import { debounceTime, distinctUntilChanged, switchMap, takeUntil, finalize, map, catchError } from 'rxjs/operators';
+import { debounceTime, distinctUntilChanged, switchMap, takeUntil, finalize, map, catchError, filter } from 'rxjs/operators';
 
 import { MovementService } from '../../../../../../core/services/movement.service';
 import { ToolService } from '../../../../../../core/services/tool.service';
@@ -129,6 +129,7 @@ export class TraspasoTecnicoDialogComponent implements OnInit, OnDestroy {
         });
 
         this._setupScanTecnico();
+        this._setupScanTecnicoQrFallback();
         this._fetchTrptCorrelativoPreview();
         setTimeout(() => this._focusScanTecnico(), 150);
     }
@@ -168,20 +169,42 @@ export class TraspasoTecnicoDialogComponent implements OnInit, OnDestroy {
     /** Un solo input hace de escáner (Enter/wedge → coincidencia exacta) y de buscador
      *  (dropdown de sugerencias mientras se escribe), igual que Préstamo Técnico. */
     onScanTecnicoInput(v: string): void { this.scanValueTecnico = v; this._srchTecnico$.next(v); }
+
+    /** Respaldo por si el lector físico no entrega un Enter reconocible (idioma de teclado
+     *  mal configurado, ver QrScanService): en cuanto el tecleo se detiene ~120ms y ya es
+     *  (o parece) una etiqueta QR, dispara el escaneo solo, sin esperar el Enter. */
+    private _setupScanTecnicoQrFallback(): void {
+        this._srchTecnico$.pipe(
+            debounceTime(120),
+            filter(term => this.qrScan.isQrLabel(term)),
+            takeUntil(this._unsub$)
+        ).subscribe(() => this.scanTecnicoEnter());
+    }
+
+    /** Mutex dedicado: evita procesar el mismo escaneo dos veces si el Enter llega a
+     *  disparar en paralelo con el respaldo por inactividad de arriba. */
+    private _scanLockTecnico = false;
     scanTecnicoEnter(): void {
+        if (this._scanLockTecnico) return;
         const raw = this.scanValueTecnico.trim();
         if (!raw) return;
+        this._scanLockTecnico = true;
         // Etiqueta QR (URL `.../qr-code/<token>`): descifra a código plano y reintenta.
         if (this.qrScan.isQrLabel(raw)) {
             this.scanningTecnico = true;
-            this.qrScan.toToolCode(raw).pipe(takeUntil(this._unsub$)).subscribe(code => {
-                this.scanningTecnico = false;
-                if (!code) { this._showMsg('Etiqueta QR no reconocida', 'warning'); this.scanValueTecnico = ''; this._focusScanTecnico(); return; }
-                this.scanValueTecnico = code;
-                this.scanTecnicoEnter();
+            this.qrScan.toToolCode(raw).pipe(takeUntil(this._unsub$)).subscribe({
+                next: code => {
+                    this.scanningTecnico = false;
+                    this._scanLockTecnico = false;
+                    if (!code) { this._showMsg('No se pudo leer el código QR (revise el idioma de teclado del lector)', 'warning'); this.scanValueTecnico = ''; this._focusScanTecnico(); return; }
+                    this.scanValueTecnico = code;
+                    this.scanTecnicoEnter();
+                },
+                error: () => { this.scanningTecnico = false; this._scanLockTecnico = false; this._showMsg('Error al leer el código QR', 'error'); }
             });
             return;
         }
+        this._scanLockTecnico = false;
         this._pendingScanTecnico = raw;
         this._scanTecnico$.next(raw);
     }
@@ -212,7 +235,9 @@ export class TraspasoTecnicoDialogComponent implements OnInit, OnDestroy {
         this._srchTecnico$.pipe(
             debounceTime(300), distinctUntilChanged(),
             switchMap(term => {
-                if (!term || term.trim().length < 2) {
+                // Etiqueta QR (o su versión garbled): la resuelve solo _setupScanTecnicoQrFallback.
+                // Dejarla pasar también por acá duplicaba descencriptarIdQR+listTools en paralelo.
+                if (!term || term.trim().length < 2 || this.qrScan.isQrLabel(term)) {
                     this.toolResultsTecnico = []; this.showToolDropTecnico = false; return of([]);
                 }
                 this.searchingToolsTecnico = true;

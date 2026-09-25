@@ -6,7 +6,7 @@ import { MatDialogRef, MatDialogModule, MatDialog } from '@angular/material/dial
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { Subject, of } from 'rxjs';
-import { takeUntil, finalize, catchError, debounceTime, distinctUntilChanged, switchMap, map } from 'rxjs/operators';
+import { takeUntil, finalize, catchError, debounceTime, distinctUntilChanged, switchMap, map, filter } from 'rxjs/operators';
 import { MovementService } from '../../../../../core/services/movement.service';
 import { CustomerService } from '../../../../../core/services/customer.service';
 import { ToolService } from '../../../../../core/services/tool.service';
@@ -199,7 +199,9 @@ export class FormPrestamoExternoDialogComponent implements OnInit, OnDestroy {
         this._toolSearchPe$.pipe(
             debounceTime(300), distinctUntilChanged(),
             switchMap(term => {
-                if (term.length < 2) { this.showToolDropPe = false; return of([]); }
+                // Etiqueta QR (o su versión garbled): la resuelve solo el disparador dedicado
+                // de abajo. Dejarla pasar también por acá duplicaba descencriptarIdQR+listTools.
+                if (term.length < 2 || this.qrScan.isQrLabel(term)) { this.showToolDropPe = false; return of([]); }
                 this.toolSearchLoadingPe = true;
                 return this.toolSvc.getTools({ query: term }).pipe(
                     map((tools: any[]) => (tools || [])
@@ -224,6 +226,16 @@ export class FormPrestamoExternoDialogComponent implements OnInit, OnDestroy {
             }),
             takeUntil(this.destroy$)
         ).subscribe(res => { this.toolSuggestionsPe = res; this.showToolDropPe = res.length > 0; });
+
+        // Respaldo por si el lector físico no entrega un Enter reconocible (mismo problema
+        // de idioma de teclado que mezcla símbolos, ver QrScanService): en cuanto el tecleo
+        // se detiene ~120ms y lo tecleado ya es (o parece) una etiqueta QR, dispara el
+        // escaneo solo, sin esperar el Enter.
+        this._toolSearchPe$.pipe(
+            debounceTime(120),
+            filter(term => this.qrScan.isQrLabel(term)),
+            takeUntil(this.destroy$)
+        ).subscribe(() => this.scanAndAddPe());
     }
 
     onToolInputPe(value: string): void { this.toolSearchPe = value; this._toolSearchPe$.next(value.trim()); }
@@ -231,26 +243,36 @@ export class FormPrestamoExternoDialogComponent implements OnInit, OnDestroy {
     selectToolSuggestionPe(tool: any): void { this.toolSearchPe = tool.codigo; this.showToolDropPe = false; this._agregarToolPe(tool); }
 
     /** Enter / lector físico: coincidencia exacta en sugerencias, si no resuelve
-     *  el código directo contra el backend (getToolByCode). */
+     *  el código directo contra el backend (getToolByCode). También lo dispara el
+     *  respaldo por inactividad de _setupToolSearchPe() (ver ahí); _scanningPe es un
+     *  mutex dedicado (toolSearchLoadingPe lo comparte la búsqueda en vivo y bloquearía
+     *  un Enter legítimo si hay una búsqueda de fondo en curso). */
+    private _scanningPe = false;
     scanAndAddPe(): void {
+        if (this._scanningPe) return;
         const code = this.toolSearchPe.trim();
         if (!code) return;
+        this._scanningPe = true;
         // Etiqueta QR (URL `.../qr-code/<token>`): descifra a código plano y reintenta.
         if (this.qrScan.isQrLabel(code)) {
             this.toolSearchLoadingPe = true;
-            this.qrScan.toToolCode(code).pipe(takeUntil(this.destroy$)).subscribe(real => {
-                this.toolSearchLoadingPe = false;
-                if (!real) { this.showMsg('warning', 'Etiqueta QR no reconocida'); this.toolSearchPe = ''; return; }
-                this.toolSearchPe = real;
-                this.scanAndAddPe();
+            this.qrScan.toToolCode(code).pipe(takeUntil(this.destroy$)).subscribe({
+                next: real => {
+                    this.toolSearchLoadingPe = false;
+                    this._scanningPe = false;
+                    if (!real) { this.showMsg('warning', 'No se pudo leer el código QR (revise el idioma de teclado del lector)'); this.toolSearchPe = ''; return; }
+                    this.toolSearchPe = real;
+                    this.scanAndAddPe();
+                },
+                error: () => { this.toolSearchLoadingPe = false; this._scanningPe = false; this.showMsg('error', 'Error al leer el código QR'); }
             });
             return;
         }
         const exact = this.toolSuggestionsPe.find(h => h.codigo.toLowerCase() === code.toLowerCase());
-        if (exact) { this._agregarToolPe(exact); return; }
+        if (exact) { this._agregarToolPe(exact); this._scanningPe = false; return; }
         this.toolSearchLoadingPe = true;
         this.toolSvc.getToolByCode(code).pipe(
-            finalize(() => this.toolSearchLoadingPe = false),
+            finalize(() => { this.toolSearchLoadingPe = false; this._scanningPe = false; }),
             takeUntil(this.destroy$)
         ).subscribe({
             next: (raw: any) => {

@@ -6,7 +6,7 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatDialogRef, MatDialogModule, MatDialog } from '@angular/material/dialog';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { Subject, forkJoin, of } from 'rxjs';
-import { takeUntil, finalize, switchMap, map, catchError, debounceTime, distinctUntilChanged } from 'rxjs/operators';
+import { takeUntil, finalize, switchMap, map, catchError, debounceTime, distinctUntilChanged, filter } from 'rxjs/operators';
 import { MovementService } from '../../../../../core/services/movement.service';
 import { FleetService } from '../../../../../core/services/fleet.service';
 import { KitsService } from '../../../../../core/services/kits.service';
@@ -262,7 +262,11 @@ export class FormPrestamoDialogComponent implements OnInit, OnDestroy {
         this._toolSearchPt$.pipe(
             debounceTime(300), distinctUntilChanged(),
             switchMap(term => {
-                if (term.length < 2) { this.showToolDropPt = false; return of([]); }
+                // Etiqueta QR (o su versión garbled): la resuelve solo el disparador dedicado
+                // de abajo. Dejarla pasar también por acá duplicaba descencriptarIdQR+listTools
+                // en paralelo (2 requests por escaneo) y esa concurrencia llegó a hacer
+                // crashear al backend (count() sobre respuesta no-array en driver.php).
+                if (term.length < 2 || this.qrScan.isQrLabel(term)) { this.showToolDropPt = false; return of([]); }
                 this.toolSearchLoadingPt = true;
                 return this.toolSvc.getTools({ query: term }).pipe(
                     map((tools: any[]) => (tools || [])
@@ -289,6 +293,17 @@ export class FormPrestamoDialogComponent implements OnInit, OnDestroy {
             }),
             takeUntil(this.destroy$)
         ).subscribe(res => { this.toolSuggestionsPt = res; this.showToolDropPt = res.length > 0; });
+
+        // Respaldo por si el lector físico no entrega un Enter reconocible (mismo problema
+        // de idioma de teclado que mezcla símbolos, ver QrScanService): en cuanto el tecleo
+        // se detiene ~120ms y lo tecleado ya es (o parece) una etiqueta QR, dispara el
+        // escaneo solo, sin esperar el Enter. No afecta la búsqueda manual (un código de
+        // herramienta tecleado nunca matchea isQrLabel, que exige el prefijo "http").
+        this._toolSearchPt$.pipe(
+            debounceTime(120),
+            filter(term => this.qrScan.isQrLabel(term)),
+            takeUntil(this.destroy$)
+        ).subscribe(() => this.scanAndAddPt());
     }
 
     onToolInputPt(value: string): void { this.toolSearchPt = value; this._toolSearchPt$.next(value.trim()); }
@@ -296,26 +311,39 @@ export class FormPrestamoDialogComponent implements OnInit, OnDestroy {
     selectToolSuggestionPt(tool: any): void { this.toolSearchPt = tool.codigo; this.showToolDropPt = false; this._agregarToolPt(tool); }
 
     /** Enter en el input / lector físico wedge: usa la coincidencia exacta de las
-     *  sugerencias si ya llegó, si no resuelve el código directo contra el backend. */
+     *  sugerencias si ya llegó, si no resuelve el código directo contra el backend.
+     *  También lo dispara el respaldo por inactividad de _setupToolSearchPt() (ver ahí);
+     *  _scanningPt es un mutex dedicado (toolSearchLoadingPt lo comparte la búsqueda en
+     *  vivo y bloquearía un Enter legítimo si hay una búsqueda de fondo en curso). */
+    private _scanningPt = false;
     scanAndAddPt(): void {
+        if (this._scanningPt) return;
         const code = this.toolSearchPt.trim();
         if (!code) return;
+        this._scanningPt = true;
         // Etiqueta QR (URL `.../qr-code/<token>`): descifra a código plano y reintenta.
         if (this.qrScan.isQrLabel(code)) {
             this.toolSearchLoadingPt = true;
-            this.qrScan.toToolCode(code).pipe(takeUntil(this.destroy$)).subscribe(real => {
-                this.toolSearchLoadingPt = false;
-                if (!real) { this.showMsg('warning', 'Etiqueta QR no reconocida'); this.toolSearchPt = ''; return; }
-                this.toolSearchPt = real;
-                this.scanAndAddPt();
+            this.qrScan.toToolCode(code).pipe(takeUntil(this.destroy$)).subscribe({
+                next: real => {
+                    this.toolSearchLoadingPt = false;
+                    this._scanningPt = false;
+                    if (!real) { this.showMsg('warning', 'No se pudo leer el código QR (revise el idioma de teclado del lector)'); this.toolSearchPt = ''; return; }
+                    this.toolSearchPt = real;
+                    this.scanAndAddPt();
+                },
+                // toToolCode ya absorbe sus propios errores (siempre emite, nunca error), pero
+                // por si acaso: sin esto el mutex quedaría trabado para siempre y ningún
+                // escaneo/Enter posterior volvería a funcionar.
+                error: () => { this.toolSearchLoadingPt = false; this._scanningPt = false; this.showMsg('error', 'Error al leer el código QR'); }
             });
             return;
         }
         const exact = this.toolSuggestionsPt.find(h => h.codigo.toLowerCase() === code.toLowerCase());
-        if (exact) { this._agregarToolPt(exact); return; }
+        if (exact) { this._agregarToolPt(exact); this._scanningPt = false; return; }
         this.toolSearchLoadingPt = true;
         this.toolSvc.getToolByCode(code).pipe(
-            finalize(() => this.toolSearchLoadingPt = false),
+            finalize(() => { this.toolSearchLoadingPt = false; this._scanningPt = false; }),
             takeUntil(this.destroy$)
         ).subscribe({
             next: (raw: any) => {

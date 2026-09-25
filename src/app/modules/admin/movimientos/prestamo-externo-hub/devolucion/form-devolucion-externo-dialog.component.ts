@@ -6,7 +6,7 @@ import { MatDialogRef, MatDialogModule, MatDialog } from '@angular/material/dial
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { Subject, of } from 'rxjs';
-import { takeUntil, finalize, switchMap, map, catchError, debounceTime, distinctUntilChanged } from 'rxjs/operators';
+import { takeUntil, finalize, switchMap, map, catchError, debounceTime, distinctUntilChanged, filter } from 'rxjs/operators';
 import { MovementService } from '../../../../../core/services/movement.service';
 import { CustomerService } from '../../../../../core/services/customer.service';
 import { QrScanService } from '../../../../../core/services/qr-scan.service';
@@ -94,6 +94,7 @@ export class FormDevolucionExternoDialogComponent implements OnInit, OnDestroy {
     scanValue = '';
     scanSuggestions: DevolucionExternoItem[] = [];
     showScanDropdown = false;
+    private _scanValue$ = new Subject<string>();
 
     // ── "Devuelto por" — conectado a la empresa / cliente (he.tcustomers) ──
     private _returnedBySearch$ = new Subject<string>();
@@ -122,6 +123,7 @@ export class FormDevolucionExternoDialogComponent implements OnInit, OnDestroy {
         this.initForm();
         this._setupResponsableSearch();
         this._setupReturnedBySearch();
+        this._setupScanQrFallback();
 
         const currentUser = this._currentUserName();
         if (currentUser) this.devForm.patchValue({ responsableRecibe: currentUser });
@@ -230,8 +232,20 @@ export class FormDevolucionExternoDialogComponent implements OnInit, OnDestroy {
         try { this.scanInputRef?.nativeElement.focus(); } catch { /* vista no lista */ }
     }
 
+    /** Respaldo por si el lector físico no entrega un Enter reconocible (idioma de teclado
+     *  mal configurado, ver QrScanService): en cuanto el tecleo se detiene ~120ms y ya es
+     *  (o parece) una etiqueta QR, dispara el escaneo solo, sin esperar el Enter. */
+    private _setupScanQrFallback(): void {
+        this._scanValue$.pipe(
+            debounceTime(120),
+            filter(term => this.qrScan.isQrLabel(term)),
+            takeUntil(this.destroy$)
+        ).subscribe(() => this.scanAndAdd());
+    }
+
     onScanInput(v: string): void {
         this.scanValue = v;
+        this._scanValue$.next(v.trim());
         const q = v.trim().toLowerCase();
         if (!q) { this.scanSuggestions = []; this.showScanDropdown = false; return; }
         const vistos = new Set<string>();
@@ -254,20 +268,32 @@ export class FormDevolucionExternoDialogComponent implements OnInit, OnDestroy {
 
     hideScanDropdown(): void { setTimeout(() => this.showScanDropdown = false, 150); }
 
+    /** También lo dispara el respaldo por inactividad de _setupScanQrFallback() (ver ahí);
+     *  _scanLock es un mutex dedicado para no procesar el mismo escaneo dos veces si el
+     *  Enter llega a disparar en paralelo con ese respaldo. */
+    private _scanLock = false;
     scanAndAdd(): void {
+        if (this._scanLock) return;
         const code = this.scanValue.trim();
         if (!code) return;
+        this._scanLock = true;
         // Etiqueta QR (URL `.../qr-code/<token>`): descifra a código plano y reintenta.
         if (this.qrScan.isQrLabel(code)) {
             this.loadingIndex = true;
-            this.qrScan.toToolCode(code).pipe(takeUntil(this.destroy$)).subscribe(real => {
-                this.loadingIndex = false;
-                if (!real) { this.showMsg('warning', 'Etiqueta QR no reconocida'); this._clearScan(); return; }
-                this.scanValue = real;
-                this.scanAndAdd();
+            this.qrScan.toToolCode(code).pipe(takeUntil(this.destroy$)).subscribe({
+                next: real => {
+                    this.loadingIndex = false;
+                    this._scanLock = false;
+                    if (!real) { this.showMsg('warning', 'No se pudo leer el código QR (revise el idioma de teclado del lector)'); this._clearScan(); return; }
+                    this.scanValue = real;
+                    this.scanAndAdd();
+                },
+                error: () => { this.loadingIndex = false; this._scanLock = false; this.showMsg('error', 'Error al leer el código QR'); }
             });
             return;
         }
+        // Resto del método es síncrono (índice en memoria): libera el mutex ya mismo.
+        this._scanLock = false;
         if (!this.indexReady) { this.showMsg('warning', 'Cargando préstamos activos, espere un momento'); return; }
         const exactas = this._openLoanIndex.get(code.toUpperCase());
         if (exactas && exactas.length > 0) { this._agregarItem(exactas); return; }

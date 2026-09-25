@@ -1,5 +1,5 @@
 import {
-    Component, OnInit, inject, signal, computed, ViewEncapsulation, effect
+    Component, OnInit, OnDestroy, inject, signal, computed, ViewEncapsulation, effect
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -7,8 +7,8 @@ import { MatDialog } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
-import { forkJoin, of } from 'rxjs';
-import { catchError, finalize } from 'rxjs/operators';
+import { forkJoin, of, Subject } from 'rxjs';
+import { catchError, finalize, debounceTime, switchMap, takeUntil } from 'rxjs/operators';
 
 import { ToolService }        from 'app/core/services/tool.service';
 import { QrScanService }      from 'app/core/services/qr-scan.service';
@@ -101,7 +101,7 @@ export interface UnifiedItem {
 
     `]
 })
-export class ConsultarInventarioComponent implements OnInit {
+export class ConsultarInventarioComponent implements OnInit, OnDestroy {
 
     // ── Servicios ─────────────────────────────────────────────────────────────
     private dialog            = inject(MatDialog);
@@ -311,20 +311,37 @@ export class ConsultarInventarioComponent implements OnInit {
         }, { allowSignalWrites: true });
     }
 
+    private _destroy$ = new Subject<void>();
+    private _qrSearchValue$ = new Subject<string>();
+
     ngOnInit(): void {
         this.loadInventory();
+        this._setupQrSearchFallback();
     }
+
+    ngOnDestroy(): void { this._destroy$.next(); this._destroy$.complete(); }
 
     // ── Búsqueda libre (acepta etiqueta QR) ──────────────────────────────────
     // El buscador filtra en el cliente; si lo escaneado es la URL de una etiqueta QR
     // (`.../qr-code/<token>`) se descifra a código plano con QrScanService antes de filtrar.
+    // El descifrado va debounced+switchMap (_setupQrSearchFallback): sin eso, cada tecla del
+    // lector físico (sin Enter, ngModelChange dispara en vivo) mandaba su propio
+    // descencriptarIdQR con el token todavía incompleto — varias peticiones en paralelo,
+    // la mayoría con "Código inválido" porque el token a medio escribir no es válido aún.
     onSearchInput(v: string): void {
         const raw = (v ?? '').trim();
         if (!this._qrScan.isQrLabel(raw)) { this.searchTerm.set(v); return; }
+        this._qrSearchValue$.next(raw);
+    }
 
-        this.resolviendoQr.set(true);
-        this._qrScan.toToolCode(raw).pipe(
-            finalize(() => this.resolviendoQr.set(false))
+    private _setupQrSearchFallback(): void {
+        this._qrSearchValue$.pipe(
+            debounceTime(120),
+            switchMap(raw => {
+                this.resolviendoQr.set(true);
+                return this._qrScan.toToolCode(raw).pipe(finalize(() => this.resolviendoQr.set(false)));
+            }),
+            takeUntil(this._destroy$)
         ).subscribe(code => {
             if (code) {
                 if (this.activeTab() === 'kits' || this.activeTab() === 'miscelaneos') {
@@ -332,7 +349,7 @@ export class ConsultarInventarioComponent implements OnInit {
                 }
                 this.searchTerm.set(code);
             } else {
-                this.snackBar.open('Etiqueta QR no reconocida', 'OK', { duration: 3000 });
+                this.snackBar.open('No se pudo leer el código QR (revise el idioma de teclado del lector)', 'OK', { duration: 3000 });
                 this.searchTerm.set('');
             }
         });
@@ -345,7 +362,10 @@ export class ConsultarInventarioComponent implements OnInit {
         this.inventoryData.set([]);
 
         forkJoin({
-            tools:      this.toolService.getTools().pipe(catchError(() => of([]))),
+            // forceRefresh: esta vista es de consulta/auditoría de estado — no puede mostrar
+            // el cache corto de listTools (30s) porque un préstamo/devolución recién hecho
+            // aparecería como "disponible" hasta que el cache expire.
+            tools:      this.toolService.getTools({ forceRefresh: true }).pipe(catchError(() => of([]))),
             kits:       this.kitsService.getKits({ limit: 5000 }).pipe(catchError(() => of([]))),
             miscs:      this.miscelaneosService.getMiscelaneos().pipe(catchError(() => of([]))),
             warehouses: this.warehouseService.getWarehouses().pipe(catchError(() => of([]))),

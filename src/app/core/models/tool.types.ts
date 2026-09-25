@@ -114,5 +114,6 @@ export interface ToolFilters {
     condition?: ToolCondition;
     requiresCalibration?: boolean;
     calibrationExpired?: boolean;
+    forceRefresh?: boolean; // ignora el cache corto de listTools (ver ToolService.getTools)
 }
 

@@ -252,8 +252,8 @@ export class InventarioMiscelaneosComponent implements OnInit, OnDestroy {
     async nuevoCatalogo(): Promise<void> {
         const { FormMaterialComponent } = await import('./form-material/form-material.component');
         this.dialog.open(FormMaterialComponent, {
-            maxWidth: '95vw',
-            panelClass: 'no-padding-dialog',
+            maxWidth: '100vw', maxHeight: '100dvh',
+            panelClass: 'neo-dialog-transparent', disableClose: true, autoFocus: false,
             data: { mode: 'new' }
         }).afterClosed().subscribe((r: Partial<Material> | undefined) => {
             if (!r) return;
@@ -273,8 +273,8 @@ export class InventarioMiscelaneosComponent implements OnInit, OnDestroy {
     async editarCatalogo(m: Material): Promise<void> {
         const { FormMaterialComponent } = await import('./form-material/form-material.component');
         this.dialog.open(FormMaterialComponent, {
-            maxWidth: '95vw',
-            panelClass: 'no-padding-dialog',
+            maxWidth: '100vw', maxHeight: '100dvh',
+            panelClass: 'neo-dialog-transparent', disableClose: true, autoFocus: false,
             data: { mode: 'edit', material: m }
         }).afterClosed().subscribe((r: Partial<Material> | undefined) => {
             if (!r) return;
@@ -303,8 +303,8 @@ export class InventarioMiscelaneosComponent implements OnInit, OnDestroy {
     async verCatalogo(m: Material): Promise<void> {
         const { FormMaterialComponent } = await import('./form-material/form-material.component');
         this.dialog.open(FormMaterialComponent, {
-            maxWidth: '95vw',
-            panelClass: 'no-padding-dialog',
+            maxWidth: '100vw', maxHeight: '100dvh',
+            panelClass: 'neo-dialog-transparent', autoFocus: false,
             data: { mode: 'view', material: m }
         });
     }
@@ -341,10 +341,8 @@ export class InventarioMiscelaneosComponent implements OnInit, OnDestroy {
     async nuevaEntrada(): Promise<void> {
         const { FormEntradaComponent } = await import('./form-entrada/form-entrada.component');
         this.dialog.open(FormEntradaComponent, {
-            width:      '900px',
-            maxWidth:   '95vw',
-            height:     '88vh',
-            panelClass: 'no-padding-dialog',
+            width: 'min(1240px, 96vw)', maxWidth: '100vw', maxHeight: '100dvh',
+            panelClass: 'neo-dialog-transparent', disableClose: true, autoFocus: false,
             data: { mode: 'new', materiales: this.materiales }
         }).afterClosed().subscribe((ok: boolean | undefined) => {
             if (ok) this.loadAll();
@@ -403,10 +401,8 @@ export class InventarioMiscelaneosComponent implements OnInit, OnDestroy {
     async nuevaSalida(): Promise<void> {
         const { FormSalidaComponent } = await import('./form-salida/form-salida.component');
         this.dialog.open(FormSalidaComponent, {
-            width:      '900px',
-            maxWidth:   '95vw',
-            height:     '88vh',
-            panelClass: 'no-padding-dialog',
+            width: 'min(1240px, 96vw)', maxWidth: '100vw', maxHeight: '100dvh',
+            panelClass: 'neo-dialog-transparent', disableClose: true, autoFocus: false,
             data: { mode: 'new', materiales: this.materiales }
         }).afterClosed().subscribe((ok: boolean | undefined) => {
             if (ok) this.loadAll();

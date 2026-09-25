@@ -74,7 +74,7 @@ export class ToolService {
         // segundos: son las dos pantallas que más se revisitan en la sesión y no vale la
         // pena re-traer las ~2000+ herramientas activas en cada navegación de vuelta.
         const isPlainListing = !filters?.categoryId && !filters?.warehouseId && !filters?.status;
-        if (isPlainListing && this._allToolsCache && (Date.now() - this._allToolsCache.ts) < this.ALL_TOOLS_CACHE_TTL_MS) {
+        if (isPlainListing && !filters?.forceRefresh && this._allToolsCache && (Date.now() - this._allToolsCache.ts) < this.ALL_TOOLS_CACHE_TTL_MS) {
             return of(this._allToolsCache.data);
         }
 
@@ -98,7 +98,7 @@ export class ToolService {
             id_tool: id
         })).pipe(
             switchMap((response: any) => {
-                const tool = response?.data?.[0] || null;
+                const tool = response?.datos?.[0] ?? response?.data?.[0] ?? null;
                 if (tool) {
                     this._tool.next(tool);
                 }
@@ -111,17 +111,25 @@ export class ToolService {
      * Get tool by code.
      * Acepta también el contenido de una etiqueta QR (URL `.../qr-code/<token>`):
      * QrScanService la traduce al código plano antes de consultar el backend.
+     * Usa searchToolsAutocomplete (HE_TOS_SEARCH) en vez de listTools/getToolByCode: ese
+     * endpoint (ACTtools::listarTools reutilizado) crashea en el backend (pXP driver.php,
+     * count() sobre respuesta no-array) al filtrar por code — HE_TOS_SEARCH ya es la
+     * transacción probada que usa la búsqueda en vivo del dropdown.
      */
     getToolByCode(code: string): Observable<Tool> {
         return this._qrScan.toToolCode(code).pipe(
             switchMap((realCode) => {
-                if (!realCode) return of(null);
-                return from(this._api.post('herramientas/tools/getToolByCode', {
-                    code: realCode
-                }));
-            }),
-            switchMap((response: any) => {
-                return of(response?.data?.[0] || null);
+                const term = (realCode || '').trim();
+                if (!term) return of(null);
+                return from(this._api.post('herramientas/tools/searchToolsAutocomplete', {
+                    search_term: term, start: 0, limit: 20,
+                })).pipe(
+                    switchMap((response: any) => {
+                        const rows = response?.datos || response?.data || [];
+                        const exact = rows.find((r: any) => (r.code || '').trim().toLowerCase() === term.toLowerCase());
+                        return of(exact ?? rows[0] ?? null);
+                    })
+                );
             })
         );
     }

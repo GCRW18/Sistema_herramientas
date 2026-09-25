@@ -5,7 +5,7 @@ import { MatDialog, MatDialogRef, MAT_DIALOG_DATA, MatDialogModule } from '@angu
 import { MatIconModule } from '@angular/material/icon';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { Subject, of } from 'rxjs';
-import { debounceTime, distinctUntilChanged, switchMap, takeUntil, finalize, map } from 'rxjs/operators';
+import { debounceTime, distinctUntilChanged, switchMap, takeUntil, finalize, map, filter } from 'rxjs/operators';
 
 import { MovementService } from '../../../../../../core/services/movement.service';
 import { ToolService } from '../../../../../../core/services/tool.service';
@@ -122,6 +122,7 @@ export class TraspasoDialogComponent implements OnInit, OnDestroy {
             notas:                ['']
         });
         this._setupSearches();
+        this._setupScanTrpQrFallback();
         this._loadCorrelativo();
 
         // Prellena "Responsable (traspasa)" con el usuario logueado (editable). emitEvent:false
@@ -145,27 +146,47 @@ export class TraspasoDialogComponent implements OnInit, OnDestroy {
         this.addToolTraspaso(tool);
     }
 
+    /** Respaldo por si el lector físico no entrega un Enter reconocible (idioma de teclado
+     *  mal configurado, ver QrScanService): en cuanto el tecleo se detiene ~120ms y ya es
+     *  (o parece) una etiqueta QR, dispara el escaneo solo, sin esperar el Enter. */
+    private _setupScanTrpQrFallback(): void {
+        this._srchTraspaso$.pipe(
+            debounceTime(120),
+            filter(term => this.qrScan.isQrLabel(term)),
+            takeUntil(this._unsub$)
+        ).subscribe(() => this.scanTrpEnter());
+    }
+
     /** Enter / lector wedge: usa la coincidencia exacta de las sugerencias si ya llegó;
-     *  si no, resuelve el código directo contra el backend. */
+     *  si no, resuelve el código directo contra el backend. También lo dispara el
+     *  respaldo por inactividad de arriba; _scanLockTrp evita procesar el mismo
+     *  escaneo dos veces si ambos disparan en paralelo. */
+    private _scanLockTrp = false;
     scanTrpEnter(): void {
+        if (this._scanLockTrp) return;
         const code = this.toolSearchTraspaso.trim();
         if (!code) return;
+        this._scanLockTrp = true;
         // Etiqueta QR (URL `.../qr-code/<token>`): descifra a código plano y reintenta.
         if (this.qrScan.isQrLabel(code)) {
             this.scanningTrp = true;
-            this.qrScan.toToolCode(code).pipe(takeUntil(this._unsub$)).subscribe(real => {
-                this.scanningTrp = false;
-                if (!real) { this._showMsg('Etiqueta QR no reconocida', 'warning'); this.toolSearchTraspaso = ''; return; }
-                this.toolSearchTraspaso = real;
-                this.scanTrpEnter();
+            this.qrScan.toToolCode(code).pipe(takeUntil(this._unsub$)).subscribe({
+                next: real => {
+                    this.scanningTrp = false;
+                    this._scanLockTrp = false;
+                    if (!real) { this._showMsg('No se pudo leer el código QR (revise el idioma de teclado del lector)', 'warning'); this.toolSearchTraspaso = ''; return; }
+                    this.toolSearchTraspaso = real;
+                    this.scanTrpEnter();
+                },
+                error: () => { this.scanningTrp = false; this._scanLockTrp = false; this._showMsg('Error al leer el código QR', 'error'); }
             });
             return;
         }
         const exact = this.toolResultsTraspaso.find((t: any) => String(t.code ?? t.codigo ?? '').toLowerCase() === code.toLowerCase());
-        if (exact) { this.addToolTraspaso(exact); return; }
+        if (exact) { this.addToolTraspaso(exact); this._scanLockTrp = false; return; }
         this.scanningTrp = true;
         this.toolSvc.getToolByCode(code).pipe(
-            finalize(() => this.scanningTrp = false),
+            finalize(() => { this.scanningTrp = false; this._scanLockTrp = false; }),
             takeUntil(this._unsub$)
         ).subscribe({
             next: (raw: any) => {
@@ -205,7 +226,9 @@ export class TraspasoDialogComponent implements OnInit, OnDestroy {
         this._srchTraspaso$.pipe(
             debounceTime(300), distinctUntilChanged(),
             switchMap(term => {
-                if (!term || term.trim().length < 2) {
+                // Etiqueta QR (o su versión garbled): la resuelve solo _setupScanTrpQrFallback.
+                // Dejarla pasar también por acá duplicaba descencriptarIdQR+listTools en paralelo.
+                if (!term || term.trim().length < 2 || this.qrScan.isQrLabel(term)) {
                     this.toolResultsTraspaso = []; this.showToolDropTraspaso = false; return of([]);
                 }
                 this.searchingToolsTraspaso = true;

@@ -5,10 +5,11 @@ import { MatDialogModule, MatDialogRef }                                        
 import { MatIconModule }                                                             from '@angular/material/icon';
 import { MatSnackBar, MatSnackBarModule }                                            from '@angular/material/snack-bar';
 import { Subject, interval, of }                                                     from 'rxjs';
-import { takeUntil, finalize, debounceTime, distinctUntilChanged, switchMap, map, catchError } from 'rxjs/operators';
+import { takeUntil, finalize, debounceTime, distinctUntilChanged, switchMap, map, catchError, filter } from 'rxjs/operators';
 
 import { CalibrationService } from '../../../../../core/services/calibration.service';
 import { MovementService }    from '../../../../../core/services/movement.service';
+import { QrScanService }      from '../../../../../core/services/qr-scan.service';
 import { ScanToolResult }     from '../../../../../core/models';
 import { localDateStr, formatDateDMY } from '../../../../../core/utils/date.utils';
 
@@ -55,6 +56,7 @@ export class FormEnvioComponent implements OnInit, OnDestroy {
 
     private calibrationService = inject(CalibrationService);
     private movementService    = inject(MovementService);
+    private qrScan             = inject(QrScanService);
     public  dialogRef          = inject(MatDialogRef<FormEnvioComponent>);
     private snackBar           = inject(MatSnackBar);
     private cdr                = inject(ChangeDetectorRef);
@@ -121,6 +123,7 @@ export class FormEnvioComponent implements OnInit, OnDestroy {
         this.loadWarehouses();
         this.loadBases();
         this._setupToolSearch();
+        this._setupToolQrFallback();
         this._setupFuncionarioSearch();
 
         this.refreshDraft(true);
@@ -228,7 +231,9 @@ export class FormEnvioComponent implements OnInit, OnDestroy {
             debounceTime(350),
             distinctUntilChanged(),
             switchMap(term => {
-                if (term.length < 2) { this.showToolDropdown = false; return of([]); }
+                // Etiqueta QR (o su versión garbled): la resuelve solo _setupToolQrFallback.
+                // Dejarla pasar también por acá duplicaba descencriptarIdQR+listTools en paralelo.
+                if (term.length < 2 || this.qrScan.isQrLabel(term)) { this.showToolDropdown = false; return of([]); }
                 this.toolSearchLoading = true;
                 return this.calibrationService.searchToolsAutocomplete(term).pipe(
                     finalize(() => this.toolSearchLoading = false)
@@ -239,6 +244,17 @@ export class FormEnvioComponent implements OnInit, OnDestroy {
             this.toolSuggestions = results || [];
             this.showToolDropdown = this.toolSuggestions.length > 0;
         });
+    }
+
+    /** Respaldo por si el lector físico no entrega un Enter reconocible (idioma de teclado
+     *  mal configurado, ver QrScanService): en cuanto el tecleo se detiene ~120ms y ya es
+     *  (o parece) una etiqueta QR, dispara el escaneo solo, sin esperar el Enter. */
+    private _setupToolQrFallback(): void {
+        this._toolSearch$.pipe(
+            debounceTime(120),
+            filter(term => this.qrScan.isQrLabel(term)),
+            takeUntil(this._destroy$)
+        ).subscribe(() => this.scanAndAdd());
     }
 
     private _setupFuncionarioSearch(): void {
@@ -350,7 +366,11 @@ export class FormEnvioComponent implements OnInit, OnDestroy {
     }
 
     // ── Borrador: mutaciones ───────────────────────────────
+    /** También lo dispara el respaldo por inactividad de _setupToolQrFallback() (ver ahí);
+     *  isScanning también actúa de mutex (no se comparte con la búsqueda en vivo) para no
+     *  procesar el mismo escaneo dos veces si el Enter dispara en paralelo con ese respaldo. */
     scanAndAdd(): void {
+        if (this.isScanning()) return;
         const barcode = this.barcodeValue.trim();
         if (!barcode) return;
         this.isScanning.set(true);

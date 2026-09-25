@@ -7,13 +7,14 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { DragDropModule } from '@angular/cdk/drag-drop';
 import { Subject, of } from 'rxjs';
-import { debounceTime, distinctUntilChanged, finalize, switchMap, takeUntil } from 'rxjs/operators';
+import { debounceTime, distinctUntilChanged, finalize, switchMap, takeUntil, filter } from 'rxjs/operators';
 
 import { lastValueFrom } from 'rxjs';
 import { Level, LevelTool, Rack, ToolEstado } from '../interfaces';
 import { CalibrationService } from 'app/core/services/calibration.service';
 import { MovementService } from 'app/core/services/movement.service';
 import { BlobStorageService } from 'app/core/services/blob-storage.service';
+import { QrScanService } from 'app/core/services/qr-scan.service';
 
 type Mode = 'new' | 'edit';
 
@@ -54,6 +55,7 @@ export class FormHerramientaNivelComponent implements OnInit, OnDestroy {
     private calibSvc    = inject(CalibrationService);
     private movementSvc = inject(MovementService);
     private blobStorage = inject(BlobStorageService);
+    private qrScan      = inject(QrScanService);
     private _destroy$   = new Subject<void>();
     private _search$    = new Subject<string>();
 
@@ -148,6 +150,7 @@ export class FormHerramientaNivelComponent implements OnInit, OnDestroy {
         });
 
         this._setupSearch();
+        this._setupQrAutoSelect();
     }
 
     ngOnDestroy(): void {
@@ -162,6 +165,10 @@ export class FormHerramientaNivelComponent implements OnInit, OnDestroy {
             debounceTime(300),
             distinctUntilChanged(),
             switchMap(term => {
+                // Etiqueta QR (o su versión garbled): la resuelve solo _setupQrAutoSelect,
+                // que además selecciona la herramienta sola en vez de dejarla en el dropdown.
+                // Dejarla pasar también por acá duplicaba descencriptarIdQR+listTools en paralelo.
+                if (this.qrScan.isQrLabel(term)) { this.showToolDropdown = false; return of([]); }
                 const q = term.replace(/^BOA-H-/i, '').trim();
                 if (q.length < 1) {
                     this.showToolDropdown = false;
@@ -176,6 +183,31 @@ export class FormHerramientaNivelComponent implements OnInit, OnDestroy {
         ).subscribe(results => {
             this.toolSuggestions  = results || [];
             this.showToolDropdown = this.toolSuggestions.length > 0;
+        });
+    }
+
+    /** Mismo comportamiento que el buscador de Consultar Inventario: si lo escaneado es
+     *  (o parece) una etiqueta QR, se resuelve sola apenas el tecleo se detiene ~120ms —
+     *  sin dejarla en el dropdown esperando un clic manual del usuario. debounce+switchMap
+     *  cancela automáticamente cualquier resolución en curso si llega una tecla nueva. */
+    private _setupQrAutoSelect(): void {
+        this._search$.pipe(
+            debounceTime(120),
+            filter(term => this.qrScan.isQrLabel(term)),
+            switchMap(term => {
+                this.toolSearchLoading = true;
+                return this.calibSvc.searchToolsAutocomplete(term).pipe(
+                    finalize(() => this.toolSearchLoading = false)
+                );
+            }),
+            takeUntil(this._destroy$)
+        ).subscribe(results => {
+            const tool = (results || [])[0];
+            if (tool) {
+                this.seleccionarHerramienta(tool);
+            } else {
+                this.showToolDropdown = false;
+            }
         });
     }
 

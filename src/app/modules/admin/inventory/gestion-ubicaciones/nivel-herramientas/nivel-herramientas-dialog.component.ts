@@ -1,16 +1,19 @@
-import { AfterViewInit, Component, ElementRef, inject, signal } from '@angular/core';
+import { AfterViewInit, Component, ElementRef, OnDestroy, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { MatDialog, MatDialogModule, MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { Subject } from 'rxjs';
+import { debounceTime, filter, switchMap, takeUntil } from 'rxjs/operators';
 
 import { Warehouse, Rack, Level, LevelTool, LevelKit, LevelMiscelaneo } from '../interfaces';
 import { GestionUbicacionesService } from '../gestion-ubicaciones.service';
 import { ConfirmDeleteComponent, ConfirmDeleteData } from '../confirm-delete/confirm-delete.component';
 import { MoverResult } from '../mover-herramientas/mover-herramientas.component';
 import { HasPermissionDirective } from '../../../../../core/directives/has-permission.directive';
+import { QrScanService } from '../../../../../core/services/qr-scan.service';
 
 export interface NivelHerramientasData {
     almacen:           Warehouse;
@@ -229,7 +232,7 @@ export interface NivelHerramientasData {
     </div>
     `,
 })
-export class NivelHerramientasDialogComponent implements AfterViewInit {
+export class NivelHerramientasDialogComponent implements OnInit, AfterViewInit, OnDestroy {
 
     dialogRef        = inject(MatDialogRef<NivelHerramientasDialogComponent>);
     data             = inject<NivelHerramientasData>(MAT_DIALOG_DATA);
@@ -237,6 +240,8 @@ export class NivelHerramientasDialogComponent implements AfterViewInit {
     private snackBar = inject(MatSnackBar);
     private svc      = inject(GestionUbicacionesService);
     private host     = inject(ElementRef);
+    private qrScan   = inject(QrScanService);
+    private _destroy$ = new Subject<void>();
 
     rack  = this.data.rack;
     level = this.data.level;
@@ -279,6 +284,26 @@ export class NivelHerramientasDialogComponent implements AfterViewInit {
         return this.miscelaneos.filter(m => `${m.codigo} ${m.nombre}`.toLowerCase().includes(q));
     }
 
+    ngOnInit(): void {
+        // Buscador "Buscar en este nivel...": filtra en memoria, pero si lo escaneado es (o
+        // parece) la URL de una etiqueta QR, se descifra a código plano antes de filtrar —
+        // mismo comportamiento que el buscador de Consultar Inventario. debounce+switchMap
+        // cancela automáticamente cualquier descifrado en curso si llega una tecla nueva.
+        this.filtroControl.valueChanges.pipe(
+            debounceTime(120),
+            filter(v => this.qrScan.isQrLabel((v ?? '').toString().trim())),
+            switchMap(v => this.qrScan.toToolCode((v ?? '').toString().trim())),
+            takeUntil(this._destroy$)
+        ).subscribe(code => {
+            if (code) {
+                this.filtroControl.setValue(code);
+            } else {
+                this.snackBar.open('No se pudo leer el código QR (revise el idioma de teclado del lector)', 'Cerrar', { duration: 3000 });
+                this.filtroControl.setValue('');
+            }
+        });
+    }
+
     ngAfterViewInit(): void {
         const id = this.highlightId();
         if (id == null) return;
@@ -286,6 +311,11 @@ export class NivelHerramientasDialogComponent implements AfterViewInit {
             const el = (this.host.nativeElement as HTMLElement).querySelector(`#nivel-tool-${id}`);
             el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
         }, 150);
+    }
+
+    ngOnDestroy(): void {
+        this._destroy$.next();
+        this._destroy$.complete();
     }
 
     cerrar(): void {

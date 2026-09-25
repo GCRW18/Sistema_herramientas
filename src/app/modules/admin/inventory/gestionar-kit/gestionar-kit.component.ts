@@ -5,12 +5,13 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatDialog, MatDialogRef, MatDialogModule, MAT_DIALOG_DATA } from '@angular/material/dialog';
 import { DragDropModule } from '@angular/cdk/drag-drop';
 import { Subject, Subscription, Observable, of, forkJoin } from 'rxjs';
-import { debounceTime, distinctUntilChanged, switchMap, catchError, finalize, mergeMap, map } from 'rxjs/operators';
+import { debounceTime, distinctUntilChanged, switchMap, catchError, finalize, mergeMap, map, filter } from 'rxjs/operators';
 import { MovementService }          from '../../../../core/services/movement.service';
 import { CalibrationService }       from '../../../../core/services/calibration.service';
 import { GestionUbicacionesService } from '../gestion-ubicaciones/gestion-ubicaciones.service';
 import { Warehouse, Rack, Level }   from '../gestion-ubicaciones/interfaces';
 import { KitsService }              from '../../../../core/services/kits.service';
+import { QrScanService }            from '../../../../core/services/qr-scan.service';
 
 @Component({
     selector: 'app-gestionar-kit',
@@ -104,6 +105,7 @@ export class GestionarKitComponent implements OnInit, OnDestroy {
     private ubicSvc          = inject(GestionUbicacionesService);
     private kitsService      = inject(KitsService);
     private dialog           = inject(MatDialog);
+    private qrScan           = inject(QrScanService);
 
     constructor() {
         this.kitForm = this.fb.group({
@@ -219,7 +221,10 @@ export class GestionarKitComponent implements OnInit, OnDestroy {
                 debounceTime(350),
                 distinctUntilChanged(),
                 switchMap(term => {
-                    if (term.length < 2) {
+                    // Etiqueta QR (o su versión garbled): la resuelve solo el respaldo por
+                    // inactividad de abajo. Dejarla pasar también por acá duplicaba
+                    // descencriptarIdQR+listTools en paralelo (ver QrScanService).
+                    if (term.length < 2 || this.qrScan.isQrLabel(term)) {
                         this.toolSuggestions  = [];
                         this.showToolDropdown = false;
                         return of([]);
@@ -234,6 +239,17 @@ export class GestionarKitComponent implements OnInit, OnDestroy {
                 this.toolSuggestions  = tools;
                 this.showToolDropdown = tools.length > 0;
             })
+        );
+
+        // Respaldo por si el lector físico no entrega un Enter reconocible (idioma de
+        // teclado mal configurado, ver QrScanService): en cuanto el tecleo se detiene
+        // ~120ms y ya es (o parece) una etiqueta QR, dispara el escaneo solo, sin
+        // esperar el Enter.
+        this._subs.add(
+            this._toolSearch$.pipe(
+                debounceTime(120),
+                filter(term => this.qrScan.isQrLabel(term))
+            ).subscribe(() => this.scanAndAdd())
         );
     }
 

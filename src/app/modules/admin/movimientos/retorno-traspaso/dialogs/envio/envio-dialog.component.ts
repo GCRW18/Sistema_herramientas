@@ -6,7 +6,7 @@ import { ReactiveFormsModule, FormsModule, FormBuilder, FormGroup, Validators } 
 import { MatIconModule } from '@angular/material/icon';
 import { MatDialogRef, MatDialogModule, MatDialog, MAT_DIALOG_DATA } from '@angular/material/dialog';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
-import { Subject, takeUntil, finalize, debounceTime, distinctUntilChanged, switchMap, of, map, catchError } from 'rxjs';
+import { Subject, takeUntil, finalize, debounceTime, distinctUntilChanged, switchMap, of, map, catchError, filter } from 'rxjs';
 
 import { MovementService } from '../../../../../../core/services/movement.service';
 import { ToolService } from '../../../../../../core/services/tool.service';
@@ -99,6 +99,7 @@ export class EnvioDialogComponent implements OnInit, OnDestroy {
         this._initForm();
         this._setupToolSearch();
         this._setupScanEnv();
+        this._setupScanEnvQrFallback();
         this._setupFuncSearch();
         this._setDefaultAlmacen();
         this._setDefaultResponsable();
@@ -149,20 +150,42 @@ export class EnvioDialogComponent implements OnInit, OnDestroy {
     /** Un solo input hace de escáner (Enter/wedge → coincidencia exacta) y de buscador
      *  (dropdown de sugerencias mientras se escribe), igual que Préstamo Técnico. */
     onScanEnvInput(v: string): void { this.scanValueEnv = v; this._srchEnvio$.next(v); }
+
+    /** Respaldo por si el lector físico no entrega un Enter reconocible (idioma de teclado
+     *  mal configurado, ver QrScanService): en cuanto el tecleo se detiene ~120ms y ya es
+     *  (o parece) una etiqueta QR, dispara el escaneo solo, sin esperar el Enter. */
+    private _setupScanEnvQrFallback(): void {
+        this._srchEnvio$.pipe(
+            debounceTime(120),
+            filter(term => this.qrScan.isQrLabel(term)),
+            takeUntil(this._unsub$)
+        ).subscribe(() => this.scanEnvEnter());
+    }
+
+    /** Mutex dedicado: evita procesar el mismo escaneo dos veces si el Enter llega a
+     *  disparar en paralelo con el respaldo por inactividad de arriba. */
+    private _scanLockEnv = false;
     scanEnvEnter(): void {
+        if (this._scanLockEnv) return;
         const raw = this.scanValueEnv.trim();
         if (!raw) return;
+        this._scanLockEnv = true;
         // Etiqueta QR (URL `.../qr-code/<token>`): descifra a código plano y reintenta.
         if (this.qrScan.isQrLabel(raw)) {
             this.scanningEnv = true;
-            this.qrScan.toToolCode(raw).pipe(takeUntil(this._unsub$)).subscribe(code => {
-                this.scanningEnv = false;
-                if (!code) { this._showMsg('Etiqueta QR no reconocida', 'warning'); this.scanValueEnv = ''; this._focusScanEnv(); return; }
-                this.scanValueEnv = code;
-                this.scanEnvEnter();
+            this.qrScan.toToolCode(raw).pipe(takeUntil(this._unsub$)).subscribe({
+                next: code => {
+                    this.scanningEnv = false;
+                    this._scanLockEnv = false;
+                    if (!code) { this._showMsg('No se pudo leer el código QR (revise el idioma de teclado del lector)', 'warning'); this.scanValueEnv = ''; this._focusScanEnv(); return; }
+                    this.scanValueEnv = code;
+                    this.scanEnvEnter();
+                },
+                error: () => { this.scanningEnv = false; this._scanLockEnv = false; this._showMsg('Error al leer el código QR', 'error'); }
             });
             return;
         }
+        this._scanLockEnv = false;
         this._pendingScanEnv = raw;
         this._scanEnv$.next(raw);
     }
@@ -193,7 +216,9 @@ export class EnvioDialogComponent implements OnInit, OnDestroy {
         this._srchEnvio$.pipe(
             debounceTime(300), distinctUntilChanged(),
             switchMap(term => {
-                if (!term || term.trim().length < 2) {
+                // Etiqueta QR (o su versión garbled): la resuelve solo _setupScanEnvQrFallback.
+                // Dejarla pasar también por acá duplicaba descencriptarIdQR+listTools en paralelo.
+                if (!term || term.trim().length < 2 || this.qrScan.isQrLabel(term)) {
                     this.toolResultsEnvio = []; this.showToolDropEnvio = false; return of([]);
                 }
                 this.searchingToolsEnvio = true;

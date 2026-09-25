@@ -8,12 +8,13 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { DragDropModule } from '@angular/cdk/drag-drop';
 import { Subject, forkJoin, of, lastValueFrom } from 'rxjs';
-import { takeUntil, finalize, catchError, debounceTime, distinctUntilChanged, switchMap, map } from 'rxjs/operators';
+import { takeUntil, finalize, catchError, debounceTime, distinctUntilChanged, switchMap, map, filter } from 'rxjs/operators';
 import { MovementService } from '../../../../core/services/movement.service';
 import { QuarantineService } from '../../../../core/services/quarantine.service';
 import { BlobStorageService } from '../../../../core/services/blob-storage.service';
 import { GestionUbicacionesService } from '../../inventory/gestion-ubicaciones/gestion-ubicaciones.service';
 import { ToolService } from '../../../../core/services/tool.service';
+import { QrScanService } from '../../../../core/services/qr-scan.service';
 import { HasPermissionDirective } from '../../../../core/directives/has-permission.directive';
 import { formatDateDMY } from '../../../../core/utils/date.utils';
 
@@ -87,6 +88,7 @@ export class CuarentenaBajaHubComponent implements OnInit, OnDestroy {
     private blobStorage   = inject(BlobStorageService);
     private ubicSvc       = inject(GestionUbicacionesService);
     private toolSvc       = inject(ToolService);
+    private qrScan        = inject(QrScanService);
     private destroy$      = new Subject<void>();
 
     /** Sube a Blob Storage las fotos nuevas de los ítems y las adjunta a cada herramienta.
@@ -379,10 +381,11 @@ export class CuarentenaBajaHubComponent implements OnInit, OnDestroy {
         this._toolCSearch$.pipe(
             debounceTime(300), distinctUntilChanged(),
             switchMap(term => {
-                const q = term.trim();
-                if (q.length < 2) { this.showToolDropdown = false; return of([]); }
+                // Etiqueta QR (o su versión garbled): la resuelve sola _setupToolCQrAutoSelect.
+                // Dejarla pasar también por acá duplicaba descencriptarIdQR+listTools en paralelo.
+                if (term.trim().length < 2 || this.qrScan.isQrLabel(term)) { this.showToolDropdown = false; return of([]); }
                 this.toolCSearchLoading = true;
-                return this.toolSvc.getTools({ query: q }).pipe(
+                return this.toolSvc.getTools({ query: term.trim() }).pipe(
                     catchError(() => of([])),
                     finalize(() => this.toolCSearchLoading = false)
                 );
@@ -391,6 +394,27 @@ export class CuarentenaBajaHubComponent implements OnInit, OnDestroy {
         ).subscribe((tools: any[]) => {
             this.toolsFiltradas   = (tools || []).slice(0, 8);
             this.showToolDropdown = this.toolsFiltradas.length > 0;
+        });
+
+        // Respaldo por si el lector físico no entrega un Enter reconocible (idioma de
+        // teclado mal configurado, ver QrScanService): en cuanto el tecleo se detiene
+        // ~120ms y ya es (o parece) una etiqueta QR, la resuelve sola — mismo
+        // comportamiento que el buscador de Consultar Inventario, sin dejarla en el
+        // dropdown esperando un clic manual.
+        this._toolCSearch$.pipe(
+            debounceTime(120),
+            filter(term => this.qrScan.isQrLabel(term)),
+            switchMap(term => {
+                this.toolCSearchLoading = true;
+                return this.toolSvc.getTools({ query: term.trim() }).pipe(
+                    catchError(() => of([])),
+                    finalize(() => this.toolCSearchLoading = false)
+                );
+            }),
+            takeUntil(this.destroy$)
+        ).subscribe((tools: any[]) => {
+            const tool = (tools || [])[0];
+            if (tool) this.selectTool(tool);
         });
     }
 

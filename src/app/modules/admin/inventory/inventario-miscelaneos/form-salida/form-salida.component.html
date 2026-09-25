@@ -1,11 +1,11 @@
-<div class="bg-stone-100 dark:bg-[#0F172A] border-2 border-black rounded-2xl overflow-hidden flex flex-col w-full h-full"
->
+<div class="bg-stone-100 dark:bg-[#0F172A] sm:border-2 border-black rounded-2xl flex flex-col overflow-hidden relative w-full"
+     style="box-shadow:6px 6px 0 #000; height:min(820px,92vh)">
 
     <!-- ── CABECERA ── -->
     <div class="bg-[#0F172A] px-4 py-3 flex items-center gap-3 shrink-0 select-none"
          cdkDrag cdkDragRootElement=".cdk-overlay-pane" cdkDragHandle style="cursor:grab">
-        <div class="w-9 h-9 rounded bg-orange-500 border-2 border-black flex items-center justify-center shadow-[2px_2px_0_#ea580c] shrink-0">
-            <mat-icon class="!text-lg text-white">output</mat-icon>
+        <div class="w-8 h-8 rounded bg-amber-400 border-2 border-black flex items-center justify-center shadow-[2px_2px_0_#fbbf24] shrink-0">
+            <mat-icon class="!text-base text-black">output</mat-icon>
         </div>
         <div>
             <p class="text-[9px] text-slate-400 font-bold uppercase tracking-[0.18em] leading-none mb-0.5">{{ subtitulo }}</p>
@@ -13,13 +13,9 @@
         </div>
         <div class="ml-auto flex items-center gap-2 shrink-0">
             <span *ngIf="mode === 'new' && items.length > 0"
-                  class="px-2 py-0.5 bg-orange-500 text-white font-black text-[10px] border-2 border-black rounded-lg">
+                  class="px-2 py-0.5 bg-amber-500 text-black font-black text-[10px] border-2 border-black rounded-lg">
                 {{ items.length }} ítem{{ items.length !== 1 ? 's' : '' }}
             </span>
-            <button type="button" (click)="dialogRef.close(undefined)"
-                    class="px-3 py-1.5 bg-[#FF1414] text-white font-black text-[10px] border-2 border-black rounded-lg shadow-[2px_2px_0_#000] hover:shadow-none hover:translate-x-[1px] hover:translate-y-[1px] transition-all uppercase">
-                {{ readOnly ? 'Cerrar' : 'Cancelar' }}
-            </button>
         </div>
     </div>
 
@@ -35,7 +31,7 @@
 
                 <div *ngIf="salidaView.nroNota" class="mb-3">
                     <p class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 mb-1">N° de Nota</p>
-                    <span class="font-mono font-black text-orange-700 dark:text-orange-400 text-sm bg-orange-50 dark:bg-orange-900/30 px-2 py-1 rounded border border-orange-200 uppercase">
+                    <span class="font-mono font-black text-amber-700 dark:text-amber-400 text-sm bg-amber-50 dark:bg-amber-900/30 px-2 py-1 rounded border border-amber-200 uppercase">
                         {{ salidaView.nroNota }}
                     </span>
                 </div>
@@ -43,7 +39,7 @@
                 <div class="mb-3">
                     <p class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 mb-1">Material</p>
                     <div class="flex items-center gap-2">
-                        <span class="font-mono text-[10px] font-black text-orange-700 dark:text-orange-400 bg-orange-50 dark:bg-orange-900/30 px-1.5 rounded border border-orange-300 uppercase">
+                        <span class="font-mono text-[10px] font-black text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/30 px-1.5 rounded border border-amber-300 uppercase">
                             {{ salidaView.codigoNombre }}
                         </span>
                         <span class="text-sm font-bold text-black dark:text-white">{{ salidaView.producto }}</span>
@@ -53,7 +49,7 @@
                 <div class="grid grid-cols-2 gap-3 mb-3">
                     <div>
                         <p class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 mb-1">Cantidad</p>
-                        <p class="text-xl font-black text-orange-600 dark:text-orange-400">
+                        <p class="text-xl font-black text-amber-600 dark:text-amber-400">
                             {{ salidaView.cantidad }} <span class="text-sm font-bold text-stone-400">{{ salidaView.unidad }}</span>
                         </p>
                     </div>
@@ -101,7 +97,7 @@
         <!-- Pie -->
         <div class="border-t-2 border-black bg-stone-200 dark:bg-slate-900 px-5 py-3 flex justify-end shrink-0">
             <button type="button" (click)="imprimirPdf()" [disabled]="generandoPdf"
-                    class="flex items-center gap-2 px-5 py-2 bg-orange-500 text-white font-black text-[10px] border-2 border-black rounded-xl shadow-[3px_3px_0_#000] hover:shadow-none hover:translate-x-[3px] hover:translate-y-[3px] transition-all uppercase disabled:opacity-50 disabled:cursor-not-allowed">
+                    class="flex items-center gap-2 px-5 py-2 bg-amber-500 text-black font-black text-[10px] border-2 border-black rounded-xl shadow-[3px_3px_0_#000] hover:shadow-none hover:translate-x-[3px] hover:translate-y-[3px] transition-all uppercase disabled:opacity-50 disabled:cursor-not-allowed">
                 <mat-spinner *ngIf="generandoPdf" diameter="16"></mat-spinner>
                 <mat-icon *ngIf="!generandoPdf" class="!text-sm">picture_as_pdf</mat-icon>
                 {{ generandoPdf ? 'Generando...' : 'Imprimir Nota (MGH-117)' }}
@@ -123,7 +119,7 @@
                     </div>
                     <div>
                         <p class="text-[7px] font-black uppercase tracking-[0.18em] text-stone-400 leading-none mb-0.5">N° de Nota</p>
-                        <span class="font-mono font-black text-orange-700 dark:text-orange-400 text-xs bg-orange-50 dark:bg-orange-900/30 px-1.5 py-0.5 rounded border border-orange-200 uppercase">
+                        <span class="font-mono font-black text-amber-700 dark:text-amber-400 text-xs bg-amber-50 dark:bg-amber-900/30 px-1.5 py-0.5 rounded border border-amber-200 uppercase">
                             {{ salidaView.nroNota }}
                         </span>
                     </div>
@@ -168,7 +164,7 @@
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
                     <div class="relative">
                         <label class="text-[8px] font-black uppercase tracking-[0.14em] text-stone-400 mb-1 flex items-center justify-between">
-                            <span class="flex items-center gap-0.5"><mat-icon class="!text-[10px] text-orange-500">how_to_reg</mat-icon>Solicitante *</span>
+                            <span class="flex items-center gap-0.5"><mat-icon class="!text-[10px] text-amber-500">how_to_reg</mat-icon>Solicitante *</span>
                             <mat-spinner *ngIf="funcionarioLoading" diameter="11"></mat-spinner>
                         </label>
                         <input type="text" [(ngModel)]="funcionarioName"
@@ -180,7 +176,7 @@
                         <div *ngIf="showFuncionarioDropdown"
                              class="absolute z-50 w-full mt-1 border-2 border-black rounded-xl bg-white dark:bg-slate-800 overflow-hidden shadow-[3px_3px_0_#000] divide-y divide-stone-100">
                             <div *ngFor="let f of funcionarios" (mousedown)="selectFuncionario(f)"
-                                 class="px-3 py-2 hover:bg-orange-50 dark:hover:bg-slate-700 cursor-pointer">
+                                 class="px-3 py-2 hover:bg-amber-50 dark:hover:bg-slate-700 cursor-pointer">
                                 <div class="text-xs font-black text-black dark:text-white uppercase">{{ f.nombre }}</div>
                                 <div class="text-[9px] font-bold text-stone-400 uppercase">{{ f.cargo }}</div>
                             </div>
@@ -189,7 +185,7 @@
                     </div>
                     <div class="relative">
                         <label class="text-[8px] font-black uppercase tracking-[0.14em] text-stone-400 mb-1 flex items-center justify-between">
-                            <span class="flex items-center gap-0.5"><mat-icon class="!text-[10px] text-orange-500">local_shipping</mat-icon>Despachado *</span>
+                            <span class="flex items-center gap-0.5"><mat-icon class="!text-[10px] text-amber-500">local_shipping</mat-icon>Despachado *</span>
                             <mat-spinner *ngIf="despachadoPorLoading" diameter="11"></mat-spinner>
                         </label>
                         <input type="text" [(ngModel)]="despachadoPorName"
@@ -201,7 +197,7 @@
                         <div *ngIf="showDespachadoPorDropdown"
                              class="absolute z-50 w-full mt-1 border-2 border-black rounded-xl bg-white dark:bg-slate-800 overflow-hidden shadow-[3px_3px_0_#000] divide-y divide-stone-100">
                             <div *ngFor="let f of despachadoPorFuncionarios" (mousedown)="selectDespachado(f)"
-                                 class="px-3 py-2 hover:bg-orange-50 dark:hover:bg-slate-700 cursor-pointer">
+                                 class="px-3 py-2 hover:bg-amber-50 dark:hover:bg-slate-700 cursor-pointer">
                                 <div class="text-xs font-black text-black dark:text-white uppercase">{{ f.nombre }}</div>
                                 <div class="text-[9px] font-bold text-stone-400 uppercase">{{ f.cargo }}</div>
                             </div>
@@ -273,178 +269,185 @@
          MODO NUEVO — layout split panels
     ====================================================== -->
     <ng-container *ngIf="mode === 'new'">
-        <div class="flex flex-col md:flex-row flex-1 overflow-hidden min-h-0 p-2 gap-2">
+        <div class="flex flex-col sm:flex-row flex-1 overflow-hidden min-h-0">
 
-            <!-- ── PANEL IZQUIERDO: Datos comunes + Buscador ── -->
-            <div class="basis-[42%] shrink-0 flex flex-col bg-white dark:bg-slate-800 border-2 border-black overflow-y-auto custom-scrollbar"
-                 style="box-shadow: 3px 3px 0 #000">
+            <!-- ── PANEL IZQUIERDO: Datos comunes ── -->
+            <div class="sm:basis-[340px] sm:max-w-[380px] shrink-0 overflow-y-auto custom-scrollbar border-b-2 sm:border-b-0 sm:border-r-2 border-black/20 dark:border-slate-600">
+                <div class="px-4 py-3 flex flex-col gap-3">
 
-                <div class="flex flex-col gap-4 p-4">
-
-                    <h3 class="text-[9px] font-black uppercase text-stone-400 dark:text-slate-300 border-b-2 border-black pb-1.5 flex items-center gap-1.5">
-                        <mat-icon class="!text-sm text-orange-500">settings</mat-icon> Datos del Despacho
-                    </h3>
+                    <!-- ── Datos del Despacho ── -->
+                    <div class="flex items-center gap-1.5">
+                        <mat-icon class="!text-xs text-amber-500 shrink-0">settings</mat-icon>
+                        <span class="text-[9px] font-black uppercase text-stone-400 dark:text-slate-500 tracking-wider whitespace-nowrap">Datos del Despacho</span>
+                        <div class="flex-1 h-px bg-stone-200 dark:bg-slate-600 ml-1"></div>
+                    </div>
 
                     <!-- Fecha + Hora -->
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div class="grid grid-cols-2 gap-2">
                         <div>
-                            <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-300 mb-1.5 block">Fecha *</label>
+                            <label class="text-[9px] font-black uppercase tracking-wider text-stone-400 dark:text-slate-400 mb-1 block">Fecha *</label>
                             <input type="date" [(ngModel)]="fecha"
-                                   class="w-full h-10 text-sm font-bold bg-white dark:bg-slate-900 dark:text-white border-2 rounded-xl px-3 outline-none transition-all duration-150 cursor-pointer"
+                                   class="w-full h-8 text-xs font-bold bg-white dark:bg-slate-800 dark:text-white border-2 rounded-lg px-2.5 outline-none transition-all cursor-pointer"
                                    [class]="camposTouched && !fecha
                                        ? 'border-red-400 focus:shadow-[2px_2px_0_#f87171]'
-                                       : 'border-stone-300 dark:border-slate-600 hover:border-stone-400 focus:border-black focus:shadow-[3px_3px_0_#000]'">
+                                       : 'border-stone-300 dark:border-slate-600 hover:border-stone-400 focus:border-black focus:shadow-[2px_2px_0_#000]'">
                         </div>
                         <div>
-                            <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-300 mb-1.5 block">Hora</label>
+                            <label class="text-[9px] font-black uppercase tracking-wider text-stone-400 dark:text-slate-400 mb-1 block">Hora</label>
                             <input type="time" [(ngModel)]="hora"
-                                   class="w-full h-10 text-sm font-bold bg-white dark:bg-slate-900 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-xl px-3 outline-none transition-all duration-150 cursor-pointer hover:border-stone-400 focus:border-black focus:shadow-[3px_3px_0_#000]">
+                                   class="w-full h-8 text-xs font-bold bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-lg px-2.5 outline-none transition-all cursor-pointer hover:border-stone-400 focus:border-black focus:shadow-[2px_2px_0_#000]">
                         </div>
                     </div>
 
                     <!-- Solicitante -->
                     <div class="relative">
-                        <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-300 mb-1.5 flex items-center justify-between">
-                            <span class="flex items-center gap-1">
-                                <mat-icon class="!text-[12px] text-orange-500">how_to_reg</mat-icon>
-                                Solicitante *
-                            </span>
-                            <mat-spinner *ngIf="funcionarioLoading" diameter="14"></mat-spinner>
+                        <label class="text-[9px] font-black uppercase tracking-wider text-stone-400 dark:text-slate-400 mb-1 flex items-center justify-between">
+                            <span>Solicitante *</span>
+                            <mat-spinner *ngIf="funcionarioLoading" diameter="12"></mat-spinner>
                         </label>
-                        <input type="text"
-                               [(ngModel)]="funcionarioName"
-                               (input)="onFuncionarioInput($any($event.target).value)"
-                               (blur)="hideFuncionarioDropdown()"
-                               placeholder="Buscar funcionario..."
-                               autocomplete="off"
-                               class="w-full h-10 text-sm font-bold bg-white dark:bg-slate-900 dark:text-white border-2 rounded-xl px-3 outline-none transition-all duration-150 placeholder:text-stone-300 dark:placeholder:text-slate-600"
-                               [class]="camposTouched && !funcionarioValue.trim()
-                                   ? 'border-red-400 focus:shadow-[2px_2px_0_#f87171]'
-                                   : 'border-stone-300 dark:border-slate-600 hover:border-stone-400 focus:border-black focus:shadow-[3px_3px_0_#000]'">
+                        <div class="relative">
+                            <input type="text"
+                                   [(ngModel)]="funcionarioName"
+                                   (input)="onFuncionarioInput($any($event.target).value)"
+                                   (blur)="hideFuncionarioDropdown()"
+                                   placeholder="Buscar funcionario..."
+                                   autocomplete="off"
+                                   class="w-full h-8 pl-8 pr-2.5 text-xs font-bold bg-white dark:bg-slate-800 dark:text-white border-2 rounded-lg outline-none transition-all placeholder:text-stone-300 placeholder:font-normal dark:placeholder:text-slate-500"
+                                   [class]="camposTouched && !funcionarioValue.trim()
+                                       ? 'border-red-400 focus:shadow-[2px_2px_0_#f87171]'
+                                       : 'border-stone-300 dark:border-slate-600 hover:border-stone-400 focus:border-black focus:shadow-[2px_2px_0_#000]'">
+                            <mat-icon class="absolute left-2.5 top-1/2 -translate-y-1/2 text-stone-400 !text-sm !w-[14px] !h-[14px] !leading-[14px] pointer-events-none">how_to_reg</mat-icon>
+                        </div>
                         <div *ngIf="showFuncionarioDropdown"
-                             class="absolute z-50 w-full mt-1 border-2 border-black dark:border-slate-500 rounded-xl bg-white dark:bg-slate-800 overflow-hidden shadow-[3px_3px_0_#000] divide-y divide-stone-100 dark:divide-slate-600">
-                            <div *ngFor="let f of funcionarios"
-                                 (mousedown)="selectFuncionario(f)"
-                                 class="px-3 py-2.5 hover:bg-orange-50 dark:hover:bg-slate-700 cursor-pointer transition-colors">
-                                <div class="text-xs font-black text-black dark:text-white uppercase">{{ f.nombre }}</div>
-                                <div class="text-[9px] font-bold text-stone-400 uppercase">{{ f.cargo }}</div>
-                            </div>
+                             class="absolute z-50 w-full mt-1 border-2 border-black dark:border-slate-500 rounded-xl bg-white dark:bg-slate-800 overflow-hidden shadow-[3px_3px_0_#000] divide-y divide-stone-100 dark:divide-slate-600 max-h-40 overflow-y-auto custom-scrollbar">
+                            <button *ngFor="let f of funcionarios" type="button"
+                                    (mousedown)="selectFuncionario(f)"
+                                    class="w-full text-left px-3 py-2 hover:bg-amber-50 dark:hover:bg-slate-700 transition-colors">
+                                <p class="text-[11px] font-black text-black dark:text-white leading-none mb-0.5 truncate uppercase">{{ f.nombre }}</p>
+                                <p class="text-[9px] font-bold text-stone-400 dark:text-slate-400 uppercase tracking-tight">{{ f.cargo }}</p>
+                            </button>
                         </div>
                         <p *ngIf="camposTouched && !funcionarioValue.trim()"
-                           class="text-[8px] font-bold text-red-500 mt-1">Requerido.</p>
+                           class="text-[9px] font-bold text-red-500 mt-0.5">Requerido.</p>
                     </div>
 
                     <!-- Despachado Por -->
                     <div class="relative">
-                        <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-300 mb-1.5 flex items-center justify-between">
-                            <span class="flex items-center gap-1">
-                                <mat-icon class="!text-[12px] text-orange-500">local_shipping</mat-icon>
-                                Despachado Por *
-                            </span>
-                            <mat-spinner *ngIf="despachadoPorLoading" diameter="14"></mat-spinner>
+                        <label class="text-[9px] font-black uppercase tracking-wider text-stone-400 dark:text-slate-400 mb-1 flex items-center justify-between">
+                            <span>Despachado Por *</span>
+                            <mat-spinner *ngIf="despachadoPorLoading" diameter="12"></mat-spinner>
                         </label>
-                        <input type="text"
-                               [(ngModel)]="despachadoPorName"
-                               (input)="onDespachadoInput($any($event.target).value)"
-                               (blur)="hideDespachadoDropdown()"
-                               placeholder="Buscar funcionario despachante..."
-                               autocomplete="off"
-                               class="w-full h-10 text-sm font-bold bg-white dark:bg-slate-900 dark:text-white border-2 rounded-xl px-3 outline-none transition-all duration-150 placeholder:text-stone-300 dark:placeholder:text-slate-600"
-                               [class]="camposTouched && !despachadoPorValue.trim()
-                                   ? 'border-red-400 focus:shadow-[2px_2px_0_#f87171]'
-                                   : 'border-stone-300 dark:border-slate-600 hover:border-stone-400 focus:border-black focus:shadow-[3px_3px_0_#000]'">
+                        <div class="relative">
+                            <input type="text"
+                                   [(ngModel)]="despachadoPorName"
+                                   (input)="onDespachadoInput($any($event.target).value)"
+                                   (blur)="hideDespachadoDropdown()"
+                                   placeholder="Buscar funcionario despachante..."
+                                   autocomplete="off"
+                                   class="w-full h-8 pl-8 pr-2.5 text-xs font-bold bg-white dark:bg-slate-800 dark:text-white border-2 rounded-lg outline-none transition-all placeholder:text-stone-300 placeholder:font-normal dark:placeholder:text-slate-500"
+                                   [class]="camposTouched && !despachadoPorValue.trim()
+                                       ? 'border-red-400 focus:shadow-[2px_2px_0_#f87171]'
+                                       : 'border-stone-300 dark:border-slate-600 hover:border-stone-400 focus:border-black focus:shadow-[2px_2px_0_#000]'">
+                            <mat-icon class="absolute left-2.5 top-1/2 -translate-y-1/2 text-stone-400 !text-sm !w-[14px] !h-[14px] !leading-[14px] pointer-events-none">local_shipping</mat-icon>
+                        </div>
                         <div *ngIf="showDespachadoPorDropdown"
-                             class="absolute z-50 w-full mt-1 border-2 border-black dark:border-slate-500 rounded-xl bg-white dark:bg-slate-800 overflow-hidden shadow-[3px_3px_0_#000] divide-y divide-stone-100 dark:divide-slate-600">
-                            <div *ngFor="let f of despachadoPorFuncionarios"
-                                 (mousedown)="selectDespachado(f)"
-                                 class="px-3 py-2.5 hover:bg-orange-50 dark:hover:bg-slate-700 cursor-pointer transition-colors">
-                                <div class="text-xs font-black text-black dark:text-white uppercase">{{ f.nombre }}</div>
-                                <div class="text-[9px] font-bold text-stone-400 uppercase">{{ f.cargo }}</div>
-                            </div>
+                             class="absolute z-50 w-full mt-1 border-2 border-black dark:border-slate-500 rounded-xl bg-white dark:bg-slate-800 overflow-hidden shadow-[3px_3px_0_#000] divide-y divide-stone-100 dark:divide-slate-600 max-h-40 overflow-y-auto custom-scrollbar">
+                            <button *ngFor="let f of despachadoPorFuncionarios" type="button"
+                                    (mousedown)="selectDespachado(f)"
+                                    class="w-full text-left px-3 py-2 hover:bg-amber-50 dark:hover:bg-slate-700 transition-colors">
+                                <p class="text-[11px] font-black text-black dark:text-white leading-none mb-0.5 truncate uppercase">{{ f.nombre }}</p>
+                                <p class="text-[9px] font-bold text-stone-400 dark:text-slate-400 uppercase tracking-tight">{{ f.cargo }}</p>
+                            </button>
                         </div>
                         <p *ngIf="camposTouched && !despachadoPorValue.trim()"
-                           class="text-[8px] font-bold text-red-500 mt-1">Requerido.</p>
+                           class="text-[9px] font-bold text-red-500 mt-0.5">Requerido.</p>
                     </div>
 
                     <!-- OT + Aeronave -->
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div class="grid grid-cols-2 gap-2">
                         <div>
-                            <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-300 mb-1.5 block">Orden de Trabajo</label>
+                            <label class="text-[9px] font-black uppercase tracking-wider text-stone-400 dark:text-slate-400 mb-1 block">Orden de Trabajo</label>
                             <input type="text" [(ngModel)]="ordenTrabajo" placeholder="OT-auto"
-                                   class="w-full h-10 text-sm font-bold bg-white dark:bg-slate-900 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-xl px-3 outline-none transition-all duration-150 placeholder:text-stone-300 hover:border-stone-400 focus:border-black focus:shadow-[3px_3px_0_#000]">
+                                   class="w-full h-8 text-xs font-bold bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-lg px-2.5 outline-none transition-all placeholder:text-stone-300 placeholder:font-normal hover:border-stone-400 focus:border-black focus:shadow-[2px_2px_0_#000]">
                         </div>
                         <div>
-                            <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-300 mb-1.5 block">Aeronave / Matrícula</label>
+                            <label class="text-[9px] font-black uppercase tracking-wider text-stone-400 dark:text-slate-400 mb-1 block">Aeronave / Matrícula</label>
                             <input type="text" [(ngModel)]="buscadorAeronave" placeholder="CP-XXXX"
-                                   class="w-full h-10 text-sm font-bold bg-white dark:bg-slate-900 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-xl px-3 outline-none transition-all duration-150 placeholder:text-stone-300 hover:border-stone-400 focus:border-black focus:shadow-[3px_3px_0_#000]">
+                                   class="w-full h-8 text-xs font-bold bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-lg px-2.5 outline-none transition-all placeholder:text-stone-300 placeholder:font-normal hover:border-stone-400 focus:border-black focus:shadow-[2px_2px_0_#000]">
                         </div>
                     </div>
 
                     <!-- Autorizado Por -->
                     <div class="relative">
-                        <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-300 mb-1.5 flex items-center justify-between">
-                            <span class="flex items-center gap-1">
-                                <mat-icon class="!text-[12px] text-amber-500">verified_user</mat-icon>
-                                Autorizado Por
-                            </span>
-                            <mat-spinner *ngIf="autorizadoLoading" diameter="14"></mat-spinner>
+                        <label class="text-[9px] font-black uppercase tracking-wider text-stone-400 dark:text-slate-400 mb-1 flex items-center justify-between">
+                            <span>Autorizado Por</span>
+                            <mat-spinner *ngIf="autorizadoLoading" diameter="12"></mat-spinner>
                         </label>
-                        <input type="text"
-                               [(ngModel)]="autorizadoName"
-                               (input)="onAutorizadoInput($any($event.target).value)"
-                               (blur)="hideAutorizadoDropdown()"
-                               placeholder="Buscar autorizante..."
-                               autocomplete="off"
-                               class="w-full h-10 text-sm font-bold bg-white dark:bg-slate-900 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-xl px-3 outline-none transition-all duration-150 placeholder:text-stone-300 hover:border-stone-400 focus:border-black focus:shadow-[3px_3px_0_#000]">
+                        <div class="relative">
+                            <input type="text"
+                                   [(ngModel)]="autorizadoName"
+                                   (input)="onAutorizadoInput($any($event.target).value)"
+                                   (blur)="hideAutorizadoDropdown()"
+                                   placeholder="Buscar autorizante..."
+                                   autocomplete="off"
+                                   class="w-full h-8 pl-8 pr-2.5 text-xs font-bold bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-lg outline-none transition-all placeholder:text-stone-300 placeholder:font-normal hover:border-stone-400 focus:border-black focus:shadow-[2px_2px_0_#000]">
+                            <mat-icon class="absolute left-2.5 top-1/2 -translate-y-1/2 text-stone-400 !text-sm !w-[14px] !h-[14px] !leading-[14px] pointer-events-none">verified_user</mat-icon>
+                        </div>
                         <div *ngIf="showAutorizadoDropdown"
-                             class="absolute z-50 w-full mt-1 border-2 border-black dark:border-slate-500 rounded-xl bg-white dark:bg-slate-800 overflow-hidden shadow-[3px_3px_0_#000] divide-y divide-stone-100 dark:divide-slate-600">
-                            <div *ngFor="let f of autorizadoFuncionarios"
-                                 (mousedown)="selectAutorizado(f)"
-                                 class="px-3 py-2.5 hover:bg-amber-50 dark:hover:bg-slate-700 cursor-pointer transition-colors">
-                                <div class="text-xs font-black text-black dark:text-white uppercase">{{ f.nombre }}</div>
-                                <div class="text-[9px] font-bold text-stone-400 uppercase">{{ f.cargo }}</div>
-                            </div>
+                             class="absolute z-50 w-full mt-1 border-2 border-black dark:border-slate-500 rounded-xl bg-white dark:bg-slate-800 overflow-hidden shadow-[3px_3px_0_#000] divide-y divide-stone-100 dark:divide-slate-600 max-h-40 overflow-y-auto custom-scrollbar">
+                            <button *ngFor="let f of autorizadoFuncionarios" type="button"
+                                    (mousedown)="selectAutorizado(f)"
+                                    class="w-full text-left px-3 py-2 hover:bg-amber-50 dark:hover:bg-slate-700 transition-colors">
+                                <p class="text-[11px] font-black text-black dark:text-white leading-none mb-0.5 truncate uppercase">{{ f.nombre }}</p>
+                                <p class="text-[9px] font-bold text-stone-400 dark:text-slate-400 uppercase tracking-tight">{{ f.cargo }}</p>
+                            </button>
                         </div>
                     </div>
 
                     <!-- Observaciones -->
                     <div>
-                        <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-300 mb-1.5 block">Observaciones</label>
+                        <label class="text-[9px] font-black uppercase tracking-wider text-stone-400 dark:text-slate-400 mb-1 block">Observaciones</label>
                         <textarea [(ngModel)]="observaciones" rows="3"
                                   placeholder="Notas adicionales sobre el despacho..."
-                                  class="w-full text-sm font-normal bg-stone-50 dark:bg-slate-900 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-xl px-3 py-2.5 outline-none transition-all duration-150 resize-none placeholder:text-stone-300 hover:border-stone-400 focus:border-black focus:shadow-[3px_3px_0_#000] custom-scrollbar"></textarea>
-                        <p class="text-[8px] font-bold text-stone-400 mt-1.5 flex items-center gap-1">
+                                  class="w-full text-xs font-normal bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-lg px-2.5 py-2 outline-none transition-all resize-none placeholder:text-stone-300 hover:border-stone-400 focus:border-black focus:shadow-[2px_2px_0_#000] custom-scrollbar"
+                                  style="min-height: 70px;"></textarea>
+                        <p class="text-[9px] font-bold text-stone-400 mt-1 flex items-center gap-1">
                             <mat-icon class="!text-[10px]">info</mat-icon>
                             El N° de nota se genera automáticamente (SLM-N/YYYY). Si no se completa OT, se genera OT-N/YYYY.
                         </p>
                     </div>
 
                 </div>
+            </div>
 
-                <!-- ── Buscador para añadir material ── -->
-                <div class="border-t-2 border-dashed border-stone-300 dark:border-slate-600 mx-4 pt-4 pb-4 flex flex-col gap-2">
-                    <h3 class="text-[9px] font-black uppercase text-stone-400 dark:text-slate-300 flex items-center gap-1.5 mb-1">
-                        <mat-icon class="!text-sm text-orange-500">search</mat-icon> Añadir Material al Lote
-                    </h3>
+            <!-- ── PANEL DERECHO: Lote de materiales ── -->
+            <div class="flex-1 min-h-0 flex flex-col overflow-hidden">
+
+                <!-- Añadir material al lote -->
+                <div class="border-b-2 border-black/20 dark:border-slate-600 px-4 pt-3 pb-2.5 flex flex-col gap-2 shrink-0">
+                    <div class="flex items-center gap-1.5">
+                        <mat-icon class="!text-sm text-amber-500">search</mat-icon>
+                        <span class="text-[9px] font-black uppercase text-stone-400 dark:text-slate-500 tracking-wider">Añadir Material al Lote</span>
+                    </div>
 
                     <div class="relative">
-                        <mat-icon class="absolute left-3 top-1/2 -translate-y-1/2 !text-sm text-orange-600 pointer-events-none z-10">search</mat-icon>
                         <input type="text"
                                [(ngModel)]="materialSearch"
                                (input)="onMaterialInput($any($event.target).value)"
                                (blur)="hideMaterialDropdown()"
                                placeholder="Código, descripción..."
                                autocomplete="off"
-                               class="w-full h-10 pl-9 pr-3 text-sm font-bold bg-white dark:bg-slate-900 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-xl outline-none transition-all duration-150 placeholder:text-stone-300 hover:border-orange-400 focus:border-orange-500 focus:shadow-[3px_3px_0_#ea580c]">
+                               class="w-full h-8 pl-8 pr-2.5 text-xs font-bold bg-white dark:bg-slate-800 dark:text-white border-2 border-black rounded-lg outline-none transition-all placeholder:text-stone-300 hover:border-stone-400 focus:shadow-[2px_2px_0_#000]">
+                        <mat-icon class="absolute left-2.5 top-1/2 -translate-y-1/2 text-stone-400 !text-sm !w-[14px] !h-[14px] !leading-[14px] pointer-events-none">search</mat-icon>
 
                         <!-- Desplegable de materiales -->
                         <div *ngIf="showMaterialDropdown"
                              class="absolute z-50 w-full mt-1 top-full border-2 border-black dark:border-slate-500 rounded-xl bg-white dark:bg-slate-800 overflow-hidden shadow-[3px_3px_0_#000] divide-y divide-stone-100 dark:divide-slate-600 max-h-52 overflow-y-auto custom-scrollbar">
                             <div *ngFor="let m of materialFiltrados"
                                  (mousedown)="selectMaterial(m)"
-                                 class="px-3 py-2.5 hover:bg-orange-50 dark:hover:bg-slate-700 cursor-pointer transition-colors flex items-start justify-between gap-2">
+                                 class="px-3 py-2.5 hover:bg-amber-50 dark:hover:bg-slate-700 cursor-pointer transition-colors flex items-start justify-between gap-2">
                                 <div class="min-w-0">
-                                    <span class="font-mono text-[9px] font-black text-orange-700 dark:text-orange-400 bg-orange-50 dark:bg-orange-900/30 px-1 rounded border border-orange-200 uppercase block w-fit mb-0.5">
+                                    <span class="font-mono text-[9px] font-black text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/30 px-1 rounded border border-amber-200 uppercase block w-fit mb-0.5">
                                         {{ m.codigoBoaM }}
                                     </span>
                                     <div class="text-xs font-black text-black dark:text-white truncate max-w-[200px]">{{ m.producto }}</div>
@@ -463,36 +466,31 @@
                         </div>
                     </div>
                 </div>
-            </div>
-
-            <!-- ── PANEL DERECHO: Lote de materiales ── -->
-            <div class="flex-1 min-h-0 flex flex-col bg-white dark:bg-slate-800 border-2 border-black overflow-hidden"
-                 style="box-shadow: 3px 3px 0 #000">
 
                 <!-- Cabecera del lote -->
-                <div class="flex items-center justify-between px-4 py-3 shrink-0 border-b-2 border-black bg-[#0F172A]">
-                    <h3 class="text-[11px] font-black uppercase text-white flex items-center gap-2 tracking-widest">
-                        <mat-icon class="!text-sm text-orange-400">output</mat-icon>
-                        Lote a Despachar
-                        <span class="px-2 py-0.5 bg-orange-500 text-white border-2 border-black rounded font-mono text-[10px] shadow-[1px_1px_0_#000]">
-                            {{ items.length }}
+                <div class="border-b-2 border-black/20 dark:border-slate-600 px-4 py-2.5 flex items-center justify-between shrink-0">
+                    <div class="flex items-center gap-1.5">
+                        <mat-icon class="!text-xs text-amber-500">output</mat-icon>
+                        <span class="text-[9px] font-black uppercase text-stone-400 dark:text-slate-500 tracking-wider">Lote a Despachar</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span *ngIf="doneCount > 0 && doneCount < items.length"
+                              class="text-[9px] font-black text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
+                            <mat-icon class="!text-sm">check_circle</mat-icon>
+                            {{ doneCount }}/{{ items.length }}
                         </span>
-                    </h3>
-                    <span *ngIf="doneCount > 0 && doneCount < items.length"
-                          class="text-[9px] font-black text-orange-400 flex items-center gap-1">
-                        <mat-icon class="!text-sm">check_circle</mat-icon>
-                        {{ doneCount }}/{{ items.length }} registrados
-                    </span>
+                        <span class="px-2 py-0.5 bg-amber-400 text-black border-2 border-black rounded font-mono text-[10px] font-black shadow-[1px_1px_0_#000]">{{ items.length }}</span>
+                    </div>
                 </div>
 
                 <!-- Lista de items -->
-                <div *ngIf="items.length > 0" class="flex-1 overflow-y-auto custom-scrollbar p-3 flex flex-col gap-3">
+                <div *ngIf="items.length > 0" class="flex-1 overflow-y-auto custom-scrollbar bg-stone-50 dark:bg-slate-900/50 p-3 flex flex-col gap-3">
 
                     <div *ngFor="let item of items; let i = index"
                          class="border-2 rounded-sm transition-all duration-150"
                          [ngClass]="{
                              'border-stone-300 dark:border-slate-600 bg-stone-50 dark:bg-slate-700': item.status === 'pending',
-                             'border-orange-400 bg-orange-50 dark:bg-orange-900/20 animate-pulse': item.status === 'saving',
+                             'border-amber-400 bg-amber-50 dark:bg-amber-900/20 animate-pulse': item.status === 'saving',
                              'border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20': item.status === 'done',
                              'border-red-400 bg-red-50 dark:bg-red-900/20': item.status === 'error'
                          }">
@@ -508,7 +506,7 @@
                             <!-- Info material -->
                             <div class="flex-1 min-w-0">
                                 <div class="flex items-center gap-2 flex-wrap mb-0.5">
-                                    <span class="font-mono text-[9px] font-black text-orange-700 dark:text-orange-400 bg-orange-50 dark:bg-orange-900/30 px-1.5 rounded border border-orange-300 uppercase">
+                                    <span class="font-mono text-[9px] font-black text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/30 px-1.5 rounded border border-amber-300 uppercase">
                                         {{ item.material.codigoBoaM }}
                                     </span>
                                     <span *ngIf="item.status === 'done'"
@@ -516,7 +514,7 @@
                                         ✓ REGISTRADO
                                     </span>
                                     <span *ngIf="item.status === 'saving'"
-                                          class="text-[8px] font-black px-1.5 py-0.5 bg-orange-400 text-black border border-black rounded uppercase">
+                                          class="text-[8px] font-black px-1.5 py-0.5 bg-amber-400 text-black border border-black rounded uppercase">
                                         Guardando…
                                     </span>
                                     <span *ngIf="item.status === 'error'"
@@ -562,7 +560,7 @@
                                     <input type="number"
                                            [(ngModel)]="item.cantidad"
                                            min="1"
-                                           class="w-16 h-8 text-center text-sm font-black bg-white dark:bg-slate-900 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-lg outline-none focus:border-orange-500 focus:shadow-[2px_2px_0_#ea580c] transition-all">
+                                           class="w-16 h-8 text-center text-sm font-black bg-white dark:bg-slate-900 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-lg outline-none focus:border-amber-500 focus:shadow-[2px_2px_0_#f59e0b] transition-all">
                                     <button type="button"
                                             (click)="item.cantidad = item.cantidad + 1"
                                             class="w-8 h-8 flex items-center justify-center border-2 border-black dark:border-slate-500 bg-stone-100 dark:bg-slate-700 rounded-lg font-black text-base hover:bg-stone-200 dark:hover:bg-slate-600 transition-all shadow-[1px_1px_0_#000] active:shadow-none active:translate-y-[1px]">
@@ -595,11 +593,9 @@
 
                 <!-- Estado vacío -->
                 <div *ngIf="items.length === 0"
-                     class="flex-1 flex flex-col items-center justify-center text-center p-8 gap-3">
-                    <div class="w-16 h-16 border-2 border-dashed border-stone-300 dark:border-slate-500 flex items-center justify-center">
-                        <mat-icon class="!text-3xl text-stone-300 dark:text-slate-500">output</mat-icon>
-                    </div>
-                    <p class="text-[9px] font-black uppercase text-stone-400 dark:text-slate-400 tracking-[0.18em]">
+                     class="flex-1 flex flex-col items-center justify-center text-center p-8 gap-3 bg-stone-50 dark:bg-slate-900/50">
+                    <mat-icon class="!text-5xl text-stone-300 dark:text-slate-600">output</mat-icon>
+                    <p class="text-sm font-black uppercase text-stone-400 dark:text-slate-500">
                         Busca y agrega materiales al lote
                     </p>
                     <p *ngIf="camposTouched" class="text-[9px] font-black text-red-500 uppercase">
@@ -611,36 +607,37 @@
         </div>
 
         <!-- ── PIE ── -->
-        <div class="border-t-2 border-black bg-stone-200 dark:bg-slate-900 px-5 py-3 flex flex-wrap justify-between items-center gap-3 shrink-0">
-
-            <div class="flex items-center gap-3 flex-wrap">
+        <div class="border-t-2 border-black bg-stone-200 dark:bg-slate-800 px-4 py-2 flex flex-col gap-1.5 shrink-0">
+            <div class="flex flex-col-reverse sm:flex-row justify-between items-stretch sm:items-center gap-2">
                 <button type="button" (click)="dialogRef.close(undefined)"
-                        class="px-4 py-2 bg-[#FF1414] text-white font-black text-[10px] border-2 border-black rounded-xl shadow-[2px_2px_0_#000] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all uppercase">
+                        class="w-full sm:w-auto flex items-center justify-center gap-1 px-3 py-1.5 bg-[#FF1414] text-white font-black text-[10px] uppercase border-2 border-black rounded-lg shadow-[2px_2px_0_#000] hover:shadow-none hover:translate-x-[1px] hover:translate-y-[1px] transition-all">
+                    <mat-icon class="!text-xs">close</mat-icon>
                     Cancelar
                 </button>
-                <span class="text-[10px] text-stone-500 dark:text-slate-300 font-bold uppercase tracking-wider">
-                    <span *ngIf="items.length === 0">Agregue materiales al lote</span>
-                    <span *ngIf="items.length > 0 && !isProcessing() && doneCount < items.length">
-                        <strong class="font-black text-black dark:text-white text-xs">{{ items.length }}</strong>
-                        material{{ items.length > 1 ? 'es' : '' }} para despachar
+                <div class="flex items-center gap-3 w-full sm:w-auto justify-end">
+                    <span class="text-[10px] text-stone-500 dark:text-slate-400 font-bold uppercase tracking-wider">
+                        <span *ngIf="items.length === 0">Agregue materiales al lote</span>
+                        <span *ngIf="items.length > 0 && !isProcessing() && doneCount < items.length">
+                            <strong class="font-black text-black dark:text-white text-xs">{{ items.length }}</strong>
+                            material{{ items.length > 1 ? 'es' : '' }} para despachar
+                        </span>
+                        <span *ngIf="isProcessing()" class="text-amber-600 dark:text-amber-400">
+                            Procesando {{ processedCount + 1 }} de {{ items.length }}...
+                        </span>
+                        <span *ngIf="!isProcessing() && doneCount === items.length && items.length > 0"
+                              class="text-emerald-600 dark:text-emerald-400">
+                            ✓ Todos registrados — cerrando...
+                        </span>
                     </span>
-                    <span *ngIf="isProcessing()" class="text-orange-600 dark:text-orange-400">
-                        Procesando {{ processedCount + 1 }} de {{ items.length }}...
-                    </span>
-                    <span *ngIf="!isProcessing() && doneCount === items.length && items.length > 0"
-                          class="text-emerald-600 dark:text-emerald-400">
-                        ✓ Todos registrados — cerrando...
-                    </span>
-                </span>
+                    <button type="button" (click)="save()"
+                            [disabled]="!canSubmit || isProcessing()"
+                            class="flex items-center gap-1.5 px-3 py-1.5 bg-black text-white font-black text-[10px] uppercase border-2 border-black rounded-lg shadow-[2px_2px_0_#fbbf24] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all disabled:opacity-40 disabled:cursor-not-allowed disabled:translate-x-0 disabled:translate-y-0 disabled:shadow-none">
+                        <span *ngIf="isProcessing()" class="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                        <mat-icon *ngIf="!isProcessing()" class="!text-xs">output</mat-icon>
+                        {{ isProcessing() ? 'PROCESANDO...' : 'REGISTRAR LOTE (' + items.length + ')' }}
+                    </button>
+                </div>
             </div>
-
-            <button type="button" (click)="save()"
-                    [disabled]="!canSubmit || isProcessing()"
-                    class="flex items-center gap-2 px-5 py-2 bg-orange-500 text-white font-black text-[10px] border-2 border-black rounded-xl shadow-[3px_3px_0_#000] hover:shadow-none hover:translate-x-[3px] hover:translate-y-[3px] transition-all uppercase disabled:opacity-50 disabled:cursor-not-allowed">
-                <mat-spinner *ngIf="isProcessing()" diameter="16"></mat-spinner>
-                <mat-icon *ngIf="!isProcessing()" class="!text-sm">output</mat-icon>
-                {{ isProcessing() ? 'PROCESANDO...' : 'REGISTRAR LOTE (' + items.length + ')' }}
-            </button>
         </div>
     </ng-container>
 

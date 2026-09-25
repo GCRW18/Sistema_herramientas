@@ -8,10 +8,11 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { DragDropModule } from '@angular/cdk/drag-drop';
 import { Subject, of } from 'rxjs';
-import { takeUntil, debounceTime, distinctUntilChanged, switchMap, catchError, finalize } from 'rxjs/operators';
+import { takeUntil, debounceTime, distinctUntilChanged, switchMap, catchError, finalize, filter } from 'rxjs/operators';
 import { ToolService } from '../../../../../core/services/tool.service';
 import { MovementService } from '../../../../../core/services/movement.service';
 import { BlobStorageService } from '../../../../../core/services/blob-storage.service';
+import { QrScanService } from '../../../../../core/services/qr-scan.service';
 import { GestionUbicacionesService } from '../../../inventory/gestion-ubicaciones/gestion-ubicaciones.service';
 import { Warehouse, Rack, Level } from '../../../inventory/gestion-ubicaciones/interfaces';
 import type { HerramientaItem } from '../ingresos-hub.component';
@@ -56,6 +57,7 @@ export class RecepcionHerramientaComponent implements OnInit, OnDestroy {
     private movementSvc = inject(MovementService);
     public  blobStorage = inject(BlobStorageService);
     private ubicSvc   = inject(GestionUbicacionesService);
+    private qrScan    = inject(QrScanService);
     private destroy$  = new Subject<void>();
 
     @ViewChild('ubicDialogTpl') ubicDialogTpl!: TemplateRef<any>;
@@ -212,7 +214,9 @@ export class RecepcionHerramientaComponent implements OnInit, OnDestroy {
             debounceTime(300),
             distinctUntilChanged(),
             switchMap(term => {
-                if (term.trim().length < 2) { this.showHerDD = false; return of([]); }
+                // Etiqueta QR (o su versión garbled): la resuelve sola _setupHerQrAutoSelect.
+                // Dejarla pasar también por acá duplicaba descencriptarIdQR+listTools en paralelo.
+                if (term.trim().length < 2 || this.qrScan.isQrLabel(term)) { this.showHerDD = false; return of([]); }
                 this.herSearchLoading = true;
                 return this.toolSvc.getTools({ query: term.trim() }).pipe(
                     catchError(() => of([])),
@@ -223,6 +227,27 @@ export class RecepcionHerramientaComponent implements OnInit, OnDestroy {
         ).subscribe(tools => {
             this.herSuggestions = tools as any[];
             this.showHerDD      = this.herSuggestions.length > 0;
+        });
+
+        // Respaldo por si el lector físico no entrega un Enter reconocible (idioma de
+        // teclado mal configurado, ver QrScanService): en cuanto el tecleo se detiene
+        // ~120ms y ya es (o parece) una etiqueta QR, la resuelve sola — mismo
+        // comportamiento que el buscador de Consultar Inventario, sin dejarla en el
+        // dropdown esperando un clic manual.
+        this._herSearch$.pipe(
+            debounceTime(120),
+            filter(term => this.qrScan.isQrLabel(term)),
+            switchMap(term => {
+                this.herSearchLoading = true;
+                return this.toolSvc.getTools({ query: term.trim() }).pipe(
+                    catchError(() => of([])),
+                    finalize(() => { this.herSearchLoading = false; })
+                );
+            }),
+            takeUntil(this.destroy$)
+        ).subscribe(tools => {
+            const tool = (tools as any[])[0];
+            if (tool) this.seleccionarHerExistente(tool);
         });
     }
 

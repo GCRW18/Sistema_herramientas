@@ -7,10 +7,11 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { DragDropModule } from '@angular/cdk/drag-drop';
 import { Subject, of } from 'rxjs';
-import { takeUntil, debounceTime, distinctUntilChanged, switchMap, map, catchError, finalize } from 'rxjs/operators';
+import { takeUntil, debounceTime, distinctUntilChanged, switchMap, map, catchError, finalize, filter } from 'rxjs/operators';
 import { ToolService } from '../../../../../core/services/tool.service';
 import { BlobStorageService } from '../../../../../core/services/blob-storage.service';
 import { GestionUbicacionesService } from '../../../inventory/gestion-ubicaciones/gestion-ubicaciones.service';
+import { QrScanService } from '../../../../../core/services/qr-scan.service';
 import { Warehouse, Rack, Level } from '../../../inventory/gestion-ubicaciones/interfaces';
 
 interface HerramientaOption {
@@ -74,6 +75,7 @@ export class DetalleHerramientaComponent implements OnInit, OnDestroy {
     public  blobStorage = inject(BlobStorageService);
     private ubicSvc   = inject(GestionUbicacionesService);
     private dialog    = inject(MatDialog);
+    private qrScan    = inject(QrScanService);
     private destroy$  = new Subject<void>();
 
     @ViewChild('ubicDialogTpl') ubicDialogTpl!: TemplateRef<any>;
@@ -178,34 +180,40 @@ export class DetalleHerramientaComponent implements OnInit, OnDestroy {
     }
 
     /* ════════ Búsqueda de herramientas ════════ */
+    private _toHerramientaOption(t: any): HerramientaOption {
+        return {
+            id_tool:      t.id_tool,
+            codigo:       t.code            || '',
+            pn:           t.part_number     || '',
+            nombre:       t.name            || t.description || '',
+            marca:        t.brand           || '',
+            tipo:         t.tool_type       || t.category    || '',
+            sn:           t.serial_number   || '',
+            estado:       t.status          || '',
+            estadoLabel:  this._statusLabel(t.status),
+            ubicacion:    t.ubicacion       || '',
+            um:           t.unit_of_measure || 'UNIDAD',
+            quantity_in_stock: t.quantity_in_stock != null ? Number(t.quantity_in_stock) : 1,
+            imagen:       t.location_photo  || null,
+            observaciones: t.notes          || '',
+            warehouse_id: t.warehouse_id    ? Number(t.warehouse_id)  : null,
+            rack_id:      t.rack_id         ? Number(t.rack_id)       : null,
+            level_id:     t.level_id        ? Number(t.level_id)      : null,
+        } as HerramientaOption;
+    }
+
     private _setupSearch(): void {
         this._search$.pipe(
             debounceTime(300),
             distinctUntilChanged(),
             switchMap(term => {
                 const q = term.trim();
-                if (q.length < 2) { this.showToolDropdown = false; return of([]); }
+                // Etiqueta QR (o su versión garbled): la resuelve sola el respaldo de abajo.
+                // Dejarla pasar también por acá duplicaba descencriptarIdQR+listTools en paralelo.
+                if (q.length < 2 || this.qrScan.isQrLabel(q)) { this.showToolDropdown = false; return of([]); }
                 this.toolSearchLoading = true;
                 return this.toolSvc.getTools({ query: q }).pipe(
-                    map((tools: any[]) => tools.map(t => ({
-                        id_tool:      t.id_tool,
-                        codigo:       t.code            || '',
-                        pn:           t.part_number     || '',
-                        nombre:       t.name            || t.description || '',
-                        marca:        t.brand           || '',
-                        tipo:         t.tool_type       || t.category    || '',
-                        sn:           t.serial_number   || '',
-                        estado:       t.status          || '',
-                        estadoLabel:  this._statusLabel(t.status),
-                        ubicacion:    t.ubicacion       || '',
-                        um:           t.unit_of_measure || 'UNIDAD',
-                        quantity_in_stock: t.quantity_in_stock != null ? Number(t.quantity_in_stock) : 1,
-                        imagen:       t.location_photo  || null,
-                        observaciones: t.notes          || '',
-                        warehouse_id: t.warehouse_id    ? Number(t.warehouse_id)  : null,
-                        rack_id:      t.rack_id         ? Number(t.rack_id)       : null,
-                        level_id:     t.level_id        ? Number(t.level_id)      : null,
-                    } as HerramientaOption))),
+                    map((tools: any[]) => tools.map(t => this._toHerramientaOption(t))),
                     catchError(() => of([])),
                     finalize(() => { this.toolSearchLoading = false; })
                 );
@@ -214,6 +222,21 @@ export class DetalleHerramientaComponent implements OnInit, OnDestroy {
         ).subscribe(results => {
             this.toolSuggestions  = results as HerramientaOption[];
             this.showToolDropdown = this.toolSuggestions.length > 0;
+        });
+
+        // Respaldo por si el lector físico no entrega un Enter reconocible (idioma de
+        // teclado mal configurado, ver QrScanService): en cuanto el tecleo se detiene
+        // ~120ms y ya es (o parece) una etiqueta QR, la resuelve sola — mismo
+        // comportamiento que el buscador de Consultar Inventario, sin dejarla en el
+        // dropdown esperando un clic manual.
+        this._search$.pipe(
+            debounceTime(120),
+            filter(term => this.qrScan.isQrLabel(term.trim())),
+            switchMap(term => this.toolSvc.getTools({ query: term.trim() }).pipe(catchError(() => of([])))),
+            takeUntil(this.destroy$)
+        ).subscribe((tools: any[]) => {
+            const tool = (tools || [])[0];
+            if (tool) this.seleccionarHerramienta(this._toHerramientaOption(tool));
         });
     }
 

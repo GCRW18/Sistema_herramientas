@@ -342,7 +342,9 @@
     }
 }
 
-// Clean Dialog for Calibration Alerts
+// Neo-brutalist Dialog for Calibration Alerts — borde negro grueso + sombra dura,
+// igual al resto del dashboard (neo-card-base). El componente ya no dibuja su propio
+// borde/sombra por dentro para no duplicarlo con el del contenedor de Material.
 .neo-dialog-calibration {
     .mat-mdc-dialog-container {
         --mdc-dialog-container-shape: 16px;
@@ -356,11 +358,12 @@
         }
 
         .mdc-dialog__surface {
-            background-color: #f8fafc !important;
+            background-color: #fff !important;
             border-radius: 16px !important;
             padding: 0 !important;
             overflow: hidden !important;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2) !important;
+            border: 3px solid #000 !important;
+            box-shadow: 8px 8px 0px 0px rgba(0, 0, 0, 1) !important;
             max-height: 90vh;
         }
     }
@@ -370,7 +373,7 @@
     .mat-mdc-dialog-container {
         .mdc-dialog__surface {
             background-color: #1e293b !important;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5) !important;
+            box-shadow: 8px 8px 0px 0px rgba(71, 85, 105, 1) !important;
         }
     }
 }
