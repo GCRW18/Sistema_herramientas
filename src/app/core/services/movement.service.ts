@@ -357,15 +357,15 @@ export class MovementService {
     getLastBoaCode(): Observable<number> {
         return from(this._api.post('herramientas/tools/listarTools', {
             start: 0,
-            limit: 2000,
-            ordenacion: 'id_tool',
-            dir_ordenacion: 'desc'
+            limit: 5000,
+            sort: 'id_tool', // pXP lee sort/dir; con ordenacion/dir_ordenacion traía las 2000 más antiguas
+            dir: 'desc'
         })).pipe(
             switchMap((response: any) => {
                 const tools = response?.ROOT?.datos || response?.datos || response?.data || [];
                 let maxNum = 0;
                 tools.forEach((t: any) => {
-                    const match = String(t.code || '').match(/BOA-H-(\d+)/);
+                    const match = String(t.code || '').trim().match(/^BOA-H-(\d+)$/i);
                     if (match) {
                         const num = parseInt(match[1], 10);
                         if (num > maxNum) maxNum = num;

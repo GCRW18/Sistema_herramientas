@@ -224,7 +224,7 @@ export class IngresosHubComponent implements OnInit, OnDestroy {
     private _initFormsNueva(): void {
         this.recepcionForm = this.fb.group({
             tipoDe:           ['COMPRA', Validators.required],
-            nroCmr:           ['', [Validators.required, Validators.minLength(3)]],
+            nroCmr:           ['', [Validators.required, Validators.pattern(/^\s*\S.*\S.*\S\s*$/)]],
             nroFactura:       [''],
             proveedor:        [''],
             fechaIngreso:     [this._localDateStr(), Validators.required],
@@ -250,17 +250,35 @@ export class IngresosHubComponent implements OnInit, OnDestroy {
         const isEdit = index !== undefined;
         const ref = this.dialog.open(RecepcionHerramientaComponent, {
             width: '800px', maxWidth: '96vw', height: '560px', panelClass: 'no-padding-dialog', disableClose: true,
-            data: { item: isEdit ? this.dataSource[index] : undefined, mode: isEdit ? 'editar' : 'nuevo' }
+            data: { item: isEdit ? this.dataSource[index] : undefined, mode: isEdit ? 'editar' : 'nuevo',
+                    codigosPendientes: this._codigosPendientes(isEdit ? index : undefined) }
         });
         ref.afterClosed().subscribe((result: any) => this._procesarResultadoHerramienta(result, isEdit ? index : undefined));
+    }
+
+    /** Códigos BOA de la lista en curso, sin el ítem que se está editando. */
+    private _codigosPendientes(excluirIndex?: number): string[] {
+        return this.dataSource.filter((_, i) => i !== excluirIndex).map(h => h.codigoBoa);
+    }
+
+    /** Reabre el form con lo ya cargado para corregir el código, en vez de descartarlo. */
+    private async _reabrirHerramienta(item: HerramientaItem, editIndex?: number): Promise<void> {
+        const { RecepcionHerramientaComponent } = await import('./recepcion-herramienta/recepcion-herramienta.component');
+        const ref = this.dialog.open(RecepcionHerramientaComponent, {
+            width: '800px', maxWidth: '96vw', height: '560px', panelClass: 'no-padding-dialog', disableClose: true,
+            data: { item, mode: editIndex !== undefined ? 'editar' : 'nuevo', codigosPendientes: this._codigosPendientes(editIndex) }
+        });
+        ref.afterClosed().subscribe((result: any) => this._procesarResultadoHerramienta(result, editIndex));
     }
 
     private async _procesarResultadoHerramienta(result: { action: string; data: HerramientaItem } | undefined, editIndex?: number): Promise<void> {
         if (!result) return;
         const item = result.data;
-        const existeIndex = this.dataSource.findIndex(i => i.codigoBoa.toUpperCase() === item.codigoBoa.toUpperCase());
+        const code = (item.codigoBoa || '').trim().toUpperCase();
+        const existeIndex = this.dataSource.findIndex(i => (i.codigoBoa || '').trim().toUpperCase() === code);
         if (existeIndex >= 0 && editIndex !== existeIndex) {
-            this._showMsg('Ya existe una herramienta con este código BOA', 'warning');
+            this._showMsg('Ya existe una herramienta con este código BOA en esta recepción', 'warning');
+            this._reabrirHerramienta(item, editIndex);
             return;
         }
         // Guarda contra la BD: el código no puede ser de una herramienta ya registrada
@@ -268,6 +286,7 @@ export class IngresosHubComponent implements OnInit, OnDestroy {
         const yaRegistrado = await this._codigosRegistradosEnBD([item.codigoBoa]);
         if (yaRegistrado.length > 0) {
             this._showMsg(`El código ${yaRegistrado[0]} ya está registrado en otra herramienta del sistema`, 'warning');
+            this._reabrirHerramienta(item, editIndex);
             return;
         }
         if (editIndex !== undefined) {
@@ -342,7 +361,7 @@ export class IngresosHubComponent implements OnInit, OnDestroy {
         copy.levelId        = null;
         const ref = this.dialog.open(RecepcionHerramientaComponent, {
             width: '800px', maxWidth: '96vw', height: '560px', panelClass: 'no-padding-dialog', disableClose: true,
-            data: { item: copy, mode: 'nuevo', autoGenerarCodigo: true }
+            data: { item: copy, mode: 'nuevo', autoGenerarCodigo: true, codigosPendientes: this._codigosPendientes() }
         });
         ref.afterClosed().subscribe((result: any) => this._procesarResultadoHerramienta(result));
         this._showMsg('Ítem copiado. Ajuste el S/N si es necesario.', 'info');
@@ -427,7 +446,7 @@ export class IngresosHubComponent implements OnInit, OnDestroy {
             warranty_expiration: h.fechaVencimiento || null, batch_number: h.loteNumero || ''
         })));
         this.movementSvc.registrarNuevaCompra({
-            movement_number:    rec.nroCmr,
+            movement_number:    (rec.nroCmr || '').trim().toUpperCase(),
             date:               rec.fechaIngreso,
             responsible_person: rec.funcionarioRecibe || '',
             received_by_name:   rec.recibiConforme   || '',

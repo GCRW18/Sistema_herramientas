@@ -91,7 +91,7 @@
                         </button>
                     </div>
                     <p *ngIf="hasHerramientaError('codigoBoa','required')" class="text-[8px] text-red-500 font-bold mt-0.5">Requerido.</p>
-                    <p *ngIf="hasHerramientaError('codigoBoa','pattern')" class="text-[8px] text-red-500 font-bold mt-0.5">Solo letras, números, guiones y /.</p>
+                    <p *ngIf="hasHerramientaError('codigoBoa','pattern')" class="text-[8px] text-red-500 font-bold mt-0.5">Solo letras, números, guiones y /; debe terminar en letra o número.</p>
                 </div>
                 <div>
                     <label class="text-[9px] font-black uppercase tracking-wider text-stone-400 dark:text-slate-400 mb-1 block">P/N <span class="text-red-500">*</span></label>

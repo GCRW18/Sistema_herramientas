@@ -96,14 +96,16 @@ export class DatosRecepcionComponent implements OnInit, OnDestroy {
             v => this.showRecibiConformeDropdown = v
         );
 
-        this.recepcionForm.get('tipoDe')?.valueChanges.pipe(takeUntil(this.destroy$))
+        // Re-click en el mismo tipo no limpia nada; al cambiar de tipo se regenera el correlativo
+        // salvo que el usuario haya escrito un documento propio.
+        this.recepcionForm.get('tipoDe')?.valueChanges.pipe(distinctUntilChanged(), takeUntil(this.destroy$))
             .subscribe(() => {
-                this.recepcionForm.patchValue({ nroCmr: '' });
                 this.recepcionForm.patchValue({ recibiConforme: '' });
+                if (this._nroCmrEsAuto()) this.generarNroCmr(false);
             });
 
         if (!this.recepcionForm.get('nroCmr')?.value) {
-            this.generarNroCmr();
+            this.generarNroCmr(false);
         }
 
         // Prellena "Funcionario que recibe" con el usuario logueado (editable) si viene vacío.
@@ -155,12 +157,22 @@ export class DatosRecepcionComponent implements OnInit, OnDestroy {
         ).subscribe(res => { setItems(res || []); setShow((res || []).length > 0); });
     }
 
-    generarNroCmr(): void {
+    /** forzar=false (automático): no pisa lo que el usuario haya escrito mientras llegaba la respuesta. */
+    generarNroCmr(forzar = true): void {
         const tipo = this.recepcionForm.get('tipoDe')?.value || 'COMPRA';
         const prefijos: Record<string, string> = { 'COMPRA': 'CMR', 'DONACION': 'DON', 'TRANSFERENCIA': 'TRANS' };
         this.movementSvc.getSiguienteCorrelativoPreview(prefijos[tipo] || 'CMR')
             .pipe(takeUntil(this.destroy$))
-            .subscribe(num => this.recepcionForm.patchValue({ nroCmr: num }));
+            .subscribe(num => {
+                if (num.includes('?')) return; // sin conexión: se deja para escribir a mano
+                if (forzar || this._nroCmrEsAuto()) this.recepcionForm.patchValue({ nroCmr: num });
+            });
+    }
+
+    /** Vacío o con formato de correlativo autogenerado (CMR-n/aaaa, DON-…, TRANS-…). */
+    private _nroCmrEsAuto(): boolean {
+        const v = (this.recepcionForm.get('nroCmr')?.value || '').trim().toUpperCase();
+        return !v || /^(CMR|DON|TRANS)-\d+\/\d{4}$/.test(v);
     }
 
     onProveedorInput(val: string): void {

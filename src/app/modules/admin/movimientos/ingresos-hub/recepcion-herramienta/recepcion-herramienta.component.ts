@@ -22,6 +22,8 @@ export interface RecepcionHerramientaData {
     mode: 'nuevo' | 'editar';
     /** Si es true, genera automáticamente un código BOA nuevo al abrir (duplicar / desde catálogo). */
     autoGenerarCodigo?: boolean;
+    /** Códigos de los demás ítems de la recepción (aún no guardados), para no repetirlos al generar. */
+    codigosPendientes?: string[];
 }
 
 export interface RecepcionHerramientaResult {
@@ -92,6 +94,7 @@ export class RecepcionHerramientaComponent implements OnInit, OnDestroy {
     ];
 
     private ultimoCorrelativo = 0;
+    correlativoCargado = false;
 
     /* ════════ Ubicación — picker inline ════════ */
     ubAlmacenes: Warehouse[] = [];
@@ -122,7 +125,8 @@ export class RecepcionHerramientaComponent implements OnInit, OnDestroy {
             pn:                   ['', [Validators.required, Validators.minLength(2)]],
             sn:                   [''],
             descripcion:          ['', [Validators.required, Validators.minLength(3)]],
-            codigoBoa:            ['BOA-H-', [Validators.required, Validators.pattern(/^[A-Za-z0-9\-/]+$/)]],
+            // Debe terminar en letra/número: el prefijo solo ("BOA-H-") pasaba la validación.
+            codigoBoa:            ['BOA-H-', [Validators.required, Validators.pattern(/^\s*[A-Za-z0-9\-/]*[A-Za-z0-9]\s*$/)]],
             cantidad:             [1, [Validators.required, Validators.min(1), Validators.max(9999)]],
             unidadMedida:         ['UNIDAD', Validators.required],
             estado:               ['NUEVO', Validators.required],
@@ -197,15 +201,30 @@ export class RecepcionHerramientaComponent implements OnInit, OnDestroy {
 
     private _loadUltimoCorrelativo(): void {
         this.movementSvc.getLastBoaCode().pipe(takeUntil(this.destroy$))
-            .subscribe({ next: (num: number) => {
-                this.ultimoCorrelativo = num;
-                if (this.data?.autoGenerarCodigo) this.generarCodigoBoa();
-            } });
+            .subscribe({
+                next: (num: number) => {
+                    this.ultimoCorrelativo = num;
+                    this.correlativoCargado = true;
+                    if (this.data?.autoGenerarCodigo || this._generarAlCargar) this.generarCodigoBoa();
+                },
+                error: () => {
+                    this.snackBar.open('No se pudo obtener el último código BOA; escríbalo a mano', 'OK', { duration: 5000, horizontalPosition: 'end', verticalPosition: 'top', panelClass: ['snackbar-error'] });
+                }
+            });
     }
 
+    private _generarAlCargar = false;
+
+    /** Siguiente BOA-H-#### sobre el mayor entre la BD y los ítems pendientes de la recepción. */
     generarCodigoBoa(): void {
-        this.ultimoCorrelativo++;
-        this.herramientaForm.patchValue({ codigoBoa: `BOA-H-${this.ultimoCorrelativo.toString().padStart(4, '0')}` });
+        if (!this.correlativoCargado) { this._generarAlCargar = true; return; }
+        const maxPendiente = (this.data?.codigosPendientes || []).reduce((max, c) => {
+            const m = String(c || '').trim().match(/^BOA-H-(\d+)$/i);
+            return m ? Math.max(max, parseInt(m[1], 10)) : max;
+        }, 0);
+        const siguiente = Math.max(this.ultimoCorrelativo, maxPendiente) + 1;
+        this.herramientaForm.patchValue({ codigoBoa: `BOA-H-${siguiente.toString().padStart(4, '0')}` });
+        this.herramientaForm.get('codigoBoa')?.markAsTouched();
     }
 
     /* ════════ Buscador herramienta existente ════════ */
@@ -264,12 +283,13 @@ export class RecepcionHerramientaComponent implements OnInit, OnDestroy {
         this.herramientaForm.patchValue({
             pn:          tool.part_number  || '',
             sn:          tool.serial_number || '',
-            codigoBoa:   tool.code         || '',
             descripcion: tool.name         || tool.description || '',
             marca:       tool.brand        || '',
             observacion: tool.notes        || '',
         });
         if (tool.location_photo) this.herramientaImagen.set(tool.location_photo);
+        // Se usa como plantilla: el código de la existente siempre sería rechazado por duplicado.
+        this.generarCodigoBoa();
 
         // Ubicación actual de la herramienta (rack_id/level_id): busca en la lista completa de
         // almacenes (la herramienta puede estar fuera de Cbba por datos legado).
@@ -443,10 +463,19 @@ export class RecepcionHerramientaComponent implements OnInit, OnDestroy {
             return;
         }
         const f = this.herramientaForm.value;
+        // Ubicación a medias (almacén o estante sin nivel) se guardaba sin level_id y la
+        // herramienta no aparecía en el inventario del estante.
+        if (f.warehouseId && (!f.rackId || !f.levelId)) {
+            this.snackBar.open(
+                f.rackId ? 'Seleccione el nivel del estante' : 'Seleccione el estante y el nivel, o quite el almacén',
+                'OK', { duration: 5000, horizontalPosition: 'end', verticalPosition: 'top', panelClass: ['snackbar-error'] });
+            this.openUbicacionDialog();
+            return;
+        }
         const item: HerramientaItem = {
             ...f,
             pn:                   f.pn.toUpperCase(),
-            codigoBoa:            f.codigoBoa.toUpperCase(),
+            codigoBoa:            f.codigoBoa.trim().toUpperCase(),
             intervaloCalibracion: f.requiereCalibracion ? f.intervaloCalibracion : null,
             fechaCalibracion:     f.requiereCalibracion ? f.fechaCalibracion     : null,
             nroCertificado:       f.requiereCalibracion ? f.nroCertificado       : '',

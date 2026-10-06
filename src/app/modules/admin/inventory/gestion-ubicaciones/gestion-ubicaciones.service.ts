@@ -305,7 +305,7 @@ export class GestionUbicacionesService {
 
     getLevelTools(rackId: number): Observable<LevelTool[]> {
         const params = {
-            start: 0, limit: 5000, ordenacion: 'tl.id_tool', dir_ordenacion: 'asc',
+            start: 0, limit: 50000, ordenacion: 'tl.id_tool', dir_ordenacion: 'asc',
             filtro_adicional: `tl.rack_id = ${rackId}`,
             rack_id: rackId
         };
@@ -317,7 +317,7 @@ export class GestionUbicacionesService {
 
     getLevelToolsByWarehouse(warehouseId: number): Observable<LevelTool[]> {
         const params = {
-            start: 0, limit: 5000, ordenacion: 'tl.id_tool', dir_ordenacion: 'asc',
+            start: 0, limit: 50000, ordenacion: 'tl.id_tool', dir_ordenacion: 'asc',
             filtro_adicional: `tl.warehouse_id = ${warehouseId} and tl.level_id is not null`,
             warehouse_id: warehouseId
         };
@@ -336,7 +336,7 @@ export class GestionUbicacionesService {
      */
     getToolLocationsMap(): Observable<Map<number, { warehouseId: number; rackName: string; levelLabel: string }>> {
         const params = {
-            start: 0, limit: 5000, ordenacion: 'tl.id_tool', dir_ordenacion: 'asc',
+            start: 0, limit: 50000, ordenacion: 'tl.id_tool', dir_ordenacion: 'asc',
             filtro_adicional: 'tl.level_id is not null',
         };
         return from(this._api.post('herramientas/leveltools/listarLevelTools', params)).pipe(
