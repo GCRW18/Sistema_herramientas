@@ -6,10 +6,10 @@
     <div class="flex-1 flex flex-col p-4 gap-3 overflow-hidden relative z-10">
 
         <!-- ══ CABECERA ══ -->
-        <div class="flex flex-col gap-3 shrink-0">
+        <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 shrink-0">
 
             <!-- Título principal -->
-            <div class="flex items-center gap-4">
+            <div class="flex items-center gap-4 shrink-0 min-w-0">
                 <div class="flex items-center justify-center w-10 h-10 bg-white dark:bg-[#0F172AFF] border-[3px] border-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] rounded-xl shrink-0">
                     <mat-icon class="text-black dark:text-[#FFC501FF] !text-base">category</mat-icon>
                 </div>
@@ -23,11 +23,11 @@
                 </div>
             </div>
 
-            <!-- Botones debajo del título -->
-            <div class="flex items-center gap-3 flex-wrap">
+            <!-- Controles: a la derecha del título -->
+            <div class="flex flex-wrap items-center gap-2 lg:justify-end">
 
                 <!-- Búsqueda -->
-                <div class="relative flex-1 min-w-[140px] sm:flex-none">
+                <div class="relative w-full sm:w-52">
                     <input type="text" [formControl]="searchControl"
                            placeholder="Buscar código, descripción..."
                            class="w-full h-9 pl-9 pr-3 bg-white dark:bg-[#0F172AFF] text-black dark:text-white
@@ -38,7 +38,7 @@
                 </div>
 
                 <!-- Botones de vista -->
-                <div class="flex items-center gap-1">
+                <div class="flex items-center flex-wrap gap-1">
                     <button (click)="setTab('catalogo')"
                             class="h-9 px-3 flex items-center gap-1.5 rounded-lg border-[2px] border-black font-black text-[10px] uppercase transition-all"
                             [ngClass]="activeTab() === 'catalogo'
@@ -87,10 +87,10 @@
                     <option value="ELECTRICO">Eléctrico</option>
                 </select>
 
-                <!-- Botón de acción (cambia por tab) — alineado a la derecha -->
-                <div class="ml-auto flex items-center gap-3">
+                <!-- Botón de acción (cambia por tab) -->
+                <div class="flex items-center gap-2">
                     <button [hidden]="activeTab() !== 'catalogo'" (click)="nuevoCatalogo()"
-                            class="px-5 py-2 bg-amber-400 text-black font-black text-xs border-[2px] border-black rounded-xl
+                            class="h-9 px-4 bg-amber-400 text-black font-black text-xs border-[2px] border-black rounded-lg
                                    shadow-[3px_3px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none
                                    transition-all uppercase flex items-center gap-2">
                         <mat-icon class="!text-s !text-black">add_circle</mat-icon>
@@ -98,7 +98,7 @@
                     </button>
 
                     <button *appHasPermission="'miscelaneos.entry'" [hidden]="activeTab() !== 'entradas'" (click)="nuevaEntrada()"
-                            class="px-5 py-2 bg-amber-400 text-black font-black text-xs border-[2px] border-black rounded-xl
+                            class="h-9 px-4 bg-amber-400 text-black font-black text-xs border-[2px] border-black rounded-lg
                                    shadow-[3px_3px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none
                                    transition-all uppercase flex items-center gap-2">
                         <mat-icon class="!text-sm !text-black">arrow_downward</mat-icon>
@@ -106,7 +106,7 @@
                     </button>
 
                     <button *appHasPermission="'miscelaneos.exit'" [hidden]="activeTab() !== 'salidas'" (click)="nuevaSalida()"
-                            class="px-5 py-2 bg-amber-400 text-black font-black text-xs border-[2px] border-black rounded-xl
+                            class="h-9 px-4 bg-amber-400 text-black font-black text-xs border-[2px] border-black rounded-lg
                                    shadow-[3px_3px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none
                                    transition-all uppercase flex items-center gap-2">
                         <mat-icon class="!text-sm !text-black">arrow_upward</mat-icon>
@@ -559,30 +559,9 @@
                 </div>
             </div>
 
-            <!-- PAGINADOR (tabs catálogo / entradas / salidas) -->
-            <div *ngIf="activeTab() !== 'stock' && listaActiva().length > pageSize"
-                 class="shrink-0 border-t-2 border-black bg-white dark:bg-slate-800 px-3 sm:px-4 py-2 flex items-center justify-between gap-2 flex-wrap">
-                <span class="text-[9px] sm:text-[10px] font-black uppercase text-gray-500">
-                    {{ rangoPagina().desde }}–{{ rangoPagina().hasta }} de {{ listaActiva().length }} registros
-                </span>
-                <div class="flex items-center gap-1">
-                    <button (click)="irAPagina(pagina() - 1)" [disabled]="pagina() <= 1"
-                            class="w-7 h-7 flex items-center justify-center bg-white dark:bg-slate-700 border-2 border-black rounded-lg shadow-[2px_2px_0px_0px_#000] hover:translate-y-[1px] hover:shadow-none transition-all disabled:opacity-30 disabled:cursor-not-allowed disabled:translate-y-0 disabled:shadow-[2px_2px_0px_0px_#000]">
-                        <mat-icon class="!text-sm text-black dark:text-white">chevron_left</mat-icon>
-                    </button>
-                    <button *ngFor="let p of paginasVisibles(); trackBy: trackByPagina" (click)="irAPagina(p)"
-                            class="w-7 h-7 flex items-center justify-center border-2 border-black rounded-lg text-[10px] font-black transition-all"
-                            [ngClass]="p === pagina()
-                                ? 'bg-amber-400 text-black shadow-none translate-y-[1px]'
-                                : 'bg-white dark:bg-slate-700 text-black dark:text-white shadow-[2px_2px_0px_0px_#000] hover:translate-y-[1px] hover:shadow-none'">
-                        {{ p }}
-                    </button>
-                    <button (click)="irAPagina(pagina() + 1)" [disabled]="pagina() >= totalPaginas()"
-                            class="w-7 h-7 flex items-center justify-center bg-white dark:bg-slate-700 border-2 border-black rounded-lg shadow-[2px_2px_0px_0px_#000] hover:translate-y-[1px] hover:shadow-none transition-all disabled:opacity-30 disabled:cursor-not-allowed disabled:translate-y-0 disabled:shadow-[2px_2px_0px_0px_#000]">
-                        <mat-icon class="!text-sm text-black dark:text-white">chevron_right</mat-icon>
-                    </button>
-                </div>
-            </div>
+            <!-- Paginador -->
+            <app-paginador-compacto *ngIf="activeTab() !== 'stock' && listaActiva().length > 0" [total]="listaActiva().length" [pageSize]="pageSize"
+                                    [pageIndex]="pagina() - 1" (pageIndexChange)="irAPagina($event + 1)"></app-paginador-compacto>
 
         </div>
     </div>

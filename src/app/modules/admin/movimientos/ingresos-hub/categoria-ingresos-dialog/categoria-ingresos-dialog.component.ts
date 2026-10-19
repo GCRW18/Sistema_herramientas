@@ -18,7 +18,7 @@ interface Categoria {
     standalone: true,
     imports: [CommonModule, FormsModule, MatIconModule],
     template: `
-<div class="bg-stone-100 dark:bg-slate-900 border-2 border-black rounded-2xl overflow-hidden flex flex-col"
+<div class="bg-stone-100 dark:bg-slate-900 border-2 border-black rounded-2xl overflow-hidden flex flex-col max-h-[90dvh]"
      style="width: 640px; max-width: 95vw;">
 
     <!-- CABECERA -->
@@ -37,7 +37,7 @@ interface Categoria {
     </div>
 
     <!-- CUERPO -->
-    <div class="p-4 flex flex-col gap-4">
+    <div class="flex-1 min-h-0 overflow-y-auto p-4 flex flex-col gap-4">
 
         <!-- Lista de categorías -->
         <div>

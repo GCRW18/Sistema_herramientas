@@ -1,4 +1,6 @@
 import { Component, OnDestroy, inject, Type, Injector, TrackByFunction, ViewChildren, QueryList } from '@angular/core';
+import { firstValueFrom } from 'rxjs';
+import { PermissionsService } from '../../../core/services/permissions.service';
 import { CommonModule, NgComponentOutlet } from '@angular/common';
 import { outletsTienenCambios } from '../../../core/guards/pending-changes.guard';
 import { MatIconModule } from '@angular/material/icon';
@@ -108,6 +110,14 @@ interface ModuleDef {
 })
 export class AdministrationComponent implements OnDestroy {
     private injector = inject(Injector);
+    private _permissionsSvc = inject(PermissionsService);
+
+    /** Pestañas que el rol del usuario puede abrir (ver AREA_SUBMODULES). */
+    allowedTabs = new Set<number>();
+    private _allowedTabs$ = this._permissionsSvc.allowedTabs('administration');
+    private _allowedSub = this._allowedTabs$.subscribe(tabs => this.allowedTabs = tabs);
+    canSee(type: number): boolean { return this.allowedTabs.has(type); }
+    get visibleModuleDefs() { return this.MODULE_DEFS.filter(d => this.allowedTabs.has(d.type)); }
 
     private _unsubscribeAll = new Subject<void>();
 
@@ -178,6 +188,7 @@ export class AdministrationComponent implements OnDestroy {
 
     async openModule(type: number): Promise<void> {
         this.showBandeja = false;
+        if (!(await firstValueFrom(this._allowedTabs$)).has(type)) return;
 
         const existing = this.openTabs.find(t => t.type === type);
         if (existing) {

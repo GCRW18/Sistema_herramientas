@@ -3,6 +3,8 @@ import {
     Type, Injector, TrackByFunction, ChangeDetectorRef,
     ViewChild, ViewChildren, QueryList, TemplateRef
 } from '@angular/core';
+import { firstValueFrom } from 'rxjs';
+import { PermissionsService } from '../../../core/services/permissions.service';
 import { CommonModule, NgComponentOutlet } from '@angular/common';
 import { Router } from '@angular/router';
 import { MatIconModule, MatIconRegistry } from '@angular/material/icon';
@@ -16,6 +18,7 @@ import { DomSanitizer } from '@angular/platform-browser';
 import { DragDropModule } from '@angular/cdk/drag-drop';
 import { MovementService } from '../../../core/services/movement.service';
 import { outletsTienenCambios } from '../../../core/guards/pending-changes.guard';
+import { formatDateDMY } from '../../../core/utils/date.utils';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -74,6 +77,16 @@ interface OpenTab {
 export class MovimientosComponent implements OnInit, OnDestroy {
 
     private injector      = inject(Injector);
+    private _permissionsSvc = inject(PermissionsService);
+
+    /** Pestañas que el rol del usuario puede abrir (ver AREA_SUBMODULES). */
+    allowedTabs = new Set<number>();
+    private _allowedTabs$ = this._permissionsSvc.allowedTabs('movimientos');
+    private _allowedSub = this._allowedTabs$.subscribe(tabs => this.allowedTabs = tabs);
+    canSee(type: number): boolean { return this.allowedTabs.has(type); }
+    canSeeCalibraciones = false;
+    private _calSub = this._permissionsSvc.canAccessArea('calibraciones').subscribe(ok => this.canSeeCalibraciones = ok);
+    get visibleModuleDefs() { return this.MODULE_DEFS.filter(d => this.allowedTabs.has(d.type)); }
     private router        = inject(Router);
     private dialog        = inject(MatDialog);
     private snackBar      = inject(MatSnackBar);
@@ -277,8 +290,8 @@ export class MovimientosComponent implements OnInit, OnDestroy {
 
     private formatMovDate(date: string): string {
         if (!date) return '-';
-        try { return new Date(date).toLocaleDateString('es-BO', { day: '2-digit', month: '2-digit', year: 'numeric' }); }
-        catch { return date; }
+        // Sin pasar por Date: 'YYYY-MM-DD' leído como UTC mostraba el día anterior.
+        return formatDateDMY(date) || date;
     }
 
     irACalibraciones(): void {
@@ -301,6 +314,7 @@ export class MovimientosComponent implements OnInit, OnDestroy {
 
     async openModule(type: number): Promise<void> {
         this.showBandeja = false;
+        if (!(await firstValueFrom(this._allowedTabs$)).has(type)) return;
 
         const existing = this.openTabs.find(t => t.type === type);
         if (existing) {

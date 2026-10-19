@@ -47,7 +47,7 @@
         </div>
 
         <!-- Tabs -->
-        <div class="flex items-center gap-1">
+        <div class="flex items-center flex-wrap gap-1">
           <button (click)="setTab('cuarentena')"
                   class="h-9 px-3 flex items-center gap-1.5 rounded-lg border-[2px] border-black font-black text-[10px] uppercase transition-all"
                   [ngClass]="activeTab() === 'cuarentena'
@@ -84,7 +84,7 @@
 
       <!-- Cabecera oscura con KPIs -->
       <div class="px-3 sm:px-4 py-2 bg-[#0F172AFF] border-b-[3px] border-black shrink-0 rounded-t-2xl">
-        <div class="flex items-center gap-2 overflow-x-auto scrollbar-none flex-nowrap">
+        <div class="flex items-center gap-2 flex-wrap">
 
           <!-- ── Tab Cuarentena ── -->
           <ng-container *ngIf="activeTab() === 'cuarentena'">
@@ -143,7 +143,7 @@
           </ng-container>
 
           <!-- Acciones lado derecho -->
-          <div class="ml-auto flex items-center gap-1.5 shrink-0">
+          <div class="ml-auto flex items-center flex-wrap justify-end gap-1.5">
 
             <ng-container *ngIf="activeTab() === 'cuarentena'">
               <button (click)="abrirModalReporte()"
@@ -198,7 +198,7 @@
             <button *ngIf="activeTab() === 'historial'" (click)="loadHistorial()" [disabled]="isLoadingHistorial"
                     class="flex items-center gap-1.5 h-7 px-2.5 rounded-lg border border-white/30 text-white hover:bg-white/20 transition-all disabled:opacity-40 font-black text-[10px] uppercase shrink-0">
               <mat-icon class="!text-sm !w-4 !h-4 text-[#FFC501FF]" [class.animate-spin]="isLoadingHistorial">refresh</mat-icon>
-              Actualizar
+              <span class="hidden sm:inline">Actualizar</span>
             </button>
           </div>
 
@@ -385,11 +385,12 @@
               </tr>
             </thead>
             <tbody>
-              <tr *ngFor="let m of filteredHistorial; let idx = index"
+              <tr *ngFor="let m of filteredHistorial | slice: pageHistorial * 10 : pageHistorial * 10 + 10; let idx = index"
                   class="border-b border-gray-200 dark:border-slate-700 transition-all hover:bg-gray-100 dark:hover:bg-slate-700/60"
                   [ngClass]="idx % 2 === 0 ? 'bg-white dark:bg-slate-800/60' : 'bg-gray-50 dark:bg-slate-800/40'">
                 <td class="px-3 py-2.5">
                   <span class="font-mono font-black text-[10px] text-black dark:text-white whitespace-nowrap">{{ m.record_number || m.report_number || '—' }}</span>
+                  <div *ngIf="m.tool_code" class="text-[9px] font-bold text-gray-500 dark:text-gray-400 truncate max-w-[220px]" [title]="m.tool_name">{{ m.tool_code }} · {{ m.tool_name }}</div>
                 </td>
                 <td class="px-3 py-2.5">
                   <span class="text-[9px] font-black uppercase text-black dark:text-white">{{ getHistorialTypeLabel(m) }}</span>
@@ -430,6 +431,7 @@
             </tbody>
           </table>
         </div>
+        <app-paginador-compacto *ngIf="!isLoadingHistorial && filteredHistorial.length > 0" [total]="filteredHistorial.length" [pageIndex]="pageHistorial" (pageIndexChange)="pageHistorial = $event"></app-paginador-compacto>
       </div>
 
       </div><!-- /tabs wrapper -->
@@ -561,7 +563,7 @@
     </div>
 
     <!-- Pie -->
-    <div class="border-t-2 border-black bg-stone-200 dark:bg-slate-800 px-5 py-3 flex justify-between items-center shrink-0">
+    <div class="border-t-2 border-black bg-stone-200 dark:bg-slate-800 px-5 py-3 flex flex-wrap gap-y-2 justify-between items-center shrink-0">
       <button type="button" (click)="dialogRefActual?.close()"
               class="px-4 py-2 bg-[#FF1414] text-white font-black text-[10px] border-2 border-black rounded-xl shadow-[2px_2px_0_#000] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all uppercase">
         Cancelar
@@ -609,7 +611,7 @@
                 </button>
                 <!-- Desplegable -->
                 <div *ngIf="showToolDropdown"
-                     class="absolute z-[300] w-80 bg-white dark:bg-slate-800 border-2 border-black dark:border-slate-600 rounded-xl shadow-[4px_4px_0_#000] max-h-60 overflow-y-auto mt-1 top-full right-0 custom-scrollbar-cb divide-y divide-stone-100 dark:divide-slate-700">
+                     class="absolute z-[300] w-80 max-w-[calc(100vw-3rem)] bg-white dark:bg-slate-800 border-2 border-black dark:border-slate-600 rounded-xl shadow-[4px_4px_0_#000] max-h-60 overflow-y-auto mt-1 top-full right-0 custom-scrollbar-cb divide-y divide-stone-100 dark:divide-slate-700">
                     <div *ngFor="let t of toolsFiltradas"
                          (mousedown)="selectTool(t)"
                          class="px-3 py-2 hover:bg-amber-50 dark:hover:bg-slate-700 cursor-pointer transition-colors">
@@ -629,10 +631,10 @@
 
         <!-- Cuerpo -->
         <div class="animate-fadeIn flex-1 overflow-hidden">
-            <form [formGroup]="toolCuarentenaForm" class="h-full flex flex-col sm:flex-row overflow-hidden min-h-0">
+            <form [formGroup]="toolCuarentenaForm" class="dlg-cuerpo h-full flex flex-col sm:flex-row overflow-y-auto sm:overflow-hidden min-h-0">
 
                 <!-- Columna izquierda -->
-                <div class="flex-1 overflow-y-auto custom-scrollbar-cb px-4 py-3 flex flex-col gap-2">
+                <div class="dlg-panel sm:flex-1 sm:overflow-y-auto custom-scrollbar-cb px-4 py-3 flex flex-col gap-2">
 
                     <!-- P/N · S/N · Stock -->
                     <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
@@ -739,9 +741,9 @@
                 </div>
 
                 <!-- Columna derecha: Foto -->
-                <div class="w-2/5 flex flex-col items-center justify-center border-t-2 sm:border-t-0 sm:border-l-2 border-stone-200 dark:border-slate-700 px-4 py-4">
+                <div class="w-full sm:w-2/5 shrink-0 flex flex-col items-center justify-center border-t-2 sm:border-t-0 sm:border-l-2 border-stone-200 dark:border-slate-700 px-4 py-4">
                     <label class="text-[9px] font-black uppercase tracking-wider text-stone-400 dark:text-slate-400 mb-2 block text-center">Foto del Activo <span class="text-red-500">*</span></label>
-                    <div class="w-72 h-72 border-2 border-dashed border-stone-300 dark:border-slate-600 rounded-xl bg-stone-50 dark:bg-slate-900 flex flex-col items-center justify-center relative overflow-hidden cursor-pointer hover:border-amber-400 transition-colors group"
+                    <div class="w-56 h-56 sm:w-72 sm:h-72 border-2 border-dashed border-stone-300 dark:border-slate-600 rounded-xl bg-stone-50 dark:bg-slate-900 flex flex-col items-center justify-center relative overflow-hidden cursor-pointer hover:border-amber-400 transition-colors group"
                          (click)="fileInputCuarentena.click()">
                         <img *ngIf="selectedToolImage()" [src]="selectedToolImage()"
                              class="w-full h-full object-contain p-2 absolute inset-0 z-10 bg-white dark:bg-slate-800">
@@ -756,13 +758,14 @@
                         </div>
                     </div>
                     <input type="file" #fileInputCuarentena (change)="onToolImageSelected($event)" accept="image/*" class="hidden">
+                    <app-botones-foto class="block w-56 sm:w-72" (seleccion)="onToolImageSelected($event)"></app-botones-foto>
                 </div>
 
             </form>
         </div>
 
         <!-- Pie -->
-        <div class="border-t-2 border-black bg-stone-200 dark:bg-slate-800 px-4 py-2 flex justify-between items-center shrink-0">
+        <div class="border-t-2 border-black bg-stone-200 dark:bg-slate-800 px-4 py-2 flex flex-wrap gap-y-2 justify-between items-center shrink-0">
             <button type="button" (click)="dialogRefActual?.close()"
                     class="flex items-center gap-1 px-3 py-1.5 bg-[#FF1414] text-white font-black text-[10px] border-2 border-black rounded-lg shadow-[2px_2px_0_#000] hover:shadow-none hover:translate-x-[1px] hover:translate-y-[1px] transition-all uppercase">
                 <mat-icon class="!text-xs">close</mat-icon>Cancelar
@@ -895,7 +898,7 @@
     </div>
 
     <!-- Pie -->
-    <div class="border-t-2 border-black bg-stone-200 dark:bg-slate-800 px-5 py-3 flex justify-between items-center shrink-0">
+    <div class="border-t-2 border-black bg-stone-200 dark:bg-slate-800 px-5 py-3 flex flex-wrap gap-y-2 justify-between items-center shrink-0">
       <button type="button" (click)="dialogRefActual?.close()" [disabled]="isResolviendo"
               class="px-4 py-2 bg-[#FF1414] text-white font-black text-[10px] border-2 border-black rounded-xl shadow-[2px_2px_0_#000] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all uppercase disabled:opacity-40">
         Cancelar
@@ -1106,7 +1109,7 @@
         </div>
 
         <!-- Pie -->
-        <div class="border-t-2 border-black bg-stone-200 dark:bg-slate-800 px-4 py-2 flex justify-between items-center shrink-0">
+        <div class="border-t-2 border-black bg-stone-200 dark:bg-slate-800 px-4 py-2 flex flex-wrap gap-y-2 justify-between items-center shrink-0">
             <button type="button" (click)="cancelarModalDatos()"
                     class="px-3.5 py-1.5 bg-[#FF1414] text-white font-black text-[10px] border-2 border-black rounded-lg shadow-[2px_2px_0_#000] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all uppercase">
                 Cancelar
@@ -1190,7 +1193,7 @@
     </div>
 
     <!-- Pie -->
-    <div class="border-t-2 border-black bg-stone-200 dark:bg-slate-800 px-5 py-3 flex justify-between items-center shrink-0">
+    <div class="border-t-2 border-black bg-stone-200 dark:bg-slate-800 px-5 py-3 flex flex-wrap gap-y-2 justify-between items-center shrink-0">
       <button type="button" (click)="dialogRefActual?.close()" [disabled]="isAnulando"
               class="px-4 py-2 bg-[#FF1414] text-white font-black text-[10px] border-2 border-black rounded-xl shadow-[2px_2px_0_#000] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all uppercase disabled:opacity-40">
         Cancelar

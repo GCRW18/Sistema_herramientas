@@ -10,8 +10,9 @@ import { takeUntil, finalize, switchMap, map, catchError, debounceTime, distinct
 import { MovementService } from '../../../../../core/services/movement.service';
 import { CustomerService } from '../../../../../core/services/customer.service';
 import { QrScanService } from '../../../../../core/services/qr-scan.service';
+import { diasDesde } from '../../../../../core/utils/date.utils';
 
-type CondicionExt = 'BUENO' | 'REPARADO' | 'CALIBRADO' | 'PARCIAL' | 'NO_REPARABLE';
+type CondicionExt = 'BUENO' | 'REPARADO' | 'CALIBRADO' | 'PARCIAL' | 'DAÑADO' | 'NO_REPARABLE' | 'FALTANTE';
 
 /** Ítem del carrito de devolución externa: sale de escanear una herramienta y
  *  resolver su préstamo externo abierto (he.tloan_items.returned = false). */
@@ -116,8 +117,13 @@ export class FormDevolucionExternoDialogComponent implements OnInit, OnDestroy {
         { value: 'REPARADO',     label: 'Reparado',     bgColor: 'bg-blue-500',  icon: 'build'         },
         { value: 'CALIBRADO',    label: 'Calibrado',    bgColor: 'bg-cyan-500',  icon: 'tune'          },
         { value: 'PARCIAL',      label: 'Parcial',      bgColor: 'bg-yellow-500',icon: 'construction'  },
+        { value: 'DAÑADO',       label: 'Dañado',       bgColor: 'bg-red-500',   icon: 'report_problem'},
         { value: 'NO_REPARABLE', label: 'No Reparable', bgColor: 'bg-red-700',   icon: 'dangerous'     },
+        { value: 'FALTANTE',     label: 'Faltante',     bgColor: 'bg-gray-800',  icon: 'help_outline'  },
     ];
+
+    /** Condiciones que exigen observación (DAÑADO → Cuarentena, NO_REPARABLE → Baja, FALTANTE → perdida). */
+    requiereObs(c: CondicionExt): boolean { return c !== 'BUENO' && c !== 'REPARADO' && c !== 'CALIBRADO'; }
 
     ngOnInit(): void {
         this.initForm();
@@ -197,10 +203,9 @@ export class FormDevolucionExternoDialogComponent implements OnInit, OnDestroy {
 
     private _toItem(loan: any, it: any): DevolucionExternoItem {
         const loanDate = loan.loan_date || '';
-        const diasFuera = loanDate
-            ? Math.ceil(Math.abs(Date.now() - new Date(loanDate).getTime()) / 86400000)
-            : 0;
-        const qty = Number(it.quantity) || 1;
+        const diasFuera = diasDesde(loanDate);
+        // Solo lo que falta devolver (patch HE-84: devoluciones parciales por cantidad).
+        const qty = Math.max((Number(it.quantity) || 1) - (Number(it.quantity_returned) || 0), 1);
         return {
             idLoanItem:      Number(it.id_loan_item),
             idLoan:          Number(it.loan_id),
@@ -449,7 +454,7 @@ export class FormDevolucionExternoDialogComponent implements OnInit, OnDestroy {
         if (!this.devForm.get('responsableRecibe')?.value?.trim()) errors.push('Indique quién recibe en el almacén');
         this.cart.forEach(i => {
             if (i.cantidadDevolver <= 0 || i.cantidadDevolver > i.cantidadPrestada) errors.push(`${i.codigo}: cantidad inválida`);
-            if ((i.condicionDevolucion === 'PARCIAL' || i.condicionDevolucion === 'NO_REPARABLE') && !i.observacionItem.trim()) errors.push(`${i.codigo}: falta observación`);
+            if (this.requiereObs(i.condicionDevolucion) && !i.observacionItem.trim()) errors.push(`${i.codigo}: falta observación`);
         });
         return { valid: errors.length === 0, errors };
     }

@@ -565,6 +565,8 @@ export class FormEnvioComponent implements OnInit, OnDestroy {
         );
         if (!ok) return;
 
+        // Pestaña reservada en el click: la nota llega después de 2 requests y el bloqueador la cortaba.
+        const notaWin = this.calibrationService.preAbrirVentanaPdf();
         this.confirming.set(true);
         this.calibrationService.confirmDraftEnvio({
             almacen:           this.almacen,
@@ -580,10 +582,14 @@ export class FormEnvioComponent implements OnInit, OnDestroy {
                 const nota = res?.record_number ?? '';
                 this.showMsg(`Envío confirmado — nota ${nota}`, 'success');
                 const idCal = Number(res?.id_calibration) || 0;
-                if (idCal) this.calibrationService.generarYVerPdfEnvio(idCal);
+                if (idCal) this.calibrationService.generarYVerPdfEnvio(idCal, notaWin);
+                else { try { notaWin?.close(); } catch { /* noop */ } }
                 setTimeout(() => this.dialogRef.close(true), 1600);
             },
-            error: (e) => this.showMsg(e?.message || 'Error al confirmar el envío', 'error'),
+            error: (e) => {
+                try { notaWin?.close(); } catch { /* noop */ }
+                this.showMsg(e?.message || 'Error al confirmar el envío', 'error');
+            },
         });
     }
 

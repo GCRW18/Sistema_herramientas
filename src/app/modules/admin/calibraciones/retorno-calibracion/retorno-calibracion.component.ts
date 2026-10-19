@@ -326,31 +326,25 @@ export class RetornoCalibracionComponent implements OnInit, OnDestroy {
 
     printNota(cal: CalibrationDisplay): void {
         if (!cal.id_calibration) return;
+        const win = this.calibrationService.preAbrirVentanaPdf();
         this.isLoading.set(true);
         this.calibrationService.generarPdfEnvioCalibracion(cal.id_calibration).pipe(
             finalize(() => this.isLoading.set(false))
         ).subscribe({
-            next: (res) => {
-                if (res?.pdf_base64) {
-                    this.calibrationService.abrirPdf(res.pdf_base64, res.nombre_archivo);
-                }
-            },
-            error: () => this.showMsg('No se pudo generar la Nota de Envío', 'error')
+            next: (res) => this.calibrationService.abrirPdf(res?.pdf_base64 ?? '', res?.nombre_archivo || 'documento.pdf', win),
+            error: () => { try { win?.close(); } catch { /* noop */ } this.showMsg('No se pudo generar la Nota de Envío', 'error'); }
         });
     }
 
     visualizarRetorno(cal: CalibrationDisplay): void {
         if (!cal.id_calibration) return;
+        const win = this.calibrationService.preAbrirVentanaPdf();
         this.isLoading.set(true);
         this.calibrationService.generarPdfRetornoCalibracion(cal.id_calibration).pipe(
             finalize(() => this.isLoading.set(false))
         ).subscribe({
-            next: (res) => {
-                if (res?.pdf_base64) {
-                    this.calibrationService.abrirPdf(res.pdf_base64, res.nombre_archivo);
-                }
-            },
-            error: () => this.showMsg('Certificado no disponible o error de generación', 'error')
+            next: (res) => this.calibrationService.abrirPdf(res?.pdf_base64 ?? '', res?.nombre_archivo || 'documento.pdf', win),
+            error: () => { try { win?.close(); } catch { /* noop */ } this.showMsg('Certificado no disponible o error de generación', 'error'); }
         });
     }
 

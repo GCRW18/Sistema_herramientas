@@ -22,8 +22,8 @@ export class MaintenanceService {
         const params: any = {
             start: 0,
             limit: 50,
-            ordenacion: 'id_maintenance',
-            dir_ordenacion: 'desc',
+            sort: 'id_maintenance',
+            dir: 'desc',
             ...filters
         };
 
@@ -78,7 +78,8 @@ export class MaintenanceService {
      */
     getActiveMaintenancesPxp(): Observable<any[]> {
         return from(this._api.post('herramientas/maintenances/listarMaintenancesActivos', {
-            start: 0, limit: 100, ordenacion: 'send_date', dir_ordenacion: 'desc'
+            // pXP lee sort/dir; con 100 los envíos viejos aún EN TALLER salían de la lista.
+            start: 0, limit: 1000, sort: 'send_date', dir: 'desc'
         })).pipe(
             switchMap((response: any) => {
                 const raw = response?.ROOT?.datos ?? response?.datos ?? [];
@@ -272,10 +273,11 @@ export class MaintenanceService {
      * Genera y abre PDF de Nota de Envío a Mantenimiento directamente
      * @param id_maintenance - ID del registro de mantenimiento
      */
-    generarYVerPdfEnvioMantenimiento(id_maintenance: number): void {
+    generarYVerPdfEnvioMantenimiento(id_maintenance: number, ventana?: Window | null): void {
         this.generarPdfEnvioMantenimiento(id_maintenance).subscribe({
-            next: (result) => this.abrirNota(result),
+            next: (result) => this.abrirNota(result, ventana),
             error: (error) => {
+                try { ventana?.close(); } catch { /* noop */ }
                 console.error('Error al generar PDF de envío de mantenimiento:', error);
             }
         });
@@ -323,8 +325,8 @@ export class MaintenanceService {
     }
 
     // MGH-125 — Listado de gatas hidráulicas (PDF real vía ACTreportes/RReporteGatasHidraulicas).
-    generarPdfGatasHidraulicas(): Observable<{ pdf_base64: string; nombre_archivo: string }> {
-        return from(this._api.post('herramientas/reportes/generarPDFGatasHidraulicas', {})).pipe(
+    generarPdfGatasHidraulicas(generadoPor = ''): Observable<{ pdf_base64: string; nombre_archivo: string }> {
+        return from(this._api.post('herramientas/reportes/generarPDFGatasHidraulicas', { generado_por: generadoPor })).pipe(
             switchMap((response: any) => {
                 // pxp-client puede dejar {ROOT:{...}} o desenvolverlo a {error,detalle,datos}.
                 const root = response?.ROOT ?? response ?? {};

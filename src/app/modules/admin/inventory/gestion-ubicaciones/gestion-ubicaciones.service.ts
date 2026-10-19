@@ -187,7 +187,7 @@ export class GestionUbicacionesService {
     /* ════════ Warehouses ════════ */
 
     getWarehouses(): Observable<Warehouse[]> {
-        const params = { start: 0, limit: 1000, ordenacion: 'id_warehouse', dir_ordenacion: 'asc' };
+        const params = { start: 0, limit: 1000, sort: 'id_warehouse', dir: 'asc' };
         return from(this._api.post('herramientas/warehouses/listarWarehouses', params))
             .pipe(map((r: any) => (r?.datos || r?.data || []).map((w: BackendWarehouse) => this.toWarehouse(w))));
     }
@@ -229,7 +229,7 @@ export class GestionUbicacionesService {
 
     getRacks(warehouseId: number): Observable<Rack[]> {
         const params = {
-            start: 0, limit: 1000, ordenacion: 'rk.id_rack', dir_ordenacion: 'asc',
+            start: 0, limit: 1000, sort: 'rk.id_rack', dir: 'asc',
             filtro_adicional: `rk.warehouse_id = ${warehouseId}`,
             warehouse_id: warehouseId
         };
@@ -258,7 +258,7 @@ export class GestionUbicacionesService {
 
     getLevels(rackId: number): Observable<Level[]> {
         const params = {
-            start: 0, limit: 1000, ordenacion: 'lv.number', dir_ordenacion: 'asc',
+            start: 0, limit: 1000, sort: 'lv.number', dir: 'asc',
             filtro_adicional: `lv.rack_id = ${rackId}`,
             rack_id: rackId
         };
@@ -274,7 +274,7 @@ export class GestionUbicacionesService {
      */
     getLevelsByWarehouse(warehouseId: number): Observable<Level[]> {
         const params = {
-            start: 0, limit: 5000, ordenacion: 'lv.number', dir_ordenacion: 'asc',
+            start: 0, limit: 5000, sort: 'lv.number', dir: 'asc',
             filtro_adicional: `rk.warehouse_id = ${warehouseId}`,
             warehouse_id: warehouseId
         };
@@ -305,7 +305,7 @@ export class GestionUbicacionesService {
 
     getLevelTools(rackId: number): Observable<LevelTool[]> {
         const params = {
-            start: 0, limit: 50000, ordenacion: 'tl.id_tool', dir_ordenacion: 'asc',
+            start: 0, limit: 50000, sort: 'tl.id_tool', dir: 'asc',
             filtro_adicional: `tl.rack_id = ${rackId}`,
             rack_id: rackId
         };
@@ -317,7 +317,7 @@ export class GestionUbicacionesService {
 
     getLevelToolsByWarehouse(warehouseId: number): Observable<LevelTool[]> {
         const params = {
-            start: 0, limit: 50000, ordenacion: 'tl.id_tool', dir_ordenacion: 'asc',
+            start: 0, limit: 50000, sort: 'tl.id_tool', dir: 'asc',
             filtro_adicional: `tl.warehouse_id = ${warehouseId} and tl.level_id is not null`,
             warehouse_id: warehouseId
         };
@@ -336,7 +336,7 @@ export class GestionUbicacionesService {
      */
     getToolLocationsMap(): Observable<Map<number, { warehouseId: number; rackName: string; levelLabel: string }>> {
         const params = {
-            start: 0, limit: 50000, ordenacion: 'tl.id_tool', dir_ordenacion: 'asc',
+            start: 0, limit: 50000, sort: 'tl.id_tool', dir: 'asc',
             filtro_adicional: 'tl.level_id is not null',
         };
         return from(this._api.post('herramientas/leveltools/listarLevelTools', params)).pipe(
@@ -414,7 +414,7 @@ export class GestionUbicacionesService {
      */
     getKitsByWarehouse(warehouseId: number): Observable<LevelKit[]> {
         const params = {
-            start: 0, limit: 5000, ordenacion: 'kit.id_kit', dir_ordenacion: 'asc',
+            start: 0, limit: 5000, sort: 'kit.id_kit', dir: 'asc',
             filtro_adicional: `kit.warehouse_id = ${warehouseId} and kit.level_id is not null`,
             warehouse_id: warehouseId
         };
@@ -441,7 +441,7 @@ export class GestionUbicacionesService {
      */
     getMiscelaneosByWarehouse(warehouseId: number): Observable<LevelMiscelaneo[]> {
         const params = {
-            start: 0, limit: 5000, ordenacion: 'mis.id_miscelaneo', dir_ordenacion: 'asc',
+            start: 0, limit: 5000, sort: 'mis.id_miscelaneo', dir: 'asc',
             filtro_adicional: `mis.warehouse_id = ${warehouseId} and mis.level_id is not null`,
             warehouse_id: warehouseId
         };

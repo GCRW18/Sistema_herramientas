@@ -30,10 +30,10 @@ export interface CalibrationAlertDialogData {
     imports: [CommonModule, MatDialogModule, MatButtonModule, MatIconModule, MatTooltipModule],
     template: `
 
-    <div class="flex flex-col overflow-hidden">
+    <div class="flex flex-col overflow-hidden max-h-[90dvh]">
 
         <!-- ── CABECERA ─────────────────────────────────────────────────── -->
-        <div class="bg-[#0F172A] px-5 py-4 flex items-center justify-between gap-3 shrink-0 border-b-3 border-black">
+        <div class="bg-[#0F172A] px-5 py-4 flex items-center justify-between gap-3 shrink-0">
             <div class="flex items-center gap-3">
                 <div class="w-10 h-10 flex items-center justify-center bg-[#FF1414] border-2 border-black rounded-lg shrink-0 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
                     <mat-icon class="text-white !text-xl">warning</mat-icon>
@@ -79,7 +79,7 @@ export interface CalibrationAlertDialogData {
         </div>
 
         <!-- ── LISTA ───────────────────────────────────────────────────────── -->
-        <div class="overflow-y-auto bg-stone-100 dark:bg-slate-900" style="max-height: 320px;">
+        <div class="flex-1 min-h-0 overflow-y-auto bg-stone-100 dark:bg-slate-900" style="max-height: 320px;">
             <div class="px-4 py-3 flex flex-col gap-2.5">
 
                 <div *ngFor="let alert of data.alerts"
@@ -154,7 +154,7 @@ export class CalibrationAlertDialogComponent {
 
     viewAll(): void {
         this.dialogRef.close();
-        this.router.navigate(['/calibraciones']);
+        this.router.navigate(['/calibraciones'], { queryParams: { tab: 'alertas' } });
     }
 
     close(): void {

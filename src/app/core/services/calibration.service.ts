@@ -9,12 +9,14 @@ import {
 import { ErpApiService } from '../api/api.service';
 import { BlobStorageService } from './blob-storage.service';
 import { QrScanService } from './qr-scan.service';
+import { MovementService } from './movement.service';
 
 @Injectable({ providedIn: 'root' })
 export class CalibrationService {
     private _api = inject(ErpApiService);
     private _blob = inject(BlobStorageService);
     private _qrScan = inject(QrScanService);
+    private _movementSvc = inject(MovementService);
     private _calibrations: ReplaySubject<CalibrationRecord[]> = new ReplaySubject<CalibrationRecord[]>(1);
     private _laboratories: ReplaySubject<CalibrationLaboratory[]> = new ReplaySubject<CalibrationLaboratory[]>(1);
 
@@ -72,11 +74,10 @@ export class CalibrationService {
     // -----------------------------------------------------------------------------------------------------
 
     getCalibrations(filters?: any): Observable<CalibrationRecord[]> {
-        // ACTcalibrations.php->listarCalibrations() lee 'ordenacion'/'dir_ordenacion' (no
-        // 'sort'/'dir') — con las claves equivocadas el backend ignoraba el override y
-        // ordenaba por su default (id_calibration ASC), dejando fuera los registros
-        // recién enviados/retornados (id_calibration alto) del limit.
-        const params = { start: 0, limit: 50, ordenacion: 'send_date', dir_ordenacion: 'desc', ...filters };
+        // pXP (CTParametro) solo lee 'sort'/'dir': 'ordenacion'/'dir_ordenacion' se ignoraban y
+        // el ACT ordenaba id_calibration ASC, dejando fuera del limit los envíos más nuevos.
+        const { ordenacion, dir_ordenacion, ...rest } = { ordenacion: 'send_date', dir_ordenacion: 'desc', ...filters };
+        const params = { start: 0, limit: 50, ...rest, sort: ordenacion, dir: dir_ordenacion };
         return from(this._api.post('herramientas/calibrations/listCalibrations', params)).pipe(
             switchMap((response: any) => {
                 const calibrations = this._normalizeResponse(response);
@@ -105,13 +106,12 @@ export class CalibrationService {
     }
 
     getToolCalibrationHistory(toolId: string): Observable<CalibrationRecord[]> {
-        // El parámetro suelto tool_id NO es procesado por ACTcalibrations: sin el
-        // filtro explícito, el endpoint devolvía las últimas calibraciones de TODAS
-        // las herramientas y el historial mostraba registros ajenos.
+        // ACTcalibrations solo lee 'filtro_adicional' (ni tool_id ni 'filtro'): sin él devolvía
+        // las calibraciones de TODAS las herramientas y el historial mostraba registros ajenos.
         const idNum = Number(toolId) || 0;
         return from(this._api.post('herramientas/calibrations/listCalibrations', {
-            start: 0, limit: 100, ordenacion: 'id_calibration', dir_ordenacion: 'desc',
-            filtro: `cls.tool_id = ${idNum}`,
+            start: 0, limit: 100, sort: 'id_calibration', dir: 'desc',
+            filtro_adicional: `cls.tool_id = ${idNum}`,
         })).pipe(
             switchMap((response: any) => of(this._normalizeResponse(response) as CalibrationRecord[])),
             catchError((error) => { console.error('Error en getToolCalibrationHistory:', error); return of([]); })
@@ -267,7 +267,7 @@ export class CalibrationService {
     getToolImages(idTool: number): Observable<string[]> {
         const escaped = String(idTool).replace(/[^\d]/g, '');
         return from(this._api.postRaw('herramientas/tools/listarTools', {
-            start: 0, limit: 1, ordenacion: 'id_tool', dir_ordenacion: 'asc',
+            start: 0, limit: 1, sort: 'id_tool', dir: 'asc',
             filtro_adicional: `id_tool = ${escaped}`,
         })).pipe(
             map((resp: any) => {
@@ -308,8 +308,10 @@ export class CalibrationService {
     // @ PXP Backend v3: Dashboard y Alertas
     // -----------------------------------------------------------------------------------------------------
 
+    // Hasta 5000: con orden ascendente un límite corto deja fuera a las que vencen pronto
+    // (salen primero las vencidas hace tiempo). pXP lee sort/dir, no ordenacion/dir_ordenacion.
     getCalibrationAlertsPxp(filters?: any): Observable<PxpCalibrationAlert[]> {
-        const params = { start: 0, limit: 100, ordenacion: 'next_calibration_date', dir_ordenacion: 'asc', ...filters };
+        const params = { start: 0, limit: 5000, sort: 'next_calibration_date', dir: 'asc', ...filters };
         return from(this._api.post('herramientas/calibrations/getCalibrationAlerts', params)).pipe(
             switchMap((response: any) => {
                 const alerts = this._normalizeResponse(response);
@@ -351,7 +353,7 @@ export class CalibrationService {
     // -----------------------------------------------------------------------------------------------------
 
     getActiveLaboratoriesPxp(tipo_servicio?: string): Observable<any[]> {
-        const params: any = { start: 0, limit: 500, ordenacion: 'name', dir_ordenacion: 'asc' };
+        const params: any = { start: 0, limit: 500, sort: 'name', dir: 'asc' };
         if (tipo_servicio) params.tipo_servicio = tipo_servicio;
         return from(this._api.post('herramientas/calibrations/listActiveLaboratories', params)).pipe(
             switchMap((response: any) => {
@@ -573,18 +575,21 @@ export class CalibrationService {
     }
 
     // MGH-111 — Herramientas y equipos enviados a calibración (Consultoría y Auditoría).
-    generarPdfEnviadasCalibracionForm(): Observable<{ pdf_base64: string; nombre_archivo: string }> {
-        return this._pdfReporte('herramientas/reportes/generarPDFEnviadasCalibracionForm', 'enviadas_calibracion.pdf');
+    generarPdfEnviadasCalibracionForm(generadoPor = ''): Observable<{ pdf_base64: string; nombre_archivo: string }> {
+        return this._pdfReporte('herramientas/reportes/generarPDFEnviadasCalibracionForm', 'enviadas_calibracion.pdf',
+            { generado_por: generadoPor });
     }
 
     // MGH-104 — Próximas a vencer por días de holgura (Centro de Control).
-    generarPdfVencerHolgura(diasHolgura = 60): Observable<{ pdf_base64: string; nombre_archivo: string }> {
-        return this._pdfReporte('herramientas/reportes/generarPDFVencerHolgura', 'vencer_calibracion.pdf', { dias_holgura: diasHolgura });
+    generarPdfVencerHolgura(diasHolgura = 60, generadoPor = ''): Observable<{ pdf_base64: string; nombre_archivo: string }> {
+        return this._pdfReporte('herramientas/reportes/generarPDFVencerHolgura', 'vencer_calibracion.pdf',
+            { dias_holgura: diasHolgura, generado_por: generadoPor });
     }
 
-    // MGH-123 — Reporte mensual de próximas a vencer, por período en días (Centro de Control).
-    generarPdfVencerMensual(periodoDias = 30): Observable<{ pdf_base64: string; nombre_archivo: string }> {
-        return this._pdfReporte('herramientas/reportes/generarPDFVencerMensual', 'vencer_mensual.pdf', { periodo_dias: periodoDias });
+    // MGH-123 — Reporte mensual de próximas a vencer; periodo = 'YYYY-MM' (Centro de Control).
+    generarPdfVencerMensual(periodo = '', generadoPor = ''): Observable<{ pdf_base64: string; nombre_archivo: string }> {
+        return this._pdfReporte('herramientas/reportes/generarPDFVencerMensual', 'vencer_mensual.pdf',
+            { periodo, generado_por: generadoPor });
     }
 
     // R-AUD-01 — Registro Histórico de Auditoría Técnica (Consulta y Auditoría / Servicios de
@@ -596,13 +601,25 @@ export class CalibrationService {
 
     // MGH-102 — Listado de herramientas sujetas a calibración / alertas de vencimiento
     // (Centro de Control, botón Imprimir). range: all|expired|4d|7d|15d|30d|90d|in_lab.
-    generarPdfAlertasCalibracion(range = 'all'): Observable<{ pdf_base64: string; nombre_archivo: string }> {
-        return this._pdfReporte('herramientas/reportes/generarPDFAlertasCalibracion', 'alertas_calibracion.pdf', { range });
+    generarPdfAlertasCalibracion(range = 'all', generadoPor = ''): Observable<{ pdf_base64: string; nombre_archivo: string }> {
+        return this._pdfReporte('herramientas/reportes/generarPDFAlertasCalibracion', 'alertas_calibracion.pdf',
+            { range, generado_por: generadoPor });
     }
 
-    abrirPdf(pdfBase64: string, filename: string = 'documento.pdf'): void {
+    /** Reserva la pestaña del PDF dentro del click (ver MovementService.preAbrirVentanaPdf). */
+    preAbrirVentanaPdf(): Window | null { return this._movementSvc.preAbrirVentanaPdf(); }
+
+    /** `ventana` = pestaña reservada con preAbrirVentanaPdf() dentro del click.
+     *  Un PDF que llega tras un request ya no está en el gesto: sin ventana reservada el
+     *  bloqueador lo cortaba en silencio; ahora cae a descarga. */
+    abrirPdf(pdfBase64: string, filename: string = 'documento.pdf', ventana?: Window | null): void {
         if (!pdfBase64) {
             console.error('No se recibió contenido PDF/HTML');
+            try { ventana?.close(); } catch { /* noop */ }
+            return;
+        }
+        if (!filename.toLowerCase().endsWith('.html')) {
+            this._movementSvc.abrirPdfNota(pdfBase64, filename, ventana);
             return;
         }
         try {
@@ -625,31 +642,35 @@ export class CalibrationService {
         }
     }
 
-    generarYVerPdfEnvio(id_calibration: number): void {
+    generarYVerPdfEnvio(id_calibration: number, ventana?: Window | null): void {
         this.generarPdfEnvioCalibracion(id_calibration).subscribe({
             next: (result) => {
                 if (result?.pdf_base64) {
-                    this.abrirPdf(result.pdf_base64, result.nombre_archivo);
+                    this.abrirPdf(result.pdf_base64, result.nombre_archivo, ventana);
                 } else {
+                    try { ventana?.close(); } catch { /* noop */ }
                     alert('No se recibió contenido PDF válido');
                 }
             },
             error: (error) => {
+                try { ventana?.close(); } catch { /* noop */ }
                 alert('Error al generar el PDF de envío: ' + (error.message || 'Error desconocido'));
             }
         });
     }
 
-    generarYVerPdfRetorno(id_calibration: number): void {
+    generarYVerPdfRetorno(id_calibration: number, ventana?: Window | null): void {
         this.generarPdfRetornoCalibracion(id_calibration).subscribe({
             next: (result) => {
                 if (result?.pdf_base64) {
-                    this.abrirPdf(result.pdf_base64, result.nombre_archivo);
+                    this.abrirPdf(result.pdf_base64, result.nombre_archivo, ventana);
                 } else {
+                    try { ventana?.close(); } catch { /* noop */ }
                     alert('No se recibió contenido PDF válido');
                 }
             },
             error: (error) => {
+                try { ventana?.close(); } catch { /* noop */ }
                 alert('Error al generar el PDF de retorno: ' + (error.message || 'Error desconocido'));
             }
         });

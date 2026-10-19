@@ -103,12 +103,12 @@
     </div>
 
     <!-- PIE -->
-    <div class="border-t-2 border-black bg-stone-200 dark:bg-slate-800 px-4 py-2.5 flex justify-between items-center shrink-0">
-        <div class="flex items-center gap-1.5">
+    <div class="border-t-2 border-black bg-stone-200 dark:bg-slate-800 px-4 py-2.5 flex flex-wrap gap-y-2 justify-between items-center shrink-0">
+        <div class="flex items-center flex-wrap gap-1.5">
             <mat-icon class="!text-xs text-stone-400">lock</mat-icon>
             <span class="text-[8px] font-black uppercase tracking-widest text-stone-500">Solo lectura</span>
         </div>
-        <div class="flex items-center gap-2">
+        <div class="flex items-center flex-wrap gap-2">
             <button type="button" (click)="cerrar()"
                     class="px-3 py-1.5 bg-[#FF1414] text-white font-black text-[9px] border-2 border-black rounded-lg shadow-[2px_2px_0_#000] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all uppercase">
                 Cerrar

@@ -1,4 +1,4 @@
-<div class="bg-stone-100 dark:bg-slate-900 border-2 border-black flex flex-col w-full rounded-2xl overflow-hidden">
+<div class="bg-stone-100 dark:bg-slate-900 border-2 border-black flex flex-col w-full max-h-[90dvh] rounded-2xl overflow-hidden">
 
     <!-- CABECERA -->
     <div class="bg-[#0F172A] px-5 py-2.5 flex items-center gap-3 shrink-0 select-none"
@@ -19,7 +19,7 @@
     </div>
 
     <!-- FORMULARIO -->
-    <form [formGroup]="proveedorForm" class="px-5 py-4 grid grid-cols-1 md:grid-cols-2 gap-x-5 gap-y-3">
+    <form [formGroup]="proveedorForm" class="flex-1 min-h-0 overflow-y-auto px-5 py-4 grid grid-cols-1 md:grid-cols-2 gap-x-5 gap-y-3">
 
         <!-- ═══ COLUMNA IZQUIERDA · Identificación ═══ -->
         <div class="flex flex-col gap-2.5">
@@ -178,7 +178,7 @@
     </form>
 
     <!-- PIE -->
-    <div class="border-t-2 border-black bg-stone-200 dark:bg-slate-800 px-4 py-2 flex justify-between items-center gap-2 shrink-0">
+    <div class="border-t-2 border-black bg-stone-200 dark:bg-slate-800 px-4 py-2 flex flex-wrap gap-y-2 justify-between items-center gap-2 shrink-0">
         <button type="button" (click)="onCancel()"
                 class="px-4 py-1.5 bg-[#FF1414] text-white font-black text-[10px] border-2 border-black rounded-xl shadow-[2px_2px_0_#000] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all uppercase">
             Cancelar

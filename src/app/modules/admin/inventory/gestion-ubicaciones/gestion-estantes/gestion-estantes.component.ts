@@ -1,3 +1,4 @@
+import { PaginadorCompactoComponent } from 'app/shared/components/paginador-compacto/paginador-compacto.component';
 import { Component, EventEmitter, Input, OnInit, OnChanges, OnDestroy, SimpleChanges, Output, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
@@ -21,7 +22,7 @@ import { HasPermissionDirective } from '../../../../../core/directives/has-permi
 @Component({
     selector: 'app-gestion-estantes',
     standalone: true,
-    imports: [
+    imports: [PaginadorCompactoComponent, 
         CommonModule,
         ReactiveFormsModule,
         MatDialogModule,

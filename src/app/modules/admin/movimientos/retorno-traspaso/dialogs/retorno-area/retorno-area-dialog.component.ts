@@ -12,7 +12,7 @@ import { MovementService } from '../../../../../../core/services/movement.servic
 import { localDateStr } from '../../../../../../core/utils/date.utils';
 import {
     MovimientoActivo, TraspasoItem, Funcionario, CondRetorno,
-    CONDICIONES_RETORNO, isItemValid, getItemErrors
+    CONDICIONES_RETORNO, isItemValid, getItemErrors, pendienteRetorno
 } from '../../retorno-traspaso.types';
 
 export interface RetornoAreaDialogData {
@@ -145,12 +145,12 @@ export class RetornoAreaDialogComponent implements OnInit, OnDestroy {
             takeUntil(this._unsub$)
         ).subscribe({
             next: (items: any[]) => {
-                this.retornoAreaItems = items.map((i: any) => ({
+                this.retornoAreaItems = items.filter((i: any) => pendienteRetorno(i) > 0).map((i: any) => ({
                     id: String(i.id_movement_item || i.id || ''),
                     filaObs: 0, toolId: String(i.tool_id || ''),
                     codigo: i.code || i.codigo || '', descripcion: i.name || i.description || '',
                     pn: i.part_number || '', sn: i.serial_number || '', marca: i.brand || '',
-                    cantidadEnviada: Number(i.quantity) || 1, cantidadRetorna: Number(i.quantity) || 1,
+                    cantidadEnviada: pendienteRetorno(i), cantidadRetorna: pendienteRetorno(i),
                     fechaEnvio: mov.send_date, nroNotaSalida: mov.movement_number,
                     ubicacionOrigen: mov.source_warehouse_name, diasFuera: 0,
                     selected: false, expanded: false, condicion: '', observacionItem: ''
@@ -218,9 +218,9 @@ export class RetornoAreaDialogComponent implements OnInit, OnDestroy {
             type:                     'RETORNO_TRASPASO',
             date:                     form.fechaRetorno,
             time:                     new Date().toTimeString().slice(0, 8),
-            // "Devuelto por" del acta = el área/almacén que devuelve (no hay persona individual
-            // clara aquí), para que la nota no repita el mismo nombre en DEVUELTO POR y RECIBIDO POR.
-            requested_by_name:        mov.destination_warehouse_name || form.recibeAlmacen || '',
+            // "Devuelto por" del acta = quien recibió el traspaso en el área (el área sale como ORIGEN),
+            // para que la nota no repita el mismo nombre en DEVUELTO POR y RECIBIDO POR.
+            requested_by_name:        mov.received_by_name || mov.destination_warehouse_name || form.recibeAlmacen || '',
             responsible_person:       form.recibeAlmacen || '',
             document_number:          form.nroDocumento  || '',
             destination_warehouse_id: mov.source_warehouse_id,
@@ -236,7 +236,7 @@ export class RetornoAreaDialogComponent implements OnInit, OnDestroy {
         ).subscribe({
             next: (res: any) => {
                 const nro = res?.movement_number || '---';
-                this._showMsg(`Retorno registrado: ${nro}`, 'success');
+                this._showMsg(Number(res?.pendientes) > 0 ? (res?.mensaje || `Retorno parcial registrado: ${nro}`) : `Retorno registrado: ${nro}`, 'success');
                 // Acta de Retorno MGH — mismo reporte TCPDF compartido con Retorno
                 // de Base/Traspaso (RReporteRetornoNota ya soporta RETORNO_TRASPASO).
                 const idMov = Number(res?.id_movement);

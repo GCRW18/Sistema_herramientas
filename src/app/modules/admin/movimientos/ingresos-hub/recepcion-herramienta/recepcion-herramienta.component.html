@@ -31,7 +31,7 @@
             </button>
             <!-- Desplegable -->
             <div *ngIf="showHerDD"
-                 class="absolute z-[300] w-72 bg-white dark:bg-slate-800 border-2 border-black dark:border-slate-600 rounded-xl shadow-[4px_4px_0_#000] max-h-52 overflow-y-auto mt-1 top-full right-0 custom-scrollbar-ing divide-y divide-stone-100 dark:divide-slate-700">
+                 class="absolute z-[300] w-72 max-w-[calc(100vw-3rem)] bg-white dark:bg-slate-800 border-2 border-black dark:border-slate-600 rounded-xl shadow-[4px_4px_0_#000] max-h-52 overflow-y-auto mt-1 top-full right-0 custom-scrollbar-ing divide-y divide-stone-100 dark:divide-slate-700">
                 <div *ngFor="let tool of herSuggestions"
                      (mousedown)="seleccionarHerExistente(tool)"
                      class="px-3 py-2 hover:bg-stone-50 dark:hover:bg-slate-700 cursor-pointer transition-colors">
@@ -44,7 +44,7 @@
     </div>
 
     <!-- Cuerpo: dos columnas (foto izq. · campos der.) -->
-    <form [formGroup]="herramientaForm" class="flex-1 flex flex-col sm:flex-row overflow-hidden min-h-0">
+    <form [formGroup]="herramientaForm" class="dlg-cuerpo flex-1 flex flex-col sm:flex-row overflow-y-auto sm:overflow-hidden min-h-0">
 
         <!-- ── COLUMNA IZQUIERDA: Foto ── -->
         <div class="sm:w-2/5 shrink-0 flex flex-col items-center justify-center px-4 py-4">
@@ -71,10 +71,12 @@
                 <input #imgHerramientaInput type="file" accept="image/jpeg,image/png,image/webp" class="hidden"
                        (change)="onHerramientaImageSelected($event)">
             </div>
+            <app-botones-foto class="block w-full max-w-[260px]" accept="image/jpeg,image/png,image/webp"
+                              (seleccion)="onHerramientaImageSelected($event)"></app-botones-foto>
         </div>
 
         <!-- ── COLUMNA DERECHA: Campos ── -->
-        <div class="flex-1 overflow-y-auto custom-scrollbar-ing px-4 py-3 flex flex-col gap-2">
+        <div class="dlg-panel sm:flex-1 sm:overflow-y-auto custom-scrollbar-ing px-4 py-3 flex flex-col gap-2">
 
             <!-- Fila 1: Código BOA · P/N · S/N -->
             <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
@@ -223,10 +225,10 @@
                         </div>
 
                         <!-- Contenido: 3 columnas horizontales -->
-                        <div class="flex-1 min-h-0 overflow-hidden flex flex-col md:flex-row divide-y-2 md:divide-y-0 md:divide-x-2 divide-stone-200 dark:divide-slate-700">
+                        <div class="ubic-cuerpo flex-1 min-h-0 overflow-y-auto md:overflow-hidden flex flex-col md:flex-row divide-y-2 md:divide-y-0 md:divide-x-2 divide-stone-200 dark:divide-slate-700">
 
                         <!-- ─── COLUMNA 1: ALMACÉN ─── -->
-                        <div class="md:w-1/3 min-h-0 flex flex-col overflow-y-auto custom-scrollbar-ing px-3 py-3">
+                        <div class="ubic-col md:w-1/3 shrink-0 md:shrink md:min-h-0 flex flex-col md:overflow-y-auto custom-scrollbar-ing px-3 py-3">
                             <div class="flex items-center gap-2 mb-2">
                                 <span class="w-5 h-5 rounded border-2 flex items-center justify-center text-[9px] font-black shrink-0 transition-all"
                                       [ngClass]="ubSelectedWarehouse ? 'border-black bg-black text-white' : 'border-stone-300 bg-white dark:bg-slate-800 text-stone-400'">
@@ -283,7 +285,7 @@
                         </div>
 
                         <!-- ─── COLUMNA 2: ESTANTE ─── -->
-                        <div class="md:w-1/3 min-h-0 flex flex-col overflow-y-auto custom-scrollbar-ing px-3 py-3">
+                        <div class="ubic-col md:w-1/3 shrink-0 md:shrink md:min-h-0 flex flex-col md:overflow-y-auto custom-scrollbar-ing px-3 py-3">
                             <div class="flex items-center gap-2 mb-2 shrink-0">
                                 <span class="w-5 h-5 rounded border-2 flex items-center justify-center text-[9px] font-black shrink-0 transition-all"
                                       [ngClass]="ubSelectedRack ? 'border-black bg-black text-white' : 'border-stone-300 bg-white dark:bg-slate-800 text-stone-400'">
@@ -322,7 +324,7 @@
                         </div>
 
                         <!-- ─── COLUMNA 3: NIVEL ─── -->
-                        <div class="md:w-1/3 min-h-0 flex flex-col overflow-y-auto custom-scrollbar-ing px-3 py-3">
+                        <div class="ubic-col md:w-1/3 shrink-0 md:shrink md:min-h-0 flex flex-col md:overflow-y-auto custom-scrollbar-ing px-3 py-3">
                             <div class="flex items-center gap-2 mb-2 shrink-0">
                                 <span class="w-5 h-5 rounded border-2 flex items-center justify-center text-[9px] font-black shrink-0 transition-all"
                                       [ngClass]="ubSelectedLevel ? 'border-black bg-black text-white' : 'border-stone-300 bg-white dark:bg-slate-800 text-stone-400'">
@@ -408,12 +410,12 @@
     </form>
 
     <!-- Pie -->
-    <div class="border-t-2 border-black bg-stone-200 dark:bg-slate-800 px-4 py-2 flex justify-between items-center gap-2 shrink-0">
+    <div class="border-t-2 border-black bg-stone-200 dark:bg-slate-800 px-4 py-2 flex flex-wrap gap-y-2 justify-between items-center gap-2 shrink-0">
         <button type="button" (click)="cerrarModalHerramienta()"
                 class="flex items-center gap-1 px-3 py-1.5 bg-[#FF1414] text-white font-black text-[10px] border-2 border-black rounded-lg shadow-[2px_2px_0_#000] hover:shadow-none hover:translate-x-[1px] hover:translate-y-[1px] transition-all uppercase">
             <mat-icon class="!text-xs">close</mat-icon>Cancelar
         </button>
-        <div class="flex items-center gap-2">
+        <div class="flex items-center flex-wrap gap-2">
             <span class="text-[9px] font-bold text-stone-400 dark:text-slate-400 uppercase hidden sm:block">
                 {{ herramientaForm.value.estado }} · {{ herramientaForm.value.cantidad }} {{ herramientaForm.value.unidadMedida }}
             </span>

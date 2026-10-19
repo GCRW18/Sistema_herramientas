@@ -1,5 +1,6 @@
 import { Component, inject, signal, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { BotonesFotoComponent } from 'app/shared/components/botones-foto/botones-foto.component';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { MatInputModule } from '@angular/material/input';
@@ -37,6 +38,7 @@ interface HerramientaOption {
     selector: 'app-herramienta-a-baja',
     standalone: true,
     imports: [
+        BotonesFotoComponent,
         CommonModule,
         MatIconModule,
         MatButtonModule,
@@ -164,8 +166,8 @@ export class HerramientaABajaComponent implements OnInit, OnDestroy {
      *  guardas de he.ft_decommissions_ime). */
     private _motivoNoBaja(status: string): string | null {
         switch (String(status || '').toLowerCase()) {
-            case 'decommissioned':
-            case 'baja':           return 'ya está dada de baja';
+            // 'decommissioned' pasa: puede venir IRREPARABLE de una devolución sin registro de baja;
+            // si ya tiene una baja registrada lo rechaza he.ft_decommissions_ime.
             case 'lost':           return 'está registrada como perdida';
             case 'in_use':
             case 'loaned':         return 'está prestada — registre primero su devolución';
@@ -269,8 +271,8 @@ export class HerramientaABajaComponent implements OnInit, OnDestroy {
         const file = (event.target as HTMLInputElement).files?.[0];
         if (!file) return;
 
-        if (file.size > 8 * 1024 * 1024) {
-            this.showMessage('La imagen no debe superar 8MB', 'error');
+        if (file.size > 20 * 1024 * 1024) {
+            this.showMessage('La imagen no debe superar 20MB', 'error');
             return;
         }
 

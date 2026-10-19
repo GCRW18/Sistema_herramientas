@@ -8,15 +8,15 @@
      style="box-shadow:6px 6px 0 #000; height:min(820px,92vh)">
 
     <!-- Cabecera -->
-    <div class="bg-[#0F172A] px-4 py-3 flex items-center gap-3 shrink-0">
+    <div class="bg-[#0F172A] px-4 py-3 flex items-center flex-wrap gap-x-3 gap-y-2 shrink-0">
         <div class="w-8 h-8 rounded bg-amber-400 border-2 border-black flex items-center justify-center shadow-[2px_2px_0_#fbbf24] shrink-0">
             <mat-icon class="!text-base text-black">inventory_2</mat-icon>
         </div>
-        <div>
+        <div class="flex-1 min-w-0">
             <p class="text-[9px] text-slate-400 font-bold uppercase tracking-[0.15em] leading-none mb-1">Calibraciones — Borrador compartido</p>
-            <h2 class="text-sm text-white font-black uppercase tracking-tight leading-none">Borrador de Envío a Calibración</h2>
+            <h2 class="text-sm text-white font-black uppercase tracking-tight leading-tight">Borrador de Envío a Calibración</h2>
         </div>
-        <div class="ml-auto flex items-center gap-2 shrink-0">
+        <div class="ml-auto flex items-center flex-wrap justify-end gap-2">
             <span *ngIf="draftLoading() || savingCount() > 0"
                   class="text-[9px] font-black text-amber-400 flex items-center gap-1">
                 <div class="w-3 h-3 border-2 border-amber-400 border-t-transparent rounded-full animate-spin"></div>
@@ -45,10 +45,10 @@
     </div>
 
     <!-- Cuerpo: IZQUIERDA (datos comunes) / DERECHA (borrador) -->
-    <div class="flex flex-col sm:flex-row flex-1 overflow-hidden min-h-0">
+    <div class="dlg-cuerpo flex flex-col sm:flex-row flex-1 overflow-y-auto sm:overflow-hidden min-h-0">
 
         <!-- IZQUIERDA: datos comunes de la nota -->
-        <div class="sm:basis-[340px] sm:max-w-[380px] shrink-0 overflow-y-auto custom-scrollbar border-b-2 sm:border-b-0 sm:border-r-2 border-black/20 dark:border-slate-600">
+        <div class="dlg-panel sm:basis-[340px] sm:max-w-[380px] shrink-0 sm:overflow-y-auto custom-scrollbar border-b-2 sm:border-b-0 sm:border-r-2 border-black/20 dark:border-slate-600">
             <div class="px-4 py-3 flex flex-col gap-3">
 
                 <div class="flex items-center gap-1.5">
@@ -114,7 +114,7 @@
         </div>
 
         <!-- DERECHA: escaneo + borrador -->
-        <div class="flex-1 min-h-0 flex flex-col overflow-hidden">
+        <div class="dlg-lista flex-1 min-h-[24rem] sm:min-h-0 flex flex-col overflow-hidden">
 
             <!-- Escanear / Añadir Herramienta -->
             <div class="border-b-2 border-black/20 dark:border-slate-600 px-4 pt-3 pb-2.5 flex flex-col gap-2 shrink-0">
@@ -331,8 +331,8 @@
     </div>
 
     <!-- Pie -->
-    <div class="border-t-2 border-black bg-stone-200 dark:bg-slate-800 px-4 py-2 flex items-center justify-between shrink-0 gap-2">
-        <div class="flex items-center gap-2 shrink-0">
+    <div class="border-t-2 border-black bg-stone-200 dark:bg-slate-800 px-4 py-2 flex items-center flex-wrap gap-y-2 justify-between shrink-0 gap-2">
+        <div class="flex items-center flex-wrap gap-2">
             <button type="button" (click)="cerrar()" [disabled]="confirming()"
                     class="flex items-center gap-1 px-3 py-1.5 bg-white dark:bg-slate-700 text-black dark:text-white font-black text-[10px] uppercase border-2 border-black rounded-lg shadow-[2px_2px_0_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all disabled:opacity-40">
                 <mat-icon class="!text-xs">close</mat-icon>
@@ -344,7 +344,7 @@
                 Descartar
             </button>
         </div>
-        <div class="flex items-center gap-2 shrink-0 min-w-0">
+        <div class="flex items-center flex-wrap justify-end gap-2 min-w-0 ml-auto">
             <span class="text-[10px] font-black text-black dark:text-white shrink-0 truncate max-w-[190px]">
                 <span *ngIf="toolList.length === 0">Agregue herramientas al borrador</span>
                 <ng-container *ngIf="toolList.length > 0 && !confirming()">

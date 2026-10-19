@@ -64,7 +64,7 @@ export class FormDetalleComponent {
             'completed': 'COMPLETADO',
             'returned': 'RETORNADO',
             'rejected': 'RECHAZADO',
-            'cancelled': 'CANCELADO'
+            'cancelled': 'ANULADO'
         };
         return labels[status] ?? status.toUpperCase();
     }
@@ -99,19 +99,21 @@ export class FormDetalleComponent {
         }
 
         this.isPrinting.set(true);
+        // Pestaña reservada en el click: el PDF llega después del request.
+        const win = this.calibrationService.preAbrirVentanaPdf();
 
         if (this.row.tipo_registro === 'calibracion') {
-            // Para calibración, usar PDF del backend
-            this.calibrationService.generarYVerPdfEnvio(this.row.id);
+            this.calibrationService.generarYVerPdfEnvio(this.row.id, win);
             setTimeout(() => {
                 this.isPrinting.set(false);
             }, 1500);
         } else if (this.row.tipo_registro === 'mantenimiento') {
-            this.maintenanceService.generarYVerPdfEnvioMantenimiento(this.row.id);
+            this.maintenanceService.generarYVerPdfEnvioMantenimiento(this.row.id, win);
             setTimeout(() => {
                 this.isPrinting.set(false);
             }, 1500);
         } else {
+            try { win?.close(); } catch { /* noop */ }
             this.imprimirDetalleFallback();
             this.isPrinting.set(false);
         }
@@ -137,7 +139,7 @@ export class FormDetalleComponent {
         }
 
         this.isPrinting.set(true);
-        this.calibrationService.generarYVerPdfRetorno(this.row.id);
+        this.calibrationService.generarYVerPdfRetorno(this.row.id, this.calibrationService.preAbrirVentanaPdf());
 
         setTimeout(() => {
             this.isPrinting.set(false);
@@ -202,7 +204,7 @@ body{font-family:Arial,sans-serif;font-size:11px;padding:20px}
         <div class="field"><span class="label">Estado</span><span class="value" style="color:${this.row.status === 'completed' || this.row.status === 'returned' ? '#16a34a' : '#d97706'}">${this.getStatusLabel(this.row.status)}</span></div>
         ${this.row.certificate_number ? `<div class="field"><span class="label">N° Certificado</span><span class="value cert">${this.row.certificate_number}</span></div>` : ''}
         ${this.row.next_calibration_date ? `<div class="field"><span class="label">Próxima Calibración</span><span class="value">${this.formatDate(this.row.next_calibration_date)}</span></div>` : ''}
-        ${this.row.cost > 0 ? `<div class="field"><span class="label">Costo</span><span class="value">$${this.row.cost.toFixed(2)}</span></div>` : ''}
+        ${this.row.cost > 0 ? `<div class="field"><span class="label">Costo</span><span class="value">Bs ${Number(this.row.cost).toFixed(2)}</span></div>` : ''}
     </div>
     ${this.row.notes ? `<div class="section-body" style="grid-column:1/-1;border-top:1px solid #e2e8f0;margin-top:4px;padding-top:8px"><div class="field"><span class="label">Observaciones</span><div class="value" style="font-size:10px;font-weight:normal">${this.row.notes}</div></div></div>` : ''}
     ${this.row.result ? `<div class="section-body"><div class="field" style="grid-column:1/-1"><span class="label">Resultado</span><div class="value" style="font-size:10px;font-weight:normal">${this.row.result}</div></div></div>` : ''}

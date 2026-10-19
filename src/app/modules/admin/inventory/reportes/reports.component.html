@@ -7,7 +7,8 @@
   <div class="flex-1 flex flex-col p-3 sm:p-4 gap-3 overflow-hidden relative z-10">
 
     <!-- ══════════════════════════ CABECERA ══════════════════════════ -->
-    <div class="flex items-center gap-3 shrink-0">
+    <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 shrink-0">
+    <div class="flex items-center gap-3 shrink-0 min-w-0">
       <div class="flex items-center justify-center w-10 h-10 bg-white dark:bg-[#0F172AFF] border-[3px] border-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] rounded-xl shrink-0">
         <mat-icon class="text-black dark:text-[#FFC501FF] !text-base">bar_chart</mat-icon>
       </div>
@@ -18,6 +19,64 @@
         <p class="text-[10px] font-bold bg-[#FFC501FF] text-black px-2 py-0.5 inline-block border-2 border-black rounded uppercase tracking-wider mt-0.5">
           Inventario · Calibración · Préstamos · Kits · Misceláneos
         </p>
+      </div>
+    </div>
+
+      <!-- Controles: a la derecha del título (búsqueda, contador, PDF, recargar) -->
+      <div class="flex flex-wrap items-center gap-2 lg:justify-end">
+        <!-- Buscador -->
+        <div class="relative w-full sm:w-60">
+          <input type="text"
+                 [ngModel]="searchTerm()" (ngModelChange)="searchTerm.set($event)"
+                 placeholder="Buscar en los datos..."
+                 class="h-9 pl-8 pr-7 w-full bg-white dark:bg-[#0F172AFF] text-black dark:text-white
+                        border-[2px] border-black rounded-lg font-bold text-xs
+                        focus:outline-none focus:shadow-[2px_2px_0px_0px_#000] focus:-translate-y-[1px] transition-all
+                        placeholder:font-normal placeholder:normal-case placeholder:text-gray-400" />
+          <mat-icon class="absolute left-2 top-2 text-black dark:text-white !text-sm pointer-events-none">search</mat-icon>
+          <button *ngIf="searchTerm()" (click)="searchTerm.set('')"
+                  class="absolute right-2 top-2 text-gray-400 hover:text-black dark:hover:text-white transition-colors">
+            <mat-icon class="!text-sm">close</mat-icon>
+          </button>
+        </div>
+
+        <!-- Contador -->
+        <span class="text-[10px] font-black uppercase tracking-wider text-black dark:text-white shrink-0 hidden sm:inline">
+          {{ filteredRows().length }} reg.
+        </span>
+
+        <!-- Botón Generar Reporte (PDF real, TCPDF backend) -->
+        <button *appHasPermission="'inv_reportes.generate'" (click)="generarReporte()"
+                [disabled]="loading() || generando() || rows().length === 0"
+                matTooltip="Generar el PDF del reporte (se abre en el visor: imprimir o guardar)"
+                class="flex items-center gap-1.5 h-9 px-3
+                       bg-[#0F172AFF] text-[#FFC501FF]
+                       font-black text-[10px] uppercase
+                       border-[2px] border-black rounded-lg
+                       shadow-[2px_2px_0px_0px_#000]
+                       hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none
+                       active:translate-x-[2px] active:translate-y-[2px] active:shadow-none
+                       disabled:opacity-50 disabled:cursor-not-allowed
+                       disabled:translate-x-0 disabled:translate-y-0 disabled:shadow-none
+                       transition-all shrink-0">
+          <mat-icon class="!text-sm !w-4 !h-4" [class.spin]="generando()">{{ generando() ? 'progress_activity' : 'picture_as_pdf' }}</mat-icon>
+          <span class="hidden sm:inline">{{ generando() ? 'Generando…' : 'Generar Reporte' }}</span>
+        </button>
+
+        <!-- Botón Refresh datos -->
+        <button (click)="loadData()"
+                [disabled]="loading()"
+                matTooltip="Recargar datos"
+                class="flex items-center justify-center w-9 h-9
+                       bg-white dark:bg-[#0F172AFF] text-black dark:text-white
+                       border-[2px] border-black rounded-lg
+                       shadow-[2px_2px_0px_0px_#000]
+                       hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none
+                       disabled:opacity-40 disabled:cursor-not-allowed
+                       transition-all shrink-0">
+          <mat-icon class="!text-sm !w-4 !h-4" [class.spin]="loading()">refresh</mat-icon>
+        </button>
+
       </div>
     </div>
 
@@ -57,64 +116,25 @@
           </ng-container>
         </div>
 
-        <!-- Toolbar: search + imprimir + refresh -->
-        <div class="flex items-center gap-2 px-3 sm:px-4 py-2
-                    bg-gray-50 dark:bg-slate-800/30 border-b-[2px] border-black shrink-0">
-
-          <!-- Buscador -->
-          <div class="relative flex-1 min-w-0">
-            <input type="text"
-                   [ngModel]="searchTerm()" (ngModelChange)="searchTerm.set($event)"
-                   placeholder="Buscar en los datos..."
-                   class="h-8 pl-8 pr-7 w-full bg-white dark:bg-slate-700 text-black dark:text-white
-                          border-[2px] border-black rounded-lg font-bold text-xs
-                          focus:outline-none focus:shadow-[2px_2px_0px_0px_#000] focus:-translate-y-[1px] transition-all
-                          placeholder:font-normal placeholder:normal-case placeholder:text-gray-400" />
-            <mat-icon class="absolute left-2 top-1.5 text-black dark:text-white !text-sm pointer-events-none">search</mat-icon>
-            <button *ngIf="searchTerm()" (click)="searchTerm.set('')"
-                    class="absolute right-2 top-1.5 text-gray-400 hover:text-black dark:hover:text-white transition-colors">
-              <mat-icon class="!text-sm">close</mat-icon>
-            </button>
+        <!-- Filtros del sub-reporte (los mismos se aplican al PDF) -->
+        <div *ngIf="currentFiltros().length"
+             class="flex flex-wrap items-end gap-2 px-3 sm:px-4 py-2 bg-gray-50 dark:bg-slate-800/30 border-b-[2px] border-black shrink-0">
+          <div *ngFor="let f of currentFiltros()" class="flex flex-col">
+            <label class="text-[9px] font-black uppercase tracking-wider text-stone-400 dark:text-slate-400 mb-0.5">{{ f.label }}</label>
+            <select *ngIf="f.type === 'select'" [ngModel]="filtros()[f.key]" (ngModelChange)="setFiltro(f.key, $event)"
+                    class="h-8 px-2 text-xs font-bold bg-white dark:bg-slate-700 text-black dark:text-white border-2 border-black rounded-lg outline-none cursor-pointer">
+              <option *ngFor="let o of opcionesDe(f)" [ngValue]="o.value">{{ o.label }}</option>
+            </select>
+            <input *ngIf="f.type === 'date'" type="date" [ngModel]="filtros()[f.key]" (change)="setFiltro(f.key, $any($event.target).value)"
+                   class="h-8 px-2 text-xs font-bold bg-white dark:bg-slate-700 text-black dark:text-white border-2 border-black rounded-lg outline-none cursor-pointer">
+            <input *ngIf="f.type === 'number'" type="number" min="1" [ngModel]="filtros()[f.key]" (change)="setFiltro(f.key, $any($event.target).value)"
+                   class="h-8 w-24 px-2 text-xs font-bold text-center bg-white dark:bg-slate-700 text-black dark:text-white border-2 border-black rounded-lg outline-none">
           </div>
-
-          <!-- Contador -->
-          <span class="text-[10px] font-black uppercase tracking-wider text-black dark:text-white shrink-0 hidden sm:inline">
-            {{ filteredRows().length }} reg.
-          </span>
-
-          <!-- Botón Generar Reporte (PDF real, TCPDF backend) -->
-          <button *appHasPermission="'inv_reportes.generate'" (click)="generarReporte()"
-                  [disabled]="loading() || generando() || rows().length === 0"
-                  matTooltip="Generar el PDF del reporte (se abre en el visor: imprimir o guardar)"
-                  class="flex items-center gap-1.5 h-8 px-3
-                         bg-[#0F172AFF] text-[#FFC501FF]
-                         font-black text-[10px] uppercase
-                         border-[2px] border-black rounded-lg
-                         shadow-[2px_2px_0px_0px_#000]
-                         hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none
-                         active:translate-x-[2px] active:translate-y-[2px] active:shadow-none
-                         disabled:opacity-50 disabled:cursor-not-allowed
-                         disabled:translate-x-0 disabled:translate-y-0 disabled:shadow-none
-                         transition-all shrink-0">
-            <mat-icon class="!text-sm !w-4 !h-4" [class.spin]="generando()">{{ generando() ? 'progress_activity' : 'picture_as_pdf' }}</mat-icon>
-            <span class="hidden sm:inline">{{ generando() ? 'Generando…' : 'Generar Reporte' }}</span>
+          <button (click)="limpiarFiltros()" matTooltip="Volver a los filtros iniciales"
+                  class="h-8 px-2.5 flex items-center gap-1 text-[10px] font-black uppercase bg-white dark:bg-slate-700 text-black dark:text-white border-2 border-black rounded-lg hover:bg-stone-100 dark:hover:bg-slate-600 transition-colors">
+            <mat-icon class="!text-sm !w-4 !h-4">filter_alt_off</mat-icon> Restablecer
           </button>
-
-          <!-- Botón Refresh datos -->
-          <button (click)="loadData()"
-                  [disabled]="loading()"
-                  matTooltip="Recargar datos"
-                  class="flex items-center justify-center w-8 h-8
-                         bg-white dark:bg-slate-700 text-black dark:text-white
-                         border-[2px] border-black rounded-lg
-                         shadow-[1px_1px_0px_0px_#000]
-                         hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none
-                         disabled:opacity-40 disabled:cursor-not-allowed
-                         transition-all shrink-0">
-            <mat-icon class="!text-sm !w-4 !h-4" [class.spin]="loading()">refresh</mat-icon>
-          </button>
-
-        </div><!-- /barra de herramientas -->
+        </div>
 
         <!-- ── CARGANDO ── -->
         <ng-container *ngIf="loading()">
@@ -164,19 +184,7 @@
                 &nbsp;· pág. {{ pageIndex() + 1 }}/{{ totalPages() }}
               </span>
             </span>
-            <div *ngIf="totalPages() > 1" class="flex items-center gap-1">
-              <button (click)="prevPage()" [disabled]="pageIndex() === 0"
-                      class="h-6 px-2 text-[10px] font-black uppercase bg-white dark:bg-slate-700 border-[2px] border-black rounded-lg
-                             shadow-[1px_1px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all
-                             disabled:opacity-40 disabled:cursor-not-allowed text-black dark:text-white">←</button>
-              <span class="h-6 px-2 text-[10px] font-black bg-[#0F172AFF] text-[#FFC501FF] border-[2px] border-black rounded-lg flex items-center">
-                {{ pageIndex() + 1 }}/{{ totalPages() }}
-              </span>
-              <button (click)="nextPage()" [disabled]="pageIndex() >= totalPages() - 1"
-                      class="h-6 px-2 text-[10px] font-black uppercase bg-white dark:bg-slate-700 border-[2px] border-black rounded-lg
-                             shadow-[1px_1px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all
-                             disabled:opacity-40 disabled:cursor-not-allowed text-black dark:text-white">→</button>
-            </div>
+
           </div>
 
           <!-- Tabla con scroll -->
@@ -219,7 +227,8 @@
                       <!-- INSIGNIA (estado, condición, etc.) -->
                       <ng-container *ngSwitchCase="'badge'">
                         <span *ngIf="row[col.key] != null && row[col.key] !== ''"
-                              class="px-1.5 py-0.5 text-[9px] font-black uppercase border-2 border-black rounded inline-flex items-center gap-1 text-black dark:text-white">
+                              class="px-1.5 py-0.5 text-[9px] font-black uppercase border-2 rounded inline-flex items-center gap-1 whitespace-nowrap text-black"
+                              [ngClass]="badgeClass(col, row[col.key])">
                           {{ badgeLabel(row[col.key]) }}
                         </span>
                         <span *ngIf="row[col.key] == null || row[col.key] === ''"
@@ -228,11 +237,11 @@
 
                       <!-- DAYS (días restantes de calibración, mora, etc.) -->
                       <ng-container *ngSwitchCase="'days'">
-                        <span *ngIf="row[col.key] != null"
+                        <span *ngIf="row[col.key] != null && row[col.key] !== ''"
                               class="text-xs font-black text-black dark:text-white">
                           {{ row[col.key] }}d
                         </span>
-                        <span *ngIf="row[col.key] == null"
+                        <span *ngIf="row[col.key] == null || row[col.key] === ''"
                               class="text-[10px] text-gray-400">—</span>
                       </ng-container>
 
@@ -245,24 +254,24 @@
 
                       <!-- BOOL -->
                       <ng-container *ngSwitchCase="'bool'">
-                        <mat-icon *ngIf="row[col.key] === true"
+                        <mat-icon *ngIf="esVerdadero(row[col.key])"
                                   class="!text-base text-black dark:text-white">check</mat-icon>
-                        <span *ngIf="row[col.key] !== true"
+                        <span *ngIf="!esVerdadero(row[col.key])"
                               class="text-[10px] text-gray-400">—</span>
                       </ng-container>
 
                       <!-- NUMBER -->
                       <ng-container *ngSwitchCase="'number'">
                         <span class="text-xs font-black text-black dark:text-white">
-                          {{ row[col.key] ?? '—' }}
+                          {{ texto(row[col.key]) }}
                         </span>
                       </ng-container>
 
                       <!-- TEXT (default) -->
                       <ng-container *ngSwitchDefault>
                         <span class="text-xs font-bold text-black dark:text-white"
-                              [title]="row[col.key]">
-                          {{ row[col.key] ?? '—' }}
+                              [title]="texto(row[col.key])">
+                          {{ texto(row[col.key]) }}
                         </span>
                       </ng-container>
 
@@ -275,27 +284,9 @@
             </table>
           </div><!-- /scroll de tabla -->
 
-          <!-- Pie de paginación -->
-          <div *ngIf="totalPages() > 1"
-               class="px-3 sm:px-4 py-2 bg-gray-100 dark:bg-slate-800 border-t-[2px] border-black
-                      flex items-center justify-between shrink-0 rounded-b-2xl gap-2">
-            <span class="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase hidden sm:inline">
-              {{ pageStart }}–{{ pageEnd }} de {{ filteredRows().length }} registros
-            </span>
-            <div class="flex items-center gap-1 mx-auto sm:mx-0">
-              <button (click)="prevPage()" [disabled]="pageIndex() === 0"
-                      class="h-6 px-2 text-[10px] font-black uppercase bg-white dark:bg-slate-700 border-[2px] border-black rounded-lg
-                             shadow-[1px_1px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all
-                             disabled:opacity-40 disabled:cursor-not-allowed text-black dark:text-white">← Ant.</button>
-              <span class="h-6 px-3 text-[10px] font-black bg-[#0F172AFF] text-[#FFC501FF] border-[2px] border-black rounded-lg flex items-center">
-                {{ pageIndex() + 1 }} / {{ totalPages() }}
-              </span>
-              <button (click)="nextPage()" [disabled]="pageIndex() >= totalPages() - 1"
-                      class="h-6 px-2 text-[10px] font-black uppercase bg-white dark:bg-slate-700 border-[2px] border-black rounded-lg
-                             shadow-[1px_1px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all
-                             disabled:opacity-40 disabled:cursor-not-allowed text-black dark:text-white">Sig. →</button>
-            </div>
-          </div>
+          <!-- Paginador -->
+          <app-paginador-compacto *ngIf="true" [total]="filteredRows().length" [pageSize]="pageSize"
+                                  [pageIndex]="pageIndex()" (pageIndexChange)="pageIndex.set($event)"></app-paginador-compacto>
 
         </ng-container><!-- /tabla datos -->
 

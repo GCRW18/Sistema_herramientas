@@ -1,5 +1,6 @@
 import { Component, OnInit, OnDestroy, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { BotonesFotoComponent } from 'app/shared/components/botones-foto/botones-foto.component';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { MatDialogRef, MatDialogModule, MAT_DIALOG_DATA } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
@@ -15,6 +16,7 @@ import { CalibrationService } from 'app/core/services/calibration.service';
 import { MovementService } from 'app/core/services/movement.service';
 import { BlobStorageService } from 'app/core/services/blob-storage.service';
 import { QrScanService } from 'app/core/services/qr-scan.service';
+import { esActivo } from '../../../../../core/utils/bool.utils';
 
 type Mode = 'new' | 'edit';
 
@@ -29,6 +31,7 @@ interface DialogData {
     selector: 'app-form-herramienta-nivel',
     standalone: true,
     imports: [
+        BotonesFotoComponent,
         CommonModule,
         FormsModule,
         ReactiveFormsModule,
@@ -132,7 +135,7 @@ export class FormHerramientaNivelComponent implements OnInit, OnDestroy {
             takeUntil(this._destroy$)
         ).subscribe(cats => {
             this.tiposHerramienta = cats
-                .filter(c => c.active)
+                .filter(c => esActivo(c.active))
                 .map(c => ({ value: c.code, label: c.name }));
         });
 
@@ -272,7 +275,7 @@ export class FormHerramientaNivelComponent implements OnInit, OnDestroy {
     onImageSelected(event: Event): void {
         const file = (event.target as HTMLInputElement).files?.[0];
         if (!file) return;
-        if (file.size > 8 * 1024 * 1024) { return; }
+        if (file.size > 20 * 1024 * 1024) { return; }
         this.selectedImageFile = file;
         const reader = new FileReader();
         reader.onload = () => this.selectedImage.set(reader.result as string); // solo preview

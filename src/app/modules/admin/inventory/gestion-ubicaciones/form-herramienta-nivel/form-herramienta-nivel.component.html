@@ -24,7 +24,7 @@
             <mat-spinner *ngIf="toolSearchLoading" diameter="12" class="absolute right-2 top-2"></mat-spinner>
             <mat-icon *ngIf="!toolSearchLoading" class="absolute right-2 top-1.5 text-white/40 !text-base">search</mat-icon>
             <div *ngIf="showToolDropdown"
-                 class="absolute z-[300] w-72 bg-white dark:bg-slate-800 border-2 border-black dark:border-slate-600 rounded-xl shadow-[4px_4px_0_#000] max-h-52 overflow-y-auto mt-1 top-full right-0 custom-scrollbar divide-y divide-stone-100 dark:divide-slate-700">
+                 class="absolute z-[300] w-72 max-w-[calc(100vw-3rem)] bg-white dark:bg-slate-800 border-2 border-black dark:border-slate-600 rounded-xl shadow-[4px_4px_0_#000] max-h-52 overflow-y-auto mt-1 top-full right-0 custom-scrollbar divide-y divide-stone-100 dark:divide-slate-700">
                 <div *ngFor="let tool of toolSuggestions"
                      (mousedown)="seleccionarHerramienta(tool)"
                      class="px-3 py-2 hover:bg-stone-50 dark:hover:bg-slate-700 cursor-pointer transition-colors">
@@ -55,10 +55,10 @@
     </div>
 
     <!-- CUERPO -->
-    <div class="flex-1 overflow-y-auto sm:overflow-hidden">
+    <div class="dlg-cuerpo flex-1 overflow-y-auto sm:overflow-hidden">
 
         <!-- Grid principal -->
-        <form [formGroup]="form" class="flex flex-col sm:flex-row sm:h-full overflow-visible sm:overflow-hidden min-h-0">
+        <form [formGroup]="form" class="dlg-panel flex flex-col sm:flex-row sm:h-full overflow-visible sm:overflow-hidden min-h-0">
 
             <!-- IZQUIERDA: Foto -->
             <div class="w-full sm:w-1/2 shrink-0 flex flex-col items-center justify-center px-2 py-3 sm:py-2">
@@ -76,10 +76,11 @@
                     </ng-template>
                     <input type="file" #fileInput (change)="onImageSelected($event)" accept="image/*" class="hidden">
                 </div>
+                <app-botones-foto class="block w-56 sm:w-60" (seleccion)="onImageSelected($event)"></app-botones-foto>
             </div>
 
             <!-- DERECHA: Campos -->
-            <div class="w-full sm:w-1/2 sm:overflow-y-auto custom-scrollbar px-2 py-2 flex flex-col gap-1">
+            <div class="dlg-panel w-full sm:w-1/2 sm:overflow-y-auto custom-scrollbar px-2 py-2 flex flex-col gap-1">
 
                 <!-- Fila 1: Código · P/N · S/N -->
                 <div class="grid grid-cols-1 sm:grid-cols-3 gap-1.5">
@@ -218,7 +219,7 @@
     </div>
 
     <!-- PIE -->
-    <div class="border-t-2 border-black bg-stone-200 dark:bg-slate-800 px-3 py-1.5 flex justify-between items-center shrink-0">
+    <div class="border-t-2 border-black bg-stone-200 dark:bg-slate-800 px-3 py-1.5 flex flex-wrap gap-y-2 justify-between items-center shrink-0">
         <button type="button" (click)="cerrar()"
                 class="px-3 py-1 bg-[#FF1414] text-white font-black text-[9px] border-2 border-black rounded-lg shadow-[2px_2px_0_#000] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all uppercase">
             Cancelar

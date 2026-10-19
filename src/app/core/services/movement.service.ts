@@ -2,6 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { catchError, from, map, Observable, of, switchMap } from 'rxjs';
 import { Movement } from '../models';
 import { ErpApiService } from '../api/api.service';
+import { esActivo } from '../utils/bool.utils';
 
 @Injectable({ providedIn: 'root' })
 export class MovementService {
@@ -64,8 +65,8 @@ export class MovementService {
         const params = {
             start: ((filtros?.page || 1) - 1) * (filtros?.limit || 25),
             limit: filtros?.limit || 25,
-            ordenacion: 'date',
-            dir_ordenacion: 'desc',
+            sort: 'date',
+            dir: 'desc',
             ...filtros
         };
 
@@ -87,16 +88,14 @@ export class MovementService {
      * 2000 herramientas activas, el orden ascendente + limit 2000 dejaba fuera a las
      * recién creadas (mayor id_tool), que quedaban al final del orden y nunca entraban
      * dentro del límite — invisibles en el buscador de Préstamo Técnico.
-     * IMPORTANTE: ACTtools.php->listarTools() lee 'ordenacion'/'dir_ordenacion' (no
-     * 'sort'/'dir') — con las claves equivocadas el backend ignoraba el override y
-     * seguía aplicando su default (id_tool ASC), por lo que el orden nunca cambiaba.
+     * pXP lee el orden de 'sort'/'dir' (no de 'ordenacion'/'dir_ordenacion').
      */
     getHerramientasDisponibles(filters?: any): Observable<any[]> {
         return from(this._api.post('herramientas/tools/listTools', {
             start: 0,
             limit: 2000,
-            ordenacion: 'id_tool',
-            dir_ordenacion: 'desc',
+            sort: 'id_tool',
+            dir: 'desc',
             ...filters
         })).pipe(
             switchMap((response: any) => of(response?.ROOT?.datos || response?.datos || response?.data || []))
@@ -113,8 +112,8 @@ export class MovementService {
             this._personalPromise = (this._api.post('herramientas/employees/listarFuncionarios', {
                 start: 0,
                 limit: 5000,
-                ordenacion: 'full_name',
-                dir_ordenacion: 'asc'
+                sort: 'full_name',
+                dir: 'asc'
             }) as Promise<any>).then((response: any) => {
                 const raw: any[] = response?.ROOT?.datos || response?.datos || response?.data || [];
                 const mapped = raw.map((emp: any) => ({
@@ -229,7 +228,7 @@ export class MovementService {
      * Get funcionarios list (personal que puede recibir/entregar herramientas)
      */
     getFuncionarios(search?: string): Observable<any[]> {
-        const params: any = { start: 0, limit: 30, ordenacion: 'full_name', dir_ordenacion: 'asc' };
+        const params: any = { start: 0, limit: 30, sort: 'full_name', dir: 'asc' };
         if (search && search.trim().length >= 1) {
             params.search_term = search.trim();
         }
@@ -283,11 +282,11 @@ export class MovementService {
 
     getIngresosCategories(): Observable<{ id_category: number; name: string; code: string; active: boolean }[]> {
         return from(this._api.post('herramientas/categories/listCategories', {
-            start: 0, limit: 200, ordenacion: 'display_order', dir_ordenacion: 'asc'
+            start: 0, limit: 200, sort: 'display_order', dir: 'asc'
         })).pipe(
             map((r: any) => {
                 const data = r?.ROOT?.datos ?? r?.datos ?? r?.data ?? [];
-                return (Array.isArray(data) ? data : []).filter((c: any) => c.active !== false);
+                return (Array.isArray(data) ? data : []).filter((c: any) => esActivo(c.active));
             }),
             catchError(() => of([]))
         );
@@ -338,8 +337,8 @@ export class MovementService {
         return from(this._api.post('herramientas/tools/listarTools', {
             start: 0,
             limit: 500,
-            ordenacion: 'brand',
-            dir_ordenacion: 'asc'
+            sort: 'brand',
+            dir: 'asc'
         })).pipe(
             switchMap((response: any) => {
                 const tools = response?.ROOT?.datos || response?.datos || response?.data || [];
@@ -382,7 +381,7 @@ export class MovementService {
      */
     getActiveLoans(params?: { filtro_adicional?: string; [key: string]: any }): Observable<any[]> {
         const { filtro_adicional, ...rest } = params || {};
-        const postParams: any = { start: 0, limit: 3000, ordenacion: 'id_loan', dir_ordenacion: 'desc', ...rest };
+        const postParams: any = { start: 0, limit: 3000, sort: 'id_loan', dir: 'desc', ...rest };
         if (filtro_adicional) { postParams.filtro_adicional = filtro_adicional; }
         return from(this._api.post('herramientas/movements/listarLoans', postParams)).pipe(
             switchMap((response: any) => {
@@ -397,7 +396,7 @@ export class MovementService {
 
     getActiveLoanItems(params?: { filtro_adicional?: string; [key: string]: any }): Observable<any[]> {
         return from(this._api.post('herramientas/movements/listarLoanItems', {
-            start: 0, limit: 8000, ordenacion: 'id_loan_item', dir_ordenacion: 'asc',
+            start: 0, limit: 8000, sort: 'id_loan_item', dir: 'asc',
             ...params
         })).pipe(
             switchMap((response: any) => {
@@ -790,7 +789,7 @@ export class MovementService {
         specific_observations?: string;
         items_json: string;
         [key: string]: any;
-    }): Observable<{ id_movement: number; movement_number: string }> {
+    }): Observable<{ id_movement: number; movement_number: string; mensaje?: string; pendientes?: string }> {
         return from(this._api.post('herramientas/movements/registrarRetornoBase', data)).pipe(
             switchMap((response: any) => {
                 const root = response?.ROOT || response;
@@ -892,13 +891,16 @@ export class MovementService {
      */
     getParametrosPorCategoria(categoria: string): Observable<string[]> {
         return from(this._api.post('herramientas/parametros/listarParametros', {
-            start: 0, limit: 200,
-            ordenacion: 'nombre', dir_ordenacion: 'asc',
-            filtro: `par.categoria = '${categoria}' AND par.active = true AND par.estado_reg = 'activo'`
+            start: 0, limit: 1000,
+            sort: 'nombre', dir: 'asc',
         })).pipe(
             switchMap((response: any) => {
+                // ACTparametros no lee 'filtro' (traía todas las categorías): se filtra aquí.
                 const rows: any[] = response?.ROOT?.datos || response?.datos || response?.data || [];
-                return of(rows.map(r => r.valor || r.nombre).filter(Boolean));
+                return of(rows
+                    .filter(r => r.categoria === categoria && r.estado_reg === 'activo'
+                        && r.active !== false && r.active !== 'f' && r.active !== 'false')
+                    .map(r => r.valor || r.nombre).filter(Boolean));
             }),
             catchError(() => of([]))
         );

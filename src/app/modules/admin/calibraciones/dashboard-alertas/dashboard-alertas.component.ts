@@ -19,9 +19,10 @@ export interface AlertItem {
     calibration_expiry: string;
     days_remaining: number;
     urgency: string;
+    en_laboratorio: boolean;
 }
 
-type RangeKey = 'all' | 'expired' | '4d' | '7d' | '15d' | '30d' | '90d';
+type RangeKey = 'all' | 'expired' | '4d' | '7d' | '15d' | '30d' | '90d' | 'in_lab';
 
 @Component({
     selector: 'app-dashboard-alertas',
@@ -66,6 +67,10 @@ export class DashboardAlertasComponent implements OnInit, OnDestroy {
     pageSize = 10;
     pageIndex = 0;
 
+    // Parámetros de los PDF MGH-104 (días de holgura) y MGH-123 (mes YYYY-MM).
+    diasHolgura = 60;
+    periodoMensual = this._mesActual();
+
     ngOnInit(): void {
         this.loadAlerts();
     }
@@ -80,7 +85,7 @@ export class DashboardAlertasComponent implements OnInit, OnDestroy {
         this.isLoading = true;
         this.pageIndex = 0;
 
-        this.calibrationService.getCalibrationAlertsPxp({ start: 0, limit: 1000 }).pipe(
+        this.calibrationService.getCalibrationAlertsPxp().pipe(
             takeUntil(this._unsubscribeAll),
             finalize(() => this.isLoading = false)
         ).subscribe({
@@ -101,8 +106,10 @@ export class DashboardAlertasComponent implements OnInit, OnDestroy {
                         warehouse:          item.warehouse     || '—',
                         ubicacion:          rack && level ? `${rack} - ${level}` : rack || level || '—',
                         calibration_expiry: this.formatDate(item.next_calibration_date),
-                        days_remaining:     item.days_until_calibration ?? 0,
+                        days_remaining:     Number(item.days_until_calibration ?? 0),
                         urgency:            item.alert_type || 'UPCOMING_30D',
+                        // Ya está en el laboratorio: no es una alerta por atender.
+                        en_laboratorio:     ['in_calibration', 'CALIBRACION'].includes(item.status) || item.id_calibration != null,
                     };
                 });
                 this.applyRangeFilter();
@@ -116,31 +123,22 @@ export class DashboardAlertasComponent implements OnInit, OnDestroy {
     }
 
     // ── Filtro por rango de días ────────────────────────────────────────────────
+    // Mismas reglas que ACTreportes::generarPDFAlertasCalibracion: vencida = días < 0 (el
+    // candado de calibración la da por válida hasta el día de vencimiento inclusive).
+    private _enRango(x: AlertItem, range: RangeKey): boolean {
+        const d = x.days_remaining;
+        const tope: Record<string, number> = { '4d': 4, '7d': 7, '15d': 15, '30d': 30, '90d': 90 };
+        switch (range) {
+            case 'all':     return true;
+            case 'in_lab':  return x.en_laboratorio;
+            case 'expired': return !x.en_laboratorio && d < 0;
+            default:        return !x.en_laboratorio && d >= 0 && d <= tope[range];
+        }
+    }
+
     applyRangeFilter(): void {
         this.pageIndex = 0;
-        const a = this.allAlerts;
-        switch (this.selectedRange) {
-            case 'expired':
-                this.filteredAlerts = a.filter(x => x.days_remaining <= 0);
-                break;
-            case '4d':
-                this.filteredAlerts = a.filter(x => x.days_remaining >= 1 && x.days_remaining <= 4);
-                break;
-            case '7d':
-                this.filteredAlerts = a.filter(x => x.days_remaining >= 1 && x.days_remaining <= 7);
-                break;
-            case '15d':
-                this.filteredAlerts = a.filter(x => x.days_remaining >= 1 && x.days_remaining <= 15);
-                break;
-            case '30d':
-                this.filteredAlerts = a.filter(x => x.days_remaining >= 1 && x.days_remaining <= 30);
-                break;
-            case '90d':
-                this.filteredAlerts = a.filter(x => x.days_remaining >= 1 && x.days_remaining <= 90);
-                break;
-            default:
-                this.filteredAlerts = [...a];
-        }
+        this.filteredAlerts = this.allAlerts.filter(x => this._enRango(x, this.selectedRange));
     }
 
     // ── Paginación ──────────────────────────────────────────────────────────────
@@ -159,53 +157,52 @@ export class DashboardAlertasComponent implements OnInit, OnDestroy {
 
     // ── KPI Conteos ─────────────────────────────────────────────────────────────
     countRange(range: RangeKey): number {
-        switch (range) {
-            case 'expired': return this.allAlerts.filter(x => x.days_remaining <= 0).length;
-            case '4d':      return this.allAlerts.filter(x => x.days_remaining >= 1 && x.days_remaining <= 4).length;
-            case '7d':      return this.allAlerts.filter(x => x.days_remaining >= 1 && x.days_remaining <= 7).length;
-            case '15d':     return this.allAlerts.filter(x => x.days_remaining >= 1 && x.days_remaining <= 15).length;
-            case '30d':     return this.allAlerts.filter(x => x.days_remaining >= 1 && x.days_remaining <= 30).length;
-            case '90d':     return this.allAlerts.filter(x => x.days_remaining >= 1 && x.days_remaining <= 90).length;
-            default:        return 0;
-        }
+        return range === 'all' ? 0 : this.allAlerts.filter(x => this._enRango(x, range)).length;
     }
 
     // ── Impresión ───────────────────────────────────────────────────────────────
-    // MGH-102 — Listado de herramientas sujetas a calibración (PDF real vía backend),
-    // respetando el rango de días seleccionado en pantalla.
+    // La pestaña se reserva dentro del click; si no, el bloqueador corta el PDF que llega
+    // después del request.
+    private _imprimir(obs: any, etiqueta: string): void {
+        const win = this.calibrationService.preAbrirVentanaPdf();
+        this.isLoading = true;
+        obs.pipe(
+            takeUntil(this._unsubscribeAll),
+            finalize(() => this.isLoading = false),
+        ).subscribe({
+            next: (r: any) => this.calibrationService.abrirPdf(r.pdf_base64, r.nombre_archivo, win),
+            error: (e: any) => {
+                try { win?.close(); } catch { /* noop */ }
+                console.error(`Error al generar ${etiqueta}:`, e);
+            },
+        });
+    }
+
+    // MGH-102 — Listado de herramientas sujetas a calibración con el rango de la pantalla.
     printAlerts(): void {
-        this.isLoading = true;
-        this.calibrationService.generarPdfAlertasCalibracion(this.selectedRange).pipe(
-            takeUntil(this._unsubscribeAll),
-            finalize(() => this.isLoading = false),
-        ).subscribe({
-            next: (r) => this.calibrationService.abrirPdf(r.pdf_base64, r.nombre_archivo),
-            error: (e) => console.error('Error al generar el listado de alertas:', e),
-        });
+        this._imprimir(this.calibrationService.generarPdfAlertasCalibracion(this.selectedRange, this._currentUser()), 'MGH-102');
     }
 
-    // MGH-104 — Próximas a vencer por días de holgura (PDF real vía backend).
+    // MGH-104 — Próximas a vencer por días de holgura.
     printVencerHolgura(): void {
-        this.isLoading = true;
-        this.calibrationService.generarPdfVencerHolgura(60).pipe(
-            takeUntil(this._unsubscribeAll),
-            finalize(() => this.isLoading = false),
-        ).subscribe({
-            next: (r) => this.calibrationService.abrirPdf(r.pdf_base64, r.nombre_archivo),
-            error: (e) => console.error('Error al generar MGH-104:', e),
-        });
+        const dias = Math.trunc(Number(this.diasHolgura));
+        this.diasHolgura = dias > 0 ? Math.min(dias, 3650) : 60;
+        this._imprimir(this.calibrationService.generarPdfVencerHolgura(this.diasHolgura, this._currentUser()), 'MGH-104');
     }
 
-    // MGH-123 — Reporte mensual de próximas a vencer (PDF real vía backend).
+    // MGH-123 — Reporte mensual de próximas a vencer (vencen en el mes + ya vencidas).
     printVencerMensual(): void {
-        this.isLoading = true;
-        this.calibrationService.generarPdfVencerMensual(30).pipe(
-            takeUntil(this._unsubscribeAll),
-            finalize(() => this.isLoading = false),
-        ).subscribe({
-            next: (r) => this.calibrationService.abrirPdf(r.pdf_base64, r.nombre_archivo),
-            error: (e) => console.error('Error al generar MGH-123:', e),
-        });
+        if (!/^\d{4}-\d{2}$/.test(this.periodoMensual || '')) this.periodoMensual = this._mesActual();
+        this._imprimir(this.calibrationService.generarPdfVencerMensual(this.periodoMensual, this._currentUser()), 'MGH-123');
+    }
+
+    private _currentUser(): string {
+        try { return JSON.parse(localStorage.getItem('aut') || '{}')?.nombre_usuario || ''; } catch { return ''; }
+    }
+
+    private _mesActual(): string {
+        const h = new Date();
+        return `${h.getFullYear()}-${String(h.getMonth() + 1).padStart(2, '0')}`;
     }
 
     // ── Estilos Visuales ────────────────────────────────────────────────────────

@@ -1,5 +1,6 @@
 import { Component, OnInit, OnDestroy, inject, signal, ViewChild, TemplateRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { BotonesFotoComponent } from 'app/shared/components/botones-foto/botones-foto.component';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
 import { MatDialog, MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
@@ -35,6 +36,7 @@ export interface RecepcionHerramientaResult {
     selector: 'app-recepcion-herramienta',
     standalone: true,
     imports: [
+        BotonesFotoComponent,
         CommonModule, ReactiveFormsModule,
         MatIconModule, MatSnackBarModule,
         MatTooltipModule, MatProgressSpinnerModule, DragDropModule,
@@ -318,7 +320,7 @@ export class RecepcionHerramientaComponent implements OnInit, OnDestroy {
     onHerramientaImageSelected(event: Event): void {
         const file = (event.target as HTMLInputElement).files?.[0];
         if (!file) return;
-        if (file.size > 8 * 1024 * 1024) return;
+        if (file.size > 20 * 1024 * 1024) return;
         this.herramientaImagenFile = file;
         const reader = new FileReader();
         reader.onload = () => this.herramientaImagen.set(reader.result as string); // solo preview

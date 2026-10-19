@@ -50,6 +50,8 @@ export class PermisosDialogComponent implements OnInit {
         'Usuarios':                    'people',
         'Proveedores':                 'local_shipping',
         'Roles y Permisos':            'shield',
+        'Clientes / Terceros':         'groups',
+        'Aeronaves':                   'flight',
     };
 
     get filteredPermissions(): { mod: string; perm: Permission }[] {
@@ -114,7 +116,7 @@ export class PermisosDialogComponent implements OnInit {
         const currentSelected = this.localPermissions.filter(id => moduleIds.includes(id));
 
         const ref = this.dialog.open(ModuloPermisosMiniDialogComponent, {
-            panelClass:    'neo-mini-dialog',
+            panelClass:    'neo-mini-dialog', maxWidth: '95vw',
             hasBackdrop:   true,
             backdropClass: 'bg-black/30',
             data: {

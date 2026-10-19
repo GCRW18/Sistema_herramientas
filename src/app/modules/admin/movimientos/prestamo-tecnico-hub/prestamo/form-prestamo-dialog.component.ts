@@ -13,6 +13,7 @@ import { KitsService } from '../../../../../core/services/kits.service';
 import { ToolService } from '../../../../../core/services/tool.service';
 import { QrScanService } from '../../../../../core/services/qr-scan.service';
 import { motivoBloqueoSalida } from '../../retorno-traspaso/retorno-traspaso.types';
+import { esActivo } from '../../../../../core/utils/bool.utils';
 
 interface InternalLoanItem {
     toolId: number; id: number; codigo: string; pn: string; descripcion: string; sn: string;
@@ -25,6 +26,8 @@ interface InternalLoanItem {
     warehouseId?: number | null;
     rackId?: number | null;
     levelId?: number | null;
+    // Kit del que salió (agregarKit): el backend marca el kit "en uso" y lo libera al devolver.
+    kitId?: number | null;
 }
 
 @Component({
@@ -141,7 +144,7 @@ export class FormPrestamoDialogComponent implements OnInit, OnDestroy {
             fecha:             [today, Validators.required],
             hora:              [`${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}`, Validators.required],
             matriculaAeronave: ['N/A'],
-            ordenTrabajo:      [''],
+            ordenTrabajo:      ['', [Validators.required, Validators.pattern(/\S/)]],
             destino:           ['', Validators.required],
             trabajoEspecial:   [false],
             observaciones:     [''],
@@ -411,12 +414,13 @@ export class FormPrestamoDialogComponent implements OnInit, OnDestroy {
             .subscribe({
                 next: ({ categorias, kits }) => {
                     const nombresValidos = new Set(
-                        (categorias || []).filter(c => c.active !== false).map(c => (c.name ?? '').trim().toUpperCase())
+                        (categorias || []).filter(c => esActivo(c.active)).map(c => (c.name ?? '').trim().toUpperCase())
                     );
                     this.kits = (kits || []).filter(k => {
                         const cat    = (k.category ?? '').trim().toUpperCase();
                         const status = (k.status ?? '').toLowerCase();
-                        return k.active !== false && nombresValidos.has(cat) && !['in_use', 'decommissioned', 'in_calibration'].includes(status);
+                        // Kit desactivado: el 'f' de pXP pasaba el !== false y seguía apareciendo.
+                        return esActivo(k.active) && nombresValidos.has(cat) && !['in_use', 'decommissioned', 'in_calibration'].includes(status);
                     });
                 },
                 error: () => { this.kits = []; }
@@ -437,6 +441,7 @@ export class FormPrestamoDialogComponent implements OnInit, OnDestroy {
                         const codigo = c.tool_code ?? c.code ?? c.codigo ?? '';
                         if (!codigo) return;
                         if (this.internalDataSource().some(i => i.codigo === codigo)) return;
+                        if (c.is_present === false || c.is_present === 'f') { bloqueadas.push(`${codigo}: falta en el kit`); return; }
                         if (!this._toolDisponible(c)) { bloqueadas.push(`${codigo}: ${this._motivoNoDisponible(c)}`); return; }
                         if (this._toolIdsEnPrestamo.has(Number(c.tool_id ?? c.id_tool ?? 0))) { bloqueadas.push(`${codigo}: ya tiene un préstamo activo`); return; }
                         const item: InternalLoanItem = {
@@ -453,6 +458,7 @@ export class FormPrestamoDialogComponent implements OnInit, OnDestroy {
                             warehouseId: c.warehouse_id != null ? Number(c.warehouse_id) : null,
                             rackId:      c.rack_id      != null ? Number(c.rack_id)      : null,
                             levelId:     c.level_id     != null ? Number(c.level_id)     : null,
+                            kitId,
                         };
                         this.internalDataSource.update(list => [...list, item]);
                         added++;
@@ -500,7 +506,7 @@ export class FormPrestamoDialogComponent implements OnInit, OnDestroy {
 
     procesar(): void {
         this.internalForm.markAllAsTouched();
-        if (this.internalForm.invalid) { this.showMsg('error', 'Complete los datos del técnico'); return; }
+        if (this.internalForm.invalid) { this.showMsg('error', 'Complete los datos del técnico y la orden de trabajo'); return; }
         if (this.internalDataSource().length === 0) { this.showMsg('warning', 'Agregue al menos una herramienta'); return; }
         this._confirmDialogRef = this.dialog.open(this.confirmInternoModal, {
             width: 'min(920px, 95vw)', maxWidth: '95vw', panelClass: 'no-padding-dialog', disableClose: true
@@ -518,14 +524,15 @@ export class FormPrestamoDialogComponent implements OnInit, OnDestroy {
         const items = this.internalDataSource();
         const itemsJson = JSON.stringify(items.map(i => ({
             tool_id: i.toolId, quantity: i.cantidad, notes: i.contenido || '',
-            condition: this.conditionMap[i.estado?.toUpperCase()] || 'good'
+            condition: this.conditionMap[i.estado?.toUpperCase()] || 'good',
+            ...(i.kitId ? { kit_id: i.kitId } : {})
         })));
         const responsiblePerson = fv.nombreEntregador || 'ALMACÉN';
         this.movementSvc.registrarPrestamoMultiple({
             type: 'PRESTAMO_INTERNO', date: fv.fecha, time: fv.hora,
             requested_by_name: fv.nombreCompleto, technician: fv.nombreCompleto,
             authorized_by: fv.nroLicencia, department: fv.destino || '',
-            aircraft: fv.matriculaAeronave || '', work_order_number: fv.ordenTrabajo || '',
+            aircraft: fv.matriculaAeronave || '', work_order_number: (fv.ordenTrabajo || '').trim(),
             special_work: fv.trabajoEspecial || false, notes: fv.observaciones || '',
             responsible_person: responsiblePerson, items_json: itemsJson
         }).pipe(finalize(() => this.isSaving = false), takeUntil(this.destroy$)).subscribe({

@@ -17,7 +17,7 @@ interface ExternalLoanItem {
     toolId: number; id: number; codigo: string; pn: string; descripcion: string; sn: string;
     marca: string; fechaCalibracion: string; listaContenido: string;
     cantidad: number;
-    contenido: string; estado: string;
+    contenido: string;
     // Datos reales de la herramienta (catálogo), para el detalle de solo-lectura.
     imagen?: string | null;
     notesTool?: string;
@@ -74,10 +74,12 @@ export class FormPrestamoExternoDialogComponent implements OnInit, OnDestroy {
     showEmpresasDropdown = false;
     _empresaSeleccionada: any = null;
 
+    // Búsqueda de funcionarios compartida por "Autorizado por" y "Entregado por (Almacén)".
     private _entregadorSearch$ = new Subject<string>();
     entregadoresFiltrados:  any[] = [];
     entregadorLoading      = false;
     showEntregadorDropdown = false;
+    personaCampo: 'autorizado' | 'entregadoPor' = 'autorizado';
 
     tiposMotivo = [
         { value: 'ALQUILER',           label: 'Alquiler por Contrato'  },
@@ -85,13 +87,6 @@ export class FormPrestamoExternoDialogComponent implements OnInit, OnDestroy {
         { value: 'REPARACION_EXTERNA', label: 'Reparación Externa'     },
         { value: 'CALIBRACION',        label: 'Calibración Externa'    },
     ];
-
-    private readonly conditionMap: Record<string,string> = {
-        'SERVICEABLE':'good','BUENO':'good','NUEVO':'new','NEW':'new',
-        'EN_CALIBRACION':'fair','REGULAR':'fair','RECONDITIONED':'fair',
-        'UNSERVICEABLE':'damaged','EN_REPARACION':'poor',
-        'MALO':'poor','DAÑADO':'damaged','DAMAGED':'damaged',
-    };
 
     ngOnInit(): void {
         this.initForm();
@@ -123,11 +118,11 @@ export class FormPrestamoExternoDialogComponent implements OnInit, OnDestroy {
         this.externalForm = this.fb.group({
             nombreEmpresa:  ['', Validators.required],
             nit:            [''],
-            contacto:       [''],
-            telefono:       [''],
+            contacto:       ['', Validators.required],
             motivoPrestamo: ['', Validators.required],
-            // "Autorizado por" prellenado con el usuario logueado (editable).
-            autorizado:     [this._currentUserName(), Validators.required],
+            // Autoriza una jefatura BoA; entrega el almacenero (usuario logueado, editable).
+            autorizado:     ['', Validators.required],
+            entregadoPor:   [this._currentUserName(), Validators.required],
             fecha:          [this._localDateStr(), Validators.required],
             hora:           [`${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}`, Validators.required],
             observaciones:  [''],
@@ -141,6 +136,7 @@ export class FormPrestamoExternoDialogComponent implements OnInit, OnDestroy {
             this._tercerosList = (clientes || [])
                 .filter((c: any) => c.active !== false && c.active !== 'f' && c.active !== 'false')
                 .map((c: any) => ({
+                    idCustomer:     Number(c.id_customer) || null,
                     razonSocial:    c.name           || c.company_name || '',
                     nit:            c.tax_id         || c.code         || '',
                     nombreContacto: c.contact_person || '',
@@ -160,7 +156,7 @@ export class FormPrestamoExternoDialogComponent implements OnInit, OnDestroy {
     }
     selectEmpresa(e: any): void {
         this._empresaSeleccionada = e;
-        this.externalForm.patchValue({ nombreEmpresa: e.razonSocial, nit: e.nit||'', contacto: e.nombreContacto||'', telefono: e.telefono||'' });
+        this.externalForm.patchValue({ nombreEmpresa: e.razonSocial, nit: e.nit||'', contacto: e.nombreContacto||'' });
         this.showEmpresasDropdown = false;
     }
     hideEmpresasDropdown(): void { setTimeout(() => this.showEmpresasDropdown = false, 150); }
@@ -168,7 +164,9 @@ export class FormPrestamoExternoDialogComponent implements OnInit, OnDestroy {
     private _setupEntregadorSearch(): void {
         this._entregadorSearch$.pipe(
             debounceTime(200), distinctUntilChanged(),
-            switchMap(t => {
+            switchMap(clave => {
+                // clave = "<campo>|<texto>" para que cambiar de campo con el mismo texto vuelva a buscar.
+                const t = clave.slice(clave.indexOf('|') + 1);
                 if (t.length < 2) { this.showEntregadorDropdown = false; return of([]); }
                 this.entregadorLoading = true;
                 const q = t.toLowerCase();
@@ -185,12 +183,13 @@ export class FormPrestamoExternoDialogComponent implements OnInit, OnDestroy {
         ).subscribe(res => { this.entregadoresFiltrados = res||[]; this.showEntregadorDropdown = (res||[]).length > 0; });
     }
 
-    onEntregadorInput(v: string): void {
-        this.externalForm.patchValue({ autorizado: v }, { emitEvent: false });
-        if (v.length >= 2) this._entregadorSearch$.next(v); else this.showEntregadorDropdown = false;
+    onEntregadorInput(v: string, campo: 'autorizado' | 'entregadoPor' = 'autorizado'): void {
+        if (this.personaCampo !== campo) { this.personaCampo = campo; this.entregadoresFiltrados = []; this.showEntregadorDropdown = false; }
+        this.externalForm.patchValue({ [campo]: v }, { emitEvent: false });
+        if (v.length >= 2) this._entregadorSearch$.next(`${campo}|${v}`); else this.showEntregadorDropdown = false;
     }
     selectEntregador(e: any): void {
-        this.externalForm.patchValue({ autorizado: e.nombre });
+        this.externalForm.patchValue({ [this.personaCampo]: e.nombre });
         this.showEntregadorDropdown = false;
     }
     hideEntregadorSuggestions(): void { setTimeout(() => this.showEntregadorDropdown = false, 200); }
@@ -311,7 +310,7 @@ export class FormPrestamoExternoDialogComponent implements OnInit, OnDestroy {
             pn: tool.pn || '', descripcion: tool.nombre || '', sn: tool.sn || '',
             marca: tool.marca || '', fechaCalibracion: tool.fechaCalibracion || '',
             listaContenido: tool.listaContenido || '', cantidad: 1,
-            contenido: '', estado: 'SERVICEABLE',
+            contenido: '',
             imagen: tool.imagen ?? null, notesTool: tool.notesTool || '',
             warehouseId: tool.warehouseId ?? null, rackId: tool.rackId ?? null, levelId: tool.levelId ?? null,
         };
@@ -328,7 +327,7 @@ export class FormPrestamoExternoDialogComponent implements OnInit, OnDestroy {
         const editItem = {
             toolId: item.toolId, codigoBoa: item.codigo, pn: item.pn, sn: item.sn,
             descripcion: item.descripcion, marca: item.marca, tipo: 'HERRAMIENTA',
-            estado: item.estado, cantidad: item.cantidad, um: 'PZA', obs: item.notesTool,
+            estado: 'SERVICEABLE', cantidad: item.cantidad, um: 'PZA', obs: item.notesTool,
             imagenMaster: item.imagen, warehouseId: item.warehouseId,
             rackId: item.rackId, levelId: item.levelId
         };
@@ -344,6 +343,8 @@ export class FormPrestamoExternoDialogComponent implements OnInit, OnDestroy {
         this.dataSource.update(list => list.filter((_,i) => i !== idx));
         this.showMsg('info', `"${item.descripcion}" eliminada`);
     }
+
+    motivoLabel(v: string): string { return this.tiposMotivo.find(m => m.value === v)?.label || v || '—'; }
 
     hasError(field: string, error: string): boolean {
         const c = this.externalForm.get(field);
@@ -367,15 +368,17 @@ export class FormPrestamoExternoDialogComponent implements OnInit, OnDestroy {
         const fv    = this.externalForm.getRawValue();
         const items = this.dataSource();
         const itemsJson = JSON.stringify(items.map(i => ({
-            tool_id: i.toolId, quantity: i.cantidad, notes: i.contenido||'',
-            condition: this.conditionMap[i.estado?.toUpperCase()]||'good',
+            tool_id: i.toolId, quantity: i.cantidad, notes: i.contenido||'', condition: 'good',
         })));
+        // Solo se enlaza al catálogo si la empresa se eligió de la lista y no se editó después.
+        const cliente = this._empresaSeleccionada?.razonSocial === fv.nombreEmpresa ? this._empresaSeleccionada : null;
         this.movementSvc.registrarPrestamoMultiple({
             type: 'PRESTAMO_EXTERNO', date: fv.fecha, time: fv.hora,
             requested_by_name: fv.nombreEmpresa, customer: fv.nombreEmpresa,
+            customer_id: cliente?.idCustomer || undefined, document_number: fv.nit || '',
             authorized_by: fv.autorizado||'', recipient: fv.contacto||'',
             notes: fv.motivoPrestamo||'', specific_observations: fv.observaciones||'',
-            responsible_person: fv.autorizado || '',
+            responsible_person: fv.entregadoPor || '',
             items_json: itemsJson,
         }).pipe(finalize(() => this.isSaving = false), takeUntil(this.destroy$)).subscribe({
             next: (result: any) => {

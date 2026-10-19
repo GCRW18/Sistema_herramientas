@@ -51,8 +51,8 @@ export class KitsService {
         const params: any = {
             start: ((filters?.page ?? 1) - 1) * (filters?.limit ?? 50),
             limit: filters?.limit ?? 50,
-            ordenacion: 'id_kit',
-            dir_ordenacion: 'desc'
+            sort: 'id_kit',
+            dir: 'desc'
         };
 
         return from(this._api.post('herramientas/kits/listarKits', params)).pipe(
@@ -78,6 +78,7 @@ export class KitsService {
         })).pipe(
             map((r: any) => {
                 const d = r?.ROOT ?? r;
+                if (d?.error === true) throw new Error(d?.detalle?.mensaje ?? d?.mensaje ?? 'Error al crear el kit');
                 return { id_kit: Number(d?.id_kit ?? d?.data?.id_kit ?? d?.datos?.id_kit ?? 0), code: kit.code ?? '' };
             }),
             catchError(err => { throw err; })
@@ -96,10 +97,9 @@ export class KitsService {
         payload.requires_calibration = kit.requires_calibration ?? false;
         payload.is_complete          = kit.is_complete          ?? false;
 
-        return from(this._api.post('herramientas/kits/insertarKits', payload)).pipe(
-            map((r: any) => r),
-            catchError(err => { throw err; })
-        );
+        // Sin este chequeo el error se tomaba como éxito: el form seguía borrando y re-insertando
+        // componentes y el toggle de activo cambiaba en pantalla aunque no se guardara.
+        return this._postOrThrow('herramientas/kits/insertarKits', payload);
     }
 
     deleteKit(id_kit: number): Observable<boolean> {
@@ -153,8 +153,8 @@ export class KitsService {
         return from(this._api.post('herramientas/kitcomponents/listarKitComponents', {
             start: 0, limit: 200,
             kit_id: kitId,
-            ordenacion:     'id_kit_component',
-            dir_ordenacion: 'asc'
+            sort:     'id_kit_component',
+            dir: 'asc'
         })).pipe(
             map((r: any) => this._normalize(r)),
             catchError(() => of([]))
@@ -177,7 +177,8 @@ export class KitsService {
                 tool_id:          i.tool_id,
                 quantity:         1,
                 is_mandatory:     true,
-                is_present:       true,
+                // Conserva los ausentes: re-guardar el kit los volvía a "presente".
+                is_present:       i.is_present === false ? 'false' : 'true',
                 present_quantity: 0
             })
         );
@@ -200,7 +201,7 @@ export class KitsService {
 
     getKitCategories(): Observable<{ id_kit_category: number; name: string; active: boolean }[]> {
         return from(this._api.post('herramientas/kitcategories/listarKitCategorias', {
-            start: 0, limit: 100, ordenacion: 'name', dir_ordenacion: 'asc'
+            start: 0, limit: 100, sort: 'name', dir: 'asc'
         })).pipe(
             map((r: any) => this._normalize(r) as { id_kit_category: number; name: string; active: boolean }[]),
             catchError(() => of([]))
@@ -220,64 +221,9 @@ export class KitsService {
         return this._postOrThrow('herramientas/kitcategories/eliminarKitCategorias', { id_kit_category });
     }
 
-    getNextWorkOrderNumber(): Observable<string> {
-        return from(this._api.post('herramientas/correlativos/siguienteCorrelativo', { prefijo: 'OT' })).pipe(
-            map((r: any) => {
-                if (r?.error === true || r?.ROOT?.error === true) {
-                    throw new Error(r?.mensaje ?? r?.ROOT?.mensaje ?? 'Error al generar OT');
-                }
-                let datos = r?.ROOT?.datos ?? r?.datos ?? r?.data ?? r;
-                if (typeof datos === 'string') { try { datos = JSON.parse(datos); } catch { /* */ } }
-                const numero = datos?.numero ?? datos?.nro_formateado;
-                if (!numero) throw new Error('Correlativo OT no recibido');
-                return numero as string;
-            }),
-            catchError(() => of(''))
-        );
-    }
-
     // -----------------------------------------------------------------------------------------------------
-    // @ Préstamos de kits
+    // @ Devolución de préstamos PKT (los kits ahora se prestan desde Préstamo Técnico)
     // -----------------------------------------------------------------------------------------------------
-
-    prestarKit(data: {
-        kit_id: number;
-        borrower_name: string;
-        borrower_id?: number;
-        department?: string;
-        work_order_number?: string;
-        loan_date?: string;
-        expected_return_date?: string;
-        delivered_by_name?: string;
-        notes?: string;
-    }): Observable<{ id_kit_loan: number; loan_number: string }> {
-        // Payload explícito: solo se mandan las claves con valor real (pxp-client serializa
-        // `undefined` como el string "undefined" y rompe los casts de fecha en el backend).
-        const payload: any = {
-            kit_id:        data.kit_id,
-            borrower_name: data.borrower_name,
-        };
-        if (data.borrower_id)          payload.borrower_id          = data.borrower_id;
-        if (data.department)           payload.department           = data.department;
-        if (data.work_order_number)    payload.work_order_number    = data.work_order_number;
-        if (data.loan_date)            payload.loan_date            = data.loan_date;
-        if (data.expected_return_date) payload.expected_return_date = data.expected_return_date;
-        if (data.delivered_by_name)    payload.delivered_by_name    = data.delivered_by_name;
-        if (data.notes)                payload.notes                = data.notes;
-
-        return from(this._api.post('herramientas/kitloans/prestarKit', payload)).pipe(
-            map((r: any) => {
-                const root = r?.ROOT ?? r;
-                if (root?.error === true) throw new Error(root?.detalle?.mensaje ?? root?.mensaje ?? 'Error al registrar préstamo');
-                const d = root?.datos ?? root;
-                return {
-                    id_kit_loan: Number(d?.id_kit_loan ?? 0),
-                    loan_number: d?.loan_number ?? ''
-                };
-            }),
-            catchError(err => { throw err; })
-        );
-    }
 
     devolverKit(data: {
         id_kit_loan: number;
@@ -287,6 +233,7 @@ export class KitsService {
         is_complete: boolean;
         missing_components?: string;
         damaged_components?: string;
+        absent_tool_ids?: number[];
         extra_components?: string;
         actions_taken?: string;
         notes?: string;
@@ -301,6 +248,8 @@ export class KitsService {
         if (data.verified_by_id)     payload.verified_by_id     = data.verified_by_id;
         if (data.missing_components) payload.missing_components = data.missing_components;
         if (data.damaged_components) payload.damaged_components = data.damaged_components;
+        // Faltantes y dañados quedan ausentes en el kit (tkit_components.is_present = false).
+        if (data.absent_tool_ids?.length) payload.absent_tool_ids = data.absent_tool_ids.join(',');
         if (data.extra_components)   payload.extra_components   = data.extra_components;
         if (data.actions_taken)      payload.actions_taken      = data.actions_taken;
         if (data.notes)              payload.notes              = data.notes;
@@ -319,8 +268,28 @@ export class KitsService {
         );
     }
 
+    /** Préstamos de un kit: los PKT antiguos (he.tkit_loans) + los de Préstamo Técnico
+     *  ("agregar kit", he.tloan_items.kit_id), del más reciente al más antiguo. */
+    getPrestamosKit(kitId: number): Observable<any[]> {
+        const pt$ = from(this._api.post('herramientas/movements/listarLoanItems', {
+            start: 0, limit: 1000, sort: 'lis.id_loan_item', dir: 'desc', kit_id: kitId
+        })).pipe(
+            map((r: any) => [...new Set(this._normalize(r).map((i: any) => Number(i.loan_id)).filter(Boolean))].slice(0, 50)),
+            switchMap((ids: number[]) => ids.length
+                ? from(this._api.post('herramientas/movements/listarLoans', {
+                    start: 0, limit: ids.length, sort: 'id_loan', dir: 'desc', ids_loan: ids.join(',')
+                })).pipe(map((r: any) => this._normalize(r)))
+                : of([])),
+            catchError(() => of([]))
+        );
+        return forkJoin({ pkt: this.getKitLoans(kitId), pt: pt$ }).pipe(
+            map(({ pkt, pt }) => [...pkt, ...pt].sort((a: any, b: any) =>
+                String(b.loan_date ?? '').localeCompare(String(a.loan_date ?? ''))))
+        );
+    }
+
     getKitLoans(kitId?: number): Observable<any[]> {
-        const params: any = { start: 0, limit: 100, ordenacion: 'id_kit_loan', dir_ordenacion: 'desc' };
+        const params: any = { start: 0, limit: 100, sort: 'id_kit_loan', dir: 'desc' };
         if (kitId) params.kit_id = kitId;
         return from(this._api.post('herramientas/kitloans/listarKitLoans', params)).pipe(
             map((r: any) => this._normalize(r)),

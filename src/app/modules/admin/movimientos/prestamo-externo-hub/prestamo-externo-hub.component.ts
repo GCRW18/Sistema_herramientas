@@ -1,3 +1,4 @@
+import { PaginadorCompactoComponent } from 'app/shared/components/paginador-compacto/paginador-compacto.component';
 import { Component, OnInit, OnDestroy, signal, inject } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
@@ -9,6 +10,7 @@ import { Subject, forkJoin, of } from 'rxjs';
 import { debounceTime, startWith, takeUntil, finalize, catchError } from 'rxjs/operators';
 import { MovementService } from '../../../../core/services/movement.service';
 import { HasPermissionDirective } from '../../../../core/directives/has-permission.directive';
+import { diasDesde } from '../../../../core/utils/date.utils';
 
 interface ExternalLoanDisplay {
     id_loan:                 number;
@@ -44,7 +46,7 @@ interface PendingExternalItem {
 @Component({
     selector: 'app-prestamo-externo-hub',
     standalone: true,
-    imports: [CommonModule, DatePipe, ReactiveFormsModule, MatIconModule,
+    imports: [CommonModule, DatePipe, ReactiveFormsModule, MatIconModule, PaginadorCompactoComponent,
               MatDialogModule, MatSnackBarModule, MatTooltipModule, HasPermissionDirective],
     templateUrl: './prestamo-externo-hub.component.html',
     styles: [`
@@ -77,6 +79,8 @@ export class PrestamoExternoHubComponent implements OnInit, OnDestroy {
     private loans:     ExternalLoanDisplay[] = [];
     private loanItems: any[]                 = [];
 
+    pageLoans   = 0;
+    pagePending = 0;
     filteredLoans:   ExternalLoanDisplay[]  = [];
     pendingItems:    PendingExternalItem[]  = [];
     filteredPending: PendingExternalItem[]  = [];
@@ -105,7 +109,8 @@ export class PrestamoExternoHubComponent implements OnInit, OnDestroy {
         this.isLoading.set(true);
         forkJoin({
             loans: this.movementSvc.getActiveLoans(),
-            items: this.movementSvc.getActiveLoanItems()
+            // Solo ítems abiertos: sin filtro se traían los 8000 más viejos y los nuevos quedaban fuera.
+            items: this.movementSvc.getActiveLoanItems({ filtro_adicional: 'returned = false' })
         }).pipe(
             takeUntil(this.destroy$),
             finalize(() => this.isLoading.set(false)),
@@ -122,7 +127,7 @@ export class PrestamoExternoHubComponent implements OnInit, OnDestroy {
                     loan_time:               l.loan_time        || '',
                     status:                  l.status           || 'active',
                     notes:                   l.loan_notes       || '',
-                    motivo:                  l.notes || l.loan_notes || '—',
+                    motivo:                  this._motivoLabel(l.notes || l.loan_notes),
                     delivered_by_name:       l.delivered_by_name        || '—',
                     diasFuera:               l.status === 'returned'
                                                  ? this._calcDias(l.loan_date, l.actual_return_date || l.loan_date)
@@ -135,6 +140,16 @@ export class PrestamoExternoHubComponent implements OnInit, OnDestroy {
             this._buildPending();
             this.applyFilters();
         });
+    }
+
+    private readonly _motivos: Record<string,string> = {
+        ALQUILER: 'Alquiler por Contrato', APOYO_MUTUO: 'Apoyo Mutuo Operacional',
+        REPARACION_EXTERNA: 'Reparación Externa', CALIBRACION: 'Calibración Externa',
+    };
+
+    private _motivoLabel(v: string): string {
+        const k = (v || '').trim();
+        return this._motivos[k.toUpperCase()] || k || '—';
     }
 
     private _isReturned(val: any): boolean {
@@ -155,7 +170,7 @@ export class PrestamoExternoHubComponent implements OnInit, OnDestroy {
                     descripcion:     item.description || item.name   || '—',
                     pn:              item.part_number || item.pn     || '—',
                     sn:              item.serial_number || item.sn   || '—',
-                    cantidad:        Number(item.quantity) || 1,
+                    cantidad:        Math.max((Number(item.quantity) || 1) - (Number(item.quantity_returned) || 0), 1),
                     und:             item.unit_of_measure || 'UND',
                     estadoAlPrestar: item.condition_on_loan || '—',
                 }))
@@ -164,6 +179,8 @@ export class PrestamoExternoHubComponent implements OnInit, OnDestroy {
 
     applyFilters(): void {
         const q = (this.searchControl.value || '').toLowerCase().trim();
+        this.pageLoans = 0;
+        this.pagePending = 0;
         if (!q) {
             this.filteredLoans   = [...this.loans];
             this.filteredPending = [...this.pendingItems];
@@ -183,9 +200,7 @@ export class PrestamoExternoHubComponent implements OnInit, OnDestroy {
     }
 
     private _calcDias(fecha: string, hasta?: string): number {
-        if (!fecha) return 0;
-        const end = hasta ? new Date(hasta) : new Date();
-        return Math.ceil(Math.abs(end.getTime() - new Date(fecha).getTime()) / 86400000);
+        return diasDesde(fecha, hasta);
     }
 
     formatFecha(loan_date: string, loan_time: string): string {

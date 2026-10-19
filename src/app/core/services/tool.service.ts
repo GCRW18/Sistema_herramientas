@@ -126,8 +126,13 @@ export class ToolService {
                 })).pipe(
                     switchMap((response: any) => {
                         const rows = response?.datos || response?.data || [];
-                        const exact = rows.find((r: any) => (r.code || '').trim().toLowerCase() === term.toLowerCase());
-                        return of(exact ?? rows[0] ?? null);
+                        const t = term.toLowerCase();
+                        const eq = (v: any) => String(v ?? '').trim().toLowerCase() === t;
+                        // Sin coincidencia exacta no se adivina: rows[0] agregaba al préstamo otra
+                        // herramienta que solo contenía el texto escaneado.
+                        const exact = rows.find((r: any) => eq(r.code))
+                            ?? rows.find((r: any) => eq(r.serial_number) || eq(r.part_number));
+                        return of(exact ?? (rows.length === 1 ? rows[0] : null));
                     })
                 );
             })

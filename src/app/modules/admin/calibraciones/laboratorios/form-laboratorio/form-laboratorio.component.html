@@ -1,5 +1,4 @@
-<div class="bg-stone-100 dark:bg-slate-900 border-2 border-black rounded-xl overflow-hidden flex flex-col w-full h-full relative"
->
+<div class="bg-stone-100 dark:bg-slate-900 border-2 border-black rounded-xl overflow-hidden flex flex-col w-full h-full relative">
 
     <!-- OVERLAY GUARDANDO -->
     <div *ngIf="isSaving()" class="absolute inset-0 bg-black/60 flex items-center justify-center z-50">
@@ -10,297 +9,198 @@
     </div>
 
     <!-- CABECERA -->
-    <div class="bg-[#0F172A] px-4 py-2 flex items-center gap-2.5 shrink-0 select-none"
+    <div class="bg-[#0F172A] px-4 py-3 flex items-center gap-3 shrink-0 select-none"
          cdkDrag cdkDragRootElement=".cdk-overlay-pane" cdkDragHandle style="cursor:grab">
-        <div class="w-7 h-7 rounded bg-amber-400 border-2 border-black flex items-center justify-center shadow-[2px_2px_0_#fbbf24] shrink-0">
-            <mat-icon class="!text-sm text-black">business</mat-icon>
+        <div class="w-8 h-8 rounded bg-amber-400 border-2 border-black flex items-center justify-center shadow-[2px_2px_0_#fbbf24] shrink-0">
+            <mat-icon class="!text-base text-black">business</mat-icon>
         </div>
-        <div>
-            <p class="text-[8px] text-slate-400 font-bold uppercase tracking-[0.18em] leading-none mb-0.5">Calibraciones · Empresas</p>
-            <h2 class="text-xs text-white font-black uppercase tracking-tight leading-none">
-                {{ mode === 'new' ? 'Nueva Empresa' : mode === 'edit' ? 'Editar Empresa' : 'Ver Empresa' }}
+        <div class="flex-1 min-w-0">
+            <p class="text-[9px] text-slate-400 font-bold uppercase tracking-[0.18em] leading-none mb-0.5">Calibraciones · Empresas</p>
+            <h2 class="text-sm text-white font-black uppercase tracking-tight leading-none">
+                {{ mode === 'new' ? 'Nueva Empresa' : mode === 'edit' ? 'Editar Empresa' : 'Detalle de Empresa' }}
             </h2>
         </div>
+        <!-- Estado: interruptor al crear/editar, insignia al ver -->
+        <button *ngIf="mode !== 'view'" type="button" (click)="laboratory.active = !laboratory.active"
+                matTooltip="Cambiar estado"
+                class="shrink-0 flex items-center gap-2 h-8 px-2.5 border-2 border-black rounded-lg text-[9px] font-black uppercase transition-all"
+                [ngClass]="laboratory.active ? 'bg-emerald-500 text-white' : 'bg-stone-500 text-white'">
+            <span class="w-7 h-3.5 rounded-full border-2 border-black relative bg-white/30 shrink-0">
+                <span class="absolute top-0 w-2.5 h-2.5 rounded-full bg-white transition-all" [ngClass]="laboratory.active ? 'left-3' : 'left-0'"></span>
+            </span>
+            {{ laboratory.active ? 'Activo' : 'Inactivo' }}
+        </button>
+        <span *ngIf="mode === 'view'" class="shrink-0 px-2 py-1 border-2 border-black rounded-lg text-[9px] font-black uppercase"
+              [ngClass]="laboratory.active ? 'bg-emerald-500 text-white' : 'bg-stone-500 text-white'">
+            {{ laboratory.active ? 'Activo' : 'Inactivo' }}
+        </span>
     </div>
 
-    <!-- CUERPO -->
-    <div class="flex-1 overflow-y-auto px-3.5 py-3 custom-scrollbar">
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+    <!-- ═══ CUERPO: una sola tarjeta, campos en 4 columnas para que entre sin scroll ═══ -->
+    <div class="flex-1 min-h-0 overflow-y-auto custom-scrollbar p-3">
+    <div class="bg-white dark:bg-slate-800 border-2 border-black rounded-xl shadow-[3px_3px_0_#000] p-4 flex flex-col gap-3">
 
-            <!-- Nombre -->
-            <div class="sm:col-span-2">
-                <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-0.5 block">
-                    Nombre <span class="text-black dark:text-white">*</span>
-                </label>
-                <input type="text" [(ngModel)]="laboratory.name" placeholder="Nombre de la empresa"
-                       [disabled]="mode === 'view'"
-                       class="w-full h-8 text-xs font-bold bg-white dark:bg-slate-800 dark:text-white border-2 rounded-lg px-3 outline-none transition-all duration-150 placeholder:text-stone-300 dark:placeholder:text-slate-600"
-                       [class]="mode === 'view'
-                           ? 'border-stone-200 dark:border-slate-700 text-black dark:text-white cursor-not-allowed'
-                           : 'border-stone-300 dark:border-slate-600 hover:border-stone-400 dark:hover:border-slate-500 focus:border-black dark:focus:border-slate-400 focus:shadow-[3px_3px_0_#000]'">
-            </div>
-
-            <!-- Código -->
-            <div>
-                <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-0.5 block">
-                    Código <span class="text-black dark:text-white">*</span>
-                </label>
-                <input type="text" [(ngModel)]="laboratory.code" placeholder="LAB-001"
-                       [disabled]="mode === 'view'"
-                       class="w-full h-8 text-xs font-bold uppercase tracking-wider bg-white dark:bg-slate-800 dark:text-white border-2 rounded-lg px-3 outline-none transition-all duration-150 placeholder:text-stone-300 dark:placeholder:text-slate-600"
-                       [class]="mode === 'view'
-                           ? 'border-stone-200 dark:border-slate-700 text-black dark:text-white cursor-not-allowed'
-                           : 'border-stone-300 dark:border-slate-600 hover:border-stone-400 dark:hover:border-slate-500 focus:border-black dark:focus:border-slate-400 focus:shadow-[3px_3px_0_#000]'">
-            </div>
-
-            <!-- Tipo Servicio -->
-            <div>
-                <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-0.5 block">
-                    Tipo Servicio <span class="text-black dark:text-white">*</span>
-                </label>
-                <select [(ngModel)]="laboratory.tipo_servicio" [disabled]="mode === 'view'"
-                        class="w-full h-8 text-xs font-bold bg-white dark:bg-slate-800 dark:text-white border-2 rounded-lg px-3 outline-none transition-all duration-150 appearance-none cursor-pointer"
-                        [class]="mode === 'view'
-                            ? 'border-stone-200 dark:border-slate-700 text-black dark:text-white cursor-not-allowed'
-                            : 'border-stone-300 dark:border-slate-600 hover:border-stone-400 dark:hover:border-slate-500 focus:border-black dark:focus:border-slate-400 focus:shadow-[3px_3px_0_#000]'">
-                    <option value="">— Seleccionar —</option>
-                    <option *ngFor="let t of tiposServicio" [value]="t.value">{{ t.label }}</option>
-                </select>
-            </div>
-
-            <!-- RUT / NIT -->
-            <div>
-                <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-0.5 block">RUT / NIT</label>
-                <input type="text" [(ngModel)]="laboratory.rut_nit" placeholder="12345678"
-                       [disabled]="mode === 'view'"
-                       class="w-full h-8 text-xs font-bold bg-white dark:bg-slate-800 dark:text-white border-2 rounded-lg px-3 outline-none transition-all duration-150 placeholder:text-stone-300 dark:placeholder:text-slate-600"
-                       [class]="mode === 'view'
-                           ? 'border-stone-200 dark:border-slate-700 text-black dark:text-white cursor-not-allowed'
-                           : 'border-stone-300 dark:border-slate-600 hover:border-stone-400 dark:hover:border-slate-500 focus:border-black dark:focus:border-slate-400 focus:shadow-[3px_3px_0_#000]'">
-            </div>
-
-            <!-- Días Promedio -->
-            <div>
-                <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-0.5 block">Días Prom. Entrega</label>
-                <input type="number" [(ngModel)]="laboratory.average_delivery_days" min="1"
-                       [disabled]="mode === 'view'"
-                       class="w-full h-8 text-xs font-bold bg-white dark:bg-slate-800 dark:text-white border-2 rounded-lg px-3 outline-none transition-all duration-150"
-                       [class]="mode === 'view'
-                           ? 'border-stone-200 dark:border-slate-700 text-black dark:text-white cursor-not-allowed'
-                           : 'border-stone-300 dark:border-slate-600 hover:border-stone-400 dark:hover:border-slate-500 focus:border-black dark:focus:border-slate-400 focus:shadow-[3px_3px_0_#000]'">
-            </div>
-
-            <!-- Calificación -->
-            <div>
-                <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-0.5 block">Calificación (0-5)</label>
-                <input type="number" [(ngModel)]="laboratory.rating" min="0" max="5" step="0.1"
-                       [disabled]="mode === 'view'"
-                       class="w-full h-8 text-xs font-bold bg-white dark:bg-slate-800 dark:text-white border-2 rounded-lg px-3 outline-none transition-all duration-150"
-                       [class]="mode === 'view'
-                           ? 'border-stone-200 dark:border-slate-700 text-black dark:text-white cursor-not-allowed'
-                           : 'border-stone-300 dark:border-slate-600 hover:border-stone-400 dark:hover:border-slate-500 focus:border-black dark:focus:border-slate-400 focus:shadow-[3px_3px_0_#000]'">
-            </div>
-
-            <!-- Separador CONTACTO -->
-            <div class="sm:col-span-2 flex items-center gap-2 pt-0.5">
-                <span class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-500 shrink-0">Contacto</span>
-                <div class="flex-1 h-px bg-stone-200 dark:bg-slate-700"></div>
-            </div>
-
-            <!-- Persona de Contacto -->
-            <div>
-                <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-0.5 block">Persona de Contacto</label>
-                <div class="relative">
-                    <mat-icon class="absolute left-2.5 top-2 !text-xs text-stone-300 dark:text-slate-600 pointer-events-none">person</mat-icon>
-                    <input type="text" [(ngModel)]="laboratory.contact_person" placeholder="Nombre"
-                           [disabled]="mode === 'view'"
-                           class="w-full h-8 text-xs font-bold bg-white dark:bg-slate-800 dark:text-white border-2 rounded-lg pl-8 pr-2 outline-none transition-all duration-150 placeholder:text-stone-300 dark:placeholder:text-slate-600"
-                           [class]="mode === 'view'
-                               ? 'border-stone-200 dark:border-slate-700 text-black dark:text-white cursor-not-allowed'
-                               : 'border-stone-300 dark:border-slate-600 hover:border-stone-400 dark:hover:border-slate-500 focus:border-black dark:focus:border-slate-400 focus:shadow-[3px_3px_0_#000]'">
+        <!-- ── DETALLE (solo lectura) ── -->
+        <ng-container *ngIf="mode === 'view'">
+            <div class="flex items-start justify-between gap-3">
+                <div class="min-w-0">
+                    <p class="font-mono font-black text-[11px] text-amber-600 dark:text-amber-400 tracking-wider leading-none">{{ laboratory.code || '—' }}</p>
+                    <h3 class="text-base font-black uppercase text-black dark:text-white leading-tight mt-1 truncate">{{ laboratory.name || '—' }}</h3>
+                </div>
+                <div class="flex flex-wrap justify-end gap-1.5 shrink-0">
+                    <span class="px-2 py-0.5 bg-[#0F172A] text-amber-400 border-2 border-black rounded text-[9px] font-black uppercase">{{ tipoServicioLabel }}</span>
+                    <span class="px-2 py-0.5 border-2 border-black rounded text-[9px] font-black uppercase"
+                          [ngClass]="laboratory.is_certified ? 'bg-emerald-500 text-white' : 'bg-stone-100 dark:bg-slate-700 text-black dark:text-white'">
+                        {{ laboratory.is_certified ? 'Certificada' : 'Sin certificar' }}
+                    </span>
                 </div>
             </div>
 
-            <!-- Teléfono -->
-            <div>
-                <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-0.5 block">Teléfono</label>
-                <div class="relative">
-                    <mat-icon class="absolute left-2.5 top-2 !text-xs text-stone-300 dark:text-slate-600 pointer-events-none">phone</mat-icon>
-                    <input type="text" [(ngModel)]="laboratory.phone" placeholder="+591 ..."
-                           [disabled]="mode === 'view'"
-                           class="w-full h-8 text-xs font-bold bg-white dark:bg-slate-800 dark:text-white border-2 rounded-lg pl-8 pr-2 outline-none transition-all duration-150 placeholder:text-stone-300 dark:placeholder:text-slate-600"
-                           [class]="mode === 'view'
-                               ? 'border-stone-200 dark:border-slate-700 text-black dark:text-white cursor-not-allowed'
-                               : 'border-stone-300 dark:border-slate-600 hover:border-stone-400 dark:hover:border-slate-500 focus:border-black dark:focus:border-slate-400 focus:shadow-[3px_3px_0_#000]'">
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-x-4 gap-y-2.5 pt-3 border-t-2 border-stone-200 dark:border-slate-700">
+                <div><p [class]="labelCls">RUT / NIT</p><p [class]="valueCls">{{ laboratory.rut_nit || '—' }}</p></div>
+                <div><p [class]="labelCls">Calificación</p><p [class]="valueCls"><span class="text-amber-500">{{ estrellas }}</span> {{ laboratory.rating || 0 }}/5</p></div>
+                <div><p [class]="labelCls">Entrega promedio</p><p [class]="valueCls">{{ laboratory.average_delivery_days || '—' }} días</p></div>
+                <div><p [class]="labelCls">N° Certificación</p><p [class]="valueCls + ' font-mono'">{{ laboratory.is_certified ? (laboratory.certification_number || '—') : '—' }}</p></div>
+
+                <div><p [class]="labelCls">Contacto</p><p [class]="valueCls">{{ laboratory.contact_person || '—' }}</p></div>
+                <div><p [class]="labelCls">Teléfono</p><p [class]="valueCls">{{ laboratory.phone || '—' }}</p></div>
+                <div class="min-w-0"><p [class]="labelCls">Email</p>
+                    <p [class]="valueCls + ' truncate'">
+                        <a *ngIf="laboratory.email; else sinDato" [href]="'mailto:' + laboratory.email" class="text-blue-600 dark:text-blue-400 hover:underline">{{ laboratory.email }}</a>
+                    </p>
                 </div>
+                <div class="min-w-0"><p [class]="labelCls">Sitio web</p><p [class]="valueCls + ' truncate'">{{ laboratory.website || '—' }}</p></div>
+
+                <div class="col-span-2"><p [class]="labelCls">Dirección</p><p [class]="valueCls">{{ laboratory.address || '—' }}</p></div>
+                <div><p [class]="labelCls">Ciudad</p><p [class]="valueCls">{{ laboratory.city || '—' }}</p></div>
+                <div><p [class]="labelCls">País</p><p [class]="valueCls">{{ laboratory.country || '—' }}</p></div>
             </div>
 
-            <!-- Email -->
-            <div>
-                <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-0.5 block">Email</label>
-                <div class="relative">
-                    <mat-icon class="absolute left-2.5 top-2 !text-xs text-stone-300 dark:text-slate-600 pointer-events-none">mail</mat-icon>
-                    <input type="email" [(ngModel)]="laboratory.email" placeholder="correo@empresa.com"
-                           [disabled]="mode === 'view'"
-                           class="w-full h-8 text-xs font-bold bg-white dark:bg-slate-800 dark:text-white border-2 rounded-lg pl-8 pr-2 outline-none transition-all duration-150 placeholder:text-stone-300 dark:placeholder:text-slate-600"
-                           [class]="mode === 'view'
-                               ? 'border-stone-200 dark:border-slate-700 text-black dark:text-white cursor-not-allowed'
-                               : 'border-stone-300 dark:border-slate-600 hover:border-stone-400 dark:hover:border-slate-500 focus:border-black dark:focus:border-slate-400 focus:shadow-[3px_3px_0_#000]'">
+            <div *ngIf="laboratory.is_certified && tiposCertificacion.length" class="flex flex-wrap items-center gap-1.5">
+                <span [class]="labelCls + ' !mb-0 mr-1'">Tipos de certificación</span>
+                <span *ngFor="let t of tiposCertificacion" class="px-2 py-0.5 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 border-2 border-emerald-500 rounded text-[9px] font-black uppercase">{{ t }}</span>
+            </div>
+
+            <div *ngIf="laboratory.observaciones" class="bg-amber-50 dark:bg-slate-900 border-2 border-stone-200 dark:border-slate-700 rounded-lg px-3 py-2">
+                <p [class]="labelCls">Observaciones</p>
+                <p class="text-xs text-black dark:text-white whitespace-pre-line">{{ laboratory.observaciones }}</p>
+            </div>
+            <ng-template #sinDato><span class="text-black dark:text-white">—</span></ng-template>
+        </ng-container>
+
+        <!-- ── NUEVA / EDITAR ── -->
+        <ng-container *ngIf="mode !== 'view'">
+            <!-- Identificación -->
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-x-3 gap-y-2.5">
+                <div class="col-span-2">
+                    <label [class]="labelCls">Nombre de la empresa *</label>
+                    <input type="text" [(ngModel)]="laboratory.name" placeholder="Nombre de la empresa" [class]="inputCls + ' font-black uppercase'">
                 </div>
-            </div>
-
-            <!-- Sitio Web -->
-            <div>
-                <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-0.5 block">Sitio Web</label>
-                <div class="relative">
-                    <mat-icon class="absolute left-2.5 top-2 !text-xs text-stone-300 dark:text-slate-600 pointer-events-none">language</mat-icon>
-                    <input type="text" [(ngModel)]="laboratory.website" placeholder="www.empresa.com"
-                           [disabled]="mode === 'view'"
-                           class="w-full h-8 text-xs font-bold bg-white dark:bg-slate-800 dark:text-white border-2 rounded-lg pl-8 pr-2 outline-none transition-all duration-150 placeholder:text-stone-300 dark:placeholder:text-slate-600"
-                           [class]="mode === 'view'
-                               ? 'border-stone-200 dark:border-slate-700 text-black dark:text-white cursor-not-allowed'
-                               : 'border-stone-300 dark:border-slate-600 hover:border-stone-400 dark:hover:border-slate-500 focus:border-black dark:focus:border-slate-400 focus:shadow-[3px_3px_0_#000]'">
+                <div>
+                    <label [class]="labelCls">Código *</label>
+                    <input type="text" [(ngModel)]="laboratory.code" placeholder="LAB-001" [class]="inputCls + ' font-mono uppercase'">
                 </div>
-            </div>
+                <div>
+                    <label [class]="labelCls">Tipo de servicio *</label>
+                    <select [(ngModel)]="laboratory.tipo_servicio" [class]="inputCls + ' cursor-pointer'">
+                        <option value="">— Seleccionar —</option>
+                        <option *ngFor="let t of tiposServicio" [value]="t.value">{{ t.label }}</option>
+                    </select>
+                </div>
 
-            <!-- Separador UBICACIÓN -->
-            <div class="sm:col-span-2 flex items-center gap-2 pt-0.5">
-                <span class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-500 shrink-0">Ubicación</span>
-                <div class="flex-1 h-px bg-stone-200 dark:bg-slate-700"></div>
-            </div>
-
-            <!-- Dirección -->
-            <div class="sm:col-span-2">
-                <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-0.5 block">Dirección</label>
-                <input type="text" [(ngModel)]="laboratory.address" placeholder="Dirección física"
-                       [disabled]="mode === 'view'"
-                       class="w-full h-8 text-xs font-bold bg-white dark:bg-slate-800 dark:text-white border-2 rounded-lg px-3 outline-none transition-all duration-150 placeholder:text-stone-300 dark:placeholder:text-slate-600"
-                       [class]="mode === 'view'
-                           ? 'border-stone-200 dark:border-slate-700 text-black dark:text-white cursor-not-allowed'
-                           : 'border-stone-300 dark:border-slate-600 hover:border-stone-400 dark:hover:border-slate-500 focus:border-black dark:focus:border-slate-400 focus:shadow-[3px_3px_0_#000]'">
-            </div>
-
-            <!-- Ciudad -->
-            <div>
-                <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-0.5 block">Ciudad</label>
-                <input type="text" [(ngModel)]="laboratory.city" placeholder="Ciudad"
-                       [disabled]="mode === 'view'"
-                       class="w-full h-8 text-xs font-bold bg-white dark:bg-slate-800 dark:text-white border-2 rounded-lg px-3 outline-none transition-all duration-150 placeholder:text-stone-300 dark:placeholder:text-slate-600"
-                       [class]="mode === 'view'
-                           ? 'border-stone-200 dark:border-slate-700 text-black dark:text-white cursor-not-allowed'
-                           : 'border-stone-300 dark:border-slate-600 hover:border-stone-400 dark:hover:border-slate-500 focus:border-black dark:focus:border-slate-400 focus:shadow-[3px_3px_0_#000]'">
-            </div>
-
-            <!-- País -->
-            <div>
-                <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-0.5 block">País</label>
-                <input type="text" [(ngModel)]="laboratory.country" placeholder="País"
-                       [disabled]="mode === 'view'"
-                       class="w-full h-8 text-xs font-bold bg-white dark:bg-slate-800 dark:text-white border-2 rounded-lg px-3 outline-none transition-all duration-150 placeholder:text-stone-300 dark:placeholder:text-slate-600"
-                       [class]="mode === 'view'
-                           ? 'border-stone-200 dark:border-slate-700 text-black dark:text-white cursor-not-allowed'
-                           : 'border-stone-300 dark:border-slate-600 hover:border-stone-400 dark:hover:border-slate-500 focus:border-black dark:focus:border-slate-400 focus:shadow-[3px_3px_0_#000]'">
-            </div>
-
-            <!-- Separador CONFIGURACIÓN -->
-            <div class="sm:col-span-2 flex items-center gap-2 pt-0.5">
-                <span class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-500 shrink-0">Configuración</span>
-                <div class="flex-1 h-px bg-stone-200 dark:bg-slate-700"></div>
-            </div>
-
-            <!-- Estado -->
-            <div>
-                <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-0.5 block">Estado</label>
-                @if (mode !== 'view') {
-                    <button type="button" (click)="laboratory.active = !laboratory.active"
-                            class="flex items-center gap-2 h-8 px-3 border-2 rounded-lg font-black text-[10px] uppercase transition-all duration-150 w-full"
-                            [class]="laboratory.active
-                                ? 'border-black bg-white dark:bg-slate-700 shadow-[2px_2px_0_#000] text-black dark:text-white'
-                                : 'border-stone-300 dark:border-slate-600 bg-stone-50 dark:bg-slate-800 text-stone-400 dark:text-slate-500'">
-                        <div class="w-7 h-3.5 rounded-full border-2 relative transition-all duration-200 shrink-0"
-                             [class]="laboratory.active ? 'border-black bg-black dark:border-slate-400 dark:bg-slate-400' : 'border-stone-300 dark:border-slate-600 bg-stone-200 dark:bg-slate-600'">
-                            <div class="absolute top-px w-2 h-2 rounded-full bg-white transition-all duration-200"
-                                 [class]="laboratory.active ? 'left-3' : 'left-px'"></div>
-                        </div>
-                        {{ laboratory.active ? 'Activo' : 'Inactivo' }}
-                    </button>
-                }
-                @if (mode === 'view') {
-                    <div class="flex items-center h-8 px-3 border-2 border-stone-200 dark:border-slate-700 rounded-lg font-black text-[10px] uppercase text-black dark:text-white">
-                        {{ laboratory.active ? 'Activo' : 'Inactivo' }}
-                    </div>
-                }
-            </div>
-
-            <!-- Certificación -->
-            <div>
-                <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-0.5 block">Certificación</label>
-                @if (mode !== 'view') {
+                <div>
+                    <label [class]="labelCls">RUT / NIT</label>
+                    <input type="text" [(ngModel)]="laboratory.rut_nit" placeholder="12345678" [class]="inputCls">
+                </div>
+                <div>
+                    <label class="text-[9px] font-black uppercase tracking-wider text-amber-600 mb-1 block">Calificación (0-5)</label>
+                    <input type="number" [(ngModel)]="laboratory.rating" min="0" max="5" step="0.1"
+                           class="w-full h-8 text-xs font-black text-center bg-white dark:bg-slate-900 dark:text-white border-2 border-amber-400 rounded-lg px-1.5 outline-none transition-all focus:shadow-[2px_2px_0_#D97706]">
+                </div>
+                <div>
+                    <label [class]="labelCls">Días prom. entrega</label>
+                    <input type="number" [(ngModel)]="laboratory.average_delivery_days" min="1" [class]="inputCls + ' text-center font-black'">
+                </div>
+                <div>
+                    <label [class]="labelCls">Certificación</label>
                     <button type="button" (click)="laboratory.is_certified = !laboratory.is_certified"
-                            class="flex items-center gap-2 h-8 px-3 border-2 rounded-lg font-black text-[10px] uppercase transition-all duration-150 w-full"
-                            [class]="laboratory.is_certified
-                                ? 'border-black bg-white dark:bg-slate-700 shadow-[2px_2px_0_#000] text-black dark:text-white'
-                                : 'border-stone-300 dark:border-slate-600 bg-stone-50 dark:bg-slate-800 text-stone-400 dark:text-slate-500'">
-                        <div class="w-7 h-3.5 rounded-full border-2 relative transition-all duration-200 shrink-0"
-                             [class]="laboratory.is_certified ? 'border-black bg-black dark:border-slate-400 dark:bg-slate-400' : 'border-stone-300 dark:border-slate-600 bg-stone-200 dark:bg-slate-600'">
-                            <div class="absolute top-px w-2 h-2 rounded-full bg-white transition-all duration-200"
-                                 [class]="laboratory.is_certified ? 'left-3' : 'left-px'"></div>
-                        </div>
-                        {{ laboratory.is_certified ? 'Certificado' : 'Sin certificar' }}
+                            class="w-full flex items-center gap-2 h-8 px-2.5 border-2 border-black rounded-lg text-[9px] font-black uppercase transition-all"
+                            [ngClass]="laboratory.is_certified ? 'bg-emerald-500 text-white' : 'bg-white dark:bg-slate-700 text-black dark:text-white'">
+                        <span class="w-7 h-3.5 rounded-full border-2 border-black relative shrink-0" [ngClass]="laboratory.is_certified ? 'bg-white/30' : 'bg-stone-200 dark:bg-slate-600'">
+                            <span class="absolute top-0 w-2.5 h-2.5 rounded-full transition-all" [ngClass]="laboratory.is_certified ? 'left-3 bg-white' : 'left-0 bg-black dark:bg-white'"></span>
+                        </span>
+                        {{ laboratory.is_certified ? 'Certificada' : 'Sin certificar' }}
                     </button>
-                }
-                @if (mode === 'view') {
-                    <div class="flex items-center h-8 px-3 border-2 border-stone-200 dark:border-slate-700 rounded-lg font-black text-[10px] uppercase text-black dark:text-white">
-                        {{ laboratory.is_certified ? 'Certificado' : 'Sin certificar' }}
+                </div>
+
+                <ng-container *ngIf="laboratory.is_certified">
+                    <div class="col-span-2">
+                        <label [class]="labelCls">N° de certificación</label>
+                        <input type="text" [(ngModel)]="laboratory.certification_number" placeholder="ISO/IEC 17025:2017" [class]="inputCls + ' font-mono uppercase'">
                     </div>
-                }
+                    <div class="col-span-2">
+                        <label [class]="labelCls">Tipos <span class="font-normal normal-case">(separados por coma)</span></label>
+                        <input type="text" [(ngModel)]="laboratory.certification_types" placeholder="ISO 9001, ISO 17025" [class]="inputCls">
+                    </div>
+                </ng-container>
             </div>
 
-            <!-- N° Certificación (condicional) -->
-            <div *ngIf="laboratory.is_certified">
-                <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-0.5 block">N° Certificación</label>
+            <!-- Contacto -->
+            <div class="flex items-center gap-2">
+                <mat-icon class="!text-xs !w-3 !h-3 text-amber-500">contact_phone</mat-icon>
+                <span class="text-[9px] font-black uppercase tracking-wider text-stone-400 dark:text-slate-500">Contacto</span>
+                <div class="flex-1 h-px bg-stone-200 dark:bg-slate-700"></div>
+            </div>
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-x-3 gap-y-2.5">
                 <div class="relative">
-                    <mat-icon class="absolute left-2.5 top-2 !text-xs text-stone-300 dark:text-slate-600 pointer-events-none">workspace_premium</mat-icon>
-                    <input type="text" [(ngModel)]="laboratory.certification_number" placeholder="ISO/IEC 17025:2017"
-                           [disabled]="mode === 'view'"
-                           class="w-full h-8 text-xs font-bold uppercase tracking-wide bg-white dark:bg-slate-800 dark:text-white border-2 rounded-lg pl-8 pr-2 outline-none transition-all duration-150 placeholder:text-stone-300 dark:placeholder:text-slate-600"
-                           [class]="mode === 'view'
-                               ? 'border-stone-200 dark:border-slate-700 text-black dark:text-white cursor-not-allowed'
-                               : 'border-stone-300 dark:border-slate-600 hover:border-stone-400 dark:hover:border-slate-500 focus:border-black dark:focus:border-slate-400 focus:shadow-[3px_3px_0_#000]'">
+                    <mat-icon class="absolute left-2.5 top-2 !text-xs !w-3 !h-3 text-stone-400 pointer-events-none">person</mat-icon>
+                    <input type="text" [(ngModel)]="laboratory.contact_person" placeholder="Persona de contacto" [class]="inputCls + ' pl-7'">
+                </div>
+                <div class="relative">
+                    <mat-icon class="absolute left-2.5 top-2 !text-xs !w-3 !h-3 text-stone-400 pointer-events-none">phone</mat-icon>
+                    <input type="text" [(ngModel)]="laboratory.phone" placeholder="Teléfono" [class]="inputCls + ' pl-7'">
+                </div>
+                <div class="relative">
+                    <mat-icon class="absolute left-2.5 top-2 !text-xs !w-3 !h-3 text-stone-400 pointer-events-none">mail</mat-icon>
+                    <input type="email" [(ngModel)]="laboratory.email" placeholder="correo@empresa.com" [class]="inputCls + ' pl-7'">
+                </div>
+                <div class="relative">
+                    <mat-icon class="absolute left-2.5 top-2 !text-xs !w-3 !h-3 text-stone-400 pointer-events-none">language</mat-icon>
+                    <input type="text" [(ngModel)]="laboratory.website" placeholder="www.empresa.com" [class]="inputCls + ' pl-7'">
                 </div>
             </div>
 
-            <!-- Tipos de Certificación (condicional) -->
-            <div *ngIf="laboratory.is_certified">
-                <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-0.5 block">Tipos de Certificación</label>
-                <input type="text" [(ngModel)]="laboratory.certification_types" placeholder="ISO 9001, ISO 17025"
-                       [disabled]="mode === 'view'"
-                       class="w-full h-8 text-xs font-bold bg-white dark:bg-slate-800 dark:text-white border-2 rounded-lg px-3 outline-none transition-all duration-150 placeholder:text-stone-300 dark:placeholder:text-slate-600"
-                       [class]="mode === 'view'
-                           ? 'border-stone-200 dark:border-slate-700 text-black dark:text-white cursor-not-allowed'
-                           : 'border-stone-300 dark:border-slate-600 hover:border-stone-400 dark:hover:border-slate-500 focus:border-black dark:focus:border-slate-400 focus:shadow-[3px_3px_0_#000]'">
-                <p class="text-[8px] text-stone-400 dark:text-slate-500 mt-0.5">Separadas por coma</p>
+            <!-- Ubicación -->
+            <div class="flex items-center gap-2">
+                <mat-icon class="!text-xs !w-3 !h-3 text-amber-500">location_on</mat-icon>
+                <span class="text-[9px] font-black uppercase tracking-wider text-stone-400 dark:text-slate-500">Ubicación</span>
+                <div class="flex-1 h-px bg-stone-200 dark:bg-slate-700"></div>
+            </div>
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-x-3 gap-y-2.5">
+                <div class="col-span-2">
+                    <input type="text" [(ngModel)]="laboratory.address" placeholder="Dirección física" [class]="inputCls">
+                </div>
+                <div>
+                    <input type="text" [(ngModel)]="laboratory.city" placeholder="Ciudad" [class]="inputCls">
+                </div>
+                <div>
+                    <input type="text" [(ngModel)]="laboratory.country" placeholder="País" [class]="inputCls">
+                </div>
             </div>
 
             <!-- Observaciones -->
-            <div class="sm:col-span-2">
-                <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-0.5 block">
-                    Observaciones <span class="font-normal normal-case">(opcional)</span>
-                </label>
-                <textarea [(ngModel)]="laboratory.observaciones" rows="2"
-                          placeholder="Notas adicionales..."
-                          [disabled]="mode === 'view'"
-                          class="w-full text-xs font-normal bg-white dark:bg-slate-800 dark:text-white border-2 rounded-lg px-3 py-2 outline-none transition-all duration-150 resize-none placeholder:text-stone-300 dark:placeholder:text-slate-600 custom-scrollbar"
-                          [class]="mode === 'view'
-                              ? 'border-stone-200 dark:border-slate-700 text-black dark:text-white cursor-not-allowed'
-                              : 'border-stone-300 dark:border-slate-600 hover:border-stone-400 dark:hover:border-slate-500 focus:border-black dark:focus:border-slate-400 focus:shadow-[3px_3px_0_#000]'"></textarea>
+            <div>
+                <label [class]="labelCls">Observaciones <span class="font-normal normal-case">(opcional)</span></label>
+                <textarea [(ngModel)]="laboratory.observaciones" rows="2" placeholder="Notas adicionales..."
+                          class="w-full text-xs bg-white dark:bg-slate-900 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-lg px-2.5 py-1.5 outline-none transition-all resize-none placeholder:text-stone-300 dark:placeholder:text-slate-600 hover:border-stone-400 focus:border-black focus:shadow-[2px_2px_0_#000] custom-scrollbar"></textarea>
             </div>
+        </ng-container>
 
-        </div>
+    </div>
     </div>
 
     <!-- PIE -->
-    <div class="border-t-2 border-black bg-stone-200 dark:bg-slate-800 px-4 py-2 flex justify-between items-center shrink-0">
+    <div class="border-t-2 border-black bg-stone-200 dark:bg-slate-800 px-4 py-2 flex flex-wrap gap-y-2 justify-between items-center shrink-0">
         <button type="button" (click)="dialogRef.close(false)"
                 class="px-3 py-1.5 bg-[#FF1414] text-white font-black text-[10px] border-2 border-black rounded-lg shadow-[2px_2px_0_#000] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all uppercase">
             {{ mode === 'view' ? 'Cerrar' : 'Cancelar' }}

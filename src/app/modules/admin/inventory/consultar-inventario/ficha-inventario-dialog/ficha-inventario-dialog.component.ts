@@ -17,6 +17,7 @@ import { ToolService }              from 'app/core/services/tool.service';
 import { UnifiedItem }               from '../consultar-inventario.component';
 import { buildFichaPdfPayload }      from './ficha-pdf.util';
 import { ReportesService }           from '../../reportes/reportes.service';
+import { parseLocalDate } from '../../../../../core/utils/date.utils';
 
 // ─── Tipos ────────────────────────────────────────────────────────────────────
 
@@ -231,13 +232,15 @@ export class FichaInventarioDialogComponent implements OnInit {
                     // "Últ. mov." real: la fecha del movimiento más reciente en he.tmovements
                     // (item.ultimoMovimiento venía de fecha_mod, que es la última edición del registro)
                     const fechaUlt = movs[0]?.fecha;
-                    if (fechaUlt) this.item.ultimoMovimiento = new Date(fechaUlt);
+                    // fecha = 'YYYY-MM-DD': new Date() la leía como UTC (un día antes en Bolivia).
+                    const d = parseLocalDate(fechaUlt);
+                    if (d) this.item.ultimoMovimiento = d;
                 });
 
         } else if (item.tipo === 'KIT') {
             forkJoin({
                 components: this.kitsService.getKitComponents(item.id).pipe(catchError(() => of([]))),
-                loans:      this.kitsService.getKitLoans(item.id).pipe(catchError(() => of([]))),
+                loans:      this.kitsService.getPrestamosKit(item.id).pipe(catchError(() => of([]))),
             }).pipe(finalize(() => this.isLoadingDetail.set(false)))
                 .subscribe(({ components, loans }) => {
                     this.detailComponents.set(components as any[]);
@@ -302,26 +305,17 @@ export class FichaInventarioDialogComponent implements OnInit {
 
     // ── Código QR (etiqueta para impresora Bixolon) ─────────────────────────
     verCodigoQR(): void {
+        // Pestaña reservada en el clic: tras la espera del backend el navegador bloqueaba el
+        // window.open, y la URL se liberaba a los 300 ms (el visor a veces no alcanzaba a cargarla).
+        const ventana = this.movementService.preAbrirVentanaPdf();
         this.isGeneratingQR.set(true);
         this.toolService.generarCodigoQR(Number(this.item.id)).pipe(
             finalize(() => this.isGeneratingQR.set(false))
         ).subscribe({
-            next: ({ pdf_base64 }) => {
-                try {
-                    const bytes = atob(pdf_base64);
-                    const arr   = new Uint8Array(bytes.length);
-                    for (let i = 0; i < bytes.length; i++) arr[i] = bytes.charCodeAt(i);
-                    const blob = new Blob([arr], { type: 'application/pdf' });
-                    const url  = window.URL.createObjectURL(blob);
-                    window.open(url, '_blank');
-                    setTimeout(() => window.URL.revokeObjectURL(url), 300);
-                } catch (e) {
-                    console.error('Error abriendo código QR:', e);
-                    this.snackBar.open('No se pudo abrir el PDF del código QR', 'OK', { duration: 5000 });
-                }
-            },
+            next: ({ pdf_base64, nombre_archivo }) =>
+                this.movementService.abrirPdfNota(pdf_base64, nombre_archivo || 'etiqueta_qr.pdf', ventana),
             error: (e) => {
-                console.error('Error al generar código QR:', e);
+                try { ventana?.close(); } catch { /* noop */ }
                 this.snackBar.open(e?.message || 'Error al generar el código QR', 'OK', { duration: 5000 });
             }
         });

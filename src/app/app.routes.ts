@@ -1,6 +1,7 @@
 import { Route } from '@angular/router';
 import { initialDataResolver } from 'app/app.resolvers';
 import { AuthGuard } from 'app/core/auth/guards/auth.guard';
+import { areaGuard } from 'app/core/auth/guards/area.guard';
 import { NoAuthGuard } from 'app/core/auth/guards/noAuth.guard';
 import { LayoutComponent } from 'app/layout/layout.component';
 
@@ -61,20 +62,20 @@ export const appRoutes: Route[] = [
             {path: 'dashboard', loadComponent: () => import('app/modules/admin/dashboard/dashboard.component').then(m => m.DashboardComponent)},
 
             // MOVIMIENTOS - Shell unificado (Inter-Bases · Entradas · Salidas)
-            {path: 'movimientos', loadChildren: () => import('app/modules/admin/movimientos/movimientos.routes')},
+            {path: 'movimientos', canActivate: [areaGuard('movimientos')], loadChildren: () => import('app/modules/admin/movimientos/movimientos.routes')},
 
             // Redirects de compatibilidad
             {path: 'entradas', redirectTo: 'movimientos', pathMatch: 'full'},
             {path: 'salidas',  redirectTo: 'movimientos', pathMatch: 'full'},
 
             // CALIBRACIONES - Gestión de calibraciones, dashboard-alertas, laboratorios y gatas
-            {path: 'calibraciones', loadChildren: () => import('app/modules/admin/calibraciones/calibraciones.routes')},
+            {path: 'calibraciones', canActivate: [areaGuard('calibraciones')], loadChildren: () => import('app/modules/admin/calibraciones/calibraciones.routes')},
 
             // INVENTARIO - Módulo unificado (inventario + kits + reportes)
-            {path: 'inventario', loadChildren: () => import('app/modules/admin/inventory/inventory.routes')},
+            {path: 'inventario', canActivate: [areaGuard('inventario')], loadChildren: () => import('app/modules/admin/inventory/inventory.routes')},
 
             // ADMINISTRACIÓN - Gestión de usuarios, roles, proveedores y clientes
-            {path: 'administration', loadChildren: () => import('app/modules/admin/administration/administration.routes')}
+            {path: 'administration', canActivate: [areaGuard('administration')], loadChildren: () => import('app/modules/admin/administration/administration.routes')}
         ]
     }
 ];

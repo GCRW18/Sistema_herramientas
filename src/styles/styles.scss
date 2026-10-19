@@ -68,6 +68,40 @@
     }
 }
 
+// Ningún diálogo más alto que la pantalla: varios se abren con height:'560px', que en celular
+// horizontal o tablet chica se sale de la vista (el contenido ya scrollea por dentro).
+.cdk-overlay-pane.mat-mdc-dialog-panel {
+    max-height: 100dvh !important;
+}
+
+// Pantalla baja con paneles lado a lado (celular horizontal, tablet con el teclado abierto):
+// el formulario scrollea entero en vez de dejar dos zonas de scroll diminutas.
+// dlg-cuerpo = contenedor de paneles, dlg-panel = panel de datos, dlg-lista = panel de herramientas.
+@media (max-height: 560px) and (min-width: 600px) {
+    .dlg-cuerpo {
+        overflow-y: auto !important;
+        align-items: flex-start !important;
+    }
+    .dlg-panel {
+        height: auto !important;
+        overflow: visible !important;
+    }
+    .dlg-lista {
+        min-height: 0 !important;
+    }
+}
+
+// Mismo criterio para el selector Almacén → Estante → Nivel (3 columnas desde md = 960px).
+@media (max-height: 560px) and (min-width: 960px) {
+    .ubic-cuerpo {
+        overflow-y: auto !important;
+        align-items: flex-start !important;
+    }
+    .ubic-col {
+        overflow: visible !important;
+    }
+}
+
 // Responsive dialog
 .dialog-responsive {
     @media (max-width: 640px) {
@@ -275,13 +309,14 @@
 }
 
 // Neo-Brutal Dialog for Entradas Recientes
+// Registros Recientes (Movimientos): sin borde negro ni sombra dura, solo sombra suave.
 .neo-dialog-entradas {
     .mat-mdc-dialog-container {
         --mdc-dialog-container-shape: 16px;
-        border: 3px solid black !important;
+        border: none !important;
         border-radius: 16px !important;
         overflow: hidden !important;
-        box-shadow: 8px 8px 0px 0px rgba(0, 0, 0, 1) !important;
+        box-shadow: 0 20px 40px -12px rgba(0, 0, 0, 0.35) !important;
         background: #f8f9fc !important;
         padding: 0 !important;
 
@@ -298,9 +333,8 @@
 
 .dark .neo-dialog-entradas {
     .mat-mdc-dialog-container {
-        border-color: #000000 !important;
         background: #0f172a !important;
-        box-shadow: 8px 8px 0px 0px rgba(0, 0, 0, 0.8) !important;
+        box-shadow: 0 20px 40px -12px rgba(0, 0, 0, 0.6) !important;
 
         .mdc-dialog__surface {
             background-color: #0f172a !important;
@@ -342,9 +376,7 @@
     }
 }
 
-// Neo-brutalist Dialog for Calibration Alerts — borde negro grueso + sombra dura,
-// igual al resto del dashboard (neo-card-base). El componente ya no dibuja su propio
-// borde/sombra por dentro para no duplicarlo con el del contenedor de Material.
+// Diálogo de Alertas de Calibración: sin borde negro ni sombra dura, solo sombra suave.
 .neo-dialog-calibration {
     .mat-mdc-dialog-container {
         --mdc-dialog-container-shape: 16px;
@@ -362,8 +394,8 @@
             border-radius: 16px !important;
             padding: 0 !important;
             overflow: hidden !important;
-            border: 3px solid #000 !important;
-            box-shadow: 8px 8px 0px 0px rgba(0, 0, 0, 1) !important;
+            border: none !important;
+            box-shadow: 0 20px 40px -12px rgba(0, 0, 0, 0.35) !important;
             max-height: 90vh;
         }
     }
@@ -373,7 +405,7 @@
     .mat-mdc-dialog-container {
         .mdc-dialog__surface {
             background-color: #1e293b !important;
-            box-shadow: 8px 8px 0px 0px rgba(71, 85, 105, 1) !important;
+            box-shadow: 0 20px 40px -12px rgba(0, 0, 0, 0.6) !important;
         }
     }
 }

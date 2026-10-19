@@ -71,7 +71,7 @@
                     HERRAMIENTAS EN LABORATORIO ({{ filteredCalibraciones.length }})
                 </h2>
 
-                <div class="flex items-center gap-4">
+                <div class="flex items-center flex-wrap gap-2 sm:gap-4">
                     <div class="flex items-center gap-2 bg-white/20 rounded-lg px-3 py-1.5 border border-white/30 shadow-[1px_1px_0px_0px_#000]">
                         <div class="w-5 h-5 bg-[#0F172AFF] border border-white rounded flex items-center justify-center">
                             <mat-icon class="!text-xs text-[#FFC501FF]">science</mat-icon>
@@ -207,6 +207,10 @@
                             <span *ngIf="cal.status === 'returned' || cal.status === 'completed'"
                                   class="inline-block px-2 py-0.5 border-[2px] border-green-200 bg-green-100 text-green-800 rounded-lg text-[10px] font-black uppercase">
                                 COMPLETADO
+                            </span>
+                            <span *ngIf="cal.status === 'cancelled'"
+                                  class="inline-block px-2 py-0.5 border-[2px] border-stone-300 bg-stone-100 text-stone-600 rounded-lg text-[10px] font-black uppercase">
+                                ANULADO
                             </span>
                         </td>
 

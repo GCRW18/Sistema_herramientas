@@ -88,7 +88,7 @@ export interface NivelHerramientasData {
         </div>
 
         <!-- Lista de herramientas -->
-        <div class="flex-1 overflow-y-auto custom-scrollbar p-3.5 sm:p-5 min-h-[260px]">
+        <div class="flex-1 overflow-y-auto custom-scrollbar p-3.5 sm:p-5 min-h-[min(260px,30vh)]">
             <div class="flex flex-col gap-3">
 
                 <div class="flex flex-col gap-2.5">

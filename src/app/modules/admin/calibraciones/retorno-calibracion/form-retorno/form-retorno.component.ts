@@ -266,7 +266,11 @@ export class FormRetornoComponent implements OnInit, OnDestroy {
                 }
             }
 
-            this.showMessage('Retorno registrado con éxito', 'success');
+            if (this.isRechazado) {
+                this.showMessage('Retorno registrado: RECHAZADA, la herramienta queda en CUARENTENA. Registre su Reporte de Discrepancia en Cuarentena & Baja.', 'warning');
+            } else {
+                this.showMessage('Retorno registrado con éxito', 'success');
+            }
             this.dialogRef.close(true);
         } catch (err: any) {
             console.error('Error retorno:', err);

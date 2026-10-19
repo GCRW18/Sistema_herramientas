@@ -1,3 +1,4 @@
+import { PaginadorCompactoComponent } from 'app/shared/components/paginador-compacto/paginador-compacto.component';
 import { Component, OnInit, inject, signal, computed, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -5,10 +6,12 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { MatDialogRef } from '@angular/material/dialog';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatSnackBar } from '@angular/material/snack-bar';
 import { KitsService } from '../../../../core/services/kits.service';
 import { HasPermissionDirective } from '../../../../core/directives/has-permission.directive';
 import { catchError, finalize } from 'rxjs/operators';
 import { of } from 'rxjs';
+import { esActivo } from '../../../../core/utils/bool.utils';
 
 interface Kit {
     id: number;
@@ -38,7 +41,7 @@ interface KitItem {
 @Component({
     selector: 'app-lista-kits',
     standalone: true,
-    imports: [CommonModule, FormsModule, MatIconModule, MatDialogModule, MatTooltipModule, HasPermissionDirective],
+    imports: [PaginadorCompactoComponent, CommonModule, FormsModule, MatIconModule, MatDialogModule, MatTooltipModule, HasPermissionDirective],
     template: `
     <div class="flex flex-col w-full h-full bg-[#f8f9fc] dark:bg-[#0F172AFF] transition-colors duration-300 font-sans overflow-hidden">
 
@@ -47,18 +50,12 @@ interface KitItem {
 
         <div class="flex-1 flex flex-col p-4 gap-3 overflow-hidden relative z-10">
 
-            <!-- Banner de éxito préstamo -->
-            <div *ngIf="prestamoMsg()"
-                 class="shrink-0 flex items-center gap-2 px-4 py-2.5 bg-green-100 border-2 border-green-700 rounded-xl shadow-[2px_2px_0_#15803d] text-green-800 font-black text-xs uppercase">
-                <mat-icon class="!text-base text-green-700 shrink-0">check_circle</mat-icon>
-                {{ prestamoMsg() }}
-            </div>
 
             <!-- ══════════ CABECERA ══════════ -->
-            <div class="flex flex-col gap-3 shrink-0">
+            <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 shrink-0">
 
                 <!-- Título principal -->
-                <div class="flex items-center gap-4">
+                <div class="flex items-center gap-4 shrink-0 min-w-0">
                     <div class="flex items-center justify-center w-10 h-10 bg-white dark:bg-[#0F172AFF] border-[3px] border-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] rounded-xl shrink-0">
                         <mat-icon class="text-black dark:text-[#FFC501FF] !text-base">construction</mat-icon>
                     </div>
@@ -74,12 +71,12 @@ interface KitItem {
                     </div>
                 </div>
 
-                <!-- Botones debajo del título -->
-                <div class="flex items-center gap-3 flex-wrap">
-                    <div class="relative">
+                <!-- Controles: a la derecha del título -->
+                <div class="flex flex-wrap items-center gap-2 lg:justify-end">
+                    <div class="relative w-full sm:w-auto">
                         <input type="text" [ngModel]="searchTerm()" (ngModelChange)="searchTerm.set($event)"
                                placeholder="Buscar kit, responsable..."
-                               class="w-52 h-9 pl-9 pr-3 bg-white dark:bg-[#0F172AFF] text-black dark:text-white
+                               class="w-full sm:w-52 h-9 pl-9 pr-3 bg-white dark:bg-[#0F172AFF] text-black dark:text-white
                                       border-[2px] border-black rounded-lg font-black text-xs uppercase
                                       focus:outline-none focus:shadow-[3px_3px_0px_0px_#000] focus:-translate-y-[1px] transition-all
                                       placeholder:font-bold placeholder:normal-case">
@@ -104,7 +101,7 @@ interface KitItem {
 
                     <button (click)="abrirCategorias()"
                             class="h-9 px-3 font-black text-xs bg-white dark:bg-[#0F172AFF] text-black dark:text-white
-                                   border-[2px] border-black rounded-xl
+                                   border-[2px] border-black rounded-lg
                                    shadow-[3px_3px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px]
                                    hover:shadow-none transition-all uppercase flex items-center gap-2">
                         <mat-icon class="!text-sm">category</mat-icon>
@@ -112,8 +109,8 @@ interface KitItem {
                     </button>
 
                     <button *appHasPermission="'kits.create'" (click)="crearNuevoKit()"
-                            class="ml-auto px-5 py-2 bg-[#FFC501FF] text-black font-black text-xs
-                                   border-[2px] border-black rounded-xl
+                            class="h-9 px-4 bg-[#FFC501FF] text-black font-black text-xs
+                                   border-[2px] border-black rounded-lg
                                    shadow-[3px_3px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px]
                                    hover:shadow-none transition-all uppercase flex items-center gap-2">
                         <mat-icon class="!text-sm text-black">add_circle</mat-icon>
@@ -183,7 +180,7 @@ interface KitItem {
 
                 <!-- TABLA -->
                 <div class="flex-1 overflow-auto custom-scrollbar">
-                    <table class="w-full">
+                    <table class="w-full min-w-[720px]">
                         <thead class="bg-gray-100 dark:bg-slate-800 border-b-[2px] border-black sticky top-0 z-10">
                         <tr class="text-left text-[10px] font-black uppercase tracking-wider text-black dark:text-white">
                             <th class="px-4 py-3">#</th>
@@ -253,18 +250,10 @@ interface KitItem {
                                             class="w-7 h-7 flex items-center justify-center bg-[#FFC501FF] border-2 border-black rounded-lg shadow-[2px_2px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all">
                                         <mat-icon class="!text-sm text-black">edit</mat-icon>
                                     </button>
-                                    <!-- Prestar: visible cuando el kit no está EN USO y está activo -->
-                                    <ng-container *appHasPermission="'kits.prestar'">
-                                        <button *ngIf="kit.estado !== 'EN USO' && kit.activo"
-                                                (click)="prestarKit(kit)"
-                                                matTooltip="Prestar kit"
-                                                class="w-7 h-7 flex items-center justify-center bg-blue-500 border-2 border-black rounded-lg shadow-[2px_2px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all">
-                                            <mat-icon class="!text-sm text-white">send</mat-icon>
-                                        </button>
-                                    </ng-container>
-                                    <!-- Devolver: visible cuando el kit está EN USO -->
+                                    <!-- Devolver: solo préstamos PKT de Gestión de Kits aún abiertos; los de
+                                         Préstamo Técnico se devuelven allí (el kit se libera solo). -->
                                     <ng-container *appHasPermission="'kits.devolver'">
-                                        <button *ngIf="kit.estado === 'EN USO'"
+                                        <button *ngIf="kit.estado === 'EN USO' && kit._raw?.current_loan_id"
                                                 (click)="devolverKit(kit)"
                                                 matTooltip="Registrar devolución"
                                                 class="w-7 h-7 flex items-center justify-center bg-orange-500 border-2 border-black rounded-lg shadow-[2px_2px_0px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all">
@@ -300,30 +289,9 @@ interface KitItem {
                     </table>
                 </div>
 
-                <!-- PAGINADOR -->
-                <div *ngIf="!isLoading() && kitsFiltrados().length > pageSize"
-                     class="shrink-0 border-t-2 border-black bg-white dark:bg-slate-800 px-3 sm:px-4 py-2 flex items-center justify-between gap-2 flex-wrap">
-                    <span class="text-[9px] sm:text-[10px] font-black uppercase text-gray-500">
-                        {{ rangoPagina().desde }}–{{ rangoPagina().hasta }} de {{ kitsFiltrados().length }} kits
-                    </span>
-                    <div class="flex items-center gap-1">
-                        <button (click)="irAPagina(pagina() - 1)" [disabled]="pagina() <= 1"
-                                class="w-7 h-7 flex items-center justify-center bg-white dark:bg-slate-700 border-2 border-black rounded-lg shadow-[2px_2px_0px_0px_#000] hover:translate-y-[1px] hover:shadow-none transition-all disabled:opacity-30 disabled:cursor-not-allowed disabled:translate-y-0 disabled:shadow-[2px_2px_0px_0px_#000]">
-                            <mat-icon class="!text-sm text-black dark:text-white">chevron_left</mat-icon>
-                        </button>
-                        <button *ngFor="let p of paginasVisibles()" (click)="irAPagina(p)"
-                                class="w-7 h-7 flex items-center justify-center border-2 border-black rounded-lg text-[10px] font-black transition-all"
-                                [ngClass]="p === pagina()
-                                    ? 'bg-amber-400 text-black shadow-none translate-y-[1px]'
-                                    : 'bg-white dark:bg-slate-700 text-black dark:text-white shadow-[2px_2px_0px_0px_#000] hover:translate-y-[1px] hover:shadow-none'">
-                            {{ p }}
-                        </button>
-                        <button (click)="irAPagina(pagina() + 1)" [disabled]="pagina() >= totalPaginas()"
-                                class="w-7 h-7 flex items-center justify-center bg-white dark:bg-slate-700 border-2 border-black rounded-lg shadow-[2px_2px_0px_0px_#000] hover:translate-y-[1px] hover:shadow-none transition-all disabled:opacity-30 disabled:cursor-not-allowed disabled:translate-y-0 disabled:shadow-[2px_2px_0px_0px_#000]">
-                            <mat-icon class="!text-sm text-black dark:text-white">chevron_right</mat-icon>
-                        </button>
-                    </div>
-                </div>
+                <!-- Paginador -->
+                <app-paginador-compacto *ngIf="!isLoading() && kitsFiltrados().length > 0" [total]="kitsFiltrados().length" [pageSize]="pageSize"
+                                        [pageIndex]="pagina() - 1" (pageIndexChange)="irAPagina($event + 1)"></app-paginador-compacto>
             </div>
 
         </div>
@@ -342,9 +310,9 @@ export class ListaKitsComponent implements OnInit {
     private dialog      = inject(MatDialog);
     public  dialogRef   = inject(MatDialogRef<ListaKitsComponent>, { optional: true });
     private kitsService = inject(KitsService);
+    private snackBar    = inject(MatSnackBar);
 
     isLoading = signal(false);
-    prestamoMsg = signal('');
 
     searchTerm        = signal('');
     selectedCategoria = signal<string>('todas');
@@ -354,7 +322,8 @@ export class ListaKitsComponent implements OnInit {
     kitCategories: { id_kit_category: number; name: string; active: boolean }[] = [];
     get categorias(): string[] { return this.kitCategories.map(c => c.name); }
 
-    estados = ['COMPLETO', 'INCOMPLETO', 'EN USO', 'MANTENIMIENTO'];
+    // Mismas etiquetas que _statusMap (MANTENIMIENTO no existe en he.tkits.status).
+    estados = ['COMPLETO', 'INCOMPLETO', 'EN USO', 'EN CALIBRACIÓN', 'BAJA'];
 
     kitsFiltrados = computed(() => {
         let data = this.kits();
@@ -495,7 +464,7 @@ export class ListaKitsComponent implements OnInit {
             next: () => this.kits.update(list => list.map(k =>
                 k.id === kit.id ? { ...k, activo: nuevoActivo, _raw: { ...k._raw, active: nuevoActivo } } : k
             )),
-            error: () => {}
+            error: (e) => this.snackBar.open(e?.message ?? 'No se pudo cambiar el estado del kit', 'Cerrar', { duration: 4000 })
         });
     }
 
@@ -522,23 +491,7 @@ export class ListaKitsComponent implements OnInit {
 
     cargarCategorias(): void {
         this.kitsService.getKitCategories().subscribe(cats => {
-            this.kitCategories = cats.filter(c => c.active);
-        });
-    }
-
-    async prestarKit(kit: Kit): Promise<void> {
-        const { PrestarKitDialogComponent } = await import('./prestar-kit-dialog/prestar-kit-dialog.component');
-        const ref = this.dialog.open(PrestarKitDialogComponent, {
-            width: '440px', maxWidth: '95vw', height: 'auto', maxHeight: '85vh',
-            panelClass: 'neo-dialog', data: kit._raw ?? kit
-        });
-        ref.afterClosed().subscribe(result => {
-            this.cargarKits();
-            if (result?.prestado) {
-                const ot = result.work_order_number ? ` · OT: ${result.work_order_number}` : '';
-                this.prestamoMsg.set(`Préstamo registrado${ot}`);
-                setTimeout(() => this.prestamoMsg.set(''), 6000);
-            }
+            this.kitCategories = cats.filter(c => esActivo(c.active));
         });
     }
 
@@ -559,7 +512,7 @@ export class ListaKitsComponent implements OnInit {
     async abrirCategorias(): Promise<void> {
         const { CategoriaManagerDialogComponent } = await import('./categoria-manager-dialog/categoria-manager-dialog.component');
         const ref = this.dialog.open(CategoriaManagerDialogComponent, {
-            panelClass: 'neo-dialog',
+            panelClass: 'neo-dialog', maxWidth: '95vw',
             disableClose: false
         });
         ref.afterClosed().subscribe(() => this.cargarCategorias());

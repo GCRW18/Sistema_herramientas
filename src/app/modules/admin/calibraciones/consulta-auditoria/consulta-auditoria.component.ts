@@ -120,6 +120,7 @@ export class ConsultaAuditoriaComponent implements OnInit, OnDestroy {
         { value: 'in_process', label: 'En Proceso' },
         { value: 'completed', label: 'Completado' },
         { value: 'returned', label: 'Retornado' },
+        { value: 'cancelled', label: 'Anulado' },
     ];
 
     ngOnInit(): void {
@@ -188,14 +189,19 @@ export class ConsultaAuditoriaComponent implements OnInit, OnDestroy {
         if (this.filterDateTo) baseParams.date_to = this.filterDateTo;
 
         const includeCal = this.filterTipo === 'todos' || this.filterTipo === 'calibracion';
-        const includeMnt = this.filterTipo === 'todos' || this.filterTipo === 'mantenimiento';
+        // Mantenimiento no tiene laboratorio: con filtro de Empresa no aplica (igual que el PDF).
+        const includeMnt = (this.filterTipo === 'todos' || this.filterTipo === 'mantenimiento') && !this.filterEmpresa;
 
         try {
             let combined: AuditRow[] = [];
 
             if (includeCal) {
                 // he.tcalibrations usa 'in_process' y sí tiene id_laboratory (supplier_id).
-                const calParams: any = { ...baseParams };
+                // Mismo universo que el PDF R-AUD-01: sin transcripciones históricas ni registros inactivos.
+                const calParams: any = {
+                    ...baseParams,
+                    filtro_adicional: "(cls.estado_reg = 'activo' AND COALESCE(cls.is_historical, false) = false)",
+                };
                 if (this.filterStatus) calParams.status = this.filterStatus;
                 if (this.filterEmpresa) calParams.id_laboratory = this.filterEmpresa;
                 const cals = await this.calibrationService.getCalibrations(calParams).toPromise();
@@ -239,7 +245,7 @@ export class ConsultaAuditoriaComponent implements OnInit, OnDestroy {
             return_date: r.actual_return_date ?? r.return_date ?? null,
             expected_return_date: r.expected_return_date ?? null,
             result: r.result ?? '',
-            cost: r.cost ?? 0,
+            cost: Number(r.cost) || 0,   // pXP devuelve numeric como texto
             notes: r.notes ?? '',
             certificate_number: r.certificate_number ?? '',
             next_calibration_date: r.next_calibration_date ?? null
@@ -285,8 +291,9 @@ export class ConsultaAuditoriaComponent implements OnInit, OnDestroy {
 
     getStatusLabel = (s: string) => ({
         'sent': 'ENVIADO', 'in_process': 'EN TRÁNSITO', 'in_progress': 'EN TRÁNSITO',
-        'completed': 'FINALIZADO', 'returned': 'RETORNADO'
-    }[s] || s.toUpperCase());
+        'completed': 'FINALIZADO', 'returned': 'RETORNADO', 'cancelled': 'ANULADO',
+        'rejected': 'RECHAZADO', 'pending': 'PENDIENTE', 'scheduled': 'PROGRAMADO'
+    }[s] || (s || '—').toUpperCase());
 
     getTipoLabel = (t: string) => t === 'calibracion' ? 'CAL' : 'MNT';
 
@@ -304,33 +311,38 @@ export class ConsultaAuditoriaComponent implements OnInit, OnDestroy {
     }
 
     printNota(row: AuditRow): void {
+        // Pestaña reservada en el click: el PDF llega después del request.
+        const win = this.calibrationService.preAbrirVentanaPdf();
         this.isLoading.set(true);
         if (row.tipo_registro === 'calibracion') {
-            this.calibrationService.generarYVerPdfEnvio(row.id);
+            this.calibrationService.generarYVerPdfEnvio(row.id, win);
         } else {
-            this.maintenanceService.generarYVerPdfEnvioMantenimiento(row.id);
+            this.maintenanceService.generarYVerPdfEnvioMantenimiento(row.id, win);
         }
         setTimeout(() => this.isLoading.set(false), 1000);
     }
 
     printCertificado(row: AuditRow): void {
         if (!row.certificate_number) return;
+        const win = this.calibrationService.preAbrirVentanaPdf();
         this.isLoading.set(true);
-        this.calibrationService.generarYVerPdfRetorno(row.id);
+        this.calibrationService.generarYVerPdfRetorno(row.id, win);
         setTimeout(() => this.isLoading.set(false), 1000);
     }
 
     // MGH-111 — Herramientas y Equipos Enviados a Calibración (PDF real vía backend).
     printEnviadasCalibracion(): void {
+        const win = this.calibrationService.preAbrirVentanaPdf();
         this.isLoading.set(true);
-        this.calibrationService.generarPdfEnviadasCalibracionForm().pipe(
+        this.calibrationService.generarPdfEnviadasCalibracionForm(this._currentUser()).pipe(
             takeUntil(this._destroy$),
         ).subscribe({
             next: (result) => {
                 this.isLoading.set(false);
-                this.calibrationService.abrirPdf(result.pdf_base64, result.nombre_archivo);
+                this.calibrationService.abrirPdf(result.pdf_base64, result.nombre_archivo, win);
             },
             error: (error) => {
+                try { win?.close(); } catch { /* noop */ }
                 this.isLoading.set(false);
                 console.error('Error al generar MGH-111:', error);
                 this.snackBar.open('Error al generar el reporte de enviadas a calibración', 'Cerrar',
@@ -340,7 +352,12 @@ export class ConsultaAuditoriaComponent implements OnInit, OnDestroy {
     }
 
     // R-AUD-01 — PDF real (TCPDF backend) con los mismos filtros de la pantalla.
+    private _currentUser(): string {
+        try { return JSON.parse(localStorage.getItem('aut') || '{}')?.nombre_usuario || ''; } catch { return ''; }
+    }
+
     imprimirReporte(): void {
+        const win = this.calibrationService.preAbrirVentanaPdf();
         this.isLoading.set(true);
         const params: any = { tipo: this.filterTipo || 'todos' };
         if (this.filterCode)     params.record_number = this.filterCode;
@@ -355,8 +372,9 @@ export class ConsultaAuditoriaComponent implements OnInit, OnDestroy {
             takeUntil(this._destroy$),
             finalize(() => this.isLoading.set(false)),
         ).subscribe({
-            next: (r) => this.calibrationService.abrirPdf(r.pdf_base64, r.nombre_archivo),
+            next: (r) => this.calibrationService.abrirPdf(r.pdf_base64, r.nombre_archivo, win),
             error: (e) => {
+                try { win?.close(); } catch { /* noop */ }
                 console.error('Error al generar el reporte de auditoría:', e);
                 this.snackBar.open(e?.message || 'Error al generar el reporte de auditoría', 'Cerrar',
                     { duration: 4000, panelClass: ['snackbar-error'] });

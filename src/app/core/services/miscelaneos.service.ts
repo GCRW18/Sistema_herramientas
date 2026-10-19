@@ -100,7 +100,7 @@ export class MiscelaneosService {
     getMiscelaneos(): Observable<Material[]> {
         // limit 2000: el catálogo, las notificaciones de bajo stock y la vista unificada
         // consumen la lista completa — con 200 se truncaba silenciosamente.
-        const params: any = { start: 0, limit: 2000, ordenacion: 'code', dir_ordenacion: 'asc' };
+        const params: any = { start: 0, limit: 2000, sort: 'code', dir: 'asc' };
         return from(this._api.post('herramientas/miscelaneos/listarMiscelaneos', params)).pipe(
             map((r: any) => this._normalize(r).map(x => this._mapMaterial(x))),
             catchError(() => of([]))
@@ -155,7 +155,7 @@ export class MiscelaneosService {
             unit_of_measure:   mat.unidad ?? 'UND',
             purchase_type:     mat.tipoCompra ?? 'COMPRA DIRECTA',
             item_type:         mat.tipoItem ?? 'CONSUMIBLE',
-            quantity_in_stock: mat.stock ?? 0,
+            // quantity_in_stock no se manda: HE_MIS_MOD conserva el actual (solo lo mueven entradas/salidas).
             stock_min:         mat.stockMin ?? 0,
             stock_max:         mat.stockMax ?? 0,
             location_name:     mat.ubicacion?.trim() ?? '',
@@ -223,7 +223,7 @@ export class MiscelaneosService {
     // ── Movimientos ───────────────────────────────────────────────────────────
 
     getEntradas(miscelaneo_id?: number): Observable<Entrada[]> {
-        const params: any = { start: 0, limit: 500, ordenacion: 'mv.fecha_reg', dir_ordenacion: 'desc', type: 'ENTRADA' };
+        const params: any = { start: 0, limit: 500, sort: 'mv.fecha_reg', dir: 'desc', type: 'ENTRADA' };
         if (miscelaneo_id) params.miscelaneo_id = miscelaneo_id;
         return from(this._api.post('herramientas/miscelaneomovimientos/listarMiscelaneoMovimientos', params)).pipe(
             map((r: any) => this._normalize(r)
@@ -235,7 +235,7 @@ export class MiscelaneosService {
     }
 
     getSalidas(miscelaneo_id?: number): Observable<Salida[]> {
-        const params: any = { start: 0, limit: 500, ordenacion: 'mv.fecha_reg', dir_ordenacion: 'desc', type: 'SALIDA' };
+        const params: any = { start: 0, limit: 500, sort: 'mv.fecha_reg', dir: 'desc', type: 'SALIDA' };
         if (miscelaneo_id) params.miscelaneo_id = miscelaneo_id;
         return from(this._api.post('herramientas/miscelaneomovimientos/listarMiscelaneoMovimientos', params)).pipe(
             map((r: any) => this._normalize(r)
@@ -400,6 +400,19 @@ export class MiscelaneosService {
                 if (root?.error === true) throw new Error(root?.detalle?.mensaje ?? root?.mensaje ?? 'Error al eliminar salida');
             }),
             catchError(err => { throw err; })
+        );
+    }
+
+    /** PDF real de la Nota de Salida MGH-117 de una salida (SLM). */
+    generarPdfNotaSalida(idMovMisc: number): Observable<{ pdf_base64: string; nombre_archivo: string }> {
+        return from(this._api.post('herramientas/miscelaneomovimientos/generarPdfNotaSalida', { id_mov_misc: idMovMisc })).pipe(
+            map((r: any) => {
+                const root = r?.ROOT ?? r;
+                if (root?.error === true) throw new Error(root?.detalle?.mensaje ?? root?.mensaje ?? 'Error al generar la nota MGH-117');
+                const d = this._single(r);
+                if (!d?.pdf_base64) throw new Error('El servidor no devolvió el PDF');
+                return { pdf_base64: d.pdf_base64, nombre_archivo: d.nombre_archivo ?? 'nota_salida.pdf' };
+            })
         );
     }
 }

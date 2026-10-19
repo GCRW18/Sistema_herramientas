@@ -1,3 +1,4 @@
+import { PaginadorCompactoComponent } from 'app/shared/components/paginador-compacto/paginador-compacto.component';
 import {
     Component, OnInit, OnDestroy, inject, signal, computed, ViewEncapsulation, effect
 } from '@angular/core';
@@ -20,6 +21,8 @@ import { BlobStorageService } from 'app/core/services/blob-storage.service';
 import { GestionUbicacionesService } from '../gestion-ubicaciones/gestion-ubicaciones.service';
 import { ReportesService } from '../reportes/reportes.service';
 import { FichaInventarioDialogComponent } from './ficha-inventario-dialog/ficha-inventario-dialog.component';
+import { esActivo } from '../../../../core/utils/bool.utils';
+import { parseLocalDate } from '../../../../core/utils/date.utils';
 
 // ─── Tipos ────────────────────────────────────────────────────────────────────
 
@@ -82,7 +85,7 @@ export interface UnifiedItem {
 @Component({
     selector:      'app-consultar-inventario',
     standalone:    true,
-    imports: [
+    imports: [PaginadorCompactoComponent, 
         CommonModule, FormsModule,
         MatIconModule, MatTooltipModule, MatSnackBarModule
     ],
@@ -177,6 +180,12 @@ export class ConsultarInventarioComponent implements OnInit, OnDestroy {
         'COMPLETO','INCOMPLETO','BAJA'
     ];
 
+    /** Crítico = SIN STOCK o BAJO STOCK (el estado ya lo calcula cada mapper). Una herramienta
+     *  prestada tiene existencia 0 porque el préstamo la descuenta: no es "crítica". */
+    esCritico(i: UnifiedItem): boolean {
+        return i.estado === 'SIN STOCK' || i.estado === 'BAJO STOCK';
+    }
+
     // ── Computed: pestañas filtradas ──────────────────────────────────────────
 
     tabFilteredData = computed<UnifiedItem[]>(() => {
@@ -191,10 +200,7 @@ export class ConsultarInventarioComponent implements OnInit, OnDestroy {
             case 'miscelaneos':
                 data = data.filter(i => i.tipo === 'MISCELANEO'); break;
             case 'critico':
-                data = data.filter(i =>
-                    i.stockActual === 0 ||
-                    (i.stockMinimo != null && i.stockActual <= i.stockMinimo)
-                ); break;
+                data = data.filter(i => this.esCritico(i)); break;
             case 'prestados':
                 data = data.filter(i =>
                     i.estado === 'EN PRESTAMO' || i.estado === 'EN USO'
@@ -255,10 +261,7 @@ export class ConsultarInventarioComponent implements OnInit, OnDestroy {
         cutoff90.setDate(cutoff90.getDate() - 90);
         return {
             total:     all.length,
-            critico:   all.filter(i =>
-                i.stockActual === 0 ||
-                (i.stockMinimo != null && i.stockActual <= i.stockMinimo)
-            ).length,
+            critico:   all.filter(i => this.esCritico(i)).length,
             prestados: all.filter(i =>
                 i.estado === 'EN PRESTAMO' || i.estado === 'EN USO'
             ).length,
@@ -276,10 +279,7 @@ export class ConsultarInventarioComponent implements OnInit, OnDestroy {
             herramientas: all.filter(i => i.tipo === 'HERRAMIENTA').length,
             kits:         all.filter(i => i.tipo === 'KIT').length,
             miscelaneos:  all.filter(i => i.tipo === 'MISCELANEO').length,
-            critico:      all.filter(i =>
-                i.stockActual === 0 ||
-                (i.stockMinimo != null && i.stockActual <= i.stockMinimo)
-            ).length,
+            critico:      all.filter(i => this.esCritico(i)).length,
             prestados:    all.filter(i =>
                 i.estado === 'EN PRESTAMO' || i.estado === 'EN USO'
             ).length,
@@ -491,11 +491,9 @@ export class ConsultarInventarioComponent implements OnInit, OnDestroy {
             enLaboratorio:        t.sent_to_calibration === true || t.sent_to_calibration === 't',
             imagen,
             notas:               t.notes            || undefined,
-            ultimoMovimiento:    t.fecha_mod
-                ? new Date(t.fecha_mod)
-                : t.fecha_reg ? new Date(t.fecha_reg) : undefined,
+            ultimoMovimiento:    parseLocalDate(t.fecha_mod || t.fecha_reg) ?? undefined,
             fechaRegistro:       t.fecha_reg ? new Date(t.fecha_reg) : new Date(),
-            activo:              t.active !== false,
+            activo:              esActivo(t.active),
             _raw:                t,
         };
     }
@@ -525,9 +523,9 @@ export class ConsultarInventarioComponent implements OnInit, OnDestroy {
             unidad:           'Kit',
             ubicacion,
             almacen:          k.location_name || undefined,
-            // Un kit es una unidad física: 1 en almacén, 0 si está prestado (current_loan_id).
+            // Un kit es una unidad física: 1 en almacén, 0 si está prestado (en uso).
             // stockMinimo undefined — no participa de "Bajo stock".
-            stockActual:      k.current_loan_id ? 0 : 1,
+            stockActual:      k.status === 'in_use' || k.current_loan_id ? 0 : 1,
             stockMinimo:      undefined,
             totalComponentes: k.total_components   ?? 0,
             responsable:      k.funcionario_nombre  || undefined,
@@ -536,11 +534,9 @@ export class ConsultarInventarioComponent implements OnInit, OnDestroy {
             marca:               k.manufacturer  || undefined,
             imagen:              k.image_url     || undefined,
             estado,
-            ultimoMovimiento: k.fecha_mod
-                ? new Date(k.fecha_mod)
-                : k.fecha_reg ? new Date(k.fecha_reg) : undefined,
+            ultimoMovimiento: parseLocalDate(k.fecha_mod || k.fecha_reg) ?? undefined,
             fechaRegistro:    k.fecha_reg ? new Date(k.fecha_reg) : new Date(),
-            activo:           k.active === true || k.active === 't' || k.active === 'true',
+            activo:           esActivo(k.active),
             _raw:             k,
         };
     }
@@ -579,7 +575,7 @@ export class ConsultarInventarioComponent implements OnInit, OnDestroy {
             // del catálogo. 'T00:00:00' fuerza hora local (evita el corrimiento de día por UTC).
             ultimoMovimiento: m.lastMovementDate
                 ? new Date(`${m.lastMovementDate}T00:00:00`)
-                : m.fecha_mod ? new Date(m.fecha_mod) : undefined,
+                : parseLocalDate(m.fecha_mod) ?? undefined,
             fechaRegistro:    m.fecha
                 ? new Date(`${m.fecha}T00:00:00`)
                 : m.fecha_reg ? new Date(m.fecha_reg) : new Date(),
@@ -681,27 +677,18 @@ export class ConsultarInventarioComponent implements OnInit, OnDestroy {
         const ids = Array.from(this.selectedIds());
         if (ids.length === 0 || this.isGeneratingQR()) return;
 
+        // Pestaña reservada en el clic (tras la espera el navegador bloqueaba window.open).
+        const ventana = this.movementService.preAbrirVentanaPdf();
         this.isGeneratingQR.set(true);
         this.toolService.generarCodigoQR(ids).pipe(
             finalize(() => this.isGeneratingQR.set(false))
         ).subscribe({
-            next: ({ pdf_base64 }) => {
-                try {
-                    const bytes = atob(pdf_base64);
-                    const arr   = new Uint8Array(bytes.length);
-                    for (let i = 0; i < bytes.length; i++) arr[i] = bytes.charCodeAt(i);
-                    const blob = new Blob([arr], { type: 'application/pdf' });
-                    const url  = window.URL.createObjectURL(blob);
-                    window.open(url, '_blank');
-                    setTimeout(() => window.URL.revokeObjectURL(url), 300);
-                    this.clearSelection();
-                } catch (e) {
-                    console.error('Error abriendo códigos QR:', e);
-                    this.snackBar.open('No se pudo abrir el PDF de códigos QR', 'OK', { duration: 5000 });
-                }
+            next: ({ pdf_base64, nombre_archivo }) => {
+                this.movementService.abrirPdfNota(pdf_base64, nombre_archivo || 'codigos_qr.pdf', ventana);
+                this.clearSelection();
             },
             error: (e) => {
-                console.error('Error al generar códigos QR:', e);
+                try { ventana?.close(); } catch { /* noop */ }
                 this.snackBar.open(e?.message || 'Error al generar los códigos QR', 'OK', { duration: 5000 });
             }
         });

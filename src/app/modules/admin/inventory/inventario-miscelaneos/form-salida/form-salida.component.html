@@ -1,17 +1,18 @@
 <div class="bg-stone-100 dark:bg-[#0F172A] sm:border-2 border-black rounded-2xl flex flex-col overflow-hidden relative w-full"
-     style="box-shadow:6px 6px 0 #000; height:min(820px,92vh)">
+     style="box-shadow:6px 6px 0 #000; max-height:92vh"
+     [style.height]="mode === 'new' ? 'min(820px,92vh)' : null">
 
     <!-- ── CABECERA ── -->
-    <div class="bg-[#0F172A] px-4 py-3 flex items-center gap-3 shrink-0 select-none"
+    <div class="bg-[#0F172A] px-4 py-3 flex items-center flex-wrap gap-x-3 gap-y-2 shrink-0 select-none"
          cdkDrag cdkDragRootElement=".cdk-overlay-pane" cdkDragHandle style="cursor:grab">
         <div class="w-8 h-8 rounded bg-amber-400 border-2 border-black flex items-center justify-center shadow-[2px_2px_0_#fbbf24] shrink-0">
             <mat-icon class="!text-base text-black">output</mat-icon>
         </div>
-        <div>
+        <div class="flex-1 min-w-0">
             <p class="text-[9px] text-slate-400 font-bold uppercase tracking-[0.18em] leading-none mb-0.5">{{ subtitulo }}</p>
-            <h2 class="text-sm text-white font-black uppercase tracking-tight leading-none">{{ titulo }}</h2>
+            <h2 class="text-sm text-white font-black uppercase tracking-tight leading-tight">{{ titulo }}</h2>
         </div>
-        <div class="ml-auto flex items-center gap-2 shrink-0">
+        <div class="ml-auto flex items-center flex-wrap justify-end gap-2">
             <span *ngIf="mode === 'new' && items.length > 0"
                   class="px-2 py-0.5 bg-amber-500 text-black font-black text-[10px] border-2 border-black rounded-lg">
                 {{ items.length }} ítem{{ items.length !== 1 ? 's' : '' }}
@@ -20,96 +21,91 @@
     </div>
 
     <!-- ======================================================
-         MODO VISTA (readonly)
+         MODO VISTA (readonly) — cabecera (nota · material · cantidad) + grilla 2 columnas
     ====================================================== -->
     <ng-container *ngIf="readOnly && salidaView">
-        <div class="flex-1 overflow-y-auto px-5 py-5 custom-scrollbar">
-            <div class="bg-white dark:bg-slate-800 border-2 border-black rounded-xl p-4 shadow-[3px_3px_0_#000] max-w-lg mx-auto">
-                <span class="text-[8px] font-black text-stone-400 dark:text-slate-400 uppercase tracking-[0.18em] mb-3 border-b-2 border-black/10 pb-1.5 w-full block">
-                    Detalle de Salida
-                </span>
+        <div class="flex-1 overflow-y-auto custom-scrollbar p-3 sm:p-5">
+            <div class="bg-white dark:bg-slate-800 border-2 border-black rounded-xl shadow-[3px_3px_0_#000] overflow-hidden">
 
-                <div *ngIf="salidaView.nroNota" class="mb-3">
-                    <p class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 mb-1">N° de Nota</p>
-                    <span class="font-mono font-black text-amber-700 dark:text-amber-400 text-sm bg-amber-50 dark:bg-amber-900/30 px-2 py-1 rounded border border-amber-200 uppercase">
-                        {{ salidaView.nroNota }}
-                    </span>
-                </div>
-
-                <div class="mb-3">
-                    <p class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 mb-1">Material</p>
-                    <div class="flex items-center gap-2">
-                        <span class="font-mono text-[10px] font-black text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/30 px-1.5 rounded border border-amber-300 uppercase">
-                            {{ salidaView.codigoNombre }}
+                <div class="grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-3 items-center px-4 py-3 bg-stone-50 dark:bg-slate-900/40 border-b-2 border-black/10 dark:border-slate-700">
+                    <div class="min-w-0">
+                        <p class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 mb-1">N° de Nota</p>
+                        <span class="font-mono font-black text-amber-700 dark:text-amber-400 text-sm bg-amber-50 dark:bg-amber-900/30 px-2 py-0.5 rounded border border-amber-200 uppercase">
+                            {{ salidaView.nroNota || '—' }}
                         </span>
-                        <span class="text-sm font-bold text-black dark:text-white">{{ salidaView.producto }}</span>
+                        <p class="text-sm font-black text-black dark:text-white mt-2 leading-tight break-words">{{ salidaView.producto || '—' }}</p>
+                        <p class="font-mono text-[10px] font-black text-stone-500 dark:text-slate-400 uppercase mt-0.5">{{ salidaView.codigoNombre }}</p>
                     </div>
-                </div>
-
-                <div class="grid grid-cols-2 gap-3 mb-3">
-                    <div>
+                    <div class="sm:text-right sm:pl-4 sm:border-l-2 border-black/10 dark:border-slate-700">
                         <p class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 mb-1">Cantidad</p>
-                        <p class="text-xl font-black text-amber-600 dark:text-amber-400">
+                        <p class="text-2xl font-black text-amber-600 dark:text-amber-400 leading-none whitespace-nowrap">
                             {{ salidaView.cantidad }} <span class="text-sm font-bold text-stone-400">{{ salidaView.unidad }}</span>
                         </p>
                     </div>
-                    <div>
-                        <p class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 mb-1">Fecha / Hora</p>
-                        <p class="text-sm font-black text-black dark:text-white">{{ formatFecha(salidaView.fecha) }}</p>
-                        <p class="text-xs font-bold text-stone-400">{{ salidaView.hora }}</p>
-                    </div>
                 </div>
 
-                <div class="grid grid-cols-2 gap-3 mb-3">
-                    <div>
-                        <p class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 mb-1">Solicitante</p>
-                        <p class="text-sm font-bold text-black dark:text-white">{{ salidaView.nombre || '—' }}</p>
-                        <p class="text-[9px] text-stone-400">{{ salidaView.area || '' }}</p>
+                <!-- gap-px sobre fondo gris = líneas divisorias iguales en ambas columnas -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-px bg-black/10 dark:bg-slate-700">
+                    <div class="bg-white dark:bg-slate-800 px-4 py-2.5">
+                        <p class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 mb-1">Fecha y Hora</p>
+                        <p class="text-sm font-bold text-black dark:text-white">{{ formatFecha(salidaView.fecha) }} <span class="text-stone-400">{{ salidaView.hora }}</span></p>
                     </div>
-                    <div>
+                    <div class="bg-white dark:bg-slate-800 px-4 py-2.5">
                         <p class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 mb-1">Despachado Por</p>
-                        <p class="text-sm font-bold text-black dark:text-white">{{ salidaView.despachadoPor || '—' }}</p>
+                        <p class="text-sm font-bold text-black dark:text-white break-words">{{ salidaView.despachadoPor || '—' }}</p>
                     </div>
-                </div>
-
-                <div class="grid grid-cols-3 gap-3 mb-3">
-                    <div *ngIf="salidaView.ordenTrabajo">
+                    <div class="bg-white dark:bg-slate-800 px-4 py-2.5">
+                        <p class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 mb-1">Solicitante</p>
+                        <p class="text-sm font-bold text-black dark:text-white break-words">{{ salidaView.nombre || '—' }}</p>
+                    </div>
+                    <div class="bg-white dark:bg-slate-800 px-4 py-2.5">
+                        <p class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 mb-1">Licencia</p>
+                        <p class="text-sm font-bold text-black dark:text-white break-words">{{ salidaView.nroLicencia || '—' }}</p>
+                    </div>
+                    <div class="bg-white dark:bg-slate-800 px-4 py-2.5">
+                        <p class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 mb-1">Unidad de Destino</p>
+                        <p class="text-sm font-bold text-black dark:text-white break-words">{{ salidaView.area || '—' }}</p>
+                    </div>
+                    <div class="bg-white dark:bg-slate-800 px-4 py-2.5">
+                        <p class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 mb-1">Matrícula Aeronave</p>
+                        <p class="text-sm font-bold text-black dark:text-white break-words">{{ salidaView.buscadorAeronave || '—' }}</p>
+                    </div>
+                    <div class="bg-white dark:bg-slate-800 px-4 py-2.5">
                         <p class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 mb-1">Orden de Trabajo</p>
-                        <p class="text-sm font-bold text-black dark:text-white">{{ salidaView.ordenTrabajo }}</p>
+                        <p class="text-sm font-bold text-black dark:text-white break-words">{{ salidaView.ordenTrabajo || '—' }}</p>
                     </div>
-                    <div *ngIf="salidaView.buscadorAeronave">
-                        <p class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 mb-1">Aeronave</p>
-                        <p class="text-sm font-bold text-black dark:text-white">{{ salidaView.buscadorAeronave }}</p>
-                    </div>
-                    <div *ngIf="salidaView.buscadorAutorizado">
+                    <div class="bg-white dark:bg-slate-800 px-4 py-2.5">
                         <p class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 mb-1">Autorizado Por</p>
-                        <p class="text-sm font-bold text-black dark:text-white">{{ salidaView.buscadorAutorizado }}</p>
+                        <p class="text-sm font-bold text-black dark:text-white break-words">{{ salidaView.buscadorAutorizado || '—' }}</p>
                     </div>
-                </div>
-
-                <div *ngIf="salidaView.observaciones">
-                    <p class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 mb-1">Observaciones</p>
-                    <p class="text-sm text-black dark:text-white">{{ salidaView.observaciones }}</p>
+                    <div class="bg-white dark:bg-slate-800 px-4 py-2.5 sm:col-span-2">
+                        <p class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 mb-1">Observaciones</p>
+                        <p class="text-sm text-black dark:text-white whitespace-pre-line break-words">{{ salidaView.observaciones || '—' }}</p>
+                    </div>
                 </div>
             </div>
         </div>
 
-        <!-- Pie -->
-        <div class="border-t-2 border-black bg-stone-200 dark:bg-slate-900 px-5 py-3 flex justify-end shrink-0">
+        <div class="border-t-2 border-black bg-stone-200 dark:bg-slate-900 px-4 py-2 flex flex-col-reverse sm:flex-row justify-between items-stretch sm:items-center gap-2 shrink-0">
+            <button type="button" (click)="dialogRef.close()"
+                    class="w-full sm:w-auto flex items-center justify-center gap-1 px-3 py-1.5 bg-[#FF1414] text-white font-black text-[10px] uppercase border-2 border-black rounded-lg shadow-[2px_2px_0_#000] hover:shadow-none hover:translate-x-[1px] hover:translate-y-[1px] transition-all">
+                <mat-icon class="!text-xs">close</mat-icon>
+                Cerrar
+            </button>
             <button type="button" (click)="imprimirPdf()" [disabled]="generandoPdf"
-                    class="flex items-center gap-2 px-5 py-2 bg-amber-500 text-black font-black text-[10px] border-2 border-black rounded-xl shadow-[3px_3px_0_#000] hover:shadow-none hover:translate-x-[3px] hover:translate-y-[3px] transition-all uppercase disabled:opacity-50 disabled:cursor-not-allowed">
-                <mat-spinner *ngIf="generandoPdf" diameter="16"></mat-spinner>
-                <mat-icon *ngIf="!generandoPdf" class="!text-sm">picture_as_pdf</mat-icon>
+                    class="w-full sm:w-auto flex items-center justify-center gap-1.5 px-3 py-1.5 bg-amber-500 text-black font-black text-[10px] uppercase border-2 border-black rounded-lg shadow-[2px_2px_0_#000] hover:shadow-none hover:translate-x-[1px] hover:translate-y-[1px] transition-all disabled:opacity-60">
+                <mat-spinner *ngIf="generandoPdf" diameter="14"></mat-spinner>
+                <mat-icon *ngIf="!generandoPdf" class="!text-xs">picture_as_pdf</mat-icon>
                 {{ generandoPdf ? 'Generando...' : 'Imprimir Nota (MGH-117)' }}
             </button>
         </div>
     </ng-container>
 
     <!-- ======================================================
-         MODO EDICIÓN — single item editable (sin scroll)
+         MODO EDICIÓN — single item editable
     ====================================================== -->
     <ng-container *ngIf="isEdit && salidaView">
-        <div class="px-4 py-3">
+        <div class="flex-1 overflow-y-auto p-3 sm:p-4 custom-scrollbar">
             <div class="bg-white dark:bg-slate-800 border-2 border-black rounded-xl p-3 shadow-[3px_3px_0_#000] flex flex-col gap-2.5">
 
                 <!-- Chip nota (no editable) -->
@@ -248,20 +244,21 @@
                               class="w-full text-xs font-normal bg-stone-50 dark:bg-slate-900 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-lg px-2.5 py-1.5 outline-none resize-none transition-all placeholder:text-stone-300 focus:border-amber-500"></textarea>
                 </div>
 
-                <!-- Botones -->
-                <div class="flex justify-end gap-2 pt-1.5 border-t-2 border-black/10">
-                    <button type="button" (click)="dialogRef.close(undefined)"
-                            class="px-4 py-1.5 bg-[#FF1414] text-white font-black text-[10px] border-2 border-black rounded-lg shadow-[2px_2px_0_#000] hover:shadow-none hover:translate-x-[1px] hover:translate-y-[1px] transition-all uppercase">
-                        Cancelar
-                    </button>
-                    <button type="button" (click)="saveEdit()" [disabled]="isSaving()"
-                            class="flex items-center gap-1.5 px-4 py-1.5 bg-amber-400 text-black font-black text-[10px] border-2 border-black rounded-lg shadow-[2px_2px_0_#000] hover:shadow-none hover:translate-x-[1px] hover:translate-y-[1px] transition-all uppercase disabled:opacity-50">
-                        <mat-spinner *ngIf="isSaving()" diameter="14"></mat-spinner>
-                        <mat-icon *ngIf="!isSaving()" class="!text-xs">save</mat-icon>
-                        {{ isSaving() ? 'Guardando...' : 'Guardar Cambios' }}
-                    </button>
-                </div>
             </div>
+        </div>
+
+        <div class="border-t-2 border-black bg-stone-200 dark:bg-slate-900 px-4 py-2 flex flex-col-reverse sm:flex-row justify-between items-stretch sm:items-center gap-2 shrink-0">
+            <button type="button" (click)="dialogRef.close(undefined)"
+                    class="w-full sm:w-auto flex items-center justify-center gap-1 px-3 py-1.5 bg-[#FF1414] text-white font-black text-[10px] uppercase border-2 border-black rounded-lg shadow-[2px_2px_0_#000] hover:shadow-none hover:translate-x-[1px] hover:translate-y-[1px] transition-all">
+                <mat-icon class="!text-xs">close</mat-icon>
+                Cancelar
+            </button>
+            <button type="button" (click)="saveEdit()" [disabled]="isSaving()"
+                    class="w-full sm:w-auto flex items-center justify-center gap-1.5 px-3 py-1.5 bg-amber-400 text-black font-black text-[10px] uppercase border-2 border-black rounded-lg shadow-[2px_2px_0_#000] hover:shadow-none hover:translate-x-[1px] hover:translate-y-[1px] transition-all disabled:opacity-50 disabled:cursor-not-allowed">
+                <mat-spinner *ngIf="isSaving()" diameter="14"></mat-spinner>
+                <mat-icon *ngIf="!isSaving()" class="!text-xs">save</mat-icon>
+                {{ isSaving() ? 'Guardando...' : 'Guardar Cambios' }}
+            </button>
         </div>
     </ng-container>
 
@@ -269,10 +266,10 @@
          MODO NUEVO — layout split panels
     ====================================================== -->
     <ng-container *ngIf="mode === 'new'">
-        <div class="flex flex-col sm:flex-row flex-1 overflow-hidden min-h-0">
+        <div class="dlg-cuerpo flex flex-col sm:flex-row flex-1 overflow-y-auto sm:overflow-hidden min-h-0">
 
             <!-- ── PANEL IZQUIERDO: Datos comunes ── -->
-            <div class="sm:basis-[340px] sm:max-w-[380px] shrink-0 overflow-y-auto custom-scrollbar border-b-2 sm:border-b-0 sm:border-r-2 border-black/20 dark:border-slate-600">
+            <div class="dlg-panel sm:basis-[340px] sm:max-w-[380px] shrink-0 sm:overflow-y-auto custom-scrollbar border-b-2 sm:border-b-0 sm:border-r-2 border-black/20 dark:border-slate-600">
                 <div class="px-4 py-3 flex flex-col gap-3">
 
                     <!-- ── Datos del Despacho ── -->
@@ -421,7 +418,7 @@
             </div>
 
             <!-- ── PANEL DERECHO: Lote de materiales ── -->
-            <div class="flex-1 min-h-0 flex flex-col overflow-hidden">
+            <div class="dlg-lista flex-1 min-h-[24rem] sm:min-h-0 flex flex-col overflow-hidden">
 
                 <!-- Añadir material al lote -->
                 <div class="border-b-2 border-black/20 dark:border-slate-600 px-4 pt-3 pb-2.5 flex flex-col gap-2 shrink-0">

@@ -14,7 +14,7 @@
     <div class="flex flex-col gap-3 shrink-0">
 
       <!-- Título principal + tabs a la derecha -->
-      <div class="flex items-center justify-between gap-4">
+      <div class="flex items-center justify-between gap-3 flex-wrap">
         <div class="flex items-center gap-4">
           <div class="flex items-center justify-center w-10 h-10 bg-white dark:bg-[#0F172AFF] border-[3px] border-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] rounded-xl shrink-0">
             <mat-icon class="text-black dark:text-[#FFC501FF] !text-base">swap_horiz</mat-icon>
@@ -39,7 +39,7 @@
         </select>
 
         <!-- Tabs de vista -->
-        <div class="flex items-center gap-1 shrink-0">
+        <div class="flex items-center gap-1 flex-wrap">
           <button (click)="setTabView('envios')"
                   class="h-9 px-3 flex items-center gap-1.5 rounded-lg border-[2px] border-black font-black text-[10px] uppercase transition-all"
                   [ngClass]="activeTabView === 'envios'
@@ -74,7 +74,7 @@
 
       <!-- Cabecera oscura con KPIs -->
       <div class="px-3 sm:px-4 py-2 bg-[#0F172AFF] border-b-[3px] border-black shrink-0 rounded-t-2xl">
-        <div class="flex items-center gap-2 overflow-x-auto scrollbar-none flex-nowrap">
+        <div class="flex items-center gap-2 flex-wrap">
 
           <div class="flex items-center gap-1.5 bg-white/10 rounded-lg px-2.5 py-1.5 border border-white/20 shrink-0">
             <div class="w-4 h-4 bg-white/20 rounded flex items-center justify-center">
@@ -87,7 +87,7 @@
           </div>
 
           <!-- ── Acciones contextuales + Actualizar (esquina derecha) ── -->
-          <div class="ml-auto flex items-center gap-1.5 shrink-0">
+          <div class="ml-auto flex items-center flex-wrap justify-end gap-1.5">
 
             <!-- Envíos Base -->
             <ng-container *ngIf="activeTabView === 'envios'">
@@ -144,7 +144,7 @@
             <button (click)="loadMovActivos()" [disabled]="loadingActivos"
                     class="flex items-center gap-1.5 h-7 px-2.5 rounded-lg border border-white/30 text-white hover:bg-white/20 transition-all disabled:opacity-40 font-black text-[10px] uppercase shrink-0">
               <mat-icon class="!text-sm !w-4 !h-4 text-[#FFC501FF]" [class.animate-spin]="loadingActivos">refresh</mat-icon>
-              Actualizar
+              <span class="hidden sm:inline">Actualizar</span>
             </button>
 
           </div>
@@ -297,13 +297,10 @@
         </table>
       </div>
 
-      <!-- Paginator -->
-      <div *ngIf="!loadingActivos && movActivosFiltrados.length>0"
-           class="shrink-0 border-t-[2px] border-black bg-gray-100 dark:bg-slate-800 px-4 py-1 rounded-b-2xl">
-        <mat-paginator [length]="movActivosFiltrados.length" [pageSize]="activosPageSize" [pageIndex]="activosPageIndex"
-                       [pageSizeOptions]="activosPageSizeOptions" (page)="onActivosPageChange($event)" showFirstLastButtons>
-        </mat-paginator>
-      </div>
+      <!-- Paginador -->
+      <app-paginador-compacto *ngIf="!loadingActivos && movActivosFiltrados.length>0" class="rounded-b-2xl overflow-hidden"
+                              [total]="movActivosFiltrados.length" [pageSize]="activosPageSize"
+                              [pageIndex]="activosPageIndex" (pageIndexChange)="activosPageIndex = $event"></app-paginador-compacto>
 
     </div><!-- /tarjeta de activos -->
   </div><!-- /p-4 -->

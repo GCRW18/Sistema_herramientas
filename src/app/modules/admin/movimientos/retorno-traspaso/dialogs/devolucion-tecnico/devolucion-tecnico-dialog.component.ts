@@ -12,7 +12,7 @@ import { MovementService } from '../../../../../../core/services/movement.servic
 import { localDateStr } from '../../../../../../core/utils/date.utils';
 import {
     MovimientoActivo, TraspasoItem, Funcionario, CondRetorno,
-    CONDICIONES_RETORNO, isItemValid, getItemErrors
+    CONDICIONES_RETORNO, isItemValid, getItemErrors, pendienteRetorno
 } from '../../retorno-traspaso.types';
 
 export interface DevolucionTecnicoDialogData {
@@ -146,12 +146,12 @@ export class DevolucionTecnicoDialogComponent implements OnInit, OnDestroy {
             takeUntil(this._unsub$)
         ).subscribe({
             next: (items: any[]) => {
-                this.devolucionTecnicoItems = items.map((i: any) => ({
+                this.devolucionTecnicoItems = items.filter((i: any) => pendienteRetorno(i) > 0).map((i: any) => ({
                     id: String(i.id_movement_item || i.id || ''),
                     filaObs: 0, toolId: String(i.tool_id || ''),
                     codigo: i.code || i.codigo || '', descripcion: i.name || i.description || '',
                     pn: i.part_number || '', sn: i.serial_number || '', marca: i.brand || '',
-                    cantidadEnviada: Number(i.quantity) || 1, cantidadRetorna: Number(i.quantity) || 1,
+                    cantidadEnviada: pendienteRetorno(i), cantidadRetorna: pendienteRetorno(i),
                     fechaEnvio: mov.send_date, nroNotaSalida: mov.movement_number,
                     ubicacionOrigen: mov.source_warehouse_name, diasFuera: 0,
                     selected: false, expanded: false, condicion: '', observacionItem: ''
@@ -255,7 +255,7 @@ export class DevolucionTecnicoDialogComponent implements OnInit, OnDestroy {
         ).subscribe({
             next: (res: any) => {
                 const nro = res?.movement_number || '---';
-                this._showMsg(`Devolución registrada: ${nro}`, 'success');
+                this._showMsg(Number(res?.pendientes) > 0 ? (res?.mensaje || `Devolución parcial registrada: ${nro}`) : `Devolución registrada: ${nro}`, 'success');
                 // Acta de Retorno MGH — mismo reporte TCPDF compartido con Retorno
                 // de Base/Traspaso (RReporteRetornoNota ya soporta RETORNO_TRASPASO).
                 const idMov = Number(res?.id_movement);

@@ -13,15 +13,15 @@
     </div>
 
     <!-- Cabecera -->
-    <div class="bg-[#0F172A] px-4 py-3 flex items-center gap-3 shrink-0">
+    <div class="bg-[#0F172A] px-4 py-3 flex items-center flex-wrap gap-x-3 gap-y-2 shrink-0">
         <div class="w-8 h-8 rounded bg-amber-400 border-2 border-black flex items-center justify-center shadow-[2px_2px_0_#fbbf24] shrink-0">
             <mat-icon class="!text-base text-black">engineering</mat-icon>
         </div>
-        <div>
+        <div class="flex-1 min-w-0">
             <p class="text-[9px] text-slate-400 font-bold uppercase tracking-[0.15em] leading-none mb-1">Préstamo Técnico Interno</p>
-            <h2 class="text-sm text-white font-black uppercase tracking-tight leading-none">Nuevo Préstamo · MGH-100</h2>
+            <h2 class="text-sm text-white font-black uppercase tracking-tight leading-tight">Nuevo Préstamo · MGH-100</h2>
         </div>
-        <div class="ml-auto flex items-center gap-2 shrink-0">
+        <div class="ml-auto flex items-center flex-wrap justify-end gap-2">
             <div class="flex items-center gap-1.5 bg-white/10 rounded-lg px-2.5 py-1 border border-white/20">
                 <div *ngIf="loadingPtCorrelativo" class="w-3 h-3 border-2 border-[#FFC501FF] border-t-transparent rounded-full animate-spin"></div>
                 <mat-icon *ngIf="!loadingPtCorrelativo" class="!text-xs text-amber-300">tag</mat-icon>
@@ -35,10 +35,10 @@
     </div>
 
     <!-- Cuerpo: IZQUIERDA (form técnico) / DERECHA (items) -->
-    <div class="flex flex-col sm:flex-row flex-1 overflow-hidden min-h-0">
+    <div class="dlg-cuerpo flex flex-col sm:flex-row flex-1 overflow-y-auto sm:overflow-hidden min-h-0">
 
         <!-- IZQUIERDA: form técnico -->
-        <div class="sm:basis-[340px] sm:max-w-[380px] shrink-0 overflow-y-auto custom-scrollbar border-b-2 sm:border-b-0 sm:border-r-2 border-black/20 dark:border-slate-600">
+        <div class="dlg-panel sm:basis-[340px] sm:max-w-[380px] shrink-0 sm:overflow-y-auto custom-scrollbar border-b-2 sm:border-b-0 sm:border-r-2 border-black/20 dark:border-slate-600">
             <form [formGroup]="internalForm" class="px-4 py-3 flex flex-col gap-3">
 
                 <!-- ── Datos del Técnico ── -->
@@ -181,9 +181,11 @@
                 <!-- Orden de Trabajo + Trabajo Especial -->
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 items-end">
                     <div>
-                        <label class="text-[9px] font-black uppercase tracking-wider text-stone-400 dark:text-slate-400 mb-1 block">Orden de Trabajo</label>
+                        <label class="text-[9px] font-black uppercase tracking-wider text-stone-400 dark:text-slate-400 mb-1 block">Orden de Trabajo <span class="text-red-500">*</span></label>
                         <input formControlName="ordenTrabajo" type="text"
-                               class="w-full h-8 text-xs font-bold bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-lg px-2.5 outline-none transition-all hover:border-stone-400 focus:border-black focus:shadow-[2px_2px_0_#000]">
+                               class="w-full h-8 text-xs font-bold bg-white dark:bg-slate-800 dark:text-white border-2 rounded-lg px-2.5 outline-none transition-all"
+                               [ngClass]="hasErrorInternal('ordenTrabajo','required') || hasErrorInternal('ordenTrabajo','pattern') ? 'border-red-500' : 'border-stone-300 dark:border-slate-600 hover:border-stone-400 focus:border-black focus:shadow-[2px_2px_0_#000]'">
+                        <p *ngIf="hasErrorInternal('ordenTrabajo','required') || hasErrorInternal('ordenTrabajo','pattern')" class="text-[9px] text-red-500 font-black mt-1">Requerido</p>
                     </div>
                     <label class="h-8 flex items-center gap-2 px-3 bg-white dark:bg-slate-800 border-2 border-stone-300 dark:border-slate-600 rounded-lg cursor-pointer hover:border-stone-400 transition-all">
                         <mat-checkbox formControlName="trabajoEspecial"></mat-checkbox>
@@ -201,7 +203,7 @@
         </div>
 
         <!-- DERECHA: bÃºsqueda de herramienta + lista de Ã­tems -->
-        <div class="flex-1 min-h-0 flex flex-col overflow-hidden">
+        <div class="dlg-lista flex-1 min-h-[24rem] sm:min-h-0 flex flex-col overflow-hidden">
 
             <!-- Cabecera de agregar herramientas -->
             <div class="border-b-2 border-black/20 dark:border-slate-600 px-4 pt-3 pb-2.5 flex flex-col gap-2 shrink-0">
@@ -320,15 +322,15 @@
     </div>
 
     <!-- Pie -->
-    <div class="border-t-2 border-black bg-stone-200 dark:bg-slate-800 px-4 py-2 flex items-center justify-between shrink-0">
-        <div class="flex items-center gap-2 shrink-0">
+    <div class="border-t-2 border-black bg-stone-200 dark:bg-slate-800 px-4 py-2 flex items-center flex-wrap gap-y-2 justify-between shrink-0">
+        <div class="flex items-center flex-wrap gap-2">
             <button type="button" (click)="cerrar()"
                     class="flex items-center gap-1 px-3 py-1.5 bg-[#FF1414] text-white font-black text-[10px] uppercase border-2 border-black rounded-lg shadow-[2px_2px_0_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all">
                 <mat-icon class="!text-xs">close</mat-icon>
                 Cancelar
             </button>
         </div>
-        <div class="flex items-center gap-2 shrink-0">
+        <div class="flex items-center flex-wrap gap-2">
             <span class="text-[10px] font-black text-black dark:text-white shrink-0">{{ internalDataSource().length }} herramienta(s)</span>
             <span *ngIf="internalForm.get('nombreCompleto')?.value"
                   class="text-[9px] text-stone-500 dark:text-slate-400 font-bold truncate hidden sm:block max-w-[120px]">
@@ -352,13 +354,13 @@
     <div class="bg-stone-100 dark:bg-[#0F172A] border-2 border-black overflow-hidden flex flex-col"
          style="width:min(920px,95vw); height:min(600px,88vh)">
 
-        <div class="bg-[#0F172A] px-4 py-3 flex items-center gap-3 shrink-0">
+        <div class="bg-[#0F172A] px-4 py-3 flex items-center flex-wrap gap-x-3 gap-y-2 shrink-0">
             <div class="w-8 h-8 rounded bg-amber-400 border-2 border-black flex items-center justify-center shadow-[2px_2px_0_#fbbf24] shrink-0">
                 <mat-icon class="!text-base text-black">send</mat-icon>
             </div>
-            <div>
+            <div class="flex-1 min-w-0">
                 <p class="text-[9px] text-slate-400 font-bold uppercase tracking-[0.15em] leading-none mb-1">Préstamo Técnico · MGH-100</p>
-                <h2 class="text-sm text-white font-black uppercase tracking-tight leading-none">Confirmar Préstamo</h2>
+                <h2 class="text-sm text-white font-black uppercase tracking-tight leading-tight">Confirmar Préstamo</h2>
             </div>
             <span class="ml-auto px-2 py-1 bg-amber-500 text-black font-black text-[10px] border border-black rounded leading-none shrink-0">
                 {{ internalDataSource().length }} ítem{{ internalDataSource().length !== 1 ? 's' : '' }}
@@ -366,10 +368,10 @@
         </div>
 
         <!-- Cuerpo: IZQUIERDA (Datos) / DERECHA (Herramientas) -->
-        <div class="flex flex-col sm:flex-row flex-1 overflow-hidden min-h-0">
+        <div class="dlg-cuerpo flex flex-col sm:flex-row flex-1 overflow-y-auto sm:overflow-hidden min-h-0">
 
             <!-- IZQUIERDA: Datos -->
-            <div class="sm:basis-[320px] sm:max-w-[360px] shrink-0 overflow-y-auto custom-scrollbar border-b-2 sm:border-b-0 sm:border-r-2 border-black/20 dark:border-slate-600 px-4 py-4 flex flex-col gap-3">
+            <div class="dlg-panel sm:basis-[320px] sm:max-w-[360px] shrink-0 sm:overflow-y-auto custom-scrollbar border-b-2 sm:border-b-0 sm:border-r-2 border-black/20 dark:border-slate-600 px-4 py-4 flex flex-col gap-3">
 
                 <div class="bg-white dark:bg-slate-800 border-2 border-black rounded-xl p-3 flex flex-col gap-1.5">
                     <p class="text-[9px] font-black uppercase tracking-[0.15em] text-stone-500 dark:text-slate-300 mb-0.5">Técnico</p>
@@ -401,7 +403,7 @@
             </div>
 
             <!-- DERECHA: Herramientas -->
-            <div class="flex-1 min-h-0 flex flex-col overflow-hidden">
+            <div class="dlg-lista flex-1 min-h-[24rem] sm:min-h-0 flex flex-col overflow-hidden">
                 <div class="px-4 pt-3 pb-2 shrink-0">
                     <p class="text-[9px] font-black uppercase tracking-[0.15em] text-stone-500 dark:text-slate-300">Herramientas ({{ internalDataSource().length }})</p>
                 </div>
@@ -434,7 +436,7 @@
             </div>
         </div>
 
-        <div class="border-t-2 border-black bg-stone-200 dark:bg-slate-800 px-4 py-3 flex justify-between items-center shrink-0">
+        <div class="border-t-2 border-black bg-stone-200 dark:bg-slate-800 px-4 py-3 flex flex-wrap gap-y-2 justify-between items-center shrink-0">
             <button (click)="cerrarModalConfirmInterno()"
                     class="flex items-center gap-1 px-3 py-1.5 bg-[#FF1414] text-white font-black text-[10px] border-2 border-black rounded-lg shadow-[2px_2px_0_#000] hover:shadow-none hover:translate-x-[1px] hover:translate-y-[1px] transition-all uppercase">
                 <mat-icon class="!text-xs">close</mat-icon>Cancelar

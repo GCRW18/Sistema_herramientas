@@ -2,6 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { Observable, of } from 'rxjs';
 import { catchError, map, shareReplay, switchMap } from 'rxjs/operators';
 import { RoleService } from './role.service';
+import { AppArea, AREA_SUBMODULES } from '../models/role.types';
 
 interface PermissionsState {
     /** true si el usuario tiene una fila en he.tusuarios con id_role asignado */
@@ -77,6 +78,27 @@ export class PermissionsService {
         return this.state$.pipe(
             map(s => !s.hasRoleData || s.permissions.includes(permissionId))
         );
+    }
+
+    /** true si el rol tiene al menos un permiso del submódulo (prefijo `kits` → `kits.*`). */
+    private _hasPrefix(s: PermissionsState, prefix: string): boolean {
+        return !s.hasRoleData || s.permissions.some(p => p.startsWith(prefix + '.'));
+    }
+
+    /** Pestañas (type de MODULE_DEFS) del módulo que el rol puede ver. */
+    allowedTabs(area: AppArea): Observable<Set<number>> {
+        return this.state$.pipe(
+            map(s => new Set(
+                Object.entries(AREA_SUBMODULES[area])
+                    .filter(([, prefix]) => this._hasPrefix(s, prefix))
+                    .map(([type]) => Number(type))
+            ))
+        );
+    }
+
+    /** true si el módulo del menú debe mostrarse (alguna de sus pestañas es visible). */
+    canAccessArea(area: AppArea): Observable<boolean> {
+        return this.allowedTabs(area).pipe(map(tabs => tabs.size > 0));
     }
 
     /** Limpia la caché — llamar al cerrar sesión para no arrastrar permisos del usuario anterior. */

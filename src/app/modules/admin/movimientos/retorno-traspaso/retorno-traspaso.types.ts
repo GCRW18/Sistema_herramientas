@@ -130,6 +130,11 @@ export const TIPOS_TRASPASO = [
 ];
 
 // Auxiliares comunes de validación de ítems
+/** Cantidad de un ítem de salida que aún no volvió (quantity - quantity_returned, patch HE-83). */
+export function pendienteRetorno(i: any): number {
+    return Math.max((Number(i?.quantity) || 1) - (Number(i?.quantity_returned) || 0), 0);
+}
+
 export function isItemValid(item: TraspasoItem): boolean {
     if (!item.selected) return true;
     if (!item.condicion) return false;

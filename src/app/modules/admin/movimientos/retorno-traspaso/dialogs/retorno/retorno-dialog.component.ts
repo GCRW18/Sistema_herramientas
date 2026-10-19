@@ -10,8 +10,8 @@ import { debounceTime, distinctUntilChanged, switchMap, takeUntil, finalize, map
 
 import { MovementService } from '../../../../../../core/services/movement.service';
 import { QrScanService } from '../../../../../../core/services/qr-scan.service';
-import { localDateStr } from '../../../../../../core/utils/date.utils';
-import { Ubicacion, CondRetorno, CONDICIONES_RETORNO } from '../../retorno-traspaso.types';
+import { localDateStr, diasDesde } from '../../../../../../core/utils/date.utils';
+import { Ubicacion, CondRetorno, CONDICIONES_RETORNO, pendienteRetorno } from '../../retorno-traspaso.types';
 
 export interface RetornoDialogData {
     almacenes: Ubicacion[];
@@ -96,6 +96,8 @@ export class RetornoDialogComponent implements OnInit, OnDestroy {
 
     // ── Índice de notas de salida abiertas: code (mayúsculas) → ítems ──
     private _openSendIndex = new Map<string, RetornoScanItem[]>();
+    /** Código → nota de los traspasos técnicos MGH-109 abiertos: se devuelven solo desde Devolución Técnica. */
+    private _tecnicoIndex = new Map<string, string>();
 
     // ── Escaneo ──
     scanValue = '';
@@ -167,10 +169,13 @@ export class RetornoDialogComponent implements OnInit, OnDestroy {
             finalize(() => { this.loadingIndex = false; this.indexReady = true; setTimeout(() => this._focusScan(), 100); })
         ).subscribe((results: { mov: any; items: any[] }[]) => {
             this._openSendIndex.clear();
+            this._tecnicoIndex.clear();
             (results || []).forEach(({ mov, items }) => {
-                (items || []).forEach((it: any) => {
+                const esTecnico = String(mov.specific_observations || '').includes('MGH109');
+                (items || []).filter((it: any) => pendienteRetorno(it) > 0).forEach((it: any) => {
                     const si = this._toScanItem(mov, it);
                     if (!si.codigo) return;
+                    if (esTecnico) { this._tecnicoIndex.set(si.codigo.toUpperCase(), mov.movement_number || ''); return; }
                     const key = si.codigo.toUpperCase();
                     const arr = this._openSendIndex.get(key) || [];
                     arr.push(si);
@@ -184,9 +189,8 @@ export class RetornoDialogComponent implements OnInit, OnDestroy {
 
     private _toScanItem(mov: any, it: any): RetornoScanItem {
         const fechaEnvio = mov.date || mov.send_date || '';
-        const diasFuera  = fechaEnvio
-            ? Math.ceil(Math.abs(Date.now() - new Date(fechaEnvio).getTime()) / 86400000) : 0;
-        const qty = Number(it?.quantity) || 1;
+        const diasFuera  = diasDesde(fechaEnvio);
+        const qty = pendienteRetorno(it);
         return {
             srcMovementId:     Number(mov.id_movement) || 0,
             srcMovementNumber: mov.movement_number || '',
@@ -298,6 +302,12 @@ export class RetornoDialogComponent implements OnInit, OnDestroy {
         if (this.scanSuggestions.length > 1) {
             this.showScanDropdown = true;
             this.showMsg('info', `${this.scanSuggestions.length} coincidencias — elija de la lista`);
+            return;
+        }
+        const notaTecnico = this._tecnicoIndex.get(code.toUpperCase());
+        if (notaTecnico !== undefined) {
+            this.showMsg('warning', `"${code}" está en el traspaso técnico ${notaTecnico} (MGH-109): regístrela en Devolución Técnica`);
+            this._clearScan();
             return;
         }
         this.showMsg('warning', `"${code}" no tiene una nota de salida abierta para retornar`);
@@ -500,7 +510,8 @@ export class RetornoDialogComponent implements OnInit, OnDestroy {
         ).subscribe({
             next: (results: any[]) => {
                 const nros = results.map(r => r?.movement_number || '---').join(', ');
-                this.showMsg('success', `Retorno registrado: ${nros}`);
+                const pend = results.reduce((n, r) => n + (Number(r?.pendientes) || 0), 0);
+                this.showMsg('success', pend > 0 ? `Retorno registrado: ${nros} (parcial: quedan ${pend} herramienta(s) pendiente(s) de retorno)` : `Retorno registrado: ${nros}`);
                 results.forEach((r, idx) => {
                     const id = Number(r?.id_movement);
                     if (id) this.movSvc.verNotaRetorno(id, idx === 0 ? notaWin : null);

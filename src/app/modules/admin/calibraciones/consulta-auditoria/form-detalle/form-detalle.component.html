@@ -1,12 +1,12 @@
-<div class="bg-stone-100 dark:bg-slate-900 border-2 border-black overflow-hidden flex flex-col w-full h-full">
+<div class="bg-stone-100 dark:bg-slate-900 border-2 border-black overflow-hidden flex flex-col w-full h-full max-h-[90dvh]">
 
     <!-- CABECERA -->
-    <div class="bg-[#0F172A] px-5 py-3.5 flex items-center gap-3 shrink-0 select-none"
+    <div class="bg-[#0F172A] px-4 sm:px-5 py-3.5 flex items-center flex-wrap gap-x-3 gap-y-2 shrink-0 select-none"
          cdkDrag cdkDragRootElement=".cdk-overlay-pane" cdkDragHandle style="cursor:grab">
         <div class="w-9 h-9 rounded bg-amber-400 border-2 border-black flex items-center justify-center shadow-[2px_2px_0_#fbbf24] shrink-0">
             <mat-icon class="!text-lg text-black">{{ row.tipo_registro === 'calibracion' ? 'verified' : 'build' }}</mat-icon>
         </div>
-        <div>
+        <div class="flex-1 min-w-0">
             <p class="text-[9px] text-slate-400 font-bold uppercase tracking-[0.18em] leading-none mb-0.5">
                 MGH-109 · {{ row.tipo_registro === 'calibracion' ? 'Calibración' : 'Mantenimiento' }}
             </p>
@@ -24,7 +24,7 @@
     </div>
 
     <!-- CUERPO -->
-    <div class="flex-1 overflow-y-auto px-5 py-5 custom-scrollbar">
+    <div class="flex-1 min-h-0 overflow-y-auto px-4 sm:px-5 py-5 custom-scrollbar">
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
 
             <!-- Columna Izquierda - Datos de la Herramienta -->
@@ -103,7 +103,7 @@
                         </div>
                         <div *ngIf="row.cost > 0">
                             <label class="text-[9px] font-black uppercase text-gray-500 dark:text-gray-400 block">Costo</label>
-                            <p class="text-sm font-black text-black dark:text-white">${{ row.cost.toFixed(2) }}</p>
+                            <p class="text-sm font-black text-black dark:text-white">Bs {{ row.cost | number:'1.2-2' }}</p>
                         </div>
                     </div>
                 </div>
@@ -135,13 +135,13 @@
     </div>
 
     <!-- PIE -->
-    <div class="border-t-2 border-black bg-stone-200 dark:bg-slate-800 px-5 py-3 flex justify-between items-center shrink-0">
+    <div class="border-t-2 border-black bg-stone-200 dark:bg-slate-800 px-5 py-3 flex flex-wrap gap-y-2 justify-between items-center shrink-0">
         <button (click)="cerrar()"
                 class="px-4 py-2 bg-[#FF1414] text-white font-black text-[10px] border-2 border-black rounded-xl shadow-[2px_2px_0_#000] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all uppercase flex items-center gap-1.5">
             <mat-icon class="!text-sm">close</mat-icon>
             Cerrar
         </button>
-        <div class="flex items-center gap-2">
+        <div class="flex items-center flex-wrap gap-2">
             <button *ngIf="row.tipo_registro === 'calibracion' && row.certificate_number"
                     (click)="imprimirCertificado()"
                     [disabled]="isPrinting()"

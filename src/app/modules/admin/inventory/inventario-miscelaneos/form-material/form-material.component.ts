@@ -12,7 +12,7 @@ import { catchError, finalize, map, takeUntil } from 'rxjs/operators';
 import { Material, DialogMode } from '../interfaces';
 import { GestionUbicacionesService } from '../../gestion-ubicaciones/gestion-ubicaciones.service';
 import { Warehouse, Rack, Level } from '../../gestion-ubicaciones/interfaces';
-import { localDateStr } from '../../../../../core/utils/date.utils';
+import { localDateStr, formatDateDMY } from '../../../../../core/utils/date.utils';
 
 @Component({
     selector: 'app-form-material',
@@ -69,31 +69,6 @@ export class FormMaterialComponent implements OnInit, OnDestroy {
     tiposCompra = ['COMPRA DIRECTA', 'LICITACIÓN', 'DONACIÓN', 'TRANSFERENCIA'];
     unidades    = ['UND', 'LT', 'KG', 'MTS', 'GAL', 'CAJA', 'ROLLO', 'JUEGO'];
 
-    // ── Mini ventana de Vista Previa (MatDialog anidado, mismo patrón que el picker de ubicación) ──
-    @ViewChild('vistaPreviaTpl') vistaPreviaTpl!: TemplateRef<any>;
-    private vistaPreviaRef: MatDialogRef<any> | null = null;
-    vistaExpanded = false;
-
-    openVistaPreview(): void {
-        if (this.vistaPreviaRef) { this.closeVistaPreview(); return; }
-        this.vistaExpanded  = true;
-        this.vistaPreviaRef = this.dialog.open(this.vistaPreviaTpl, {
-            width: 'min(420px, 92vw)',
-            maxHeight: '70vh',
-            panelClass: 'no-padding-dialog',
-            hasBackdrop: true,
-            autoFocus: false,
-        });
-        this.vistaPreviaRef.afterClosed().subscribe(() => {
-            this.vistaPreviaRef = null;
-            this.vistaExpanded  = false;
-        });
-    }
-
-    closeVistaPreview(): void {
-        this.vistaPreviaRef?.close();
-    }
-
     // ── Picker de ubicación (mini ventana / MatDialog anidado) ──
     @ViewChild('ubicacionPickerTpl') ubicacionPickerTpl!: TemplateRef<any>;
     private ubicacionPickerRef: MatDialogRef<any> | null = null;
@@ -148,6 +123,9 @@ export class FormMaterialComponent implements OnInit, OnDestroy {
         // El código es siempre generado por el servidor (correlativo BOA-M-NNN al crear,
         // ver HE_MIS_INS) — nunca lo escribe el usuario, ni en alta ni en edición.
         this.form.get('codigoBoaM')?.disable();
+        // En edición el stock solo cambia con Entradas/Salidas: editarlo aquí no dejaba movimiento
+        // y podía pisar una salida registrada mientras el form estaba abierto.
+        if (this.mode === 'edit') this.form.get('stock')?.disable();
         if (this.readOnly) {
             this.form.disable();
         }
@@ -307,6 +285,31 @@ export class FormMaterialComponent implements OnInit, OnDestroy {
     }
 
     get readOnly(): boolean { return this.mode === 'view'; }
+
+    // ── Vista de solo lectura ──────────────────────────────────
+    /** Valores del ítem (el form está deshabilitado en modo detalle). */
+    get v(): any { return this.form.getRawValue(); }
+
+    fecha(d: string): string { return formatDateDMY(d) || '—'; }
+
+    /** Clase común de inputs/selects del modo Editar. */
+    readonly inputCls = 'w-full h-9 text-xs font-bold bg-white dark:bg-slate-900 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-lg px-2.5 outline-none transition-all placeholder:text-stone-300 placeholder:font-normal dark:placeholder:text-slate-600 hover:border-stone-400 focus:border-black focus:shadow-[2px_2px_0_#000]';
+
+    /** Estado del stock respecto del mínimo, para el color y la etiqueta del detalle. */
+    get estadoStock(): { label: string; cls: string } {
+        const stock = Number(this.v.stock) || 0;
+        const min   = Number(this.v.stockMin) || 0;
+        if (stock <= 0)   return { label: 'Sin stock',  cls: 'bg-red-600 text-white' };
+        if (stock <= min) return { label: 'Stock bajo', cls: 'bg-amber-400 text-black' };
+        return { label: 'Stock OK', cls: 'bg-emerald-500 text-white' };
+    }
+
+    /** % del stock actual sobre el máximo (null si no hay máximo). */
+    get stockPct(): number | null {
+        const max = Number(this.form.get('stockMax')?.value) || 0;
+        if (max <= 0) return null;
+        return Math.min(100, Math.max(0, (Number(this.form.get('stock')?.value) || 0) / max * 100));
+    }
 
     hasError(field: string, error: string): boolean {
         const c = this.form.get(field);

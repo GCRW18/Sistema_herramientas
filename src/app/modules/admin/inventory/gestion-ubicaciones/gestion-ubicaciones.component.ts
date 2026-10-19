@@ -1,3 +1,4 @@
+import { PaginadorCompactoComponent } from 'app/shared/components/paginador-compacto/paginador-compacto.component';
 import { Component, OnInit, OnDestroy, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
@@ -17,7 +18,7 @@ import { HasPermissionDirective } from '../../../../core/directives/has-permissi
 @Component({
     selector: 'app-gestion-ubicaciones',
     standalone: true,
-    imports: [
+    imports: [PaginadorCompactoComponent, 
         CommonModule,
         ReactiveFormsModule,
         MatDialogModule,

@@ -14,9 +14,13 @@ import { takeUntil, finalize, debounceTime, distinctUntilChanged, switchMap, sta
 import { CalibrationService } from '../../../../core/services/calibration.service';
 import { BlobStorageService } from '../../../../core/services/blob-storage.service';
 import { HasPermissionDirective } from '../../../../core/directives/has-permission.directive';
-import { localDateStr } from '../../../../core/utils/date.utils';
+import { localDateStr, formatDateDMY } from '../../../../core/utils/date.utils';
 
-interface ToolSuggestion { tool_id: number; tool_code: string; tool_name: string; is_calibratable?: boolean; }
+interface ToolSuggestion {
+    tool_id: number; tool_code: string; tool_name: string; is_calibratable?: boolean;
+    part_number?: string; serial_number?: string; brand?: string; status?: string;
+    last_calibration_date?: string; next_calibration_date?: string;
+}
 interface TranscriptionRecord { id: string | number; tool_id: string | number; fecha: string; codigo: string; nombre: string; certificado: string; resultado: string; laboratorio: string; has_certificate_file: boolean; }
 
 @Component({
@@ -121,7 +125,7 @@ export class TranscripcionManualComponent implements OnInit, OnDestroy {
         this.calibrationService.getCalibrations({
             limit: 1000,
             ordenacion: 'id_calibration', dir_ordenacion: 'desc',
-            filtro: "(COALESCE(cls.is_historical, false) = true"
+            filtro_adicional: "(COALESCE(cls.is_historical, false) = true"
                 + " OR cls.internal_notes LIKE '[TRANSCRIPCION HISTORICA%'"
                 + " OR cls.internal_notes LIKE '[TRANSCRIPCIÓN HISTÓRICA%')"
                 + " and cls.estado_reg = 'activo'",
@@ -208,10 +212,11 @@ export class TranscripcionManualComponent implements OnInit, OnDestroy {
     openFormDialog(): void {
         this.resetForm();
         this.activeDialogRef = this.dialog.open(this.formDialogTemplate, {
-            width: '600px',
-            maxWidth: '95vw',
-            maxHeight: '95vh',
-            panelClass: 'no-padding-dialog',
+            // Mismo tamaño que el lote de mantenimiento MGH-109.
+            width: 'min(1240px, 96vw)',
+            maxWidth: '100vw',
+            maxHeight: '100dvh',
+            panelClass: 'neo-dialog-transparent',
             hasBackdrop: true,
             disableClose: true,
             autoFocus: false
@@ -264,7 +269,9 @@ export class TranscripcionManualComponent implements OnInit, OnDestroy {
             takeUntil(this._destroy$)
         ).subscribe(results => {
             this.toolSuggestions = results.map((r: any) => ({
-                tool_id: r.id_tool ?? r.tool_id ?? r.id, tool_code: r.tool_code ?? r.code, tool_name: r.tool_name ?? r.name
+                tool_id: r.id_tool ?? r.tool_id ?? r.id, tool_code: r.tool_code ?? r.code, tool_name: r.tool_name ?? r.name,
+                part_number: r.part_number, serial_number: r.serial_number, brand: r.brand, status: r.status,
+                last_calibration_date: r.last_calibration_date, next_calibration_date: r.next_calibration_date
             }));
             this.showToolDropdown = this.toolSuggestions.length > 0;
         });
@@ -285,6 +292,21 @@ export class TranscripcionManualComponent implements OnInit, OnDestroy {
     }
 
     hideToolDropdown(): void { setTimeout(() => this.showToolDropdown = false, 200); }
+
+    clearTool(): void {
+        this.selectedTool = null;
+        this.toolSearch = 'BOA-H-';
+    }
+
+    fmtDate(d?: string | null): string { return formatDateDMY(d) || '—'; }
+
+    readonly resultOptions = [
+        { value: 'approved',    label: 'Aprobado',    activeCls: 'bg-emerald-500 text-white' },
+        { value: 'conditional', label: 'Condicional', activeCls: 'bg-amber-400 text-black' },
+        { value: 'rejected',    label: 'Rechazado',   activeCls: 'bg-[#FF1414] text-white' },
+    ];
+    get resultLabel(): string    { return this.resultOptions.find(r => r.value === this.result)?.label ?? '—'; }
+    get resultBadgeCls(): string { return this.resultOptions.find(r => r.value === this.result)?.activeCls ?? ''; }
 
     isFechaFutura(): boolean {
         if (!this.calibrationDateStr) return false;

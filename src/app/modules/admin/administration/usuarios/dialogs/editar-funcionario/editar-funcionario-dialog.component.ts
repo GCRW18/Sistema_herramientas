@@ -22,17 +22,17 @@ const AREAS_EMPLEADO = ['LINEA', 'MANTENIMIENTO', 'CENTRO CONTROL', 'AVIONICOS',
     standalone: true,
     imports: [CommonModule, ReactiveFormsModule, MatIconModule, MatDialogModule, MatSnackBarModule],
     template: `
-    <div class="bg-stone-100 dark:bg-slate-900 border-2 border-black overflow-hidden flex flex-col w-full" style="max-height:90vh">
+    <div class="bg-stone-100 dark:bg-slate-900 border-2 border-black rounded-2xl overflow-hidden flex flex-col w-full" style="max-height:90vh">
 
-        <div class="bg-[#0F172A] px-4 py-3 flex items-center gap-3 shrink-0">
+        <div class="bg-[#0F172A] px-4 py-3 flex items-center flex-wrap gap-x-3 gap-y-2 shrink-0">
             <div class="w-8 h-8 rounded bg-amber-400 border-2 border-black flex items-center justify-center shadow-[2px_2px_0_#fbbf24] shrink-0">
                 <mat-icon class="!text-base text-black">badge</mat-icon>
             </div>
-            <div class="min-w-0">
+            <div class="flex-1 min-w-0">
                 <p class="text-[9px] text-slate-400 font-bold uppercase tracking-[0.15em] leading-none mb-0.5">
                     {{ esEdicion ? 'Editar Datos de Herramientas' : 'Alta en Herramientas' }}
                 </p>
-                <h2 class="text-xs text-white font-black uppercase tracking-tight leading-none truncate">{{ f.full_name || f.cuenta }}</h2>
+                <h2 class="text-xs text-white font-black uppercase tracking-tight leading-tight truncate">{{ f.full_name || f.cuenta }}</h2>
             </div>
             <button type="button" (click)="cerrar()" class="ml-auto w-7 h-7 flex items-center justify-center rounded-lg bg-white/10 hover:bg-white/20 transition-colors shrink-0">
                 <mat-icon class="text-white !text-base">close</mat-icon>
@@ -124,7 +124,7 @@ const AREAS_EMPLEADO = ['LINEA', 'MANTENIMIENTO', 'CENTRO CONTROL', 'AVIONICOS',
             </label>
         </form>
 
-        <div class="border-t-2 border-black bg-stone-200 dark:bg-slate-800 px-4 py-2 flex justify-between items-center shrink-0">
+        <div class="border-t-2 border-black bg-stone-200 dark:bg-slate-800 px-4 py-2 flex flex-wrap gap-y-2 justify-between items-center shrink-0">
             <button type="button" (click)="cerrar()"
                     class="flex items-center gap-1 px-3 py-1.5 bg-[#FF1414] text-white font-black text-[10px] uppercase border-2 border-black rounded-lg shadow-[2px_2px_0_#000] hover:shadow-none hover:translate-x-[1px] hover:translate-y-[1px] transition-all">
                 <mat-icon class="!text-xs">close</mat-icon>Cancelar

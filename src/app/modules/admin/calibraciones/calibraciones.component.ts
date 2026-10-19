@@ -1,5 +1,8 @@
 import { Component, OnInit, OnDestroy, inject, ViewChild, ViewChildren, QueryList, TemplateRef, Type, Injector, TrackByFunction, ChangeDetectorRef, AfterViewInit } from '@angular/core';
+import { firstValueFrom } from 'rxjs';
+import { PermissionsService } from '../../../core/services/permissions.service';
 import { CommonModule, NgComponentOutlet } from '@angular/common';
+import { ActivatedRoute } from '@angular/router';
 import { outletsTienenCambios } from '../../../core/guards/pending-changes.guard';
 import { FormsModule } from '@angular/forms';
 import { MatIconModule, MatIconRegistry } from '@angular/material/icon';
@@ -98,6 +101,15 @@ export class CalibracionesComponent implements OnInit, OnDestroy, AfterViewInit 
     private calibrationService = inject(CalibrationService);
     private maintenanceService = inject(MaintenanceService);
     private injector           = inject(Injector);
+    private _permissionsSvc = inject(PermissionsService);
+    private _route          = inject(ActivatedRoute);
+
+    /** Pestañas que el rol del usuario puede abrir (ver AREA_SUBMODULES). */
+    allowedTabs = new Set<number>();
+    private _allowedTabs$ = this._permissionsSvc.allowedTabs('calibraciones');
+    private _allowedSub = this._allowedTabs$.subscribe(tabs => this.allowedTabs = tabs);
+    canSee(type: number): boolean { return this.allowedTabs.has(type); }
+    get visibleModuleDefs() { return this.MODULE_DEFS.filter(d => this.allowedTabs.has(d.type)); }
     private iconRegistry       = inject(MatIconRegistry);
     private sanitizer          = inject(DomSanitizer);
     private cdr                = inject(ChangeDetectorRef);
@@ -199,6 +211,9 @@ export class CalibracionesComponent implements OnInit, OnDestroy, AfterViewInit 
         this.loadAlertCount();
         this.loadRecentCalibrations();
 
+        // Desde el dashboard ("Ver todas" alertas) se entra directo al Centro de Control.
+        if (this._route.snapshot.queryParamMap.get('tab') === 'alertas') this.openModule(5);
+
         this.calibrationService.calibrationsChanged$.pipe(
             takeUntil(this._unsubscribeAll),
         ).subscribe(() => {
@@ -233,6 +248,7 @@ export class CalibracionesComponent implements OnInit, OnDestroy, AfterViewInit 
 
     async openModule(type: number): Promise<void> {
         this.showBandeja = false;
+        if (!(await firstValueFrom(this._allowedTabs$)).has(type)) return;
 
         const existing = this.openTabs.find(t => t.type === type);
         if (existing) {
@@ -310,15 +326,16 @@ export class CalibracionesComponent implements OnInit, OnDestroy, AfterViewInit 
 
     // ── Datos ────────────────────────────────────────────────────────────────
     private loadAlertCount(): void {
-        this.calibrationService.getCalibrationAlertsPxp({ start: 0, limit: 1 }).pipe(
+        // Antes pedía limit 1 y contaba el arreglo: el badge nunca pasaba de 1. Cuenta las
+        // críticas (vencidas / ≤15 días) que no están ya en el laboratorio, como el Dashboard.
+        this.calibrationService.getCalibrationAlertsPxp().pipe(
             takeUntil(this._unsubscribeAll)
         ).subscribe({
-            next: (res: any) => {
-                let count = 0;
-                if (Array.isArray(res)) count = res.length;
-                else if (res?.total) count = res.total;
-                else if (res?.datos?.length) count = res.datos.length;
-                else if (typeof res === 'number') count = res;
+            next: (res: any[]) => {
+                const count = (Array.isArray(res) ? res : []).filter((a: any) =>
+                    ['EXPIRED', 'CRITICAL_7D', 'URGENT_15D'].includes(a.alert_type)
+                    && !['in_calibration', 'CALIBRACION'].includes(a.status) && a.id_calibration == null
+                ).length;
 
                 setTimeout(() => {
                     this.alertCount = count;

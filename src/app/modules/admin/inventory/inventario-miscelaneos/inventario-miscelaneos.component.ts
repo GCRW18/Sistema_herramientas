@@ -1,3 +1,4 @@
+import { PaginadorCompactoComponent } from 'app/shared/components/paginador-compacto/paginador-compacto.component';
 import { Component, OnInit, OnDestroy, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
@@ -16,7 +17,7 @@ import { HasPermissionDirective } from '../../../../core/directives/has-permissi
 @Component({
     selector: 'app-inventario-miscelaneos',
     standalone: true,
-    imports: [CommonModule, ReactiveFormsModule, MatDialogModule, MatIconModule, MatSnackBarModule, MatTooltipModule, HasPermissionDirective],
+    imports: [PaginadorCompactoComponent, CommonModule, ReactiveFormsModule, MatDialogModule, MatIconModule, MatSnackBarModule, MatTooltipModule, HasPermissionDirective],
     templateUrl: './inventario-miscelaneos.component.html',
     styles: [`
         :host { display: block; height: 100%; }
@@ -285,8 +286,11 @@ export class InventarioMiscelaneosComponent implements OnInit, OnDestroy {
                     // Si el usuario cambió la ubicación en el picker, se dispara HE_MIS_MOV aparte.
                     mergeMap(() => {
                         const changed = r.rackId !== m.rackId || r.levelId !== m.levelId;
-                        if (!changed || !r.rackId || !r.levelId) return of(null);
-                        return this.svc.moverMiscelaneo(m.id, r.rackId, r.levelId);
+                        if (!changed) return of(null);
+                        if (r.rackId && r.levelId) return this.svc.moverMiscelaneo(m.id, r.rackId, r.levelId);
+                        // Quitó la ubicación en el picker: sin esto seguía en el estante anterior.
+                        if (m.rackId || m.levelId) return this.svc.desasignarMiscelaneo(m.id);
+                        return of(null);
                     }),
                     finalize(() => this.isLoading.set(false))
                 )
@@ -318,7 +322,7 @@ export class InventarioMiscelaneosComponent implements OnInit, OnDestroy {
                 itemKind:     'ítem de catálogo',
                 itemCode:     m.codigoBoaM,
                 itemName:     m.producto,
-                warning:      'Se eliminará permanentemente del catálogo de misceláneos.',
+                warning:      'Se quitará del catálogo de misceláneos; su historial de entradas y salidas se conserva.',
                 confirmLabel: 'Eliminar Ítem',
             }
         });
@@ -352,7 +356,7 @@ export class InventarioMiscelaneosComponent implements OnInit, OnDestroy {
     async verEntrada(e: Entrada): Promise<void> {
         const { FormEntradaComponent } = await import('./form-entrada/form-entrada.component');
         this.dialog.open(FormEntradaComponent, {
-            maxWidth: '95vw',
+            width: 'min(640px, 95vw)', maxWidth: '95vw',
             panelClass: 'no-padding-dialog',
             data: { mode: 'view', entrada: e, materiales: this.materiales }
         });
@@ -361,7 +365,7 @@ export class InventarioMiscelaneosComponent implements OnInit, OnDestroy {
     async editarEntrada(e: Entrada): Promise<void> {
         const { FormEntradaComponent } = await import('./form-entrada/form-entrada.component');
         this.dialog.open(FormEntradaComponent, {
-            width: '560px', maxWidth: '95vw',
+            width: 'min(640px, 95vw)', maxWidth: '95vw', disableClose: true,
             panelClass: 'no-padding-dialog',
             data: { mode: 'edit', entrada: e, materiales: this.materiales }
         }).afterClosed().subscribe((ok: boolean | undefined) => {
@@ -412,7 +416,7 @@ export class InventarioMiscelaneosComponent implements OnInit, OnDestroy {
     async verSalida(s: Salida): Promise<void> {
         const { FormSalidaComponent } = await import('./form-salida/form-salida.component');
         this.dialog.open(FormSalidaComponent, {
-            maxWidth: '95vw',
+            width: 'min(640px, 95vw)', maxWidth: '95vw',
             panelClass: 'no-padding-dialog',
             data: { mode: 'view', salida: s, materiales: this.materiales }
         });
@@ -421,7 +425,7 @@ export class InventarioMiscelaneosComponent implements OnInit, OnDestroy {
     async editarSalida(s: Salida): Promise<void> {
         const { FormSalidaComponent } = await import('./form-salida/form-salida.component');
         this.dialog.open(FormSalidaComponent, {
-            width: '500px', maxWidth: '95vw',
+            width: 'min(640px, 95vw)', maxWidth: '95vw', disableClose: true,
             panelClass: 'no-padding-dialog',
             data: { mode: 'edit', salida: s, materiales: this.materiales }
         }).afterClosed().subscribe((ok: boolean | undefined) => {

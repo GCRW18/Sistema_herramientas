@@ -160,7 +160,7 @@ export class PrestamoPdfService {
   <tr>
     <td class="logo-cell" rowspan="2">
       ${logoUri ? `<img src="${logoUri}" alt="BoA">` : '<div style="font-weight:900;font-size:16px">BoA</div>'}
-      <div class="oam">BoAMM &nbsp; OAM145# N-114</div>
+      <div class="oam">BoAMM &nbsp; OAM145# N-014</div>
     </td>
     <td class="title-cell" rowspan="2">
       <h1>Nota de Préstamo - Devolución</h1>

@@ -67,8 +67,8 @@ export class CategoryService {
         return from(this._api.post('herramientas/categories/listCategories', {
             start: 0,
             limit: 500,
-            ordenacion: 'name',
-            dir_ordenacion: 'asc'
+            sort: 'name',
+            dir: 'asc'
         })).pipe(
             switchMap((response: any) => {
                 const categories = response?.datos || response?.data || [];
@@ -144,8 +144,8 @@ export class CategoryService {
             start: 0,
             limit: 500,
             parent_category_id: parentId === '0' ? null : parentId,
-            ordenacion: 'name',
-            dir_ordenacion: 'asc'
+            sort: 'name',
+            dir: 'asc'
         })).pipe(
             switchMap((response: any) => {
                 const categories = response?.datos || response?.data || [];
@@ -178,8 +178,8 @@ export class CategoryService {
             start: 0,
             limit: 500,
             parent_category_id: parentNode.id_category,
-            ordenacion: 'name',
-            dir_ordenacion: 'asc'
+            sort: 'name',
+            dir: 'asc'
         })).pipe(
             switchMap((response: any) => {
                 const children = response?.datos || response?.data || [];
@@ -214,8 +214,8 @@ export class CategoryService {
             start: 0,
             limit: 500,
             name: query, // Búsqueda por nombre
-            ordenacion: 'name',
-            dir_ordenacion: 'asc'
+            sort: 'name',
+            dir: 'asc'
         })).pipe(
             switchMap((response: any) => {
                 const categories = response?.datos || response?.data || [];
@@ -253,8 +253,8 @@ export class CategoryService {
             limit: 100,
             id_category: categoryId,
             code: toolCode, // Búsqueda por código de herramienta
-            ordenacion: 'code',
-            dir_ordenacion: 'asc'
+            sort: 'code',
+            dir: 'asc'
         })).pipe(
             switchMap((response: any) => {
                 return of(response?.data || []);
@@ -278,8 +278,8 @@ export class CategoryService {
             start: filters?.start || 0,
             limit: filters?.limit || 50,
             id_category: categoryId,
-            ordenacion: 'code',
-            dir_ordenacion: 'asc'
+            sort: 'code',
+            dir: 'asc'
         };
 
         if (filters?.code) {
@@ -339,8 +339,8 @@ export class CategoryService {
         const params: any = {
             start: 0,
             limit: 500,
-            ordenacion: 'name',
-            dir_ordenacion: 'asc'
+            sort: 'name',
+            dir: 'asc'
         };
 
         if (categoryId) {

@@ -63,7 +63,7 @@
             </div>
 
             <div *ngIf="!isLoading" class="flex-1 overflow-y-auto custom-scrollbar">
-                <table class="w-full text-sm">
+                <table class="w-full min-w-[760px] text-sm">
                     <thead class="bg-stone-200 dark:bg-[#020617] sticky top-0 z-10 border-b-[2px] border-black text-[11px] font-black uppercase">
                     <tr>
                         <th class="py-3 px-4 text-left text-black dark:text-amber-400 w-28">FECHA CAL.</th>
@@ -125,7 +125,7 @@
                 </table>
             </div>
 
-            <div class="flex items-center justify-between px-4 py-2 border-t-[3px] border-black bg-stone-200 dark:bg-[#020617] shrink-0">
+            <div class="flex items-center flex-wrap gap-2 justify-between px-4 py-2 border-t-[3px] border-black bg-stone-200 dark:bg-[#020617] shrink-0">
                 <span class="text-[11px] font-black text-black dark:text-slate-300 uppercase">
                     {{ startIndex }}–{{ endIndex }} de {{ totalRecords }}
                 </span>
@@ -148,189 +148,233 @@
 </div>
 
 <ng-template #formDialogTemplate>
-    <div class="bg-stone-100 dark:bg-slate-900 border-2 border-black overflow-hidden flex flex-col relative"
-         style="width:600px; max-width:95vw; max-height:90vh">
+    <!-- Mismo diseño que el lote de mantenimiento MGH-109: datos a la izquierda, herramienta a la derecha -->
+    <div class="bg-stone-100 dark:bg-[#0F172A] sm:border-2 border-black rounded-2xl flex flex-col overflow-hidden relative w-full"
+         style="box-shadow:6px 6px 0 #000; height:min(820px,92vh)">
 
         <!-- Cabecera -->
-        <div class="bg-[#0F172A] px-4 py-2.5 flex items-center gap-2 shrink-0 select-none"
+        <div class="bg-[#0F172A] px-4 py-3 flex items-center flex-wrap gap-x-3 gap-y-2 shrink-0 select-none"
              cdkDrag cdkDragRootElement=".cdk-overlay-pane" cdkDragHandle style="cursor:grab">
             <div class="w-8 h-8 rounded bg-amber-400 border-2 border-black flex items-center justify-center shadow-[2px_2px_0_#fbbf24] shrink-0">
                 <mat-icon class="!text-base text-black">edit_note</mat-icon>
             </div>
-            <div>
-                <p class="text-[9px] text-slate-400 font-bold uppercase tracking-[0.18em] leading-none mb-0.5">Calibraciones Históricas</p>
+            <div class="flex-1 min-w-0">
+                <p class="text-[9px] text-slate-400 font-bold uppercase tracking-[0.15em] leading-tight mb-1 truncate">Calibraciones Históricas · Transcripción</p>
                 <h2 class="text-sm text-white font-black uppercase tracking-tight leading-none">Nueva Transcripción</h2>
             </div>
+            <div class="ml-auto flex items-center flex-wrap justify-end gap-2">
+                <span *ngIf="selectedTool" class="text-[9px] font-black text-emerald-400 flex items-center gap-1">
+                    <mat-icon class="!text-sm">check_circle</mat-icon> Herramienta lista
+                </span>
+            </div>
         </div>
 
-        <!-- Barra de contexto (visible al seleccionar herramienta) -->
-        <div *ngIf="selectedTool" class="border-b-2 border-black bg-white dark:bg-slate-800 px-4 py-2 flex items-center gap-2 shrink-0">
-            <div class="w-8 h-8 rounded-xl border-2 border-stone-200 dark:border-slate-700 bg-stone-50 dark:bg-slate-700 flex items-center justify-center shrink-0">
-                <mat-icon class="!text-sm text-stone-400 dark:text-slate-400">handyman</mat-icon>
-            </div>
-            <div class="flex-1 min-w-0">
-                <p class="text-[8px] text-stone-400 dark:text-slate-400 font-black uppercase tracking-widest leading-none mb-0.5">Herramienta seleccionada</p>
-                <p class="text-xs font-black text-black dark:text-white truncate">{{ selectedTool.tool_name }}</p>
-            </div>
-            <span class="text-[8px] font-black uppercase px-2 py-1 border-2 border-stone-200 dark:border-slate-700 rounded-lg text-stone-400 dark:text-slate-400 shrink-0">
-                {{ selectedTool.tool_code }}
-            </span>
-        </div>
+        <!-- Cuerpo: IZQUIERDA (datos del certificado) / DERECHA (herramienta) -->
+        <div class="dlg-cuerpo flex flex-col sm:flex-row flex-1 overflow-y-auto sm:overflow-hidden min-h-0">
 
-        <!-- Cuerpo -->
-        <div class="flex-1 overflow-y-auto px-4 py-3 flex flex-col gap-2 custom-scrollbar">
+            <!-- IZQUIERDA -->
+            <div class="dlg-panel sm:basis-[340px] sm:max-w-[380px] shrink-0 sm:overflow-y-auto custom-scrollbar border-b-2 sm:border-b-0 sm:border-r-2 border-black/20 dark:border-slate-600">
+                <div class="px-4 py-3 flex flex-col gap-3">
 
-            <!-- Sección 1: Herramienta -->
-            <div class="flex flex-col gap-2">
-                <p class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 flex items-center gap-1.5 border-b border-stone-200 dark:border-slate-700 pb-1.5">
-                    <mat-icon class="!text-sm">handyman</mat-icon> 1. Herramienta
-                </p>
-
-                <div class="relative">
-                    <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1 flex justify-between items-center">
-                        <span>Buscar Herramienta *</span>
-                        <mat-spinner *ngIf="toolSearchLoading" diameter="10"></mat-spinner>
-                    </label>
-                    <input type="text" [(ngModel)]="toolSearch" (ngModelChange)="onToolInput($event)" (blur)="hideToolDropdown()"
-                           placeholder="Código, Nombre o P/N..."
-                           class="w-full h-8 text-xs font-bold bg-white dark:bg-slate-800 dark:text-white border-2 rounded-xl px-3 outline-none transition-all duration-150 placeholder:text-stone-300 dark:placeholder:text-slate-600 uppercase"
-                           [class]="showToolError()
-                               ? 'border-red-400 focus:shadow-[2px_2px_0_#f87171]'
-                               : 'border-stone-300 dark:border-slate-600 hover:border-stone-400 dark:hover:border-slate-500 focus:border-black dark:focus:border-slate-400 focus:shadow-[3px_3px_0_#000]'" />
-                    <p *ngIf="showToolError()" class="text-[8px] font-bold text-red-500 mt-1">Seleccione una herramienta.</p>
-
-                    <div *ngIf="showToolDropdown && toolSuggestions.length > 0"
-                         class="absolute top-full left-0 right-0 z-50 mt-1 border-2 border-black rounded-xl bg-white dark:bg-slate-800 overflow-hidden shadow-[3px_3px_0_#000] divide-y divide-stone-100 dark:divide-slate-700 max-h-44 overflow-y-auto">
-                        <button type="button" *ngFor="let t of toolSuggestions" (mousedown)="selectTool(t)"
-                                class="w-full text-left px-3 py-2.5 transition-colors duration-100 hover:bg-stone-50 dark:hover:bg-slate-700/50">
-                            <p class="text-[10px] font-black text-black dark:text-white">{{ t.tool_code }} — {{ t.tool_name }}</p>
-                        </button>
+                    <!-- ── Datos del Certificado ── -->
+                    <div class="flex items-center gap-1.5">
+                        <mat-icon class="!text-xs text-amber-500 shrink-0">description</mat-icon>
+                        <span class="text-[9px] font-black uppercase text-stone-400 dark:text-slate-500 tracking-wider whitespace-nowrap">Datos del Certificado</span>
+                        <div class="flex-1 h-px bg-stone-200 dark:bg-slate-600 ml-1"></div>
                     </div>
-                </div>
 
-                <div class="grid grid-cols-1 sm:grid-cols-4 gap-2">
-                    <div class="col-span-1">
-                        <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1 block">Código</label>
-                        <input type="text" [value]="selectedTool?.tool_code || ''" readonly
-                               class="w-full h-8 text-xs font-bold bg-stone-200 dark:bg-slate-700 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-xl px-3 outline-none cursor-not-allowed uppercase" />
-                    </div>
-                    <div class="col-span-3">
-                        <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1 block">Nombre / Descripción</label>
-                        <input type="text" [value]="selectedTool?.tool_name || ''" readonly
-                               class="w-full h-8 text-xs font-bold bg-stone-200 dark:bg-slate-700 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-xl px-3 outline-none cursor-not-allowed uppercase truncate" />
-                    </div>
-                </div>
-            </div>
-
-            <!-- Sección 2: Datos del Certificado -->
-            <div class="flex flex-col gap-2">
-                <p class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 flex items-center gap-1.5 border-b border-stone-200 dark:border-slate-700 pb-1.5">
-                    <mat-icon class="!text-sm">description</mat-icon> 2. Datos del Certificado
-                </p>
-
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
                     <div>
-                        <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1 block">N° Certificado *</label>
+                        <label class="text-[9px] font-black uppercase tracking-wider text-stone-400 dark:text-slate-400 mb-1 block">N° Certificado <span class="text-red-500">*</span></label>
                         <input type="text" [(ngModel)]="certificateNumber" (ngModelChange)="showCertError.set(false)"
                                placeholder="Ej: CERT-123"
-                               class="w-full h-8 text-xs font-bold bg-white dark:bg-slate-800 dark:text-white border-2 rounded-xl px-3 outline-none transition-all duration-150 placeholder:text-stone-300 dark:placeholder:text-slate-600 uppercase"
-                               [class]="showCertError()
-                                   ? 'border-red-400 focus:shadow-[2px_2px_0_#f87171]'
-                                   : 'border-stone-300 dark:border-slate-600 hover:border-stone-400 dark:hover:border-slate-500 focus:border-black dark:focus:border-slate-400 focus:shadow-[3px_3px_0_#000]'" />
-                        <p *ngIf="showCertError()" class="text-[8px] font-bold text-red-500 mt-1">Número requerido.</p>
+                               class="w-full h-8 text-xs font-bold uppercase bg-white dark:bg-slate-800 dark:text-white border-2 rounded-lg px-2.5 outline-none transition-all placeholder:text-stone-300 placeholder:normal-case dark:placeholder:text-slate-500"
+                               [ngClass]="showCertError() ? 'border-red-400' : 'border-stone-300 dark:border-slate-600 hover:border-stone-400 focus:border-black focus:shadow-[2px_2px_0_#000]'">
+                        <p *ngIf="showCertError()" class="text-[9px] font-bold text-red-500 mt-0.5">Número requerido.</p>
                     </div>
-                    <div>
-                        <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1 block">Resultado *</label>
-                        <select [(ngModel)]="result"
-                                class="w-full h-8 text-xs font-bold bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-xl px-3 outline-none transition-all duration-150 hover:border-stone-400 dark:hover:border-slate-500 focus:border-black dark:focus:border-slate-400 focus:shadow-[3px_3px_0_#000]">
-                            <option value="approved">Aprobado</option>
-                            <option value="conditional">Condicional</option>
-                            <option value="rejected">Rechazado</option>
-                        </select>
-                    </div>
-                </div>
 
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
                     <div>
-                        <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1 block">Fecha Calibración *</label>
-                        <input type="date" [(ngModel)]="calibrationDateStr"
-                               (ngModelChange)="autoCalcNextDate(); showDateError.set(false)"
-                               [max]="todayStr"
-                               class="w-full h-8 text-xs font-bold bg-white dark:bg-slate-800 dark:text-white border-2 rounded-xl px-3 outline-none transition-all duration-150"
-                               [class]="showDateError()
-                                   ? 'border-red-400 focus:shadow-[2px_2px_0_#f87171]'
-                                   : 'border-stone-300 dark:border-slate-600 hover:border-stone-400 dark:hover:border-slate-500 focus:border-black dark:focus:border-slate-400 focus:shadow-[3px_3px_0_#000]'" />
-                        <p *ngIf="showDateError()" class="text-[8px] font-bold text-red-500 mt-1">Fecha requerida.</p>
+                        <label class="text-[9px] font-black uppercase tracking-wider text-stone-400 dark:text-slate-400 mb-1 block">Resultado <span class="text-red-500">*</span></label>
+                        <div class="flex gap-1">
+                            <button *ngFor="let r of resultOptions" type="button" (click)="result = r.value"
+                                    class="flex-1 h-8 text-[9px] font-black uppercase border-2 rounded-lg transition-all"
+                                    [ngClass]="result === r.value ? r.activeCls + ' border-black' : 'bg-white dark:bg-slate-700 border-stone-300 dark:border-slate-600 text-stone-400 dark:text-slate-300 hover:border-stone-400'">
+                                {{ r.label }}
+                            </button>
+                        </div>
                     </div>
-                    <div>
-                        <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1 block">Próxima Calibración</label>
-                        <input type="date" [(ngModel)]="nextCalibrationDate"
-                               class="w-full h-8 text-xs font-bold bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-xl px-3 outline-none transition-all duration-150 hover:border-stone-400 dark:hover:border-slate-500 focus:border-black dark:focus:border-slate-400 focus:shadow-[3px_3px_0_#000]" />
+
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <label class="text-[9px] font-black uppercase tracking-wider text-stone-400 dark:text-slate-400 mb-1 block">Fecha Calib. <span class="text-red-500">*</span></label>
+                            <input type="date" [(ngModel)]="calibrationDateStr"
+                                   (ngModelChange)="autoCalcNextDate(); showDateError.set(false)"
+                                   [max]="todayStr"
+                                   class="w-full h-8 text-xs font-bold bg-white dark:bg-slate-800 dark:text-white border-2 rounded-lg px-2 outline-none transition-all cursor-pointer"
+                                   [ngClass]="showDateError() ? 'border-red-400' : 'border-stone-300 dark:border-slate-600 hover:border-stone-400 focus:border-black focus:shadow-[2px_2px_0_#000]'">
+                            <p *ngIf="showDateError()" class="text-[9px] font-bold text-red-500 mt-0.5">Fecha requerida.</p>
+                        </div>
+                        <div>
+                            <label class="text-[9px] font-black uppercase tracking-wider text-stone-400 dark:text-slate-400 mb-1 block">Próxima Calib.</label>
+                            <input type="date" [(ngModel)]="nextCalibrationDate"
+                                   class="w-full h-8 text-xs font-bold bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-lg px-2 outline-none transition-all cursor-pointer hover:border-stone-400 focus:border-black focus:shadow-[2px_2px_0_#000]">
+                        </div>
                     </div>
-                </div>
-            </div>
 
-            <!-- Sección 3: Laboratorio -->
-            <div class="flex flex-col gap-2">
-                <p class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 flex items-center gap-1.5 border-b border-stone-200 dark:border-slate-700 pb-1.5">
-                    <mat-icon class="!text-sm">science</mat-icon> 3. Laboratorio
-                </p>
+                    <!-- ── Laboratorio ── -->
+                    <div class="flex items-center gap-1.5 pt-1">
+                        <mat-icon class="!text-xs text-amber-500 shrink-0">science</mat-icon>
+                        <span class="text-[9px] font-black uppercase text-stone-400 dark:text-slate-500 tracking-wider whitespace-nowrap">Laboratorio</span>
+                        <div class="flex-1 h-px bg-stone-200 dark:bg-slate-600 ml-1"></div>
+                    </div>
 
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
                     <div>
-                        <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1 block">Laboratorio Sistema</label>
+                        <label class="text-[9px] font-black uppercase tracking-wider text-stone-400 dark:text-slate-400 mb-1 block">Empresa / Laboratorio</label>
                         <select [(ngModel)]="labId" (ngModelChange)="onLabChange()"
-                                class="w-full h-8 text-xs font-bold bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-xl px-3 outline-none transition-all duration-150 hover:border-stone-400 dark:hover:border-slate-500 focus:border-black dark:focus:border-slate-400 focus:shadow-[3px_3px_0_#000]">
-                            <option [ngValue]="null">— Ingreso Manual —</option>
+                                class="w-full h-8 px-2.5 bg-white dark:bg-slate-800 text-black dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-lg text-xs font-bold outline-none transition-all cursor-pointer hover:border-stone-400 focus:border-black focus:shadow-[2px_2px_0_#000] appearance-none">
+                            <option [ngValue]="null">— Ingreso manual —</option>
                             <option *ngFor="let lab of laboratories" [ngValue]="lab.id_laboratory">{{ lab.name }}</option>
                         </select>
                     </div>
-                    <div>
-                        <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1 block">Nombre (Manual)</label>
-                        <input type="text" [(ngModel)]="labNameOverride" [disabled]="!!labId"
-                               placeholder="Si no está en lista..."
-                               class="w-full h-8 text-xs font-bold bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-xl px-3 outline-none transition-all duration-150 placeholder:text-stone-300 dark:placeholder:text-slate-600 uppercase hover:border-stone-400 dark:hover:border-slate-500 focus:border-black dark:focus:border-slate-400 focus:shadow-[3px_3px_0_#000] disabled:bg-stone-200 disabled:dark:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-60" />
+                    <div *ngIf="!labId">
+                        <label class="text-[9px] font-black uppercase tracking-wider text-stone-400 dark:text-slate-400 mb-1 block">Nombre (manual)</label>
+                        <input type="text" [(ngModel)]="labNameOverride" placeholder="Si no está en la lista..."
+                               class="w-full h-8 text-xs font-bold uppercase bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-lg px-2.5 outline-none transition-all placeholder:text-stone-300 placeholder:normal-case dark:placeholder:text-slate-500 hover:border-stone-400 focus:border-black focus:shadow-[2px_2px_0_#000]">
+                    </div>
+
+                    <!-- ── Archivo PDF ── -->
+                    <div class="flex items-center gap-1.5 pt-1">
+                        <mat-icon class="!text-xs text-amber-500 shrink-0">attach_file</mat-icon>
+                        <span class="text-[9px] font-black uppercase text-stone-400 dark:text-slate-500 tracking-wider whitespace-nowrap">Certificado PDF <span class="normal-case font-bold">(opcional)</span></span>
+                        <div class="flex-1 h-px bg-stone-200 dark:bg-slate-600 ml-1"></div>
+                    </div>
+
+                    <div *ngIf="!selectedFile" (click)="fileInput.click()"
+                         class="w-full h-12 border-2 border-dashed border-stone-300 dark:border-slate-600 rounded-lg flex items-center justify-center gap-2 cursor-pointer transition-all hover:border-black hover:bg-white dark:hover:bg-slate-800">
+                        <mat-icon class="!text-lg text-stone-400 dark:text-slate-500">upload_file</mat-icon>
+                        <span class="text-[9px] font-black uppercase text-stone-400 dark:text-slate-500">Click para adjuntar PDF</span>
+                    </div>
+                    <div *ngIf="selectedFile"
+                         class="w-full border-2 border-black bg-white dark:bg-slate-800 rounded-lg px-3 py-2 flex items-center gap-2 shadow-[2px_2px_0_#000]">
+                        <mat-icon class="!text-lg text-red-500 shrink-0">picture_as_pdf</mat-icon>
+                        <span class="flex-1 text-xs font-bold text-black dark:text-white truncate">{{ selectedFile.name }}</span>
+                        <button type="button" (click)="removeFile()"
+                                class="w-7 h-7 flex items-center justify-center bg-red-50 hover:bg-red-500 text-red-500 hover:text-white border-2 border-red-200 hover:border-red-600 rounded-lg transition-all shrink-0">
+                            <mat-icon class="!text-xs">close</mat-icon>
+                        </button>
+                    </div>
+                    <input #fileInput type="file" accept=".pdf" class="hidden" (change)="onFileSelected($event)" />
+                </div>
+            </div>
+
+            <!-- DERECHA: búsqueda + herramienta -->
+            <div class="dlg-lista flex-1 min-h-[24rem] sm:min-h-0 flex flex-col overflow-hidden">
+
+                <!-- Buscar / Escanear Herramienta -->
+                <div class="border-b-2 border-black/20 dark:border-slate-600 px-4 pt-3 pb-2.5 flex flex-col gap-2 shrink-0">
+                    <div class="flex items-center gap-1.5">
+                        <mat-icon class="!text-sm text-amber-500">qr_code_scanner</mat-icon>
+                        <span class="text-[9px] font-black uppercase text-stone-400 dark:text-slate-500 tracking-wider">Buscar Herramienta <span class="text-red-500">*</span></span>
+                    </div>
+                    <div class="relative">
+                        <input type="text" [(ngModel)]="toolSearch" (ngModelChange)="onToolInput($event)" (blur)="hideToolDropdown()"
+                               placeholder="Código, nombre o P/N..."
+                               autocomplete="off"
+                               class="w-full h-8 pl-8 pr-8 text-xs font-bold uppercase bg-white dark:bg-slate-800 dark:text-white border-2 rounded-lg outline-none transition-all placeholder:text-stone-300 placeholder:normal-case dark:placeholder:text-slate-500 focus:shadow-[2px_2px_0_#000]"
+                               [ngClass]="showToolError() ? 'border-red-400' : 'border-black'">
+                        <mat-icon class="absolute left-2 top-1/2 -translate-y-1/2 text-stone-400 !text-sm !w-[14px] !h-[14px] !leading-[14px] pointer-events-none">hardware</mat-icon>
+                        <div *ngIf="toolSearchLoading" class="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 border-2 border-[#FFC501FF] border-t-transparent rounded-full animate-spin"></div>
+
+                        <div *ngIf="showToolDropdown && toolSuggestions.length > 0"
+                             class="absolute z-50 w-full mt-1 top-full left-0 border-2 border-black dark:border-slate-600 rounded-xl bg-white dark:bg-slate-800 overflow-hidden shadow-[3px_3px_0_#000] divide-y divide-stone-100 dark:divide-slate-700 max-h-48 overflow-y-auto custom-scrollbar">
+                            <div *ngFor="let t of toolSuggestions" (mousedown)="selectTool(t)"
+                                 class="px-3 py-2 hover:bg-amber-50 dark:hover:bg-slate-700 cursor-pointer transition-colors">
+                                <div class="text-xs font-black text-black dark:text-white">{{ t.tool_code }}</div>
+                                <div class="text-[10px] font-bold text-stone-400 dark:text-slate-400 truncate mt-0.5 uppercase">{{ t.tool_name }}</div>
+                            </div>
+                        </div>
+                    </div>
+                    <p *ngIf="showToolError()" class="text-[9px] font-bold text-red-500">Seleccione una herramienta.</p>
+                </div>
+
+                <!-- Cabecera herramienta -->
+                <div class="border-b-2 border-black/20 dark:border-slate-600 px-4 py-2.5 flex items-center justify-between shrink-0">
+                    <div class="flex items-center gap-1.5">
+                        <mat-icon class="!text-xs text-amber-500">handyman</mat-icon>
+                        <span class="text-[9px] font-black uppercase text-stone-400 dark:text-slate-500 tracking-wider">Herramienta a Transcribir</span>
+                    </div>
+                    <span class="px-2 py-0.5 bg-amber-400 text-black border-2 border-black rounded font-mono text-[10px] font-black shadow-[1px_1px_0_#000]">{{ selectedTool ? 1 : 0 }}</span>
+                </div>
+
+                <!-- Herramienta seleccionada -->
+                <div class="flex-1 overflow-y-auto custom-scrollbar">
+                    <div *ngIf="!selectedTool" class="flex flex-col items-center justify-center gap-3 h-full py-10 text-center px-4">
+                        <mat-icon class="!text-5xl text-stone-300 dark:text-slate-600">qr_code_scanner</mat-icon>
+                        <p class="text-sm font-black uppercase text-stone-400 dark:text-slate-500">Busque la herramienta cuya calibración va a transcribir</p>
+                    </div>
+
+                    <div *ngIf="selectedTool" class="p-3">
+                        <div class="border-2 border-stone-200 dark:border-slate-600 bg-white dark:bg-slate-800 rounded-lg">
+                            <div class="flex items-start gap-2 p-2.5">
+                                <div class="shrink-0 flex items-center justify-center w-6 h-6 rounded-full border-2 border-stone-300 dark:border-slate-600 bg-stone-100 dark:bg-slate-700 text-[10px] font-black text-stone-500 dark:text-slate-300 mt-0.5">1</div>
+                                <div class="flex-1 min-w-0">
+                                    <div class="flex items-center gap-2 flex-wrap">
+                                        <span class="font-mono text-xs font-black text-black dark:text-white">{{ selectedTool.tool_code }}</span>
+                                        <span *ngIf="selectedTool.status"
+                                              class="text-[9px] font-black uppercase text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-300 dark:border-emerald-700 px-1.5 py-0.5 rounded">
+                                            {{ selectedTool.status }}
+                                        </span>
+                                    </div>
+                                    <div class="text-xs font-bold text-black dark:text-white mt-0.5 uppercase leading-tight">{{ selectedTool.tool_name }}</div>
+                                    <div class="text-[10px] text-stone-400 font-mono mt-0.5">
+                                        P/N: {{ selectedTool.part_number || '—' }} · S/N: {{ selectedTool.serial_number || '—' }}<span *ngIf="selectedTool.brand"> · {{ selectedTool.brand }}</span>
+                                    </div>
+                                    <div class="text-[10px] text-stone-400 mt-0.5">
+                                        <span *ngIf="selectedTool.last_calibration_date || selectedTool.next_calibration_date">
+                                            Última calib: {{ fmtDate(selectedTool.last_calibration_date) }} · Vence: {{ fmtDate(selectedTool.next_calibration_date) }}
+                                        </span>
+                                        <span *ngIf="!selectedTool.last_calibration_date && !selectedTool.next_calibration_date">Sin calibración registrada</span>
+                                    </div>
+                                </div>
+                                <button type="button" (click)="clearTool()" matTooltip="Quitar herramienta"
+                                        class="w-7 h-7 flex items-center justify-center bg-red-50 hover:bg-red-500 text-red-500 hover:text-white border-2 border-red-200 hover:border-red-600 rounded-lg transition-all shrink-0">
+                                    <mat-icon class="!text-xs">close</mat-icon>
+                                </button>
+                            </div>
+
+                            <!-- Resumen de lo que se va a registrar -->
+                            <div class="border-t-2 border-dashed border-stone-200 dark:border-slate-600 mx-2.5 py-2 flex items-center gap-2 flex-wrap">
+                                <span class="text-[9px] font-black uppercase px-1.5 py-0.5 rounded border border-black" [ngClass]="resultBadgeCls">{{ resultLabel }}</span>
+                                <span class="text-[9px] font-bold text-stone-500 dark:text-slate-300 uppercase">Cert: {{ certificateNumber || '—' }}</span>
+                                <span class="text-[8px] font-bold text-stone-400">·</span>
+                                <span class="text-[9px] font-bold text-stone-500 dark:text-slate-300">Calib: {{ fmtDate(calibrationDateStr) }}</span>
+                                <span class="text-[8px] font-bold text-stone-400">·</span>
+                                <span class="text-[9px] font-bold text-stone-500 dark:text-slate-300">Próx: {{ fmtDate(nextCalibrationDate) }}</span>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
-
-            <!-- PDF Opcional -->
-            <div class="flex flex-col gap-2">
-                <p class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 flex items-center gap-1.5 border-b border-stone-200 dark:border-slate-700 pb-1.5">
-                    <mat-icon class="!text-sm">attach_file</mat-icon> Archivo PDF <span class="normal-case font-medium ml-1">(Opcional)</span>
-                </p>
-
-                <div *ngIf="!selectedFile"
-                     (click)="fileInput.click()"
-                     class="w-full h-14 border-2 border-dashed border-stone-300 dark:border-slate-600 rounded-xl flex flex-col items-center justify-center gap-1.5 cursor-pointer transition-all duration-150 hover:border-stone-400 dark:hover:border-slate-500 hover:bg-white dark:hover:bg-slate-800">
-                    <mat-icon class="!text-xl text-stone-300 dark:text-slate-500">upload_file</mat-icon>
-                    <span class="text-[8px] font-black uppercase text-stone-400 dark:text-slate-500">Click para adjuntar PDF</span>
-                </div>
-
-                <div *ngIf="selectedFile"
-                     class="w-full border-2 border-black bg-white dark:bg-slate-800 rounded-xl px-4 py-3 flex items-center gap-2 shadow-[2px_2px_0_#000]">
-                    <mat-icon class="!text-xl text-red-500 shrink-0">picture_as_pdf</mat-icon>
-                    <span class="flex-1 text-xs font-bold text-black dark:text-white truncate">{{ selectedFile.name }}</span>
-                    <button type="button" (click)="removeFile()"
-                            class="shrink-0 px-2 py-1 text-[8px] font-black uppercase bg-red-50 dark:bg-red-900/30 text-red-600 border-2 border-red-300 dark:border-red-700 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/50 transition-colors">
-                        Eliminar
-                    </button>
-                </div>
-                <input #fileInput type="file" accept=".pdf" class="hidden" (change)="onFileSelected($event)" />
-            </div>
-
         </div>
 
         <!-- Pie -->
-        <div class="border-t-2 border-black bg-stone-200 dark:bg-slate-800 px-4 py-2 flex justify-between items-center shrink-0">
-            <button type="button" (click)="closeDialog()"
-                    class="px-3 py-1.5 bg-[#FF1414] text-white font-black text-[10px] border-2 border-black rounded-xl shadow-[2px_2px_0_#000] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all uppercase">
-                Cancelar
-            </button>
+        <div class="border-t-2 border-black bg-stone-200 dark:bg-slate-800 px-4 py-2 flex flex-wrap items-center justify-between gap-2 shrink-0">
+            <div class="flex items-center flex-wrap gap-2">
+                <button type="button" (click)="closeDialog()"
+                        class="flex items-center gap-1 px-3 py-1.5 bg-[#FF1414] text-white font-black text-[10px] uppercase border-2 border-black rounded-lg shadow-[2px_2px_0_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all">
+                    <mat-icon class="!text-xs">close</mat-icon>
+                    Cancelar
+                </button>
+                <span class="text-[10px] font-black text-black dark:text-white">
+                    <span *ngIf="!selectedTool" class="font-bold normal-case text-stone-500 dark:text-slate-300">Seleccione la herramienta</span>
+                    <span *ngIf="selectedTool && !canSubmit() && !isProcessing()" class="font-bold normal-case text-stone-500 dark:text-slate-300">Complete N° de certificado y fecha</span>
+                    <span *ngIf="canSubmit()">Listo para guardar</span>
+                </span>
+            </div>
             <button type="button" (click)="save()" [disabled]="!canSubmit()"
-                    class="flex items-center gap-2 px-4 py-1.5 bg-amber-400 text-black font-black text-[10px] border-2 border-black rounded-xl shadow-[3px_3px_0_#000] hover:shadow-none hover:translate-x-[3px] hover:translate-y-[3px] transition-all uppercase disabled:opacity-50 disabled:cursor-not-allowed">
-                <mat-icon class="!text-sm">save</mat-icon>
-                {{ isProcessing() ? 'Guardando...' : 'Guardar Registro' }}
+                    class="flex items-center gap-1.5 px-3 py-1.5 bg-black text-white font-black text-[10px] uppercase border-2 border-black rounded-lg shadow-[2px_2px_0_#fbbf24] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all disabled:opacity-40 disabled:cursor-not-allowed disabled:translate-x-0 disabled:translate-y-0 disabled:shadow-none">
+                <div *ngIf="isProcessing()" class="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                <mat-icon *ngIf="!isProcessing()" class="!text-xs">save</mat-icon>
+                {{ isProcessing() ? 'GUARDANDO...' : 'GUARDAR REGISTRO' }}
             </button>
         </div>
 

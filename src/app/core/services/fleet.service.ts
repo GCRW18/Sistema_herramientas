@@ -42,8 +42,8 @@ export class FleetService {
         const params: any = {
             start: 0,
             limit: 200,
-            ordenacion: 'registration',
-            dir_ordenacion: 'asc',
+            sort: 'registration',
+            dir: 'asc',
             ...filters
         };
         return from(this._api.post('herramientas/aircraft/listarAircraft', params)).pipe(

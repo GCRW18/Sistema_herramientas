@@ -71,7 +71,7 @@
 
       <!-- Cabecera oscura con KPIs -->
       <div class="px-3 sm:px-4 py-2 bg-[#0F172AFF] border-b-[3px] border-black shrink-0 rounded-t-2xl">
-        <div class="flex items-center gap-2 overflow-x-auto scrollbar-none flex-nowrap">
+        <div class="flex items-center gap-2 flex-wrap">
 
           <ng-container *ngIf="activeTab === 'prestamo'">
             <div class="flex items-center gap-1.5 bg-white/10 rounded-lg px-2.5 py-1.5 border border-white/20 shrink-0">
@@ -94,7 +94,7 @@
           </ng-container>
 
           <!-- Acciones -->
-          <div class="ml-auto flex items-center gap-1.5 shrink-0">
+          <div class="ml-auto flex items-center flex-wrap justify-end gap-1.5">
             <ng-container *appHasPermission="'prestamo_tecnico.prestar'">
               <button *ngIf="activeTab === 'prestamo'" (click)="abrirFormPrestamo()"
                       class="h-7 px-2.5 flex items-center gap-1.5 rounded-lg bg-[#FFC501FF] border border-black text-black font-black text-[10px] uppercase shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all shrink-0">
@@ -114,7 +114,7 @@
             <button (click)="loadData()" [disabled]="isLoading()"
                     class="flex items-center gap-1.5 h-7 px-2.5 rounded-lg border border-white/30 text-white hover:bg-white/20 transition-all disabled:opacity-40 font-black text-[10px] uppercase shrink-0">
               <mat-icon class="!text-sm !w-4 !h-4 text-[#FFC501FF]" [class.animate-spin]="isLoading()">refresh</mat-icon>
-              Actualizar
+              <span class="hidden sm:inline">Actualizar</span>
             </button>
           </div>
         </div>
@@ -160,7 +160,7 @@
               </tr>
             </thead>
             <tbody>
-              <tr *ngFor="let mov of filteredLoans; let idx = index"
+              <tr *ngFor="let mov of filteredLoans | slice: pageLoans * 10 : pageLoans * 10 + 10; let idx = index"
                   class="border-b border-gray-200 dark:border-slate-700 transition-all"
                   [ngClass]="idx % 2 === 0 ? 'bg-white dark:bg-slate-800/60' : 'bg-gray-50 dark:bg-slate-800/40'">
 
@@ -223,6 +223,7 @@
             </tbody>
           </table>
         </div>
+        <app-paginador-compacto *ngIf="filteredLoans.length > 0" [total]="filteredLoans.length" [pageIndex]="pageLoans" (pageIndexChange)="pageLoans = $event"></app-paginador-compacto>
 
       </ng-container>
 
@@ -258,7 +259,7 @@
               </tr>
             </thead>
             <tbody>
-              <tr *ngFor="let item of filteredPending; let idx = index"
+              <tr *ngFor="let item of filteredPending | slice: pagePending * 10 : pagePending * 10 + 10; let idx = index"
                   class="border-b border-gray-200 dark:border-slate-700 transition-all hover:bg-gray-100 dark:hover:bg-slate-700/60"
                   [ngClass]="idx % 2 === 0 ? 'bg-white dark:bg-slate-800/60' : 'bg-gray-50 dark:bg-slate-800/40'">
 
@@ -325,6 +326,7 @@
             </tbody>
           </table>
         </div>
+        <app-paginador-compacto *ngIf="filteredPending.length > 0" [total]="filteredPending.length" [pageIndex]="pagePending" (pageIndexChange)="pagePending = $event"></app-paginador-compacto>
 
       </ng-container>
 

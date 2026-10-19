@@ -1,3 +1,4 @@
+import { PaginadorCompactoComponent } from 'app/shared/components/paginador-compacto/paginador-compacto.component';
 import {
     Component, OnInit, inject, signal, computed, effect, ViewEncapsulation
 } from '@angular/core';
@@ -8,7 +9,8 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { ReportesService } from './reportes.service';
-import { REPORTE_CONFIGS, ColDef, STATUS_LABELS } from './reporte-configs';
+import { REPORTE_CONFIGS, ColDef, FilterField, STATUS_LABELS } from './reporte-configs';
+import { localDateStr } from '../../../../core/utils/date.utils';
 import { HasPermissionDirective } from '../../../../core/directives/has-permission.directive';
 
 /* ── Opciones de sub-reporte por tab ───────────────────────────────────────── */
@@ -20,21 +22,26 @@ export interface SubReporteOpt {
 
 const TAB_OPTS: Record<string, SubReporteOpt[]> = {
     inventario: [
-        { id: 'inv-1', codigo: 'MGH-108',  label: 'Inventario maestro'      },
+        { id: 'inv-1', codigo: 'MGH-108',  label: 'Listado general'         },
         { id: 'inv-2', codigo: 'R-INV-02', label: 'Por estado / condición'  },
-        { id: 'inv-4', codigo: 'MGH-112',  label: 'Cuarentena / Observadas' },
+        { id: 'inv-4', codigo: 'MGH-112',  label: 'En cuarentena'           },
         { id: 'inv-5', codigo: 'MGH-105',  label: 'Fabricación local'       },
+        { id: 'inv-6', codigo: 'MGH-115',  label: 'Listado por base'        },
     ],
     movimientos: [
-        { id: 'mov-1', codigo: 'MGH-114',  label: 'Entradas al almacén'   },
-        { id: 'mov-2', codigo: 'R-MOV-02', label: 'Salidas del almacén'   },
-        { id: 'mov-3', codigo: 'MGH-110',  label: 'Traspasos entre bases' },
+        { id: 'mov-4', codigo: 'MGH-114',  label: 'Herramientas ingresadas'  },
+        { id: 'mov-3', codigo: 'MGH-110',  label: 'Herramientas traspasadas' },
+        { id: 'mov-5', codigo: 'MGH-113',  label: 'Compra internacional'     },
+        { id: 'mov-1', codigo: 'R-MOV-01', label: 'Notas de entrada'         },
+        { id: 'mov-2', codigo: 'R-MOV-02', label: 'Notas de salida'          },
     ],
     calibracion: [
         { id: 'cal-1', codigo: 'MGH-102',  label: 'Sujetas a calibración'       },
-        { id: 'cal-2', codigo: 'MGH-104',  label: 'Próximas a vencer (≤60 d)'   },
+        { id: 'cal-5', codigo: 'MGH-103',  label: 'Reporte mensual'             },
+        { id: 'cal-7', codigo: 'MGH-107',  label: 'Calibración por base'        },
+        { id: 'cal-2', codigo: 'MGH-104',  label: 'Próximas a vencer'           },
         { id: 'cal-3', codigo: 'R-CAL-03', label: 'Calibración vencida'         },
-        { id: 'cal-4', codigo: 'MGH-111',  label: 'Actualmente en calibración'  },
+        { id: 'cal-4', codigo: 'MGH-111',  label: 'Enviadas a calibración / reparación' },
     ],
     prestamos: [
         { id: 'pre-1', codigo: 'R-PRE-01', label: 'Préstamos activos'      },
@@ -47,9 +54,9 @@ const TAB_OPTS: Record<string, SubReporteOpt[]> = {
         { id: 'kit-3', codigo: 'R-KIT-03', label: 'En uso / Prestados'  },
     ],
     miscelaneos: [
-        { id: 'mis-1', codigo: 'MGH-120',  label: 'Inventario de consumibles' },
+        { id: 'mis-1', codigo: 'MGH-120',  label: 'Stock de misceláneos'      },
         { id: 'mis-2', codigo: 'R-MIS-02', label: 'Bajo stock mínimo'         },
-        { id: 'mis-3', codigo: 'MGH-118',  label: 'Entradas de materiales'    },
+        { id: 'mis-3', codigo: 'R-MIS-03', label: 'Entradas de materiales'    },
         { id: 'mis-4', codigo: 'MGH-121',  label: 'Salidas de materiales'     },
     ],
 };
@@ -60,7 +67,7 @@ const TAB_OPTS: Record<string, SubReporteOpt[]> = {
     selector:      'app-reports',
     standalone:    true,
     encapsulation: ViewEncapsulation.None,
-    imports: [
+    imports: [PaginadorCompactoComponent, 
         CommonModule, FormsModule,
         MatIconModule, MatTooltipModule,
         MatProgressSpinnerModule, MatSnackBarModule,
@@ -110,6 +117,13 @@ export class ReportsComponent implements OnInit {
     readonly currentOpts   = computed<SubReporteOpt[]>(() => TAB_OPTS[this.activeTab()] ?? []);
     readonly currentConfig = computed(() => REPORTE_CONFIGS[this.activeReport()]);
     readonly currentCols   = computed<ColDef[]>(() => this.currentConfig()?.columnas ?? []);
+    readonly currentFiltros = computed<FilterField[]>(() => this.currentConfig()?.filtros ?? []);
+
+    /* ── Filtros del sub-reporte activo (van igual a la grilla y al PDF) ── */
+    filtros = signal<Record<string, any>>({});
+
+    /** Bases con herramientas registradas (opciones del filtro Base). */
+    private bases = signal<string[]>([]);
 
     readonly filteredRows = computed(() => {
         const s = this.searchTerm().toLowerCase().trim();
@@ -145,6 +159,45 @@ export class ReportsComponent implements OnInit {
     }
 
     ngOnInit(): void {
+        this._resetFiltros();
+        this.loadData();
+        this.reportesSvc.getReporte('bases').subscribe({
+            next:  rows => this.bases.set((rows ?? []).map(r => r.base).filter(Boolean)),
+            error: () => this.bases.set([]),
+        });
+    }
+
+    /** Opciones de un filtro select (fijas o cargadas del backend). */
+    opcionesDe(f: FilterField): { value: any; label: string }[] {
+        if (f.opcionesDe === 'bases') {
+            return [{ value: '', label: 'Todas' }, ...this.bases().map(b => ({ value: b, label: b }))];
+        }
+        return f.options ?? [];
+    }
+
+    /** Valores iniciales de los filtros del sub-reporte activo. */
+    private _resetFiltros(): void {
+        const hoy = new Date();
+        const valores: Record<string, any> = {};
+        for (const f of this.currentFiltros()) {
+            let v = f.default ?? '';
+            if (v === 'hoy')       v = localDateStr(hoy);
+            if (v === 'inicioMes') v = localDateStr(new Date(hoy.getFullYear(), hoy.getMonth(), 1));
+            if (v === 'finMes')    v = localDateStr(new Date(hoy.getFullYear(), hoy.getMonth() + 1, 0));
+            valores[f.key] = v;
+        }
+        this.filtros.set(valores);
+    }
+
+    setFiltro(key: string, value: any): void {
+        this.filtros.update(f => ({ ...f, [key]: value }));
+        this.pageIndex.set(0);
+        this.loadData();
+    }
+
+    limpiarFiltros(): void {
+        this._resetFiltros();
+        this.pageIndex.set(0);
         this.loadData();
     }
 
@@ -156,6 +209,7 @@ export class ReportsComponent implements OnInit {
         this.activeReport.set(opts[0].id);
         this.searchTerm.set('');
         this.pageIndex.set(0);
+        this._resetFiltros();
         this.loadData();
     }
 
@@ -165,18 +219,22 @@ export class ReportsComponent implements OnInit {
         this.activeReport.set(id);
         this.searchTerm.set('');
         this.pageIndex.set(0);
+        this._resetFiltros();
         this.loadData();
     }
 
     /* ── Carga de datos desde el API ── */
     loadData(): void {
-        const config = REPORTE_CONFIGS[this.activeReport()];
-        if (!config) return;
+        if (!REPORTE_CONFIGS[this.activeReport()]) return;
         this.loading.set(true);
         this.rows.set([]);
-        config.loader(this.reportesSvc, {}).subscribe({
+        this.reportesSvc.getReporte(this.activeReport(), this.filtros()).subscribe({
             next:  (data: any[]) => { this.rows.set(data ?? []); this.loading.set(false); },
-            error: () => { this.rows.set([]); this.loading.set(false); }
+            error: (e) => {
+                this.rows.set([]);
+                this.loading.set(false);
+                this.snackBar.open(e?.message || 'Error al cargar el reporte', 'OK', { duration: 6000 });
+            }
         });
     }
 
@@ -196,6 +254,16 @@ export class ReportsComponent implements OnInit {
             : d.toLocaleDateString('es-BO', { day: '2-digit', month: '2-digit', year });
     }
 
+    /** Booleano de pXP: true o texto 't'/'true'. */
+    esVerdadero(v: any): boolean { return v === true || v === 't' || v === 'true'; }
+
+    /** Texto de celda; vacío/null como guion. */
+    texto(v: any): string { return v == null || v === '' ? '—' : String(v); }
+
+    badgeClass(col: ColDef, v: any): string {
+        return col.badge?.[String(v ?? '').toLowerCase()] ?? 'bg-gray-100 dark:bg-slate-700 border-gray-400';
+    }
+
     /** Traduce el valor crudo de un badge (status/condición) al español. */
     badgeLabel(v: any): string {
         if (v == null || v === '') return '';
@@ -207,7 +275,7 @@ export class ReportsComponent implements OnInit {
         if (v == null || v === '') return '—';
         if (col.tipo === 'date') return this.fmtDate(v);
         if (col.tipo === 'days') return `${v}d`;
-        if (col.tipo === 'bool') return v === true ? '✔' : '—';
+        if (col.tipo === 'bool') return this.esVerdadero(v) ? '✔' : '—';
         return String(v);
     }
 
@@ -221,11 +289,21 @@ export class ReportsComponent implements OnInit {
             tipo:   c.tipo ?? 'text',
             align:  c.align ?? null,
         }));
+        const filtros: Record<string, string> = {};
+        for (const [k, v] of Object.entries(this.filtros())) {
+            if (v !== undefined && v !== null && v !== '') filtros[k] = String(v);
+        }
         return {
+            ...filtros,
             titulo:   opt?.label ?? config?.mghCode ?? 'Reporte',
             mgh_code: opt?.codigo ?? config?.mghCode ?? '',
             columnas: JSON.stringify(cols),
+            generado_por: this._currentUser(),
         };
+    }
+
+    private _currentUser(): string {
+        try { return JSON.parse(localStorage.getItem('aut') || '{}')?.nombre_usuario || ''; } catch { return ''; }
     }
 
     /* ── Generar reporte: PDF real (TCPDF backend), se abre en el visor ── */

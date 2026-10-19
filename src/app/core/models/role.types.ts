@@ -133,4 +133,25 @@ export const AVAILABLE_PERMISSIONS: Permission[] = [
     { id: 'admin_roles.create', name: 'Crear Rol',          description: 'Registrar un nuevo rol', module: 'Roles y Permisos', action: 'create' },
     { id: 'admin_roles.edit',   name: 'Editar Rol',         description: 'Modificar un rol existente', module: 'Roles y Permisos', action: 'edit' },
     { id: 'admin_roles.toggle', name: 'Activar/Desactivar', description: 'Cambiar el estado de un rol', module: 'Roles y Permisos', action: 'toggle' },
+
+    // ── Administración · Clientes / Terceros ────────────────────────────────
+    { id: 'admin_clientes.view', name: 'Ver Clientes / Terceros', description: 'Consultar y gestionar clientes/terceros', module: 'Clientes / Terceros', action: 'view' },
+
+    // ── Administración · Aeronaves ──────────────────────────────────────────
+    { id: 'admin_aeronaves.view', name: 'Ver Aeronaves', description: 'Consultar y gestionar aeronaves', module: 'Aeronaves', action: 'view' },
 ];
+
+/** Módulos del menú lateral que se filtran por rol (el Dashboard es visible para todos). */
+export type AppArea = 'movimientos' | 'calibraciones' | 'inventario' | 'administration';
+
+/**
+ * Prefijo de permiso de cada pestaña (type de MODULE_DEFS) por módulo. Una pestaña
+ * se muestra si el rol tiene al menos un permiso con ese prefijo; el módulo del
+ * menú se muestra si alguna de sus pestañas se muestra.
+ */
+export const AREA_SUBMODULES: Record<AppArea, Record<number, string>> = {
+    movimientos:    { 10: 'interbases', 20: 'prestamo_tecnico', 21: 'prestamo_terceros', 22: 'ingresos', 33: 'cuarentena' },
+    calibraciones:  { 1: 'cal_envio', 2: 'cal_retorno', 3: 'cal_labs', 8: 'cal_auditoria', 6: 'mantenimiento', 5: 'cal_alertas', 9: 'transcripcion' },
+    inventario:     { 1: 'inv_ubicaciones', 2: 'miscelaneos', 7: 'kits', 8: 'inv_reportes', 10: 'inv_consulta' },
+    administration: { 1: 'admin_usuarios', 2: 'admin_proveedores', 3: 'admin_roles', 4: 'admin_clientes', 5: 'admin_aeronaves' },
+};

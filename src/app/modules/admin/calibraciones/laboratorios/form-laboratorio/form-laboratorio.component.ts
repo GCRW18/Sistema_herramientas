@@ -71,6 +71,25 @@ export class FormLaboratorioComponent implements OnDestroy {
         { value: 'ambos', label: 'Ambos' },
     ];
 
+    /** Clases comunes de etiquetas e inputs del formulario. */
+    readonly labelCls = 'text-[9px] font-black uppercase tracking-wider text-stone-400 dark:text-slate-400 mb-1 block';
+    readonly valueCls = 'text-xs font-bold text-black dark:text-white';
+    readonly inputCls = 'w-full h-8 text-xs font-bold bg-white dark:bg-slate-900 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-lg px-2.5 outline-none transition-all placeholder:text-stone-300 placeholder:font-normal dark:placeholder:text-slate-600 hover:border-stone-400 focus:border-black focus:shadow-[2px_2px_0_#000]';
+
+    get tipoServicioLabel(): string {
+        return this.tiposServicio.find(t => t.value === this.laboratory.tipo_servicio)?.label ?? 'Sin tipo';
+    }
+
+    /** Calificación 0-5 como estrellas llenas/vacías. */
+    get estrellas(): string {
+        const n = Math.round(Math.min(5, Math.max(0, Number(this.laboratory.rating) || 0)));
+        return '★'.repeat(n) + '☆'.repeat(5 - n);
+    }
+
+    get tiposCertificacion(): string[] {
+        return (this.laboratory.certification_types || '').split(',').map(t => t.trim()).filter(Boolean);
+    }
+
     constructor() {
         // Inicializar modo
         this.mode = this.data?.mode || 'new';

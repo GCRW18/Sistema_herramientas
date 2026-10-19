@@ -1,9 +1,11 @@
 import { Component, inject, signal, OnInit, OnDestroy, ViewChild, TemplateRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { BotonesFotoComponent } from 'app/shared/components/botones-foto/botones-foto.component';
 import { MatIconModule } from '@angular/material/icon';
 import { MatDialog, MatDialogRef, MatDialogModule, MAT_DIALOG_DATA } from '@angular/material/dialog';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatSnackBar } from '@angular/material/snack-bar';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { DragDropModule } from '@angular/cdk/drag-drop';
 import { Subject, of } from 'rxjs';
@@ -40,6 +42,7 @@ interface HerramientaOption {
     selector: 'app-detalle-herramienta',
     standalone: true,
     imports: [
+        BotonesFotoComponent,
         CommonModule, MatIconModule, MatDialogModule,
         MatTooltipModule, MatProgressSpinnerModule,
         FormsModule, ReactiveFormsModule, DragDropModule,
@@ -76,6 +79,7 @@ export class DetalleHerramientaComponent implements OnInit, OnDestroy {
     private ubicSvc   = inject(GestionUbicacionesService);
     private dialog    = inject(MatDialog);
     private qrScan    = inject(QrScanService);
+    private snackBar  = inject(MatSnackBar);
     private destroy$  = new Subject<void>();
 
     @ViewChild('ubicDialogTpl') ubicDialogTpl!: TemplateRef<any>;
@@ -304,6 +308,8 @@ export class DetalleHerramientaComponent implements OnInit, OnDestroy {
         });
         if (tool.imagen) this.imagenOriginal.set(tool.imagen);
 
+        // Sin esto quedaba la ubicación de la herramienta elegida antes y se la movía ahí.
+        this._resetUbicacion();
         // Auto-selecciona la ubicación si el tool la trae, buscando en la lista completa de
         // almacenes (la herramienta puede estar fuera de Cbba por datos legado).
         if (tool.warehouse_id && this._todosLosAlmacenes.length > 0) {
@@ -452,6 +458,11 @@ export class DetalleHerramientaComponent implements OnInit, OnDestroy {
 
     limpiarUbicacion(): void {
         if (this.viewOnly()) return;
+        this._resetUbicacion();
+    }
+
+    private _resetUbicacion(): void {
+        this._pendingAutoSelect  = null;
         this.ubSelectedWarehouse = null;
         this.ubSelectedRack      = null;
         this.ubSelectedLevel     = null;
@@ -509,7 +520,7 @@ export class DetalleHerramientaComponent implements OnInit, OnDestroy {
         if (this.viewOnly()) return;
         const file = (event.target as HTMLInputElement).files?.[0];
         if (!file) return;
-        if (file.size > 8 * 1024 * 1024) return;
+        if (file.size > 20 * 1024 * 1024) return;
         this.imagenNuevaFile = file;
         const reader = new FileReader();
         reader.onload = () => { this.imagenNueva.set(reader.result as string); }; // solo preview
@@ -527,6 +538,14 @@ export class DetalleHerramientaComponent implements OnInit, OnDestroy {
         this.detalleForm.markAllAsTouched();
         if (this.detalleForm.invalid) return;
         const v = this.detalleForm.getRawValue();
+        // Almacén o estante sin nivel no se aplica (HE_LTL_MOV necesita estante y nivel).
+        if (v.warehouseId && (!v.rackId || !v.levelId)) {
+            this.snackBar.open(
+                v.rackId ? 'Seleccione el nivel del estante' : 'Seleccione el estante y el nivel, o quite el almacén',
+                'OK', { duration: 5000, horizontalPosition: 'end', verticalPosition: 'top', panelClass: ['snackbar-error'] });
+            this.openUbicacionDialog();
+            return;
+        }
         const ubicacion = this.getUbicacionLabel() !== 'Sin asignar' ? this.getUbicacionLabel() : '';
 
         this.dialogRef?.close({

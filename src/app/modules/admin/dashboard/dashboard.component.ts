@@ -1,4 +1,5 @@
 import { Component, OnInit, OnDestroy, AfterViewInit, ViewChild, ElementRef, signal, inject } from '@angular/core';
+import { PermissionsService } from '../../../core/services/permissions.service';
 import { CommonModule } from '@angular/common';
 import { RouterModule, Router } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
@@ -13,6 +14,9 @@ import { catchError } from 'rxjs/operators';
 import { ToolService } from 'app/core/services/tool.service';
 import { MovementService } from 'app/core/services/movement.service';
 import { CalibrationService } from 'app/core/services/calibration.service';
+import { KitsService } from 'app/core/services/kits.service';
+import { formatDateDMY, parseLocalDate } from 'app/core/utils/date.utils';
+import { esActivo } from 'app/core/utils/bool.utils';
 import {
     CalibrationAlertDialogComponent,
     CalibrationAlertDialogData
@@ -25,7 +29,7 @@ interface KPI {
     value: string | number;
     subtitle?: string;
     icon: string;
-    variant: 'info' | 'success' | 'warning' | 'danger' | 'default';
+    variant: 'info' | 'success' | 'warning' | 'danger' | 'default' | 'purple' | 'orange' | 'slate';
     trend?: { value: number, isPositive: boolean };
 }
 
@@ -112,6 +116,9 @@ interface QuickAction {
         .variant-warning { background-color: #ffcc00; color: black; }
         .variant-danger  { background-color: #ff0000; color: #fbf7f7; }
         .variant-default { background-color: #0069ff; color: #f4efef; }
+        .variant-purple  { background-color: #7c3aed; color: #ffffff; }
+        .variant-orange  { background-color: #ff7a00; color: black; }
+        .variant-slate   { background-color: #475569; color: #ffffff; }
 
         @keyframes cardIn {
             from { opacity: 0; transform: translateY(14px) scale(0.98); }
@@ -138,7 +145,9 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewInit {
     private toolService       = inject(ToolService);
     private movService        = inject(MovementService);
     private calibrationService = inject(CalibrationService);
+    private kitsService       = inject(KitsService);
     private _dialog           = inject(MatDialog);
+    private _permissionsSvc   = inject(PermissionsService);
 
     isLoading = signal(true);
 
@@ -151,6 +160,7 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewInit {
     private recentMovements: any[] = [];
     private calibAlerts: any[]  = [];
     private loanItems: any[]    = [];
+    private allKits: any[]      = [];
 
     kpiCardsData    = signal<KPI[]>([]);
     alertsData      = signal<Alert[]>([]);
@@ -167,12 +177,19 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewInit {
     quickActionsData = signal<QuickAction[]>([]);
 
     ngOnInit(): void {
-        this.quickActionsData.set([
-            { icon: 'heroicons_outline:arrow-path',      label: 'Movimientos',   description: 'Entradas/Salidas', variant: 'success', route: '/movimientos' },
-            { icon: 'heroicons_outline:wrench',          label: 'Calibraciones', description: 'Gestionar',        variant: 'warning', route: '/calibraciones' },
-            { icon: 'heroicons_outline:archive-box',     label: 'Inventario',    description: 'Ver stock',        variant: 'info',     route: '/inventario' },
-            { icon: 'heroicons_outline:document-text',   label: 'Reportes',      description: 'Ver',              variant: 'default',  route: '/inventario', queryParams: { tab: 'reportes' } }
-        ]);
+        // Accesos rápidos solo a los módulos que el rol del usuario puede abrir.
+        forkJoin({
+            mov: this._permissionsSvc.canAccessArea('movimientos'),
+            cal: this._permissionsSvc.canAccessArea('calibraciones'),
+            inv: this._permissionsSvc.allowedTabs('inventario'),
+        }).subscribe(({ mov, cal, inv }) => {
+            this.quickActionsData.set([
+                { icon: 'heroicons_outline:arrow-path',      label: 'Movimientos',   description: 'Entradas/Salidas', variant: 'success', route: '/movimientos', ok: mov },
+                { icon: 'heroicons_outline:wrench',          label: 'Calibraciones', description: 'Gestionar',        variant: 'warning', route: '/calibraciones', ok: cal },
+                { icon: 'heroicons_outline:archive-box',     label: 'Inventario',    description: 'Ver stock',        variant: 'info',     route: '/inventario', ok: inv.size > 0 },
+                { icon: 'heroicons_outline:document-text',   label: 'Reportes',      description: 'Ver',              variant: 'default',  route: '/inventario', queryParams: { tab: 'reportes' }, ok: inv.has(8) }
+            ].filter(a => a.ok).map(({ ok, ...a }) => a as QuickAction));
+        });
 
         forkJoin({
             tools:      this.toolService.getTools().pipe(catchError(() => of([] as any[]))),
@@ -180,15 +197,21 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewInit {
             // meses se quedaba corto en operaciones con volumen alto, subrrepresentando
             // los meses mas viejos de la ventana.
             movements:  this.movService.getMovements({ limit: 2000 }).pipe(catchError(() => of([] as any[]))),
-            calibAlerts: this.calibrationService.getCalibrationAlertsPxp({ limit: 100 }).pipe(catchError(() => of([] as any[]))),
-            loanItems:  this.movService.getActiveLoanItems().pipe(catchError(() => of([] as any[])))
+            calibAlerts: this.calibrationService.getCalibrationAlertsPxp().pipe(catchError(() => of([] as any[]))),
+            // desc: con más de 8000 ítems históricos se descartaban los más nuevos.
+            loanItems:  this.movService.getActiveLoanItems({ dir: 'desc' }).pipe(catchError(() => of([] as any[]))),
+            kits:       this.kitsService.getKits({ limit: 5000 }).pipe(catchError(() => of([] as any[])))
         }).subscribe({
-            next: ({ tools, movements, calibAlerts, loanItems }) => {
-                const alertsArr: any[] = Array.isArray(calibAlerts) ? calibAlerts : (calibAlerts as any)?.data || [];
+            next: ({ tools, movements, calibAlerts, loanItems, kits }) => {
+                // Las que ya están en el laboratorio no son alertas por atender (y el gráfico
+                // las contaba dos veces: "En Calibración" y "Vencida").
+                const alertsArr: any[] = (Array.isArray(calibAlerts) ? calibAlerts : (calibAlerts as any)?.data || [])
+                    .filter((a: any) => !['in_calibration', 'CALIBRACION'].includes(a.status) && a.id_calibration == null);
                 this.allTools        = tools;
                 this.recentMovements = movements;
                 this.calibAlerts     = alertsArr;
                 this.loanItems       = Array.isArray(loanItems) ? loanItems : [];
+                this.allKits         = Array.isArray(kits) ? kits : [];
                 this.buildKPIs(alertsArr);
                 this.buildActivities(alertsArr);
                 this.isLoading.set(false);
@@ -213,26 +236,30 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewInit {
 
     // ── KPIs ────────────────────────────────────────────────────────────────────
     private buildKPIs(calibAlerts: any[] = []): void {
-        const tools      = this.allTools;
-        const total      = tools.filter((t: any) => t.status !== 'decommissioned').length;
-        const available  = tools.filter((t: any) => t.status === 'available').length;
-        const inUse      = tools.filter((t: any) => t.status === 'in_use').length;
-        const inCalib    = tools.filter((t: any) => t.status === 'in_calibration').length;
-        const quarantine = tools.filter((t: any) => t.status === 'quarantine').length;
-        const decomm     = tools.filter((t: any) => t.status === 'decommissioned').length;
+        // Solo activas; estados en español de registros viejos se normalizan (antes no contaban).
+        const tools      = this.allTools.filter((t: any) => esActivo(t.active));
+        const st         = (t: any) => this._status(t);
+        const total      = tools.filter((t: any) => !['decommissioned', 'lost'].includes(st(t))).length;
+        const available  = tools.filter((t: any) => st(t) === 'available').length;
+        const inUse      = tools.filter((t: any) => st(t) === 'in_use').length;
+        const inCalib    = tools.filter((t: any) => st(t) === 'in_calibration').length;
+        const quarantine = tools.filter((t: any) => st(t) === 'quarantine').length;
+        const decomm     = this.allTools.filter((t: any) => st(t) === 'decommissioned').length;
         const pct        = total ? Math.round(available / total * 100) : 0;
         const expired    = calibAlerts.filter(a => a.alert_type === 'EXPIRED').length;
-        const critical   = calibAlerts.filter(a => ['EXPIRED', 'CRITICAL_7D', 'URGENT_15D'].includes(a.alert_type)).length;
+        // Kits activos que no están dados de baja; el subtítulo muestra cuántos están prestados.
+        const kits       = this.allKits.filter((k: any) => esActivo(k.active) && k.status !== 'decommissioned');
+        const kitsInUse  = kits.filter((k: any) => k.status === 'in_use').length;
 
         this.kpiCardsData.set([
             { title: 'Total Herramientas', value: total.toLocaleString(),     subtitle: 'INVENTARIO', icon: 'heroicons_outline:wrench-screwdriver', variant: 'info' },
             { title: 'Disponibles',         value: available.toLocaleString(), subtitle: `${pct}% TOTAL`, icon: 'heroicons_outline:check-circle',       variant: 'success', trend: { value: pct, isPositive: true } },
-            { title: 'Alertas Críticas',    value: critical,                   subtitle: 'ATENCIÓN',   icon: 'heroicons_outline:exclamation-triangle', variant: 'danger' },
+            { title: 'Kits',                value: kits.length.toLocaleString(), subtitle: `${kitsInUse} EN USO`, icon: 'heroicons_outline:briefcase',  variant: 'purple' },
             { title: 'En Calibración',      value: inCalib,                    subtitle: 'EXTERNO',    icon: 'heroicons_outline:wrench',               variant: 'warning' },
             { title: 'Calib. Vencida',      value: expired,                    subtitle: 'BLOQUEADAS', icon: 'heroicons_outline:clock',                variant: 'danger' },
-            { title: 'En Cuarentena',       value: quarantine,                 subtitle: 'REVISIÓN',   icon: 'heroicons_outline:shield-exclamation',   variant: 'warning' },
-            { title: 'En Uso',              value: inUse.toLocaleString(),     subtitle: 'PRÉSTAMOS',  icon: 'heroicons_outline:arrow-path',           variant: 'info' },
-            { title: 'Dados de Baja',       value: decomm.toLocaleString(),    subtitle: 'HISTÓRICO',  icon: 'heroicons_outline:trash',                variant: 'default' }
+            { title: 'En Cuarentena',       value: quarantine,                 subtitle: 'REVISIÓN',   icon: 'heroicons_outline:shield-exclamation',   variant: 'orange' },
+            { title: 'En Uso',              value: inUse.toLocaleString(),     subtitle: 'PRÉSTAMOS',  icon: 'heroicons_outline:arrow-path',           variant: 'default' },
+            { title: 'Dados de Baja',       value: decomm.toLocaleString(),    subtitle: 'HISTÓRICO',  icon: 'heroicons_outline:trash',                variant: 'slate' }
         ]);
     }
 
@@ -252,8 +279,11 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewInit {
             AJUSTE_INGRESO: 'Ajuste', ADJUSTMENT: 'Ajuste', PURCHASE: 'Compra', COMPRA: 'Compra',
             COMAT: 'COMAT', ENTRADA_MISC: 'Entrada Misceláneo', MANUAL: 'Ajuste Manual'
         };
-        this.recentMovementsTotalCount.set(this.recentMovements.length);
-        const items: Activity[] = this.recentMovements.slice(0, 8).map((m: any, i: number) => {
+        // El badge mostraba cuántos movimientos se cargaron (hasta 2000), no algo útil: ahora son los de hoy.
+        const vigentes = this.recentMovements.filter((m: any) => m.status !== 'cancelled');
+        const hoy = new Date().toDateString();
+        this.recentMovementsTotalCount.set(vigentes.filter((m: any) => parseLocalDate(m.date || m.fecha_reg)?.toDateString() === hoy).length);
+        const items: Activity[] = vigentes.slice(0, 8).map((m: any, i: number) => {
             const rawType = m.type || m.movement_type || '';
             return {
                 id:          String(m.id_movement || i),
@@ -261,7 +291,7 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewInit {
                 title:       TYPE_LABELS[rawType.toUpperCase()] || rawType || 'Movimiento',
                 description: m.notes || m.movement_number || '',
                 user:        m.requested_by_name || m.created_by || 'Sistema',
-                time:        m.date ? new Date(m.date).toLocaleDateString('es-BO') : (m.fecha_reg ? new Date(m.fecha_reg).toLocaleDateString('es-BO') : ''),
+                time:        formatDateDMY(m.date || m.fecha_reg || ''),
                 route:       '/movimientos'
             };
         });
@@ -284,7 +314,7 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewInit {
                 description: (a.tool_code && a.tool_name) ? a.tool_code : '',
                 time:        this.formatAlertDate(a.next_calibration_date || a.calibration_expiry),
                 icon:        isExpired ? 'heroicons_outline:exclamation-circle' : 'heroicons_outline:clock',
-                badge:       isExpired ? 'VENCIDA' : (days == null ? 'PRÓXIMA' : `${days} DÍA${days === 1 ? '' : 'S'}`),
+                badge:       isExpired ? 'VENCIDA' : (days == null ? 'PRÓXIMA' : days === 0 ? 'HOY' : `${days} DÍA${days === 1 ? '' : 'S'}`),
                 route:       '/calibraciones'
             };
         });
@@ -315,17 +345,12 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewInit {
             const mes = d.getMonth();
             const anio = d.getFullYear();
             const movMes = this.recentMovements.filter((m: any) => {
-                const md = new Date(m.date || m.fecha || m.fecha_reg || '');
-                return md.getMonth() === mes && md.getFullYear() === anio;
+                if (m.status === 'cancelled') return false;
+                const md = parseLocalDate(m.date || m.fecha || m.fecha_reg);
+                return !!md && md.getMonth() === mes && md.getFullYear() === anio;
             });
-            // entry_reason/exit_reason son mutuamente excluyentes por diseño (chk_tmovements_*):
-            // un movimiento con entry_reason es entrada, con exit_reason es salida. El tipo
-            // (ENTRADA/SALIDA en mayúsculas) queda solo como respaldo si algún registro viejo
-            // no tuviera el reason poblado.
-            const isEntrada = (m: any) => m.entry_reason != null || (m.type || m.movement_type || '').toUpperCase() === 'ENTRADA';
-            const isSalida  = (m: any) => m.exit_reason  != null || (m.type || m.movement_type || '').toUpperCase() === 'SALIDA';
-            entradas.push(movMes.filter(isEntrada).length);
-            salidas.push(movMes.filter(isSalida).length);
+            entradas.push(movMes.filter(m => this._sentido(m) === 'entrada').length);
+            salidas.push(movMes.filter(m => this._sentido(m) === 'salida').length);
         }
 
         this.movementsChartInstance?.destroy();
@@ -385,11 +410,14 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewInit {
         // vencer), porque el status no cambia solo por vencer la fecha: sin este filtro una
         // misma herramienta podía contarse dos veces (disponible Y vencida a la vez).
         const isCalibratable = (t: any) => t.requires_calibration === true || t.requires_calibration === 't';
-        const alertedIds = new Set(this.calibAlerts.map(a => String(a.tool_id ?? '')));
+        // Solo se descuentan de "Disponible" las alertas que la dona cuenta (vencida / ≤15 días):
+        // las de 16-90 días quedaban fuera de todos los segmentos.
+        const contadas   = ['EXPIRED', 'CRITICAL_7D', 'URGENT_15D'];
+        const alertedIds = new Set(this.calibAlerts.filter(a => contadas.includes(a.alert_type)).map(a => String(a.tool_id ?? '')));
 
-        const tools     = this.allTools.filter(isCalibratable);
-        const vigente   = tools.filter(t => t.status === 'available' && !alertedIds.has(String(t.id_tool ?? t.id ?? ''))).length;
-        const enCalib   = tools.filter(t => t.status === 'in_calibration').length;
+        const tools     = this.allTools.filter(t => isCalibratable(t) && esActivo(t.active));
+        const vigente   = tools.filter(t => this._status(t) === 'available' && !alertedIds.has(String(t.id_tool ?? t.id ?? ''))).length;
+        const enCalib   = tools.filter(t => this._status(t) === 'in_calibration').length;
         const vencida   = this.calibAlerts.filter(a => a.alert_type === 'EXPIRED').length;
         const porVencer = this.calibAlerts.filter(a => ['CRITICAL_7D', 'URGENT_15D'].includes(a.alert_type)).length;
         const total     = vigente + enCalib + vencida + porVencer;
@@ -453,15 +481,43 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewInit {
         });
     }
 
+    // Sin pasar por Date: 'YYYY-MM-DD' leído como UTC mostraba el vencimiento un día antes.
     private formatAlertDate(date: string): string {
-        if (!date) return '-';
-        try {
-            return new Date(date).toLocaleDateString('es-BO', { day: '2-digit', month: '2-digit', year: 'numeric' });
-        } catch { return date; }
+        return formatDateDMY(date) || '-';
+    }
+
+    // Compra, préstamo, ajuste y retorno de base no graban entry/exit_reason: sin motivo se
+    // decide por el tipo (antes solo contaban ENTRADA/SALIDA y la gráfica salía casi vacía).
+    private static readonly TIPOS_ENTRADA = new Set([
+        'ENTRADA', 'COMPRA', 'PURCHASE', 'AJUSTE_INGRESO', 'ENTRADA_MISC',
+        'DEVOLUCION', 'DEVOLUCION_PRESTAMO_INTERNO', 'DEVOLUCION_PRESTAMO_EXTERNO', 'DEVOLUCION_TERCERO',
+        'RETORNO_CALIBRACION', 'RETORNO_BASE', 'RETORNO_TRASPASO',
+    ]);
+    private static readonly TIPOS_SALIDA = new Set([
+        'SALIDA', 'PRESTAMO', 'PRESTAMO_INTERNO', 'PRESTAMO_EXTERNO', 'PRESTAMO_TERCERO',
+        'TRASPASO', 'ENVIO_BASE', 'ENVIO_CALIBRACION', 'BAJA',
+    ]);
+
+    private _sentido(m: any): 'entrada' | 'salida' | null {
+        if (m.entry_reason) return 'entrada';
+        if (m.exit_reason)  return 'salida';
+        const tipo = String(m.type || m.movement_type || '').toUpperCase();
+        if (DashboardComponent.TIPOS_ENTRADA.has(tipo)) return 'entrada';
+        if (DashboardComponent.TIPOS_SALIDA.has(tipo))  return 'salida';
+        return null;
+    }
+
+    /** Estado de la herramienta en inglés (registros viejos traen DISPONIBLE/CUARENTENA/...). */
+    private _status(t: any): string {
+        const legacy: Record<string, string> = {
+            DISPONIBLE: 'available', CUARENTENA: 'quarantine', BAJA: 'decommissioned', CALIBRACION: 'in_calibration',
+        };
+        const s = String(t?.status ?? '');
+        return legacy[s] ?? s;
     }
 
     getVariantColor(variant: string): string {
-        const colors: any = { 'info': 'variant-info', 'success': 'variant-success', 'warning': 'variant-warning', 'danger': 'variant-danger', 'default': 'variant-default' };
+        const colors: any = { 'info': 'variant-info', 'success': 'variant-success', 'warning': 'variant-warning', 'danger': 'variant-danger', 'default': 'variant-default', 'purple': 'variant-purple', 'orange': 'variant-orange', 'slate': 'variant-slate' };
         return colors[variant] || 'variant-default';
     }
 
@@ -475,11 +531,11 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewInit {
     }
 
     navigateToAlert(alert: Alert): void {
-        if (alert.route) this.router.navigate([alert.route]);
+        if (alert.route) this.verTodasAlertas();
     }
 
     verTodasAlertas(): void {
-        this.router.navigate(['/calibraciones']);
+        this.router.navigate(['/calibraciones'], { queryParams: { tab: 'alertas' } });
     }
 
     navigateToActivity(activity: Activity): void {

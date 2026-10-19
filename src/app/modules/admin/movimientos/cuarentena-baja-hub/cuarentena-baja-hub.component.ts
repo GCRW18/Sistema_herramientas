@@ -1,5 +1,7 @@
+import { PaginadorCompactoComponent } from 'app/shared/components/paginador-compacto/paginador-compacto.component';
 import { Component, OnInit, OnDestroy, signal, inject, ViewChild, TemplateRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { BotonesFotoComponent } from 'app/shared/components/botones-foto/botones-foto.component';
 import { FormBuilder, FormControl, FormGroup, ReactiveFormsModule, FormsModule, Validators } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
 import { MatDialogRef, MatDialogModule, MatDialog } from '@angular/material/dialog';
@@ -45,7 +47,8 @@ type TabType = 'cuarentena' | 'baja' | 'historial';
     selector: 'app-cuarentena-baja-hub',
     standalone: true,
     imports: [
-        CommonModule, ReactiveFormsModule, FormsModule,
+        BotonesFotoComponent,
+        CommonModule, ReactiveFormsModule, FormsModule, PaginadorCompactoComponent,
         MatIconModule, MatDialogModule, MatSnackBarModule,
         MatProgressSpinnerModule, MatTooltipModule, DragDropModule,
         HasPermissionDirective
@@ -227,6 +230,7 @@ export class CuarentenaBajaHubComponent implements OnInit, OnDestroy {
     // ── Historial ──
     historialItems:     any[] = [];
     filteredHistorial:  any[] = [];
+    pageHistorial = 0;
     isLoadingHistorial        = false;
     historialTotal            = 0;
     historialSearch           = new FormControl('');
@@ -444,8 +448,8 @@ export class CuarentenaBajaHubComponent implements OnInit, OnDestroy {
         switch (String(status || '').toLowerCase()) {
             case 'decommissioned':
             case 'baja':           return 'ya está dada de baja';
-            case 'quarantine':
-            case 'cuarentena':     return 'ya está en cuarentena';
+            // 'quarantine' pasa: puede venir DAÑADA de un retorno sin registro de cuarentena;
+            // si ya tiene una cuarentena activa lo rechaza he.ft_quarantines_ime.
             case 'lost':           return 'está registrada como perdida';
             case 'in_use':
             case 'loaned':         return 'está prestada — registre primero su devolución';
@@ -495,7 +499,7 @@ export class CuarentenaBajaHubComponent implements OnInit, OnDestroy {
     onToolImageSelected(event: Event): void {
         const file = (event.target as HTMLInputElement).files?.[0];
         if (!file) return;
-        if (file.size > 8 * 1024 * 1024) { this._showMsg('La imagen no debe superar 8MB', 'error'); return; }
+        if (file.size > 20 * 1024 * 1024) { this._showMsg('La imagen no debe superar 20MB', 'error'); return; }
         this.selectedToolImageFile = file;
         const reader = new FileReader();
         reader.onload = () => this.selectedToolImage.set(reader.result as string); // solo preview
@@ -578,6 +582,7 @@ export class CuarentenaBajaHubComponent implements OnInit, OnDestroy {
             const notesExtra = `${rep.descripcion ? 'Descripción: ' + rep.descripcion + '. ' : ''}` +
                                `${tool.motivoItem ? 'Motivo ítem: ' + tool.motivoItem + '. ' : ''}` +
                                `Cant: ${tool.cantidad}. Base: ${tool.base || '-'}.` +
+                               (tool.estadoFisico ? ` Estado: ${tool.estadoFisico}.` : '') +
                                (tool.observaciones ? ` Obs: ${tool.observaciones}.` : '') +
                                (tool.fechaVencimiento ? ` Vence: ${tool.fechaVencimiento}.` : '');
             const payload: any = {
@@ -594,31 +599,45 @@ export class CuarentenaBajaHubComponent implements OnInit, OnDestroy {
             };
             // reported_by_id / evaluator_id no se envían: getPersonal() da id_usuario (segu) pero
             // tquarantines referencia he.temployees. El _name basta.
-            return this.quarantineSvc.createQuarantine(payload);
+            // Cada ítem se registra aparte: si uno falla, los demás ya quedaron grabados.
+            return this.quarantineSvc.createQuarantine(payload).pipe(
+                map((r: any) => ({ tool, r, err: null as string | null })),
+                catchError((e: any) => of({ tool, r: null as any, err: `${tool.codigo}: ${e?.message || 'error'}` }))
+            );
         });
         forkJoin(requests).pipe(
             finalize(() => { this.isSavingCuarentena = false; }),
             takeUntil(this.destroy$)
-        ).subscribe({
-            next: (results: any[]) => {
-                // Cada herramienta genera su record_number único (RDC-N/YYYY); el impreso es el
-                // de la primera fila del lote (igual que "N° Nota" en Baja).
-                const nro = results[0]?.record_number || '---';
-                this.reporteForm.patchValue({ nroReporteDiscrepancia: nro });
-                void this._persistirFotos(this.cuarentenaList.map((t: any) => ({ toolId: t.id_tool, file: t.fotoFile })));
-                // Reporte Discrepancia MGH-101 — PDF real TCPDF backend.
-                const ids = results.map((r: any) => r?.id_quarantine).filter(Boolean);
-                if (ids.length) this.quarantineSvc.verNotaCuarentena(ids, notaWin);
-                else { try { notaWin?.close(); } catch { /* noop */ } }
-                this._showMsg(`Cuarentena ${nro} procesada correctamente.`, 'success');
-                this.cuarentenaList = [];
-                this.reporteForm.reset({
-                    fecha: this._today(), nroReporteDiscrepancia: '',
-                    nombreApellido: this._currentUserName(), realizadoPor: this._currentUserName()
-                });
-                this.historialItems = [];
-            },
-            error: (err: any) => { try { notaWin?.close(); } catch { /* noop */ } this._showMsg(err?.message || 'Error al procesar la cuarentena.', 'error'); }
+        ).subscribe((res) => {
+            const ok     = res.filter(x => !x.err);
+            const fallos = res.filter(x => x.err);
+            if (ok.length === 0) {
+                try { notaWin?.close(); } catch { /* noop */ }
+                this._showMsg(fallos.map(x => x.err).join(' | ') || 'Error al procesar la cuarentena.', 'error');
+                return;
+            }
+            // Cada herramienta genera su record_number único (RDC-N/YYYY); el impreso es el
+            // de la primera fila del lote (igual que "N° Nota" en Baja).
+            const nro = ok[0].r?.record_number || '---';
+            this.reporteForm.patchValue({ nroReporteDiscrepancia: nro });
+            void this._persistirFotos(ok.map(x => ({ toolId: x.tool.id_tool, file: x.tool.fotoFile })));
+            // Reporte Discrepancia MGH-101 — PDF real TCPDF backend.
+            const ids = ok.map(x => x.r?.id_quarantine).filter(Boolean);
+            if (ids.length) this.quarantineSvc.verNotaCuarentena(ids, notaWin);
+            else { try { notaWin?.close(); } catch { /* noop */ } }
+            this.historialItems = [];
+            if (fallos.length) {
+                // Quedan en la lista solo las que fallaron, para corregir y reintentar.
+                this.cuarentenaList = fallos.map(x => x.tool);
+                this._showMsg(`Cuarentena ${nro} registrada, pero fallaron: ${fallos.map(x => x.err).join(' | ')}`, 'warning');
+                return;
+            }
+            this._showMsg(`Cuarentena ${nro} procesada correctamente.`, 'success');
+            this.cuarentenaList = [];
+            this.reporteForm.reset({
+                fecha: this._today(), nroReporteDiscrepancia: '',
+                nombreApellido: this._currentUserName(), realizadoPor: this._currentUserName()
+            });
         });
     }
 
@@ -814,6 +833,10 @@ export class CuarentenaBajaHubComponent implements OnInit, OnDestroy {
     }
 
     private _agregarItemBaja(data: any): void {
+        if (data.id_tool && this.bajaItems().some(i => i.toolId === data.id_tool)) {
+            this._showMsg(`${data.codigo || 'La herramienta'} ya está en la lista.`, 'warning');
+            return;
+        }
         const item: BajaItem = {
             id:           crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(),
             toolId:       data.id_tool      ?? 0,
@@ -927,30 +950,44 @@ export class CuarentenaBajaHubComponent implements OnInit, OnDestroy {
                 authorized_position:  fv.autorizadoCargo     || '',
                 quantity:             Number(item.cantidad)  || 1
             };
-            return this.quarantineSvc.createDecommission(payload);
+            // Cada ítem se registra aparte: si uno falla, los demás ya quedaron grabados.
+            return this.quarantineSvc.createDecommission(payload).pipe(
+                map((r: any) => ({ item, r, err: null as string | null })),
+                catchError((e: any) => of({ item, r: null as any, err: `${item.codigo}: ${e?.message || 'error'}` }))
+            );
         });
         forkJoin(calls).pipe(
             finalize(() => { this.isSavingBaja = false; }),
             takeUntil(this.destroy$)
-        ).subscribe({
-            next: (results: any[]) => {
-                const nro = results[0]?.decommission_number || results[0]?.record_number || 'BJA';
-                this.nroNota.set(nro);
-                void this._persistirFotos(items.map(i => ({ toolId: i.toolId, file: i.imagenFile })));
-                // Nota de Baja MGH-119 — PDF real TCPDF backend.
-                const ids = results.map((r: any) => r?.id_decommission).filter(Boolean);
-                if (ids.length) this.quarantineSvc.verNotaBaja(ids, notaWin);
-                else { try { notaWin?.close(); } catch { /* noop */ } }
-                this._showMsg(`Baja ${nro} procesada exitosamente.`, 'success');
-                this.bajaItems.set([]);
-                this.bajaForm.reset({
-                    estado: 'requested', motivo: 'beyond_repair',
-                    disposalMethod: 'other', fecha: this._today(),
-                    procesadoPor: this._currentUserName()
-                });
-                this.historialItems = [];
-            },
-            error: (err: any) => { try { notaWin?.close(); } catch { /* noop */ } this._showMsg(err?.message || 'Error al registrar la baja.', 'error'); }
+        ).subscribe((res) => {
+            const ok     = res.filter(x => !x.err);
+            const fallos = res.filter(x => x.err);
+            if (ok.length === 0) {
+                try { notaWin?.close(); } catch { /* noop */ }
+                this._showMsg(fallos.map(x => x.err).join(' | ') || 'Error al registrar la baja.', 'error');
+                return;
+            }
+            const nro = ok[0].r?.decommission_number || ok[0].r?.record_number || 'BJA';
+            this.nroNota.set(nro);
+            void this._persistirFotos(ok.map(x => ({ toolId: x.item.toolId, file: x.item.imagenFile })));
+            // Nota de Baja MGH-119 — PDF real TCPDF backend.
+            const ids = ok.map(x => x.r?.id_decommission).filter(Boolean);
+            if (ids.length) this.quarantineSvc.verNotaBaja(ids, notaWin);
+            else { try { notaWin?.close(); } catch { /* noop */ } }
+            this.historialItems = [];
+            if (fallos.length) {
+                // Quedan en la lista solo las que fallaron, para corregir y reintentar.
+                this.bajaItems.set(fallos.map(x => x.item));
+                this._showMsg(`Baja ${nro} registrada, pero fallaron: ${fallos.map(x => x.err).join(' | ')}`, 'warning');
+                return;
+            }
+            this._showMsg(`Baja ${nro} procesada exitosamente.`, 'success');
+            this.bajaItems.set([]);
+            this.bajaForm.reset({
+                estado: 'requested', motivo: 'beyond_repair',
+                disposalMethod: 'other', fecha: this._today(),
+                procesadoPor: this._currentUserName()
+            });
         });
     }
 
@@ -981,13 +1018,16 @@ export class CuarentenaBajaHubComponent implements OnInit, OnDestroy {
     }
 
     private _filterHistorial(): void {
+        this.pageHistorial = 0;
         const q = (this.historialSearch.value || '').toLowerCase().trim();
         this.filteredHistorial = q
             ? this.historialItems.filter((m: any) =>
                 (m.record_number      || '').toLowerCase().includes(q) ||
                 (m.report_number      || '').toLowerCase().includes(q) ||
                 (m.reported_by_name   || '').toLowerCase().includes(q) ||
-                (m.requested_by_name  || '').toLowerCase().includes(q))
+                (m.requested_by_name  || '').toLowerCase().includes(q) ||
+                (m.tool_code          || '').toLowerCase().includes(q) ||
+                (m.tool_name          || '').toLowerCase().includes(q))
             : [...this.historialItems];
     }
 
@@ -1091,7 +1131,8 @@ export class CuarentenaBajaHubComponent implements OnInit, OnDestroy {
         const payload: any = {
             record_number:      q.record_number      || q.report_number || '',
             tool_id:            q.tool_id             || 0,
-            status:             'resolved',
+            // PENDIENTE solo guarda el diagnóstico: la cuarentena sigue activa.
+            status:             fv.resolution === 'pending' ? 'active' : 'resolved',
             reason:             q.reason              || 'other',
             reason_description: q.reason_description  || '',
             start_date:         q.start_date          || this._today(),
@@ -1111,7 +1152,14 @@ export class CuarentenaBajaHubComponent implements OnInit, OnDestroy {
         ).subscribe({
             next: () => {
                 this.dialogRefActual?.close();
-                this._showMsg('Cuarentena resuelta. La herramienta vuelve a disponible.', 'success');
+                const msgs: Record<string, string> = {
+                    released:         'Cuarentena resuelta. La herramienta vuelve a disponible.',
+                    repaired:         'Cuarentena resuelta. La herramienta vuelve a disponible.',
+                    sent_calibration: 'Cuarentena resuelta. La herramienta queda EN CALIBRACIÓN: inclúyala en un Envío a Calibración.',
+                    decommissioned:   'Cuarentena resuelta. La herramienta queda DADA DE BAJA: registre su Nota de Baja en la pestaña Baja.',
+                    pending:          'Diagnóstico guardado. La cuarentena sigue activa.'
+                };
+                this._showMsg(msgs[fv.resolution] || 'Cuarentena actualizada.', 'success');
                 this.historialItems = [];
                 this.loadHistorial();
             },
@@ -1192,7 +1240,7 @@ export class CuarentenaBajaHubComponent implements OnInit, OnDestroy {
         ).subscribe({
             next: () => {
                 this.dialogRefActual?.close();
-                this._showMsg('Baja anulada. La herramienta vuelve a disponible.', 'success');
+                this._showMsg('Baja anulada. La herramienta vuelve a disponible (o a cuarentena si tenía una activa).', 'success');
                 this.historialItems = [];
                 this.loadHistorial();
             },

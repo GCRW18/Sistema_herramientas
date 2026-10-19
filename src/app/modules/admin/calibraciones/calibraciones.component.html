@@ -1,6 +1,6 @@
 <div class="relative flex flex-col w-full h-full bg-white dark:bg-[#0F172AFF] transition-colors duration-300 font-sans overflow-hidden">
 
-    <div class="flex items-center gap-4 px-6 py-4 border-b-[3px] border-black shrink-0 bg-white dark:bg-slate-900 relative z-[110]">
+    <div class="flex items-center gap-2 sm:gap-4 px-3 sm:px-6 py-3 sm:py-4 border-b-[3px] border-black shrink-0 bg-white dark:bg-slate-900 relative z-[110]">
 
         <div class="flex items-center gap-3">
             <h1 class="text-2xl md:text-3xl font-black text-black dark:text-white uppercase tracking-tighter leading-none">
@@ -18,7 +18,7 @@
         <button (click)="toggleBandeja()"
                 [class.!bg-black]="showBandeja"
                 [class.!text-white]="showBandeja"
-                class="header-btn flex items-center gap-2 px-5 py-2 bg-[#2563eb] border-[2px] border-black font-black text-xs uppercase rounded-xl shadow-[3px_3px_0px_0px_#000] hover:shadow-[1px_1px_0px_0px_#000] hover:translate-x-[2px] hover:translate-y-[2px] transition-all text-white">
+                class="header-btn flex items-center gap-2 px-3 sm:px-5 py-2 bg-[#2563eb] border-[2px] border-black font-black text-xs uppercase rounded-xl shadow-[3px_3px_0px_0px_#000] hover:shadow-[1px_1px_0px_0px_#000] hover:translate-x-[2px] hover:translate-y-[2px] transition-all text-white">
             <mat-icon class="header-btn-icon !text-base !text-white dark:!text-white">apps</mat-icon>
             <span class="hidden sm:inline">MÓDULOS</span>
             <mat-icon class="!text-sm transition-transform duration-200 !text-white dark:!text-white" [class.rotate-180]="showBandeja">expand_more</mat-icon>
@@ -26,9 +26,9 @@
 
         <div class="w-px h-8 bg-black/20 dark:bg-white/20 mx-1"></div>
 
-        <div *ngIf="alertCount > 0" class="relative">
+        <div *ngIf="alertCount > 0 && canSee(5)" class="relative">
             <button (click)="openModule(5)"
-                    class="header-btn flex items-center gap-2 px-5 py-2 bg-[#FF1414FF] text-white border-[2px] border-black font-black text-xs uppercase rounded-xl shadow-[3px_3px_0px_0px_#000] hover:shadow-[1px_1px_0px_0px_#000] hover:translate-x-[2px] hover:translate-y-[2px] transition-all">
+                    class="header-btn flex items-center gap-2 px-3 sm:px-5 py-2 bg-[#FF1414FF] text-white border-[2px] border-black font-black text-xs uppercase rounded-xl shadow-[3px_3px_0px_0px_#000] hover:shadow-[1px_1px_0px_0px_#000] hover:translate-x-[2px] hover:translate-y-[2px] transition-all">
                 <mat-icon class="header-btn-icon !text-white dark:!text-white">notifications_active</mat-icon>
                 <span class="hidden lg:inline">ALERTAS</span>
                 <span class="bg-white text-[#e94125] text-[9px] font-black px-1.5 py-0.5 rounded border border-black min-w-[18px] text-center shadow-[1px_1px_0px_0px_#000]">{{ alertCount }}</span>
@@ -36,7 +36,7 @@
         </div>
 
         <button (click)="openCalibracionesRecientes()"
-                class="header-btn flex items-center gap-2 px-5 py-2 bg-black dark:bg-slate-700 border-[2px] border-black font-black text-xs uppercase rounded-xl shadow-[3px_3px_0px_0px_rgba(0,0,0,0.5)] hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,0.5)] hover:translate-x-[2px] hover:translate-y-[2px] transition-all text-white">
+                class="header-btn flex items-center gap-2 px-3 sm:px-5 py-2 bg-black dark:bg-slate-700 border-[2px] border-black font-black text-xs uppercase rounded-xl shadow-[3px_3px_0px_0px_rgba(0,0,0,0.5)] hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,0.5)] hover:translate-x-[2px] hover:translate-y-[2px] transition-all text-white">
             <mat-icon class="header-btn-icon !text-base !text-white dark:!text-white">history</mat-icon>
             <span class="hidden sm:inline">Registros Recientes</span>
         </button>
@@ -45,14 +45,14 @@
     <div *ngIf="showBandeja" (click)="closeBandeja()" class="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm transition-all duration-300"></div>
 
     <div *ngIf="showBandeja"
-         class="absolute top-[80px] left-2 right-2 md:left-auto md:right-6 md:w-auto z-[110] bg-white dark:bg-slate-800 border-[3px] border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] rounded-xl p-4 animate-in slide-in-from-top-2 duration-150">
+         class="absolute top-[64px] sm:top-[80px] left-2 right-2 md:left-auto md:right-6 md:w-auto z-[110] bg-white dark:bg-slate-800 border-[3px] border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] rounded-xl p-4 animate-in slide-in-from-top-2 duration-150">
 
         <p class="text-[10px] font-black uppercase tracking-widest text-black dark:text-white mb-3 px-1 border-b-2 border-black pb-1.5">
             Seleccionar Módulo de Calibración
         </p>
 
         <div class="flex gap-3 overflow-x-auto custom-scrollbar pb-2 pt-1 px-1">
-            <button *ngFor="let def of MODULE_DEFS"
+            <button *ngFor="let def of visibleModuleDefs"
                     (click)="openModule(def.type)"
                     class="group relative flex flex-col items-center gap-1.5 p-3 rounded-xl border-[2px] border-black transition-all hover:-translate-y-1 w-[120px] shrink-0"
                     [style.background-color]="isTabOpen(def.type) ? '#FBBF24' : '#f8f9fc'"

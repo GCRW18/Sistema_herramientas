@@ -5,18 +5,18 @@
      style="box-shadow:6px 6px 0 #000; height:min(820px,92vh)">
 
     <!-- ═══ CABECERA (drag handle) ═══ -->
-    <div class="bg-[#0F172A] px-4 py-3 flex items-center gap-3 shrink-0 select-none"
+    <div class="bg-[#0F172A] px-4 py-3 flex items-center flex-wrap gap-x-3 gap-y-2 shrink-0 select-none"
          cdkDrag cdkDragRootElement=".cdk-overlay-pane" cdkDragHandle style="cursor:grab">
         <div class="w-8 h-8 rounded bg-amber-400 border-2 border-black flex items-center justify-center shadow-[2px_2px_0_#fbbf24] shrink-0">
             <mat-icon class="!text-base text-black">widgets</mat-icon>
         </div>
-        <div>
+        <div class="flex-1 min-w-0">
             <p class="text-[9px] text-slate-400 font-bold uppercase tracking-[0.15em] leading-none mb-1">Configuración de Activos</p>
-            <h2 class="text-sm text-white font-black uppercase tracking-tight leading-none">
+            <h2 class="text-sm text-white font-black uppercase tracking-tight leading-tight">
                 {{ modoEdicion ? 'Editar Kit' : 'Nuevo Kit' }}
             </h2>
         </div>
-        <div class="ml-auto flex items-center gap-2 shrink-0">
+        <div class="ml-auto flex items-center flex-wrap justify-end gap-2">
             <span class="px-2 py-1 bg-amber-500 text-black font-black text-[10px] border border-black rounded leading-none">
                 {{ items.length }} herramienta{{ items.length !== 1 ? 's' : '' }}
             </span>
@@ -24,10 +24,10 @@
     </div>
 
     <!-- ═══ CUERPO: IZQUIERDA (datos) / DERECHA (herramientas) ═══ -->
-    <form [formGroup]="kitForm" class="flex flex-col sm:flex-row flex-1 overflow-hidden min-h-0">
+    <form [formGroup]="kitForm" class="dlg-cuerpo flex flex-col sm:flex-row flex-1 overflow-y-auto sm:overflow-hidden min-h-0">
 
         <!-- ─── PANEL IZQUIERDO: campos ─── -->
-        <div class="sm:basis-[340px] sm:max-w-[380px] shrink-0 overflow-y-auto neo-scrollbar border-b-2 sm:border-b-0 sm:border-r-2 border-black/20 dark:border-slate-600">
+        <div class="dlg-panel sm:basis-[340px] sm:max-w-[380px] shrink-0 sm:overflow-y-auto neo-scrollbar border-b-2 sm:border-b-0 sm:border-r-2 border-black/20 dark:border-slate-600">
             <div class="px-4 py-3 flex flex-col gap-3">
 
                 <!-- ── Datos del Kit ── -->
@@ -74,6 +74,7 @@
                         <select formControlName="estado"
                                 class="w-full h-8 text-xs font-bold bg-white dark:bg-slate-800 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-lg px-2 outline-none transition-all uppercase cursor-pointer hover:border-stone-400 focus:border-black focus:shadow-[2px_2px_0_#000] appearance-none">
                             <option *ngFor="let e of estados" [value]="e.value">{{ e.label }}</option>
+                            <option *ngIf="kitPrestado" value="in_use">EN USO (PRESTADO)</option>
                         </select>
                     </div>
                 </div>
@@ -162,10 +163,10 @@
                         </div>
 
                         <!-- Contenido: 3 columnas horizontales -->
-                        <div class="flex-1 min-h-0 overflow-hidden flex flex-col md:flex-row divide-y-2 md:divide-y-0 md:divide-x-2 divide-stone-200 dark:divide-slate-700">
+                        <div class="ubic-cuerpo flex-1 min-h-0 overflow-y-auto md:overflow-hidden flex flex-col md:flex-row divide-y-2 md:divide-y-0 md:divide-x-2 divide-stone-200 dark:divide-slate-700">
 
                         <!-- ─── COLUMNA 1: ALMACÉN ─── -->
-                        <div class="md:w-1/3 min-h-0 flex flex-col overflow-y-auto neo-scrollbar px-3 py-3">
+                        <div class="ubic-col md:w-1/3 shrink-0 md:shrink md:min-h-0 flex flex-col md:overflow-y-auto neo-scrollbar px-3 py-3">
                             <div class="flex items-center gap-2 mb-2">
                                 <span class="w-5 h-5 rounded border-2 flex items-center justify-center text-[9px] font-black shrink-0 transition-all"
                                       [ngClass]="selWarehouse ? 'border-black bg-black text-white' : 'border-stone-300 bg-white dark:bg-slate-800 text-stone-400'">
@@ -222,7 +223,7 @@
                         </div>
 
                         <!-- ─── COLUMNA 2: ESTANTE ─── -->
-                        <div class="md:w-1/3 min-h-0 flex flex-col overflow-y-auto neo-scrollbar px-3 py-3">
+                        <div class="ubic-col md:w-1/3 shrink-0 md:shrink md:min-h-0 flex flex-col md:overflow-y-auto neo-scrollbar px-3 py-3">
                             <div class="flex items-center gap-2 mb-2 shrink-0">
                                 <span class="w-5 h-5 rounded border-2 flex items-center justify-center text-[9px] font-black shrink-0 transition-all"
                                       [ngClass]="selRack ? 'border-black bg-black text-white' : 'border-stone-300 bg-white dark:bg-slate-800 text-stone-400'">
@@ -263,7 +264,7 @@
                         </div>
 
                         <!-- ─── COLUMNA 3: NIVEL ─── -->
-                        <div class="md:w-1/3 min-h-0 flex flex-col overflow-y-auto neo-scrollbar px-3 py-3">
+                        <div class="ubic-col md:w-1/3 shrink-0 md:shrink md:min-h-0 flex flex-col md:overflow-y-auto neo-scrollbar px-3 py-3">
                             <div class="flex items-center gap-2 mb-2 shrink-0">
                                 <span class="w-5 h-5 rounded border-2 flex items-center justify-center text-[9px] font-black shrink-0 transition-all"
                                       [ngClass]="selectedLevelId ? 'border-black bg-black text-white' : 'border-stone-300 bg-white dark:bg-slate-800 text-stone-400'">
@@ -312,7 +313,7 @@
         </div>
 
         <!-- ─── PANEL DERECHO: caja de herramientas ─── -->
-        <div class="flex-1 min-h-0 flex flex-col overflow-hidden">
+        <div class="dlg-lista flex-1 min-h-[24rem] sm:min-h-0 flex flex-col overflow-hidden">
 
             <!-- Escanear / Añadir Herramienta -->
             <div class="border-b-2 border-black/20 dark:border-slate-600 px-4 pt-3 pb-2.5 flex flex-col gap-2 shrink-0">
@@ -409,6 +410,15 @@
                                       class="text-[9px] font-black uppercase text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-300 dark:border-emerald-700 px-1.5 py-0.5 rounded">
                                     {{ item.get('estado')?.value }}
                                 </span>
+                                <!-- Ausente: faltó o volvió dañado en una devolución. Clic = repuesto. -->
+                                <button type="button" (click)="togglePresente(i)"
+                                        [title]="item.get('is_present')?.value ? 'Marcar como faltante en el kit' : 'Marcar como repuesto (presente)'"
+                                        class="text-[9px] font-black uppercase px-1.5 py-0.5 rounded border transition-colors"
+                                        [ngClass]="item.get('is_present')?.value
+                                            ? 'text-stone-500 bg-stone-50 border-stone-300 hover:bg-stone-100'
+                                            : 'text-red-700 bg-red-50 border-red-400 hover:bg-red-100'">
+                                    {{ item.get('is_present')?.value ? 'PRESENTE' : 'FALTA EN EL KIT' }}
+                                </button>
                             </div>
                             <div class="text-xs font-bold text-black dark:text-white mt-0.5 uppercase">{{ item.get('descripcion')?.value || '—' }}</div>
                             <div class="text-[10px] text-stone-400 font-mono mt-0.5">

@@ -9,6 +9,7 @@ import { Subject, of } from 'rxjs';
 import { takeUntil, finalize, switchMap, map, catchError, debounceTime, distinctUntilChanged, filter } from 'rxjs/operators';
 import { MovementService } from '../../../../../core/services/movement.service';
 import { QrScanService } from '../../../../../core/services/qr-scan.service';
+import { diasDesde } from '../../../../../core/utils/date.utils';
 
 type CondicionDevolucion = 'BUENO' | 'DAÑADO' | 'IRREPARABLE' | 'REQUIERE_CALIBRACION' | 'FALTANTE';
 
@@ -200,10 +201,9 @@ export class FormDevolucionDialogComponent implements OnInit, OnDestroy {
 
     private _toDevolucionItem(loan: any, it: any): DevolucionItem {
         const loanDate = loan.loan_date || '';
-        const diasFuera = loanDate
-            ? Math.ceil(Math.abs(Date.now() - new Date(loanDate).getTime()) / 86400000)
-            : 0;
-        const qty = Number(it.quantity) || 1;
+        const diasFuera = diasDesde(loanDate);
+        // Solo lo que falta devolver (patch HE-84: devoluciones parciales por cantidad).
+        const qty = Math.max((Number(it.quantity) || 1) - (Number(it.quantity_returned) || 0), 1);
         return {
             idLoanItem:       Number(it.id_loan_item),
             idLoan:           Number(it.loan_id),

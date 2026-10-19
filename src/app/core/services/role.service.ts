@@ -11,18 +11,21 @@ export class RoleService {
         return from(this._api.post('herramientas/roles/listarRoles', {
             start: 0,
             limit: 200,
-            ordenacion: 'name',
-            dir_ordenacion: 'asc'
+            sort: 'name',
+            dir: 'asc'
         })).pipe(
             switchMap((response: any) => of(response?.datos || response?.data || []))
         );
     }
 
     getRoleById(id: string): Observable<Role> {
+        // listarRoles solo filtra por filtro_adicional; mandar id_role suelto devolvía el primer rol
+        const idRole = Number(id);
+        if (!Number.isInteger(idRole) || idRole <= 0) return of(null);
         return from(this._api.post('herramientas/roles/listarRoles', {
             start: 0,
             limit: 1,
-            id_role: id
+            filtro_adicional: `rol.id_role = ${idRole}`
         })).pipe(
             switchMap((response: any) => {
                 const list = response?.datos || response?.data || [];

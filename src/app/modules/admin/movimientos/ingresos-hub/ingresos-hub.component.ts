@@ -1,3 +1,4 @@
+import { PaginadorCompactoComponent } from 'app/shared/components/paginador-compacto/paginador-compacto.component';
 import { Component, OnInit, OnDestroy, signal, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
@@ -76,7 +77,7 @@ type TabType = 'nueva' | 'ajuste' | 'historial';
     selector: 'app-ingresos-hub',
     standalone: true,
     imports: [
-        CommonModule, ReactiveFormsModule,
+        CommonModule, ReactiveFormsModule, PaginadorCompactoComponent,
         MatIconModule, MatSnackBarModule, MatProgressSpinnerModule,
         MatTooltipModule,
         HasPermissionDirective
@@ -143,6 +144,7 @@ export class IngresosHubComponent implements OnInit, OnDestroy {
     filterMovType      = new FormControl('');
     historialItems:    any[] = [];
     filteredHistorial: any[] = [];
+    pageHistorial = 0;
     isLoadingHistorial = false;
     historialTotal     = 0;
 
@@ -497,7 +499,7 @@ export class IngresosHubComponent implements OnInit, OnDestroy {
     async abrirCategorias(): Promise<void> {
         const { CategoriaIngresosDialogComponent } = await import('./categoria-ingresos-dialog/categoria-ingresos-dialog.component');
         this.dialog.open(CategoriaIngresosDialogComponent, {
-            panelClass: 'no-padding-dialog', disableClose: false
+            panelClass: 'no-padding-dialog', maxWidth: '95vw', disableClose: false
         });
     }
 
@@ -747,6 +749,8 @@ export class IngresosHubComponent implements OnInit, OnDestroy {
         // registrarAjusteIngreso no toca ubicación (solo cantidad/condición/notas); la ubicación
         // del picker se aplica aparte con moveLevelTool (HE_LTL_MOV).
         const itemsConUbicacion = this.dataSourceAjuste.filter(i => i.rackId && i.levelId);
+        // Códigos cuyo traspaso de estante falló: el ajuste ya quedó guardado, solo se avisa.
+        const sinUbicar: string[] = [];
         this.movementSvc.registrarAjusteIngreso({
             date:               fv.fecha,
             time:               new Date().toTimeString().slice(0, 8),
@@ -760,7 +764,8 @@ export class IngresosHubComponent implements OnInit, OnDestroy {
             mergeMap((result: any) => {
                 if (itemsConUbicacion.length === 0) return of(result);
                 return forkJoin(itemsConUbicacion.map(i =>
-                    this.ubicSvc.moveLevelTool(i.toolId, i.rackId!, i.levelId!).pipe(catchError(() => of(null)))
+                    this.ubicSvc.moveLevelTool(i.toolId, i.rackId!, i.levelId!).pipe(
+                        catchError(() => { sinUbicar.push(i.codigoBoa); return of(null); }))
                 )).pipe(map(() => result));
             }),
             finalize(() => this.isSavingAjuste = false)
@@ -771,7 +776,17 @@ export class IngresosHubComponent implements OnInit, OnDestroy {
                 // Comprobante de Ajuste por Ingreso — PDF real TCPDF backend.
                 if (idMov) this.movementSvc.verNotaAjuste(idMov, printWin);
                 else { try { printWin?.close(); } catch { /* noop */ } }
-                this._showMsg(`Ajuste registrado exitosamente: ${nro}`, 'success');
+                // El ajuste deja todo disponible; lo no serviciable debe pasar por su flujo.
+                const pendientes = itemsAjuste.filter(i => i.estado && i.estado !== 'SERVICEABLE' && i.estado !== 'NUEVO');
+                if (pendientes.length > 0) {
+                    this._showMsg(`Ajuste ${nro} registrado. ${pendientes.map(i => i.codigoBoa).join(', ')} quedaron disponibles: ` +
+                        'envíelas a Calibración o Cuarentena según su estado.', 'warning');
+                } else if (sinUbicar.length > 0) {
+                    this._showMsg(`Ajuste ${nro} registrado, pero no se pudo asignar estante a: ${sinUbicar.join(', ')}. ` +
+                        'Asígnelo desde Almacenes y Ubicaciones.', 'warning');
+                } else {
+                    this._showMsg(`Ajuste registrado exitosamente: ${nro}`, 'success');
+                }
                 this.dataSourceAjuste = [];
                 this.ajusteForm.reset({ tipoAjuste: 'INVENTARIO', fecha: localDateStr() });
                 this.loadHistorial();
@@ -807,6 +822,7 @@ export class IngresosHubComponent implements OnInit, OnDestroy {
     }
 
     applyHistorialFilters(): void {
+        this.pageHistorial = 0;
         const q    = (this.searchControl.value || '').toLowerCase().trim();
         const tipo = this.filterMovType.value || '';
         let base   = this.historialItems;

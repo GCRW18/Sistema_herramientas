@@ -28,6 +28,7 @@ function enrichLoanRow(r: any): any {
     };
 }
 import { ErpApiService } from '../../../../core/api/api.service';
+import { localDateStr } from '../../../../core/utils/date.utils';
 
 /* ── Filtros genéricos ─────────────────────────────────────────────────── */
 export interface FiltrosReporte {
@@ -166,8 +167,9 @@ export class ReportesService {
         return [];
     }
 
+    // limit 5000 = tope del PDF (ACTreportes::_ordenConsulta): grilla y PDF muestran las mismas filas.
     private _req<T>(url: string, params: any = {}): Observable<T[]> {
-        const p = { start: params.start ?? 0, limit: params.limit ?? 1000, ...params };
+        const p = { start: params.start ?? 0, limit: params.limit ?? 5000, ...params };
         return from(this._api.post(url, p)).pipe(
             switchMap((r: any) => {
                 // pxp-client strips ROOT → response is { datos, total, error }
@@ -178,6 +180,29 @@ export class ReportesService {
                 return of(arr as T[]);
             }),
             catchError(e => { console.error('[ReportesService]', url, e); return of([] as T[]); })
+        );
+    }
+
+    /* ── Centro de Reportes: filas de un sub-reporte (misma consulta que su PDF) ── */
+
+    getReporte(tipo: string, f: FiltrosReporte = {}): Observable<any[]> {
+        const params: any = { tipo_reporte: tipo };
+        for (const [k, v] of Object.entries(f)) {
+            if (v !== undefined && v !== null && v !== '') params[k] = String(v);
+        }
+        // A diferencia de _req, el error del servidor se propaga: la grilla lo muestra en vez de quedar en blanco.
+        return from(this._api.post('herramientas/reportes/listarReporte', { start: 0, limit: 5000, ...params })).pipe(
+            map((r: any) => {
+                const root = r?.ROOT ?? r ?? {};
+                if (root?.error === true || r?.error === true) {
+                    // pxp-client entrega el error como { error, message } o { error, detail: { message } }.
+                    throw new Error(root?.detalle?.mensaje ?? r?.detail?.message ?? r?.message ?? root?.mensaje
+                        ?? 'Error al cargar el reporte');
+                }
+                const raw = r?.datos ?? r?.data ?? r?.ROOT?.datos;
+                if (!raw || raw === '' || raw === 0) return [];
+                return Array.isArray(raw) ? raw : [raw];
+            })
         );
     }
 
@@ -267,8 +292,6 @@ export class ReportesService {
     exportarPDF(tipoReporte: string, filtros: FiltrosReporte = {}): Observable<{ pdf_base64: string; nombre_archivo: string }> {
         const params = {
             tipo_reporte: tipoReporte,
-            cantidad: '2000',
-            puntero:  '0',
             ...Object.fromEntries(
                 Object.entries(filtros)
                     .filter(([, v]) => v !== undefined && v !== null)
@@ -312,7 +335,7 @@ export class ReportesService {
         const url  = URL.createObjectURL(blob);
         const a    = document.createElement('a');
         a.href     = url;
-        a.download = `${archivo}_${new Date().toISOString().slice(0, 10)}.csv`;
+        a.download = `${archivo}_${localDateStr()}.csv`;
         a.click();
         URL.revokeObjectURL(url);
     }

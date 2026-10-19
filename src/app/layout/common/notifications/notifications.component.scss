@@ -38,6 +38,24 @@
     &.critical-pulse { background: #DC2626; color: #fff; animation: badgePulse 1.5s infinite; }
 }
 
+// Modo oscuro: la campana tenía fondo blanco fijo.
+:host-context(.dark) {
+    .notif-trigger {
+        background: #1e293b;
+        border-color: #000;
+        box-shadow: 3px 3px 0 rgb(71, 85, 105);
+
+        mat-icon { color: #fff; }
+        &:hover { background: #334155; }
+        &:active { box-shadow: 1px 1px 0 rgb(71, 85, 105); }
+    }
+
+    .notif-badge:not(.critical-pulse) {
+        background: #334155;
+        color: #fff;
+    }
+}
+
 // ── SCROLLBAR ──────────────────────────────────────────────────────────
 .notif-scroll {
     &::-webkit-scrollbar { width: 4px; }

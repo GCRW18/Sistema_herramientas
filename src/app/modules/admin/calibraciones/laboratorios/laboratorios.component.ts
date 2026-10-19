@@ -95,7 +95,8 @@ export class LaboratoriosComponent implements OnInit, OnDestroy {
                     phone: lab.phone ?? '',
                     email: lab.email ?? '',
                     website: lab.website ?? '',
-                    is_certified: !!lab.is_certified,
+                    // pXP puede mandar 'f' (texto): con !! una empresa sin certificar salía certificada.
+                    is_certified: lab.is_certified === true || lab.is_certified === 't' || lab.is_certified === 'true' || lab.is_certified === 1,
                     certification_number: lab.certification_number ?? '',
                     certification_types: Array.isArray(lab.certification_types)
                         ? lab.certification_types.join(', ')
@@ -181,7 +182,7 @@ export class LaboratoriosComponent implements OnInit, OnDestroy {
         try {
             const { FormLaboratorioComponent } = await import('./form-laboratorio/form-laboratorio.component');
             const ref = this.dialog.open(FormLaboratorioComponent, {
-                width: '540px',
+                width: '900px',
                 maxWidth: '95vw',
                 height: 'auto',
                 maxHeight: '85vh',
@@ -205,7 +206,7 @@ export class LaboratoriosComponent implements OnInit, OnDestroy {
         try {
             const { FormLaboratorioComponent } = await import('./form-laboratorio/form-laboratorio.component');
             const ref = this.dialog.open(FormLaboratorioComponent, {
-                width: '540px',
+                width: '900px',
                 maxWidth: '95vw',
                 height: 'auto',
                 maxHeight: '85vh',
@@ -229,7 +230,7 @@ export class LaboratoriosComponent implements OnInit, OnDestroy {
         try {
             const { FormLaboratorioComponent } = await import('./form-laboratorio/form-laboratorio.component');
             const ref = this.dialog.open(FormLaboratorioComponent, {
-                width: '540px',
+                width: '900px',
                 maxWidth: '95vw',
                 height: 'auto',
                 maxHeight: '85vh',

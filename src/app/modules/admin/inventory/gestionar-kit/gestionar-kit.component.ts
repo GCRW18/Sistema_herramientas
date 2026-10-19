@@ -12,6 +12,7 @@ import { GestionUbicacionesService } from '../gestion-ubicaciones/gestion-ubicac
 import { Warehouse, Rack, Level }   from '../gestion-ubicaciones/interfaces';
 import { KitsService }              from '../../../../core/services/kits.service';
 import { QrScanService }            from '../../../../core/services/qr-scan.service';
+import { esActivo } from '../../../../core/utils/bool.utils';
 
 @Component({
     selector: 'app-gestionar-kit',
@@ -53,12 +54,13 @@ export class GestionarKitComponent implements OnInit, OnDestroy {
 
     categorias: string[]     = [];
     categoriasLoading        = false;
+    // EN USO no se elige a mano: lo ponen el préstamo y la devolución del kit.
     readonly estados = [
         { value: 'complete',       label: 'COMPLETO' },
         { value: 'incomplete',     label: 'INCOMPLETO' },
-        { value: 'in_use',         label: 'EN USO' },
         { value: 'in_calibration', label: 'EN CALIBRACIÓN' }
     ];
+    kitPrestado = false;
 
     // ── Autocomplete funcionarios ──────────────────────────────────────
     funcionarioSuggestions: any[] = [];
@@ -129,7 +131,7 @@ export class GestionarKitComponent implements OnInit, OnDestroy {
             this.kitsService.getKitCategories().pipe(
                 finalize(() => this.categoriasLoading = false)
             ).subscribe(cats => {
-                this.categorias = cats.filter(c => c.active).map(c => c.name);
+                this.categorias = cats.filter(c => esActivo(c.active)).map(c => c.name);
                 if (this.categorias.length > 0 && !this.kitForm.get('categoria')?.value) {
                     this.kitForm.get('categoria')?.setValue(this.categorias[0]);
                 }
@@ -151,6 +153,8 @@ export class GestionarKitComponent implements OnInit, OnDestroy {
                 // description es legacy y nunca se escribe. Se lee notes primero.
                 descripcionKit: kit.notes ?? kit.description ?? kit.descripcion ?? ''
             });
+            this.kitPrestado = kit.status === 'in_use';
+            if (this.kitPrestado) this.kitForm.get('estado')?.disable();
             this.prefillUbicacion(kit);
             // Cargar componentes existentes desde el backend (no desde _raw, que no los tiene)
             if (id_kit) {
@@ -168,7 +172,8 @@ export class GestionarKitComponent implements OnInit, OnDestroy {
                                     pn:     c.part_number ?? c.pn ?? '',
                                     sn:     c.serial_number ?? c.sn ?? '',
                                     marca:  c.brand ?? c.marca ?? '',
-                                    estado: String(c.tool_status ?? c.status ?? '').toUpperCase()
+                                    estado: String(c.tool_status ?? c.status ?? '').toUpperCase(),
+                                    is_present: !(c.is_present === false || c.is_present === 'f' || c.is_present === 'false')
                                 }
                             ));
                         });
@@ -260,7 +265,7 @@ export class GestionarKitComponent implements OnInit, OnDestroy {
 
     private _buildItemGroup(
         descripcion = '', codigo = '', tool_id: number | null = null,
-        extra: { pn?: string; sn?: string; marca?: string; estado?: string } = {}
+        extra: { pn?: string; sn?: string; marca?: string; estado?: string; is_present?: boolean } = {}
     ): FormGroup {
         return this.fb.group({
             descripcion: [descripcion],
@@ -269,8 +274,15 @@ export class GestionarKitComponent implements OnInit, OnDestroy {
             pn:          [extra.pn ?? ''],
             sn:          [extra.sn ?? ''],
             marca:       [extra.marca ?? ''],
-            estado:      [extra.estado ?? '']
+            estado:      [extra.estado ?? ''],
+            is_present:  [extra.is_present ?? true]
         });
+    }
+
+    togglePresente(i: number): void {
+        const c = this.items.at(i).get('is_present');
+        c?.setValue(!c.value);
+        this.kitForm.markAsDirty();
     }
 
     eliminarItem(i: number): void { this.items.removeAt(i); }
@@ -310,9 +322,19 @@ export class GestionarKitComponent implements OnInit, OnDestroy {
                 setTimeout(() => this.errorMsg = '', 2500);
                 return;
             }
-            const exact = tools.find(t =>
-                String(t.code ?? t.tool_code ?? '').toLowerCase() === term.toLowerCase());
-            this.seleccionarHerramienta(exact ?? tools[0]);
+            // Sin coincidencia exacta no se adivina (tools[0] metía otra herramienta al kit).
+            // Un QR ya llega traducido: la búsqueda pone primero el código exacto.
+            const t = term.toLowerCase();
+            const eq = (v: any) => String(v ?? '').trim().toLowerCase() === t;
+            const exact = tools.find(x => eq(x.code ?? x.tool_code))
+                ?? tools.find(x => eq(x.serial_number) || eq(x.part_number))
+                ?? (this.qrScan.isQrLabel(term) || tools.length === 1 ? tools[0] : null);
+            if (!exact) {
+                this.errorMsg = `Varias coincidencias para "${term}": elija una de la lista`;
+                setTimeout(() => this.errorMsg = '', 2500);
+                return;
+            }
+            this.seleccionarHerramienta(exact);
             this.showToolDropdown = false;
             this.toolSuggestions  = [];
             setTimeout(() => this.scanInputRef?.nativeElement.focus(), 50);

@@ -396,7 +396,7 @@ export class EnvioCalibracionComponent implements OnInit, OnDestroy {
         try {
             const { AnularEnvioComponent } = await import('./anular-envio/anular-envio.component');
             const ref = this.dialog.open(AnularEnvioComponent, {
-                width: '500px', panelClass: 'no-padding-dialog',
+                width: '500px', maxWidth: '95vw', panelClass: 'no-padding-dialog',
                 disableClose: true, data: { calibracion: cal }
             });
             ref.afterClosed().subscribe(reason => {
@@ -420,7 +420,7 @@ export class EnvioCalibracionComponent implements OnInit, OnDestroy {
     verEnvio(cal: CalibrationDisplay): void {
         if (!cal.id_calibration) { this.showMsg('ID de calibración no válido', 'error'); return; }
         this.isLoading.set(true);
-        this.calibrationService.generarYVerPdfEnvio(cal.id_calibration);
+        this.calibrationService.generarYVerPdfEnvio(cal.id_calibration, this.calibrationService.preAbrirVentanaPdf());
         setTimeout(() => this.isLoading.set(false), 1500);
     }
 

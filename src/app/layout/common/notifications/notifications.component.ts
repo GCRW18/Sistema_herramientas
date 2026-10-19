@@ -9,7 +9,7 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { forkJoin, of } from 'rxjs';
 import { catchError, finalize } from 'rxjs/operators';
 
-import { ToolService } from 'app/core/services/tool.service';
+import { CalibrationService } from 'app/core/services/calibration.service';
 import { QuarantineService } from 'app/core/services/quarantine.service';
 import { MiscelaneosService } from 'app/core/services/miscelaneos.service';
 
@@ -42,7 +42,7 @@ export interface ToolAlert {
 export class NotificationsComponent implements OnInit {
     private router            = inject(Router);
     private dialog            = inject(MatDialog);
-    private toolService       = inject(ToolService);
+    private calibrationService = inject(CalibrationService);
     private quarantineService = inject(QuarantineService);
     private miscelaneosService = inject(MiscelaneosService);
 
@@ -61,7 +61,7 @@ export class NotificationsComponent implements OnInit {
         this.loading.set(true);
 
         forkJoin({
-            tools:       this.toolService.getToolsRequiringCalibration().pipe(catchError(() => of([]))),
+            tools:       this.calibrationService.getCalibrationAlertsPxp().pipe(catchError(() => of([]))),
             quarantine:  this.quarantineService.getActiveQuarantines().pipe(catchError(() => of([]))),
             miscelaneos: this.miscelaneosService.getMiscelaneos().pipe(catchError(() => of([]))),
         }).pipe(
@@ -70,11 +70,13 @@ export class NotificationsComponent implements OnInit {
 
             const data: ToolAlert[] = [];
 
-            // El backend retorna todas las herramientas con requires_calibration=true.
-            // days_to_calibration_expiry llega como string desde pxp.
-            const expired  = tools.filter((t: any) => parseInt(t.days_to_calibration_expiry, 10) < 0);
-            const upcoming = tools.filter((t: any) => {
-                const d = parseInt(t.days_to_calibration_expiry, 10);
+            // Misma fuente que Dashboard y Alertas (antes listTools sin filtro: solo las 100
+            // herramientas más viejas). Las que ya están en el laboratorio no son alerta.
+            const pendientes = (tools as any[]).filter((t: any) =>
+                !['in_calibration', 'CALIBRACION'].includes(t.status) && t.id_calibration == null);
+            const expired  = pendientes.filter((t: any) => parseInt(t.days_until_calibration, 10) < 0);
+            const upcoming = pendientes.filter((t: any) => {
+                const d = parseInt(t.days_until_calibration, 10);
                 return !isNaN(d) && d >= 0 && d <= 60;
             });
 

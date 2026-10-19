@@ -70,8 +70,9 @@ export class QuarantineService {
         const params: any = {
             start: 0,
             limit: 100,
-            ordenacion: 'id_quarantine',
-            dir_ordenacion: 'desc',
+            // pXP lee sort/dir (no ordenacion/dir_ordenacion): sin esto venían las 100 más viejas.
+            sort: 'id_quarantine',
+            dir: 'desc',
             ...filters
         };
 
@@ -117,7 +118,10 @@ export class QuarantineService {
      * Get active quarantines
      */
     getActiveQuarantines(): Observable<QuarantineRecord[]> {
-        return from(this._api.post('herramientas/quarantines/listActiveQuarantines', {})).pipe(
+        return from(this._api.post('herramientas/quarantines/listActiveQuarantines', {
+            start: 0, limit: 500, sort: 'id_quarantine', dir: 'desc',
+            filtro_adicional: "qua.status = 'active'"
+        })).pipe(
             switchMap((response: any) => {
                 return of(response?.datos || response?.data || []);
             })
@@ -135,8 +139,8 @@ export class QuarantineService {
         const params: any = {
             start: 0,
             limit: 100,
-            ordenacion: 'id_decommission',
-            dir_ordenacion: 'desc',
+            sort: 'id_decommission',
+            dir: 'desc',
             ...filters
         };
 

@@ -29,7 +29,7 @@ import { HasPermissionDirective } from '../../../../../../core/directives/has-pe
         .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #e55a00; }
     `],
     template: `
-    <div class="bg-stone-100 dark:bg-slate-900 border-2 border-black overflow-hidden flex flex-col w-full"
+    <div class="bg-stone-100 dark:bg-slate-900 border-2 border-black rounded-2xl overflow-hidden flex flex-col w-full"
          style="max-height:90vh">
 
         <!-- CABECERA -->
@@ -58,7 +58,7 @@ import { HasPermissionDirective } from '../../../../../../core/directives/has-pe
 
                 <!-- Dropdown resultados -->
                 <div *ngIf="showBuscarTecnicoDropdown"
-                     class="absolute z-[300] w-72 bg-white dark:bg-slate-800 border-2 border-black dark:border-slate-600 rounded-xl shadow-[4px_4px_0_#000] max-h-60 overflow-y-auto mt-1 top-full right-0 custom-scrollbar divide-y divide-stone-100 dark:divide-slate-700">
+                     class="absolute z-[300] w-72 max-w-[calc(100vw-3rem)] bg-white dark:bg-slate-800 border-2 border-black dark:border-slate-600 rounded-xl shadow-[4px_4px_0_#000] max-h-60 overflow-y-auto mt-1 top-full right-0 custom-scrollbar divide-y divide-stone-100 dark:divide-slate-700">
                     <div *ngFor="let t of tecnicosFiltrados"
                          (mousedown)="seleccionarTecnico(t)"
                          class="px-3 py-2 hover:bg-amber-50 dark:hover:bg-slate-700 cursor-pointer transition-colors">
@@ -77,7 +77,7 @@ import { HasPermissionDirective } from '../../../../../../core/directives/has-pe
 
         <!-- CUERPO: foto + campos, mismo layout que detalle-herramienta -->
         <div class="flex-1 overflow-hidden">
-            <div class="h-full flex flex-col sm:flex-row overflow-hidden min-h-0">
+            <div class="dlg-cuerpo h-full flex flex-col sm:flex-row overflow-y-auto sm:overflow-hidden min-h-0">
 
                 <!-- ── COLUMNA IZQUIERDA: Foto/Avatar ── -->
                 <div class="w-full sm:w-2/5 shrink-0 flex flex-col items-center justify-center px-4 py-4 gap-3">
@@ -92,7 +92,7 @@ import { HasPermissionDirective } from '../../../../../../core/directives/has-pe
                 </div>
 
                 <!-- ── COLUMNA DERECHA: Campos ── -->
-                <div class="flex-1 min-w-0 overflow-y-auto custom-scrollbar px-4 py-3 flex flex-col gap-2">
+                <div class="dlg-panel sm:flex-1 min-w-0 sm:overflow-y-auto custom-scrollbar px-4 py-3 flex flex-col gap-2">
 
                     <!-- Fila 1: Cuenta · CI · Cód. Funcionario -->
                     <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
@@ -193,7 +193,7 @@ import { HasPermissionDirective } from '../../../../../../core/directives/has-pe
         </div>
 
         <!-- Pie -->
-        <div class="border-t-2 border-black bg-stone-200 dark:bg-slate-800 px-4 py-2 flex justify-between items-center shrink-0">
+        <div class="border-t-2 border-black bg-stone-200 dark:bg-slate-800 px-4 py-2 flex flex-wrap gap-y-2 justify-between items-center shrink-0">
             <button *appHasPermission="'admin_usuarios.assign_role'" type="button" (click)="editarFuncionario()"
                     class="flex items-center gap-1 px-3 py-1.5 bg-amber-400 text-black font-black text-[10px] border-2 border-black rounded-lg shadow-[2px_2px_0_#000] hover:shadow-none hover:translate-x-[1px] hover:translate-y-[1px] transition-all uppercase">
                 <mat-icon class="!text-xs">edit</mat-icon>{{ f.id_employee ? 'Editar Datos Herramientas' : 'Dar de Alta en Herramientas' }}

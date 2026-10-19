@@ -222,7 +222,8 @@ export class ServiciosMantenimientoComponent implements OnInit, OnDestroy {
     isOverdue(mnt: MaintenanceDisplay): boolean {
         if (!mnt.expected_return_date || mnt.status === 'returned') return false;
         try {
-            const expected = new Date(mnt.expected_return_date);
+            // 'YYYY-MM-DD' sin hora se lee como medianoche UTC (día anterior en Bolivia).
+            const expected = new Date(String(mnt.expected_return_date).split('T')[0] + 'T00:00:00');
             const today = new Date();
             today.setHours(0, 0, 0, 0);
             return expected < today;
@@ -232,7 +233,7 @@ export class ServiciosMantenimientoComponent implements OnInit, OnDestroy {
     getDiasRetrasado(mnt: MaintenanceDisplay): number {
         if (!mnt.expected_return_date) return 0;
         try {
-            const expected = new Date(mnt.expected_return_date);
+            const expected = new Date(String(mnt.expected_return_date).split('T')[0] + 'T00:00:00');
             const today = new Date();
             today.setHours(0, 0, 0, 0);
             return Math.floor((today.getTime() - expected.getTime()) / 86400000);
@@ -331,22 +332,16 @@ export class ServiciosMantenimientoComponent implements OnInit, OnDestroy {
 
     // MGH-125 — Listado de Gatas Hidráulicas (PDF real vía backend).
     printGatasHidraulicas(): void {
+        // Pestaña reservada en el click: el PDF llega después del request.
+        const win = this.maintenanceService.preAbrirVentanaPdf();
         this.isLoading.set(true);
-        this.maintenanceService.generarPdfGatasHidraulicas().pipe(
+        this.maintenanceService.generarPdfGatasHidraulicas(this._currentUser()).pipe(
             takeUntil(this._destroy$),
             finalize(() => this.isLoading.set(false)),
         ).subscribe({
-            next: (result) => {
-                try {
-                    const bytes = new Uint8Array(atob(result.pdf_base64).split('').map(c => c.charCodeAt(0)));
-                    const url = window.URL.createObjectURL(new Blob([bytes], { type: 'application/pdf' }));
-                    window.open(url, '_blank');
-                    setTimeout(() => window.URL.revokeObjectURL(url), 30000);
-                } catch {
-                    this.showMsg('No se pudo abrir el PDF generado', 'error');
-                }
-            },
+            next: (result) => this.maintenanceService.abrirNota(result, win),
             error: (error) => {
+                try { win?.close(); } catch { /* noop */ }
                 console.error('Error al generar el listado de gatas hidráulicas:', error);
                 const msg = error?.message || error?.ROOT?.detalle?.mensaje || 'Error al generar el listado de gatas hidráulicas';
                 this.showMsg(msg, 'error');
@@ -357,7 +352,12 @@ export class ServiciosMantenimientoComponent implements OnInit, OnDestroy {
     // ── Reporte de auditoría ──
 
     // R-AUD-01 — Registro Histórico de Auditoría Técnica (solo mantenimiento), PDF real vía backend.
+    private _currentUser(): string {
+        try { return JSON.parse(localStorage.getItem('aut') || '{}')?.nombre_usuario || ''; } catch { return ''; }
+    }
+
     imprimirReporte(): void {
+        const win = this.calibrationService.preAbrirVentanaPdf();
         this.isLoading.set(true);
         const params: any = { tipo: 'mantenimiento', subtitulo: 'Solo mantenimiento' };
         if (this.searchControl.value) params.tool_search   = this.searchControl.value;
@@ -370,8 +370,8 @@ export class ServiciosMantenimientoComponent implements OnInit, OnDestroy {
             takeUntil(this._destroy$),
             finalize(() => this.isLoading.set(false)),
         ).subscribe({
-            next: (r) => this.calibrationService.abrirPdf(r.pdf_base64, r.nombre_archivo),
-            error: (e) => this.showMsg(e?.message || 'Error al generar el reporte de auditoría', 'error'),
+            next: (r) => this.calibrationService.abrirPdf(r.pdf_base64, r.nombre_archivo, win),
+            error: (e) => { try { win?.close(); } catch { /* noop */ } this.showMsg(e?.message || 'Error al generar el reporte de auditoría', 'error'); },
         });
     }
 

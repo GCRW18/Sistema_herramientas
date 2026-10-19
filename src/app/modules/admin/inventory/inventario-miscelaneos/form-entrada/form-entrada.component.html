@@ -1,5 +1,6 @@
 <div class="bg-stone-100 dark:bg-[#0F172A] sm:border-2 border-black rounded-2xl flex flex-col overflow-hidden relative w-full"
-     style="box-shadow:6px 6px 0 #000; height:min(820px,92vh)">
+     style="box-shadow:6px 6px 0 #000; max-height:92vh"
+     [style.height]="mode === 'new' ? 'min(820px,92vh)' : null">
 
     <!-- ── CABECERA ── -->
     <div class="bg-[#0F172A] px-4 py-3 flex items-center gap-3 shrink-0 select-none"
@@ -14,63 +15,61 @@
     </div>
 
     <!-- ======================================================
-         MODO VISTA (readonly) — layout simple
+         MODO VISTA (readonly) — cabecera (nota · material · cantidad) + grilla 2 columnas
     ====================================================== -->
     <ng-container *ngIf="readOnly && entradaView">
-        <div class="flex-1 overflow-y-auto px-5 py-5 custom-scrollbar">
-            <div class="bg-white dark:bg-slate-800 border-2 border-black rounded-xl p-4 shadow-[3px_3px_0_#000] max-w-lg mx-auto">
-                <span class="text-[8px] font-black text-stone-400 dark:text-slate-400 uppercase tracking-[0.18em] mb-3 border-b-2 border-black/10 pb-1.5 w-full block">
-                    Detalle de Entrada
-                </span>
+        <div class="flex-1 overflow-y-auto custom-scrollbar p-3 sm:p-5">
+            <div class="bg-white dark:bg-slate-800 border-2 border-black rounded-xl shadow-[3px_3px_0_#000] overflow-hidden">
 
-                <!-- Nota / código -->
-                <div *ngIf="entradaView.nroNota" class="mb-3">
-                    <p class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 mb-1">N° de Nota</p>
-                    <span class="font-mono font-black text-amber-700 dark:text-amber-400 text-sm bg-amber-50 dark:bg-amber-900/30 px-2 py-1 rounded border border-amber-200 uppercase">
-                        {{ entradaView.nroNota }}
-                    </span>
-                </div>
-
-                <!-- Material -->
-                <div class="mb-3">
-                    <p class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 mb-1">Material</p>
-                    <div class="flex items-center gap-2">
-                        <span class="font-mono text-[10px] font-black text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/30 px-1.5 rounded border border-amber-300 uppercase">
-                            {{ entradaView.codigoNombre }}
+                <div class="grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-3 items-center px-4 py-3 bg-stone-50 dark:bg-slate-900/40 border-b-2 border-black/10 dark:border-slate-700">
+                    <div class="min-w-0">
+                        <p class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 mb-1">N° de Nota</p>
+                        <span class="font-mono font-black text-amber-700 dark:text-amber-400 text-sm bg-amber-50 dark:bg-amber-900/30 px-2 py-0.5 rounded border border-amber-200 uppercase">
+                            {{ entradaView.nroNota || '—' }}
                         </span>
-                        <span class="text-sm font-bold text-black dark:text-white">{{ entradaView.producto }}</span>
+                        <p class="text-sm font-black text-black dark:text-white mt-2 leading-tight break-words">{{ entradaView.producto || '—' }}</p>
+                        <p class="font-mono text-[10px] font-black text-stone-500 dark:text-slate-400 uppercase mt-0.5">{{ entradaView.codigoNombre }}</p>
                     </div>
-                </div>
-
-                <div class="grid grid-cols-2 gap-3 mb-3">
-                    <div>
+                    <div class="sm:text-right sm:pl-4 sm:border-l-2 border-black/10 dark:border-slate-700">
                         <p class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 mb-1">Cantidad</p>
-                        <p class="text-xl font-black text-amber-600 dark:text-amber-400">
+                        <p class="text-2xl font-black text-amber-600 dark:text-amber-400 leading-none whitespace-nowrap">
                             {{ entradaView.cantidad }} <span class="text-sm font-bold text-stone-400">{{ entradaView.unidad }}</span>
                         </p>
                     </div>
-                    <div>
-                        <p class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 mb-1">Fecha / Hora</p>
-                        <p class="text-sm font-black text-black dark:text-white">{{ formatFecha(fecha) }}</p>
-                        <p class="text-xs font-bold text-stone-400">{{ hora }}</p>
+                </div>
+
+                <!-- gap-px sobre fondo gris = líneas divisorias iguales en ambas columnas -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-px bg-black/10 dark:bg-slate-700">
+                    <div class="bg-white dark:bg-slate-800 px-4 py-2.5">
+                        <p class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 mb-1">Fecha y Hora</p>
+                        <p class="text-sm font-bold text-black dark:text-white">{{ formatFecha(fecha) }} <span class="text-stone-400">{{ hora }}</span></p>
+                    </div>
+                    <div class="bg-white dark:bg-slate-800 px-4 py-2.5">
+                        <p class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 mb-1">Recibido Por</p>
+                        <p class="text-sm font-bold text-black dark:text-white break-words">{{ recibidoPorName || '—' }}</p>
+                    </div>
+                    <div class="bg-white dark:bg-slate-800 px-4 py-2.5">
+                        <p class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 mb-1">Factura / Remisión</p>
+                        <p class="text-sm font-bold text-black dark:text-white break-words">{{ factura || '—' }}</p>
+                    </div>
+                    <div class="bg-white dark:bg-slate-800 px-4 py-2.5">
+                        <p class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 mb-1">Marca / P/N</p>
+                        <p class="text-sm font-bold text-black dark:text-white break-words">{{ entradaView.marca || '—' }} <span class="text-stone-400">/</span> {{ entradaView.pn || '—' }}</p>
+                    </div>
+                    <div class="bg-white dark:bg-slate-800 px-4 py-2.5 sm:col-span-2">
+                        <p class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 mb-1">Observaciones</p>
+                        <p class="text-sm text-black dark:text-white whitespace-pre-line break-words">{{ observacion || '—' }}</p>
                     </div>
                 </div>
-
-                <div class="mb-3">
-                    <p class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 mb-1">Recibido Por</p>
-                    <p class="text-sm font-bold text-black dark:text-white">{{ recibidoPorName || '—' }}</p>
-                </div>
-
-                <div *ngIf="factura" class="mb-3">
-                    <p class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 mb-1">Factura / Remisión</p>
-                    <p class="text-sm font-bold text-black dark:text-white">{{ factura }}</p>
-                </div>
-
-                <div *ngIf="observacion">
-                    <p class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 mb-1">Observaciones</p>
-                    <p class="text-sm text-black dark:text-white">{{ observacion }}</p>
-                </div>
             </div>
+        </div>
+
+        <div class="border-t-2 border-black bg-stone-200 dark:bg-slate-900 px-4 py-2 flex justify-start shrink-0">
+            <button type="button" (click)="dialogRef.close()"
+                    class="w-full sm:w-auto flex items-center justify-center gap-1 px-3 py-1.5 bg-[#FF1414] text-white font-black text-[10px] uppercase border-2 border-black rounded-lg shadow-[2px_2px_0_#000] hover:shadow-none hover:translate-x-[1px] hover:translate-y-[1px] transition-all">
+                <mat-icon class="!text-xs">close</mat-icon>
+                Cerrar
+            </button>
         </div>
     </ng-container>
 
@@ -78,8 +77,8 @@
          MODO EDICIÓN — single item editable
     ====================================================== -->
     <ng-container *ngIf="isEdit && entradaView">
-        <div class="flex-1 overflow-y-auto px-5 py-5 custom-scrollbar">
-            <div class="bg-white dark:bg-slate-800 border-2 border-black rounded-xl p-4 shadow-[3px_3px_0_#000] max-w-xl mx-auto flex flex-col gap-4">
+        <div class="flex-1 overflow-y-auto p-3 sm:p-5 custom-scrollbar">
+            <div class="bg-white dark:bg-slate-800 border-2 border-black rounded-xl p-4 shadow-[3px_3px_0_#000] flex flex-col gap-4">
 
                 <!-- Chip nota (no editable) -->
                 <div class="flex items-center gap-3 pb-3 border-b-2 border-black/10">
@@ -132,7 +131,8 @@
                     </div>
                 </div>
 
-                <!-- Recibido Por -->
+                <!-- Recibido Por + Factura (2 col, como Fecha + Hora) -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div class="relative">
                     <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1.5 flex items-center justify-between">
                         <span class="flex items-center gap-1"><mat-icon class="!text-[12px] text-amber-500">how_to_reg</mat-icon>Recibido Por *</span>
@@ -155,11 +155,11 @@
                     <p *ngIf="camposTouched && !recibidoPorValue.trim()" class="text-[8px] font-bold text-red-500 mt-1">Requerido.</p>
                 </div>
 
-                <!-- Factura -->
                 <div>
                     <label class="text-[8px] font-black uppercase tracking-[0.18em] text-stone-400 dark:text-slate-400 mb-1.5 block">Factura / Remisión</label>
                     <input type="text" [(ngModel)]="factura" placeholder="Nro. de factura (opcional)"
                            class="w-full h-10 text-sm font-bold bg-white dark:bg-slate-900 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-xl px-3 outline-none transition-all placeholder:text-stone-300 focus:border-amber-500 focus:shadow-[3px_3px_0_#f59e0b]">
+                </div>
                 </div>
 
                 <!-- Observaciones -->
@@ -169,20 +169,21 @@
                               class="w-full text-sm font-normal bg-stone-50 dark:bg-slate-900 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-xl px-3 py-2.5 outline-none resize-none transition-all placeholder:text-stone-300 focus:border-amber-500 focus:shadow-[3px_3px_0_#f59e0b] custom-scrollbar"></textarea>
                 </div>
 
-                <!-- Botones -->
-                <div class="flex justify-end gap-3 pt-2 border-t-2 border-black/10">
-                    <button type="button" (click)="dialogRef.close(undefined)"
-                            class="px-4 py-2 bg-[#FF1414] text-white font-black text-[10px] border-2 border-black rounded-xl shadow-[2px_2px_0_#000] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all uppercase">
-                        Cancelar
-                    </button>
-                    <button type="button" (click)="saveEdit()" [disabled]="isSaving()"
-                            class="flex items-center gap-2 px-5 py-2 bg-amber-400 text-black font-black text-[10px] border-2 border-black rounded-xl shadow-[3px_3px_0_#000] hover:shadow-none hover:translate-x-[3px] hover:translate-y-[3px] transition-all uppercase disabled:opacity-50 disabled:cursor-not-allowed">
-                        <mat-spinner *ngIf="isSaving()" diameter="16"></mat-spinner>
-                        <mat-icon *ngIf="!isSaving()" class="!text-sm">save</mat-icon>
-                        {{ isSaving() ? 'Guardando...' : 'Guardar Cambios' }}
-                    </button>
-                </div>
             </div>
+        </div>
+
+        <div class="border-t-2 border-black bg-stone-200 dark:bg-slate-900 px-4 py-2 flex flex-col-reverse sm:flex-row justify-between items-stretch sm:items-center gap-2 shrink-0">
+            <button type="button" (click)="dialogRef.close(undefined)"
+                    class="w-full sm:w-auto flex items-center justify-center gap-1 px-3 py-1.5 bg-[#FF1414] text-white font-black text-[10px] uppercase border-2 border-black rounded-lg shadow-[2px_2px_0_#000] hover:shadow-none hover:translate-x-[1px] hover:translate-y-[1px] transition-all">
+                <mat-icon class="!text-xs">close</mat-icon>
+                Cancelar
+            </button>
+            <button type="button" (click)="saveEdit()" [disabled]="isSaving()"
+                    class="w-full sm:w-auto flex items-center justify-center gap-1.5 px-3 py-1.5 bg-amber-400 text-black font-black text-[10px] uppercase border-2 border-black rounded-lg shadow-[2px_2px_0_#000] hover:shadow-none hover:translate-x-[1px] hover:translate-y-[1px] transition-all disabled:opacity-50 disabled:cursor-not-allowed">
+                <mat-spinner *ngIf="isSaving()" diameter="14"></mat-spinner>
+                <mat-icon *ngIf="!isSaving()" class="!text-xs">save</mat-icon>
+                {{ isSaving() ? 'Guardando...' : 'Guardar Cambios' }}
+            </button>
         </div>
     </ng-container>
 
@@ -190,10 +191,10 @@
          MODO NUEVO — layout split panels
     ====================================================== -->
     <ng-container *ngIf="mode === 'new'">
-        <div class="flex flex-col sm:flex-row flex-1 overflow-hidden min-h-0">
+        <div class="dlg-cuerpo flex flex-col sm:flex-row flex-1 overflow-y-auto sm:overflow-hidden min-h-0">
 
             <!-- ── PANEL IZQUIERDO: Datos comunes ── -->
-            <div class="sm:basis-[340px] sm:max-w-[380px] shrink-0 overflow-y-auto custom-scrollbar border-b-2 sm:border-b-0 sm:border-r-2 border-black/20 dark:border-slate-600">
+            <div class="dlg-panel sm:basis-[340px] sm:max-w-[380px] shrink-0 sm:overflow-y-auto custom-scrollbar border-b-2 sm:border-b-0 sm:border-r-2 border-black/20 dark:border-slate-600">
                 <div class="px-4 py-3 flex flex-col gap-3">
 
                     <!-- ── Datos de la Nota ── -->
@@ -277,7 +278,7 @@
             </div>
 
             <!-- ── PANEL DERECHO: Lote de materiales ── -->
-            <div class="flex-1 min-h-0 flex flex-col overflow-hidden">
+            <div class="dlg-lista flex-1 min-h-[24rem] sm:min-h-0 flex flex-col overflow-hidden">
 
                 <!-- Añadir material al lote -->
                 <div class="border-b-2 border-black/20 dark:border-slate-600 px-4 pt-3 pb-2.5 flex flex-col gap-2 shrink-0">

@@ -56,7 +56,7 @@ export class FormProveedorComponent implements OnInit {
     async openUbicacionDialog(): Promise<void> {
         const { UbicacionContactoDialogComponent } = await import('./ubicacion-contacto-dialog.component');
         const ref = this.dialog.open(UbicacionContactoDialogComponent, {
-            panelClass: 'neo-mini-dialog',
+            panelClass: 'neo-mini-dialog', maxWidth: '95vw',
             hasBackdrop: true,
             backdropClass: 'bg-black/20',
             data: {

@@ -33,13 +33,13 @@ interface CompState {
     </div>
 
     <!-- KIT BANNER -->
-    <div class="bg-[#0F172A]/5 dark:bg-slate-800 border-b-2 border-black px-5 py-2.5 flex items-center gap-3 shrink-0">
+    <div class="bg-[#0F172A]/5 dark:bg-slate-800 border-b-2 border-black px-5 py-2.5 flex items-center flex-wrap gap-x-3 gap-y-2 shrink-0">
         <mat-icon class="!text-base text-amber-500 shrink-0">inventory_2</mat-icon>
-        <div class="min-w-0">
+        <div class="flex-1 min-w-0">
             <p class="text-xs font-black text-black dark:text-white uppercase truncate">{{ kit.name }}</p>
             <p class="text-[9px] font-mono font-bold text-stone-400 dark:text-slate-400">{{ kit.code }}</p>
         </div>
-        <div class="ml-auto flex items-center gap-2 shrink-0">
+        <div class="ml-auto flex items-center flex-wrap justify-end gap-2">
             <span class="px-2 py-0.5 text-[9px] font-black uppercase border-2 border-black rounded text-white"
                   [ngClass]="categoriaClass">{{ kit.category }}</span>
             <span *ngIf="data.loan_number"
@@ -338,6 +338,7 @@ export class DevolverKitDialogComponent implements OnInit, OnDestroy {
             is_complete:        this.isComplete,
             missing_components: this.missingList  || undefined,
             damaged_components: this.damagedList  || undefined,
+            absent_tool_ids:    this.compStates.filter(c => c.state !== 'present' && c.tool_id).map(c => Number(c.tool_id)),
             actions_taken:      v.actions_taken   || undefined,
             notes:              v.notes           || undefined
         }).subscribe({

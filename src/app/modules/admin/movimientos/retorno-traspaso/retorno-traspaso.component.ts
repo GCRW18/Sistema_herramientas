@@ -1,10 +1,10 @@
+import { PaginadorCompactoComponent } from 'app/shared/components/paginador-compacto/paginador-compacto.component';
 import {
     Component, OnInit, OnDestroy, inject
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
-import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 import { MatDialogRef, MatDialogModule, MatDialog } from '@angular/material/dialog';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatTooltipModule } from '@angular/material/tooltip';
@@ -31,7 +31,7 @@ import { Ubicacion, MovimientoActivo } from './retorno-traspaso.types';
     selector: 'app-retorno-traspaso',
     standalone: true,
     imports: [
-        CommonModule, FormsModule, MatIconModule, MatPaginatorModule,
+        CommonModule, FormsModule, MatIconModule, PaginadorCompactoComponent,
         MatDialogModule, MatSnackBarModule, MatTooltipModule,
         HasPermissionDirective,
     ],
@@ -88,8 +88,7 @@ export class RetornoTraspasoComponent implements OnInit, OnDestroy {
     ];
     loadingPdfActivo: number | null     = null;
     activosPageIndex        = 0;
-    activosPageSize         = 15;
-    activosPageSizeOptions  = [10, 15, 25, 50];
+    activosPageSize         = 10;
 
     // ─────────────────────────────────────────────────────────────────────────
     ngOnInit(): void {
@@ -284,10 +283,6 @@ export class RetornoTraspasoComponent implements OnInit, OnDestroy {
         return this.movActivosFiltrados.slice(start, start + this.activosPageSize);
     }
 
-    onActivosPageChange(event: PageEvent): void {
-        this.activosPageIndex = event.pageIndex;
-        this.activosPageSize  = event.pageSize;
-    }
 
     /** Texto del estado vacío, según el filtro Activos/Devueltos/Todos de la tab actual. */
     getEmptyLabelActivos(): string {
