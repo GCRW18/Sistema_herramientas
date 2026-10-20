@@ -9,6 +9,7 @@ import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { debounceTime, startWith } from 'rxjs/operators';
 import { RoleService } from '../../../../core/services/role.service';
 import { HasPermissionDirective } from '../../../../core/directives/has-permission.directive';
+import { PermissionsService } from '../../../../core/services/permissions.service';
 
 /**
  * Módulo Roles y Permisos — CRUD completo contra he.roles (herramientas/roles/*),
@@ -48,6 +49,7 @@ export class RolesComponent implements OnInit {
     private snackBar = inject(MatSnackBar);
     private dialog   = inject(MatDialog);
     private roleSvc  = inject(RoleService);
+    private permissionsSvc = inject(PermissionsService);
 
     searchControl = new FormControl('');
 
@@ -156,6 +158,7 @@ export class RolesComponent implements OnInit {
             this.roleSvc.updateRole(r.id, payload).subscribe({
                 next: () => {
                     this.snackBar.open('Rol actualizado', 'Cerrar', { duration: 2500 });
+                    this.permissionsSvc.refresh();
                     // Actualiza la fila localmente en vez de refetchear: el backend tarda un
                     // instante en reflejar el commit y un refetch inmediato traía el dato viejo.
                     this.applyOptimisticUpdate(r.id, {
@@ -213,6 +216,7 @@ export class RolesComponent implements OnInit {
             next: () => {
                 this.snackBar.open(`Rol ${!r.activo ? 'activado' : 'desactivado'}`, 'Cerrar', { duration: 2500 });
                 this.applyOptimisticUpdate(r.id, { activo: payload.active });
+                this.permissionsSvc.refresh();
             },
             error: (err: any) => this.snackBar.open(err?.message || 'Error al cambiar estado', 'Cerrar', { duration: 4000 }),
         });

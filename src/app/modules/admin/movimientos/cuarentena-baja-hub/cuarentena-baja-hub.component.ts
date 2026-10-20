@@ -95,16 +95,22 @@ export class CuarentenaBajaHubComponent implements OnInit, OnDestroy {
     private destroy$      = new Subject<void>();
 
     /** Sube a Blob Storage las fotos nuevas de los ítems y las adjunta a cada herramienta.
-     *  Best-effort: un fallo de foto no revierte la cuarentena/baja ya registrada. */
+     *  Best-effort: un fallo de foto no revierte la cuarentena/baja ya registrada, pero se avisa. */
     private async _persistirFotos(items: { toolId: number; file: File | null | undefined }[]): Promise<void> {
+        let fallidas = 0;
         for (const it of items) {
             if (!it.file || !it.toolId) continue;
             try {
                 const ruta = await lastValueFrom(this.blobStorage.upload(it.file, 'Imagenes', it.toolId));
                 await lastValueFrom(this.ubicSvc.attachToolPhoto(it.toolId, ruta));
             } catch (e) {
+                fallidas++;
                 console.warn('No se pudo guardar la foto de la herramienta', it.toolId, e);
             }
+        }
+        if (fallidas) {
+            this._showMsg(`Se registró, pero no se pudo guardar la foto de ${fallidas} herramienta(s). `
+                + 'Puede agregarla después desde Almacén y Ubicaciones.', 'warning');
         }
     }
 

@@ -242,6 +242,7 @@ export class AdministrationComponent implements OnDestroy {
     trackByTabId: TrackByFunction<OpenTab> = (_index, tab) => tab.id;
 
     ngOnDestroy(): void {
+        this._allowedSub.unsubscribe();
         this._unsubscribeAll.next();
         this._unsubscribeAll.complete();
     }

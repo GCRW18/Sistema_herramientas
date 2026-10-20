@@ -227,6 +227,7 @@ export class CalibracionesComponent implements OnInit, OnDestroy, AfterViewInit 
     }
 
     ngOnDestroy(): void {
+        this._allowedSub.unsubscribe();
         this._unsubscribeAll.next();
         this._unsubscribeAll.complete();
     }

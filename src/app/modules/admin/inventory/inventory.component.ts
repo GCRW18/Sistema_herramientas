@@ -277,6 +277,7 @@ export class InventoryComponent implements OnInit, OnDestroy {
     }
 
     ngOnDestroy(): void {
+        this._allowedSub.unsubscribe();
         this._unsubscribeAll.next();
         this._unsubscribeAll.complete();
     }

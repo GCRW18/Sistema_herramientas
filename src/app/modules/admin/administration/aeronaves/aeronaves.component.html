@@ -25,7 +25,7 @@
                         placeholder:font-bold placeholder:normal-case dark:placeholder:text-slate-500">
           <mat-icon class="absolute left-2.5 top-2 text-black dark:text-white !text-sm">search</mat-icon>
         </div>
-        <button (click)="nuevaAeronave()"
+        <button *appHasPermission="'admin_aeronaves.create'" (click)="nuevaAeronave()"
                 class="shrink-0 px-3 sm:px-4 py-2 bg-[#FFC501FF] text-black font-black text-xs
                        border-[2px] border-black rounded-xl shadow-[3px_3px_0px_0px_#000]
                        hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all
@@ -112,16 +112,16 @@
 
               <td class="px-3 py-2.5 text-center">
                 <div class="flex items-center justify-center gap-1.5">
-                  <button (click)="editarAeronave(a, $event)" matTooltip="Editar"
+                  <button *appHasPermission="'admin_aeronaves.edit'" (click)="editarAeronave(a, $event)" matTooltip="Editar"
                           class="w-7 h-7 flex items-center justify-center bg-[#FFC501FF] border-2 border-black rounded-lg shadow-[2px_2px_0px_0px_#000] hover:translate-y-[1px] hover:shadow-none transition-all">
                     <mat-icon class="!text-sm text-black">edit</mat-icon>
                   </button>
-                  <button (click)="toggleEstado(a, $event)" matTooltip="Activar/Desactivar"
+                  <button *appHasPermission="'admin_aeronaves.toggle'" (click)="toggleEstado(a, $event)" matTooltip="Activar/Desactivar"
                           [ngClass]="a.activo ? 'bg-gray-400' : 'bg-green-600'"
                           class="w-7 h-7 flex items-center justify-center border-2 border-black rounded-lg shadow-[2px_2px_0px_0px_#000] hover:translate-y-[1px] hover:shadow-none transition-all">
                     <mat-icon class="!text-sm text-white">{{ a.activo ? 'pause' : 'play_arrow' }}</mat-icon>
                   </button>
-                  <button (click)="eliminarAeronave(a, $event)" matTooltip="Eliminar"
+                  <button *appHasPermission="'admin_aeronaves.delete'" (click)="eliminarAeronave(a, $event)" matTooltip="Eliminar"
                           class="w-7 h-7 flex items-center justify-center bg-red-500 border-2 border-black rounded-lg shadow-[2px_2px_0px_0px_#000] hover:translate-y-[1px] hover:shadow-none transition-all">
                     <mat-icon class="!text-sm text-white">delete</mat-icon>
                   </button>
@@ -136,11 +136,13 @@
                   <p class="text-xs font-bold uppercase text-gray-500 mt-2">
                     {{ searchControl.value ? 'No se encontraron aeronaves' : 'No hay aeronaves registradas' }}
                   </p>
-                  <button *ngIf="!searchControl.value" (click)="nuevaAeronave()"
-                          class="mt-2 px-4 py-2 bg-[#FFC501FF] text-black font-black text-[10px] border-2 border-black rounded-lg shadow-[2px_2px_0px_0px_#000] hover:translate-y-[1px] hover:shadow-none transition-all uppercase inline-flex items-center gap-1.5">
-                    <mat-icon class="!text-base text-black">add</mat-icon>
-                    Registrar la primera
-                  </button>
+                  <ng-container *appHasPermission="'admin_aeronaves.create'">
+                    <button *ngIf="!searchControl.value" (click)="nuevaAeronave()"
+                            class="mt-2 px-4 py-2 bg-[#FFC501FF] text-black font-black text-[10px] border-2 border-black rounded-lg shadow-[2px_2px_0px_0px_#000] hover:translate-y-[1px] hover:shadow-none transition-all uppercase inline-flex items-center gap-1.5">
+                      <mat-icon class="!text-base text-black">add</mat-icon>
+                      Registrar la primera
+                    </button>
+                  </ng-container>
                 </div>
               </td>
             </tr>

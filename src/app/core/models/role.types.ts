@@ -41,15 +41,12 @@ export const AVAILABLE_PERMISSIONS: Permission[] = [
     { id: 'miscelaneos.view',   name: 'Ver Misceláneos',        description: 'Consultar catálogo y stock de misceláneos', module: 'Misceláneos', action: 'view' },
     { id: 'miscelaneos.entry',  name: 'Registrar Entrada',      description: 'Registrar entrada de material misceláneo', module: 'Misceláneos', action: 'entry' },
     { id: 'miscelaneos.exit',   name: 'Registrar Salida',       description: 'Registrar salida de material misceláneo', module: 'Misceláneos', action: 'exit' },
-    { id: 'miscelaneos.move',   name: 'Mover Ubicación',        description: 'Reubicar material misceláneo', module: 'Misceláneos', action: 'move' },
 
     // ── Inventario · Gestión Kits ─────────────────────────────────────────
     { id: 'kits.view',    name: 'Ver Kits',      description: 'Consultar kits y su contenido', module: 'Gestión Kits', action: 'view' },
     { id: 'kits.create',  name: 'Crear Kits',    description: 'Crear nuevos kits',              module: 'Gestión Kits', action: 'create' },
     { id: 'kits.edit',    name: 'Editar Kits',   description: 'Modificar datos de un kit existente', module: 'Gestión Kits', action: 'edit' },
-    { id: 'kits.prestar', name: 'Prestar Kits',  description: 'Registrar préstamo de un kit',    module: 'Gestión Kits', action: 'prestar' },
     { id: 'kits.devolver',name: 'Devolver Kits', description: 'Registrar devolución de un kit',  module: 'Gestión Kits', action: 'devolver' },
-    { id: 'kits.move',    name: 'Mover Kits',    description: 'Reubicar un kit',                 module: 'Gestión Kits', action: 'move' },
     { id: 'kits.toggle',  name: 'Activar/Desactivar Kits', description: 'Cambiar el estado activo/inactivo de un kit', module: 'Gestión Kits', action: 'toggle' },
 
     // ── Inventario · Reportes ─────────────────────────────────────────────
@@ -135,10 +132,17 @@ export const AVAILABLE_PERMISSIONS: Permission[] = [
     { id: 'admin_roles.toggle', name: 'Activar/Desactivar', description: 'Cambiar el estado de un rol', module: 'Roles y Permisos', action: 'toggle' },
 
     // ── Administración · Clientes / Terceros ────────────────────────────────
-    { id: 'admin_clientes.view', name: 'Ver Clientes / Terceros', description: 'Consultar y gestionar clientes/terceros', module: 'Clientes / Terceros', action: 'view' },
+    { id: 'admin_clientes.view',   name: 'Ver Clientes / Terceros', description: 'Consultar clientes/terceros', module: 'Clientes / Terceros', action: 'view' },
+    { id: 'admin_clientes.create', name: 'Crear Cliente',           description: 'Registrar nuevo cliente/tercero', module: 'Clientes / Terceros', action: 'create' },
+    { id: 'admin_clientes.edit',   name: 'Editar Cliente',          description: 'Modificar datos de un cliente/tercero', module: 'Clientes / Terceros', action: 'edit' },
+    { id: 'admin_clientes.toggle', name: 'Activar/Desactivar',      description: 'Cambiar el estado de un cliente/tercero', module: 'Clientes / Terceros', action: 'toggle' },
 
     // ── Administración · Aeronaves ──────────────────────────────────────────
-    { id: 'admin_aeronaves.view', name: 'Ver Aeronaves', description: 'Consultar y gestionar aeronaves', module: 'Aeronaves', action: 'view' },
+    { id: 'admin_aeronaves.view',   name: 'Ver Aeronaves',      description: 'Consultar aeronaves', module: 'Aeronaves', action: 'view' },
+    { id: 'admin_aeronaves.create', name: 'Crear Aeronave',     description: 'Registrar nueva aeronave', module: 'Aeronaves', action: 'create' },
+    { id: 'admin_aeronaves.edit',   name: 'Editar Aeronave',    description: 'Modificar datos de una aeronave', module: 'Aeronaves', action: 'edit' },
+    { id: 'admin_aeronaves.toggle', name: 'Activar/Desactivar', description: 'Cambiar el estado de una aeronave', module: 'Aeronaves', action: 'toggle' },
+    { id: 'admin_aeronaves.delete', name: 'Eliminar Aeronave',  description: 'Eliminar una aeronave del catálogo', module: 'Aeronaves', action: 'delete' },
 ];
 
 /** Módulos del menú lateral que se filtran por rol (el Dashboard es visible para todos). */

@@ -5,7 +5,7 @@ import { PermissionsService } from '../services/permissions.service';
 /**
  * *appHasPermission="'kits.create'" — oculta el elemento si el usuario logueado
  * no tiene ese permiso en el JSON de su rol asignado (he.roles.permissions).
- * Fail-open mientras el usuario no tenga rol asignado — ver PermissionsService.can().
+ * Sin rol asignado (o rol desactivado) se oculta todo — ver PermissionsService.
  */
 @Directive({
     selector: '[appHasPermission]',

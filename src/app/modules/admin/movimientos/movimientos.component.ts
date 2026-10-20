@@ -191,7 +191,12 @@ export class MovimientosComponent implements OnInit, OnDestroy {
 
     // ── Ciclo de vida ──
     ngOnInit(): void {}
-    ngOnDestroy(): void { this._unsub$.next(); this._unsub$.complete(); }
+    ngOnDestroy(): void {
+        this._allowedSub.unsubscribe();
+        this._calSub.unsubscribe();
+        this._unsub$.next();
+        this._unsub$.complete();
+    }
 
     /** pendingChangesGuard: ¿algún submódulo abierto tiene un formulario/lista en curso? */
     tieneCambiosPendientes(): boolean {

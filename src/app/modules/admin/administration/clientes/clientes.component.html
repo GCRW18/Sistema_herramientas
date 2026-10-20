@@ -25,7 +25,7 @@
                         placeholder:font-bold placeholder:normal-case dark:placeholder:text-slate-500">
           <mat-icon class="absolute left-2.5 top-2 text-black dark:text-white !text-sm">search</mat-icon>
         </div>
-        <button (click)="nuevoCliente()"
+        <button *appHasPermission="'admin_clientes.create'" (click)="nuevoCliente()"
                 class="shrink-0 px-3 sm:px-4 py-2 bg-[#FFC501FF] text-black font-black text-xs
                        border-[2px] border-black rounded-xl shadow-[3px_3px_0px_0px_#000]
                        hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all
@@ -114,11 +114,11 @@
 
               <td class="px-3 py-2.5 text-center">
                 <div class="flex items-center justify-center gap-1.5">
-                  <button (click)="editarCliente(c, $event)" matTooltip="Editar"
+                  <button *appHasPermission="'admin_clientes.edit'" (click)="editarCliente(c, $event)" matTooltip="Editar"
                           class="w-7 h-7 flex items-center justify-center bg-[#FFC501FF] border-2 border-black rounded-lg shadow-[2px_2px_0px_0px_#000] hover:translate-y-[1px] hover:shadow-none transition-all">
                     <mat-icon class="!text-sm text-black">edit</mat-icon>
                   </button>
-                  <button (click)="toggleEstado(c, $event)" matTooltip="Cambiar estado"
+                  <button *appHasPermission="'admin_clientes.toggle'" (click)="toggleEstado(c, $event)" matTooltip="Cambiar estado"
                           [ngClass]="c.activo ? 'bg-gray-400' : 'bg-green-600'"
                           class="w-7 h-7 flex items-center justify-center border-2 border-black rounded-lg shadow-[2px_2px_0px_0px_#000] hover:translate-y-[1px] hover:shadow-none transition-all">
                     <mat-icon class="!text-sm text-white">{{ c.activo ? 'pause' : 'play_arrow' }}</mat-icon>
@@ -134,11 +134,13 @@
                   <p class="text-xs font-bold uppercase text-gray-500 mt-2">
                     {{ searchControl.value ? 'No se encontraron clientes' : 'No hay clientes registrados' }}
                   </p>
-                  <button *ngIf="!searchControl.value" (click)="nuevoCliente()"
-                          class="mt-2 px-4 py-2 bg-[#FFC501FF] text-black font-black text-[10px] border-2 border-black rounded-lg shadow-[2px_2px_0px_0px_#000] hover:translate-y-[1px] hover:shadow-none transition-all uppercase inline-flex items-center gap-1.5">
-                    <mat-icon class="!text-base text-black">add</mat-icon>
-                    Registrar el primero
-                  </button>
+                  <ng-container *appHasPermission="'admin_clientes.create'">
+                    <button *ngIf="!searchControl.value" (click)="nuevoCliente()"
+                            class="mt-2 px-4 py-2 bg-[#FFC501FF] text-black font-black text-[10px] border-2 border-black rounded-lg shadow-[2px_2px_0px_0px_#000] hover:translate-y-[1px] hover:shadow-none transition-all uppercase inline-flex items-center gap-1.5">
+                      <mat-icon class="!text-base text-black">add</mat-icon>
+                      Registrar el primero
+                    </button>
+                  </ng-container>
                 </div>
               </td>
             </tr>

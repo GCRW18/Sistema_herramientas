@@ -1,5 +1,8 @@
-import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { Component, EventEmitter, Input, Output, inject } from '@angular/core';
 import { MatIconModule } from '@angular/material/icon';
+import { MatSnackBar } from '@angular/material/snack-bar';
+
+const MAX_BYTES = 20 * 1024 * 1024;
 
 /**
  * Botones "Subir archivo" / "Tomar foto" bajo la zona de foto de un formulario.
@@ -29,6 +32,8 @@ import { MatIconModule } from '@angular/material/icon';
     `,
 })
 export class BotonesFotoComponent {
+    private _snackBar = inject(MatSnackBar);
+
     @Input() accept = 'image/*';
     @Input() disabled = false;
     @Output() seleccion = new EventEmitter<Event>();
@@ -36,8 +41,17 @@ export class BotonesFotoComponent {
     readonly btnClass = 'flex-1 flex items-center justify-center gap-1 h-8 text-[9px] font-black uppercase border-2 border-black rounded-lg shadow-[2px_2px_0_#000] hover:shadow-none hover:translate-x-px hover:translate-y-px transition-all disabled:opacity-40 disabled:cursor-not-allowed';
 
     emitir(event: Event): void {
-        this.seleccion.emit(event);
+        const input = event.target as HTMLInputElement;
+        const file = input.files?.[0];
+        // Solo imágenes de hasta 20 MB: avisa aquí en vez de que el formulario la ignore en silencio.
+        if (file && !file.type.startsWith('image/')) {
+            this._snackBar.open('El archivo elegido no es una imagen', 'OK', { duration: 4000, verticalPosition: 'top' });
+        } else if (file && file.size > MAX_BYTES) {
+            this._snackBar.open('La imagen no debe superar 20 MB', 'OK', { duration: 4000, verticalPosition: 'top' });
+        } else {
+            this.seleccion.emit(event);
+        }
         // Limpia el input para que volver a elegir/tomar la misma foto dispare (change) otra vez.
-        (event.target as HTMLInputElement).value = '';
+        input.value = '';
     }
 }

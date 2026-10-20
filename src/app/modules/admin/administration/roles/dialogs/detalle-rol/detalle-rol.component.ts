@@ -5,6 +5,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MAT_DIALOG_DATA, MatDialogRef, MatDialogModule } from '@angular/material/dialog';
 import { DragDropModule } from '@angular/cdk/drag-drop';
 import { AVAILABLE_PERMISSIONS, Permission } from '../../../../../../core/models/role.types';
+import { HasPermissionDirective } from '../../../../../../core/directives/has-permission.directive';
 
 @Component({
     selector: 'app-detalle-rol',
@@ -14,7 +15,8 @@ import { AVAILABLE_PERMISSIONS, Permission } from '../../../../../../core/models
         MatButtonModule,
         MatIconModule,
         MatDialogModule,
-        DragDropModule
+        DragDropModule,
+        HasPermissionDirective
     ],
     templateUrl: './detalle-rol.component.html',
     styles: [`

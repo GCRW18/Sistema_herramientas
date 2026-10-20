@@ -6,6 +6,7 @@ import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
+import { HasPermissionDirective } from '../../../../core/directives/has-permission.directive';
 import { debounceTime, startWith } from 'rxjs/operators';
 import { CustomerService } from '../../../../core/services/customer.service';
 
@@ -36,7 +37,8 @@ interface ClienteDisplay {
         MatDialogModule,
         MatSnackBarModule,
         MatTooltipModule,
-        ReactiveFormsModule
+        ReactiveFormsModule,
+        HasPermissionDirective
     ],
     templateUrl: './clientes.component.html',
     styles: [`

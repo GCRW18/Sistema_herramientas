@@ -1,7 +1,17 @@
 import { Injectable, inject } from '@angular/core';
-import { from, Observable, of, switchMap } from 'rxjs';
+import { from, map, Observable, of, switchMap } from 'rxjs';
 import { Role, RoleFormData } from '../models';
 import { ErpApiService } from '../api/api.service';
+
+/**
+ * Filas de un listar*; lanza si la respuesta no las trae. ErpApiService.post no rechaza ante
+ * errores (devuelve el error como respuesta) y sin esto un fallo de red se leía como "sin rol".
+ */
+function filasOError(response: any): any[] {
+    const rows = response?.datos ?? response?.data;
+    if (!Array.isArray(rows)) throw new Error('Respuesta inválida al consultar roles');
+    return rows;
+}
 
 @Injectable({ providedIn: 'root' })
 export class RoleService {
@@ -22,15 +32,13 @@ export class RoleService {
         // listarRoles solo filtra por filtro_adicional; mandar id_role suelto devolvía el primer rol
         const idRole = Number(id);
         if (!Number.isInteger(idRole) || idRole <= 0) return of(null);
-        return from(this._api.post('herramientas/roles/listarRoles', {
+        // postRaw: es una consulta de fondo (recarga de permisos), sin el overlay de carga
+        return from(this._api.postRaw('herramientas/roles/listarRoles', {
             start: 0,
             limit: 1,
             filtro_adicional: `rol.id_role = ${idRole}`
         })).pipe(
-            switchMap((response: any) => {
-                const list = response?.datos || response?.data || [];
-                return of(list[0] || null);
-            })
+            map((response: any) => filasOError(response)[0] || null)
         );
     }
 
@@ -83,15 +91,14 @@ export class RoleService {
      * Angular nunca marca la opción como seleccionada.
      */
     getUserRoleAssignment(idUsuario: number): Observable<{ id_role: string | null }> {
-        return from(this._api.post('herramientas/usuarios/listarUsuarios', {
+        return from(this._api.postRaw('herramientas/usuarios/listarUsuarios', {
             start: 0,
             limit: 1,
-            filtro_adicional: `usr.id_usuario = ${idUsuario}`
+            filtro_adicional: `usr.id_usuario = ${Number(idUsuario)}`
         })).pipe(
-            switchMap((response: any) => {
-                const rows = response?.datos || response?.data || [];
-                const idRole = rows[0]?.id_role;
-                return of({ id_role: (idRole !== null && idRole !== undefined) ? String(idRole) : null });
+            map((response: any) => {
+                const idRole = filasOError(response)[0]?.id_role;
+                return { id_role: (idRole !== null && idRole !== undefined) ? String(idRole) : null };
             })
         );
     }

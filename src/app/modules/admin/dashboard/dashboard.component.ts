@@ -9,7 +9,7 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { Chart, registerables } from 'chart.js';
-import { forkJoin, of } from 'rxjs';
+import { Subscription, combineLatest, forkJoin, of } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 import { ToolService } from 'app/core/services/tool.service';
 import { MovementService } from 'app/core/services/movement.service';
@@ -148,6 +148,7 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewInit {
     private kitsService       = inject(KitsService);
     private _dialog           = inject(MatDialog);
     private _permissionsSvc   = inject(PermissionsService);
+    private _quickActionsSub?: Subscription;
 
     isLoading = signal(true);
 
@@ -177,8 +178,8 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewInit {
     quickActionsData = signal<QuickAction[]>([]);
 
     ngOnInit(): void {
-        // Accesos rápidos solo a los módulos que el rol del usuario puede abrir.
-        forkJoin({
+        // Accesos rápidos solo a los módulos que el rol del usuario puede abrir (se actualizan si cambia el rol).
+        this._quickActionsSub = combineLatest({
             mov: this._permissionsSvc.canAccessArea('movimientos'),
             cal: this._permissionsSvc.canAccessArea('calibraciones'),
             inv: this._permissionsSvc.allowedTabs('inventario'),
@@ -229,6 +230,7 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewInit {
     ngAfterViewInit(): void {}
 
     ngOnDestroy(): void {
+        this._quickActionsSub?.unsubscribe();
         this.movementsChartInstance?.destroy();
         this.topToolsChartInstance?.destroy();
         this.calibrationChartInstance?.destroy();

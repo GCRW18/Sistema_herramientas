@@ -9,8 +9,10 @@ import { DragDropModule } from '@angular/cdk/drag-drop';
 import { Subject, of } from 'rxjs';
 import { debounceTime, distinctUntilChanged, switchMap, catchError, finalize, takeUntil } from 'rxjs/operators';
 import { RoleService } from '../../../../../../core/services/role.service';
+import { PermissionsService } from '../../../../../../core/services/permissions.service';
 import { EmployeeService } from '../../../../../../core/services/employee.service';
 import { HasPermissionDirective } from '../../../../../../core/directives/has-permission.directive';
+import { esActivo } from '../../../../../../core/utils/bool.utils';
 
 /**
  * Ficha de usuario/funcionario. La cuenta de login vive en segu (solo lectura aquí);
@@ -179,8 +181,9 @@ import { HasPermissionDirective } from '../../../../../../core/directives/has-pe
                             <mat-icon class="!text-lg text-[#7113CF] shrink-0">shield</mat-icon>
                             <select [(ngModel)]="selectedRoleId" [disabled]="loadingRoles"
                                     class="flex-1 h-9 min-w-0 text-xs font-bold bg-stone-100 dark:bg-slate-700 dark:text-white border-2 border-stone-300 dark:border-slate-600 rounded-lg px-2 outline-none focus:border-black">
-                                <option [ngValue]="null">Sin rol asignado</option>
-                                <option *ngFor="let r of roles" [ngValue]="r.id_role">{{ r.name }}</option>
+                                <option [ngValue]="null">Sin rol (sin acceso)</option>
+                                <option *ngFor="let r of roles" [ngValue]="r.id_role"
+                                        [disabled]="!esActivo(r.active) && r.id_role !== selectedRoleId">{{ r.name }}{{ esActivo(r.active) ? '' : ' (desactivado)' }}</option>
                             </select>
                             <button *appHasPermission="'admin_usuarios.assign_role'" type="button" (click)="guardarRol()" [disabled]="guardandoRol || loadingRoles"
                                     class="shrink-0 px-3 h-9 bg-[#FFC501FF] text-black font-black text-[10px] uppercase border-2 border-black rounded-lg shadow-[2px_2px_0_#000] hover:shadow-none hover:translate-x-[1px] hover:translate-y-[1px] transition-all disabled:opacity-40">
@@ -210,6 +213,7 @@ export class VerUsuarioComponent implements OnInit, OnDestroy {
     f: any;
 
     private roleSvc     = inject(RoleService);
+    private _permissionsSvc = inject(PermissionsService);
     private employeeSvc = inject(EmployeeService);
     private snackBar    = inject(MatSnackBar);
     private dialog      = inject(MatDialog);
@@ -217,6 +221,7 @@ export class VerUsuarioComponent implements OnInit, OnDestroy {
 
     // Filas crudas de listarRoles (id_role, name, ...); no coinciden con el interface Role, van sin tipar.
     roles: any[] = [];
+    readonly esActivo = esActivo;
     loadingRoles  = false;
     guardandoRol  = false;
     // string, no number: los id_role llegan como string del backend y así quedan los [ngValue]
@@ -259,7 +264,8 @@ export class VerUsuarioComponent implements OnInit, OnDestroy {
                     this.selectedRoleId = res.id_role;
                     this.loadingRoles = false;
                 },
-                error: () => { this.loadingRoles = false; }
+                // Sin saber el rol actual el selector mostraría "Sin rol": se deja bloqueado para no guardarlo por error
+                error: () => this.snackBar.open('No se pudo leer el rol asignado; cierre y vuelva a abrir la ficha', 'Cerrar', { duration: 5000 })
             });
         };
         if (this.roles.length) { cargarAsignacion(); return; }
@@ -327,6 +333,7 @@ export class VerUsuarioComponent implements OnInit, OnDestroy {
             next: () => {
                 this.guardandoRol = false;
                 this.snackBar.open('Rol actualizado', 'Cerrar', { duration: 2500 });
+                this._permissionsSvc.refresh();
             },
             error: (err: any) => {
                 this.guardandoRol = false;
